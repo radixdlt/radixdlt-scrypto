@@ -87,10 +87,7 @@ impl AuthModule {
         system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
     ) -> (BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>) {
-        let is_root_call_frame = system
-            .kernel_get_system_state()
-            .current_call_frame
-            .is_root();
+        let is_root_call_frame = system.kernel_get_system_state().current_call_frame.is_root();
         let is_root_thread = system.kernel_get_thread_id() == 0;
         if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
@@ -229,7 +226,7 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    pub fn create_auth_zone<Y: SystemBasedKernelApi>(
+    pub(crate) fn create_auth_zone<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,

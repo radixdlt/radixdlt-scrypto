@@ -8,7 +8,7 @@ use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::blueprints::transaction_processor::{MAX_TOTAL_BLOB_SIZE_PER_INVOCATION, TransactionProcessorRunInputEfficientEncodable, TxnProcessor};
 use crate::blueprints::transaction_tracker::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -73,6 +73,7 @@ impl SystemBoot {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemLogicVersion {
     V1,
+    V2,
 }
 
 impl SystemLogicVersion {
@@ -90,7 +91,8 @@ impl SystemLogicVersion {
                     executable.intents().get(0).unwrap()
                 };
                 AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
-            } //ExecutableIntents::V2(_) => AuthModule::new(),
+            }
+            SystemLogicVersion::V2 => AuthModule::new(),
         };
 
         Ok(auth_module)
@@ -123,11 +125,12 @@ impl SystemLogicVersion {
                 )?;
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
-            } /*
-              ExecutableIntents::V2(intents) => {
-                  for intent in intents {
-                      let mut system_service = SystemService::new(api);
-                      let virtual_resources = intent
+            }
+            SystemLogicVersion::V2 => {
+                let intents = executable.intents();
+                for intent in intents {
+                    let mut system_service = SystemService::new(api);
+                    let virtual_resources = intent
                           .auth_zone_init
                           .simulate_every_proof_under_resources
                           .clone();
@@ -148,7 +151,7 @@ impl SystemLogicVersion {
                           ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
                           auth_zone,
                       }))?;
-                  }
+                }
 
                   {
                       let mut system_service = SystemService::new(api);
@@ -178,7 +181,6 @@ impl SystemLogicVersion {
                       output
                   }
               }
-               */
         };
 
         Ok(output)
@@ -192,6 +194,7 @@ impl SystemLogicVersion {
                     return false;
                 }
             }
+            SystemLogicVersion::V2 => {}
         }
 
         true
