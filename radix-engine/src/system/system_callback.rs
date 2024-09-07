@@ -8,7 +8,10 @@ use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::{MAX_TOTAL_BLOB_SIZE_PER_INVOCATION, TransactionProcessorRunInputEfficientEncodable, TxnProcessor};
+use crate::blueprints::transaction_processor::{
+    TransactionProcessorRunInputEfficientEncodable, TxnProcessor,
+    MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+};
 use crate::blueprints::transaction_tracker::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -131,56 +134,56 @@ impl SystemLogicVersion {
                 for intent in intents {
                     let mut system_service = SystemService::new(api);
                     let virtual_resources = intent
-                          .auth_zone_init
-                          .simulate_every_proof_under_resources
-                          .clone();
-                      let virtual_non_fungibles =
-                          intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
-                      let auth_zone = AuthModule::create_auth_zone(
-                          &mut system_service,
-                          None,
-                          virtual_resources,
-                          virtual_non_fungibles,
-                      )?;
+                        .auth_zone_init
+                        .simulate_every_proof_under_resources
+                        .clone();
+                    let virtual_non_fungibles =
+                        intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
+                    let auth_zone = AuthModule::create_auth_zone(
+                        &mut system_service,
+                        None,
+                        virtual_resources,
+                        virtual_non_fungibles,
+                    )?;
 
-                      api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
-                          blueprint_id: BlueprintId::new(
-                              &TRANSACTION_PROCESSOR_PACKAGE,
-                              TRANSACTION_PROCESSOR_BLUEPRINT,
-                          ),
-                          ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-                          auth_zone,
-                      }))?;
+                    api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
+                        blueprint_id: BlueprintId::new(
+                            &TRANSACTION_PROCESSOR_PACKAGE,
+                            TRANSACTION_PROCESSOR_BLUEPRINT,
+                        ),
+                        ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
+                        auth_zone,
+                    }))?;
                 }
 
-                  {
-                      let mut system_service = SystemService::new(api);
-                      let intent = intents.get(0).unwrap();
+                {
+                    let mut system_service = SystemService::new(api);
+                    let intent = intents.get(0).unwrap();
 
-                      let txn_processor = TxnProcessor::<InstructionV1>::init(
-                          intent.encoded_instructions.clone(),
-                          global_address_reservations.clone(),
-                          intent.blobs.clone(),
-                          MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
-                          &mut system_service,
-                      )?;
-                      let output = txn_processor.execute(&mut system_service)?;
+                    let txn_processor = TxnProcessor::<InstructionV1>::init(
+                        intent.encoded_instructions.clone(),
+                        global_address_reservations.clone(),
+                        intent.blobs.clone(),
+                        MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+                        &mut system_service,
+                    )?;
+                    let output = txn_processor.execute(&mut system_service)?;
 
-                      let actor = api.kernel_get_system_state().current_call_frame;
-                      match actor {
-                          Actor::Function(FunctionActor { auth_zone, .. }) => {
-                              let auth_zone = auth_zone.clone();
-                              let mut system_service = SystemService::new(api);
-                              AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
-                          }
-                          _ => {
-                              panic!("unexpected");
-                          }
-                      }
+                    let actor = api.kernel_get_system_state().current_call_frame;
+                    match actor {
+                        Actor::Function(FunctionActor { auth_zone, .. }) => {
+                            let auth_zone = auth_zone.clone();
+                            let mut system_service = SystemService::new(api);
+                            AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
+                        }
+                        _ => {
+                            panic!("unexpected");
+                        }
+                    }
 
-                      output
-                  }
-              }
+                    output
+                }
+            }
         };
 
         Ok(output)
