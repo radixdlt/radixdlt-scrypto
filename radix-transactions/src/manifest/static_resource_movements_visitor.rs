@@ -55,10 +55,9 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     type Error<'a> = StaticResourceMovementsError<'a>;
 
     // region:Invocation
-    fn on_next_instruction<'a>(
+    fn on_start_instruction<'a>(
         &mut self,
-        index: usize,
-        effect: ManifestInstructionEffect,
+        OnStartInstruction { index, effect }: OnStartInstruction<'a>,
     ) -> ControlFlow<Self::Error<'a>> {
         // We only care about invocations. Ignore anything that is not an invocation.
         let ManifestInstructionEffect::Invocation { kind, args } = effect else {
@@ -778,21 +777,20 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     // region:Bucket Creation
     fn on_new_bucket<'a>(
         &mut self,
-        bucket: ManifestBucket,
-        resource_address: &ResourceAddress,
-        source_amount: BucketSourceAmount,
+        OnNewBucket { bucket, state }: OnNewBucket<'_, 'a>,
     ) -> ControlFlow<Self::Error<'a>> {
         // Converting the resource address into a composite resource address and then acting based
         // on whether the resource is fungible or non-fungible.
-        let composite_resource_address = CompositeResourceAddress::from(*resource_address);
+        let composite_resource_address =
+            CompositeResourceAddress::from(*state.source_amount.resource_address());
 
-        match (composite_resource_address, source_amount) {
+        match (composite_resource_address, state.source_amount) {
             // Everything on the worktop is being taken so we remove it from the worktop contents.
             // If the resource was not known to be in the worktop then we create unknown bounds for
             // it.
             (
                 CompositeResourceAddress::Fungible(fungible_resource_address),
-                BucketSourceAmount::AllOnWorktop,
+                BucketSourceAmount::AllOnWorktop { .. },
             ) => {
                 self.tracked_buckets.insert(
                     bucket,
@@ -809,7 +807,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             }
             (
                 CompositeResourceAddress::NonFungible(non_fungible_resource_address),
-                BucketSourceAmount::AllOnWorktop,
+                BucketSourceAmount::AllOnWorktop { .. },
             ) => {
                 self.tracked_buckets.insert(
                     bucket,
@@ -833,7 +831,10 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             // guaranteed amount is created,
             (
                 CompositeResourceAddress::Fungible(fungible_resource_address),
-                BucketSourceAmount::AmountFromWorktop(bucket_amount),
+                BucketSourceAmount::AmountFromWorktop {
+                    amount: bucket_amount,
+                    ..
+                },
             ) => {
                 // Check if there's an entry for this resource on the worktop. If there is, then we
                 // subtract the amount taken from the bounds when they're defined.
@@ -863,7 +864,10 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             // ids are being taken so the bucket will just contain unknown ids.
             (
                 CompositeResourceAddress::NonFungible(non_fungible_resource_address),
-                BucketSourceAmount::AmountFromWorktop(bucket_amount),
+                BucketSourceAmount::AmountFromWorktop {
+                    amount: bucket_amount,
+                    ..
+                },
             ) => {
                 // Worktop accounting.
                 if let Some(worktop_non_fungible_content) = self
@@ -892,7 +896,9 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             // Taking non-fungibles from the worktop by id.
             (
                 CompositeResourceAddress::NonFungible(non_fungible_resource_address),
-                BucketSourceAmount::NonFungiblesFromWorktop(bucket_ids),
+                BucketSourceAmount::NonFungiblesFromWorktop {
+                    ids: bucket_ids, ..
+                },
             ) => {
                 let bucket_ids = bucket_ids.iter().cloned().collect::<IndexSet<_>>();
                 let bucket_ids_amount = Decimal::from(bucket_ids.len());
@@ -933,7 +939,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             // Invalid case - taking a fungible by ids from the worktop.
             (
                 CompositeResourceAddress::Fungible(_),
-                BucketSourceAmount::NonFungiblesFromWorktop(_),
+                BucketSourceAmount::NonFungiblesFromWorktop { .. },
             ) => {
                 return ControlFlow::Break(
                     StaticResourceMovementsError::NonFungibleIdsTakeOnFungibleResource,
@@ -948,8 +954,11 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     // region:Bucket Consumption
     fn on_consume_bucket<'a>(
         &mut self,
-        bucket: ManifestBucket,
-        destination: BucketDestination,
+        OnConsumeBucket {
+            bucket,
+            destination,
+            ..
+        }: OnConsumeBucket<'_, 'a>,
     ) -> ControlFlow<Self::Error<'a>> {
         // Try to get the bucket information. If the bucket information doesn't exist then throw an
         // error. There's no way for a bucket to be created without us catching its creation and
@@ -1017,10 +1026,27 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     // region:Assertions
     fn on_worktop_assertion<'a>(
         &mut self,
-        assertion: WorktopAssertion,
+        OnWorktopAssertion { assertion }: OnWorktopAssertion<'a>,
     ) -> ControlFlow<Self::Error<'a>> {
+        // Handle the ability to empty the worktop.
+        let resource_address = match assertion {
+            WorktopAssertion::AnyAmountGreaterThanZero { resource_address }
+            | WorktopAssertion::AtLeastAmount {
+                resource_address, ..
+            }
+            | WorktopAssertion::AtLeastNonFungibles {
+                resource_address, ..
+            } => resource_address,
+            WorktopAssertion::IsEmpty => {
+                // Empty the worktop completely.
+                self.worktop_fungible_contents = Default::default();
+                self.worktop_non_fungible_contents = Default::default();
+                self.worktop_uncertainty_sources = Default::default();
+                return ControlFlow::Continue(());
+            }
+        };
+
         // Convert to a composite resource address.
-        let resource_address = assertion.resource_address();
         let composite_resource_address = CompositeResourceAddress::from(*resource_address);
 
         match (composite_resource_address, assertion) {
@@ -1159,6 +1185,12 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
                         },
                     );
                 }
+            }
+            (_, WorktopAssertion::IsEmpty) => {
+                // Empty the worktop completely.
+                self.worktop_fungible_contents = Default::default();
+                self.worktop_non_fungible_contents = Default::default();
+                self.worktop_uncertainty_sources = Default::default();
             }
             // This is invalid. You can't assert by ids on fungibles.
             (

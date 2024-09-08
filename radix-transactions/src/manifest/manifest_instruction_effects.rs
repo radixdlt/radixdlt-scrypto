@@ -76,6 +76,20 @@ pub enum BucketSourceAmount<'a> {
     },
 }
 
+impl<'a> BucketSourceAmount<'a> {
+    pub fn resource_address(&self) -> &'a ResourceAddress {
+        match self {
+            Self::AllOnWorktop { resource_address }
+            | Self::AmountFromWorktop {
+                resource_address, ..
+            }
+            | Self::NonFungiblesFromWorktop {
+                resource_address, ..
+            } => resource_address,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ProofSourceAmount<'a> {
     AuthZonePopLastAddedProof,
@@ -162,18 +176,4 @@ pub enum WorktopAssertion<'a> {
         ids: &'a [NonFungibleLocalId],
     },
     IsEmpty,
-}
-
-impl<'a> WorktopAssertion<'a> {
-    pub fn resource_address(&self) -> &'a ResourceAddress {
-        match self {
-            Self::AnyAmountGreaterThanZero { resource_address }
-            | Self::AtLeastAmount {
-                resource_address, ..
-            }
-            | Self::AtLeastNonFungibles {
-                resource_address, ..
-            } => resource_address,
-        }
-    }
 }

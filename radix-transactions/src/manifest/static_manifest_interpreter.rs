@@ -581,44 +581,44 @@ enum ManifestLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BucketState<'a> {
-    name: Option<&'a str>,
-    source_amount: BucketSourceAmount<'a>,
-    created_at: ManifestLocation,
-    proof_locks: u32,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub source_amount: BucketSourceAmount<'a>,
+    pub created_at: ManifestLocation,
+    pub proof_locks: u32,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProofState<'a> {
-    name: Option<&'a str>,
-    source_amount: ProofSourceAmount<'a>,
-    created_at: ManifestLocation,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub source_amount: ProofSourceAmount<'a>,
+    pub created_at: ManifestLocation,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AddressReservationState<'a> {
-    name: Option<&'a str>,
-    package_address: &'a PackageAddress,
-    blueprint_name: &'a str,
-    preallocated_address: Option<&'a GlobalAddress>,
-    created_at: ManifestLocation,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub package_address: &'a PackageAddress,
+    pub blueprint_name: &'a str,
+    pub preallocated_address: Option<&'a GlobalAddress>,
+    pub created_at: ManifestLocation,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NamedAddressState<'a> {
-    name: Option<&'a str>,
-    associated_reservation: Option<ManifestAddressReservation>,
-    created_at: ManifestLocation,
+    pub name: Option<&'a str>,
+    pub associated_reservation: Option<ManifestAddressReservation>,
+    pub created_at: ManifestLocation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IntentState<'a> {
-    name: Option<&'a str>,
-    intent_hash: IntentHash,
-    intent_type: IntentType,
-    created_at: ManifestLocation,
+    pub name: Option<&'a str>,
+    pub intent_hash: IntentHash,
+    pub intent_type: IntentType,
+    pub created_at: ManifestLocation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
