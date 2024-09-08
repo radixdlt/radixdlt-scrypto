@@ -1191,13 +1191,13 @@ impl<'a> From<ManifestValidationError<'a>> for StaticResourceMovementsError<'a> 
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccountWithdraw {
     Amount(ResourceAddress, Decimal),
     Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccountDeposit {
     KnownFungible(ResourceAddress, FungibleBounds),
     KnownNonFungible(ResourceAddress, NonFungibleBounds),
@@ -1364,7 +1364,7 @@ pub enum UpperFungibleBound {
     Unbounded,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NonFungibleBounds {
     pub amount_bounds: FungibleBounds,
     pub id_bounds: NonFungibleIdBounds,
@@ -1453,7 +1453,7 @@ impl From<(NonFungibleResourceAddress, NonFungibleBounds)> for InvocationIo {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum NonFungibleIdBounds {
     FullyKnown(IndexSet<NonFungibleLocalId>),
     PartiallyKnown(IndexSet<NonFungibleLocalId>),
@@ -1537,6 +1537,7 @@ mod typed_invocations {
     use radix_engine_interface::blueprints::identity;
     use radix_engine_interface::blueprints::locker;
 
+    use radix_common::prelude::*;
     use radix_engine_interface::prelude::*;
 
     macro_rules! define_typed_invocations {
@@ -1854,7 +1855,7 @@ mod typed_invocations {
                         account::ACCOUNT_DEPOSIT_IDENT
                     ),
                     DepositBatch => (
-                        account::AccountDepositBatchManifestInput,
+                        ManifestValue,
                         account::ACCOUNT_DEPOSIT_BATCH_IDENT
                     ),
                     Withdraw => (
@@ -1898,7 +1899,7 @@ mod typed_invocations {
                         account::ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
                     ),
                     TryDepositBatchOrRefund => (
-                        account::AccountTryDepositBatchOrRefundManifestInput,
+                        ManifestValue,
                         account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
                     ),
                     TryDepositOrAbort => (
@@ -1906,7 +1907,7 @@ mod typed_invocations {
                         account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
                     ),
                     TryDepositBatchOrAbort => (
-                        account::AccountTryDepositBatchOrAbortManifestInput,
+                        ManifestValue,
                         account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
                     ),
                     Burn => (

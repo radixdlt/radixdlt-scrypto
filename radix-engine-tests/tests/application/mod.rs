@@ -9,6 +9,7 @@ mod local_component;
 mod metering;
 mod preview;
 mod stake_reconciliation;
+mod static_resource_movements_visitor;
 mod storage;
 mod stored_external_component;
 mod stored_local_component;

@@ -39,7 +39,7 @@ pub enum ManifestInstructionEffect<'a> {
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum InvocationKind<'a> {
     Method {
         address: &'a DynamicGlobalAddress,
