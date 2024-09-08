@@ -83,7 +83,7 @@ impl<T: ManifestDecode> TransactionPreparableFromValue for SummarizedRawFullValu
 pub struct SummarizedRawValueBodyWithReferences<T: ManifestDecode + ManifestCategorize> {
     pub inner: T,
     pub summary: Summary,
-    pub references: IndexSet<Reference>,
+    pub references: Rc<IndexSet<Reference>>,
 }
 
 impl_has_summary!(<T: ManifestDecode + ManifestCategorize> SummarizedRawValueBodyWithReferences<T>);
@@ -105,7 +105,7 @@ impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
         };
         Ok(Self {
             inner,
-            references,
+            references: Rc::new(references),
             summary,
         })
     }

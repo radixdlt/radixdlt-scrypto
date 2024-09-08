@@ -14,7 +14,10 @@ impl ManifestIdAllocator {
         Self::default()
     }
 
-    // NOTE: overflow is practically impossible
+    // NOTE: Overflow of untrusted inputs is impossible:
+    // * MAX_TRANSACTION_SIZE is 1MB (and this check happens first)
+    // * Each instruction takes more than 1 byte
+    // * u32 accepts more than 1M ~ 2^20
 
     pub fn new_bucket_id(&mut self) -> ManifestBucket {
         let id = self.next_bucket_id;

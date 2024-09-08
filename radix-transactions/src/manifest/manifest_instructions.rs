@@ -44,8 +44,9 @@ impl ManifestInstruction for TakeAllFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::AllOnWorktop,
+            source_amount: BucketSourceAmount::AllOnWorktop {
+                resource_address: &self.resource_address,
+            },
         }
     }
 }
@@ -72,8 +73,10 @@ impl ManifestInstruction for TakeFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::AmountFromWorktop(self.amount),
+            source_amount: BucketSourceAmount::AmountFromWorktop {
+                resource_address: &self.resource_address,
+                amount: self.amount,
+            },
         }
     }
 }
@@ -100,8 +103,10 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::NonFungiblesFromWorktop(&self.ids),
+            source_amount: BucketSourceAmount::NonFungiblesFromWorktop {
+                resource_address: &self.resource_address,
+                ids: &self.ids,
+            },
         }
     }
 }
@@ -207,6 +212,26 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
                 resource_address: &self.resource_address,
                 ids: &self.ids,
             },
+        }
+    }
+}
+
+/// Asserts that the worktop contains any positive amount of the specified resource.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertWorktopIsEmpty {}
+
+impl ManifestInstruction for AssertWorktopIsEmpty {
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY");
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::WorktopAssertion {
+            assertion: WorktopAssertion::IsEmpty,
         }
     }
 }
@@ -1164,6 +1189,7 @@ pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
+pub const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
 
 //==============
 // Auth zone

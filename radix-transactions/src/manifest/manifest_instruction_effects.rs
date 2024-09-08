@@ -4,7 +4,6 @@ use crate::internal_prelude::*;
 #[derive(Clone, Copy)]
 pub enum ManifestInstructionEffect<'a> {
     CreateBucket {
-        resource: &'a ResourceAddress,
         source_amount: BucketSourceAmount<'a>,
     },
     CreateProof {
@@ -64,9 +63,17 @@ pub enum InvocationKind<'a> {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BucketSourceAmount<'a> {
-    AllOnWorktop,
-    AmountFromWorktop(Decimal),
-    NonFungiblesFromWorktop(&'a [NonFungibleLocalId]),
+    AllOnWorktop {
+        resource_address: &'a ResourceAddress,
+    },
+    AmountFromWorktop {
+        resource_address: &'a ResourceAddress,
+        amount: Decimal,
+    },
+    NonFungiblesFromWorktop {
+        resource_address: &'a ResourceAddress,
+        ids: &'a [NonFungibleLocalId],
+    },
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -154,6 +161,7 @@ pub enum WorktopAssertion<'a> {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
+    IsEmpty,
 }
 
 impl<'a> WorktopAssertion<'a> {
