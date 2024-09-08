@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct SubintentsV2(Vec<SubintentV2>);
+pub struct SubintentsV2(pub Vec<SubintentV2>);
 
 impl TransactionPartialPrepare for SubintentsV2 {
     type Prepared = PreparedSubintentsV2;
