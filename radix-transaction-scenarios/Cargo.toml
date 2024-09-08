@@ -22,6 +22,9 @@ hex = { workspace = true }
 walkdir = { workspace = true }
 lazy_static = { workspace = true }
 
+[dev-dependencies]
+radix-engine = { workspace = true, features = ["test_utils"] }
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
