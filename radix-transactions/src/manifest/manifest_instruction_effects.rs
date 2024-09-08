@@ -155,3 +155,17 @@ pub enum WorktopAssertion<'a> {
         ids: &'a [NonFungibleLocalId],
     },
 }
+
+impl<'a> WorktopAssertion<'a> {
+    pub fn resource_address(&self) -> &'a ResourceAddress {
+        match self {
+            Self::AnyAmountGreaterThanZero { resource_address }
+            | Self::AtLeastAmount {
+                resource_address, ..
+            }
+            | Self::AtLeastNonFungibles {
+                resource_address, ..
+            } => resource_address,
+        }
+    }
+}
