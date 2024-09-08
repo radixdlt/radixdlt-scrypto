@@ -64,19 +64,17 @@ pub struct TransactionReceiptV1 {
 
 #[cfg(feature = "std")]
 impl TransactionReceiptV1 {
-    pub fn generate_execution_breakdown_flamegraph(
+    pub fn generate_execution_breakdown_flamegraph_svg_bytes(
         &self,
-        path: impl AsRef<std::path::Path>,
         title: impl AsRef<str>,
         network_definition: &NetworkDefinition,
-    ) -> Result<(), FlamegraphError> {
-        let path = path.as_ref();
-        let title = title.as_ref().to_owned();
+    ) -> Result<Vec<u8>, FlamegraphError> {
+        let title = title.as_ref();
 
         // The options to use when constructing the flamechart.
         let mut opts = inferno::flamegraph::Options::default();
         "Execution Cost Units".clone_into(&mut opts.count_name);
-        opts.title = title;
+        opts.title = title.to_owned();
 
         // Transforming the detailed execution cost breakdown into a string understood by the flamegraph
         // library.
@@ -107,9 +105,7 @@ impl TransactionReceiptV1 {
             result.into_inner()
         };
 
-        std::fs::write(path, result).map_err(FlamegraphError::IOError)?;
-
-        Ok(())
+        Ok(result)
     }
 
     fn transform_detailed_execution_breakdown_into_flamegraph_string(

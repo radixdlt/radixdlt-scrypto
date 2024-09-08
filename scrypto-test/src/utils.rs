@@ -3,4 +3,6 @@
 pub use radix_transactions::manifest::dumper::*;
 
 #[cfg(not(feature = "alloc"))]
-pub use radix_engine::utils::CostingTaskMode;
+pub use radix_engine::utils::{
+    AlignerExecutionMode, AlignerFolderMode, CostingTaskMode, FolderContentAligner,
+};
