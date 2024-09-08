@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 pub struct ExecutableIntent {
     pub encoded_instructions: Rc<Vec<u8>>,
     pub auth_zone_init: AuthZoneInit,
-    pub references: Rc<IndexSet<Reference>>,
+    pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     /// Indices against the parent Executable.
     /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
@@ -64,11 +64,42 @@ impl ExecutableTransaction {
             context,
             intents: vec![ExecutableIntent {
                 encoded_instructions: encoded_instructions_v1,
-                references: Rc::new(references),
+                references,
                 blobs,
                 auth_zone_init,
                 children_intent_indices: vec![],
             }],
+        }
+    }
+
+    pub fn new_v2(
+        mut intents: Vec<ExecutableIntent>,
+        context: ExecutionContext,
+    ) -> Self {
+        for intent in &mut intents {
+            for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
+                intent.references.insert(proof.resource_address().clone().into());
+            }
+            for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
+                intent.references.insert(resource.clone().into());
+            }
+        }
+
+        if let Some(root) = intents.get_mut(0) {
+            for preallocated_address in &context.pre_allocated_addresses {
+                root.references.insert(
+                    preallocated_address
+                        .blueprint_id
+                        .package_address
+                        .clone()
+                        .into(),
+                );
+            }
+        }
+
+        Self {
+            context,
+            intents,
         }
     }
 

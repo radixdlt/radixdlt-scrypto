@@ -122,7 +122,7 @@ impl VersionedSystemLogic {
                     scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
                         manifest_encoded_instructions: intent.encoded_instructions.clone(),
                         global_address_reservations,
-                        references: intent.references.clone(),
+                        references: Rc::new(intent.references.clone()),
                         blobs: intent.blobs.clone(),
                     })
                     .unwrap(),
@@ -1018,7 +1018,7 @@ impl<C: SystemCallbackObject> System<C> {
         let mut init_call_frames = vec![];
         for intent in intents {
             let (global_addresses, direct_accesses) =
-                Self::reference_check(intent.references.as_ref(), modules, store)?;
+                Self::reference_check(&intent.references, modules, store)?;
 
             init_call_frames.push(CallFrameInit {
                 data: Actor::Root,
