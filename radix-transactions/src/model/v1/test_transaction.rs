@@ -7,7 +7,8 @@ use std::collections::BTreeSet;
 
 #[derive(ManifestSbor)]
 pub enum TestTransaction {
-    V1(TestIntentV1)
+    V1(TestIntentV1),
+    V2(Vec<TestIntentV2>),
 }
 
 #[derive(ManifestSbor)]
@@ -26,11 +27,12 @@ pub struct TestIntentV2 {
 
 #[derive(ManifestSbor)]
 pub enum PreparedTestTransaction {
-    V1(PreparedTestIntentV1)
+    V1(PreparedTestIntent),
+    V2(Vec<PreparedTestIntent>),
 }
 
 #[derive(ManifestSbor)]
-pub struct PreparedTestIntentV1 {
+pub struct PreparedTestIntent {
     pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
@@ -39,11 +41,11 @@ pub struct PreparedTestIntentV1 {
 
 impl TestTransaction {
     /// The nonce needs to be globally unique amongst test transactions on your ledger
-    pub fn new_from_nonce(manifest: TransactionManifestV1, nonce: u32) -> Self {
-        Self::new(manifest, hash(format!("Test transaction: {}", nonce)))
+    pub fn new_v1_from_nonce(manifest: TransactionManifestV1, nonce: u32) -> Self {
+        Self::new_v1(manifest, hash(format!("Test transaction: {}", nonce)))
     }
 
-    pub fn new(manifest: TransactionManifestV1, hash: Hash) -> Self {
+    pub fn new_v1(manifest: TransactionManifestV1, hash: Hash) -> Self {
         let (instructions, blobs) = manifest.for_intent();
         Self::V1(TestIntentV1 {
             instructions,
@@ -52,17 +54,57 @@ impl TestTransaction {
         })
     }
 
+    pub fn new_v2_from_nonce(intents: Vec<(TransactionManifestV2, u32)>) -> Self {
+        let intents = intents
+            .into_iter()
+            .map(|(manifest, nonce)| (manifest, hash(format!("Test transaction: {}", nonce))))
+            .collect();
+        Self::new_v2(intents)
+    }
+
+    pub fn new_v2(intents: Vec<(TransactionManifestV2, Hash)>) -> Self {
+        let intents = intents
+            .into_iter()
+            .map(|(manifest, hash)| {
+                let (instructions, blobs, ..) = manifest.for_intent();
+                TestIntentV2 {
+                    instructions,
+                    blobs,
+                    hash,
+                }
+            })
+            .collect();
+
+        Self::V2(intents)
+    }
+
     #[allow(deprecated)]
     pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
         match self {
             Self::V1(intent) => {
                 let prepared_instructions = intent.instructions.prepare_partial()?;
-                Ok(PreparedTestTransaction::V1(PreparedTestIntentV1 {
+                Ok(PreparedTestTransaction::V1(PreparedTestIntent {
                     encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
                     references: prepared_instructions.references,
                     blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                     hash: intent.hash,
                 }))
+            }
+            Self::V2(intents) => {
+                let mut prepared = vec![];
+                for intent in intents {
+                    let prepared_instructions = intent.instructions.prepare_partial()?;
+                    prepared.push(PreparedTestIntent {
+                        encoded_instructions: Rc::new(manifest_encode(
+                            &prepared_instructions.inner.0,
+                        )?),
+                        references: prepared_instructions.references,
+                        blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
+                        hash: intent.hash,
+                    });
+                }
+
+                Ok(PreparedTestTransaction::V2(prepared))
             }
         }
     }
@@ -100,6 +142,52 @@ impl PreparedTestTransaction {
                         end_timestamp_exclusive: None,
                     },
                 )
+            }
+            PreparedTestTransaction::V2(intents) => {
+                let payload_size = intents
+                    .iter()
+                    .map(|intent| {
+                        intent.encoded_instructions.len()
+                            + intent.blobs.values().map(|x| x.len()).sum::<usize>()
+                    })
+                    .sum();
+                let num_of_signature_validations = initial_proofs.len() + 1;
+                let context = ExecutionContext {
+                    unique_hash: intents.get(0).unwrap().hash,
+                    intent_hash_nullifications: vec![],
+                    epoch_range: None,
+                    payload_size,
+                    // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
+                    num_of_signature_validations,
+                    costing_parameters: TransactionCostingParameters {
+                        tip: TipSpecifier::None,
+                        free_credit_in_xrd: Decimal::ZERO,
+                        abort_when_loan_repaid: false,
+                    },
+                    pre_allocated_addresses: vec![],
+                    disable_limits_and_costing_modules: false,
+                    start_timestamp_inclusive: None,
+                    end_timestamp_exclusive: None,
+                };
+                let mut root_auth_zone = Some(AuthZoneInit::proofs(initial_proofs));
+                let intents = intents
+                    .iter()
+                    .map(|intent| {
+                        let auth_zone_init = root_auth_zone
+                            .take()
+                            .unwrap_or(AuthZoneInit::proofs(Default::default()));
+
+                        ExecutableIntent {
+                            encoded_instructions: intent.encoded_instructions.clone(),
+                            auth_zone_init,
+                            references: intent.references.clone(),
+                            blobs: intent.blobs.clone(),
+                            children_intent_indices: vec![],
+                        }
+                    })
+                    .collect();
+
+                ExecutableTransaction::new_v2(intents, context)
             }
         }
     }

@@ -72,13 +72,12 @@ impl ExecutableTransaction {
         }
     }
 
-    pub fn new_v2(
-        mut intents: Vec<ExecutableIntent>,
-        context: ExecutionContext,
-    ) -> Self {
+    pub fn new_v2(mut intents: Vec<ExecutableIntent>, context: ExecutionContext) -> Self {
         for intent in &mut intents {
             for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
-                intent.references.insert(proof.resource_address().clone().into());
+                intent
+                    .references
+                    .insert(proof.resource_address().clone().into());
             }
             for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
                 intent.references.insert(resource.clone().into());
@@ -97,10 +96,7 @@ impl ExecutableTransaction {
             }
         }
 
-        Self {
-            context,
-            intents,
-        }
+        Self { context, intents }
     }
 
     // Consuming builder-like customization methods:

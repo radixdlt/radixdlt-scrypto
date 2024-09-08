@@ -44,7 +44,7 @@ mod multi_threaded_test {
                     &mut substate_db,
                     &vm_modules,
                     &ExecutionConfig::for_test_transaction(),
-                    TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
+                    TestTransaction::new_v1(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
                         .unwrap()
                         .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
@@ -71,7 +71,7 @@ mod multi_threaded_test {
                 &mut substate_db,
                 &vm_modules,
                 &ExecutionConfig::for_test_transaction(),
-                TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
+                TestTransaction::new_v1(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
                     .expect("Expected transaction to be preparable")
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
@@ -96,7 +96,7 @@ mod multi_threaded_test {
                         &substate_db,
                         &vm_modules,
                         &ExecutionConfig::for_test_transaction(),
-                        TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
+                        TestTransaction::new_v1(manifest.clone(), hash(format!("Transfer")))
                             .prepare()
                             .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(

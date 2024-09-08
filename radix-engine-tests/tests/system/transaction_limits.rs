@@ -44,7 +44,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
         )
         .build();
 
-    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let transactions = TestTransaction::new_v1_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
 
     let execution_config = {
@@ -111,7 +111,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
         )
         .build();
 
-    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let transactions = TestTransaction::new_v1_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
@@ -162,7 +162,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
         )
         .build();
 
-    let transactions = TestTransaction::new_from_nonce(manifest, 10);
+    let transactions = TestTransaction::new_v1_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
