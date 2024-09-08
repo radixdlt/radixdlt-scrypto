@@ -2164,7 +2164,11 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
-        let system_logic = self.api.kernel_get_system_state().system.logic_version;
+        let system_logic = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .versioned_system_logic;
         if !system_logic.should_consume_cost_units(self.api) {
             return Ok(());
         }

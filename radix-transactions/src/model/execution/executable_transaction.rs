@@ -72,44 +72,6 @@ impl ExecutableTransaction {
         }
     }
 
-    pub fn new_v2(
-        encoded_instructions_v1: Rc<Vec<u8>>,
-        auth_zone_init: AuthZoneInit,
-        references: IndexSet<Reference>,
-        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-        context: ExecutionContext,
-    ) -> Self {
-        let mut references = references;
-
-        for proof in &auth_zone_init.initial_non_fungible_id_proofs {
-            references.insert(proof.resource_address().clone().into());
-        }
-        for resource in &auth_zone_init.simulate_every_proof_under_resources {
-            references.insert(resource.clone().into());
-        }
-
-        for preallocated_address in &context.pre_allocated_addresses {
-            references.insert(
-                preallocated_address
-                    .blueprint_id
-                    .package_address
-                    .clone()
-                    .into(),
-            );
-        }
-
-        Self {
-            context,
-            intents: vec![ExecutableIntent {
-                encoded_instructions: encoded_instructions_v1,
-                references: Rc::new(references),
-                blobs,
-                auth_zone_init,
-                children_intent_indices: vec![],
-            }],
-        }
-    }
-
     // Consuming builder-like customization methods:
 
     pub fn skip_epoch_range_check(mut self) -> Self {

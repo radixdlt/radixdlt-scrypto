@@ -67,7 +67,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let intent_hash = Hash([0; 32]);
     let mut system = System {
-        logic_version: SystemLogicVersion::V1,
+        versioned_system_logic: VersionedSystemLogic::V1,
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -138,7 +138,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let intent_hash = Hash([0; 32]);
     let mut system = System {
-        logic_version: SystemLogicVersion::V1,
+        versioned_system_logic: VersionedSystemLogic::V1,
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),

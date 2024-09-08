@@ -64,28 +64,29 @@ pub type SystemBootSubstate = SystemBoot;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
-    V2(SystemLogicVersion, SystemParameters),
+    V2(VersionedSystemLogic, SystemParameters),
 }
 
 impl SystemBoot {
-    fn logic_version(&self) -> SystemLogicVersion {
-        SystemLogicVersion::V1
+    fn logic_version(&self) -> VersionedSystemLogic {
+        VersionedSystemLogic::V1
     }
 }
 
+/// System logic which may change given a protocol version
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SystemLogicVersion {
+pub enum VersionedSystemLogic {
     V1,
     V2,
 }
 
-impl SystemLogicVersion {
+impl VersionedSystemLogic {
     fn create_auth_module(
         &self,
         executable: &ExecutableTransaction,
     ) -> Result<AuthModule, RejectionReason> {
         let auth_module = match self {
-            SystemLogicVersion::V1 => {
+            VersionedSystemLogic::V1 => {
                 // This isn't exactly a necessary check as node logic should protect against this
                 // but keep it here for sanity
                 let intent = if executable.intents().len() != 1 {
@@ -95,7 +96,7 @@ impl SystemLogicVersion {
                 };
                 AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
             }
-            SystemLogicVersion::V2 => AuthModule::new(),
+            VersionedSystemLogic::V2 => AuthModule::new(),
         };
 
         Ok(auth_module)
@@ -108,7 +109,7 @@ impl SystemLogicVersion {
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let output = match self {
-            SystemLogicVersion::V1 => {
+            VersionedSystemLogic::V1 => {
                 let mut system_service = SystemService::new(api);
                 let intent = executable
                     .intents()
@@ -129,7 +130,7 @@ impl SystemLogicVersion {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
             }
-            SystemLogicVersion::V2 => {
+            VersionedSystemLogic::V2 => {
                 let intents = executable.intents();
                 for intent in intents {
                     let mut system_service = SystemService::new(api);
@@ -191,13 +192,13 @@ impl SystemLogicVersion {
 
     pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
         match self {
-            SystemLogicVersion::V1 => {
+            VersionedSystemLogic::V1 => {
                 // Skip client-side costing requested by TransactionProcessor
                 if api.kernel_get_current_depth() == 1 {
                     return false;
                 }
             }
-            SystemLogicVersion::V2 => {}
+            VersionedSystemLogic::V2 => {}
         }
 
         true
@@ -298,7 +299,7 @@ pub struct SystemInit<C> {
 }
 
 pub struct System<C: SystemCallbackObject> {
-    pub logic_version: SystemLogicVersion,
+    pub versioned_system_logic: VersionedSystemLogic,
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
@@ -1289,7 +1290,7 @@ impl<C: SystemCallbackObject> System<C> {
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
         init_input: &SystemInit<C::Init>,
-    ) -> Result<(SystemLogicVersion, SystemModuleMixer), TransactionReceiptV1> {
+    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceiptV1> {
         let system_boot = store
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -1504,7 +1505,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         };
 
         let system = System {
-            logic_version,
+            versioned_system_logic: logic_version,
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -1540,7 +1541,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             global_address_reservations.push(global_address_reservation);
         }
 
-        let system_logic_version = system_service.system().logic_version;
+        let system_logic_version = system_service.system().versioned_system_logic;
 
         let output = system_logic_version.execute_transaction(
             api,

@@ -1,6 +1,6 @@
 use super::*;
 use crate::system::system_callback::{
-    SystemBoot, SystemLogicVersion, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+    SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
 };
 use radix_substate_store_interface::db_key_mapper::{
     MappedSubstateDatabase, SpreadPrefixKeyMapper,
@@ -112,7 +112,7 @@ fn generate_system_logic_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateU
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V2(
-                                    SystemLogicVersion::V2,
+                                    VersionedSystemLogic::V2,
                                     cur_system_parameters,
                                 )).unwrap()
                             ),
