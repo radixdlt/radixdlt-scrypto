@@ -14,7 +14,7 @@ use radix_native_sdk::runtime::LocalAuthZone;
 use radix_rust::prelude::*;
 use radix_transactions::data::transform;
 use radix_transactions::model::manifest_instruction::*;
-use radix_transactions::model::InstructionV1;
+use radix_transactions::model::{InstructionV1, InstructionV2};
 
 pub trait TxnInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
@@ -67,6 +67,55 @@ impl TxnInstruction for InstructionV1 {
             InstructionV1::DropNamedProofs(i) => i.execute(worktop, objects, api),
             InstructionV1::DropAllProofs(i) => i.execute(worktop, objects, api),
             InstructionV1::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
+        }
+    }
+}
+
+impl TxnInstruction for InstructionV2 {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut TxnProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        match self {
+            InstructionV2::TakeAllFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::TakeFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::TakeNonFungiblesFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::ReturnToWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContainsAny(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContains(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
+            InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
+            InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromAuthZoneOfNonFungibles(i) => {
+                i.execute(worktop, objects, api)
+            }
+            InstructionV2::CreateProofFromAuthZoneOfAll(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromBucketOfAmount(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromBucketOfNonFungibles(i) => {
+                i.execute(worktop, objects, api)
+            }
+            InstructionV2::CreateProofFromBucketOfAll(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneRegularProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneSignatureProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::BurnResource(i) => i.execute(worktop, objects, api),
+            InstructionV2::CloneProof(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropProof(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallFunction(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallRoyaltyMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallMetadataMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallRoleAssignmentMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallDirectVaultMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropNamedProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAllProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
+            InstructionV2::YieldToChild(i) => todo!(),
+            InstructionV2::YieldToParent(i) => todo!(),
+            InstructionV2::AuthenticateParent(_) => todo!(),
         }
     }
 }

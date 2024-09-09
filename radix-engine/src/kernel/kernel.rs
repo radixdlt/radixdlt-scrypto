@@ -1186,6 +1186,12 @@ where
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelThreadApi for Kernel<'g, M, S> {
     type CallFrameData = M::CallFrameData;
+
+    fn kernel_switch_thread(&mut self, id: usize) -> Result<(), RuntimeError> {
+        self.stacks.switch(id);
+        Ok(())
+    }
+
     fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
         *self.stacks.cur_mut().data_mut() = data;
         Ok(())

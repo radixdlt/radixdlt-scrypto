@@ -44,6 +44,11 @@ impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
 
 impl<M: SystemCallbackObject> KernelThreadApi for MockKernel<M> {
     type CallFrameData = Actor;
+
+    fn kernel_switch_thread(&mut self, _id: usize) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+
     fn kernel_set_call_frame_data(&mut self, _data: Actor) -> Result<(), RuntimeError> {
         panic1!()
     }

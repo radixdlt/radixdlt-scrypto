@@ -135,7 +135,9 @@ impl VersionedSystemLogic {
             }
             VersionedSystemLogic::V2 => {
                 let intents = executable.intents();
-                for intent in intents {
+                for (thread_id, intent) in intents.iter().enumerate() {
+                    api.kernel_switch_thread(thread_id)?;
+
                     let mut system_service = SystemService::new(api);
                     let virtual_resources = intent
                         .auth_zone_init
@@ -161,10 +163,12 @@ impl VersionedSystemLogic {
                 }
 
                 {
+                    api.kernel_switch_thread(0)?;
+
                     let mut system_service = SystemService::new(api);
                     let intent = intents.get(0).unwrap();
 
-                    let txn_processor = TxnProcessor::<InstructionV1>::init(
+                    let txn_processor = TxnProcessor::<InstructionV2>::init(
                         intent.encoded_instructions.clone(),
                         global_address_reservations.clone(),
                         intent.blobs.clone(),

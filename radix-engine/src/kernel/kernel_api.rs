@@ -174,6 +174,11 @@ pub trait KernelInvokeApi<C> {
 /// API for managing threads and their associated call frame stack
 pub trait KernelThreadApi {
     type CallFrameData;
+
+    /// Context switches to a different thread
+    fn kernel_switch_thread(&mut self, id: usize) -> Result<(), RuntimeError>;
+
+    /// Sets the call frame data for the current thread's call frame
     fn kernel_set_call_frame_data(&mut self, data: Self::CallFrameData)
         -> Result<(), RuntimeError>;
 

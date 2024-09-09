@@ -14,7 +14,7 @@ impl TransactionPartialPrepare for ChildIntentsV2 {
 /// The first few of these will be the children of the given intent.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct ManifestIntent(u32);
+pub struct ManifestIntent(pub u32);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedChildIntentsV2 {
