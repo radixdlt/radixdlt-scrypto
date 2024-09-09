@@ -1,5 +1,5 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_processor::TxnInstruction;
+use crate::blueprints::transaction_processor::{TxnInstruction, Yield};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -42,7 +42,7 @@ impl From<TransactionProcessorError> for RuntimeError {
     }
 }
 
-pub struct TxnProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
+pub struct TxnProcessorThread<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
     instructions: VecDeque<I>,
     worktop: Worktop,
     objects: TxnProcessorObjects,
@@ -50,7 +50,7 @@ pub struct TxnProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize>
     pub outputs: Vec<InstructionOutput>,
 }
 
-impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
+impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread<I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         manifest_encoded_instructions: Rc<Vec<u8>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -103,23 +103,24 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
         })
     }
 
-    pub fn execute<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
-        L: Default,
-    >(
+    pub fn resume<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         &mut self,
         api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<Yield>, RuntimeError> {
         while let Some(instruction) = self.instructions.pop_front() {
             api.update_instruction_index(self.instruction_index)?;
-            let result = instruction.execute(&mut self.worktop, &mut self.objects, api)?;
-            self.outputs.push(result);
+            let (output, yield_instruction) =
+                instruction.execute(&mut self.worktop, &mut self.objects, api)?;
+            self.outputs.push(output);
             self.instruction_index += 1;
+            if yield_instruction.is_some() {
+                return Ok(yield_instruction);
+            }
         }
 
         self.worktop.drop(api)?;
 
-        Ok(())
+        Ok(None)
     }
 }
 
