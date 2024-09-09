@@ -1420,7 +1420,6 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-
 impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
     type Executable = ExecutableTransaction;

@@ -761,9 +761,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     .map_err(|e| CallbackError::Error(CreateNodeError::SubstateDiffError(e)))?;
 
                 self.process_substate_diff(substate_io, handler, destination_device, &diff)
-                    .map_err(|e| {
-                        e.map(CreateNodeError::ProcessSubstateError)
-                    })?;
+                    .map_err(|e| e.map(CreateNodeError::ProcessSubstateError))?;
             }
         }
 
