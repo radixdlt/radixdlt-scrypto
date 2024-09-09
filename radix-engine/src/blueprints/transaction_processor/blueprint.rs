@@ -57,13 +57,14 @@ impl TransactionProcessorBlueprint {
             TransactionProcessorV1MinorVersion::Zero => usize::MAX,
             TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
         };
-        let txn_processor = TxnProcessor::<InstructionV1>::init(
+        let mut txn_processor = TxnProcessor::<InstructionV1>::init(
             Rc::new(manifest_encoded_instructions),
             global_address_reservations,
             Rc::new(blobs),
             max_total_size_of_blobs,
             api,
         )?;
-        txn_processor.execute(api)
+        txn_processor.execute(api)?;
+        Ok(txn_processor.outputs)
     }
 }

@@ -43,10 +43,11 @@ impl From<TransactionProcessorError> for RuntimeError {
 }
 
 pub struct TxnProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
-    instructions: Vec<I>,
+    instructions: VecDeque<I>,
     worktop: Worktop,
     objects: TxnProcessorObjects,
-    outputs: Vec<InstructionOutput>,
+    pub instruction_index: usize,
+    pub outputs: Vec<InstructionOutput>,
 }
 
 impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
@@ -94,7 +95,8 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
         let outputs = Vec::new();
 
         Ok(Self {
-            instructions,
+            instructions: instructions.into_iter().collect(),
+            instruction_index: 0usize,
             worktop,
             objects,
             outputs,
@@ -105,18 +107,19 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
     >(
-        mut self,
+        &mut self,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        for (index, instruction) in self.instructions.into_iter().enumerate() {
-            api.update_instruction_index(index)?;
+    ) -> Result<(), RuntimeError> {
+        while let Some(instruction) = self.instructions.pop_front() {
+            api.update_instruction_index(self.instruction_index)?;
             let result = instruction.execute(&mut self.worktop, &mut self.objects, api)?;
             self.outputs.push(result);
+            self.instruction_index += 1;
         }
 
         self.worktop.drop(api)?;
 
-        Ok(self.outputs)
+        Ok(())
     }
 }
 

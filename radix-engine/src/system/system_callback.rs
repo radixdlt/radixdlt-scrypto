@@ -48,6 +48,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
+use crate::system::txn_threads::TxnThreads;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -134,6 +135,9 @@ impl VersionedSystemLogic {
                 output
             }
             VersionedSystemLogic::V2 => {
+                let mut txn_processors = vec![];
+
+                // Setup
                 let intents = executable.intents();
                 for (thread_id, intent) in intents.iter().enumerate() {
                     api.kernel_switch_thread(thread_id)?;
@@ -160,14 +164,8 @@ impl VersionedSystemLogic {
                         ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
                         auth_zone,
                     }))?;
-                }
-
-                {
-                    api.kernel_switch_thread(0)?;
 
                     let mut system_service = SystemService::new(api);
-                    let intent = intents.get(0).unwrap();
-
                     let txn_processor = TxnProcessor::<InstructionV2>::init(
                         intent.encoded_instructions.clone(),
                         global_address_reservations.clone(),
@@ -175,8 +173,20 @@ impl VersionedSystemLogic {
                         MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
                         &mut system_service,
                     )?;
-                    let output = txn_processor.execute(&mut system_service)?;
+                    txn_processors.push(txn_processor);
+                }
 
+                // Execution
+                let output = {
+                    let mut txn_threads = TxnThreads {
+                        threads: txn_processors,
+                    };
+                    txn_threads.execute(api)?;
+                    txn_threads.threads.remove(0).outputs
+                };
+
+                // Cleanup
+                {
                     let owned_nodes = api.kernel_get_owned_nodes()?;
                     System::auto_drop(owned_nodes, api)?;
 
@@ -198,9 +208,9 @@ impl VersionedSystemLogic {
                             owned_nodes,
                         )));
                     }
-
-                    output
                 }
+
+                output
             }
         };
 
