@@ -68,8 +68,11 @@ pub enum SystemBoot {
 }
 
 impl SystemBoot {
-    fn logic_version(&self) -> VersionedSystemLogic {
-        VersionedSystemLogic::V1
+    fn system_logic(&self) -> VersionedSystemLogic {
+        match self {
+            Self::V1(..) => VersionedSystemLogic::V1,
+            Self::V2(logic, _) => *logic,
+        }
     }
 }
 
@@ -170,6 +173,9 @@ impl VersionedSystemLogic {
                     )?;
                     let output = txn_processor.execute(&mut system_service)?;
 
+                    let owned_nodes = api.kernel_get_owned_nodes()?;
+                    System::auto_drop(owned_nodes, api)?;
+
                     let actor = api.kernel_get_system_state().current_call_frame;
                     match actor {
                         Actor::Function(FunctionActor { auth_zone, .. }) => {
@@ -180,6 +186,13 @@ impl VersionedSystemLogic {
                         _ => {
                             panic!("unexpected");
                         }
+                    }
+
+                    let owned_nodes = api.kernel_get_owned_nodes()?;
+                    if !owned_nodes.is_empty() {
+                        return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                            owned_nodes,
+                        )));
                     }
 
                     output
@@ -1305,7 +1318,7 @@ impl<C: SystemCallbackObject> System<C> {
                 limit_parameters: LimitParameters::babylon_genesis(),
             }));
 
-        let system_logic_version = system_boot.logic_version();
+        let system_logic_version = system_boot.system_logic();
         let mut system_parameters = match system_boot {
             SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
                 system_parameters
@@ -1406,6 +1419,7 @@ impl<C: SystemCallbackObject> System<C> {
         Ok((system_logic_version, module_mixer))
     }
 }
+
 
 impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;

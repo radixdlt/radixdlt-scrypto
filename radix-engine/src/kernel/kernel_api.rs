@@ -176,6 +176,9 @@ pub trait KernelThreadApi {
     type CallFrameData;
     fn kernel_set_call_frame_data(&mut self, data: Self::CallFrameData)
         -> Result<(), RuntimeError>;
+
+    /// Returns the owned nodes of the current call frame
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {

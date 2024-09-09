@@ -47,6 +47,10 @@ impl<M: SystemCallbackObject> KernelThreadApi for MockKernel<M> {
     fn kernel_set_call_frame_data(&mut self, _data: Actor) -> Result<(), RuntimeError> {
         panic1!()
     }
+
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
+        panic1!()
+    }
 }
 
 impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
