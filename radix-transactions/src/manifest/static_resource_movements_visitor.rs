@@ -82,8 +82,8 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
                     check_exact_end: true,
                 },
             );
-            let mut buckets = IndexSet::new();
-            let mut expressions = IndexSet::new();
+            let mut buckets = index_set_new();
+            let mut expressions = index_set_new();
             loop {
                 let event = traverser.next_event();
                 match event.event {
@@ -1437,11 +1437,11 @@ impl NonFungibleBounds {
                 NonFungibleIdBounds::PartiallyKnown(ids2),
             ) => {
                 ids1.extend(ids2);
-                let ids = std::mem::replace(ids1, IndexSet::new());
+                let ids = std::mem::replace(ids1, index_set_new());
                 self.id_bounds = NonFungibleIdBounds::PartiallyKnown(ids);
             }
             (NonFungibleIdBounds::FullyKnown(ref mut ids), NonFungibleIdBounds::Unknown) => {
-                let ids = std::mem::replace(ids, IndexSet::new());
+                let ids = std::mem::replace(ids, index_set_new());
                 self.id_bounds = NonFungibleIdBounds::PartiallyKnown(ids);
             }
             (NonFungibleIdBounds::Unknown, NonFungibleIdBounds::FullyKnown(ids))
