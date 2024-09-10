@@ -1,9 +1,3 @@
-use radix_engine::errors::*;
-use radix_engine::updates::*;
-use radix_transactions::errors::*;
-use radix_transactions::manifest::decompiler::*;
-use radix_transactions::validation::*;
-
 use crate::internal_prelude::*;
 
 use crate::accounts::*;
@@ -13,7 +7,6 @@ pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
     pub manifest: TransactionManifestV1,
-    pub naming: ManifestObjectNames,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
@@ -21,15 +14,18 @@ impl NextTransaction {
     pub fn of(
         logical_name: String,
         stage_counter: usize,
-        naming: ManifestObjectNames,
+        names: ManifestObjectNames,
         transaction: NotarizedTransactionV1,
     ) -> Self {
-        let manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
+        let mut manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
+        match names {
+            ManifestObjectNames::Unknown => {}
+            ManifestObjectNames::Known(known_names) => manifest.set_names(known_names),
+        }
         Self {
             logical_name,
             stage_counter,
             manifest,
-            naming,
             raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
         }
     }
@@ -92,8 +88,7 @@ impl ScenarioCore {
         let builder = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .then(create_manifest);
-        let object_names = builder.object_names();
-        self.next_transaction(logical_name, builder.build(), object_names, signers)
+        self.next_transaction(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_with_faucet_lock_fee_fallible(
@@ -104,8 +99,7 @@ impl ScenarioCore {
     ) -> Result<NextTransaction, ScenarioError> {
         let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
         builder = create_manifest(builder)?;
-        let object_names = builder.object_names();
-        self.next_transaction(logical_name, builder.build(), object_names, signers)
+        self.next_transaction(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
@@ -132,7 +126,6 @@ impl ScenarioCore {
         &mut self,
         logical_name: &str,
         manifest: TransactionManifestV1,
-        naming: ManifestObjectNames,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
         let nonce = self.nonce;
@@ -153,11 +146,13 @@ impl ScenarioCore {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
+        let transaction = builder.build();
+        let names = builder.into_manifest().object_names;
         Ok(NextTransaction::of(
             logical_name.to_owned(),
             self.stage_counter,
-            naming,
-            builder.build(),
+            names,
+            transaction,
         ))
     }
 

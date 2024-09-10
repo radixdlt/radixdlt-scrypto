@@ -124,7 +124,7 @@ pub struct TxnProcessorObjects {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     pub proof_mapping: IndexMap<ManifestProof, NodeId>,
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
-    address_mapping: NonIterMap<u32, NodeId>,
+    address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
     max_total_size_of_blobs: usize,
@@ -204,14 +204,17 @@ impl TxnProcessorObjects {
         Ok(Proof(Own(real_id)))
     }
 
-    pub fn get_address(&mut self, address_id: &u32) -> Result<NodeId, RuntimeError> {
+    pub fn get_address(
+        &mut self,
+        address_id: &ManifestNamedAddress,
+    ) -> Result<NodeId, RuntimeError> {
         let real_id =
             self.address_mapping
                 .get(address_id)
                 .cloned()
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::AddressNotFound(*address_id),
+                        TransactionProcessorError::AddressNotFound(address_id.0),
                     ),
                 ))?;
         Ok(real_id)
@@ -374,7 +377,10 @@ impl<'a, 'p, 'w, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
         self.objects.take_address_reservation(&r).map(|x| x.0)
     }
 
-    fn replace_named_address(&mut self, a: u32) -> Result<Reference, RuntimeError> {
+    fn replace_named_address(
+        &mut self,
+        a: ManifestNamedAddress,
+    ) -> Result<Reference, RuntimeError> {
         self.objects.get_address(&a).map(|x| Reference(x))
     }
 

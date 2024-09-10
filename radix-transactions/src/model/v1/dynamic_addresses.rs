@@ -42,7 +42,7 @@ TAKE_FROM_WORKTOP
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
-    Named(u32),
+    Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
@@ -75,7 +75,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             }
             Self::Named(address_id) => {
                 encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
-                encoder.write_slice(&address_id.to_le_bytes())?;
+                encoder.write_slice(&address_id.0.to_le_bytes())?;
             }
         }
         Ok(())
@@ -100,7 +100,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
-                Ok(Self::Named(id))
+                Ok(Self::Named(ManifestNamedAddress(id)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }
@@ -197,8 +197,8 @@ impl From<DynamicComponentAddress> for DynamicGlobalAddress {
     }
 }
 
-impl From<u32> for DynamicGlobalAddress {
-    fn from(value: u32) -> Self {
+impl From<ManifestNamedAddress> for DynamicGlobalAddress {
+    fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
@@ -217,7 +217,7 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
-    Named(u32),
+    Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
@@ -250,7 +250,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             }
             Self::Named(address_id) => {
                 encoder.write_discriminator(1)?;
-                encoder.write_slice(&address_id.to_le_bytes())?;
+                encoder.write_slice(&address_id.0.to_le_bytes())?;
             }
         }
         Ok(())
@@ -275,7 +275,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
-                Ok(Self::Named(id))
+                Ok(Self::Named(ManifestNamedAddress(id)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }
@@ -312,8 +312,8 @@ impl From<PackageAddress> for DynamicPackageAddress {
     }
 }
 
-impl From<u32> for DynamicPackageAddress {
-    fn from(value: u32) -> Self {
+impl From<ManifestNamedAddress> for DynamicPackageAddress {
+    fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
@@ -342,7 +342,7 @@ impl TryFrom<ManifestAddress> for DynamicPackageAddress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicComponentAddress {
     Static(ComponentAddress),
-    Named(u32),
+    Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
@@ -375,7 +375,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             }
             Self::Named(address_id) => {
                 encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
-                encoder.write_slice(&address_id.to_le_bytes())?;
+                encoder.write_slice(&address_id.0.to_le_bytes())?;
             }
         }
         Ok(())
@@ -401,7 +401,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
-                Ok(Self::Named(id))
+                Ok(Self::Named(ManifestNamedAddress(id)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }
@@ -414,8 +414,8 @@ impl From<ComponentAddress> for DynamicComponentAddress {
     }
 }
 
-impl From<u32> for DynamicComponentAddress {
-    fn from(value: u32) -> Self {
+impl From<ManifestNamedAddress> for DynamicComponentAddress {
+    fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
@@ -444,7 +444,7 @@ impl TryFrom<ManifestAddress> for DynamicComponentAddress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DynamicResourceAddress {
     Static(ResourceAddress),
-    Named(u32),
+    Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
@@ -477,7 +477,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             }
             Self::Named(address_id) => {
                 encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
-                encoder.write_slice(&address_id.to_le_bytes())?;
+                encoder.write_slice(&address_id.0.to_le_bytes())?;
             }
         }
         Ok(())
@@ -503,7 +503,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
-                Ok(Self::Named(id))
+                Ok(Self::Named(ManifestNamedAddress(id)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }
@@ -516,8 +516,8 @@ impl From<ResourceAddress> for DynamicResourceAddress {
     }
 }
 
-impl From<u32> for DynamicResourceAddress {
-    fn from(value: u32) -> Self {
+impl From<ManifestNamedAddress> for DynamicResourceAddress {
+    fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }

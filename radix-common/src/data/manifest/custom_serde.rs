@@ -28,11 +28,11 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                         )
                     }
                 }
-                ManifestAddress::Named(address_id) => {
-                    if let Some(name) = context.custom_context.get_address_name(&address_id) {
+                ManifestAddress::Named(value) => {
+                    if let Some(name) = context.custom_context.get_address_name(&value) {
                         (SerializableType::String(name.to_string()), true)
                     } else {
-                        (SerializableType::String(address_id.to_string()), true)
+                        (SerializableType::String(value.0.to_string()), true)
                     }
                 }
             },

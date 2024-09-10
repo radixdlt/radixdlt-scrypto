@@ -3,11 +3,10 @@ use radix_common::network::NetworkDefinition;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
-use super::decompiler::{decompile_with_known_naming, ManifestObjectNames};
+use super::decompiler::decompile;
 
 pub fn dump_manifest_to_file_system<P>(
-    naming: ManifestObjectNames,
-    manifest: &TransactionManifestV1,
+    manifest: &impl ReadableManifest,
     directory_path: P,
     name: Option<&str>,
     network_definition: &NetworkDefinition,
@@ -28,21 +27,19 @@ where
     // Decompile the transaction manifest to the manifest string and then write it to the
     // directory
     {
-        let manifest_string =
-            decompile_with_known_naming(&manifest.instructions, network_definition, naming)?;
+        let manifest_string = decompile(manifest, network_definition)?;
         let manifest_path = path.join(format!("{}.rtm", name.unwrap_or("transaction")));
         std::fs::write(manifest_path, manifest_string)?;
     }
 
     // Write all of the blobs to the specified path
     let blob_prefix = name.map(|n| format!("{n}-")).unwrap_or_default();
-    for (hash, blob_content) in &manifest.blobs {
+    for (hash, blob_content) in manifest.get_blobs() {
         let blob_path = path.join(format!("{blob_prefix}{hash}.blob"));
         std::fs::write(blob_path, blob_content)?;
     }
 
-    // Validate the manifest
-    NotarizedTransactionValidatorV1::validate_instructions_v1(&manifest.instructions)?;
+    manifest.validate()?;
 
     Ok(())
 }

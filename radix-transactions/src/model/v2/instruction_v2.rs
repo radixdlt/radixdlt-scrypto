@@ -20,6 +20,7 @@ impl ManifestInstruction for InstructionV2 {
             Self::AssertWorktopContainsAny(x) => x.decompile(context),
             Self::AssertWorktopContains(x) => x.decompile(context),
             Self::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
+            Self::AssertWorktopIsEmpty(x) => x.decompile(context),
             Self::PopFromAuthZone(x) => x.decompile(context),
             Self::PushToAuthZone(x) => x.decompile(context),
             Self::CreateProofFromAuthZoneOfAmount(x) => x.decompile(context),
@@ -45,45 +46,46 @@ impl ManifestInstruction for InstructionV2 {
             Self::AllocateGlobalAddress(x) => x.decompile(context),
             Self::YieldToParent(x) => x.decompile(context),
             Self::YieldToChild(x) => x.decompile(context),
-            Self::AuthenticateParent(x) => x.decompile(context),
+            Self::VerifyParent(x) => x.decompile(context),
         }
     }
 
-    fn side_effect(&self) -> ManifestInstructionSideEffect {
+    fn effect(&self) -> ManifestInstructionEffect {
         match self {
-            Self::TakeAllFromWorktop(x) => x.side_effect(),
-            Self::TakeFromWorktop(x) => x.side_effect(),
-            Self::TakeNonFungiblesFromWorktop(x) => x.side_effect(),
-            Self::ReturnToWorktop(x) => x.side_effect(),
-            Self::AssertWorktopContainsAny(x) => x.side_effect(),
-            Self::AssertWorktopContains(x) => x.side_effect(),
-            Self::AssertWorktopContainsNonFungibles(x) => x.side_effect(),
-            Self::PopFromAuthZone(x) => x.side_effect(),
-            Self::PushToAuthZone(x) => x.side_effect(),
-            Self::CreateProofFromAuthZoneOfAmount(x) => x.side_effect(),
-            Self::CreateProofFromAuthZoneOfNonFungibles(x) => x.side_effect(),
-            Self::CreateProofFromAuthZoneOfAll(x) => x.side_effect(),
-            Self::DropAuthZoneProofs(x) => x.side_effect(),
-            Self::DropAuthZoneRegularProofs(x) => x.side_effect(),
-            Self::DropAuthZoneSignatureProofs(x) => x.side_effect(),
-            Self::CreateProofFromBucketOfAmount(x) => x.side_effect(),
-            Self::CreateProofFromBucketOfNonFungibles(x) => x.side_effect(),
-            Self::CreateProofFromBucketOfAll(x) => x.side_effect(),
-            Self::BurnResource(x) => x.side_effect(),
-            Self::CloneProof(x) => x.side_effect(),
-            Self::DropProof(x) => x.side_effect(),
-            Self::CallFunction(x) => x.side_effect(),
-            Self::CallMethod(x) => x.side_effect(),
-            Self::CallRoyaltyMethod(x) => x.side_effect(),
-            Self::CallMetadataMethod(x) => x.side_effect(),
-            Self::CallRoleAssignmentMethod(x) => x.side_effect(),
-            Self::CallDirectVaultMethod(x) => x.side_effect(),
-            Self::DropNamedProofs(x) => x.side_effect(),
-            Self::DropAllProofs(x) => x.side_effect(),
-            Self::AllocateGlobalAddress(x) => x.side_effect(),
-            Self::YieldToParent(x) => x.side_effect(),
-            Self::YieldToChild(x) => x.side_effect(),
-            Self::AuthenticateParent(x) => x.side_effect(),
+            Self::TakeAllFromWorktop(x) => x.effect(),
+            Self::TakeFromWorktop(x) => x.effect(),
+            Self::TakeNonFungiblesFromWorktop(x) => x.effect(),
+            Self::ReturnToWorktop(x) => x.effect(),
+            Self::AssertWorktopContainsAny(x) => x.effect(),
+            Self::AssertWorktopContains(x) => x.effect(),
+            Self::AssertWorktopContainsNonFungibles(x) => x.effect(),
+            Self::AssertWorktopIsEmpty(x) => x.effect(),
+            Self::PopFromAuthZone(x) => x.effect(),
+            Self::PushToAuthZone(x) => x.effect(),
+            Self::CreateProofFromAuthZoneOfAmount(x) => x.effect(),
+            Self::CreateProofFromAuthZoneOfNonFungibles(x) => x.effect(),
+            Self::CreateProofFromAuthZoneOfAll(x) => x.effect(),
+            Self::DropAuthZoneProofs(x) => x.effect(),
+            Self::DropAuthZoneRegularProofs(x) => x.effect(),
+            Self::DropAuthZoneSignatureProofs(x) => x.effect(),
+            Self::CreateProofFromBucketOfAmount(x) => x.effect(),
+            Self::CreateProofFromBucketOfNonFungibles(x) => x.effect(),
+            Self::CreateProofFromBucketOfAll(x) => x.effect(),
+            Self::BurnResource(x) => x.effect(),
+            Self::CloneProof(x) => x.effect(),
+            Self::DropProof(x) => x.effect(),
+            Self::CallFunction(x) => x.effect(),
+            Self::CallMethod(x) => x.effect(),
+            Self::CallRoyaltyMethod(x) => x.effect(),
+            Self::CallMetadataMethod(x) => x.effect(),
+            Self::CallRoleAssignmentMethod(x) => x.effect(),
+            Self::CallDirectVaultMethod(x) => x.effect(),
+            Self::DropNamedProofs(x) => x.effect(),
+            Self::DropAllProofs(x) => x.effect(),
+            Self::AllocateGlobalAddress(x) => x.effect(),
+            Self::YieldToParent(x) => x.effect(),
+            Self::YieldToChild(x) => x.effect(),
+            Self::VerifyParent(x) => x.effect(),
         }
     }
 }
@@ -124,8 +126,6 @@ impl From<InstructionV1> for InstructionV2 {
         }
     }
 }
-
-impl InstructionVersion for InstructionV2 {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
 #[sbor(impl_variant_traits)]
@@ -170,6 +170,10 @@ pub enum InstructionV2 {
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
     AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
+
+    /// Asserts the worktop contains no amount of any resource.
+    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR))]
+    AssertWorktopIsEmpty(#[sbor(flatten)] AssertWorktopIsEmpty),
 
     //==============
     // Auth zone
@@ -271,6 +275,6 @@ pub enum InstructionV2 {
     #[sbor(discriminator(INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR))]
     YieldToChild(#[sbor(flatten)] YieldToChild),
 
-    #[sbor(discriminator(INSTRUCTION_AUTHENTICATE_PARENT_DISCRIMINATOR))]
-    AuthenticateParent(#[sbor(flatten)] AuthenticateParent),
+    #[sbor(discriminator(INSTRUCTION_VERIFY_PARENT_DISCRIMINATOR))]
+    VerifyParent(#[sbor(flatten)] VerifyParent),
 }

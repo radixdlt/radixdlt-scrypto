@@ -19,7 +19,7 @@ fn validator_sees_valid_transfer_manifest_as_valid() {
         .build();
 
     // Act
-    let validation_result = validate_call_arguments_to_native_components(&manifest.instructions);
+    let validation_result = validate_call_arguments_to_native_components(&manifest);
 
     // Assert
     validation_result
@@ -36,7 +36,7 @@ fn validator_sees_invalid_transfer_manifest_as_invalid() {
         .build();
 
     // Act
-    let validation_result = validate_call_arguments_to_native_components(&manifest.instructions);
+    let validation_result = validate_call_arguments_to_native_components(&manifest);
 
     // Assert
     assert!(is_schema_validation_error(validation_result))
@@ -51,7 +51,7 @@ fn validator_invalidates_calls_to_unknown_methods_on_a_known_blueprint() {
         .build();
 
     // Act
-    let validation_result = validate_call_arguments_to_native_components(&manifest.instructions);
+    let validation_result = validate_call_arguments_to_native_components(&manifest);
 
     // Assert
     assert!(is_method_not_found(validation_result))
@@ -78,8 +78,7 @@ fn common_manifests_are_all_valid() {
         .unwrap();
 
         // Act
-        let validation_result =
-            validate_call_arguments_to_native_components(&manifest.instructions);
+        let validation_result = validate_call_arguments_to_native_components(&manifest);
 
         // Assert
         validation_result.clone().unwrap_or_else(|_| {

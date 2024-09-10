@@ -16,7 +16,7 @@ pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;
     fn replace_proof(&mut self, p: ManifestProof) -> Result<Own, E>;
     fn replace_address_reservation(&mut self, p: ManifestAddressReservation) -> Result<Own, E>;
-    fn replace_named_address(&mut self, p: u32) -> Result<Reference, E>;
+    fn replace_named_address(&mut self, p: ManifestNamedAddress) -> Result<Reference, E>;
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, E>;
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, E>;
 }

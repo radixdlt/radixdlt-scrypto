@@ -67,7 +67,7 @@ impl Run {
             )
         })?;
 
-        validate_call_arguments_to_native_components(&compiled_manifest.instructions)
+        validate_call_arguments_to_native_components(&compiled_manifest)
             .map_err(Error::InstructionSchemaValidationError)?;
 
         handle_manifest(
