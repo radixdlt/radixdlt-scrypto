@@ -2272,7 +2272,7 @@ where
     ) -> Self {
         let intent = child_manifest_intent.resolve(&self.registrar);
         self.add_v2_instruction(YieldToChild {
-            child_index: ManifestNamedIntentAsU32(intent.0),
+            child_index: ManifestNamedIntentIndex(intent.0),
             args: arguments.resolve(),
         })
     }

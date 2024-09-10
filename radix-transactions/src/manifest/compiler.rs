@@ -25,6 +25,7 @@ pub fn compile_error_diagnostics(
     }
 }
 
+// Kept for backwards compatibility of downstream clients / integrators
 pub use compile_manifest_v1 as compile;
 
 pub fn compile_manifest_v1(
@@ -35,7 +36,7 @@ pub fn compile_manifest_v1(
     compile_manifest(manifest_string, network, blobs)
 }
 
-pub fn compile_manifest_pretty_error<M: BuildableManifest>(
+pub fn compile_manifest_with_pretty_error<M: BuildableManifest>(
     s: &str,
     network: &NetworkDefinition,
     blobs: impl IsBlobProvider,

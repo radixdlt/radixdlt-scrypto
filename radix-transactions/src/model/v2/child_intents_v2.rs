@@ -40,23 +40,24 @@ impl ChildSubintent {
 ///
 /// IMPORTANT: Unlike `Address` and similar, this is NOT its own SBOR manifest value
 /// - because versioning Manifest SBOR was seen as too much work for Cuttlefish.
-/// Instead, we use a ManifestNamedIntentAsU32 in some places.
+/// Instead, we use a ManifestNamedIntentIndex in some places.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct ManifestNamedIntent(pub u32);
 
 /// This exists as an unideal serialization target for [`ManifestNamedIntent`],
 /// due to our inability to add a new ManifestCustomValue for the Cuttlefish update.
+/// Instead, we just serialize it directly as a `u32` in the `YIELD_TO_CHILD` instruction.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, ScryptoDescribe, ManifestSbor)]
 #[sbor(transparent)]
-pub struct ManifestNamedIntentAsU32(pub u32);
+pub struct ManifestNamedIntentIndex(pub u32);
 
-impl From<ManifestNamedIntentAsU32> for ManifestNamedIntent {
-    fn from(value: ManifestNamedIntentAsU32) -> Self {
+impl From<ManifestNamedIntentIndex> for ManifestNamedIntent {
+    fn from(value: ManifestNamedIntentIndex) -> Self {
         Self(value.0)
     }
 }
 
-impl From<ManifestNamedIntent> for ManifestNamedIntentAsU32 {
+impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
     fn from(value: ManifestNamedIntent) -> Self {
         Self(value.0)
     }

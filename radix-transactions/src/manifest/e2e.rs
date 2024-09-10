@@ -1620,7 +1620,7 @@ YIELD_TO_PARENT;
     ) {
         let error_style = CompileErrorDiagnosticsStyle::PlainText;
         let original_string = manifest;
-        let original_compiled = compile_manifest_pretty_error::<M>(
+        let original_compiled = compile_manifest_with_pretty_error::<M>(
             original_string,
             network,
             blob_provider.clone(),
@@ -1632,7 +1632,7 @@ YIELD_TO_PARENT;
 
         let original_decompiled =
             decompile(&original_compiled, network).expect("Manifest could not be decompiled");
-        let recompiled = compile_manifest_pretty_error::<M>(
+        let recompiled = compile_manifest_with_pretty_error::<M>(
             &original_decompiled,
             network,
             blob_provider.clone(),
@@ -1644,7 +1644,7 @@ YIELD_TO_PARENT;
 
         let recompiled_decompiled =
             decompile(&recompiled, network).expect("Recompiled manifest could not be decompiled");
-        let re_recompiled = compile_manifest_pretty_error::<M>(
+        let re_recompiled = compile_manifest_with_pretty_error::<M>(
             &recompiled_decompiled,
             network,
             blob_provider.clone(),

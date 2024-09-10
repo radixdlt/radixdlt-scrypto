@@ -7,8 +7,6 @@ CALL_METHOD
     "some_method"
     Array<String>(
       "one",
-      # Bytes is an alias of Array so the below error is expected
-      # error: expected value of type String, found Array
       Bytes(1u32),
       "three"
     )

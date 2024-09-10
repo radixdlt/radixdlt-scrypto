@@ -318,34 +318,34 @@ impl ManifestValueIdent {
             // ==============
             // SBOR composite value types
             // ==============
-            "Enum" => ManifestValueIdent::Enum,
-            "Array" => ManifestValueIdent::Array,
-            "Tuple" => ManifestValueIdent::Tuple,
-            "Map" => ManifestValueIdent::Map,
+            "Enum" => Self::Enum,
+            "Array" => Self::Array,
+            "Tuple" => Self::Tuple,
+            "Map" => Self::Map,
             // ==============
             // SBOR aliases
             // ==============
-            "Some" => ManifestValueIdent::Some,
-            "None" => ManifestValueIdent::None,
-            "Ok" => ManifestValueIdent::Ok,
-            "Err" => ManifestValueIdent::Err,
-            "Bytes" => ManifestValueIdent::Bytes,
-            "NonFungibleGlobalId" => ManifestValueIdent::NonFungibleGlobalId,
+            "Some" => Self::Some,
+            "None" => Self::None,
+            "Ok" => Self::Ok,
+            "Err" => Self::Err,
+            "Bytes" => Self::Bytes,
+            "NonFungibleGlobalId" => Self::NonFungibleGlobalId,
             // ==============
             // Custom types
             // ==============
-            "Address" => ManifestValueIdent::Address,
-            "Bucket" => ManifestValueIdent::Bucket,
-            "Proof" => ManifestValueIdent::Proof,
-            "Expression" => ManifestValueIdent::Expression,
-            "Blob" => ManifestValueIdent::Blob,
-            "Decimal" => ManifestValueIdent::Decimal,
-            "PreciseDecimal" => ManifestValueIdent::PreciseDecimal,
-            "NonFungibleLocalId" => ManifestValueIdent::NonFungibleLocalId,
-            "AddressReservation" => ManifestValueIdent::AddressReservation,
-            "NamedAddress" => ManifestValueIdent::NamedAddress,
-            "Intent" => ManifestValueIdent::Intent,
-            "NamedIntent" => ManifestValueIdent::NamedIntent,
+            "Address" => Self::Address,
+            "Bucket" => Self::Bucket,
+            "Proof" => Self::Proof,
+            "Expression" => Self::Expression,
+            "Blob" => Self::Blob,
+            "Decimal" => Self::Decimal,
+            "PreciseDecimal" => Self::PreciseDecimal,
+            "NonFungibleLocalId" => Self::NonFungibleLocalId,
+            "AddressReservation" => Self::AddressReservation,
+            "NamedAddress" => Self::NamedAddress,
+            "Intent" => Self::Intent,
+            "NamedIntent" => Self::NamedIntent,
             _ => {
                 return None;
             }

@@ -1152,7 +1152,7 @@ pub struct YieldToChild {
     /// Ideally this would be a ManifestNamedIntent - but there wasn't time
     /// to version ManifestSbor and add this in - so instead, we use a raw u32
     /// here.
-    pub child_index: ManifestNamedIntentAsU32,
+    pub child_index: ManifestNamedIntentIndex,
     pub args: ManifestValue,
 }
 
