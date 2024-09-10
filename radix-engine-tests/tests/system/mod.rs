@@ -75,3 +75,4 @@ mod vault;
 mod vault_burn;
 mod vault_freeze;
 mod worktop;
+mod subintent_auth;
