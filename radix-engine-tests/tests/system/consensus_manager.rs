@@ -2956,30 +2956,26 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let mut pre_allocated_addresses = vec![];
-    pre_allocated_addresses.push(
-        (
-            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            GlobalAddress::from(CONSENSUS_MANAGER),
-        )
-            .into(),
+    let mut manifest_builder = ManifestBuilder::new_system_v1();
+    let consensus_manager_reservation = manifest_builder.add_address_preallocation(
+        CONSENSUS_MANAGER,
+        CONSENSUS_MANAGER_PACKAGE,
+        CONSENSUS_MANAGER_BLUEPRINT,
     );
-    pre_allocated_addresses.push(
-        (
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
-        )
-            .into(),
+    let validator_owner_reservation = manifest_builder.add_address_preallocation(
+        VALIDATOR_OWNER_BADGE,
+        RESOURCE_PACKAGE,
+        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     );
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        manifest_builder
             .call_function(
                 CONSENSUS_MANAGER_PACKAGE,
                 CONSENSUS_MANAGER_BLUEPRINT,
                 CONSENSUS_MANAGER_CREATE_IDENT,
                 ConsensusManagerCreateManifestInput {
-                    validator_owner_token_address: ManifestAddressReservation(0),
-                    component_address: ManifestAddressReservation(1),
+                    validator_owner_token_address: validator_owner_reservation,
+                    component_address: consensus_manager_reservation,
                     initial_epoch: Epoch::of(1),
                     initial_config: ConsensusManagerConfig::test_default(),
                     initial_time_ms: 120000i64,
@@ -2989,7 +2985,6 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
             .build(),
         // No validator proofs
         btreeset![],
-        pre_allocated_addresses,
     );
 
     // Assert
@@ -3007,34 +3002,30 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let mut pre_allocated_addresses = vec![];
-    pre_allocated_addresses.push(
-        (
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
-        )
-            .into(),
+    let mut manifest_builder = ManifestBuilder::new_system_v1();
+    let consensus_manager_reservation = manifest_builder.add_address_preallocation(
+        // Use a new address here so that we don't overwrite current consensus manager and break invariants
+        ComponentAddress::new_or_panic([
+            134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247, 188,
+            165, 46, 181, 74, 106, 134, 49, 140, 99, 24, 0,
+        ]),
+        CONSENSUS_MANAGER_PACKAGE,
+        CONSENSUS_MANAGER_BLUEPRINT,
     );
-    pre_allocated_addresses.push(
-        (
-            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            // Use a new address here so that we don't overwrite current consensus manager and break invariants
-            GlobalAddress::from(ComponentAddress::new_or_panic([
-                134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247,
-                188, 165, 46, 181, 74, 106, 134, 49, 140, 99, 24, 0,
-            ])),
-        )
-            .into(),
+    let validator_owner_reservation = manifest_builder.add_address_preallocation(
+        VALIDATOR_OWNER_BADGE,
+        RESOURCE_PACKAGE,
+        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     );
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        manifest_builder
             .call_function(
                 CONSENSUS_MANAGER_PACKAGE,
                 CONSENSUS_MANAGER_BLUEPRINT,
                 CONSENSUS_MANAGER_CREATE_IDENT,
                 ConsensusManagerCreateManifestInput {
-                    validator_owner_token_address: ManifestAddressReservation(0),
-                    component_address: ManifestAddressReservation(1),
+                    validator_owner_token_address: validator_owner_reservation,
+                    component_address: consensus_manager_reservation,
                     initial_epoch: Epoch::of(1),
                     initial_config: ConsensusManagerConfig::test_default(),
                     initial_time_ms: 120000i64,
@@ -3043,7 +3034,6 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             )
             .build(),
         btreeset![system_execution(SystemExecution::Protocol)],
-        pre_allocated_addresses,
     );
 
     // Assert

@@ -16,8 +16,8 @@ impl TransactionPartialPrepare for SubintentsV2 {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedSubintentsV2 {
-    subintents_by_hash: Rc<IndexMap<SubintentHash, PreparedSubintentV2>>,
-    summary: Summary,
+    pub subintents_by_hash: Rc<IndexMap<SubintentHash, PreparedSubintentV2>>,
+    pub summary: Summary,
 }
 
 impl_has_summary!(PreparedSubintentsV2);

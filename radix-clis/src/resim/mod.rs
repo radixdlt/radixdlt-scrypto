@@ -143,7 +143,7 @@ pub fn run() -> Result<(), String> {
 }
 
 pub fn handle_system_transaction<O: std::io::Write>(
-    manifest: TransactionManifestV1,
+    manifest: SystemTransactionManifestV1,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
     trace: bool,
     print_receipt: bool,
@@ -155,7 +155,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let nonce = get_nonce()?;
     let unique_hash = hash(format!("Simulator system transaction: {}", nonce));
-    let transaction = SystemTransactionV1::new(manifest, unique_hash, vec![]);
+    let transaction = manifest.into_transaction(unique_hash);
 
     let receipt = execute_and_commit_transaction(
         &mut db,
@@ -197,8 +197,7 @@ pub fn handle_manifest<O: std::io::Write>(
     match write_manifest {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let manifest_str =
-                    decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
+                let manifest_str = decompile(&manifest, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
                 for blob in manifest.blobs.values() {
                     let blob_hash = hash(&blob);

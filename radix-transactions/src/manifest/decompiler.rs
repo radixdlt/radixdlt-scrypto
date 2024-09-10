@@ -44,35 +44,21 @@ impl From<RustToManifestValueError> for DecompileError {
 #[derive(Default)]
 pub struct DecompilationContext<'a> {
     pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
+    pub transaction_hash_bech32_encoder: Option<&'a TransactionHashBech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
-    pub object_names: ManifestObjectNames,
-}
-
-#[derive(Default, Clone, Debug)]
-pub struct ManifestObjectNames {
-    pub bucket_names: NonIterMap<ManifestBucket, String>,
-    pub proof_names: NonIterMap<ManifestProof, String>,
-    pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
-    pub address_names: NonIterMap<u32, String>,
+    pub object_names: ManifestObjectNamesRef<'a>,
 }
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(
         address_bech32_encoder: &'a AddressBech32Encoder,
-        object_names: ManifestObjectNames,
+        transaction_hash_bech32_encoder: &'a TransactionHashBech32Encoder,
+        object_names: ManifestObjectNamesRef<'a>,
     ) -> Self {
         Self {
             address_bech32_encoder: Some(address_bech32_encoder),
+            transaction_hash_bech32_encoder: Some(transaction_hash_bech32_encoder),
             object_names,
-            ..Default::default()
-        }
-    }
-
-    pub fn new_with_optional_network(
-        address_bech32_encoder: Option<&'a AddressBech32Encoder>,
-    ) -> Self {
-        Self {
-            address_bech32_encoder,
             ..Default::default()
         }
     }
@@ -80,55 +66,34 @@ impl<'a> DecompilationContext<'a> {
     pub fn for_value_display(&'a self) -> ManifestDecompilationDisplayContext<'a> {
         ManifestDecompilationDisplayContext::with_bech32_and_names(
             self.address_bech32_encoder,
-            &self.object_names.bucket_names,
-            &self.object_names.proof_names,
-            &self.object_names.address_reservation_names,
-            &self.object_names.address_names,
+            self.object_names,
         )
         .with_multi_line(4, 4)
     }
 
+    pub fn transaction_hash_encoder(&'a self) -> Option<&'a TransactionHashBech32Encoder> {
+        self.transaction_hash_bech32_encoder
+    }
+
     pub fn new_bucket(&mut self) -> ManifestBucket {
-        let id = self.id_allocator.new_bucket_id();
-        if !self.object_names.bucket_names.contains_key(&id) {
-            let name = format!("bucket{}", self.object_names.bucket_names.len() + 1);
-            self.object_names.bucket_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_bucket_id()
     }
 
     pub fn new_proof(&mut self) -> ManifestProof {
-        let id = self.id_allocator.new_proof_id();
-        if !self.object_names.proof_names.contains_key(&id) {
-            let name = format!("proof{}", self.object_names.proof_names.len() + 1);
-            self.object_names.proof_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_proof_id()
     }
 
     pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
-        let id = self.id_allocator.new_address_reservation_id();
-        if !self
-            .object_names
-            .address_reservation_names
-            .contains_key(&id)
-        {
-            let name = format!(
-                "reservation{}",
-                self.object_names.address_reservation_names.len() + 1
-            );
-            self.object_names.address_reservation_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_address_reservation_id()
     }
 
     pub fn new_address(&mut self) -> ManifestAddress {
         let id = self.id_allocator.new_address_id();
-        if !self.object_names.address_names.contains_key(&id) {
-            let name = format!("address{}", self.object_names.address_names.len() + 1);
-            self.object_names.address_names.insert(id, name);
-        }
         ManifestAddress::Named(id)
+    }
+
+    pub fn new_intent(&mut self) -> ManifestIntent {
+        self.id_allocator.new_intent_id()
     }
 
     /// Allocate addresses before transaction, for system transactions only.
@@ -139,24 +104,41 @@ impl<'a> DecompilationContext<'a> {
     }
 }
 
+pub fn decompile_any(
+    manifest: &AnyTransactionManifest,
+    network: &NetworkDefinition,
+) -> Result<String, DecompileError> {
+    match manifest {
+        AnyTransactionManifest::V1(m) => decompile(m, network),
+        AnyTransactionManifest::SystemV1(m) => decompile(m, network),
+        AnyTransactionManifest::V2(m) => decompile(m, network),
+    }
+}
+
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    instructions: &[impl InstructionVersion],
+    manifest: &impl ReadableManifest,
     network: &NetworkDefinition,
-) -> Result<String, DecompileError> {
-    decompile_with_known_naming(instructions, network, Default::default())
-}
-
-pub fn decompile_with_known_naming(
-    instructions: &[impl InstructionVersion],
-    network: &NetworkDefinition,
-    known_object_names: ManifestObjectNames,
 ) -> Result<String, DecompileError> {
     let address_bech32_encoder = AddressBech32Encoder::new(network);
+    let transaction_hash_encoder = TransactionHashBech32Encoder::new(network);
     let mut buf = String::new();
-    let mut context = DecompilationContext::new(&address_bech32_encoder, known_object_names);
-    for inst in instructions {
+    let mut context = DecompilationContext::new(
+        &address_bech32_encoder,
+        &transaction_hash_encoder,
+        manifest.get_known_object_names_ref(),
+    );
+    for preallocated_address in manifest.get_preallocated_addresses() {
+        let psuedo_instruction =
+            preallocated_address.decompile_as_pseudo_instruction(&mut context)?;
+        output_instruction(&mut buf, &context, psuedo_instruction)?;
+    }
+    for child_subintent in manifest.get_child_subintents() {
+        let psuedo_instruction = child_subintent.decompile_as_pseudo_instruction(&mut context)?;
+        output_instruction(&mut buf, &context, psuedo_instruction)?;
+    }
+    for inst in manifest.get_instructions() {
         let decompiled = inst.decompile(&mut context)?;
         output_instruction(&mut buf, &context, decompiled)?;
     }
@@ -166,7 +148,12 @@ pub fn decompile_with_known_naming(
 
 pub struct DecompiledInstruction {
     command: &'static str,
-    fields: Vec<ManifestValue>,
+    fields: Vec<DecompiledInstructionField>,
+}
+
+enum DecompiledInstructionField {
+    Value(ManifestValue),
+    Raw(String),
 }
 
 impl DecompiledInstruction {
@@ -178,7 +165,7 @@ impl DecompiledInstruction {
     }
 
     pub fn add_value_argument(mut self, value: ManifestValue) -> Self {
-        self.fields.push(value);
+        self.fields.push(DecompiledInstructionField::Value(value));
         self
     }
 
@@ -187,19 +174,36 @@ impl DecompiledInstruction {
         let value = manifest_decode(&encoded).unwrap();
         self.add_value_argument(value)
     }
+
+    /// Only for use in pseudo-instructions.
+    /// When we update the manifest value model, we should be able to discard these.
+    pub fn add_raw_argument(mut self, value: String) -> Self {
+        self.fields.push(DecompiledInstructionField::Raw(value));
+        self
+    }
 }
 
 pub fn output_instruction<F: fmt::Write>(
     f: &mut F,
     context: &DecompilationContext,
-    DecompiledInstruction { command, fields }: DecompiledInstruction,
+    DecompiledInstruction {
+        command,
+        fields: arguments,
+    }: DecompiledInstruction,
 ) -> Result<(), DecompileError> {
     write!(f, "{}", command)?;
-    for field in fields.iter() {
+    for argument in arguments.iter() {
         write!(f, "\n")?;
-        format_manifest_value(f, field, &context.for_value_display(), true, 0)?;
+        match argument {
+            DecompiledInstructionField::Value(value) => {
+                format_manifest_value(f, value, &context.for_value_display(), true, 0)?;
+            }
+            DecompiledInstructionField::Raw(raw_argument) => {
+                write!(f, "{raw_argument}")?;
+            }
+        }
     }
-    if fields.len() > 0 {
+    if arguments.len() > 0 {
         write!(f, "\n;\n")?;
     } else {
         write!(f, ";\n")?;

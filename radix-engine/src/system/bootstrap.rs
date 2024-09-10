@@ -32,7 +32,6 @@ use radix_substate_store_interface::{
 };
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::ManifestIdAllocator;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
@@ -500,16 +499,16 @@ pub fn create_system_bootstrap_transaction(
     initial_current_leader: Option<ValidatorIndex>,
     faucet_supply: Decimal,
 ) -> SystemTransactionV1 {
-    let mut id_allocator = ManifestIdAllocator::new();
-    let mut manifest_builder = ManifestBuilder::new();
-    let mut pre_allocated_addresses = vec![];
+    let mut manifest_builder = ManifestBuilder::new_system_v1();
+    let lookup = manifest_builder.name_lookup();
 
     // XRD Token
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(XRD),
-        ));
+        let xrd_reservation = manifest_builder.add_address_preallocation(
+            XRD,
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -540,17 +539,18 @@ pub fn create_system_bootstrap_transaction(
                     }
                 },
                 initial_supply: Decimal::zero(),
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(xrd_reservation),
             },
         );
     }
 
-    // Package Token
+    // Package of Direct Caller
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_RESOURCE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            PACKAGE_OF_DIRECT_CALLER_RESOURCE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -575,17 +575,18 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             },
         );
     }
 
-    // Object Token
+    // Global Caller Resource
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(GLOBAL_CALLER_RESOURCE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            GLOBAL_CALLER_RESOURCE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -610,17 +611,18 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             },
         );
     }
 
-    // Package Owner Token
+    // Package Owner Resource
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(PACKAGE_OWNER_BADGE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            PACKAGE_OWNER_BADGE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -645,17 +647,18 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             },
         );
     }
 
-    // Identity Package
+    // Identity
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(IDENTITY_OWNER_BADGE),
-        ));
+        let badge_reservation = manifest_builder.add_address_preallocation(
+            IDENTITY_OWNER_BADGE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -680,20 +683,21 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(badge_reservation),
             },
         );
 
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(IDENTITY_PACKAGE),
-        ));
+        let package_reservation = manifest_builder.add_address_preallocation(
+            IDENTITY_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(package_reservation),
                 definition: IdentityNativePackage::definition(),
                 native_package_code_id: NativeCodeId::IdentityCode1 as u64,
                 metadata: metadata_init! {
@@ -706,16 +710,17 @@ pub fn create_system_bootstrap_transaction(
 
     // ConsensusManager Package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            CONSENSUS_MANAGER_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(reservation),
                 definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: NativeCodeId::ConsensusManagerCode1 as u64,
                 metadata: metadata_init! {
@@ -728,10 +733,11 @@ pub fn create_system_bootstrap_transaction(
 
     // Account Package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(ACCOUNT_OWNER_BADGE),
-        ));
+        let badge_reservation = manifest_builder.add_address_preallocation(
+            ACCOUNT_OWNER_BADGE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -759,20 +765,21 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(badge_reservation),
             },
         );
 
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ACCOUNT_PACKAGE),
-        ));
+        let package_reservation = manifest_builder.add_address_preallocation(
+            ACCOUNT_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(package_reservation),
                 definition: AccountNativePackage::definition(),
                 native_package_code_id: NativeCodeId::AccountCode1 as u64,
                 metadata: metadata_init! {
@@ -785,16 +792,17 @@ pub fn create_system_bootstrap_transaction(
 
     // AccessController Package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            ACCESS_CONTROLLER_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(reservation),
                 definition: AccessControllerV1NativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
@@ -807,16 +815,17 @@ pub fn create_system_bootstrap_transaction(
 
     // Pool Package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(POOL_PACKAGE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            POOL_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(reservation),
                 definition: PoolNativePackage::definition(PoolV1MinorVersion::Zero),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
@@ -829,10 +838,11 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA Secp256k1
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(SECP256K1_SIGNATURE_RESOURCE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            SECP256K1_SIGNATURE_RESOURCE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -851,17 +861,18 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             }
         );
     }
 
     // Ed25519
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(ED25519_SIGNATURE_RESOURCE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            ED25519_SIGNATURE_RESOURCE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -880,17 +891,18 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             },
         );
     }
 
     // System Execution Resource
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(SYSTEM_EXECUTION_RESOURCE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            SYSTEM_EXECUTION_RESOURCE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -909,80 +921,68 @@ pub fn create_system_bootstrap_transaction(
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
                     }
                 },
-                address_reservation: Some(id_allocator.new_address_reservation_id()),
+                address_reservation: Some(reservation),
             },
         );
     }
 
     // Faucet Package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(FAUCET_PACKAGE),
-        ));
-        let code_blob_ref =
-            manifest_builder.add_blob(include_bytes!("../../assets/faucet.wasm").to_vec());
-        let rpd = include_bytes!("../../assets/faucet.rpd");
-        manifest_builder = manifest_builder.call_function(
+        let reservation: ManifestAddressReservation = manifest_builder.add_address_preallocation(
+            FAUCET_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-            PackagePublishWasmAdvancedManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                code: code_blob_ref,
-                definition: manifest_decode(rpd).unwrap(),
-                metadata: metadata_init!{
-                    "name" => "Faucet Package".to_owned(), locked;
-                    "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
-                },
-                owner_role: OwnerRole::None,
+        );
+        manifest_builder = manifest_builder.publish_package_advanced(
+            reservation,
+            include_bytes!("../../assets/faucet.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/faucet.rpd")).unwrap(),
+            metadata_init!{
+                "name" => "Faucet Package".to_owned(), locked;
+                "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
             },
+            OwnerRole::None,
         );
     }
 
     // Genesis helper package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(GENESIS_HELPER_PACKAGE),
-        ));
-        let code_blob_ref =
-            manifest_builder.add_blob(include_bytes!("../../assets/genesis_helper.wasm").to_vec());
-        let rpd = include_bytes!("../../assets/genesis_helper.rpd");
-        manifest_builder = manifest_builder.call_function(
+        let reservation = manifest_builder.add_address_preallocation(
+            GENESIS_HELPER_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
-            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-            PackagePublishWasmAdvancedManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                code: code_blob_ref,
-                definition: manifest_decode(rpd).unwrap(),
-                metadata: metadata_init! {
-                    "name" => "Genesis Helper Package".to_owned(), locked;
-                    "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
-                },
-                owner_role: OwnerRole::None,
+        );
+        manifest_builder = manifest_builder.publish_package_advanced(
+            reservation,
+            include_bytes!("../../assets/genesis_helper.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/genesis_helper.rpd")).unwrap(),
+            metadata_init! {
+                "name" => "Genesis Helper Package".to_owned(), locked;
+                "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
             },
+            OwnerRole::None,
         );
     }
 
     // Create ConsensusManager
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(VALIDATOR_OWNER_BADGE),
-        ));
-        pre_allocated_addresses.push((
-            BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
-            GlobalAddress::from(CONSENSUS_MANAGER),
-        ));
+        let badge_reservation = manifest_builder.add_address_preallocation(
+            VALIDATOR_OWNER_BADGE,
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+        );
+        let manager_reservation = manifest_builder.add_address_preallocation(
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_PACKAGE,
+            CONSENSUS_MANAGER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             CONSENSUS_MANAGER_PACKAGE,
             CONSENSUS_MANAGER_BLUEPRINT,
             CONSENSUS_MANAGER_CREATE_IDENT,
             ConsensusManagerCreateManifestInput {
-                validator_owner_token_address: id_allocator.new_address_reservation_id(),
-                component_address: id_allocator.new_address_reservation_id(),
+                validator_owner_token_address: badge_reservation,
+                component_address: manager_reservation,
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
@@ -993,34 +993,36 @@ pub fn create_system_bootstrap_transaction(
 
     // Create GenesisHelper
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
-            GlobalAddress::from(GENESIS_HELPER),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            GENESIS_HELPER,
+            GENESIS_HELPER_PACKAGE,
+            GENESIS_HELPER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
             "new",
             (
-                id_allocator.new_address_reservation_id(),
+                reservation,
                 CONSENSUS_MANAGER,
                 system_execution(SystemExecution::Protocol),
             ),
         );
     }
 
-    // Intent Hash Store package
+    // Transaction tracker package
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(TRANSACTION_TRACKER_PACKAGE),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            TRANSACTION_TRACKER_PACKAGE,
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
+                package_address: Some(reservation),
                 native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
                 definition: TransactionTrackerNativePackage::definition(),
                 metadata: metadata_init!(),
@@ -1030,15 +1032,16 @@ pub fn create_system_bootstrap_transaction(
 
     // Intent Hash Store component
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&TRANSACTION_TRACKER_PACKAGE, TRANSACTION_TRACKER_BLUEPRINT),
-            GlobalAddress::from(TRANSACTION_TRACKER),
-        ));
+        let reservation = manifest_builder.add_address_preallocation(
+            TRANSACTION_TRACKER,
+            TRANSACTION_TRACKER_PACKAGE,
+            TRANSACTION_TRACKER_BLUEPRINT,
+        );
         manifest_builder = manifest_builder.call_function(
             TRANSACTION_TRACKER_PACKAGE,
             TRANSACTION_TRACKER_BLUEPRINT,
             TRANSACTION_TRACKER_CREATE_IDENT,
-            (id_allocator.new_address_reservation_id(),),
+            (reservation,),
         );
     }
 
@@ -1046,115 +1049,80 @@ pub fn create_system_bootstrap_transaction(
     // Note - the faucet is now created as part of bootstrap instead of wrap-up, to enable
     // transaction scenarios to be injected into the ledger in the node before genesis wrap-up occurs
     {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
-            GlobalAddress::from(FAUCET),
-        ));
-
+        let reservation =
+            manifest_builder.add_address_preallocation(FAUCET, FAUCET_PACKAGE, FAUCET_BLUEPRINT);
         // Mint XRD for the faucet, and then deposit it into the new faucet
         // Note - on production environments, the faucet will be empty
         manifest_builder = manifest_builder
-            .call_method(
-                XRD,
-                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                FungibleResourceManagerMintInput {
-                    amount: faucet_supply,
-                },
-            )
-            .take_from_worktop(XRD, faucet_supply, "xrd")
-            .call_function_with_name_lookup(FAUCET_PACKAGE, FAUCET_BLUEPRINT, "new", |lookup| {
-                (
-                    id_allocator.new_address_reservation_id(),
-                    lookup.bucket("xrd"),
-                )
-            });
+            .mint_fungible(XRD, faucet_supply)
+            .take_from_worktop(XRD, faucet_supply, "faucet_xrd")
+            .call_function(
+                FAUCET_PACKAGE,
+                FAUCET_BLUEPRINT,
+                "new",
+                (reservation, lookup.bucket("faucet_xrd")),
+            );
     }
 
-    SystemTransactionV1::new(
-        manifest_builder.build(),
-        hash(format!("Genesis Bootstrap")),
-        pre_allocated_addresses
-            .into_iter()
-            .map(|allocation_pair| allocation_pair.into())
-            .collect(),
-    )
+    manifest_builder
+        .build()
+        .into_transaction(hash(format!("Genesis Bootstrap")))
 }
 
 pub fn create_genesis_data_ingestion_transaction(
     chunk: GenesisDataChunk,
     chunk_number: usize,
 ) -> SystemTransactionV1 {
-    let (chunk, pre_allocated_addresses) = map_address_allocations_for_manifest(chunk);
-
-    let manifest = ManifestBuilder::new()
-        .call_method(GENESIS_HELPER, "ingest_data_chunk", (chunk,))
-        .build();
-
-    let unique_hash = hash(format!("Genesis Data Chunk: {}", chunk_number));
-    SystemTransactionV1::new(manifest, unique_hash, pre_allocated_addresses)
+    map_address_allocations_for_manifest(chunk)
+        .into_transaction(hash(format!("Genesis Data Chunk: {}", chunk_number)))
 }
 
 fn map_address_allocations_for_manifest(
     genesis_data_chunk: GenesisDataChunk,
-) -> (ManifestGenesisDataChunk, Vec<PreAllocatedAddress>) {
-    match genesis_data_chunk {
-        GenesisDataChunk::Validators(content) => {
-            (ManifestGenesisDataChunk::Validators(content), vec![])
-        }
+) -> SystemTransactionManifestV1 {
+    let mut manifest_builder = SystemV1ManifestBuilder::new_system_v1();
+    let data_chunk = match genesis_data_chunk {
+        GenesisDataChunk::Validators(content) => ManifestGenesisDataChunk::Validators(content),
         GenesisDataChunk::Stakes {
             accounts,
             allocations,
-        } => (
-            ManifestGenesisDataChunk::Stakes {
-                accounts,
-                allocations,
-            },
-            vec![],
-        ),
-        GenesisDataChunk::Resources(resources) => {
-            let (resources, allocations): (Vec<_>, Vec<_>) = resources
+        } => ManifestGenesisDataChunk::Stakes {
+            accounts,
+            allocations,
+        },
+        GenesisDataChunk::Resources(genesis_resources) => {
+            let resources = genesis_resources
                 .into_iter()
-                .enumerate()
-                .map(|(index, resource)| {
-                    let manifest_resource = ManifestGenesisResource {
-                        resource_address_reservation: ManifestAddressReservation(index as u32),
-                        metadata: resource.metadata,
-                        owner: resource.owner,
-                    };
-                    let address_allocation = PreAllocatedAddress {
-                        blueprint_id: BlueprintId {
-                            package_address: RESOURCE_PACKAGE,
-                            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                        },
-                        address: resource.reserved_resource_address.into(),
-                    };
-                    (manifest_resource, address_allocation)
+                .map(|genesis_resource| ManifestGenesisResource {
+                    resource_address_reservation: manifest_builder.add_address_preallocation(
+                        genesis_resource.reserved_resource_address,
+                        RESOURCE_PACKAGE,
+                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    ),
+                    metadata: genesis_resource.metadata,
+                    owner: genesis_resource.owner,
                 })
-                .unzip();
-            (ManifestGenesisDataChunk::Resources(resources), allocations)
+                .collect();
+            ManifestGenesisDataChunk::Resources(resources)
         }
         GenesisDataChunk::ResourceBalances {
             accounts,
             allocations,
-        } => (
-            ManifestGenesisDataChunk::ResourceBalances {
-                accounts,
-                allocations,
-            },
-            vec![],
-        ),
-        GenesisDataChunk::XrdBalances(content) => {
-            (ManifestGenesisDataChunk::XrdBalances(content), vec![])
-        }
-    }
+        } => ManifestGenesisDataChunk::ResourceBalances {
+            accounts,
+            allocations,
+        },
+        GenesisDataChunk::XrdBalances(content) => ManifestGenesisDataChunk::XrdBalances(content),
+    };
+    manifest_builder
+        .call_method(GENESIS_HELPER, "ingest_data_chunk", (data_chunk,))
+        .build()
 }
 
 pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new_system_v1()
         .call_method(GENESIS_HELPER, "wrap_up", ())
         .build();
 
-    let unique_hash = hash(format!("Genesis Wrap Up"));
-    let preallocated_addresses = vec![];
-    SystemTransactionV1::new(manifest, unique_hash, preallocated_addresses)
+    manifest.into_transaction(hash(format!("Genesis Wrap Up")))
 }

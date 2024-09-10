@@ -129,8 +129,7 @@ where
         })
         .build();
     let (manifest, signers) = callback(&mut ledger);
-    let string_manifest =
-        decompile(&manifest.instructions, &network_definition).expect("Can't fail!");
+    let string_manifest = decompile(&manifest, &network_definition).expect("Can't fail!");
     let receipt = ledger.execute_manifest_with_execution_config(
         manifest,
         signers

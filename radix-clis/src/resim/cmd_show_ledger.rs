@@ -105,7 +105,7 @@ impl ShowLedger {
     }
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<Epoch, Error> {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new_system_v1()
             .call_method(
                 CONSENSUS_MANAGER,
                 CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -121,7 +121,7 @@ impl ShowLedger {
         out: &mut O,
         precision: TimePrecisionV1,
     ) -> Result<Instant, Error> {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new_system_v1()
             .call_method(
                 CONSENSUS_MANAGER,
                 CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,

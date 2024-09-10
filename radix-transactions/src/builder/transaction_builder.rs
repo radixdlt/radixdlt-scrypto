@@ -85,6 +85,10 @@ impl TransactionBuilder {
         }
     }
 
+    pub fn into_manifest(self) -> TransactionManifestV1 {
+        self.manifest.expect("No manifest")
+    }
+
     fn transaction_intent(&self) -> IntentV1 {
         let (instructions, blobs) = self
             .manifest

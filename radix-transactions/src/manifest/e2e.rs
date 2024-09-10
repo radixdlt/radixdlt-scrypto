@@ -31,8 +31,8 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("${package_package_address}")
     "Package"
-    AddressReservation("reservation1")
-    NamedAddress("address1")
+    AddressReservation("my_reservation")
+    NamedAddress("my_package")
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
@@ -42,15 +42,15 @@ PUBLISH_PACKAGE_ADVANCED
     Blob("${code_blob_hash}")
     Map<String, Tuple>()
     Enum<1u8>(
-        AddressReservation("reservation1")
+        AddressReservation("my_reservation")
     )
 ;
 CALL_FUNCTION
-    NamedAddress("address1")
+    NamedAddress("my_package")
     "BlueprintName"
     "no_such_function"
     Decimal("1")
-    NamedAddress("address1")
+    NamedAddress("my_package")
 ;
 "##,
             ),
@@ -103,12 +103,12 @@ CALL_METHOD
 TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Decimal("2")
-    Bucket("bucket1")
+    Bucket("xrd")
 ;
 CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
-    Bucket("bucket1")
+    Bucket("xrd")
 ;
 ASSERT_WORKTOP_CONTAINS_ANY
     Address("${gumball_resource_address}")
@@ -119,17 +119,17 @@ ASSERT_WORKTOP_CONTAINS
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
-    Bucket("bucket2")
+    Bucket("some_xrd")
 ;
 RETURN_TO_WORKTOP
-    Bucket("bucket2")
+    Bucket("some_xrd")
 ;
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${non_fungible_resource_address}")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#1#")
     )
-    Bucket("bucket3")
+    Bucket("nfts")
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -158,33 +158,33 @@ CALL_METHOD
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Bucket("bucket1")
+    Bucket("some_xrd")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
-    Bucket("bucket1")
+    Bucket("some_xrd")
     Decimal("1")
-    Proof("proof1")
+    Proof("proof1a")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES
-    Bucket("bucket1")
+    Bucket("some_xrd")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#123#")
     )
-    Proof("proof2")
+    Proof("proof1b")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_ALL
-    Bucket("bucket1")
-    Proof("proof3")
+    Bucket("some_xrd")
+    Proof("proof1c")
 ;
 CLONE_PROOF
-    Proof("proof3")
-    Proof("proof4")
+    Proof("proof1c")
+    Proof("proof1d")
 ;
 DROP_PROOF
-    Proof("proof4")
+    Proof("proof1d")
 ;
 DROP_PROOF
-    Proof("proof3")
+    Proof("proof1c")
 ;
 DROP_AUTH_ZONE_PROOFS;
 CALL_METHOD
@@ -194,10 +194,10 @@ CALL_METHOD
     Decimal("5")
 ;
 POP_FROM_AUTH_ZONE
-    Proof("proof5")
+    Proof("proof3")
 ;
 DROP_PROOF
-    Proof("proof5")
+    Proof("proof3")
 ;
 CALL_METHOD
     Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
@@ -208,18 +208,18 @@ CALL_METHOD
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
     Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
     Decimal("1")
-    Proof("proof6")
+    Proof("proof4")
 ;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
     Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#123#")
     )
-    Proof("proof7")
+    Proof("proof5")
 ;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
-    Proof("proof8")
+    Proof("proof6")
 ;
 DROP_AUTH_ZONE_SIGNATURE_PROOFS;
 DROP_AUTH_ZONE_REGULAR_PROOFS;
@@ -411,11 +411,11 @@ CALL_DIRECT_VAULT_METHOD
                 r##"
 TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
-    Bucket("bucket1")
+    Bucket("temp1")
 ;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${resource_address}")
-    Proof("proof1")
+    Proof("temp2")
 ;
 CALL_METHOD
     Address("${component_address}")
@@ -505,8 +505,8 @@ CALL_METHOD
     Address("${consensusmanager_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
-    Bucket("bucket1")
-    Proof("proof1")
+    Bucket("temp1")
+    Proof("temp2")
     Expression("ENTIRE_WORKTOP")
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
     Decimal("1.2")
@@ -1186,12 +1186,12 @@ CALL_METHOD
 TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Decimal("1000")
-    Bucket("bucket1")
+    Bucket("xrd_payment")
 ;
 CREATE_VALIDATOR
     Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
     Decimal("1")
-    Bucket("bucket1")
+    Bucket("xrd_payment")
 ;
 "##,
             ),
@@ -1227,10 +1227,10 @@ CREATE_IDENTITY;
                 r##"
 TAKE_ALL_FROM_WORKTOP
     Address("${badge_resource_address}")
-    Bucket("bucket1")
+    Bucket("some_xrd")
 ;
 CREATE_ACCESS_CONTROLLER
-    Bucket("bucket1")
+    Bucket("some_xrd")
     Tuple(
         Enum<1u8>(),
         Enum<1u8>(),
@@ -1539,15 +1539,15 @@ CALL_METHOD
         let original_binary =
             manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
 
-        let original_decompiled = decompile(&original_compiled.instructions, network)
-            .expect("Manifest could not be decompiled");
+        let original_decompiled =
+            decompile(&original_compiled, network).expect("Manifest could not be decompiled");
         let recompiled = compile(&original_decompiled, network, blob_provider.clone())
             .expect("Decompiled manifest could not be recompiled");
         let recompiled_binary =
             manifest_encode(&recompiled).expect("Recompiled manifest could not be encoded");
 
-        let recompiled_decompiled = decompile(&recompiled.instructions, network)
-            .expect("Recompiled manifest could not be decompiled");
+        let recompiled_decompiled =
+            decompile(&recompiled, network).expect("Recompiled manifest could not be decompiled");
         let re_recompiled = compile(&recompiled_decompiled, network, blob_provider.clone())
             .expect("Decompiled recompiled manifest could not be re-recompiled");
         let re_recompiled_binary =
@@ -1646,7 +1646,7 @@ CALL_METHOD
         // Act
         let inverted_manifest = {
             let network = NetworkDefinition::simulator();
-            let decompiled = decompile(&manifest.instructions, &network).unwrap();
+            let decompiled = decompile(&manifest, &network).unwrap();
             compile(&decompiled, &network, BlobProvider::new()).unwrap()
         };
 
