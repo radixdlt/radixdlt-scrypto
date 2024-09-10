@@ -42,6 +42,12 @@ impl From<TransactionProcessorError> for RuntimeError {
     }
 }
 
+pub enum ResumeResult {
+    YieldToChild(usize),
+    YieldToParent,
+    Done,
+}
+
 pub struct TxnProcessorThread<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
     instructions: VecDeque<I>,
     worktop: Worktop,
@@ -106,21 +112,25 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
     pub fn resume<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         &mut self,
         api: &mut Y,
-    ) -> Result<Option<Yield>, RuntimeError> {
+    ) -> Result<ResumeResult, RuntimeError> {
         while let Some(instruction) = self.instructions.pop_front() {
             api.update_instruction_index(self.instruction_index)?;
             let (output, yield_instruction) =
                 instruction.execute(&mut self.worktop, &mut self.objects, api)?;
             self.outputs.push(output);
             self.instruction_index += 1;
-            if yield_instruction.is_some() {
-                return Ok(yield_instruction);
+            if let Some(yield_instruction) = yield_instruction {
+                let result = match yield_instruction {
+                    Yield::ToChild(child) => ResumeResult::YieldToChild(child),
+                    Yield::ToParent => ResumeResult::YieldToParent,
+                };
+                return Ok(result);
             }
         }
 
         self.worktop.drop(api)?;
 
-        Ok(None)
+        Ok(ResumeResult::Done)
     }
 }
 

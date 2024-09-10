@@ -1,5 +1,5 @@
 use crate::blueprints::transaction_processor::{
-    TxnProcessorThread, Yield, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+    ResumeResult, TxnProcessorThread, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
 };
 use crate::errors::{KernelError, RuntimeError};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -12,13 +12,16 @@ use radix_common::prelude::{BlueprintId, GlobalAddressReservation};
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
+use sbor::prelude::ToString;
 
-pub struct TxnThreads {
+/// Multi-thread transaction processor for executing multiple subintents
+pub struct MultiThreadedTxnProcessor {
     pub threads: Vec<(TxnProcessorThread<InstructionV2>, Vec<usize>)>,
 }
 
-impl TxnThreads {
+impl MultiThreadedTxnProcessor {
     pub fn init<Y: SystemBasedKernelApi>(
         executable: ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -29,7 +32,7 @@ impl TxnThreads {
         // Setup
         let intents = executable.intents();
         for (thread_id, intent) in intents.iter().enumerate() {
-            api.kernel_switch_thread(thread_id)?;
+            api.kernel_switch_stack(thread_id)?;
 
             let mut system_service = SystemService::new(api);
             let virtual_resources = intent
@@ -75,20 +78,20 @@ impl TxnThreads {
         let mut parent_stack = vec![];
 
         loop {
-            api.kernel_switch_thread(cur_thread)?;
+            api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
             let mut system_service = SystemService::new(api);
             match txn_thread.resume(&mut system_service)? {
-                Some(Yield::ToChild(child)) => {
+                ResumeResult::YieldToChild(child) => {
                     let child = *children_mapping.get(child).unwrap();
                     parent_stack.push(cur_thread);
                     cur_thread = child;
                 }
-                Some(Yield::ToParent) => {
+                ResumeResult::YieldToParent => {
                     cur_thread = parent_stack.pop().unwrap();
                 }
-                None => {
+                ResumeResult::Done => {
                     if let Some(parent) = parent_stack.pop() {
                         cur_thread = parent;
                     } else {
@@ -105,7 +108,7 @@ impl TxnThreads {
 
     pub fn cleanup<Y: SystemBasedKernelApi>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (thread_id, _intent) in self.threads.iter().enumerate() {
-            api.kernel_switch_thread(thread_id)?;
+            api.kernel_switch_stack(thread_id)?;
 
             let owned_nodes = api.kernel_get_owned_nodes()?;
             System::auto_drop(owned_nodes, api)?;

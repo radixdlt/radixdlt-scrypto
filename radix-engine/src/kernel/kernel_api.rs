@@ -171,14 +171,14 @@ pub trait KernelInvokeApi<C> {
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
-/// API for managing threads and their associated call frame stack
-pub trait KernelThreadApi {
+/// API for managing multiple call frame stacks
+pub trait KernelStackApi {
     type CallFrameData;
 
-    /// Context switches to a different thread
-    fn kernel_switch_thread(&mut self, id: usize) -> Result<(), RuntimeError>;
+    /// Achieves a context switch by switching the underlying callframe/stack
+    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError>;
 
-    /// Sets the call frame data for the current thread's call frame
+    /// Sets the call frame data for the current call frame
     fn kernel_set_call_frame_data(&mut self, data: Self::CallFrameData)
         -> Result<(), RuntimeError>;
 
@@ -227,7 +227,7 @@ pub trait KernelApi:
     KernelNodeApi
     + KernelSubstateApi<<Self::CallbackObject as KernelCallbackObject>::LockData>
     + KernelInvokeApi<<Self::CallbackObject as KernelCallbackObject>::CallFrameData>
-    + KernelThreadApi<CallFrameData = <Self::CallbackObject as KernelCallbackObject>::CallFrameData>
+    + KernelStackApi<CallFrameData = <Self::CallbackObject as KernelCallbackObject>::CallFrameData>
     + KernelInternalApi<System = Self::CallbackObject>
 {
     type CallbackObject: KernelCallbackObject;

@@ -1184,10 +1184,10 @@ where
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelThreadApi for Kernel<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for Kernel<'g, M, S> {
     type CallFrameData = M::CallFrameData;
 
-    fn kernel_switch_thread(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
         self.stacks.switch(id);
         Ok(())
     }
