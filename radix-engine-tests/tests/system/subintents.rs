@@ -16,13 +16,13 @@ fn simple_subintent_transaction_should_work() {
         {
             let manifest = ManifestV2Builder::new_v2()
                 .lock_standard_test_fee(account)
-                .yield_to_child(ManifestIntent(1), ())
+                .yield_to_child(ManifestIntent(0), ())
                 .build();
-            (manifest, ledger.next_transaction_nonce())
+            (manifest, ledger.next_transaction_nonce(), vec![1])
         },
         {
             let manifest = ManifestV2Builder::new_v2().build();
-            (manifest, ledger.next_transaction_nonce())
+            (manifest, ledger.next_transaction_nonce(), vec![])
         },
     ];
 

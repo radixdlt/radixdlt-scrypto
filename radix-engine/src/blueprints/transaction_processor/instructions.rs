@@ -13,15 +13,14 @@ use radix_native_sdk::resource::{
 use radix_native_sdk::runtime::LocalAuthZone;
 use radix_rust::prelude::*;
 use radix_transactions::data::transform;
-use radix_transactions::model::{InstructionV1, InstructionV2};
 use radix_transactions::manifest::*;
+use radix_transactions::model::{InstructionV1, InstructionV2};
 use radix_transactions::prelude::*;
 
 pub enum Yield {
     ToChild(usize),
     ToParent,
 }
-
 
 pub trait TxnInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(

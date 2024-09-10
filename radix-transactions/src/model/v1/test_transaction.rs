@@ -24,6 +24,7 @@ pub struct TestIntentV2 {
     pub instructions: InstructionsV2,
     pub blobs: BlobsV1,
     pub hash: Hash,
+    pub children_intent_indices: Vec<usize>,
 }
 
 #[derive(ManifestSbor)]
@@ -38,6 +39,7 @@ pub struct PreparedTestIntent {
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub hash: Hash,
+    pub children_intent_indices: Vec<usize>,
 }
 
 impl TestTransaction {
@@ -55,23 +57,30 @@ impl TestTransaction {
         })
     }
 
-    pub fn new_v2_from_nonce(intents: Vec<(TransactionManifestV2, u32)>) -> Self {
+    pub fn new_v2_from_nonce(intents: Vec<(TransactionManifestV2, u32, Vec<usize>)>) -> Self {
         let intents = intents
             .into_iter()
-            .map(|(manifest, nonce)| (manifest, hash(format!("Test transaction: {}", nonce))))
+            .map(|(manifest, nonce, children_intent_indices)| {
+                (
+                    manifest,
+                    hash(format!("Test transaction: {}", nonce)),
+                    children_intent_indices,
+                )
+            })
             .collect();
         Self::new_v2(intents)
     }
 
-    pub fn new_v2(intents: Vec<(TransactionManifestV2, Hash)>) -> Self {
+    pub fn new_v2(intents: Vec<(TransactionManifestV2, Hash, Vec<usize>)>) -> Self {
         let intents = intents
             .into_iter()
-            .map(|(manifest, hash)| {
+            .map(|(manifest, hash, children_intent_indices)| {
                 let (instructions, blobs, ..) = manifest.for_intent();
                 TestIntentV2 {
                     instructions,
                     blobs,
                     hash,
+                    children_intent_indices,
                 }
             })
             .collect();
@@ -89,6 +98,7 @@ impl TestTransaction {
                     references: prepared_instructions.references,
                     blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                     hash: intent.hash,
+                    children_intent_indices: vec![],
                 }))
             }
             Self::V2(intents) => {
@@ -102,6 +112,7 @@ impl TestTransaction {
                         references: prepared_instructions.references.deref().clone(),
                         blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                         hash: intent.hash,
+                        children_intent_indices: intent.children_intent_indices,
                     });
                 }
 
@@ -174,6 +185,7 @@ impl PreparedTestTransaction {
                 let intents = intents
                     .iter()
                     .map(|intent| {
+                        // TODO
                         let auth_zone_init = root_auth_zone
                             .take()
                             .unwrap_or(AuthZoneInit::proofs(Default::default()));
@@ -183,7 +195,7 @@ impl PreparedTestTransaction {
                             auth_zone_init,
                             references: intent.references.clone(),
                             blobs: intent.blobs.clone(),
-                            children_intent_indices: vec![],
+                            children_intent_indices: intent.children_intent_indices.clone(),
                         }
                     })
                     .collect();

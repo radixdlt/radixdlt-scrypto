@@ -19,7 +19,7 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
             let manifest = ManifestV2Builder::new_v2()
                 .lock_standard_test_fee(account)
                 .build();
-            (manifest, ledger.next_transaction_nonce())
+            (manifest, ledger.next_transaction_nonce(), vec![])
         })
         .collect();
     let receipt = ledger.execute_transaction(

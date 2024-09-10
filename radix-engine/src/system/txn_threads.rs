@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 
 pub struct TxnThreads {
-    pub threads: Vec<TxnProcessorThread<InstructionV2>>,
+    pub threads: Vec<(TxnProcessorThread<InstructionV2>, Vec<usize>)>,
 }
 
 impl TxnThreads {
@@ -62,7 +62,8 @@ impl TxnThreads {
                 MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
                 &mut system_service,
             )?;
-            txn_processors.push(txn_processor);
+
+            txn_processors.push((txn_processor, intent.children_intent_indices.clone()));
         }
         Ok(Self {
             threads: txn_processors,
@@ -75,11 +76,12 @@ impl TxnThreads {
 
         loop {
             api.kernel_switch_thread(cur_thread)?;
-            let txn_thread = self.threads.get_mut(cur_thread).unwrap();
+            let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
             let mut system_service = SystemService::new(api);
             match txn_thread.resume(&mut system_service)? {
                 Some(Yield::ToChild(child)) => {
+                    let child = *children_mapping.get(child).unwrap();
                     parent_stack.push(cur_thread);
                     cur_thread = child;
                 }
