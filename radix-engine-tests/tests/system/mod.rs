@@ -51,6 +51,7 @@ mod royalty_auth;
 mod royalty_edge_cases;
 mod schema_sanity_check;
 mod subintent_auth;
+mod subintent_leaks;
 mod subintent_txn_shape;
 mod system;
 mod system_access_rule;
