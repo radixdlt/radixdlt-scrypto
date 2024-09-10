@@ -69,7 +69,7 @@ pub fn run() -> Result<(), String> {
         }
     }
 
-    let transaction =
+    let manifest =
         compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
             compile_error_diagnostics(
                 &content,
@@ -78,11 +78,11 @@ pub fn run() -> Result<(), String> {
             )
         })?;
 
-    validate_call_arguments_to_native_components(&transaction.instructions)
+    validate_call_arguments_to_native_components(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(
         args.output,
-        manifest_encode(&transaction).map_err(Error::EncodeError)?,
+        manifest_encode(&manifest).map_err(Error::EncodeError)?,
     )
     .map_err(Error::IoError)?;
 

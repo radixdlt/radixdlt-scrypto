@@ -13,13 +13,15 @@ use radix_native_sdk::resource::{
 use radix_native_sdk::runtime::LocalAuthZone;
 use radix_rust::prelude::*;
 use radix_transactions::data::transform;
-use radix_transactions::model::manifest_instruction::*;
 use radix_transactions::model::{InstructionV1, InstructionV2};
+use radix_transactions::manifest::*;
+use radix_transactions::prelude::*;
 
 pub enum Yield {
     ToChild(usize),
     ToParent,
 }
+
 
 pub trait TxnInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
@@ -92,6 +94,7 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContains(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopIsEmpty(_) => todo!(),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
@@ -119,6 +122,7 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::DropNamedProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::DropAllProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
+            InstructionV2::VerifyParent(_) => todo!(),
             InstructionV2::YieldToChild(i) => {
                 return Ok((
                     InstructionOutput::None,
@@ -128,7 +132,6 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::YieldToParent(_) => {
                 return Ok((InstructionOutput::None, Some(Yield::ToParent)));
             }
-            InstructionV2::AuthenticateParent(_) => todo!(),
         }?;
 
         Ok((output, None))

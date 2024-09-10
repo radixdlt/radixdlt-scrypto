@@ -9,7 +9,6 @@ mod test {
     use radix_engine::{updates::*, utils::*, vm::*};
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
     use radix_substate_store_interface::interface::SubstateDatabase;
-    use radix_transactions::manifest::decompiler::decompile_with_known_naming;
     use radix_transactions::manifest::*;
     use std::path::*;
 
@@ -66,9 +65,11 @@ mod test {
                         transaction, ..
                     } => {
                         // Write manifest
-                        let manifest_string =
-                            decompile(&transaction.instructions.0, &self.network_definition)
-                                .unwrap();
+                        let manifest_string = decompile(
+                            &SystemTransactionManifestV1::from_transaction(transaction),
+                            &self.network_definition,
+                        )
+                        .unwrap();
                         self.manifests_folder
                             .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
                     }
@@ -226,12 +227,7 @@ mod test {
 
             // Write manifest
             // NB: We purposefully don't write the blobs as they're contained in the raw transactions
-            let manifest_string = decompile_with_known_naming(
-                &transaction.manifest.instructions,
-                network_definition,
-                transaction.naming.clone(),
-            )
-            .unwrap();
+            let manifest_string = decompile(&transaction.manifest, network_definition).unwrap();
             // Whilst we're here, let's validate that the manifest can be recompiled
             compile(
                 &manifest_string,

@@ -1,10 +1,16 @@
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "FungibleResourceManager"
+    AddressReservation("reservation1")
+    Address("resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w")
+;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6")
     "ingest_data_chunk"
     Enum<2u8>(
         Array<Tuple>(
             Tuple(
-                AddressReservation(0u32),
+                AddressReservation("reservation1"),
                 Array<Tuple>(
                     Tuple(
                         "symbol",

@@ -135,7 +135,6 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                             },
                         )
                         .build(),
-                    Default::default(),
                     vec![
                         &config.primary_role_private_key,
                         &config.recovery_role_private_key,

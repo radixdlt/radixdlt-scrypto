@@ -1,6 +1,7 @@
 use crate::data::transform;
 use crate::data::TransformHandler;
 use crate::errors::*;
+use crate::model::ManifestIntent;
 use crate::validation::*;
 use radix_common::data::manifest::model::*;
 use radix_common::data::manifest::*;
@@ -27,7 +28,9 @@ pub struct ManifestValidator {
     /// Set of active allocated global address reservation ids
     address_reservation_ids: IndexSet<ManifestAddressReservation>,
     /// Set of named global address ids
-    address_ids: IndexSet<u32>,
+    address_ids: IndexSet<ManifestNamedAddress>,
+    /// Set of named intent hashes
+    intent_ids: IndexSet<ManifestIntent>,
 }
 
 impl ManifestValidator {
@@ -146,7 +149,7 @@ impl ManifestValidator {
         }
     }
 
-    pub fn new_named_address(&mut self) -> u32 {
+    pub fn new_named_address(&mut self) -> ManifestNamedAddress {
         let address_id = self.id_allocator.new_address_id();
         self.address_ids.insert(address_id.clone());
         address_id
@@ -154,7 +157,7 @@ impl ManifestValidator {
 
     pub fn check_named_address(
         &mut self,
-        address_id: &u32,
+        address_id: &ManifestNamedAddress,
     ) -> Result<(), ManifestIdValidationError> {
         if self.address_ids.contains(address_id) {
             Ok(())
@@ -163,6 +166,12 @@ impl ManifestValidator {
                 address_id.clone(),
             ))
         }
+    }
+
+    pub fn new_intent(&mut self) -> ManifestIntent {
+        let intent_id = self.id_allocator.new_intent_id();
+        self.intent_ids.insert(intent_id.clone());
+        intent_id
     }
 
     pub fn process_call_data(
@@ -192,7 +201,10 @@ impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))
     }
 
-    fn replace_named_address(&mut self, a: u32) -> Result<Reference, ManifestIdValidationError> {
+    fn replace_named_address(
+        &mut self,
+        a: ManifestNamedAddress,
+    ) -> Result<Reference, ManifestIdValidationError> {
         self.check_named_address(&a)?;
         Ok(Reference(NodeId([0u8; NodeId::LENGTH])))
     }

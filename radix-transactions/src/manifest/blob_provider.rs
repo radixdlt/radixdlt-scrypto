@@ -31,6 +31,10 @@ impl BlobProvider {
     pub fn new_with_blobs(blobs: Vec<Blob>) -> Self {
         Self(blobs.into_iter().map(|blob| (hash(&blob), blob)).collect())
     }
+
+    pub fn new_with_prehashed_blobs(blobs: IndexMap<BlobReference, Blob>) -> Self {
+        Self(blobs)
+    }
 }
 
 impl IsBlobProvider for BlobProvider {

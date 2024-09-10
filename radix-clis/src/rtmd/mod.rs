@@ -1,13 +1,11 @@
 use clap::Parser;
-use radix_common::crypto::hash;
 use radix_common::data::manifest::manifest_decode;
 use radix_common::prelude::*;
-use radix_engine::utils::validate_call_arguments_to_native_components;
-use radix_transactions::manifest::{decompile, DecompileError};
+use radix_engine::utils::*;
+use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 use std::fmt;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::str::FromStr;
 
 /// Radix transaction manifest decompiler
@@ -62,53 +60,51 @@ pub fn run() -> Result<(), String> {
         None => NetworkDefinition::simulator(),
     };
 
-    let (manifest_instructions, blobs) = match manifest_decode::<TransactionManifestV1>(&content)
+    let manifest = match manifest_decode::<TransactionManifestV1>(&content)
         .map_err(Error::DecodeError)
     {
-        Ok(manifest) => {
-            let blobs: Vec<Vec<u8>> = manifest
-                .blobs
-                .values()
-                .into_iter()
-                .map(|item| item.to_owned())
-                .collect();
-            (manifest.instructions, blobs)
-        }
+        Ok(manifest) => AnyTransactionManifest::V1(manifest),
         Err(e) => {
             // try to decode versioned transaction
             match manifest_decode::<VersionedTransactionPayload>(&content) {
-                Ok(manifest) => {
-                    let (manifest_instructions, blobs) = match manifest {
-                        VersionedTransactionPayload::TransactionIntentV1(IntentV1 {
-                            instructions,
-                            blobs,
-                            ..
-                        }) => (instructions.0, blobs.blobs),
-                        VersionedTransactionPayload::SignedTransactionIntentV1(
-                            SignedIntentV1 { intent, .. },
-                        ) => (intent.instructions.0, intent.blobs.blobs),
-                        VersionedTransactionPayload::NotarizedTransactionV1(
-                            NotarizedTransactionV1 { signed_intent, .. },
-                        ) => (
-                            signed_intent.intent.instructions.0,
-                            signed_intent.intent.blobs.blobs,
-                        ),
-                        VersionedTransactionPayload::SystemTransactionV1(SystemTransactionV1 {
-                            instructions,
-                            blobs,
-                            ..
-                        }) => (instructions.0, blobs.blobs),
-                        other_type => {
-                            return Err(format!(
-                                "Transaction type with discriminator {} not currently supported",
-                                other_type.get_discriminator()
-                            ))
-                        }
-                    };
-
-                    let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();
-                    (Rc::try_unwrap(manifest_instructions).unwrap(), blobs)
-                }
+                Ok(manifest) => match manifest {
+                    VersionedTransactionPayload::TransactionIntentV1(intent) => {
+                        TransactionManifestV1::from_intent(&intent).into()
+                    }
+                    VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent) => {
+                        TransactionManifestV1::from_intent(&signed_intent.intent).into()
+                    }
+                    VersionedTransactionPayload::NotarizedTransactionV1(notarized) => {
+                        TransactionManifestV1::from_intent(&notarized.signed_intent.intent).into()
+                    }
+                    VersionedTransactionPayload::SystemTransactionV1(system_transaction) => {
+                        SystemTransactionManifestV1::from_transaction(&system_transaction).into()
+                    }
+                    VersionedTransactionPayload::TransactionIntentV2(intent) => {
+                        TransactionManifestV2::from_intent(&intent.root_intent_core).into()
+                    }
+                    VersionedTransactionPayload::SignedTransactionIntentV2(signed_intent) => {
+                        TransactionManifestV2::from_intent(
+                            &signed_intent.root_intent.root_intent_core,
+                        )
+                        .into()
+                    }
+                    VersionedTransactionPayload::NotarizedTransactionV2(notarized) => {
+                        TransactionManifestV2::from_intent(
+                            &notarized.signed_intent.root_intent.root_intent_core,
+                        )
+                        .into()
+                    }
+                    VersionedTransactionPayload::SubintentV2(subintent) => {
+                        TransactionManifestV2::from_intent(&subintent.intent_core).into()
+                    }
+                    other_type => {
+                        return Err(format!(
+                            "Transaction type with discriminator {} not currently supported",
+                            other_type.get_discriminator()
+                        ))
+                    }
+                },
                 Err(_) => {
                     // return original error
                     return Err(e.into());
@@ -117,17 +113,16 @@ pub fn run() -> Result<(), String> {
         }
     };
 
-    validate_call_arguments_to_native_components(&manifest_instructions)
+    validate_call_arguments_to_native_components_any(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;
 
-    let result = decompile(&manifest_instructions, &network).map_err(Error::DecompileError)?;
-    std::fs::write(&args.output, &result).map_err(Error::IoError)?;
+    let decompiled = decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
+    std::fs::write(&args.output, &decompiled).map_err(Error::IoError)?;
 
     if args.export_blobs {
         let directory = args.output.parent().unwrap();
-        for blob in blobs {
-            let blob_hash = hash(&blob);
-            std::fs::write(directory.join(format!("{}.blob", blob_hash)), &blob)
+        for (blob_hash, content) in manifest.get_blobs() {
+            std::fs::write(directory.join(format!("{}.blob", blob_hash)), &content)
                 .map_err(Error::IoError)?;
         }
     }

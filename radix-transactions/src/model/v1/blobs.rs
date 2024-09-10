@@ -13,6 +13,28 @@ pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,
 }
 
+impl From<IndexMap<Hash, Vec<u8>>> for BlobsV1 {
+    fn from(blobs: IndexMap<Hash, Vec<u8>>) -> Self {
+        let blobs = blobs
+            .into_values()
+            .into_iter()
+            .map(|blob| BlobV1(blob))
+            .collect();
+        Self { blobs }
+    }
+}
+
+impl From<BlobsV1> for IndexMap<Hash, Vec<u8>> {
+    fn from(value: BlobsV1) -> Self {
+        let mut blobs = IndexMap::default();
+        for blob in value.blobs {
+            let content = blob.0;
+            blobs.insert(hash(&content), content);
+        }
+        blobs
+    }
+}
+
 impl TransactionPartialPrepare for BlobsV1 {
     type Prepared = PreparedBlobsV1;
 }

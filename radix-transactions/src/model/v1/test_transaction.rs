@@ -4,6 +4,7 @@ use radix_common::crypto::hash;
 use radix_common::data::manifest::*;
 use radix_common::types::NonFungibleGlobalId;
 use std::collections::BTreeSet;
+use std::ops::Deref;
 
 #[derive(ManifestSbor)]
 pub enum TestTransaction {
@@ -98,7 +99,7 @@ impl TestTransaction {
                         encoded_instructions: Rc::new(manifest_encode(
                             &prepared_instructions.inner.0,
                         )?),
-                        references: prepared_instructions.references,
+                        references: prepared_instructions.references.deref().clone(),
                         blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                         hash: intent.hash,
                     });

@@ -367,10 +367,10 @@ mod tests {
         let expected_intent_core_hash = hash(
             [
                 expected_header_hash.as_slice(),
-                expected_instructions_hash.as_slice(),
                 expected_blobs_hash.as_slice(),
                 expected_message_hash.as_slice(),
                 expected_constraints_hash.as_slice(),
+                expected_instructions_hash.as_slice(),
             ]
             .concat(),
         );
@@ -391,7 +391,7 @@ mod tests {
         assert_eq!(expected_subintent_hash, actual_subintent_hash);
         assert_eq!(
             expected_subintent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
-            "subtxid_sim1qv2w94k2nhsx9k0ev7yqur0c7e2q60jrxw0g078dtv7dsngt2fxsm5q9ew",
+            "subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu",
         );
 
         (subintent, actual_subintent_hash)

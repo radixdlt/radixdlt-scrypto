@@ -30,5 +30,4 @@ pub(crate) mod internal_prelude {
     pub use crate::errors::*;
     pub use crate::manifest::*;
     pub use crate::validation::*;
-    pub(crate) use manifest_instruction::*;
 }

@@ -18,8 +18,29 @@ pub enum ManifestAddress {
     /// TODO: prevent direct construction, as in `NonFungibleLocalId`
     Static(NodeId),
     /// Named address, global only at the moment.
-    Named(u32),
+    Named(ManifestNamedAddress),
 }
+
+impl ManifestAddress {
+    pub fn named(id: u32) -> Self {
+        Self::Named(ManifestNamedAddress(id))
+    }
+
+    pub fn into_named(self) -> Option<ManifestNamedAddress> {
+        match self {
+            ManifestAddress::Static(_) => None,
+            ManifestAddress::Named(named) => Some(named),
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
+#[sbor(
+    as_type = "ManifestAddress",
+    as_ref = "&ManifestAddress::Named(*self)",
+    from_value = "value.into_named().ok_or(DecodeError::InvalidCustomValue)?"
+)]
+pub struct ManifestNamedAddress(pub u32);
 
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_STATIC: u8 = 0u8;
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_NAMED: u8 = 1u8;
@@ -50,7 +71,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E> for
             }
             Self::Named(address_id) => {
                 encoder.write_discriminator(MANIFEST_ADDRESS_DISCRIMINATOR_NAMED)?;
-                encoder.write_slice(&address_id.to_le_bytes())?;
+                encoder.write_slice(&address_id.0.to_le_bytes())?;
             }
         }
         Ok(())
@@ -74,7 +95,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D> for
             MANIFEST_ADDRESS_DISCRIMINATOR_NAMED => {
                 let slice = decoder.read_slice(4)?;
                 let id = u32::from_le_bytes(slice.try_into().unwrap());
-                Ok(Self::Named(id))
+                Ok(Self::Named(ManifestNamedAddress(id)))
             }
             _ => Err(DecodeError::InvalidCustomValue),
         }
@@ -91,18 +112,27 @@ impl fmt::Debug for ManifestAddress {
             ManifestAddress::Static(node_id) => {
                 write!(f, "Address({})", hex::encode(node_id.as_bytes()))
             }
-            ManifestAddress::Named(name) => write!(f, "NamedAddress({})", name),
+            ManifestAddress::Named(name) => write!(f, "{name:?}"),
         }
+    }
+}
+
+impl fmt::Debug for ManifestNamedAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "NamedAddress({})", self.0)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
     #[cfg(feature = "alloc")]
     use sbor::prelude::Vec;
 
-    fn prepare(addr_input: &ManifestAddress) -> Result<ManifestAddress, sbor::DecodeError> {
+    fn prepare_address(
+        addr_input: &(impl ManifestEncode + Debug),
+    ) -> Result<ManifestAddress, sbor::DecodeError> {
         #[cfg(not(feature = "alloc"))]
         println!("Encoding manifest address: {:?}", addr_input);
         let mut buf = Vec::new();
@@ -116,17 +146,20 @@ mod tests {
     fn manifest_address_decode_static_success() {
         let node_id = NodeId::new(EntityType::GlobalPackage as u8, &[0; NodeId::RID_LENGTH]);
         let addr_input = ManifestAddress::Static(node_id);
-        let addr_output = prepare(&addr_input);
+        let addr_output = prepare_address(&addr_input);
         assert!(addr_output.is_ok());
         assert_eq!(addr_input, addr_output.unwrap());
     }
 
     #[test]
     fn manifest_address_decode_named_success() {
-        let addr_input = ManifestAddress::Named(1);
-        let addr_output = prepare(&addr_input);
+        let addr_input = ManifestAddress::named(1);
+        let addr_input2 = ManifestNamedAddress(1);
+        let addr_output = prepare_address(&addr_input);
+        let addr_output2 = prepare_address(&addr_input2);
         assert!(addr_output.is_ok());
         assert_eq!(addr_input, addr_output.unwrap());
+        assert_eq!(addr_input, addr_output2.unwrap());
     }
 
     #[test]
@@ -134,7 +167,7 @@ mod tests {
         // use invalid entity type (0) to an generate error
         let node_id = NodeId::new(0, &[0; NodeId::RID_LENGTH]);
         let addr_input = ManifestAddress::Static(node_id);
-        let addr_output = prepare(&addr_input);
+        let addr_output = prepare_address(&addr_input);
         assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
     }
 
