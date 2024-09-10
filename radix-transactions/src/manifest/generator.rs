@@ -2152,7 +2152,7 @@ pub fn generator_error_diagnostics(
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::ManifestBuildError(
-            ManifestBuildError::ChildSubintentsUnsupportedByManifestByManifestType,
+            ManifestBuildError::ChildSubintentsUnsupportedByManifestType,
         ) => {
             let title = format!("child subintents are not supported in this manifest version");
             (title, "unsupported instruction".to_string())

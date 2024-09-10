@@ -5,7 +5,7 @@ pub trait BuildableManifest: ReadableManifest + ManifestEncode + Default + Eq + 
     fn add_blob(&mut self, hash: Hash, content: Vec<u8>);
     fn set_names(&mut self, names: KnownManifestObjectNames);
     fn add_child_subintent(&mut self, _hash: SubintentHash) -> Result<(), ManifestBuildError> {
-        Err(ManifestBuildError::ChildSubintentsUnsupportedByManifestByManifestType)
+        Err(ManifestBuildError::ChildSubintentsUnsupportedByManifestType)
     }
     fn add_preallocated_address(
         &mut self,
@@ -20,12 +20,12 @@ pub trait BuildableManifest: ReadableManifest + ManifestEncode + Default + Eq + 
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ManifestBuildError {
-    ChildSubintentsUnsupportedByManifestByManifestType,
+    ChildSubintentsUnsupportedByManifestType,
     PreallocatedAddressesUnsupportedByManifestType,
 }
 
 /// A trait indicating the manifest supports children.
-/// In that case, it's expected `add_child_subintent`` does not error.
+/// In that case, it's expected `add_child_subintent` does not error.
 pub trait BuildableManifestSupportingChildren: BuildableManifest {}
 
 /// A trait indicating the manifest supports children.
