@@ -39,14 +39,20 @@ fn test_subintent_txn_shape(children: Vec<Vec<usize>>) {
 
         let manifest = builder.build();
 
-        intents.push((manifest, ledger.next_transaction_nonce(), intent_children))
+        let signatures = btreeset![NonFungibleGlobalId::from_public_key(&public_key)];
+        intents.push((
+            manifest,
+            ledger.next_transaction_nonce(),
+            intent_children,
+            signatures,
+        ))
     }
 
     let receipt = ledger.execute_transaction(
         TestTransaction::new_v2_from_nonce(intents)
             .prepare()
             .expect("expected transaction to be preparable")
-            .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+            .get_executable(),
         ExecutionConfig::for_test_transaction(),
     );
 

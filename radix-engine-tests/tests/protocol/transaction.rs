@@ -19,14 +19,19 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
             let manifest = ManifestV2Builder::new_v2()
                 .lock_standard_test_fee(account)
                 .build();
-            (manifest, ledger.next_transaction_nonce(), vec![])
+            (
+                manifest,
+                ledger.next_transaction_nonce(),
+                vec![],
+                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+            )
         })
         .collect();
     let receipt = ledger.execute_transaction(
         TestTransaction::new_v2_from_nonce(intents)
             .prepare()
             .expect("expected transaction to be preparable")
-            .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+            .get_executable(),
         ExecutionConfig::for_test_transaction(),
     );
 

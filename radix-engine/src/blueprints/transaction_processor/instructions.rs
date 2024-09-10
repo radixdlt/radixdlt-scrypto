@@ -15,7 +15,6 @@ use radix_rust::prelude::*;
 use radix_transactions::data::transform;
 use radix_transactions::manifest::*;
 use radix_transactions::model::{InstructionV1, InstructionV2};
-use radix_transactions::prelude::*;
 
 pub enum Yield {
     ToChild(usize),

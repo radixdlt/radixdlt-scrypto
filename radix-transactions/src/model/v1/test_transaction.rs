@@ -17,6 +17,7 @@ pub struct TestIntentV1 {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
     pub hash: Hash,
+    pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
 #[derive(ManifestSbor)]
@@ -24,6 +25,7 @@ pub struct TestIntentV2 {
     pub instructions: InstructionsV2,
     pub blobs: BlobsV1,
     pub hash: Hash,
+    pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
     pub children_intent_indices: Vec<usize>,
 }
 
@@ -40,49 +42,83 @@ pub struct PreparedTestIntent {
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub hash: Hash,
     pub children_intent_indices: Vec<usize>,
+    pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
 impl TestTransaction {
     /// The nonce needs to be globally unique amongst test transactions on your ledger
-    pub fn new_v1_from_nonce(manifest: TransactionManifestV1, nonce: u32) -> Self {
-        Self::new_v1(manifest, hash(format!("Test transaction: {}", nonce)))
+    pub fn new_v1_from_nonce(
+        manifest: TransactionManifestV1,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> Self {
+        Self::new_v1(
+            manifest,
+            hash(format!("Test transaction: {}", nonce)),
+            initial_proofs,
+        )
     }
 
-    pub fn new_v1(manifest: TransactionManifestV1, hash: Hash) -> Self {
+    pub fn new_v1(
+        manifest: TransactionManifestV1,
+        hash: Hash,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> Self {
         let (instructions, blobs) = manifest.for_intent();
         Self::V1(TestIntentV1 {
             instructions,
             blobs,
             hash,
+            initial_proofs,
         })
     }
 
-    pub fn new_v2_from_nonce(intents: Vec<(TransactionManifestV2, u32, Vec<usize>)>) -> Self {
+    pub fn new_v2_from_nonce(
+        intents: Vec<(
+            TransactionManifestV2,
+            u32,
+            Vec<usize>,
+            BTreeSet<NonFungibleGlobalId>,
+        )>,
+    ) -> Self {
         let intents = intents
             .into_iter()
-            .map(|(manifest, nonce, children_intent_indices)| {
-                (
-                    manifest,
-                    hash(format!("Test transaction: {}", nonce)),
-                    children_intent_indices,
-                )
-            })
+            .map(
+                |(manifest, nonce, children_intent_indices, initial_proofs)| {
+                    (
+                        manifest,
+                        hash(format!("Test transaction: {}", nonce)),
+                        children_intent_indices,
+                        initial_proofs,
+                    )
+                },
+            )
             .collect();
         Self::new_v2(intents)
     }
 
-    pub fn new_v2(intents: Vec<(TransactionManifestV2, Hash, Vec<usize>)>) -> Self {
+    pub fn new_v2(
+        intents: Vec<(
+            TransactionManifestV2,
+            Hash,
+            Vec<usize>,
+            BTreeSet<NonFungibleGlobalId>,
+        )>,
+    ) -> Self {
         let intents = intents
             .into_iter()
-            .map(|(manifest, hash, children_intent_indices)| {
-                let (instructions, blobs, ..) = manifest.for_intent();
-                TestIntentV2 {
-                    instructions,
-                    blobs,
-                    hash,
-                    children_intent_indices,
-                }
-            })
+            .map(
+                |(manifest, hash, children_intent_indices, initial_proofs)| {
+                    let (instructions, blobs, ..) = manifest.for_intent();
+                    TestIntentV2 {
+                        instructions,
+                        blobs,
+                        hash,
+                        children_intent_indices,
+                        initial_proofs,
+                    }
+                },
+            )
             .collect();
 
         Self::V2(intents)
@@ -99,6 +135,7 @@ impl TestTransaction {
                     blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                     hash: intent.hash,
                     children_intent_indices: vec![],
+                    initial_proofs: intent.initial_proofs,
                 }))
             }
             Self::V2(intents) => {
@@ -113,6 +150,7 @@ impl TestTransaction {
                         blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
                         hash: intent.hash,
                         children_intent_indices: intent.children_intent_indices,
+                        initial_proofs: intent.initial_proofs,
                     });
                 }
 
@@ -123,16 +161,13 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(
-        &self,
-        initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> ExecutableTransaction {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         match self {
             PreparedTestTransaction::V1(intent) => {
-                let num_of_signature_validations = initial_proofs.len() + 1;
+                let num_of_signature_validations = intent.initial_proofs.len() + 1;
                 ExecutableTransaction::new_v1(
                     intent.encoded_instructions.clone(),
-                    AuthZoneInit::proofs(initial_proofs),
+                    AuthZoneInit::proofs(intent.initial_proofs.clone()),
                     intent.references.clone(),
                     intent.blobs.clone(),
                     ExecutionContext {
@@ -163,7 +198,11 @@ impl PreparedTestTransaction {
                             + intent.blobs.values().map(|x| x.len()).sum::<usize>()
                     })
                     .sum();
-                let num_of_signature_validations = initial_proofs.len() + 1;
+                let num_of_signature_validations = intents
+                    .iter()
+                    .map(|intent| intent.initial_proofs.len())
+                    .sum();
+
                 let context = ExecutionContext {
                     unique_hash: intents.get(0).unwrap().hash,
                     intent_hash_nullifications: vec![],
@@ -181,14 +220,10 @@ impl PreparedTestTransaction {
                     start_timestamp_inclusive: None,
                     end_timestamp_exclusive: None,
                 };
-                let mut root_auth_zone = Some(AuthZoneInit::proofs(initial_proofs));
                 let intents = intents
                     .iter()
                     .map(|intent| {
-                        // TODO
-                        let auth_zone_init = root_auth_zone
-                            .take()
-                            .unwrap_or(AuthZoneInit::proofs(Default::default()));
+                        let auth_zone_init = AuthZoneInit::proofs(intent.initial_proofs.clone());
 
                         ExecutableIntent {
                             encoded_instructions: intent.encoded_instructions.clone(),

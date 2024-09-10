@@ -51,6 +51,7 @@ mod royalty_auth;
 mod royalty_edge_cases;
 mod schema_sanity_check;
 
+mod subintent_auth;
 mod subintent_txn_shape;
 mod system;
 mod system_access_rule;
@@ -75,4 +76,3 @@ mod vault;
 mod vault_burn;
 mod vault_freeze;
 mod worktop;
-mod subintent_auth;
