@@ -23,8 +23,10 @@ impl ChildSubintent {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let subintent_id = self.hash.to_string(context.transaction_hash_encoder());
+        let new_named_intent = context.new_named_intent();
+        let intent_name = context.object_names.intent_name(new_named_intent);
         let instruction = DecompiledInstruction::new("USE_CHILD")
-            .add_argument(context.new_address_reservation())
+            .add_raw_argument(format!("NamedIntent(\"{intent_name}\")"))
             .add_raw_argument(format!("Intent(\"{subintent_id}\")"));
         Ok(instruction)
     }
@@ -32,9 +34,33 @@ impl ChildSubintent {
 
 /// A new-type representing the index of a referenced intent.
 /// The first few of these will be the children of the given intent.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, ManifestSbor, ScryptoDescribe)]
+///
+/// This is referenced in the manifest as `NamedIntent`, like `NamedAddress`.
+/// A static intent address is created as e.g. `Intent("subtxid_...")`, like `Address`.
+///
+/// IMPORTANT: Unlike `Address` and similar, this is NOT its own SBOR manifest value
+/// - because versioning Manifest SBOR was seen as too much work for Cuttlefish.
+/// Instead, we use a ManifestNamedIntentAsU32 in some places.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct ManifestNamedIntent(pub u32);
+
+/// This exists as an unideal serialization target for [`ManifestNamedIntent`],
+/// due to our inability to add a new ManifestCustomValue for the Cuttlefish update.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, ScryptoDescribe, ManifestSbor)]
 #[sbor(transparent)]
-pub struct ManifestIntent(pub u32);
+pub struct ManifestNamedIntentAsU32(pub u32);
+
+impl From<ManifestNamedIntentAsU32> for ManifestNamedIntent {
+    fn from(value: ManifestNamedIntentAsU32) -> Self {
+        Self(value.0)
+    }
+}
+
+impl From<ManifestNamedIntent> for ManifestNamedIntentAsU32 {
+    fn from(value: ManifestNamedIntent) -> Self {
+        Self(value.0)
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedChildIntentsV2 {

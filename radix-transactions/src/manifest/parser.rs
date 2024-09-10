@@ -1,10 +1,10 @@
-use crate::manifest::ast::{
-    Instruction, InstructionWithSpan, Value, ValueKind, ValueKindWithSpan, ValueWithSpan,
-};
+use crate::manifest::ast::ValueKind;
+use crate::manifest::ast::*;
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
+use crate::manifest::*;
 use radix_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::prelude::*;
 
@@ -66,6 +66,12 @@ impl fmt::Display for TokenType {
 
 pub enum InstructionIdent {
     // ==============
+    // Pseudo-instructions
+    // ==============
+    UsePreallocatedAddress,
+    UseChild,
+
+    // ==============
     // Standard instructions
     // ==============
     TakeFromWorktop,
@@ -75,6 +81,7 @@ pub enum InstructionIdent {
     AssertWorktopContains,
     AssertWorktopContainsNonFungibles,
     AssertWorktopContainsAny,
+    AssertWorktopIsEmpty,
 
     PopFromAuthZone,
     PushToAuthZone,
@@ -144,57 +151,75 @@ pub enum InstructionIdent {
     MintNonFungible,
     MintRuidNonFungible,
     CreateValidator,
+
+    // ==============
+    // Subintents
+    // ==============
+    YieldToParent,
+    YieldToChild,
+    VerifyParent,
 }
 
 impl InstructionIdent {
     pub fn from_ident(ident: &str) -> Option<Self> {
         let value = match ident {
             // ==============
+            // Pseudo-instructions
+            // ==============
+            "USE_CHILD" => InstructionIdent::UseChild,
+            "USE_PREALLOCATED_ADDRESS" => InstructionIdent::UsePreallocatedAddress,
+
+            // ==============
             // Standard instructions
             // ==============
-            "TAKE_FROM_WORKTOP" => InstructionIdent::TakeFromWorktop,
-            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => InstructionIdent::TakeNonFungiblesFromWorktop,
-            "TAKE_ALL_FROM_WORKTOP" => InstructionIdent::TakeAllFromWorktop,
-            "RETURN_TO_WORKTOP" => InstructionIdent::ReturnToWorktop,
-            "ASSERT_WORKTOP_CONTAINS" => InstructionIdent::AssertWorktopContains,
-            "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
+            TakeFromWorktop::IDENT => InstructionIdent::TakeFromWorktop,
+            TakeNonFungiblesFromWorktop::IDENT => InstructionIdent::TakeNonFungiblesFromWorktop,
+            TakeAllFromWorktop::IDENT => InstructionIdent::TakeAllFromWorktop,
+            ReturnToWorktop::IDENT => InstructionIdent::ReturnToWorktop,
+            AssertWorktopContains::IDENT => InstructionIdent::AssertWorktopContains,
+            AssertWorktopContainsNonFungibles::IDENT => {
                 InstructionIdent::AssertWorktopContainsNonFungibles
             }
-            "ASSERT_WORKTOP_CONTAINS_ANY" => InstructionIdent::AssertWorktopContainsAny,
+            AssertWorktopContainsAny::IDENT => InstructionIdent::AssertWorktopContainsAny,
+            AssertWorktopIsEmpty::IDENT => InstructionIdent::AssertWorktopIsEmpty,
 
-            "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
-            "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
+            PopFromAuthZone::IDENT => InstructionIdent::PopFromAuthZone,
+            PushToAuthZone::IDENT => InstructionIdent::PushToAuthZone,
+            CreateProofFromAuthZoneOfAmount::IDENT => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES" => {
+            CreateProofFromAuthZoneOfNonFungibles::IDENT => {
                 InstructionIdent::CreateProofFromAuthZoneOfNonFungibles
             }
-            "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => InstructionIdent::CreateProofFromAuthZoneOfAll,
-            "DROP_AUTH_ZONE_PROOFS" => InstructionIdent::DropAuthZoneProofs,
-            "DROP_AUTH_ZONE_SIGNATURE_PROOFS" => InstructionIdent::DropAuthZoneSignatureProofs,
-            "DROP_AUTH_ZONE_REGULAR_PROOFS" => InstructionIdent::DropAuthZoneRegularProofs,
+            CreateProofFromAuthZoneOfAll::IDENT => InstructionIdent::CreateProofFromAuthZoneOfAll,
+            DropAuthZoneProofs::IDENT => InstructionIdent::DropAuthZoneProofs,
+            DropAuthZoneSignatureProofs::IDENT => InstructionIdent::DropAuthZoneSignatureProofs,
+            DropAuthZoneRegularProofs::IDENT => InstructionIdent::DropAuthZoneRegularProofs,
 
-            "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => InstructionIdent::CreateProofFromBucketOfAmount,
-            "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
+            CreateProofFromBucketOfAmount::IDENT => InstructionIdent::CreateProofFromBucketOfAmount,
+            CreateProofFromBucketOfNonFungibles::IDENT => {
                 InstructionIdent::CreateProofFromBucketOfNonFungibles
             }
-            "CREATE_PROOF_FROM_BUCKET_OF_ALL" => InstructionIdent::CreateProofFromBucketOfAll,
-            "BURN_RESOURCE" => InstructionIdent::BurnResource,
+            CreateProofFromBucketOfAll::IDENT => InstructionIdent::CreateProofFromBucketOfAll,
+            BurnResource::IDENT => InstructionIdent::BurnResource,
 
-            "CLONE_PROOF" => InstructionIdent::CloneProof,
-            "DROP_PROOF" => InstructionIdent::DropProof,
+            CloneProof::IDENT => InstructionIdent::CloneProof,
+            DropProof::IDENT => InstructionIdent::DropProof,
 
-            "CALL_FUNCTION" => InstructionIdent::CallFunction,
-            "CALL_METHOD" => InstructionIdent::CallMethod,
-            "CALL_ROYALTY_METHOD" => InstructionIdent::CallRoyaltyMethod,
-            "CALL_METADATA_METHOD" => InstructionIdent::CallMetadataMethod,
-            "CALL_ROLE_ASSIGNMENT_METHOD" => InstructionIdent::CallRoleAssignmentMethod,
-            "CALL_DIRECT_VAULT_METHOD" => InstructionIdent::CallDirectVaultMethod,
+            CallFunction::IDENT => InstructionIdent::CallFunction,
+            CallMethod::IDENT => InstructionIdent::CallMethod,
+            CallRoyaltyMethod::IDENT => InstructionIdent::CallRoyaltyMethod,
+            CallMetadataMethod::IDENT => InstructionIdent::CallMetadataMethod,
+            CallRoleAssignmentMethod::IDENT => InstructionIdent::CallRoleAssignmentMethod,
+            CallDirectVaultMethod::IDENT => InstructionIdent::CallDirectVaultMethod,
 
-            "DROP_NAMED_PROOFS" => InstructionIdent::DropNamedProofs,
-            "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
-            "ALLOCATE_GLOBAL_ADDRESS" => InstructionIdent::AllocateGlobalAddress,
+            DropNamedProofs::IDENT => InstructionIdent::DropNamedProofs,
+            DropAllProofs::IDENT => InstructionIdent::DropAllProofs,
+            AllocateGlobalAddress::IDENT => InstructionIdent::AllocateGlobalAddress,
+
+            YieldToParent::IDENT => InstructionIdent::YieldToParent,
+            YieldToChild::IDENT => InstructionIdent::YieldToChild,
+            VerifyParent::IDENT => InstructionIdent::VerifyParent,
 
             // ==============
             // Call direct vault method aliases
@@ -244,6 +269,7 @@ impl InstructionIdent {
             "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
             "CLAIM_PACKAGE_ROYALTIES" => InstructionIdent::ClaimPackageRoyalties,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
+
             _ => {
                 return None;
             }
@@ -252,7 +278,7 @@ impl InstructionIdent {
     }
 }
 
-pub enum SborValueIdent {
+pub enum ManifestValueIdent {
     // ==============
     // SBOR composite value types
     // ==============
@@ -282,134 +308,44 @@ pub enum SborValueIdent {
     NonFungibleLocalId,
     AddressReservation,
     NamedAddress,
+    Intent,
+    NamedIntent,
 }
 
-impl SborValueIdent {
+impl ManifestValueIdent {
     pub fn from_ident(ident: &str) -> Option<Self> {
         let value = match ident {
             // ==============
             // SBOR composite value types
             // ==============
-            "Enum" => SborValueIdent::Enum,
-            "Array" => SborValueIdent::Array,
-            "Tuple" => SborValueIdent::Tuple,
-            "Map" => SborValueIdent::Map,
+            "Enum" => ManifestValueIdent::Enum,
+            "Array" => ManifestValueIdent::Array,
+            "Tuple" => ManifestValueIdent::Tuple,
+            "Map" => ManifestValueIdent::Map,
             // ==============
             // SBOR aliases
             // ==============
-            "Some" => SborValueIdent::Some,
-            "None" => SborValueIdent::None,
-            "Ok" => SborValueIdent::Ok,
-            "Err" => SborValueIdent::Err,
-            "Bytes" => SborValueIdent::Bytes,
-            "NonFungibleGlobalId" => SborValueIdent::NonFungibleGlobalId,
+            "Some" => ManifestValueIdent::Some,
+            "None" => ManifestValueIdent::None,
+            "Ok" => ManifestValueIdent::Ok,
+            "Err" => ManifestValueIdent::Err,
+            "Bytes" => ManifestValueIdent::Bytes,
+            "NonFungibleGlobalId" => ManifestValueIdent::NonFungibleGlobalId,
             // ==============
             // Custom types
             // ==============
-            "Address" => SborValueIdent::Address,
-            "Bucket" => SborValueIdent::Bucket,
-            "Proof" => SborValueIdent::Proof,
-            "Expression" => SborValueIdent::Expression,
-            "Blob" => SborValueIdent::Blob,
-            "Decimal" => SborValueIdent::Decimal,
-            "PreciseDecimal" => SborValueIdent::PreciseDecimal,
-            "NonFungibleLocalId" => SborValueIdent::NonFungibleLocalId,
-            "AddressReservation" => SborValueIdent::AddressReservation,
-            "NamedAddress" => SborValueIdent::NamedAddress,
-            _ => {
-                return None;
-            }
-        };
-        Some(value)
-    }
-}
-
-pub enum SborValueKindIdent {
-    // ==============
-    // Simple basic value kinds
-    // ==============
-    Bool,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    String,
-    // ==============
-    // Composite basic value kinds
-    // ==============
-    Enum,
-    Array,
-    Tuple,
-    Map,
-    // ==============
-    // Value kind aliases
-    // ==============
-    Bytes,
-    NonFungibleGlobalId,
-    // ==============
-    // Custom value kinds
-    // ==============
-    Address,
-    Bucket,
-    Proof,
-    Expression,
-    Blob,
-    Decimal,
-    PreciseDecimal,
-    NonFungibleLocalId,
-    AddressReservation,
-    NamedAddress,
-}
-
-impl SborValueKindIdent {
-    pub fn from_ident(ident: &str) -> Option<Self> {
-        let value = match ident {
-            // ==============
-            // Basic simple types
-            // ==============
-            "Bool" => SborValueKindIdent::Bool,
-            "I8" => SborValueKindIdent::I8,
-            "I16" => SborValueKindIdent::I16,
-            "I32" => SborValueKindIdent::I32,
-            "I64" => SborValueKindIdent::I64,
-            "I128" => SborValueKindIdent::I128,
-            "U8" => SborValueKindIdent::U8,
-            "U16" => SborValueKindIdent::U16,
-            "U32" => SborValueKindIdent::U32,
-            "U64" => SborValueKindIdent::U64,
-            "U128" => SborValueKindIdent::U128,
-            "String" => SborValueKindIdent::String,
-            // ==============
-            // Basic composite types
-            // ==============
-            "Enum" => SborValueKindIdent::Enum,
-            "Array" => SborValueKindIdent::Array,
-            "Tuple" => SborValueKindIdent::Tuple,
-            "Map" => SborValueKindIdent::Map,
-            // ==============
-            // Value kind aliases
-            // ==============
-            "Bytes" => SborValueKindIdent::Bytes,
-            "NonFungibleGlobalId" => SborValueKindIdent::NonFungibleGlobalId,
-            // ==============
-            // Custom types
-            // ==============
-            "Address" => SborValueKindIdent::Address,
-            "Bucket" => SborValueKindIdent::Bucket,
-            "Proof" => SborValueKindIdent::Proof,
-            "Expression" => SborValueKindIdent::Expression,
-            "Blob" => SborValueKindIdent::Blob,
-            "Decimal" => SborValueKindIdent::Decimal,
-            "PreciseDecimal" => SborValueKindIdent::PreciseDecimal,
-            "NonFungibleLocalId" => SborValueKindIdent::NonFungibleLocalId,
-            "AddressReservation" => SborValueKindIdent::AddressReservation,
-            "NamedAddress" => SborValueKindIdent::NamedAddress,
+            "Address" => ManifestValueIdent::Address,
+            "Bucket" => ManifestValueIdent::Bucket,
+            "Proof" => ManifestValueIdent::Proof,
+            "Expression" => ManifestValueIdent::Expression,
+            "Blob" => ManifestValueIdent::Blob,
+            "Decimal" => ManifestValueIdent::Decimal,
+            "PreciseDecimal" => ManifestValueIdent::PreciseDecimal,
+            "NonFungibleLocalId" => ManifestValueIdent::NonFungibleLocalId,
+            "AddressReservation" => ManifestValueIdent::AddressReservation,
+            "NamedAddress" => ManifestValueIdent::NamedAddress,
+            "Intent" => ManifestValueIdent::Intent,
+            "NamedIntent" => ManifestValueIdent::NamedIntent,
             _ => {
                 return None;
             }
@@ -568,6 +504,16 @@ impl Parser {
         let instruction_start = token.span.start;
 
         let instruction = match instruction_ident {
+            InstructionIdent::UsePreallocatedAddress => Instruction::UsePreallocatedAddress {
+                package_address: self.parse_value()?,
+                blueprint_name: self.parse_value()?,
+                address_reservation: self.parse_value()?,
+                preallocated_address: self.parse_value()?,
+            },
+            InstructionIdent::UseChild => Instruction::UseChild {
+                named_intent: self.parse_value()?,
+                subintent_hash: self.parse_value()?,
+            },
             InstructionIdent::TakeFromWorktop => Instruction::TakeFromWorktop {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,
@@ -600,6 +546,7 @@ impl Parser {
             InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
                 resource_address: self.parse_value()?,
             },
+            InstructionIdent::AssertWorktopIsEmpty => Instruction::AssertWorktopIsEmpty {},
             InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
@@ -820,6 +767,16 @@ impl Parser {
             InstructionIdent::CreateValidator => Instruction::CreateValidator {
                 args: self.parse_instruction_arguments()?,
             },
+            InstructionIdent::YieldToParent => Instruction::YieldToParent {
+                args: self.parse_instruction_arguments()?,
+            },
+            InstructionIdent::YieldToChild => Instruction::YieldToChild {
+                child: self.parse_value()?,
+                args: self.parse_instruction_arguments()?,
+            },
+            InstructionIdent::VerifyParent => Instruction::VerifyParent {
+                access_rule: self.parse_value()?,
+            },
         };
 
         let instruction_end = self.advance_exact(Token::Semicolon)?.span.end;
@@ -853,49 +810,53 @@ impl Parser {
             Token::I128Literal(value) => Value::I128(*value),
             Token::StringLiteral(value) => Value::String(value.clone()),
             Token::Ident(ident_str) => {
-                let value_ident = SborValueIdent::from_ident(ident_str).ok_or(
+                let value_ident = ManifestValueIdent::from_ident(ident_str).ok_or(
                     ParserError::unexpected_token(token.clone(), TokenType::Value),
                 )?;
                 match value_ident {
-                    SborValueIdent::Enum => self.parse_enum_content()?,
-                    SborValueIdent::Array => self.parse_array_content()?,
-                    SborValueIdent::Tuple => self.parse_tuple_content()?,
-                    SborValueIdent::Map => self.parse_map_content()?,
+                    ManifestValueIdent::Enum => self.parse_enum_content()?,
+                    ManifestValueIdent::Array => self.parse_array_content()?,
+                    ManifestValueIdent::Tuple => self.parse_tuple_content()?,
+                    ManifestValueIdent::Map => self.parse_map_content()?,
 
                     // ==============
                     // Aliases
                     // ==============
-                    SborValueIdent::Some => Value::Some(Box::new(self.parse_values_one()?)),
-                    SborValueIdent::None => Value::None,
-                    SborValueIdent::Ok => Value::Ok(Box::new(self.parse_values_one()?)),
-                    SborValueIdent::Err => Value::Err(Box::new(self.parse_values_one()?)),
-                    SborValueIdent::Bytes => Value::Bytes(Box::new(self.parse_values_one()?)),
-                    SborValueIdent::NonFungibleGlobalId => {
+                    ManifestValueIdent::Some => Value::Some(Box::new(self.parse_values_one()?)),
+                    ManifestValueIdent::None => Value::None,
+                    ManifestValueIdent::Ok => Value::Ok(Box::new(self.parse_values_one()?)),
+                    ManifestValueIdent::Err => Value::Err(Box::new(self.parse_values_one()?)),
+                    ManifestValueIdent::Bytes => Value::Bytes(Box::new(self.parse_values_one()?)),
+                    ManifestValueIdent::NonFungibleGlobalId => {
                         Value::NonFungibleGlobalId(Box::new(self.parse_values_one()?))
                     }
 
                     // ==============
                     // Custom Types
                     // ==============
-                    SborValueIdent::Address => Value::Address(self.parse_values_one()?.into()),
-                    SborValueIdent::Bucket => Value::Bucket(self.parse_values_one()?.into()),
-                    SborValueIdent::Proof => Value::Proof(self.parse_values_one()?.into()),
-                    SborValueIdent::Expression => {
+                    ManifestValueIdent::Address => Value::Address(self.parse_values_one()?.into()),
+                    ManifestValueIdent::Bucket => Value::Bucket(self.parse_values_one()?.into()),
+                    ManifestValueIdent::Proof => Value::Proof(self.parse_values_one()?.into()),
+                    ManifestValueIdent::Expression => {
                         Value::Expression(self.parse_values_one()?.into())
                     }
-                    SborValueIdent::Blob => Value::Blob(self.parse_values_one()?.into()),
-                    SborValueIdent::Decimal => Value::Decimal(self.parse_values_one()?.into()),
-                    SborValueIdent::PreciseDecimal => {
+                    ManifestValueIdent::Blob => Value::Blob(self.parse_values_one()?.into()),
+                    ManifestValueIdent::Decimal => Value::Decimal(self.parse_values_one()?.into()),
+                    ManifestValueIdent::PreciseDecimal => {
                         Value::PreciseDecimal(self.parse_values_one()?.into())
                     }
-                    SborValueIdent::NonFungibleLocalId => {
+                    ManifestValueIdent::NonFungibleLocalId => {
                         Value::NonFungibleLocalId(self.parse_values_one()?.into())
                     }
-                    SborValueIdent::AddressReservation => {
+                    ManifestValueIdent::AddressReservation => {
                         Value::AddressReservation(self.parse_values_one()?.into())
                     }
-                    SborValueIdent::NamedAddress => {
+                    ManifestValueIdent::NamedAddress => {
                         Value::NamedAddress(self.parse_values_one()?.into())
+                    }
+                    ManifestValueIdent::Intent => Value::Intent(self.parse_values_one()?.into()),
+                    ManifestValueIdent::NamedIntent => {
+                        Value::NamedIntent(self.parse_values_one()?.into())
                     }
                 }
             }
@@ -1050,56 +1011,9 @@ impl Parser {
     fn parse_value_kind(&mut self) -> Result<ValueKindWithSpan, ParserError> {
         let token = self.advance()?;
         let value_kind = match &token.token {
-            Token::Ident(ident_str) => {
-                let value_kind_ident = SborValueKindIdent::from_ident(&ident_str).ok_or(
-                    ParserError::unexpected_token(token.clone(), TokenType::ValueKind),
-                )?;
-                match value_kind_ident {
-                    // ==============
-                    // Simple basic value kinds
-                    // ==============
-                    SborValueKindIdent::Bool => ValueKind::Bool,
-                    SborValueKindIdent::I8 => ValueKind::I8,
-                    SborValueKindIdent::I16 => ValueKind::I16,
-                    SborValueKindIdent::I32 => ValueKind::I32,
-                    SborValueKindIdent::I64 => ValueKind::I64,
-                    SborValueKindIdent::I128 => ValueKind::I128,
-                    SborValueKindIdent::U8 => ValueKind::U8,
-                    SborValueKindIdent::U16 => ValueKind::U16,
-                    SborValueKindIdent::U32 => ValueKind::U32,
-                    SborValueKindIdent::U64 => ValueKind::U64,
-                    SborValueKindIdent::U128 => ValueKind::U128,
-                    SborValueKindIdent::String => ValueKind::String,
-
-                    // ==============
-                    // Composite basic value kinds
-                    // ==============
-                    SborValueKindIdent::Enum => ValueKind::Enum,
-                    SborValueKindIdent::Array => ValueKind::Array,
-                    SborValueKindIdent::Tuple => ValueKind::Tuple,
-                    SborValueKindIdent::Map => ValueKind::Map,
-
-                    // ==============
-                    // Value kind aliases
-                    // ==============
-                    SborValueKindIdent::Bytes => ValueKind::Bytes,
-                    SborValueKindIdent::NonFungibleGlobalId => ValueKind::NonFungibleGlobalId,
-
-                    // ==============
-                    // Custom value kinds
-                    // ==============
-                    SborValueKindIdent::Address => ValueKind::Address,
-                    SborValueKindIdent::Bucket => ValueKind::Bucket,
-                    SborValueKindIdent::Proof => ValueKind::Proof,
-                    SborValueKindIdent::Expression => ValueKind::Expression,
-                    SborValueKindIdent::Blob => ValueKind::Blob,
-                    SborValueKindIdent::Decimal => ValueKind::Decimal,
-                    SborValueKindIdent::PreciseDecimal => ValueKind::PreciseDecimal,
-                    SborValueKindIdent::NonFungibleLocalId => ValueKind::NonFungibleLocalId,
-                    SborValueKindIdent::AddressReservation => ValueKind::AddressReservation,
-                    SborValueKindIdent::NamedAddress => ValueKind::NamedAddress,
-                }
-            }
+            Token::Ident(ident_str) => ValueKind::from_ident(&ident_str).ok_or(
+                ParserError::unexpected_token(token.clone(), TokenType::ValueKind),
+            )?,
             _ => {
                 return Err(ParserError::unexpected_token(token, TokenType::ValueKind));
             }

@@ -52,7 +52,21 @@ impl BuildableManifest for SystemTransactionManifestV1 {
     fn set_names(&mut self, names: KnownManifestObjectNames) {
         self.object_names = names.into()
     }
+
+    fn add_preallocated_address(
+        &mut self,
+        preallocated: PreAllocatedAddress,
+    ) -> Result<(), ManifestBuildError> {
+        self.preallocated_addresses.push(preallocated);
+        Ok(())
+    }
+
+    fn preallocation_count(&self) -> usize {
+        self.preallocated_addresses.len()
+    }
 }
+
+impl BuildableManifestSupportingPreallocatedAddresses for SystemTransactionManifestV1 {}
 
 impl SystemTransactionManifestV1 {
     pub fn from_transaction(transaction: &SystemTransactionV1) -> Self {

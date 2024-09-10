@@ -1,3 +1,8 @@
+use core::iter::*;
+
+use super::ast::Instruction;
+use super::ast::InstructionWithSpan;
+use super::ast::ValueKindWithSpan;
 use super::blob_provider::*;
 use crate::data::*;
 use crate::errors::*;
@@ -38,12 +43,12 @@ pub enum GeneratorErrorKind {
         actual: ast::ValueKind,
     },
     InvalidAstValue {
-        expected_value_kind: Vec<ast::ValueKind>,
+        expected_value_kinds: Vec<ast::ValueKind>,
         actual: ast::Value,
     },
-    UnexpectedValue {
-        expected_value_kind: ManifestValueKind,
-        actual: ast::Value,
+    UnexpectedValueKind {
+        expected_value_kind: ast::ValueKind,
+        actual_value: ast::Value,
     },
     InvalidPackageAddress(String),
     InvalidResourceAddress(String),
@@ -71,6 +76,14 @@ pub enum GeneratorErrorKind {
     },
     InvalidGlobalAddress(String),
     InvalidInternalAddress(String),
+    InvalidSubTransactionId(String),
+    InstructionNotSupportedInManifestVersion,
+    ManifestBuildError(ManifestBuildError),
+    HeaderInstructionMustComeFirst,
+    IntentCannotBeUsedInValue,
+    IntentCannotBeUsedAsValueKind,
+    NamedIntentCannotBeUsedInValue,
+    NamedIntentCannotBeUsedAsValueKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,7 +108,7 @@ pub struct NameResolver {
     named_proofs: IndexMap<String, ManifestProof>,
     named_address_reservations: IndexMap<String, ManifestAddressReservation>,
     named_addresses: IndexMap<String, ManifestNamedAddress>,
-    named_intents: IndexMap<String, ManifestIntent>,
+    named_intents: IndexMap<String, ManifestNamedIntent>,
 }
 
 impl NameResolver {
@@ -159,7 +172,7 @@ impl NameResolver {
     pub fn insert_intent(
         &mut self,
         name: String,
-        intent_id: ManifestIntent,
+        intent_id: ManifestNamedIntent,
     ) -> Result<(), NameResolverError> {
         if self.named_intents.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -203,7 +216,10 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_intent(&mut self, name: &str) -> Result<ManifestIntent, NameResolverError> {
+    pub fn resolve_named_intent(
+        &mut self,
+        name: &str,
+    ) -> Result<ManifestNamedIntent, NameResolverError> {
         match self.named_intents.get(name).cloned() {
             Some(intent_id) => Ok(intent_id),
             None => Err(NameResolverError::UndefinedIntent(name.into())),
@@ -249,7 +265,7 @@ impl NameResolver {
         return None;
     }
 
-    pub fn resolve_intent_name(&self, address: ManifestIntent) -> Option<String> {
+    pub fn resolve_intent_name(&self, address: ManifestNamedIntent) -> Option<String> {
         for (name, id) in self.named_intents.iter() {
             if id.eq(&address) {
                 return Some(name.to_string());
@@ -289,33 +305,138 @@ impl NameResolver {
     }
 }
 
-pub fn generate_manifest<B>(
+pub fn generate_manifest<B, M: BuildableManifest>(
     instructions: &[ast::InstructionWithSpan],
     address_bech32_decoder: &AddressBech32Decoder,
+    transaction_bech32_decoder: &TransactionHashBech32Decoder,
     blobs: B,
-) -> Result<TransactionManifestV1, GeneratorError>
+) -> Result<M, GeneratorError>
 where
     B: IsBlobProvider,
 {
     let mut id_validator = ManifestValidator::new();
     let mut name_resolver = NameResolver::new();
-    let mut output = Vec::new();
 
-    for instruction in instructions {
-        output.push(generate_instruction(
+    let mut manifest = M::default();
+
+    let mut instructions_iter = instructions.iter().peekable();
+
+    generate_pseudo_instructions(
+        &mut manifest,
+        &mut instructions_iter,
+        &mut id_validator,
+        &mut name_resolver,
+        address_bech32_decoder,
+        transaction_bech32_decoder,
+    )?;
+
+    for instruction in instructions_iter {
+        let any_instruction = generate_instruction(
             instruction,
             &mut id_validator,
             &mut name_resolver,
             address_bech32_decoder,
             &blobs,
-        )?);
+        )?;
+        let valid_instruction = any_instruction.try_into().map_err(|_| GeneratorError {
+            span: instruction.span,
+            error_kind: GeneratorErrorKind::InstructionNotSupportedInManifestVersion,
+        })?;
+        manifest.add_instruction(valid_instruction);
+    }
+    for (hash, blob_content) in blobs.blobs() {
+        manifest.add_blob(hash, blob_content);
+    }
+    manifest.set_names(name_resolver.into_known_names());
+
+    Ok(manifest)
+}
+
+fn generate_pseudo_instructions(
+    manifest: &mut impl BuildableManifest,
+    instructions_iter: &mut Peekable<core::slice::Iter<ast::InstructionWithSpan>>,
+    id_validator: &mut ManifestValidator,
+    name_resolver: &mut NameResolver,
+    address_bech32_decoder: &AddressBech32Decoder,
+    transaction_bech32_decoder: &TransactionHashBech32Decoder,
+) -> Result<(), GeneratorError> {
+    // First handle the USE_PREALLOCATED_ADDRESS pseudo-instructions
+    loop {
+        let Some(InstructionWithSpan {
+            instruction: Instruction::UsePreallocatedAddress { .. },
+            ..
+        }) = instructions_iter.peek()
+        else {
+            break;
+        };
+        let Some(InstructionWithSpan {
+            instruction:
+                Instruction::UsePreallocatedAddress {
+                    package_address,
+                    blueprint_name,
+                    address_reservation,
+                    preallocated_address,
+                },
+            span,
+        }) = instructions_iter.next()
+        else {
+            unreachable!("Just peeked and verified");
+        };
+        declare_address_reservation(
+            address_reservation,
+            name_resolver,
+            id_validator.new_address_reservation(),
+        )?;
+        manifest
+            .add_preallocated_address(PreAllocatedAddress {
+                blueprint_id: BlueprintId {
+                    package_address: generate_package_address(
+                        package_address,
+                        address_bech32_decoder,
+                    )?,
+                    blueprint_name: generate_string(blueprint_name)?,
+                },
+                address: generate_global_address(preallocated_address, address_bech32_decoder)?,
+            })
+            .map_err(|err| GeneratorError {
+                span: *span,
+                error_kind: GeneratorErrorKind::ManifestBuildError(err),
+            })?;
     }
 
-    Ok(TransactionManifestV1 {
-        instructions: output,
-        blobs: blobs.blobs(),
-        object_names: ManifestObjectNames::Known(name_resolver.into_known_names()),
-    })
+    // Next, handle the USE_CHILD pseudo-instructions
+    loop {
+        let Some(InstructionWithSpan {
+            instruction: Instruction::UseChild { .. },
+            ..
+        }) = instructions_iter.peek()
+        else {
+            break;
+        };
+        let Some(InstructionWithSpan {
+            instruction:
+                Instruction::UseChild {
+                    named_intent,
+                    subintent_hash,
+                },
+            span,
+        }) = instructions_iter.next()
+        else {
+            unreachable!("Just peeked and verified");
+        };
+        declare_named_intent(named_intent, name_resolver, id_validator.new_intent())?;
+        manifest
+            .add_child_subintent(generate_subintent_hash(
+                transaction_bech32_decoder,
+                subintent_hash,
+            )?)
+            .map_err(|err| GeneratorError {
+                span: *span,
+                error_kind: GeneratorErrorKind::ManifestBuildError(err),
+            })?;
+    }
+
+    Ok(())
 }
 
 macro_rules! get_span {
@@ -360,11 +481,17 @@ pub fn generate_instruction<B>(
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
-) -> Result<InstructionV1, GeneratorError>
+) -> Result<AnyInstruction, GeneratorError>
 where
     B: IsBlobProvider,
 {
     Ok(match &instruction.instruction {
+        ast::Instruction::UsePreallocatedAddress { .. } | ast::Instruction::UseChild { .. } => {
+            return Err(GeneratorError {
+                span: instruction.span,
+                error_kind: GeneratorErrorKind::HeaderInstructionMustComeFirst,
+            })
+        }
         ast::Instruction::TakeFromWorktop {
             resource_address,
             amount,
@@ -446,6 +573,7 @@ where
             }
             .into()
         }
+        ast::Instruction::AssertWorktopIsEmpty {} => AssertWorktopIsEmpty {}.into(),
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
@@ -737,25 +865,25 @@ where
 
         /* direct vault method aliases */
         ast::Instruction::RecallFromVault { vault_id, args } => CallDirectVaultMethod {
-            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            address: generate_internal_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_RECALL_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
         .into(),
         ast::Instruction::FreezeVault { vault_id, args } => CallDirectVaultMethod {
-            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            address: generate_internal_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
         .into(),
         ast::Instruction::UnfreezeVault { vault_id, args } => CallDirectVaultMethod {
-            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            address: generate_internal_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
         .into(),
         ast::Instruction::RecallNonFungiblesFromVault { vault_id, args } => CallDirectVaultMethod {
-            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            address: generate_internal_address(vault_id, address_bech32_decoder)?,
             method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
@@ -928,6 +1056,25 @@ where
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
         .into(),
+        ast::Instruction::YieldToParent { args } => YieldToParent {
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::YieldToChild { child, args } => YieldToChild {
+            child_index: generate_named_intent(child, resolver)?.into(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::VerifyParent { access_rule } => VerifyParent {
+            access_rule: generate_value(
+                access_rule,
+                None,
+                resolver,
+                address_bech32_decoder,
+                blobs,
+            )?,
+        }
+        .into(),
     })
 }
 
@@ -936,7 +1083,7 @@ macro_rules! invalid_type {
     ( $span:expr, $v:expr, $($exp:expr),+ ) => {
         Err(GeneratorError {
             error_kind: GeneratorErrorKind::InvalidAstValue {
-                expected_value_kind: vec!($($exp),+),
+                expected_value_kinds: vec!($($exp),+),
                 actual: $v.clone(),
             },
             span: $span,
@@ -1007,6 +1154,31 @@ fn generate_precise_decimal(value: &ast::ValueWithSpan) -> Result<PreciseDecimal
     }
 }
 
+fn generate_global_address(
+    value: &ast::ValueWithSpan,
+    address_bech32_decoder: &AddressBech32Decoder,
+) -> Result<GlobalAddress, GeneratorError> {
+    match &value.value {
+        ast::Value::Address(inner) => match &inner.value {
+            ast::Value::String(s) => {
+                // TODO: Consider more precise message by interpreting AddressBech32DecodeError
+                // (applies everywhere where validate_and_decode() is used)
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
+                    if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
+                        return Ok(address);
+                    }
+                }
+                return Err(GeneratorError {
+                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    span: inner.span,
+                });
+            }
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
+        },
+        v => invalid_type!(value.span, v, ast::ValueKind::Address),
+    }
+}
+
 fn generate_package_address(
     value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
@@ -1028,7 +1200,7 @@ fn generate_package_address(
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(value.span, v, ast::ValueKind::PackageAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
 }
 
@@ -1051,7 +1223,7 @@ fn generate_resource_address(
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(value.span, v, ast::ValueKind::ResourceAddress),
+        v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
 }
 
@@ -1156,38 +1328,8 @@ fn generate_dynamic_package_address(
         v => invalid_type!(
             value.span,
             v,
-            ast::ValueKind::PackageAddress,
-            ast::ValueKind::NamedAddress
-        ),
-    }
-}
-
-fn generate_local_address(
-    value: &ast::ValueWithSpan,
-    address_bech32_decoder: &AddressBech32Decoder,
-) -> Result<InternalAddress, GeneratorError> {
-    match &value.value {
-        ast::Value::Address(inner) => match &inner.value {
-            ast::Value::String(s) => {
-                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
-                    if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
-                        return Ok(address);
-                    }
-                }
-                return Err(GeneratorError {
-                    error_kind: GeneratorErrorKind::InvalidInternalAddress(s.into()),
-                    span: inner.span,
-                });
-            }
-            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
-        },
-        v => invalid_type!(
-            value.span,
-            v,
             ast::ValueKind::Address,
-            ast::ValueKind::PackageAddress,
-            ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress
+            ast::ValueKind::NamedAddress
         ),
     }
 }
@@ -1292,6 +1434,49 @@ fn declare_named_address(
     }
 }
 
+fn declare_named_intent(
+    value: &ast::ValueWithSpan,
+    resolver: &mut NameResolver,
+    intent_id: ManifestNamedIntent,
+) -> Result<(), GeneratorError> {
+    match &value.value {
+        ast::Value::NamedIntent(inner) => match &inner.value {
+            ast::Value::String(name) => resolver
+                .insert_intent(name.to_string(), intent_id)
+                .map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
+        },
+        v => invalid_type!(value.span, v, ast::ValueKind::NamedIntent),
+    }
+}
+
+fn generate_named_intent(
+    value: &ast::ValueWithSpan,
+    resolver: &mut NameResolver,
+) -> Result<ManifestNamedIntent, GeneratorError> {
+    match &value.value {
+        ast::Value::NamedIntent(inner) => {
+            let out = match &inner.value {
+                // Don't support U32 for new types like this
+                ast::Value::String(s) => {
+                    resolver
+                        .resolve_named_intent(&s)
+                        .map_err(|err| GeneratorError {
+                            error_kind: GeneratorErrorKind::NameResolverError(err),
+                            span: inner.span,
+                        })
+                }
+                v => invalid_type!(inner.span, v, ast::ValueKind::String),
+            }?;
+            Ok(out)
+        }
+        v => invalid_type!(value.span, v, ast::ValueKind::NamedIntent),
+    }
+}
+
 fn generate_proof(
     value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
@@ -1356,14 +1541,7 @@ fn generate_static_address(
             }
             v => return invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        v => invalid_type!(
-            value.span,
-            v,
-            ast::ValueKind::Address,
-            ast::ValueKind::PackageAddress,
-            ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress
-        ),
+        v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
 }
 
@@ -1494,9 +1672,25 @@ fn generate_byte_vec_from_hex(value: &ast::ValueWithSpan) -> Result<Vec<u8>, Gen
     Ok(bytes)
 }
 
+fn generate_subintent_hash(
+    decoder: &TransactionHashBech32Decoder,
+    value: &ast::ValueWithSpan,
+) -> Result<SubintentHash, GeneratorError> {
+    match &value.value {
+        ast::Value::Intent(inner) => match &inner.value {
+            ast::Value::String(s) => decoder.validate_and_decode(s).map_err(|_| GeneratorError {
+                error_kind: GeneratorErrorKind::InvalidSubTransactionId(s.into()),
+                span: inner.span,
+            }),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
+        },
+        v => invalid_type!(value.span, v, ast::ValueKind::Intent),
+    }
+}
+
 pub fn generate_value<B>(
     value_with_span: &ast::ValueWithSpan,
-    expected_value_kind: Option<ManifestValueKind>,
+    expected_value_kind: Option<&ast::ValueKindWithSpan>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -1505,12 +1699,16 @@ where
     B: IsBlobProvider,
 {
     if let Some(value_kind) = expected_value_kind {
-        if value_kind != value_with_span.value.value_kind() {
+        // We check sbor value kinds to permit structures which are SBOR-compatible,
+        // even if they don't look immediately valid in SBOR land
+        // e.g. an Array<Tuple>(NonFungibleGlobalId("..."))
+        // e.g. an Array<Vec>(Bytes("..."))
+        if value_kind.sbor_value_kind() != value_with_span.value_kind().sbor_value_kind() {
             return Err(GeneratorError {
                 span: value_with_span.span,
-                error_kind: GeneratorErrorKind::UnexpectedValue {
-                    expected_value_kind: value_kind,
-                    actual: value_with_span.value.clone(),
+                error_kind: GeneratorErrorKind::UnexpectedValueKind {
+                    expected_value_kind: value_kind.value_kind,
+                    actual_value: value_with_span.value.clone(),
                 },
             });
         }
@@ -1542,12 +1740,12 @@ where
             fields: generate_singletons(&fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Array(element_type, elements) => {
-            let element_value_kind = element_type.value_kind.value_kind();
+            let element_value_kind = element_type.sbor_value_kind()?;
             Ok(Value::Array {
                 element_value_kind,
                 elements: generate_singletons(
                     &elements,
-                    Some(element_value_kind),
+                    Some(element_type),
                     resolver,
                     address_bech32_decoder,
                     blobs,
@@ -1555,15 +1753,15 @@ where
             })
         }
         ast::Value::Map(key_type, value_type, entries) => {
-            let key_value_kind = key_type.value_kind.value_kind();
-            let value_value_kind = value_type.value_kind.value_kind();
+            let key_value_kind = key_type.sbor_value_kind()?;
+            let value_value_kind = value_type.sbor_value_kind()?;
             Ok(Value::Map {
                 key_value_kind,
                 value_value_kind,
                 entries: generate_kv_entries(
                     &entries,
-                    key_value_kind,
-                    value_value_kind,
+                    &key_type,
+                    &value_type,
                     resolver,
                     address_bech32_decoder,
                     blobs,
@@ -1687,12 +1885,24 @@ where
                 value: ManifestCustomValue::AddressReservation(v),
             })
         }
+        ast::Value::NamedIntent(_) => {
+            return Err(GeneratorError {
+                error_kind: GeneratorErrorKind::NamedIntentCannotBeUsedInValue,
+                span: value_with_span.span,
+            });
+        }
+        ast::Value::Intent(_) => {
+            return Err(GeneratorError {
+                error_kind: GeneratorErrorKind::IntentCannotBeUsedInValue,
+                span: value_with_span.span,
+            });
+        }
     }
 }
 
 fn generate_singletons<B>(
     elements: &Vec<ast::ValueWithSpan>,
-    expected_value_kind: Option<ManifestValueKind>,
+    expected_value_kind: Option<&ast::ValueKindWithSpan>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -1715,8 +1925,8 @@ where
 
 fn generate_kv_entries<B>(
     entries: &[(ast::ValueWithSpan, ast::ValueWithSpan)],
-    key_value_kind: ManifestValueKind,
-    value_value_kind: ManifestValueKind,
+    key_value_kind: &ValueKindWithSpan,
+    value_value_kind: &ValueKindWithSpan,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -1750,45 +1960,41 @@ pub fn generator_error_diagnostics(
     err: GeneratorError,
     style: CompileErrorDiagnosticsStyle,
 ) -> String {
+    // The title should be a little longer, and include context about what triggered
+    // the error. The label is inline next to arrows pointing to the span which is
+    // invalid, so can be shorter.
+    // These will appear roughly like below:
+    //
+    //   error: <TITLE>
+    //     ...
+    //   12 |       Bytes(1u32),
+    //      |       ^^^^^ <LABEL>
     let (title, label) = match err.error_kind {
         GeneratorErrorKind::InvalidAstType {
             expected_value_kind,
             actual,
         } => {
-            let title = format!(
-                "expected {}, found {}",
-                expected_value_kind.value_kind(),
-                actual.value_kind()
-            );
-            let label = format!("expected {}", expected_value_kind.value_kind());
+            let title = format!("expected {:?}, found {:?}", expected_value_kind, actual,);
+            let label = format!("expected {:?}", expected_value_kind);
             (title, label)
         }
         GeneratorErrorKind::InvalidAstValue {
-            expected_value_kind,
+            expected_value_kinds,
             actual,
         } => {
-            let mut value_kinds: Vec<String> = vec![];
-
-            // Remove potential duplicates.
-            // Duplicates might occure due to aliases,
-            // eg. PackageAddress, ComponentAddress are both Address
-            for ty in expected_value_kind.iter() {
-                let ty = ty.value_kind().to_string();
-                if !value_kinds.contains(&ty) {
-                    value_kinds.push(ty)
-                }
-            }
-            let title = format!(
-                "expected {}, found {}",
-                value_kinds.join(" or "),
-                actual.value_kind()
-            );
-            let label = format!("expected {}", value_kinds.join(" or "));
+            let expected_value_kinds = expected_value_kinds
+                .iter()
+                .map(|vk| vk.to_string())
+                .collect::<Vec<_>>()
+                .join(" or ");
+            let actual_value_kind = actual.value_kind();
+            let title = format!("expected {expected_value_kinds}, found {actual_value_kind}",);
+            let label = format!("expected {expected_value_kinds}");
             (title, label)
         }
-        GeneratorErrorKind::UnexpectedValue {
+        GeneratorErrorKind::UnexpectedValueKind {
             expected_value_kind,
-            actual,
+            actual_value: actual,
         } => {
             // TODO: Consider better messages for aliases
             // eg. Bytes are reported as follows:
@@ -1799,7 +2005,7 @@ pub fn generator_error_diagnostics(
             let title = format!(
                 "expected {}, found {}",
                 expected_value_kind,
-                actual.value_kind()
+                actual.value_kind(),
             );
             let label = format!("expected {}", expected_value_kind);
             (title, label)
@@ -1929,6 +2135,49 @@ pub fn generator_error_diagnostics(
         GeneratorErrorKind::InvalidInternalAddress(string) => {
             let title = format!("invalid internal address '{}'", string);
             (title, "invalid internal address".to_string())
+        }
+        GeneratorErrorKind::InvalidSubTransactionId(string) => {
+            let title = format!("invalid sub transaction id '{}'", string);
+            (title, "invalid sub transaction id".to_string())
+        }
+        GeneratorErrorKind::InstructionNotSupportedInManifestVersion => {
+            let title = format!("unsupported instruction for this manifest version");
+            (title, "unsupported instruction".to_string())
+        }
+        GeneratorErrorKind::ManifestBuildError(
+            ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType,
+        ) => {
+            let title =
+                format!("preallocated addresses are not supported in this manifest version");
+            (title, "unsupported instruction".to_string())
+        }
+        GeneratorErrorKind::ManifestBuildError(
+            ManifestBuildError::ChildSubintentsUnsupportedByManifestByManifestType,
+        ) => {
+            let title = format!("child subintents are not supported in this manifest version");
+            (title, "unsupported instruction".to_string())
+        }
+        GeneratorErrorKind::HeaderInstructionMustComeFirst => {
+            let title = format!(
+                "a psuedo-instruction such as USE_CHILD must come before all other instructions"
+            );
+            (title, "must be at the start of the manifest".to_string())
+        }
+        GeneratorErrorKind::IntentCannotBeUsedInValue => {
+            let title = format!("an Intent(...) cannot currently be used inside a value");
+            (title, "cannot be used inside a value".to_string())
+        }
+        GeneratorErrorKind::NamedIntentCannotBeUsedInValue => {
+            let title = format!("a NamedIntent(...) cannot currently be used inside a value");
+            (title, "cannot be used inside a value".to_string())
+        }
+        GeneratorErrorKind::IntentCannotBeUsedAsValueKind => {
+            let title = format!("an Intent cannot be used as a value kind ");
+            (title, "cannot be used as a value kind".to_string())
+        }
+        GeneratorErrorKind::NamedIntentCannotBeUsedAsValueKind => {
+            let title = format!("a NamedIntent cannot be used as a value kind ");
+            (title, "cannot be used as a value kind".to_string())
         }
     };
 
@@ -2108,7 +2357,7 @@ mod tests {
             r#"Address(100u32)"#,
             GeneratorError {
                 error_kind: GeneratorErrorKind::InvalidAstValue {
-                    expected_value_kind: vec![ast::ValueKind::String],
+                    expected_value_kinds: vec![ast::ValueKind::String],
                     actual: ast::Value::U32(100),
                 },
                 span: span!(start = (8, 0, 8), end = (14, 0, 14)),
@@ -2661,6 +2910,8 @@ mod tests {
         ( $depth:expr ) => {{
             let manifest = generate_manifest_input_with_given_depth!($depth);
             let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
+            let transaction_bech32_decoder =
+                TransactionHashBech32Decoder::new(&NetworkDefinition::simulator());
 
             let tokens = tokenize(&manifest)
                 .map_err(CompileError::LexerError)
@@ -2672,7 +2923,13 @@ mod tests {
                 .unwrap();
             let blobs = BlobProvider::new();
 
-            generate_manifest(&instructions, &address_bech32_decoder, blobs).unwrap()
+            generate_manifest::<_, TransactionManifestV1>(
+                &instructions,
+                &address_bech32_decoder,
+                &transaction_bech32_decoder,
+                blobs,
+            )
+            .unwrap()
         }};
     }
 
@@ -2682,7 +2939,7 @@ mod tests {
 
         let manifest = generate_manifest_input_with_given_depth!(1000);
 
-        let result = compile(
+        let result = compile_manifest_v1(
             &manifest,
             &NetworkDefinition::simulator(),
             BlobProvider::default(),

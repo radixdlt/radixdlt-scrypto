@@ -1,0 +1,6 @@
+USE_CHILD NamedIntent("my_child") Intent("subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu");
+ASSERT_WORKTOP_IS_EMPTY;
+VERIFY_PARENT Enum<AccessRule::AllowAll>();
+YIELD_TO_PARENT Tuple() Tuple();
+YIELD_TO_CHILD NamedIntent("my_child");
+YIELD_TO_PARENT;

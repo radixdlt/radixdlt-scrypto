@@ -12,12 +12,33 @@ use radix_engine_interface::object_modules::royalty::*;
 
 use ManifestInstructionEffect as Effect;
 
-pub trait ManifestInstruction {
+/// A type representing an enum of all possible instructions.
+/// This can then be mapped into a specific instruction type.
+pub type AnyInstruction = InstructionV2;
+
+/// A marker trait for an Instruction set, e.g. InstructionV1
+pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction> {
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError>;
+
     fn effect(&self) -> Effect;
+}
+
+pub trait ManifestInstruction: Into<AnyInstruction> {
+    const IDENT: &'static str;
+
+    fn decompile(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError>;
+
+    fn effect(&self) -> Effect;
+
+    fn into_any(self) -> AnyInstruction {
+        self.into()
+    }
 }
 
 //======================================================================
@@ -32,11 +53,13 @@ pub struct TakeAllFromWorktop {
 }
 
 impl ManifestInstruction for TakeAllFromWorktop {
+    const IDENT: &'static str = "TAKE_ALL_FROM_WORKTOP";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("TAKE_ALL_FROM_WORKTOP")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(context.new_bucket());
         Ok(instruction)
@@ -60,11 +83,13 @@ pub struct TakeFromWorktop {
 }
 
 impl ManifestInstruction for TakeFromWorktop {
+    const IDENT: &'static str = "TAKE_FROM_WORKTOP";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("TAKE_FROM_WORKTOP")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(&self.amount)
             .add_argument(context.new_bucket());
@@ -90,11 +115,13 @@ pub struct TakeNonFungiblesFromWorktop {
 }
 
 impl ManifestInstruction for TakeNonFungiblesFromWorktop {
+    const IDENT: &'static str = "TAKE_NON_FUNGIBLES_FROM_WORKTOP";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("TAKE_NON_FUNGIBLES_FROM_WORKTOP")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(&self.ids)
             .add_argument(context.new_bucket());
@@ -118,12 +145,13 @@ pub struct ReturnToWorktop {
 }
 
 impl ManifestInstruction for ReturnToWorktop {
+    const IDENT: &'static str = "RETURN_TO_WORKTOP";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new("RETURN_TO_WORKTOP").add_argument(&self.bucket_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
         Ok(instruction)
     }
 
@@ -142,12 +170,14 @@ pub struct AssertWorktopContainsAny {
 }
 
 impl ManifestInstruction for AssertWorktopContainsAny {
+    const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS_ANY";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_CONTAINS_ANY")
-            .add_argument(&self.resource_address);
+        let instruction =
+            DecompiledInstruction::new(Self::IDENT).add_argument(&self.resource_address);
         Ok(instruction)
     }
 
@@ -168,11 +198,13 @@ pub struct AssertWorktopContains {
 }
 
 impl ManifestInstruction for AssertWorktopContains {
+    const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_CONTAINS")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(&self.amount);
         Ok(instruction)
@@ -196,11 +228,13 @@ pub struct AssertWorktopContainsNonFungibles {
 }
 
 impl ManifestInstruction for AssertWorktopContainsNonFungibles {
+    const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(&self.ids);
         Ok(instruction)
@@ -221,11 +255,13 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
 pub struct AssertWorktopIsEmpty {}
 
 impl ManifestInstruction for AssertWorktopIsEmpty {
+    const IDENT: &'static str = "ASSERT_WORKTOP_IS_EMPTY";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -245,12 +281,13 @@ impl ManifestInstruction for AssertWorktopIsEmpty {
 pub struct PopFromAuthZone;
 
 impl ManifestInstruction for PopFromAuthZone {
+    const IDENT: &'static str = "POP_FROM_AUTH_ZONE";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new("POP_FROM_AUTH_ZONE").add_argument(context.new_proof());
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(context.new_proof());
         Ok(instruction)
     }
 
@@ -268,12 +305,13 @@ pub struct PushToAuthZone {
 }
 
 impl ManifestInstruction for PushToAuthZone {
+    const IDENT: &'static str = "PUSH_TO_AUTHZONE";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new("PUSH_TO_AUTHZONE").add_argument(&self.proof_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
         Ok(instruction)
     }
 
@@ -293,11 +331,13 @@ pub struct CreateProofFromAuthZoneOfAmount {
 }
 
 impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(&self.amount)
             .add_argument(context.new_proof());
@@ -322,15 +362,16 @@ pub struct CreateProofFromAuthZoneOfNonFungibles {
 }
 
 impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new("CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES")
-                .add_argument(&self.resource_address)
-                .add_argument(&self.ids)
-                .add_argument(context.new_proof());
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.resource_address)
+            .add_argument(&self.ids)
+            .add_argument(context.new_proof());
         Ok(instruction)
     }
 
@@ -351,11 +392,13 @@ pub struct CreateProofFromAuthZoneOfAll {
 }
 
 impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.resource_address)
             .add_argument(context.new_proof());
         Ok(instruction)
@@ -375,11 +418,13 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
 pub struct DropAuthZoneProofs;
 
 impl ManifestInstruction for DropAuthZoneProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_PROOFS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_AUTH_ZONE_PROOFS");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -397,11 +442,13 @@ impl ManifestInstruction for DropAuthZoneProofs {
 pub struct DropAuthZoneRegularProofs;
 
 impl ManifestInstruction for DropAuthZoneRegularProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_REGULAR_PROOFS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_AUTH_ZONE_REGULAR_PROOFS");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -419,11 +466,13 @@ impl ManifestInstruction for DropAuthZoneRegularProofs {
 pub struct DropAuthZoneSignatureProofs;
 
 impl ManifestInstruction for DropAuthZoneSignatureProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_SIGNATURE_PROOFS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_AUTH_ZONE_SIGNATURE_PROOFS");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -447,11 +496,13 @@ pub struct CreateProofFromBucketOfAmount {
 }
 
 impl ManifestInstruction for CreateProofFromBucketOfAmount {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CREATE_PROOF_FROM_BUCKET_OF_AMOUNT")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.bucket_id)
             .add_argument(&self.amount)
             .add_argument(context.new_proof());
@@ -475,11 +526,13 @@ pub struct CreateProofFromBucketOfNonFungibles {
 }
 
 impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.bucket_id)
             .add_argument(&self.ids)
             .add_argument(context.new_proof());
@@ -502,11 +555,13 @@ pub struct CreateProofFromBucketOfAll {
 }
 
 impl ManifestInstruction for CreateProofFromBucketOfAll {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_ALL";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CREATE_PROOF_FROM_BUCKET_OF_ALL")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.bucket_id)
             .add_argument(context.new_proof());
         Ok(instruction)
@@ -527,11 +582,13 @@ pub struct BurnResource {
 }
 
 impl ManifestInstruction for BurnResource {
+    const IDENT: &'static str = "BURN_RESOURCE";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("BURN_RESOURCE").add_argument(&self.bucket_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
         Ok(instruction)
     }
 
@@ -553,11 +610,13 @@ pub struct CloneProof {
 }
 
 impl ManifestInstruction for CloneProof {
+    const IDENT: &'static str = "CLONE_PROOF";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("CLONE_PROOF")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.proof_id)
             .add_argument(context.new_proof());
         Ok(instruction)
@@ -577,11 +636,13 @@ pub struct DropProof {
 }
 
 impl ManifestInstruction for DropProof {
+    const IDENT: &'static str = "DROP_PROOF";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_PROOF").add_argument(&self.proof_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
         Ok(instruction)
     }
 
@@ -673,7 +734,7 @@ impl CallFunction {
                 _ => {}
             }
         }
-        DecompiledInstruction::new("CALL_FUNCTION")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.package_address)
             .add_argument(&self.blueprint_name)
             .add_argument(&self.function_name)
@@ -681,20 +742,14 @@ impl CallFunction {
 }
 
 impl ManifestInstruction for CallFunction {
+    const IDENT: &'static str = "CALL_FUNCTION";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -750,27 +805,21 @@ impl CallMethod {
                 _ => {}
             }
         }
-        DecompiledInstruction::new("CALL_METHOD")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.address)
             .add_argument(&self.method_name)
     }
 }
 
 impl ManifestInstruction for CallMethod {
+    const IDENT: &'static str = "CALL_METHOD";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -809,27 +858,21 @@ impl CallRoyaltyMethod {
             }
             _ => {}
         }
-        DecompiledInstruction::new("CALL_ROYALTY_METHOD")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.address)
             .add_argument(&self.method_name)
     }
 }
 
 impl ManifestInstruction for CallRoyaltyMethod {
+    const IDENT: &'static str = "CALL_ROYALTY_METHOD";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -865,27 +908,21 @@ impl CallMetadataMethod {
             }
             _ => {}
         }
-        DecompiledInstruction::new("CALL_METADATA_METHOD")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.address)
             .add_argument(&self.method_name)
     }
 }
 
 impl ManifestInstruction for CallMetadataMethod {
+    const IDENT: &'static str = "CALL_METADATA_METHOD";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -921,27 +958,21 @@ impl CallRoleAssignmentMethod {
             }
             _ => {}
         }
-        DecompiledInstruction::new("CALL_ROLE_ASSIGNMENT_METHOD")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.address)
             .add_argument(&self.method_name)
     }
 }
 
 impl ManifestInstruction for CallRoleAssignmentMethod {
+    const IDENT: &'static str = "CALL_ROLE_ASSIGNMENT_METHOD";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -981,27 +1012,21 @@ impl CallDirectVaultMethod {
             }
             _ => {}
         }
-        DecompiledInstruction::new("CALL_DIRECT_VAULT_METHOD")
+        DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.address)
             .add_argument(&self.method_name)
     }
 }
 
 impl ManifestInstruction for CallDirectVaultMethod {
+    const IDENT: &'static str = "CALL_DIRECT_VAULT_METHOD";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let mut instruction = self.decompile_header();
-
-        if let Value::Tuple { fields: arg_fields } = &self.args {
-            for argument in arg_fields.iter() {
-                instruction = instruction.add_value_argument(argument.clone());
-            }
-        } else {
-            return Err(DecompileError::InvalidArguments);
-        }
-        Ok(instruction)
+        self.decompile_header()
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -1023,11 +1048,13 @@ impl ManifestInstruction for CallDirectVaultMethod {
 pub struct DropNamedProofs;
 
 impl ManifestInstruction for DropNamedProofs {
+    const IDENT: &'static str = "DROP_NAMED_PROOFS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_NAMED_PROOFS");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -1045,11 +1072,13 @@ impl ManifestInstruction for DropNamedProofs {
 pub struct DropAllProofs;
 
 impl ManifestInstruction for DropAllProofs {
+    const IDENT: &'static str = "DROP_ALL_PROOFS";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("DROP_ALL_PROOFS");
+        let instruction = DecompiledInstruction::new(Self::IDENT);
         Ok(instruction)
     }
 
@@ -1069,11 +1098,13 @@ pub struct AllocateGlobalAddress {
 }
 
 impl ManifestInstruction for AllocateGlobalAddress {
+    const IDENT: &'static str = "ALLOCATE_GLOBAL_ADDRESS";
+
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("ALLOCATE_GLOBAL_ADDRESS")
+        let instruction = DecompiledInstruction::new(Self::IDENT)
             .add_argument(&self.package_address)
             .add_argument(&self.blueprint_name)
             .add_argument(context.new_address_reservation())
@@ -1099,13 +1130,13 @@ pub struct YieldToParent {
 }
 
 impl ManifestInstruction for YieldToParent {
+    const IDENT: &'static str = "YIELD_TO_PARENT";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new("YIELD_TO_PARENT").add_value_argument(self.args.clone());
-        Ok(instruction)
+        DecompiledInstruction::new(Self::IDENT).add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
@@ -1118,25 +1149,30 @@ impl ManifestInstruction for YieldToParent {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct YieldToChild {
-    pub child_index: ManifestIntent,
+    /// Ideally this would be a ManifestNamedIntent - but there wasn't time
+    /// to version ManifestSbor and add this in - so instead, we use a raw u32
+    /// here.
+    pub child_index: ManifestNamedIntentAsU32,
     pub args: ManifestValue,
 }
 
 impl ManifestInstruction for YieldToChild {
+    const IDENT: &'static str = "YIELD_TO_CHILD";
+
     fn decompile(
         &self,
-        _context: &mut DecompilationContext,
+        context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("YIELD_TO_CHILD")
-            .add_argument(self.child_index)
-            .add_value_argument(self.args.clone());
-        Ok(instruction)
+        let intent_name = context.object_names.intent_name(self.child_index.into());
+        DecompiledInstruction::new(Self::IDENT)
+            .add_raw_argument(format!("NamedIntent(\"{intent_name}\")"))
+            .add_separated_tuple_value_arguments(&self.args)
     }
 
     fn effect(&self) -> Effect {
         Effect::Invocation {
             kind: InvocationKind::YieldToChild {
-                child_index: self.child_index,
+                child_index: self.child_index.into(),
             },
             args: &self.args,
         }
@@ -1149,12 +1185,14 @@ pub struct VerifyParent {
 }
 
 impl ManifestInstruction for VerifyParent {
+    const IDENT: &'static str = "VERIFY_PARENT";
+
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new("AUTHENTICATE_PARENT")
-            .add_value_argument(self.access_rule.clone());
+        let instruction =
+            DecompiledInstruction::new(Self::IDENT).add_value_argument(self.access_rule.clone());
         Ok(instruction)
     }
 
