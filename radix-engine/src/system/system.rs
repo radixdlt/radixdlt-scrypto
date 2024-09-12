@@ -111,6 +111,10 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
     pub fn system(&mut self) -> &mut System<Y::SystemCallback> {
         self.api.kernel_get_system()
     }
+
+    pub fn is_root_thread(&self) -> bool {
+        self.api.kernel_get_stack_id() == 0
+    }
 }
 
 #[cfg_attr(
@@ -2218,6 +2222,8 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
 
     #[trace_resources]
     fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
+        self.api.kernel_get_stack_id();
+
         let costing_enabled = self
             .api
             .kernel_get_system()
@@ -2995,9 +3001,6 @@ impl<'a, Y: SystemBasedKernelApi> KernelInternalApi for SystemService<'a, Y> {
         self.api.kernel_get_system_state()
     }
 
-    fn kernel_get_thread_id(&self) -> usize {
-        self.api.kernel_get_thread_id()
-    }
 
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()

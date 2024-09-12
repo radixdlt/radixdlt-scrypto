@@ -497,6 +497,10 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
 {
     type CallFrameData = Actor;
 
+    fn kernel_get_stack_id(&self) -> usize {
+        self.api.kernel_get_stack_id()
+    }
+
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
         self.api.kernel_switch_stack(id)
     }
@@ -522,10 +526,6 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
-        self.api.kernel_get_thread_id()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -575,9 +575,6 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
         }
     }
 
-    fn kernel_get_thread_id(&self) -> usize {
-        self.api.kernel_get_thread_id()
-    }
 
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()

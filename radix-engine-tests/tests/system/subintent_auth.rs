@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::macros::dec;
 use radix_rust::btreeset;
 use radix_rust::prelude::{index_map_new, IndexMap};
-use radix_transactions::builder::{ManifestBuilder, ManifestV2Builder};
+use radix_transactions::builder::ManifestV2Builder;
 use radix_transactions::model::{InstructionV1, ManifestIntent, TestTransaction};
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
