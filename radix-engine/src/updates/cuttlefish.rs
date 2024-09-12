@@ -84,13 +84,13 @@ fn generate_principal_batch(
     if let UpdateSetting::Enabled(_settings) = &system_logic_update {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-protocol-system-logic-updates",
-            generate_system_logic_updates(store),
+            generate_system_logic_v2_updates(store),
         ));
     }
     ProtocolUpdateBatch { transactions }
 }
 
-fn generate_system_logic_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
+fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let system_boot: SystemBoot = db
         .get_mapped::<SpreadPrefixKeyMapper, _>(
             &TRANSACTION_TRACKER.into_node_id(),
