@@ -575,7 +575,6 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
         }
     }
 
-
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
     }

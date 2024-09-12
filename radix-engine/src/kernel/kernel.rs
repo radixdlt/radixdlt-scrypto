@@ -567,7 +567,6 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
         self.stacks.cur().get_node_visibility(node_id)
     }
 
-
     fn kernel_get_current_depth(&self) -> usize {
         self.stacks.cur().depth()
     }

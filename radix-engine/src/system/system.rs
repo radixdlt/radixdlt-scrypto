@@ -2222,7 +2222,13 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
 
     #[trace_resources]
     fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
-        self.api.kernel_get_stack_id();
+        let stack_id = self.api.kernel_get_stack_id();
+        if stack_id != 0 {
+            // TODO: Are we allowing contingent lock fees in child subintents?
+            return Err(RuntimeError::SystemError(
+                SystemError::CannotLockFeeInChildSubintent(stack_id),
+            ));
+        }
 
         let costing_enabled = self
             .api
@@ -3000,7 +3006,6 @@ impl<'a, Y: SystemBasedKernelApi> KernelInternalApi for SystemService<'a, Y> {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Y::CallbackObject> {
         self.api.kernel_get_system_state()
     }
-
 
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
