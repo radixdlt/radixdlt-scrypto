@@ -92,8 +92,8 @@ impl<'a> DecompilationContext<'a> {
         ManifestAddress::Named(id)
     }
 
-    pub fn new_intent(&mut self) -> ManifestIntent {
-        self.id_allocator.new_intent_id()
+    pub fn new_named_intent(&mut self) -> ManifestNamedIntent {
+        self.id_allocator.new_named_intent_id()
     }
 
     /// Allocate addresses before transaction, for system transactions only.
@@ -169,6 +169,20 @@ impl DecompiledInstruction {
         self
     }
 
+    pub fn add_separated_tuple_value_arguments(
+        mut self,
+        tuple_args: &ManifestValue,
+    ) -> Result<Self, DecompileError> {
+        if let Value::Tuple { fields } = tuple_args {
+            for argument in fields.iter() {
+                self = self.add_value_argument(argument.clone());
+            }
+        } else {
+            return Err(DecompileError::InvalidArguments);
+        }
+        Ok(self)
+    }
+
     pub fn add_argument(self, value: impl ManifestEncode) -> Self {
         let encoded = manifest_encode(&value).unwrap();
         let value = manifest_decode(&encoded).unwrap();
@@ -191,15 +205,17 @@ pub fn output_instruction<F: fmt::Write>(
         fields: arguments,
     }: DecompiledInstruction,
 ) -> Result<(), DecompileError> {
+    let value_display_context = context.for_value_display();
     write!(f, "{}", command)?;
     for argument in arguments.iter() {
         write!(f, "\n")?;
         match argument {
             DecompiledInstructionField::Value(value) => {
-                format_manifest_value(f, value, &context.for_value_display(), true, 0)?;
+                format_manifest_value(f, value, &value_display_context, true, 0)?;
             }
             DecompiledInstructionField::Raw(raw_argument) => {
-                write!(f, "{raw_argument}")?;
+                let initial_indent = value_display_context.get_indent(0);
+                write!(f, "{initial_indent}{raw_argument}")?;
             }
         }
     }

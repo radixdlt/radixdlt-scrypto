@@ -31,20 +31,20 @@ pub fn validate_call_arguments_to_native_components(
     manifest: &impl ReadableManifest,
 ) -> Result<(), LocatedInstructionSchemaValidationError> {
     for (instruction_index, instruction) in manifest.get_instructions().iter().enumerate() {
-        validate_instruction_call_arguments_to_native_components(instruction).map_err(|cause| {
-            LocatedInstructionSchemaValidationError {
+        validate_instruction_call_arguments_to_native_components(instruction.effect()).map_err(
+            |cause| LocatedInstructionSchemaValidationError {
                 instruction_index,
                 cause,
-            }
-        })?
+            },
+        )?
     }
     Ok(())
 }
 
 fn validate_instruction_call_arguments_to_native_components(
-    instruction: &impl ManifestInstruction,
+    instruction_effect: ManifestInstructionEffect,
 ) -> Result<(), InstructionSchemaValidationError> {
-    let (invocation, args) = match instruction.effect() {
+    let (invocation, args) = match instruction_effect {
         ManifestInstructionEffect::Invocation {
             kind:
                 InvocationKind::Function {

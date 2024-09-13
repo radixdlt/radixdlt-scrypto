@@ -20,7 +20,7 @@ pub mod token;
 
 pub use any_manifest::*;
 pub use blob_provider::*;
-pub use compiler::{compile, CompileError};
+pub use compiler::*;
 pub use decompiler::{decompile, decompile_any, DecompileError};
 pub use manifest_enums::*;
 pub use manifest_instruction_effects::*;

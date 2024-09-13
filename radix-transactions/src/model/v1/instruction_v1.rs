@@ -6,7 +6,7 @@ impl<T: SborEnumVariantFor<InstructionV1, ManifestCustomValueKind>> From<T> for 
     }
 }
 
-impl ManifestInstruction for InstructionV1 {
+impl ManifestInstructionSet for InstructionV1 {
     fn decompile(
         &self,
         context: &mut decompiler::DecompilationContext,

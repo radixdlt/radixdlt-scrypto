@@ -1,10 +1,7 @@
 use crate::resim::*;
 use clap::Parser;
 use radix_engine::utils::validate_call_arguments_to_native_components;
-use radix_transactions::manifest::{
-    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
-    BlobProvider,
-};
+use radix_transactions::manifest::*;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
@@ -54,18 +51,12 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = compile(
+        let compiled_manifest = compile_manifest_with_pretty_error::<TransactionManifestV1>(
             &pre_processed_manifest,
             &network,
             BlobProvider::new_with_blobs(blobs),
-        )
-        .map_err(|err| {
-            compile_error_diagnostics(
-                &pre_processed_manifest,
-                err,
-                CompileErrorDiagnosticsStyle::TextTerminalColors,
-            )
-        })?;
+            CompileErrorDiagnosticsStyle::TextTerminalColors,
+        )?;
 
         validate_call_arguments_to_native_components(&compiled_manifest)
             .map_err(Error::InstructionSchemaValidationError)?;
