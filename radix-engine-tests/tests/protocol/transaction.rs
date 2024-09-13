@@ -16,7 +16,7 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
     let intents = (0..2)
         .into_iter()
         .map(|_| {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .build();
             (manifest, ledger.next_transaction_nonce())

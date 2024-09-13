@@ -81,22 +81,22 @@ pub fn run() -> Result<(), String> {
                         SystemTransactionManifestV1::from_transaction(&system_transaction).into()
                     }
                     VersionedTransactionPayload::TransactionIntentV2(intent) => {
-                        TransactionManifestV2::from_intent(&intent.root_intent_core).into()
+                        TransactionManifestV2::from_intent_core(&intent.root_intent_core).into()
                     }
                     VersionedTransactionPayload::SignedTransactionIntentV2(signed_intent) => {
-                        TransactionManifestV2::from_intent(
+                        TransactionManifestV2::from_intent_core(
                             &signed_intent.root_intent.root_intent_core,
                         )
                         .into()
                     }
                     VersionedTransactionPayload::NotarizedTransactionV2(notarized) => {
-                        TransactionManifestV2::from_intent(
+                        TransactionManifestV2::from_intent_core(
                             &notarized.signed_intent.root_intent.root_intent_core,
                         )
                         .into()
                     }
                     VersionedTransactionPayload::SubintentV2(subintent) => {
-                        TransactionManifestV2::from_intent(&subintent.intent_core).into()
+                        TransactionManifestV2::from_intent_core(&subintent.intent_core).into()
                     }
                     other_type => {
                         return Err(format!(
