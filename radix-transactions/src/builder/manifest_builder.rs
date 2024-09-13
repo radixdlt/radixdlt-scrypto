@@ -2274,7 +2274,7 @@ where
     }
 }
 
-impl<M: BuildableManifestWithParent> ManifestBuilder<M>
+impl<M: BuildableManifest> ManifestBuilder<M>
 where
     M::Instruction: From<InstructionV2>,
 {

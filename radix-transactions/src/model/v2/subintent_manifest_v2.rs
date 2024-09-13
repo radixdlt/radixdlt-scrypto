@@ -41,8 +41,6 @@ impl ReadableManifest for SubintentManifestV2 {
     }
 }
 
-impl BuildableManifestWithParent for SubintentManifestV2 {}
-
 impl BuildableManifestWithChildSupport for SubintentManifestV2 {
     fn add_child_subintent(&mut self, hash: SubintentHash) {
         self.children.push(ChildSubintent { hash })

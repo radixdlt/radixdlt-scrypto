@@ -10,9 +10,6 @@ pub trait BuildableManifestWithChildSupport: BuildableManifest {
     fn add_child_subintent(&mut self, hash: SubintentHash);
 }
 
-/// A trait indicating the manifest has a parent
-pub trait BuildableManifestWithParent: BuildableManifest {}
-
 pub trait ReadableManifest {
     type Instruction: ManifestInstruction;
     fn get_instructions(&self) -> &[Self::Instruction];

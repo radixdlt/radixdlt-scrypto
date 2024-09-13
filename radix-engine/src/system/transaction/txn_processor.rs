@@ -115,7 +115,8 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
         api: &mut Y,
     ) -> Result<ResumeResult, RuntimeError> {
         if let Some(received_value) = received_value {
-            self.objects.handle_call_return_data(&received_value, &self.worktop, api)?;
+            self.objects
+                .handle_call_return_data(&received_value, &self.worktop, api)?;
         }
 
         while let Some(instruction) = self.instructions.pop_front() {
@@ -126,8 +127,13 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
             self.instruction_index += 1;
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
-                    Yield::ToChild(child, value) => ResumeResult::YieldToChild(child, IndexedScryptoValue::from_scrypto_value(value)),
-                    Yield::ToParent(value) => ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(value)),
+                    Yield::ToChild(child, value) => ResumeResult::YieldToChild(
+                        child,
+                        IndexedScryptoValue::from_scrypto_value(value),
+                    ),
+                    Yield::ToParent(value) => {
+                        ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(value))
+                    }
                 };
                 return Ok(result);
             }

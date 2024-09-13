@@ -49,7 +49,11 @@ impl<M: SystemCallbackObject> KernelStackApi for MockKernel<M> {
         panic1!()
     }
 
-    fn kernel_send_to_stack(&mut self, _id: usize, _value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+    fn kernel_send_to_stack(
+        &mut self,
+        _id: usize,
+        _value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
         panic1!()
     }
 
