@@ -1,8 +1,8 @@
 use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_engine::transaction::ExecutionConfig;
 use radix_rust::btreeset;
-use radix_transactions::builder::ManifestV2Builder;
 use radix_transactions::model::{ManifestIntent, TestTransaction};
+use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
@@ -29,7 +29,7 @@ fn test_subintent_txn_shape(children: Vec<Vec<usize>>) {
     let mut intents = vec![];
 
     for (index, intent_children) in children.into_iter().enumerate() {
-        let mut builder = ManifestV2Builder::new_v2();
+        let mut builder = ManifestBuilder::new_v2();
         if index == 0 {
             builder = builder.lock_standard_test_fee(account);
         }
