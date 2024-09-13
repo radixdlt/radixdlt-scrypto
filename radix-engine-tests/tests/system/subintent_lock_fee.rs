@@ -2,8 +2,8 @@ use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::ExecutionConfig;
 use radix_rust::btreeset;
-use radix_transactions::builder::ManifestV2Builder;
 use radix_transactions::model::{ManifestIntent, TestTransaction};
+use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
@@ -15,7 +15,7 @@ fn should_not_be_able_to_lock_fee_in_a_child_subintent() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -28,7 +28,7 @@ fn should_not_be_able_to_lock_fee_in_a_child_subintent() {
             )
         },
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .build();
 
