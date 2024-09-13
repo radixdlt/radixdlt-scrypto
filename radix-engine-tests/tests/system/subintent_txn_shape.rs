@@ -1,8 +1,8 @@
 use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_engine::transaction::ExecutionConfig;
 use radix_rust::btreeset;
-use radix_transactions::builder::ManifestBuilder;
 use radix_transactions::model::{ManifestIntent, TestTransaction};
+use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
