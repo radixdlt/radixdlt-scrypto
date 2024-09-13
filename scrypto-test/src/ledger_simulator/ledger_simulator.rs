@@ -1136,10 +1136,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
+            TestTransaction::new_v1_from_nonce(
+                manifest,
+                nonce,
+                initial_proofs.into_iter().collect(),
+            )
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(),
             ExecutionConfig::for_test_transaction(),
         )
     }
@@ -1155,10 +1159,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
+            TestTransaction::new_v1_from_nonce(
+                manifest,
+                nonce,
+                initial_proofs.into_iter().collect(),
+            )
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(),
             execution_config,
         )
     }
@@ -1179,10 +1187,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             ..Default::default()
         });
         self.execute_transaction(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
+            TestTransaction::new_v1_from_nonce(
+                manifest,
+                nonce,
+                initial_proofs.into_iter().collect(),
+            )
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(),
             config,
         )
     }
@@ -1197,10 +1209,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        let txn = TestTransaction::new_from_nonce(manifest, nonce)
-            .prepare()
-            .expect("expected transaction to be preparable");
-        let executable = txn.get_executable(initial_proofs.into_iter().collect());
+        let txn = TestTransaction::new_v1_from_nonce(
+            manifest,
+            nonce,
+            initial_proofs.into_iter().collect(),
+        )
+        .prepare()
+        .expect("expected transaction to be preparable");
+        let executable = txn.get_executable();
 
         let vm_init = self.vm_modules.create_vm_init();
 

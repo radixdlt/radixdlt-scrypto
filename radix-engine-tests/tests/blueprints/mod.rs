@@ -24,7 +24,6 @@ mod reentrancy;
 mod resource;
 mod static_dependencies;
 mod time;
-mod transaction_tracker;
 mod tx_processor;
 mod tx_processor_access;
 mod validator;

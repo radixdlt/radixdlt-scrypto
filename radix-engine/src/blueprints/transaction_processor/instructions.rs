@@ -14,7 +14,12 @@ use radix_native_sdk::runtime::LocalAuthZone;
 use radix_rust::prelude::*;
 use radix_transactions::data::transform;
 use radix_transactions::manifest::*;
-use radix_transactions::prelude::*;
+use radix_transactions::model::{InstructionV1, InstructionV2};
+
+pub enum Yield {
+    ToChild(usize),
+    ToParent,
+}
 
 pub trait TxnInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
@@ -22,7 +27,7 @@ pub trait TxnInstruction {
         worktop: &mut Worktop,
         objects: &mut TxnProcessorObjects,
         api: &mut Y,
-    ) -> Result<InstructionOutput, RuntimeError>;
+    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError>;
 }
 
 impl TxnInstruction for InstructionV1 {
@@ -31,8 +36,8 @@ impl TxnInstruction for InstructionV1 {
         worktop: &mut Worktop,
         objects: &mut TxnProcessorObjects,
         api: &mut Y,
-    ) -> Result<InstructionOutput, RuntimeError> {
-        match self {
+    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
+        let output = match self {
             InstructionV1::TakeAllFromWorktop(i) => i.execute(worktop, objects, api),
             InstructionV1::TakeFromWorktop(i) => i.execute(worktop, objects, api),
             InstructionV1::TakeNonFungiblesFromWorktop(i) => i.execute(worktop, objects, api),
@@ -67,11 +72,80 @@ impl TxnInstruction for InstructionV1 {
             InstructionV1::DropNamedProofs(i) => i.execute(worktop, objects, api),
             InstructionV1::DropAllProofs(i) => i.execute(worktop, objects, api),
             InstructionV1::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
-        }
+        }?;
+        Ok((output, None))
     }
 }
 
-impl TxnInstruction for TakeAllFromWorktop {
+impl TxnInstruction for InstructionV2 {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut TxnProcessorObjects,
+        api: &mut Y,
+    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
+        let output = match self {
+            InstructionV2::TakeAllFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::TakeFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::TakeNonFungiblesFromWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::ReturnToWorktop(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContainsAny(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContains(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopIsEmpty(_) => todo!(),
+            InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
+            InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromAuthZoneOfNonFungibles(i) => {
+                i.execute(worktop, objects, api)
+            }
+            InstructionV2::CreateProofFromAuthZoneOfAll(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromBucketOfAmount(i) => i.execute(worktop, objects, api),
+            InstructionV2::CreateProofFromBucketOfNonFungibles(i) => {
+                i.execute(worktop, objects, api)
+            }
+            InstructionV2::CreateProofFromBucketOfAll(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneRegularProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAuthZoneSignatureProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::BurnResource(i) => i.execute(worktop, objects, api),
+            InstructionV2::CloneProof(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropProof(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallFunction(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallRoyaltyMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallMetadataMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallRoleAssignmentMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::CallDirectVaultMethod(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropNamedProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::DropAllProofs(i) => i.execute(worktop, objects, api),
+            InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
+            InstructionV2::VerifyParent(_) => todo!(),
+            InstructionV2::YieldToChild(i) => {
+                return Ok((
+                    InstructionOutput::None,
+                    Some(Yield::ToChild(i.child_index.0 as usize)),
+                ));
+            }
+            InstructionV2::YieldToParent(_) => {
+                return Ok((InstructionOutput::None, Some(Yield::ToParent)));
+            }
+        }?;
+
+        Ok((output, None))
+    }
+}
+
+pub trait TxnNormalInstruction {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut TxnProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError>;
+}
+
+impl TxnNormalInstruction for TakeAllFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -84,7 +158,7 @@ impl TxnInstruction for TakeAllFromWorktop {
     }
 }
 
-impl TxnInstruction for TakeFromWorktop {
+impl TxnNormalInstruction for TakeFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -97,7 +171,7 @@ impl TxnInstruction for TakeFromWorktop {
     }
 }
 
-impl TxnInstruction for TakeNonFungiblesFromWorktop {
+impl TxnNormalInstruction for TakeNonFungiblesFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -114,7 +188,7 @@ impl TxnInstruction for TakeNonFungiblesFromWorktop {
     }
 }
 
-impl TxnInstruction for ReturnToWorktop {
+impl TxnNormalInstruction for ReturnToWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -127,7 +201,7 @@ impl TxnInstruction for ReturnToWorktop {
     }
 }
 
-impl TxnInstruction for AssertWorktopContainsAny {
+impl TxnNormalInstruction for AssertWorktopContainsAny {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -139,7 +213,7 @@ impl TxnInstruction for AssertWorktopContainsAny {
     }
 }
 
-impl TxnInstruction for AssertWorktopContains {
+impl TxnNormalInstruction for AssertWorktopContains {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -151,7 +225,7 @@ impl TxnInstruction for AssertWorktopContains {
     }
 }
 
-impl TxnInstruction for AssertWorktopContainsNonFungibles {
+impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -167,7 +241,7 @@ impl TxnInstruction for AssertWorktopContainsNonFungibles {
     }
 }
 
-impl TxnInstruction for PopFromAuthZone {
+impl TxnNormalInstruction for PopFromAuthZone {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -182,7 +256,7 @@ impl TxnInstruction for PopFromAuthZone {
     }
 }
 
-impl TxnInstruction for PushToAuthZone {
+impl TxnNormalInstruction for PushToAuthZone {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -195,7 +269,7 @@ impl TxnInstruction for PushToAuthZone {
     }
 }
 
-impl TxnInstruction for CreateProofFromAuthZoneOfAmount {
+impl TxnNormalInstruction for CreateProofFromAuthZoneOfAmount {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -208,7 +282,7 @@ impl TxnInstruction for CreateProofFromAuthZoneOfAmount {
     }
 }
 
-impl TxnInstruction for CreateProofFromAuthZoneOfNonFungibles {
+impl TxnNormalInstruction for CreateProofFromAuthZoneOfNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -225,7 +299,7 @@ impl TxnInstruction for CreateProofFromAuthZoneOfNonFungibles {
     }
 }
 
-impl TxnInstruction for CreateProofFromAuthZoneOfAll {
+impl TxnNormalInstruction for CreateProofFromAuthZoneOfAll {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -238,7 +312,7 @@ impl TxnInstruction for CreateProofFromAuthZoneOfAll {
     }
 }
 
-impl TxnInstruction for CreateProofFromBucketOfAmount {
+impl TxnNormalInstruction for CreateProofFromBucketOfAmount {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -252,7 +326,7 @@ impl TxnInstruction for CreateProofFromBucketOfAmount {
     }
 }
 
-impl TxnInstruction for CreateProofFromBucketOfNonFungibles {
+impl TxnNormalInstruction for CreateProofFromBucketOfNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -266,7 +340,7 @@ impl TxnInstruction for CreateProofFromBucketOfNonFungibles {
     }
 }
 
-impl TxnInstruction for CreateProofFromBucketOfAll {
+impl TxnNormalInstruction for CreateProofFromBucketOfAll {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -280,7 +354,7 @@ impl TxnInstruction for CreateProofFromBucketOfAll {
     }
 }
 
-impl TxnInstruction for DropAuthZoneProofs {
+impl TxnNormalInstruction for DropAuthZoneProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -292,7 +366,7 @@ impl TxnInstruction for DropAuthZoneProofs {
     }
 }
 
-impl TxnInstruction for DropAuthZoneRegularProofs {
+impl TxnNormalInstruction for DropAuthZoneRegularProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -304,7 +378,7 @@ impl TxnInstruction for DropAuthZoneRegularProofs {
     }
 }
 
-impl TxnInstruction for DropAuthZoneSignatureProofs {
+impl TxnNormalInstruction for DropAuthZoneSignatureProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -316,7 +390,7 @@ impl TxnInstruction for DropAuthZoneSignatureProofs {
     }
 }
 
-impl TxnInstruction for BurnResource {
+impl TxnNormalInstruction for BurnResource {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -332,7 +406,7 @@ impl TxnInstruction for BurnResource {
     }
 }
 
-impl TxnInstruction for CloneProof {
+impl TxnNormalInstruction for CloneProof {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -346,7 +420,7 @@ impl TxnInstruction for CloneProof {
     }
 }
 
-impl TxnInstruction for DropProof {
+impl TxnNormalInstruction for DropProof {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -384,7 +458,7 @@ fn handle_invocation<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Defau
     Ok(InstructionOutput::CallReturn(result.into()))
 }
 
-impl TxnInstruction for CallFunction {
+impl TxnNormalInstruction for CallFunction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -403,7 +477,7 @@ impl TxnInstruction for CallFunction {
     }
 }
 
-impl TxnInstruction for CallMethod {
+impl TxnNormalInstruction for CallMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -421,7 +495,7 @@ impl TxnInstruction for CallMethod {
     }
 }
 
-impl TxnInstruction for CallRoyaltyMethod {
+impl TxnNormalInstruction for CallRoyaltyMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -440,7 +514,7 @@ impl TxnInstruction for CallRoyaltyMethod {
     }
 }
 
-impl TxnInstruction for CallMetadataMethod {
+impl TxnNormalInstruction for CallMetadataMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -459,7 +533,7 @@ impl TxnInstruction for CallMetadataMethod {
     }
 }
 
-impl TxnInstruction for CallRoleAssignmentMethod {
+impl TxnNormalInstruction for CallRoleAssignmentMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -478,7 +552,7 @@ impl TxnInstruction for CallRoleAssignmentMethod {
     }
 }
 
-impl TxnInstruction for CallDirectVaultMethod {
+impl TxnNormalInstruction for CallDirectVaultMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -495,7 +569,7 @@ impl TxnInstruction for CallDirectVaultMethod {
     }
 }
 
-impl TxnInstruction for DropNamedProofs {
+impl TxnNormalInstruction for DropNamedProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -510,7 +584,7 @@ impl TxnInstruction for DropNamedProofs {
     }
 }
 
-impl TxnInstruction for DropAllProofs {
+impl TxnNormalInstruction for DropAllProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
@@ -526,7 +600,7 @@ impl TxnInstruction for DropAllProofs {
     }
 }
 
-impl TxnInstruction for AllocateGlobalAddress {
+impl TxnNormalInstruction for AllocateGlobalAddress {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,

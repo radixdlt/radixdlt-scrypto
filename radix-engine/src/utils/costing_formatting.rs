@@ -1,5 +1,6 @@
 use crate::transaction::*;
 use radix_common::prelude::*;
+// This module is only included if std exists, so it's fine to import it
 use std::path::PathBuf;
 
 #[derive(Copy, Clone)]

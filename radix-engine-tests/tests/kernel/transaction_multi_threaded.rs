@@ -44,12 +44,14 @@ mod multi_threaded_test {
                     &mut substate_db,
                     &vm_modules,
                     &ExecutionConfig::for_test_transaction(),
-                    TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
-                        .prepare()
-                        .unwrap()
-                        .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
-                            &public_key
-                        )]),
+                    TestTransaction::new_v1(
+                        manifest,
+                        hash(format!("Account creation: {i}")),
+                        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                    )
+                    .prepare()
+                    .unwrap()
+                    .get_executable(),
                 )
                 .expect_commit(true)
                 .new_component_addresses()[0];
@@ -71,10 +73,14 @@ mod multi_threaded_test {
                 &mut substate_db,
                 &vm_modules,
                 &ExecutionConfig::for_test_transaction(),
-                TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
-                    .prepare()
-                    .expect("Expected transaction to be preparable")
-                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+                TestTransaction::new_v1(
+                    manifest.clone(),
+                    hash(format!("Fill account: {}", nonce)),
+                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                )
+                .prepare()
+                .expect("Expected transaction to be preparable")
+                .get_executable(),
             )
             .expect_commit(true);
         }
@@ -96,12 +102,14 @@ mod multi_threaded_test {
                         &substate_db,
                         &vm_modules,
                         &ExecutionConfig::for_test_transaction(),
-                        TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
-                            .prepare()
-                            .expect("Expected transaction to be preparable")
-                            .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
-                                &public_key,
-                            )]),
+                        TestTransaction::new_v1(
+                            manifest.clone(),
+                            hash(format!("Transfer")),
+                            btreeset![NonFungibleGlobalId::from_public_key(&public_key,)],
+                        )
+                        .prepare()
+                        .expect("Expected transaction to be preparable")
+                        .get_executable(),
                     );
                     receipt.expect_commit_success();
                     println!("receipt = {:?}", receipt);

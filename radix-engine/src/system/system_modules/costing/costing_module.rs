@@ -380,10 +380,8 @@ impl PrivilegedSystemModule for CostingModule {
         api: &mut impl SystemBasedKernelApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-
         // Skip invocation costing for transaction processor
-        if depth == 0 {
+        if api.kernel_get_system_state().current_call_frame.is_root() {
             return Ok(());
         }
 
@@ -456,6 +454,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let depth = api.current_stack_depth();
+        let is_root = api.system_state().current_call_frame.is_root();
         let costing_module = api.module();
 
         // Add invocation information to the execution cost breakdown.
@@ -472,7 +471,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         }
 
         // Skip invocation costing for transaction processor
-        if depth == 0 {
+        if is_root {
             return Ok(());
         }
 
@@ -504,7 +503,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         }
 
         // Skip invocation costing for transaction processor
-        if depth == 0 {
+        if api.system_state().current_call_frame.is_root() {
             return Ok(());
         }
 
