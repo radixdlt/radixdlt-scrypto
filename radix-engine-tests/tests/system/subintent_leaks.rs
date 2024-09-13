@@ -5,8 +5,8 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::macros::dec;
 use radix_rust::btreeset;
-use radix_transactions::builder::ManifestV2Builder;
 use radix_transactions::model::{ManifestIntent, TestTransaction};
+use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
@@ -19,7 +19,7 @@ fn bucket_leak_in_subintent_should_fail() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -32,7 +32,7 @@ fn bucket_leak_in_subintent_should_fail() {
             )
         },
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .withdraw_from_account(account2, XRD, dec!(10))
                 .build();
 
@@ -74,7 +74,7 @@ fn proofs_in_subintent_should_autodrop() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -87,7 +87,7 @@ fn proofs_in_subintent_should_autodrop() {
             )
         },
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .create_proof_from_account_of_amount(account2, XRD, dec!(10))
                 .build();
 

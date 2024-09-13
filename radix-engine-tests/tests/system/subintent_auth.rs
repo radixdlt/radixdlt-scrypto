@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::macros::dec;
 use radix_rust::btreeset;
 use radix_rust::prelude::{index_map_new, IndexMap};
-use radix_transactions::builder::ManifestV2Builder;
 use radix_transactions::model::{InstructionV1, ManifestIntent, TestTransaction};
+use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
@@ -24,7 +24,7 @@ fn should_not_be_able_to_use_root_auth_in_subintent() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -37,7 +37,7 @@ fn should_not_be_able_to_use_root_auth_in_subintent() {
             )
         },
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .withdraw_from_account(account, XRD, dec!(10))
                 .deposit_entire_worktop(account)
                 .build();
@@ -78,7 +78,7 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -91,7 +91,7 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
             )
         },
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .withdraw_from_account(account2, XRD, dec!(10))
                 .deposit_entire_worktop(account2)
                 .build();
@@ -134,7 +134,7 @@ fn should_not_be_able_to_call_tx_processor_in_subintent() {
     // Act
     let intents = vec![
         {
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
                 .yield_to_child(ManifestIntent(0), ())
                 .build();
@@ -149,7 +149,7 @@ fn should_not_be_able_to_call_tx_processor_in_subintent() {
         {
             let instructions: Vec<InstructionV1> = Vec::new();
             let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
-            let manifest = ManifestV2Builder::new_v2()
+            let manifest = ManifestBuilder::new_v2()
                 .call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
                     TRANSACTION_PROCESSOR_BLUEPRINT,
