@@ -8,10 +8,7 @@ use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::{
-    TransactionProcessorRunInputEfficientEncodable, TxnProcessor,
-    MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
-};
+use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::blueprints::transaction_tracker::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -35,6 +32,7 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
+use crate::system::transaction::multithread_txn_processor::MultiThreadedTxnProcessor;
 use crate::track::*;
 use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
@@ -134,69 +132,19 @@ impl VersionedSystemLogic {
                 output
             }
             VersionedSystemLogic::V2 => {
-                let intents = executable.intents();
-                for intent in intents {
-                    let mut system_service = SystemService::new(api);
-                    let virtual_resources = intent
-                        .auth_zone_init
-                        .simulate_every_proof_under_resources
-                        .clone();
-                    let virtual_non_fungibles =
-                        intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
-                    let auth_zone = AuthModule::create_auth_zone(
-                        &mut system_service,
-                        None,
-                        virtual_resources,
-                        virtual_non_fungibles,
-                    )?;
-
-                    api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
-                        blueprint_id: BlueprintId::new(
-                            &TRANSACTION_PROCESSOR_PACKAGE,
-                            TRANSACTION_PROCESSOR_BLUEPRINT,
-                        ),
-                        ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-                        auth_zone,
-                    }))?;
-                }
-
-                {
-                    let mut system_service = SystemService::new(api);
-                    let intent = intents.get(0).unwrap();
-
-                    let txn_processor = TxnProcessor::<InstructionV1>::init(
-                        intent.encoded_instructions.clone(),
-                        global_address_reservations.clone(),
-                        intent.blobs.clone(),
-                        MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
-                        &mut system_service,
-                    )?;
-                    let output = txn_processor.execute(&mut system_service)?;
-
-                    let owned_nodes = api.kernel_get_owned_nodes()?;
-                    System::auto_drop(owned_nodes, api)?;
-
-                    let actor = api.kernel_get_system_state().current_call_frame;
-                    match actor {
-                        Actor::Function(FunctionActor { auth_zone, .. }) => {
-                            let auth_zone = auth_zone.clone();
-                            let mut system_service = SystemService::new(api);
-                            AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
-                        }
-                        _ => {
-                            panic!("unexpected");
-                        }
-                    }
-
-                    let owned_nodes = api.kernel_get_owned_nodes()?;
-                    if !owned_nodes.is_empty() {
-                        return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
-                            owned_nodes,
-                        )));
-                    }
-
-                    output
-                }
+                let mut txn_threads =
+                    MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
+                txn_threads.execute(api)?;
+                let output = txn_threads
+                    .threads
+                    .get_mut(0)
+                    .unwrap()
+                    .0
+                    .outputs
+                    .drain(..)
+                    .collect();
+                txn_threads.cleanup(api)?;
+                output
             }
         };
 

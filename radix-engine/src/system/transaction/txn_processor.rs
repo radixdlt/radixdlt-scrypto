@@ -1,5 +1,5 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_processor::TxnInstruction;
+use crate::blueprints::transaction_processor::{TxnInstruction, Yield};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -42,14 +42,21 @@ impl From<TransactionProcessorError> for RuntimeError {
     }
 }
 
-pub struct TxnProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
-    instructions: Vec<I>,
-    worktop: Worktop,
-    objects: TxnProcessorObjects,
-    outputs: Vec<InstructionOutput>,
+pub enum ResumeResult {
+    YieldToChild(usize),
+    YieldToParent,
+    Done,
 }
 
-impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
+pub struct TxnProcessorThread<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
+    instructions: VecDeque<I>,
+    worktop: Worktop,
+    objects: TxnProcessorObjects,
+    pub instruction_index: usize,
+    pub outputs: Vec<InstructionOutput>,
+}
+
+impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread<I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         manifest_encoded_instructions: Rc<Vec<u8>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -94,29 +101,36 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
         let outputs = Vec::new();
 
         Ok(Self {
-            instructions,
+            instructions: instructions.into_iter().collect(),
+            instruction_index: 0usize,
             worktop,
             objects,
             outputs,
         })
     }
 
-    pub fn execute<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
-        L: Default,
-    >(
-        mut self,
+    pub fn resume<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        &mut self,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        for (index, instruction) in self.instructions.into_iter().enumerate() {
-            api.update_instruction_index(index)?;
-            let result = instruction.execute(&mut self.worktop, &mut self.objects, api)?;
-            self.outputs.push(result);
+    ) -> Result<ResumeResult, RuntimeError> {
+        while let Some(instruction) = self.instructions.pop_front() {
+            api.update_instruction_index(self.instruction_index)?;
+            let (output, yield_instruction) =
+                instruction.execute(&mut self.worktop, &mut self.objects, api)?;
+            self.outputs.push(output);
+            self.instruction_index += 1;
+            if let Some(yield_instruction) = yield_instruction {
+                let result = match yield_instruction {
+                    Yield::ToChild(child) => ResumeResult::YieldToChild(child),
+                    Yield::ToParent => ResumeResult::YieldToParent,
+                };
+                return Ok(result);
+            }
         }
 
         self.worktop.drop(api)?;
 
-        Ok(self.outputs)
+        Ok(ResumeResult::Done)
     }
 }
 

@@ -493,9 +493,14 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCosti
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
-    KernelThreadApi for WrappedKernelApi<'a, M, K>
+    KernelStackApi for WrappedKernelApi<'a, M, K>
 {
     type CallFrameData = Actor;
+
+    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_stack(id)
+    }
+
     fn kernel_set_call_frame_data(&mut self, data: Actor) -> Result<(), RuntimeError> {
         self.api.kernel_set_call_frame_data(data)
     }
