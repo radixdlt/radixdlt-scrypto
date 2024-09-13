@@ -1,7 +1,16 @@
 use super::*;
+use crate::system::system_callback::{
+    SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+};
+use radix_substate_store_interface::db_key_mapper::{
+    MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 
 #[derive(Clone)]
-pub struct CuttlefishSettings {}
+pub struct CuttlefishSettings {
+    /// Add configuration for system logic versioning
+    pub system_logic_update: UpdateSetting<NoSettings>,
+}
 
 impl UpdateSettings for CuttlefishSettings {
     type BatchGenerator = CuttlefishBatchGenerator;
@@ -10,12 +19,16 @@ impl UpdateSettings for CuttlefishSettings {
         ProtocolVersion::Cuttlefish
     }
 
-    fn all_enabled_as_default_for_network(_network: &NetworkDefinition) -> Self {
-        Self {}
+    fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
+        Self {
+            system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
+        }
     }
 
     fn all_disabled() -> Self {
-        Self {}
+        Self {
+            system_logic_update: UpdateSetting::Disabled,
+        }
     }
 
     fn create_batch_generator(&self) -> Self::BatchGenerator {
@@ -62,9 +75,51 @@ impl ProtocolUpdateBatchGenerator for CuttlefishBatchGenerator {
 
 #[deny(unused_variables)]
 fn generate_principal_batch(
-    _store: &dyn SubstateDatabase,
-    CuttlefishSettings {}: &CuttlefishSettings,
+    store: &dyn SubstateDatabase,
+    CuttlefishSettings {
+        system_logic_update,
+    }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
-    let transactions = vec![];
+    let mut transactions = vec![];
+    if let UpdateSetting::Enabled(_settings) = &system_logic_update {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-protocol-system-logic-updates",
+            generate_system_logic_v2_updates(store),
+        ));
+    }
     ProtocolUpdateBatch { transactions }
+}
+
+fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
+    let system_boot: SystemBoot = db
+        .get_mapped::<SpreadPrefixKeyMapper, _>(
+            &TRANSACTION_TRACKER.into_node_id(),
+            BOOT_LOADER_PARTITION,
+            &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+        )
+        .unwrap();
+
+    let cur_system_parameters = match system_boot {
+        SystemBoot::V1(parameters) => parameters,
+        _ => panic!("Unexpected SystemBoot version"),
+    };
+
+    StateUpdates {
+        by_node: indexmap!(
+            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
+                                scrypto_encode(&SystemBoot::V2(
+                                    VersionedSystemLogic::V2,
+                                    cur_system_parameters,
+                                )).unwrap()
+                            ),
+                        }
+                    },
+                }
+            }
+        ),
+    }
 }

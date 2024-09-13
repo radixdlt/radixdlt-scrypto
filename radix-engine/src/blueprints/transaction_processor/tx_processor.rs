@@ -51,9 +51,9 @@ pub struct TxnProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize>
 
 impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessor<I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
-        manifest_encoded_instructions: Vec<u8>,
+        manifest_encoded_instructions: Rc<Vec<u8>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
-        blobs: IndexMap<Hash, Vec<u8>>,
+        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         max_total_size_of_blobs: usize,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
@@ -126,13 +126,13 @@ pub struct TxnProcessorObjects {
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
     address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+    blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
     max_total_size_of_blobs: usize,
 }
 
 impl TxnProcessorObjects {
     fn new(
-        blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+        blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
         max_total_size_of_blobs: usize,
     ) -> Self {

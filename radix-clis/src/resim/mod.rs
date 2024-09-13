@@ -222,7 +222,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new_from_nonce(manifest, nonce);
+            let transaction = TestTransaction::new_v1_from_nonce(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
                 &mut db,

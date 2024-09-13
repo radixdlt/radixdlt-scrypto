@@ -153,6 +153,10 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
+    pub fn is_root(&self) -> bool {
+        matches!(self, Actor::Root)
+    }
+
     pub fn self_auth_zone(&self) -> Option<NodeId> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
