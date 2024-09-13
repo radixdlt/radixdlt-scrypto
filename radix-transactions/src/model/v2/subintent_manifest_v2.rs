@@ -9,14 +9,14 @@ use crate::internal_prelude::*;
 
 /// Can be built with a [`ManifestV2Builder`]
 #[derive(Debug, Clone, Default, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct TransactionManifestV2 {
+pub struct SubintentManifestV2 {
     pub instructions: Vec<InstructionV2>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
     pub children: Vec<ChildSubintent>,
     pub object_names: ManifestObjectNames,
 }
 
-impl ReadableManifest for TransactionManifestV2 {
+impl ReadableManifest for SubintentManifestV2 {
     type Instruction = InstructionV2;
 
     fn get_instructions(&self) -> &[Self::Instruction] {
@@ -41,10 +41,18 @@ impl ReadableManifest for TransactionManifestV2 {
     }
 }
 
+impl BuildableManifestWithParent for SubintentManifestV2 {}
+
+impl BuildableManifestWithChildSupport for SubintentManifestV2 {
+    fn add_child_subintent(&mut self, hash: SubintentHash) {
+        self.children.push(ChildSubintent { hash })
+    }
+}
+
 #[deprecated]
 fn temporary_noop_validate() {}
 
-impl BuildableManifest for TransactionManifestV2 {
+impl BuildableManifest for SubintentManifestV2 {
     fn add_instruction(&mut self, instruction: Self::Instruction) {
         self.instructions.push(instruction)
     }
@@ -58,8 +66,8 @@ impl BuildableManifest for TransactionManifestV2 {
     }
 }
 
-impl TransactionManifestV2 {
-    pub fn from_intent(intent: &IntentCoreV2) -> Self {
+impl SubintentManifestV2 {
+    pub fn from_intent_core(intent: &IntentCoreV2) -> Self {
         Self {
             instructions: intent.instructions.clone().into(),
             blobs: intent.blobs.clone().into(),

@@ -11,7 +11,7 @@ use crate::internal_prelude::*;
 /// to enable passing around transaction parts.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SignedPartialTransactionV2 {
-    pub root_intent: PartialTransactionV2,
+    pub partial_transaction: PartialTransactionV2,
     pub root_intent_signatures: IntentSignaturesV2,
     pub subintent_signatures: MultipleIntentSignaturesV2,
 }
