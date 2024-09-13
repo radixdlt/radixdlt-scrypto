@@ -84,6 +84,9 @@ impl ExecutableTransaction {
             }
         }
 
+        // Pre-allocated addresses are currently only used by the protocol (ie genesis + protocol updates).
+        // Since there's no reason for the protocol to use child subintents, we only assign pre-allocated
+        // addresses to the root subintent
         if let Some(root) = intents.get_mut(0) {
             for preallocated_address in &context.pre_allocated_addresses {
                 root.references.insert(

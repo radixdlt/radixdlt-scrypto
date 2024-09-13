@@ -40,6 +40,7 @@ struct ManifestNamerCore {
     named_proofs: IndexMap<String, ManifestObjectState<ManifestProof>>,
     named_addresses: NonIterMap<String, ManifestObjectState<ManifestAddress>>,
     named_address_reservations: NonIterMap<String, ManifestObjectState<ManifestAddressReservation>>,
+    named_intents: NonIterMap<String, ManifestObjectState<ManifestIntent>>,
     object_names: KnownManifestObjectNames,
 }
 
@@ -333,6 +334,70 @@ impl ManifestNamerCore {
                 .expect("Address was not recognised - perhaps you're using a named address not sourced from this builder?");
         }
     }
+
+    // Intent
+    pub fn new_intent(&mut self, name: impl Into<String>) -> NamedManifestIntent {
+        let name = name.into();
+        let old_entry = self
+            .named_intents
+            .insert(name.clone(), ManifestObjectState::Unregistered);
+        if old_entry.is_some() {
+            panic!(
+                "You cannot create a new named intent with the same name \"{name}\" multiple times"
+            );
+        }
+        NamedManifestIntent {
+            namer_id: self.namer_id,
+            name,
+        }
+    }
+
+    pub fn new_collision_free_intent_name(&mut self, prefix: &str) -> String {
+        for name_counter in 1..u32::MAX {
+            let name = if name_counter == 1 {
+                prefix.to_string()
+            } else {
+                format!("{prefix}_{name_counter}")
+            };
+            if !self.named_intents.contains_key(&name) {
+                return name;
+            }
+        }
+        panic!("Did not resolve a name");
+    }
+
+    pub fn resolve_intent(&self, name: impl AsRef<str>) -> ManifestIntent {
+        match self.named_intents.get(name.as_ref()) {
+            Some(ManifestObjectState::Present(id)) => *id,
+            Some(ManifestObjectState::Consumed) => unreachable!("Intent binding has already been consumed"),
+            _ => panic!("You cannot reference an intent with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
+        }
+    }
+
+    /// This is intended for registering an address reservation to an allocated identifier, as part of processing a manifest
+    /// instruction which creates a named address.
+    pub fn register_intent(&mut self, new: NamedManifestIntent) {
+        if self.namer_id != new.namer_id {
+            panic!("NamedManifestIntent cannot be registered against a different ManifestNamer")
+        }
+        let id = self.id_allocator.new_intent_id();
+        match self.named_intents.get_mut(&new.name) {
+            Some(allocated @ ManifestObjectState::Unregistered) => {
+                *allocated = ManifestObjectState::Present(id);
+                self
+                .object_names.intent_names.insert(id, new.name);
+            },
+            Some(_) => unreachable!("NamedManifestIntent was somehow registered twice"),
+            None => unreachable!("NamedManifestIntent was somehow created without a corresponding entry being added in the name allocation map"),
+        }
+    }
+
+    pub fn check_intent_exists(&self, intent: impl Into<ManifestIntent>) {
+        self.object_names
+            .intent_names
+            .get(&intent.into())
+            .expect("Intent was not recognised");
+    }
 }
 
 impl ManifestNameLookup {
@@ -358,6 +423,10 @@ impl ManifestNameLookup {
             ManifestAddress::Named(id) => id,
         }
     }
+
+    pub fn intent(&self, name: impl AsRef<str>) -> ManifestIntent {
+        self.core.borrow().resolve_intent(name)
+    }
 }
 
 impl ManifestNameRegistrar {
@@ -376,6 +445,8 @@ impl ManifestNameRegistrar {
         }
     }
 
+    /// This just registers a string name.
+    /// It's not yet bound to anything until `register_bucket` is called.
     pub fn new_bucket(&self, name: impl Into<String>) -> NamedManifestBucket {
         self.core.borrow_mut().new_named_bucket(name)
     }
@@ -400,6 +471,8 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_all_buckets();
     }
 
+    /// This just registers a string name.
+    /// It's not yet bound to anything until `register_proof` is called.
     pub fn new_proof(&self, name: impl Into<String>) -> NamedManifestProof {
         self.core.borrow_mut().new_named_proof(name)
     }
@@ -424,6 +497,8 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_all_proofs()
     }
 
+    /// This just registers a string name.
+    /// It's not yet bound to anything until `register_address_reservation` is called.
     pub fn new_address_reservation(
         &self,
         name: impl Into<String>,
@@ -447,6 +522,8 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_address_reservation(consumed);
     }
 
+    /// This just registers a string name.
+    /// It's not yet bound to anything until `register_named_address` is called.
     pub fn new_named_address(&self, name: impl Into<String>) -> NamedManifestAddress {
         self.core.borrow_mut().new_named_address(name)
     }
@@ -467,6 +544,28 @@ impl ManifestNameRegistrar {
         self.core.borrow().check_address_exists(address)
     }
 
+    /// This just registers a string name.
+    /// It's not yet bound to anything until `register_intent` is called.
+    pub fn new_intent(&self, name: impl Into<String>) -> NamedManifestIntent {
+        self.core.borrow_mut().new_intent(name)
+    }
+
+    pub fn new_collision_free_intent_name(&self, prefix: impl Into<String>) -> String {
+        self.core
+            .borrow_mut()
+            .new_collision_free_intent_name(&prefix.into())
+    }
+
+    /// This is intended for registering an intent to an allocated identifier, as part of processing a manifest
+    /// instruction which creates a named intent.
+    pub fn register_intent(&self, new: NamedManifestIntent) {
+        self.core.borrow_mut().register_intent(new)
+    }
+
+    pub fn check_intent_exists(&self, intent: impl Into<ManifestIntent>) {
+        self.core.borrow().check_intent_exists(intent)
+    }
+
     pub fn object_names(&self) -> KnownManifestObjectNames {
         self.core.borrow().object_names.clone()
     }
@@ -477,6 +576,10 @@ pub enum ManifestObjectState<T> {
     Present(T),
     Consumed,
 }
+
+//=====================
+// BUCKET
+//=====================
 
 #[must_use]
 pub struct NamedManifestBucket {
@@ -548,6 +651,63 @@ impl ExistingManifestBucket for ManifestBucket {
     }
 }
 
+//=====================
+// BUCKET BATCHES
+//=====================
+
+pub trait ResolvableBucketBatch {
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
+        let buckets: Vec<_> = self
+            .into_iter()
+            .map(|b| b.mark_consumed(registrar))
+            .collect();
+        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+    }
+}
+
+impl ResolvableBucketBatch for ManifestExpression {
+    fn consume_and_resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
+        match &self {
+            ManifestExpression::EntireWorktop => {
+                // No named buckets are consumed - instead EntireWorktop refers only to the
+                // unnamed buckets on the worktop part of the transaction processor
+                manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
+            }
+            ManifestExpression::EntireAuthZone => {
+                panic!("Not an allowed expression for a batch of buckets")
+            }
+        }
+    }
+}
+
+//=====================
+// PROOFS
+//=====================
+
 #[must_use]
 pub struct NamedManifestProof {
     namer_id: ManifestNamerId,
@@ -614,6 +774,73 @@ impl ExistingManifestProof for String {
 
 impl ExistingManifestProof for ManifestProof {
     fn resolve(self, _registrar: &ManifestNameRegistrar) -> ManifestProof {
+        self
+    }
+}
+
+//=====================
+// INTENTS
+//=====================
+
+#[must_use]
+pub struct NamedManifestIntent {
+    namer_id: ManifestNamerId,
+    name: String,
+}
+
+/// Either a string, or a new intent from a namer.
+pub trait NewManifestIntent {
+    fn register(self, registrar: &ManifestNameRegistrar);
+}
+
+impl<'a> NewManifestIntent for &'a str {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_intent(registrar.new_intent(self));
+    }
+}
+
+impl<'a> NewManifestIntent for &'a String {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_intent(registrar.new_intent(self));
+    }
+}
+
+impl NewManifestIntent for String {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_intent(registrar.new_intent(self));
+    }
+}
+
+impl NewManifestIntent for NamedManifestIntent {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_intent(self);
+    }
+}
+
+pub trait ExistingManifestIntent: Sized {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent;
+}
+
+impl<'a> ExistingManifestIntent for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+        registrar.name_lookup().intent(self)
+    }
+}
+
+impl<'a> ExistingManifestIntent for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+        registrar.name_lookup().intent(self)
+    }
+}
+
+impl ExistingManifestIntent for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+        registrar.name_lookup().intent(self)
+    }
+}
+
+impl ExistingManifestIntent for ManifestIntent {
+    fn resolve(self, _registrar: &ManifestNameRegistrar) -> ManifestIntent {
         self
     }
 }
@@ -733,16 +960,13 @@ impl<'a> ExistingManifestAddressReservation for ManifestAddressReservation {
     }
 }
 
-// NOTE:
-//------
-// Addresses are more complicated than buckets/proofs - eg:
-// * They can be static or named
-// * We want to provide tighter bounds (eg distinguish Resource / Package / Global)
-// * Addresses and Address Reservations are both used together and could be confused
-//
-// So we purposefully don't support the New_/Existing_ traits for named addresses.
-//
-// Instead, users have to use an explicit namer
+//=====================
+// NAMED ADDRESSES
+//=====================
+
+// Unlike the above, addresses are a bit more complicated -- so we have traits
+// like ResolvablePackageAddress which can be used instead of an
+// ExistingNamedManifestAddress trait.
 
 #[must_use]
 pub struct NamedManifestAddress {
@@ -750,58 +974,87 @@ pub struct NamedManifestAddress {
     name: String,
 }
 
-//=================================================
-// OTHER RESOLVABLE TRAITS FOR THE MANIFEST BUILDER
-//=================================================
-
-pub trait ResolvableBucketBatch {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+pub trait ResolvableComponentAddress {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
 }
 
-impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
-            .into_iter()
-            .map(|b| b.mark_consumed(registrar))
-            .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not valid ComponentAddress");
+        registrar.check_address_exists(address);
+        address
     }
 }
 
-impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
-            .into_iter()
-            .map(|b| b.mark_consumed(registrar))
-            .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
-    }
-}
+pub trait ResolvableResourceAddress: Sized {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress;
 
-impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
-            .into_iter()
-            .map(|b| b.mark_consumed(registrar))
-            .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
-    }
-}
-
-impl ResolvableBucketBatch for ManifestExpression {
-    fn consume_and_resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
-        match &self {
-            ManifestExpression::EntireWorktop => {
-                // No named buckets are consumed - instead EntireWorktop refers only to the
-                // unnamed buckets on the worktop part of the transaction processor
-                manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
-            }
-            ManifestExpression::EntireAuthZone => {
-                panic!("Not an allowed expression for a batch of buckets")
+    /// Note - this can be removed when all the static resource addresses in the
+    /// manifest instructions are gone
+    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> ResourceAddress {
+        match self.resolve(registrar) {
+            DynamicResourceAddress::Static(address) => address,
+            DynamicResourceAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
             }
         }
     }
 }
+
+impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResourceAddress for A {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not valid ResourceAddress");
+        registrar.check_address_exists(address);
+        address
+    }
+}
+
+pub trait ResolvablePackageAddress: Sized {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
+
+    /// Note - this can be removed when all the static package addresses in the
+    /// manifest instructions are gone
+    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> PackageAddress {
+        match self.resolve(registrar) {
+            DynamicPackageAddress::Static(address) => address,
+            DynamicPackageAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
+            }
+        }
+    }
+}
+
+impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAddress for A {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not valid PackageAddress");
+        registrar.check_address_exists(address);
+        address
+    }
+}
+
+pub trait ResolvableGlobalAddress {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
+}
+
+impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddress for A {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not valid GlobalAddress");
+        registrar.check_address_exists(address);
+        address
+    }
+}
+
+//=====================
+// TRANSACTION SIGNATURES
+//=====================
 
 /// This is created so that you can put TransactionSignatures::None in your LedgerSimulator
 /// Because [] can't resolve the correct generic when used as a trait impl
@@ -885,83 +1138,9 @@ impl ResolvableTransactionSignatures for PublicKeyHash {
     }
 }
 
-pub trait ResolvableComponentAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
-}
-
-impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ComponentAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvableResourceAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress;
-
-    /// Note - this can be removed when all the static resource addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> ResourceAddress {
-        match self.resolve(registrar) {
-            DynamicResourceAddress::Static(address) => address,
-            DynamicResourceAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResourceAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ResourceAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvablePackageAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
-
-    /// Note - this can be removed when all the static package addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> PackageAddress {
-        match self.resolve(registrar) {
-            DynamicPackageAddress::Static(address) => address,
-            DynamicPackageAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid PackageAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvableGlobalAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
-}
-
-impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid GlobalAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
+//=====================
+// DECIMAL
+//=====================
 
 pub trait ResolvableDecimal {
     fn resolve(self) -> Decimal;
@@ -972,6 +1151,10 @@ impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
         self.try_into().expect("Decimal was not valid")
     }
 }
+
+//=====================
+// ARGUMENTS
+//=====================
 
 pub trait ResolvableArguments {
     fn resolve(self) -> ManifestValue;
