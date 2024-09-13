@@ -64,7 +64,7 @@ impl TransactionProcessorBlueprint {
             max_total_size_of_blobs,
             api,
         )?;
-        let resume_result = txn_processor_single_thread.resume(api)?;
+        let resume_result = txn_processor_single_thread.resume(None, api)?;
         if !matches!(resume_result, ResumeResult::Done) {
             panic!("Unexpected yield occurred in v1 transaction processing");
         }

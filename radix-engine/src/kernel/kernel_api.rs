@@ -178,6 +178,9 @@ pub trait KernelStackApi {
     /// Achieves a context switch by switching the underlying callframe/stack
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError>;
 
+    /// Moves the objects in a scrypto value from the current call frame to another stack
+    fn kernel_send_to_stack(&mut self, id: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>;
+
     /// Sets the call frame data for the current call frame
     fn kernel_set_call_frame_data(&mut self, data: Self::CallFrameData)
         -> Result<(), RuntimeError>;

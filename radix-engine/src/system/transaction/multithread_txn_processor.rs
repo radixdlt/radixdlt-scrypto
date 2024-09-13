@@ -76,20 +76,25 @@ impl MultiThreadedTxnProcessor {
     pub fn execute<Y: SystemBasedKernelApi>(&mut self, api: &mut Y) -> Result<(), RuntimeError> {
         let mut cur_thread = 0;
         let mut parent_stack = vec![];
+        let mut passed_value = None;
 
         loop {
             api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
             let mut system_service = SystemService::new(api);
-            match txn_thread.resume(&mut system_service)? {
-                ResumeResult::YieldToChild(child) => {
+            match txn_thread.resume(passed_value.take(), &mut system_service)? {
+                ResumeResult::YieldToChild(child, value) => {
                     let child = *children_mapping.get(child).unwrap();
                     parent_stack.push(cur_thread);
                     cur_thread = child;
+                    api.kernel_send_to_stack(child, value.clone())?;
+                    passed_value = Some(value);
                 }
-                ResumeResult::YieldToParent => {
+                ResumeResult::YieldToParent(value) => {
                     cur_thread = parent_stack.pop().unwrap();
+                    api.kernel_send_to_stack(cur_thread, value.clone())?;
+                    passed_value = Some(value);
                 }
                 ResumeResult::Done => {
                     if let Some(parent) = parent_stack.pop() {

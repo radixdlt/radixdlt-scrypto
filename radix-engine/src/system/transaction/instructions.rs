@@ -17,8 +17,8 @@ use radix_transactions::manifest::*;
 use radix_transactions::model::{InstructionV1, InstructionV2};
 
 pub enum Yield {
-    ToChild(usize),
-    ToParent,
+    ToChild(usize, ScryptoValue),
+    ToParent(ScryptoValue),
 }
 
 pub trait TxnInstruction {
@@ -122,19 +122,63 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
             InstructionV2::VerifyParent(_) => todo!(),
             InstructionV2::YieldToChild(i) => {
-                return Ok((
-                    InstructionOutput::None,
-                    Some(Yield::ToChild(i.child_index.0 as usize)),
-                ));
+                return i.execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
             }
-            InstructionV2::YieldToParent(_) => {
-                return Ok((InstructionOutput::None, Some(Yield::ToParent)));
+            InstructionV2::YieldToParent(i) => {
+                return i.execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
             }
         }?;
 
         Ok((output, None))
     }
+
 }
+
+pub trait YieldingInstruction {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut TxnProcessorObjects,
+        api: &mut Y,
+    ) -> Result<Yield, RuntimeError>;
+}
+
+impl YieldingInstruction for YieldToChild {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(self, worktop: &mut Worktop, objects: &mut TxnProcessorObjects, api: &mut Y) -> Result<Yield, RuntimeError> {
+        // TODO: should we disallow blobs in yield instructions?
+        let scrypto_value = {
+            let mut processor_with_api = TxnProcessorObjectsWithApi {
+                worktop,
+                objects,
+                api,
+                current_total_size_of_blobs: 0,
+            };
+            transform(self.args, &mut processor_with_api)?
+        };
+
+        Ok(Yield::ToChild(self.child_index.0 as usize, scrypto_value))
+    }
+}
+
+impl YieldingInstruction for YieldToParent {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(self, worktop: &mut Worktop, objects: &mut TxnProcessorObjects, api: &mut Y) -> Result<Yield, RuntimeError> {
+        // TODO: should we disallow blobs in yield instructions?
+        let scrypto_value = {
+            let mut processor_with_api = TxnProcessorObjectsWithApi {
+                worktop,
+                objects,
+                api,
+                current_total_size_of_blobs: 0,
+            };
+            transform(self.args, &mut processor_with_api)?
+        };
+
+        Ok(Yield::ToParent(scrypto_value))
+    }
+}
+
 
 pub trait TxnNormalInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(

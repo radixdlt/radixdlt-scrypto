@@ -1192,6 +1192,19 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
         Ok(())
     }
 
+
+    fn kernel_send_to_stack(&mut self, id: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        let message = CallFrameMessage::from_output(&value);
+
+        let (cur, other) = self.stacks.cur_mut_and_other_mut(id);
+
+        CallFrame::pass_message(&self.substate_io, cur, other, message)
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
+
+        Ok(())
+    }
+
     fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
         *self.stacks.cur_mut().data_mut() = data;
         Ok(())
