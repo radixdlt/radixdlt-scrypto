@@ -246,6 +246,7 @@ where
                 };
 
                 System {
+                    versioned_system_logic: VersionedSystemLogic::V1,
                     blueprint_cache: NonIterMap::new(),
                     auth_cache: NonIterMap::new(),
                     schema_cache: NonIterMap::new(),

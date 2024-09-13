@@ -4,7 +4,7 @@ use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
-use radix_engine::system::system_callback::{System, SystemLockData};
+use radix_engine::system::system_callback::{System, SystemLockData, VersionedSystemLogic};
 use radix_engine::system::system_modules::auth::AuthModule;
 use radix_engine::system::system_modules::costing::{
     CostingModule, CostingModuleConfig, FeeTable, SystemLoanFeeReserve,
@@ -31,10 +31,12 @@ use scrypto_test::prelude::UniqueTransaction;
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
-    let transaction =
-        TestTransaction::new_from_nonce(ManifestBuilder::new().lock_fee_from_faucet().build(), 1)
-            .prepare()
-            .unwrap();
+    let transaction = TestTransaction::new_v1_from_nonce(
+        ManifestBuilder::new().lock_fee_from_faucet().build(),
+        1,
+    )
+    .prepare()
+    .unwrap();
     let executable = transaction.get_executable(btreeset![]);
 
     // Create database and bootstrap
@@ -47,6 +49,7 @@ pub fn test_open_substate_of_invisible_package_address() {
 
     // Create kernel
     let mut system = System {
+        versioned_system_logic: VersionedSystemLogic::V1,
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),

@@ -1041,6 +1041,18 @@ where
     }
 }
 
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelThreadApi for Kernel<'g, M, S> {
+    type CallFrameData = M::CallFrameData;
+    fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
+        *self.current_frame.data_mut() = data;
+        Ok(())
+    }
+
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
+        Ok(self.current_frame.owned_nodes())
+    }
+}
+
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelApi for Kernel<'g, M, S> {
     type CallbackObject = M;
 }

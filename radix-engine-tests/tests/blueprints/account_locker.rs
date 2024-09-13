@@ -3059,7 +3059,7 @@ pub impl DefaultLedgerSimulator {
         });
 
         let nonce = self.next_transaction_nonce();
-        let test_transaction = TestTransaction::new_from_nonce(manifest, nonce);
+        let test_transaction = TestTransaction::new_v1_from_nonce(manifest, nonce);
         let prepared_transaction = test_transaction.prepare().unwrap();
         let executable = prepared_transaction.get_executable(Default::default());
         self.execute_transaction(executable, execution_config)

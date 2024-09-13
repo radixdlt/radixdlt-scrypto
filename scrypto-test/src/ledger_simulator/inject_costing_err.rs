@@ -493,6 +493,19 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCosti
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
+    KernelThreadApi for WrappedKernelApi<'a, M, K>
+{
+    type CallFrameData = Actor;
+    fn kernel_set_call_frame_data(&mut self, data: Actor) -> Result<(), RuntimeError> {
+        self.api.kernel_set_call_frame_data(data)
+    }
+
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
+        self.api.kernel_get_owned_nodes()
+    }
+}
+
+impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelApi<'a, M, K>
 {
     type System = System<M>;

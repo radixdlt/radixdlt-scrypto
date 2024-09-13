@@ -34,6 +34,8 @@ const-sha1 = { workspace = true } # Chosen because of its small size and 0 trans
 inferno = { workspace = true }
 tempfile = { workspace = true }
 
+walkdir = { workspace = true, optional = true }
+
 # WASM validation
 wasmparser = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits"] }
@@ -88,6 +90,9 @@ fuzzing = [
 # This flag enables code parts used only for testing. Using "test" config option is not enough in cases,
 # when external crate is used for tests (eg. radix-engine-tests)
 radix_engine_tests = []
+
+# This flag includes test utilities which may be useful in different testing libraries
+test_utils = ["dep:walkdir"]
 
 full_wasm_benchmarks = []
 

@@ -1,24 +1,10 @@
 use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExecutableIntents {
-    V1(ExecutableIntentV1),
-    V2(Vec<ExecutableIntentV2>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableIntentV1 {
+pub struct ExecutableIntent {
     pub encoded_instructions: Rc<Vec<u8>>,
     pub auth_zone_init: AuthZoneInit,
-    pub references: Rc<IndexSet<Reference>>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableIntentV2 {
-    pub encoded_instructions: Rc<Vec<u8>>,
-    pub auth_zone_init: AuthZoneInit,
-    pub references: Rc<IndexSet<Reference>>,
+    pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     /// Indices against the parent Executable.
     /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
@@ -28,7 +14,7 @@ pub struct ExecutableIntentV2 {
 /// This is an executable form of the transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {
-    pub(crate) intents: ExecutableIntents,
+    pub(crate) intents: Vec<ExecutableIntent>,
     pub(crate) context: ExecutionContext,
 }
 
@@ -76,20 +62,44 @@ impl ExecutableTransaction {
 
         Self {
             context,
-            intents: ExecutableIntents::V1(ExecutableIntentV1 {
+            intents: vec![ExecutableIntent {
                 encoded_instructions: encoded_instructions_v1,
-                references: Rc::new(references),
+                references,
                 blobs,
                 auth_zone_init,
-            }),
+                children_intent_indices: vec![],
+            }],
         }
     }
 
-    pub fn new_v2(intents: Vec<ExecutableIntentV2>, context: ExecutionContext) -> Self {
-        Self {
-            context,
-            intents: ExecutableIntents::V2(intents),
+    pub fn new_v2(mut intents: Vec<ExecutableIntent>, context: ExecutionContext) -> Self {
+        for intent in &mut intents {
+            for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
+                intent
+                    .references
+                    .insert(proof.resource_address().clone().into());
+            }
+            for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
+                intent.references.insert(resource.clone().into());
+            }
         }
+
+        // Pre-allocated addresses are currently only used by the protocol (ie genesis + protocol updates).
+        // Since there's no reason for the protocol to use child subintents, we only assign pre-allocated
+        // addresses to the root subintent
+        if let Some(root) = intents.get_mut(0) {
+            for preallocated_address in &context.pre_allocated_addresses {
+                root.references.insert(
+                    preallocated_address
+                        .blueprint_id
+                        .package_address
+                        .clone()
+                        .into(),
+                );
+            }
+        }
+
+        Self { context, intents }
     }
 
     // Consuming builder-like customization methods:
@@ -150,7 +160,7 @@ impl ExecutableTransaction {
         self.context.disable_limits_and_costing_modules
     }
 
-    pub fn intents(&self) -> &ExecutableIntents {
+    pub fn intents(&self) -> &Vec<ExecutableIntent> {
         &self.intents
     }
 
@@ -161,18 +171,9 @@ impl ExecutableTransaction {
     pub fn all_blob_hashes(&self) -> IndexSet<Hash> {
         let mut hashes = indexset!();
 
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for hash in intent.blobs.keys() {
-                    hashes.insert(*hash);
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for hash in intent.blobs.keys() {
-                        hashes.insert(*hash);
-                    }
-                }
+        for intent in self.intents() {
+            for hash in intent.blobs.keys() {
+                hashes.insert(*hash);
             }
         }
 
@@ -181,18 +182,9 @@ impl ExecutableTransaction {
     pub fn all_references(&self) -> IndexSet<Reference> {
         let mut references = indexset!();
 
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for reference in intent.references.iter() {
-                    references.insert(reference.clone());
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for reference in intent.references.iter() {
-                        references.insert(reference.clone());
-                    }
-                }
+        for intent in self.intents() {
+            for reference in intent.references.iter() {
+                references.insert(reference.clone());
             }
         }
 
