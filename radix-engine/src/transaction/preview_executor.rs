@@ -5,8 +5,7 @@ use radix_common::network::NetworkDefinition;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::errors::TransactionValidationError;
 use radix_transactions::model::PreviewIntentV1;
-use radix_transactions::validation::NotarizedTransactionValidatorV1;
-use radix_transactions::validation::ValidationConfig;
+use radix_transactions::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewError {
@@ -20,9 +19,9 @@ pub fn execute_preview(
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
 ) -> Result<TransactionReceipt, PreviewError> {
-    let validation_config = ValidationConfig::default(network.id);
+    let validation_config = ValidationConfig::babylon(network.id);
 
-    let validator = NotarizedTransactionValidatorV1::new(validation_config);
+    let validator = TransactionValidator::new_with_static_config(validation_config);
 
     let mut execution_config = if preview_intent.flags.disable_auth {
         ExecutionConfig::for_preview_no_auth(network.clone())

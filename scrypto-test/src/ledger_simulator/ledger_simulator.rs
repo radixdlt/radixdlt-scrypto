@@ -29,9 +29,7 @@ use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
-use radix_transactions::validation::{
-    NotarizedTransactionValidatorV1, TransactionValidator, ValidationConfig,
-};
+use radix_transactions::validation::*;
 use std::path::{Path, PathBuf};
 
 use super::Compile;
@@ -1137,7 +1135,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
+                .prepare_with_latest_settings()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             ExecutionConfig::for_test_transaction(),
@@ -1156,7 +1154,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
+                .prepare_with_latest_settings()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             execution_config,
@@ -1180,7 +1178,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         });
         self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
+                .prepare_with_latest_settings()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             config,
@@ -1198,7 +1196,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     {
         let nonce = self.next_transaction_nonce();
         let txn = TestTransaction::new_from_nonce(manifest, nonce)
-            .prepare()
+            .prepare_with_latest_settings()
             .expect("expected transaction to be preparable");
         let executable = txn.get_executable(initial_proofs.into_iter().collect());
 
@@ -1243,9 +1241,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
         let network = NetworkDefinition::simulator();
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id));
+        let validator = TransactionValidator::new(&self.database, &network);
         let validated = validator
-            .validate_from_raw(&raw_transaction)
+            .validate_from_raw(raw_transaction)
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
@@ -1265,7 +1263,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         self.execute_transaction(
             manifest
                 .into_transaction(unique_hash)
-                .prepare()
+                .prepare_with_latest_settings()
                 .expect("expected transaction to be preparable")
                 .get_executable(proofs),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
@@ -2351,10 +2349,9 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
 pub fn validate_notarized_transaction<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
-) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-        .validate(transaction.prepare().unwrap())
-        .unwrap()
+) -> ValidatedUserTransaction {
+    let validator = TransactionValidator::new_with_latest_config(network);
+    transaction.prepare_and_validate(&validator).unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

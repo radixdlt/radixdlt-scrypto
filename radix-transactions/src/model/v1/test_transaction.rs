@@ -36,12 +36,20 @@ impl TestTransaction {
     }
 
     #[allow(deprecated)]
-    pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
-        let prepared_instructions = self.instructions.prepare_partial()?;
+    pub fn prepare_with_latest_settings(self) -> Result<PreparedTestTransaction, PrepareError> {
+        self.prepare(PreparationSettings::latest_ref())
+    }
+
+    #[allow(deprecated)]
+    pub fn prepare(
+        self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedTestTransaction, PrepareError> {
+        let prepared_instructions = self.instructions.prepare_partial(settings)?;
         Ok(PreparedTestTransaction {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
             references: prepared_instructions.references,
-            blobs: self.blobs.prepare_partial()?.blobs_by_hash,
+            blobs: self.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: self.hash,
         })
     }

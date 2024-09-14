@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 //=============================================================================
 
 /// Note - some of these are reserved for use in the node.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, FromRepr)]
 #[repr(u8)]
 pub enum TransactionDiscriminator {
     V1Intent = V1_INTENT,
@@ -16,7 +16,7 @@ pub enum TransactionDiscriminator {
     V1Notarized = V1_NOTARIZED_TRANSACTION,
     V1System = V1_SYSTEM_TRANSACTION,
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
-    V1Ledger = V1_LEDGER_TRANSACTION,
+    Ledger = LEDGER_TRANSACTION,
     V1Flash = V1_FLASH_TRANSACTION,
     V2TransactionIntent = V2_TRANSACTION_INTENT,
     V2SignedTransactionIntent = V2_SIGNED_TRANSACTION_INTENT,
@@ -33,7 +33,10 @@ const V1_SYSTEM_TRANSACTION: u8 = 4;
 const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 // NOTE: 6 used to be reserved for serialized preview transactions,
 //       but they have never been serialized, so 6 is free for re-use
-const V1_LEDGER_TRANSACTION: u8 = 7;
+
+// LEDGER TRANSACTION is not versioned, and can be extended with support
+// for new versions
+const LEDGER_TRANSACTION: u8 = 7;
 const V1_FLASH_TRANSACTION: u8 = 8;
 const V2_TRANSACTION_INTENT: u8 = 9;
 const V2_SIGNED_TRANSACTION_INTENT: u8 = 10;
@@ -76,7 +79,7 @@ pub enum VersionedTransactionPayload {
     SystemTransactionV1(#[sbor(flatten)] SystemTransactionV1),
     #[sbor(discriminator(V1_ROUND_UPDATE_TRANSACTION))]
     RoundUpdateTransactionV1(#[sbor(flatten)] RoundUpdateTransactionV1),
-    #[sbor(discriminator(V1_LEDGER_TRANSACTION))] // Not flattened because it's an enum
+    #[sbor(discriminator(LEDGER_TRANSACTION))] // Not flattened because it's an enum
     LedgerTransaction(LedgerTransaction),
     #[sbor(discriminator(V1_FLASH_TRANSACTION))]
     FlashTransactionV1(#[sbor(flatten)] FlashTransactionV1),
@@ -117,6 +120,7 @@ mod tests {
     #[test]
     pub fn v1_user_transaction_structure() {
         let network = NetworkDefinition::simulator();
+        let preparation_settings = PreparationSettings::babylon();
 
         // Create key pairs
         let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -150,7 +154,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial(&preparation_settings).unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let message_v1 = MessageV1::default();
@@ -192,7 +196,8 @@ mod tests {
         );
 
         let prepared_intent =
-            PreparedIntentV1::prepare_from_payload(&intent_payload_bytes).unwrap();
+            PreparedIntentV1::prepare_from_payload(&intent_payload_bytes, &preparation_settings)
+                .unwrap();
         assert_eq!(
             expected_intent_hash,
             prepared_intent.transaction_intent_hash()
@@ -247,8 +252,11 @@ mod tests {
             VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent_v1.clone())
         );
 
-        let prepared_signed_intent =
-            PreparedSignedIntentV1::prepare_from_payload(&signed_intent_payload_bytes).unwrap();
+        let prepared_signed_intent = PreparedSignedIntentV1::prepare_from_payload(
+            &signed_intent_payload_bytes,
+            &preparation_settings,
+        )
+        .unwrap();
         assert_eq!(
             expected_signed_intent_hash,
             prepared_signed_intent.signed_transaction_intent_hash()
@@ -308,6 +316,7 @@ mod tests {
 
         let prepared_notarized_transaction = PreparedNotarizedTransactionV1::prepare_from_payload(
             &notarized_transaction_payload_bytes,
+            &preparation_settings,
         )
         .unwrap();
         assert_eq!(
@@ -386,7 +395,7 @@ mod tests {
             .concat(),
         ));
 
-        let prepared = subintent.prepare().unwrap();
+        let prepared = subintent.prepare_with_latest_settings().unwrap();
         let actual_subintent_hash = prepared.subintent_hash();
         assert_eq!(expected_subintent_hash, actual_subintent_hash);
         assert_eq!(
@@ -407,7 +416,11 @@ mod tests {
             intent_discriminator: 0,
         };
         let expected_hash = hash_encoded_sbor_value_body(&intent_header);
-        let actual_hash = intent_header.prepare_partial().unwrap().get_summary().hash;
+        let actual_hash = intent_header
+            .prepare_partial_with_latest_settings()
+            .unwrap()
+            .get_summary()
+            .hash;
         assert_eq!(expected_hash, actual_hash);
         (intent_header, expected_hash)
     }
@@ -421,7 +434,11 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let actual_hash = blobs_v1.prepare_partial().unwrap().get_summary().hash;
+        let actual_hash = blobs_v1
+            .prepare_partial_with_latest_settings()
+            .unwrap()
+            .get_summary()
+            .hash;
         assert_eq!(expected_hash, actual_hash);
 
         (blobs_v1, expected_hash)
@@ -431,7 +448,11 @@ mod tests {
         let instructions = InstructionsV2(Rc::new(vec![]));
         let expected_hash = hash_encoded_sbor_value_body(&instructions);
 
-        let actual_hash = instructions.prepare_partial().unwrap().get_summary().hash;
+        let actual_hash = instructions
+            .prepare_partial_with_latest_settings()
+            .unwrap()
+            .get_summary()
+            .hash;
         assert_eq!(expected_hash, actual_hash);
 
         (instructions, expected_hash)
@@ -441,7 +462,11 @@ mod tests {
         let message = MessageV2::Plaintext(PlaintextMessageV1::text("Hello world!"));
         let expected_hash = hash_encoded_sbor_value_body(&message);
 
-        let actual_hash = message.prepare_partial().unwrap().get_summary().hash;
+        let actual_hash = message
+            .prepare_partial_with_latest_settings()
+            .unwrap()
+            .get_summary()
+            .hash;
         assert_eq!(expected_hash, actual_hash);
 
         (message, expected_hash)
@@ -453,7 +478,11 @@ mod tests {
         let empty: [u8; 0] = [];
         let expected_hash = hash(&empty);
 
-        let actual_hash = children.prepare_partial().unwrap().get_summary().hash;
+        let actual_hash = children
+            .prepare_partial_with_latest_settings()
+            .unwrap()
+            .get_summary()
+            .hash;
         assert_eq!(expected_hash, actual_hash);
 
         (children, expected_hash)
@@ -476,7 +505,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial_with_latest_settings().unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {
@@ -521,8 +550,10 @@ mod tests {
         );
 
         let prepared_system_transaction =
-            PreparedSystemTransactionV1::prepare_from_payload(&system_transaction_payload_bytes)
-                .unwrap();
+            PreparedSystemTransactionV1::prepare_from_payload_with_latest_settings(
+                &system_transaction_payload_bytes,
+            )
+            .unwrap();
 
         assert_eq!(
             expected_system_transaction_hash,

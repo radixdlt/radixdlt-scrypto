@@ -1,13 +1,13 @@
+use radix_substate_store_interface::interface::SubstateDatabase;
+
 use crate::internal_prelude::*;
 
-pub trait TransactionValidator {
-    type Prepared: TransactionPayloadPreparable;
-    type Validated;
+pub trait TransactionPrepare<Raw: RawTransactionPayload>:
+    TransactionValidate<Self::Prepared> + TransactionPreparer
+{
+    type Prepared: TransactionPayloadPreparable<Raw = Raw>;
 
-    fn prepare_from_raw(
-        &self,
-        raw: &<Self::Prepared as TransactionPayloadPreparable>::Raw,
-    ) -> Result<Self::Prepared, TransactionValidationError> {
+    fn prepare_from_raw(&self, raw: &Raw) -> Result<Self::Prepared, TransactionValidationError> {
         self.prepare_from_payload_bytes(raw.as_slice())
     }
 
@@ -15,17 +15,13 @@ pub trait TransactionValidator {
         &self,
         raw_payload_bytes: &[u8],
     ) -> Result<Self::Prepared, TransactionValidationError> {
-        if raw_payload_bytes.len() > self.max_payload_length() {
-            return Err(TransactionValidationError::TransactionTooLarge);
-        }
-
-        Ok(Self::Prepared::prepare_from_payload(raw_payload_bytes)?)
+        Ok(Self::Prepared::prepare_from_payload(
+            raw_payload_bytes,
+            self.preparation_settings(),
+        )?)
     }
 
-    fn validate_from_raw(
-        &self,
-        raw: &<Self::Prepared as TransactionPayloadPreparable>::Raw,
-    ) -> Result<Self::Validated, TransactionValidationError> {
+    fn validate_from_raw(&self, raw: &Raw) -> Result<Self::Validated, TransactionValidationError> {
         self.validate_from_payload_bytes(raw.as_slice())
     }
 
@@ -36,39 +32,55 @@ pub trait TransactionValidator {
         let prepared = self.prepare_from_payload_bytes(payload_bytes)?;
         self.validate(prepared)
     }
+}
 
-    fn max_payload_length(&self) -> usize;
+pub trait TransactionValidate<Prepared: TransactionPayloadPreparable> {
+    type Validated;
 
     fn validate(
         &self,
-        transaction: Self::Prepared,
+        transaction: Prepared,
     ) -> Result<Self::Validated, TransactionValidationError>;
+}
+
+pub trait TransactionPreparer {
+    fn preparation_settings(&self) -> &PreparationSettings;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
     pub network_id: u8,
-    pub max_notarized_payload_size: usize,
+    pub max_signatures_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
     pub message_validation: MessageValidationConfig,
+    pub preparation_settings: PreparationSettings,
 }
 
 impl ValidationConfig {
-    pub fn default(network_id: u8) -> Self {
+    pub fn latest(network_definition: &NetworkDefinition) -> Self {
+        Self::babylon(network_definition.id)
+    }
+
+    pub fn babylon(network_id: u8) -> Self {
         Self {
             network_id,
-            max_notarized_payload_size: MAX_TRANSACTION_SIZE,
+            max_signatures_per_intent: 16,
             min_tip_percentage: MIN_TIP_PERCENTAGE,
             max_tip_percentage: MAX_TIP_PERCENTAGE,
             max_epoch_range: MAX_EPOCH_RANGE,
             message_validation: MessageValidationConfig::default(),
+            preparation_settings: PreparationSettings::babylon(),
         }
     }
 
-    pub fn simulator() -> Self {
-        Self::default(NetworkDefinition::simulator().id)
+    pub fn babylon_simulator() -> Self {
+        Self::babylon(NetworkDefinition::simulator().id)
+    }
+
+    pub fn latest_simulator() -> Self {
+        Self::latest(&NetworkDefinition::simulator())
     }
 }
 
@@ -92,49 +104,93 @@ impl Default for MessageValidationConfig {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct UserTransactionValidator {
+pub struct TransactionValidator {
     config: ValidationConfig,
-    v1: NotarizedTransactionValidatorV1,
-    v2: NotarizedTransactionValidatorV2,
 }
 
-impl TransactionValidator for UserTransactionValidator {
-    type Prepared = PreparedUserTransaction;
-    type Validated = ValidatedUserTransaction;
+#[deprecated = "Fix by cuttlefish"]
+fn fix_resolution_of_validator_config_from_database(
+    network_definition: &NetworkDefinition,
+) -> TransactionValidator {
+    TransactionValidator::new_with_latest_config(network_definition)
+}
 
-    fn max_payload_length(&self) -> usize {
-        self.config.max_notarized_payload_size
+impl TransactionValidator {
+    /// This is the best constructor to use, as it reads the configuration dynamically
+    /// Note that the validator needs recreating every time a protocol update runs,
+    /// as the config can get updated then.
+    pub fn new(_store: &impl SubstateDatabase, network_definition: &NetworkDefinition) -> Self {
+        fix_resolution_of_validator_config_from_database(network_definition)
     }
+
+    pub fn new_with_static_config(config: ValidationConfig) -> Self {
+        Self { config }
+    }
+
+    pub fn new_with_latest_config(network_definition: &NetworkDefinition) -> Self {
+        Self {
+            config: ValidationConfig::latest(network_definition),
+        }
+    }
+}
+
+impl TransactionPreparer for TransactionValidator {
+    fn preparation_settings(&self) -> &PreparationSettings {
+        &self.config.preparation_settings
+    }
+}
+
+impl TransactionPrepare<RawNotarizedTransaction> for TransactionValidator {
+    type Prepared = PreparedUserTransaction;
+}
+
+impl TransactionValidate<PreparedUserTransaction> for TransactionValidator {
+    type Validated = ValidatedUserTransaction;
 
     fn validate(
         &self,
-        transaction: Self::Prepared,
+        transaction: PreparedUserTransaction,
     ) -> Result<Self::Validated, TransactionValidationError> {
         Ok(match transaction {
-            PreparedUserTransaction::V1(t) => ValidatedUserTransaction::V1(self.v1.validate(t)?),
-            PreparedUserTransaction::V2(t) => ValidatedUserTransaction::V2(self.v2.validate(t)?),
+            PreparedUserTransaction::V1(t) => ValidatedUserTransaction::V1(self.validate(t)?),
+            PreparedUserTransaction::V2(t) => ValidatedUserTransaction::V2(self.validate(t)?),
         })
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NotarizedTransactionValidatorV1 {
-    config: ValidationConfig,
-}
-
-#[allow(deprecated)]
-impl TransactionValidator for NotarizedTransactionValidatorV1 {
-    type Prepared = PreparedNotarizedTransactionV1;
+impl TransactionValidate<PreparedNotarizedTransactionV1> for TransactionValidator {
     type Validated = ValidatedNotarizedTransactionV1;
-
-    fn max_payload_length(&self) -> usize {
-        self.config.max_notarized_payload_size
-    }
 
     fn validate(
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<Self::Validated, TransactionValidationError> {
+        self.validate_notarized_v1(transaction)
+    }
+}
+
+impl TransactionPrepare<RawSystemTransaction> for TransactionValidator {
+    type Prepared = PreparedSystemTransactionV1;
+}
+
+impl TransactionValidate<PreparedSystemTransactionV1> for TransactionValidator {
+    type Validated = PreparedSystemTransactionV1;
+
+    fn validate(
+        &self,
+        transaction: PreparedSystemTransactionV1,
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        // No validation is performed on system transactions
+        Ok(transaction)
+    }
+}
+
+impl TransactionValidator {
+    #[allow(deprecated)]
+    pub fn validate_notarized_v1(
+        &self,
+        transaction: PreparedNotarizedTransactionV1,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
         self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
         let encoded_instructions = Rc::new(manifest_encode(
@@ -160,19 +216,13 @@ impl TransactionValidator for NotarizedTransactionValidatorV1 {
             num_of_signature_validations,
         })
     }
-}
-
-impl NotarizedTransactionValidatorV1 {
-    pub fn new(config: ValidationConfig) -> Self {
-        Self { config }
-    }
 
     #[allow(deprecated)]
     pub fn validate_preview_intent_v1(
         &self,
         preview_intent: PreviewIntentV1,
     ) -> Result<ValidatedPreviewIntent, TransactionValidationError> {
-        let intent = preview_intent.intent.prepare()?;
+        let intent = preview_intent.intent.prepare(self.preparation_settings())?;
 
         self.validate_intent_v1(&intent)?;
 
@@ -299,14 +349,13 @@ impl NotarizedTransactionValidatorV1 {
         &self,
         transaction: &PreparedNotarizedTransactionV1,
     ) -> Result<Vec<PublicKey>, SignatureValidationError> {
-        // TODO: split into static validation part and runtime validation part to support more signatures
         if transaction
             .signed_intent
             .intent_signatures
             .inner
             .signatures
             .len()
-            > MAX_NUMBER_OF_INTENT_SIGNATURES
+            > self.config.max_signatures_per_intent
         {
             return Err(SignatureValidationError::TooManySignatures);
         }
@@ -418,30 +467,14 @@ impl NotarizedTransactionValidatorV1 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NotarizedTransactionValidatorV2 {
-    config: ValidationConfig,
-}
-
-impl TransactionValidator for NotarizedTransactionValidatorV2 {
-    type Prepared = PreparedNotarizedTransactionV2;
+impl TransactionValidate<PreparedNotarizedTransactionV2> for TransactionValidator {
     type Validated = ValidatedNotarizedTransactionV2;
-
-    fn max_payload_length(&self) -> usize {
-        self.config.max_notarized_payload_size
-    }
 
     fn validate(
         &self,
-        _transaction: Self::Prepared,
+        _transaction: PreparedNotarizedTransactionV2,
     ) -> Result<Self::Validated, TransactionValidationError> {
         unimplemented!()
-    }
-}
-
-impl NotarizedTransactionValidatorV2 {
-    pub fn new(config: ValidationConfig) -> Self {
-        Self { config }
     }
 }
 
@@ -454,14 +487,14 @@ mod tests {
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
-            let config: ValidationConfig = ValidationConfig::simulator();
-            let validator = NotarizedTransactionValidatorV1::new(config);
+            let config: ValidationConfig = ValidationConfig::babylon_simulator();
+            let validator = TransactionValidator::new_with_static_config(config);
             assert_eq!(
                 $result,
                 validator
-                    .validate(
-                        create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
-                            .prepare()
+                    .validate_from_raw(
+                        &create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
+                            .to_raw()
                             .unwrap()
                     )
                     .expect_err("Should be an error")
@@ -516,7 +549,8 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+        let validator =
+            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
 
         let preview_intent = PreviewIntentV1 {
             intent: tx.signed_intent.intent,
@@ -735,10 +769,9 @@ mod tests {
     fn validate_default(
         transaction: &NotarizedTransactionV1,
     ) -> Result<(), TransactionValidationError> {
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-        validator
-            .validate(transaction.prepare().unwrap())
-            .map(|_| ())
+        let validator =
+            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        transaction.prepare_and_validate(&validator).map(|_| ())
     }
 
     fn create_transaction_with_message(message: MessageV1) -> NotarizedTransactionV1 {
@@ -824,9 +857,10 @@ mod tests {
                 .drop_proof("proof1")
                 .build(),
         );
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+        let validator =
+            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
         assert_eq!(
-            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IdValidationError(
                 ManifestIdValidationError::BucketLocked(ManifestBucket(0))
             ))
@@ -856,9 +890,10 @@ mod tests {
                 })
                 .build(),
         );
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+        let validator =
+            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
         assert_eq!(
-            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IdValidationError(
                 ManifestIdValidationError::ProofNotFound(ManifestProof(0))
             ))
@@ -889,9 +924,10 @@ mod tests {
                 })
                 .build(),
         );
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+        let validator =
+            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
         assert_eq!(
-            validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
+            validator.validate_from_raw(&transaction.to_raw().unwrap()),
             Err(TransactionValidationError::IdValidationError(
                 ManifestIdValidationError::BucketNotFound(ManifestBucket(0))
             ))

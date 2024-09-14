@@ -39,23 +39,44 @@ where
         Self::from_decoded_variant(payload_variant)
     }
 
-    fn prepare(&self) -> Result<Self::Prepared, PrepareError> {
+    fn prepare(&self, settings: &PreparationSettings) -> Result<Self::Prepared, PrepareError> {
         Ok(Self::Prepared::prepare_from_payload(
             &self.to_payload_bytes()?,
+            settings,
         )?)
+    }
+
+    fn prepare_with_latest_settings(&self) -> Result<Self::Prepared, PrepareError> {
+        Ok(Self::Prepared::prepare_from_payload_with_latest_settings(
+            &self.to_payload_bytes()?,
+        )?)
+    }
+
+    fn prepare_and_validate<V: TransactionPrepare<Self::Raw>>(
+        &self,
+        validator: &V,
+    ) -> Result<V::Validated, TransactionValidationError> {
+        validator.validate_from_raw(&self.to_raw()?)
     }
 }
 
 pub trait TransactionPartialPrepare: ManifestEncode {
     type Prepared: TransactionPreparableFromValue;
 
-    fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
+    /// In producion, you should use a TransactionValidator instead, which has
+    /// access to [`PreparationSettings`].
+    fn prepare_partial_with_latest_settings(&self) -> Result<Self::Prepared, PrepareError> {
+        self.prepare_partial(PreparationSettings::latest_ref())
+    }
+
+    fn prepare_partial(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<Self::Prepared, PrepareError> {
         let payload = manifest_encode(self).unwrap();
-        let mut manifest_decoder = ManifestDecoder::new(&payload, MANIFEST_SBOR_V1_MAX_DEPTH);
-        manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
-        let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
+        let mut transaction_decoder = TransactionDecoder::new_partial(&payload, settings)?;
         let prepared = Self::Prepared::prepare_from_value(&mut transaction_decoder)?;
-        transaction_decoder.destructure().check_end()?;
+        transaction_decoder.check_complete()?;
         Ok(prepared)
     }
 }
@@ -117,18 +138,34 @@ pub trait TransactionPayloadPreparable: Sized {
     /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
-    fn prepare_from_raw(raw: &Self::Raw) -> Result<Self, PrepareError> {
-        Self::prepare_from_payload(raw.as_ref())
+    fn prepare_from_raw(
+        raw: &Self::Raw,
+        settings: &PreparationSettings,
+    ) -> Result<Self, PrepareError> {
+        Self::prepare_from_payload(raw.as_ref(), settings)
     }
 
     /// Prepares from a full payload
-    fn prepare_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
-        let mut manifest_decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
-        manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
-        let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
+    fn prepare_from_payload(
+        payload: &[u8],
+        settings: &PreparationSettings,
+    ) -> Result<Self, PrepareError> {
+        let mut transaction_decoder = TransactionDecoder::new_transaction(
+            payload,
+            <Self::Raw as RawTransactionPayload>::KIND,
+            settings,
+        )?;
         let prepared = Self::prepare_for_payload(&mut transaction_decoder)?;
-        transaction_decoder.destructure().check_end()?;
+        transaction_decoder.check_complete()?;
         Ok(prepared)
+    }
+
+    fn prepare_from_raw_with_latest_settings(raw: &Self::Raw) -> Result<Self, PrepareError> {
+        Self::prepare_from_raw(raw, PreparationSettings::latest_ref())
+    }
+
+    fn prepare_from_payload_with_latest_settings(payload: &[u8]) -> Result<Self, PrepareError> {
+        Self::prepare_from_payload(payload, PreparationSettings::latest_ref())
     }
 }
 
@@ -202,14 +239,23 @@ macro_rules! transaction_payload_v2 {
 pub(crate) use transaction_payload_v2;
 
 pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
+    const KIND: TransactionPayloadKind;
+
     fn as_slice(&self) -> &[u8] {
         self.as_ref()
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum TransactionPayloadKind {
+    CompleteUserTransaction,
+    LedgerTransaction,
+    Other,
+}
+
 #[macro_export]
 macro_rules! define_raw_transaction_payload {
-    ($(#[$docs:meta])* $name: ident) => {
+    ($(#[$docs:meta])* $name:ident, $kind:expr) => {
         #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Sbor)]
         #[sbor(transparent)]
         $(#[$docs])*
@@ -233,6 +279,8 @@ macro_rules! define_raw_transaction_payload {
             }
         }
 
-        impl RawTransactionPayload for $name {}
+        impl RawTransactionPayload for $name {
+            const KIND: TransactionPayloadKind = $kind;
+        }
     };
 }

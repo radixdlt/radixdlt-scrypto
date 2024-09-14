@@ -24,10 +24,13 @@ impl_has_summary!(PreparedSubintentsV2);
 
 impl TransactionPreparableFromValueBody for PreparedSubintentsV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let (subintents, summary) = ConcatenatedDigest::prepare_from_sbor_array_value_body::<
-            Vec<PreparedSubintentV2>,
-            V2_MAX_NUMBER_OF_SUBINTENTS_IN_TRANSACTION,
-        >(decoder, ValueType::Subintent)?;
+        let max_subintents_per_transaction = decoder.settings().max_subintents_per_transaction;
+        let (subintents, summary) =
+            ConcatenatedDigest::prepare_from_sbor_array_value_body::<Vec<PreparedSubintentV2>>(
+                decoder,
+                ValueType::Subintent,
+                max_subintents_per_transaction,
+            )?;
 
         let mut subintents_by_hash = index_map_with_capacity(subintents.len());
         for subintent in subintents {

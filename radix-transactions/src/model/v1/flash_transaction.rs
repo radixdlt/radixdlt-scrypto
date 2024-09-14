@@ -18,7 +18,7 @@ impl TransactionPayload for FlashTransactionV1 {
     type Raw = RawFlashTransactionV1;
 }
 
-define_raw_transaction_payload!(RawFlashTransactionV1);
+define_raw_transaction_payload!(RawFlashTransactionV1, TransactionPayloadKind::Other);
 
 impl_has_summary!(PreparedFlashTransactionV1);
 

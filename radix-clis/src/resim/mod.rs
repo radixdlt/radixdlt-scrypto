@@ -163,7 +163,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
         transaction
-            .prepare()
+            .prepare_with_latest_settings()
             .map_err(Error::TransactionPrepareError)?
             .get_executable(initial_proofs),
     );
@@ -229,7 +229,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &vm_modules,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 transaction
-                    .prepare()
+                    .prepare_with_latest_settings()
                     .map_err(Error::TransactionPrepareError)?
                     .get_executable(initial_proofs),
             );

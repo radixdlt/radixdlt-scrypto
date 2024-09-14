@@ -35,26 +35,30 @@ impl ConcatenatedDigest {
     }
 
     #[deprecated = "Use prepare_from_sbor_array_value_body instead for new models"]
-    pub fn prepare_from_sbor_array_full_value<T: ArrayPreparable, const MAX_LENGTH: usize>(
+    pub fn prepare_from_sbor_array_full_value<T: ArrayPreparable>(
         decoder: &mut TransactionDecoder,
         value_type: ValueType,
+        max_length: usize,
     ) -> Result<(T, Summary), PrepareError> {
-        T::prepare_into_concatenated_digest::<MAX_LENGTH>(
+        T::prepare_into_concatenated_digest(
             decoder,
             HashAccumulator::new(),
             value_type,
+            max_length,
             true,
         )
     }
 
-    pub fn prepare_from_sbor_array_value_body<T: ArrayPreparable, const MAX_LENGTH: usize>(
+    pub fn prepare_from_sbor_array_value_body<T: ArrayPreparable>(
         decoder: &mut TransactionDecoder,
         value_type: ValueType,
+        max_length: usize,
     ) -> Result<(T, Summary), PrepareError> {
-        T::prepare_into_concatenated_digest::<MAX_LENGTH>(
+        T::prepare_into_concatenated_digest(
             decoder,
             HashAccumulator::new(),
             value_type,
+            max_length,
             false,
         )
     }
@@ -86,19 +90,21 @@ impl ConcatenatedDigest {
 }
 
 pub trait ArrayPreparable: Sized {
-    fn prepare_into_concatenated_digest<const MAX_LENGTH: usize>(
+    fn prepare_into_concatenated_digest(
         decoder: &mut TransactionDecoder,
         accumulator: HashAccumulator,
         value_type: ValueType,
+        max_length: usize,
         read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError>;
 }
 
 impl<T: TransactionPreparableFromValueBody> ArrayPreparable for Vec<T> {
-    fn prepare_into_concatenated_digest<const MAX_LENGTH: usize>(
+    fn prepare_into_concatenated_digest(
         decoder: &mut TransactionDecoder,
         mut accumulator: HashAccumulator,
         value_type: ValueType,
+        max_length: usize,
         read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError> {
         decoder.track_stack_depth_increase()?;
@@ -108,11 +114,11 @@ impl<T: TransactionPreparableFromValueBody> ArrayPreparable for Vec<T> {
             decoder.read_array_header_without_value_kind(T::value_kind())?
         };
 
-        if length > MAX_LENGTH {
+        if length > max_length {
             return Err(PrepareError::TooManyValues {
                 value_type,
                 actual: length,
-                max: MAX_LENGTH,
+                max: max_length,
             });
         }
 

@@ -32,7 +32,7 @@ impl ReadableManifest for TransactionManifestV1 {
     }
 
     fn validate(&self) -> Result<(), TransactionValidationError> {
-        NotarizedTransactionValidatorV1::validate_instructions_v1(&self.instructions)
+        TransactionValidator::validate_instructions_v1(&self.instructions)
     }
 }
 

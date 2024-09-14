@@ -33,7 +33,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
     let transaction =
         TestTransaction::new_from_nonce(ManifestBuilder::new().lock_fee_from_faucet().build(), 1)
-            .prepare()
+            .prepare_with_latest_settings()
             .unwrap();
     let executable = transaction.get_executable(btreeset![]);
 

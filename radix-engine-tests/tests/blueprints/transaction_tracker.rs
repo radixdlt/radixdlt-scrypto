@@ -95,10 +95,10 @@ fn test_transaction_replay_protection() {
 
 fn get_validated(
     transaction: &NotarizedTransactionV1,
-) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-
-    validator.validate(transaction.prepare().unwrap())
+) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+    let validator =
+        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+    transaction.prepare_and_validate(&validator)
 }
 
 struct TransactionParams {

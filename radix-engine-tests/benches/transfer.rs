@@ -37,7 +37,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest, 1)
-                    .prepare()
+                    .prepare_with_latest_settings()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
@@ -63,7 +63,7 @@ fn bench_transfer(c: &mut Criterion) {
             &vm_modules,
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             TestTransaction::new_from_nonce(manifest.clone(), nonce)
-                .prepare()
+                .prepare_with_latest_settings()
                 .unwrap()
                 .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
@@ -86,7 +86,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest.clone(), nonce)
-                    .prepare()
+                    .prepare_with_latest_settings()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );

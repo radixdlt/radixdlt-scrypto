@@ -115,7 +115,8 @@ fn test_normal_transaction_flow() {
     .to_raw()
     .unwrap();
 
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+    let validator =
+        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
     let validated = validator
         .validate_from_raw(&raw_transaction)
         .expect("Invalid transaction");
@@ -136,8 +137,8 @@ fn test_normal_transaction_flow() {
 
 fn get_validated(
     transaction: &NotarizedTransactionV1,
-) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-
-    validator.validate(transaction.prepare().unwrap())
+) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+    let validator =
+        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+    transaction.prepare_and_validate(&validator)
 }

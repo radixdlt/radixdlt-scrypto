@@ -6,6 +6,7 @@ use radix_engine::updates::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
+use radix_transactions::validation::ValidationConfig;
 use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
@@ -428,7 +429,10 @@ fn run_mint_nfts_from_manifest(
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        if raw_transaction.0.len() > MAX_TRANSACTION_SIZE {
+        let max_size = ValidationConfig::latest_simulator()
+            .preparation_settings
+            .max_user_payload_length;
+        if raw_transaction.0.len() > max_size {
             high = mid - 1;
         } else {
             let receipt = ledger.execute_manifest(manifest, vec![]);

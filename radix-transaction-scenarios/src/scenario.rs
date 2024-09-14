@@ -32,8 +32,8 @@ impl NextTransaction {
 
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidatorV1,
-    ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, ScenarioError> {
         validator
             .validate_from_raw(&self.raw_transaction)
             .map_err(|err| {

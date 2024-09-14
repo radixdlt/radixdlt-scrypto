@@ -12,6 +12,7 @@ sbor = { workspace = true }
 radix-rust = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
+radix-substate-store-interface = { workspace = true }
 hex = { workspace = true }
 serde = { workspace = true, optional = true }
 lazy_static = { workspace = true }

@@ -1,5 +1,3 @@
-use radix_common::constants::MAX_NUMBER_OF_BLOBS;
-
 use super::*;
 use crate::internal_prelude::*;
 
@@ -50,10 +48,10 @@ impl_has_summary!(PreparedBlobsV1);
 #[allow(deprecated)]
 impl TransactionPreparableFromValue for PreparedBlobsV1 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let max_blobs = decoder.settings().max_blobs;
         let (blobs, summary) = ConcatenatedDigest::prepare_from_sbor_array_full_value::<
             Vec<SummarizedRawValueBodyRawBytes>,
-            MAX_NUMBER_OF_BLOBS,
-        >(decoder, ValueType::Blob)?;
+        >(decoder, ValueType::Blob, max_blobs)?;
 
         let mut blobs_by_hash = index_map_with_capacity(blobs.len());
         for blob in blobs {

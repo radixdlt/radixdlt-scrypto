@@ -65,6 +65,7 @@ mod tests {
     #[test]
     fn reconcile_transaction_payload() {
         let network = NetworkDefinition::mainnet();
+        let validator = TransactionValidator::new_with_latest_config(&network);
         let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
         let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
@@ -97,11 +98,12 @@ mod tests {
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)
             .build();
-        let mut payload = transaction.to_payload_bytes().unwrap();
+        let raw = transaction.to_raw().unwrap();
+        let payload = raw.as_slice();
         println!("{:?}", payload);
 
         reconcile_manifest_sbor(
-            &payload,
+            payload,
             r###"
 Enum<3u8>(
     Tuple(                  // signed intent
@@ -162,9 +164,7 @@ Enum<3u8>(
 "###,
         );
 
-        let validated = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-            .validate_from_payload_bytes(&payload)
-            .unwrap();
+        let validated = validator.validate_from_raw(&raw).unwrap();
         let executable = validated.get_executable();
         let expected_intent_hash = TransactionIntentHash(hash(
             [
@@ -231,12 +231,12 @@ Enum<3u8>(
         );
 
         // Test unexpected transaction type
-        payload[2] = 4;
-        let executable =
-            NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-                .validate_from_payload_bytes(&payload);
+        let mut amended_payload = payload.to_vec();
+        amended_payload[2] = 4;
+        let amended_raw = RawNotarizedTransaction(amended_payload);
+        let validated = validator.validate_from_raw(&amended_raw);
         assert_eq!(
-            executable,
+            validated,
             Err(TransactionValidationError::PrepareError(
                 PrepareError::UnexpectedDiscriminator {
                     expected: 3,

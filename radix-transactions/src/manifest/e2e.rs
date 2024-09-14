@@ -1583,7 +1583,7 @@ YIELD_TO_PARENT;
         .to_payload_bytes()
         .unwrap();
 
-        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
+        let intent_hash = PreparedIntentV1::prepare_from_payload_with_latest_settings(&intent)
             .unwrap()
             .transaction_intent_hash();
 
