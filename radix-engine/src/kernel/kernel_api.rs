@@ -175,6 +175,9 @@ pub trait KernelInvokeApi<C> {
 pub trait KernelStackApi {
     type CallFrameData;
 
+    /// Gets the stack id which is currently being used
+    fn kernel_get_stack_id(&self) -> usize;
+
     /// Achieves a context switch by switching the underlying callframe/stack
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError>;
 
@@ -211,9 +214,6 @@ pub trait KernelInternalApi {
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
-
-    /// Gets the thread id which is currently running
-    fn kernel_get_thread_id(&self) -> usize;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;

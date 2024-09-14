@@ -557,11 +557,6 @@ where
     }
 }
 
-#[deprecated = "Deprecated as a reminder to remove this when threads are implemented"]
-fn single_intent_index() -> usize {
-    0
-}
-
 // TODO: Remove
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
     for Kernel<'g, M, S>
@@ -570,11 +565,6 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.stacks.cur().get_node_visibility(node_id)
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
-        // TODO - fix when threading is implemented!
-        single_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -624,11 +614,6 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
-        // TODO - fix when threading is implemented!
-        single_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -1186,6 +1171,10 @@ where
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for Kernel<'g, M, S> {
     type CallFrameData = M::CallFrameData;
+
+    fn kernel_get_stack_id(&self) -> usize {
+        self.stacks.stack_pointer
+    }
 
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
         self.stacks.switch(id);

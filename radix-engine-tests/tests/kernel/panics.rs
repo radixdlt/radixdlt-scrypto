@@ -45,6 +45,10 @@ impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
 impl<M: SystemCallbackObject> KernelStackApi for MockKernel<M> {
     type CallFrameData = Actor;
 
+    fn kernel_get_stack_id(&self) -> usize {
+        panic1!()
+    }
+
     fn kernel_switch_stack(&mut self, _id: usize) -> Result<(), RuntimeError> {
         panic1!()
     }
@@ -197,10 +201,6 @@ impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
     type System = System<M>;
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System> {
-        panic1!()
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
         panic1!()
     }
 
