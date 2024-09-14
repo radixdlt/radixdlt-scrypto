@@ -282,7 +282,7 @@ impl TransactionPreparableFromValue for PreparedLedgerTransactionInner {
                     GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR => {
                         check_length(length, 1)?;
                         let prepared = PreparedSystemTransactionV1::prepare_from_value(decoder)?;
-                        PreparedGenesisTransaction::Transaction(Box::new(prepared))
+                        PreparedGenesisTransaction::Transaction(prepared)
                     }
                     _ => return Err(unknown_discriminator(discriminator)),
                 };
@@ -332,7 +332,7 @@ fn unknown_discriminator(discriminator: u8) -> PrepareError {
 
 pub enum PreparedGenesisTransaction {
     Flash(Summary),
-    Transaction(Box<PreparedSystemTransactionV1>),
+    Transaction(PreparedSystemTransactionV1),
 }
 
 impl HasSummary for PreparedGenesisTransaction {
@@ -362,14 +362,19 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
     }
 }
 
-impl TransactionPayloadPreparable for PreparedLedgerTransaction {
+impl PreparedTransaction for PreparedLedgerTransaction {
     type Raw = RawLedgerTransaction;
 
     fn prepare_from_transaction_enum(
         decoder: &mut TransactionDecoder,
     ) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
-        decoder.read_expected_enum_variant_header(TransactionDiscriminator::Ledger as u8, 1)?;
+        decoder.read_header(
+            ExpectedTupleHeader::EnumWithValueKind {
+                discriminator: TransactionDiscriminator::Ledger as u8,
+            },
+            1,
+        )?;
         let inner = PreparedLedgerTransactionInner::prepare_from_value(decoder)?;
         decoder.track_stack_depth_decrease()?;
 

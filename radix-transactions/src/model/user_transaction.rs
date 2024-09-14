@@ -65,7 +65,7 @@ impl HasSummary for PreparedUserTransaction {
     }
 }
 
-impl TransactionPayloadPreparable for PreparedUserTransaction {
+impl PreparedTransaction for PreparedUserTransaction {
     type Raw = RawNotarizedTransaction;
 
     fn prepare_from_transaction_enum(

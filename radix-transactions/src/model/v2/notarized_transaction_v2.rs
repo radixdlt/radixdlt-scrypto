@@ -26,7 +26,7 @@ impl NotarizedTransactionV2 {
     }
 }
 
-transaction_payload_v2!(
+define_transaction_payload!(
     NotarizedTransactionV2,
     RawNotarizedTransaction,
     PreparedNotarizedTransactionV2 {

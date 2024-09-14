@@ -21,10 +21,6 @@ pub enum PrepareError {
         max: usize,
     },
     LengthOverflow,
-    UnexpectedDiscriminator {
-        expected: u8,
-        actual: u8,
-    },
     Other(String),
 }
 
@@ -138,16 +134,25 @@ impl<'a> TransactionDecoder<'a> {
         Ok(self.decoder.track_stack_depth_increase()?)
     }
 
-    pub fn read_struct_header(&mut self, length: usize) -> Result<(), PrepareError> {
-        self.read_and_check_value_kind(ValueKind::Tuple)?;
-        self.read_struct_header_without_value_kind(length)
-    }
-
-    pub fn read_struct_header_without_value_kind(
+    pub fn read_header(
         &mut self,
-        length: usize,
+        header: ExpectedTupleHeader,
+        expected_length: usize,
     ) -> Result<(), PrepareError> {
-        self.decoder.read_and_check_size(length)?;
+        match header {
+            ExpectedTupleHeader::EnumNoValueKind { discriminator } => {
+                self.decoder.read_expected_discriminator(discriminator)?;
+            }
+            ExpectedTupleHeader::EnumWithValueKind { discriminator } => {
+                self.read_and_check_value_kind(ValueKind::Enum)?;
+                self.decoder.read_expected_discriminator(discriminator)?;
+            }
+            ExpectedTupleHeader::TupleWithValueKind => {
+                self.read_and_check_value_kind(ValueKind::Tuple)?;
+            }
+            ExpectedTupleHeader::TupleNoValueKind => {}
+        }
+        self.decoder.read_and_check_size(expected_length)?;
         Ok(())
     }
 
@@ -156,31 +161,6 @@ impl<'a> TransactionDecoder<'a> {
         let discriminator = self.decoder.read_discriminator()?;
         let length = self.decoder.read_size()?;
         Ok((discriminator, length))
-    }
-
-    pub fn read_expected_enum_variant_header(
-        &mut self,
-        expected_discriminator: u8,
-        length: usize,
-    ) -> Result<(), PrepareError> {
-        self.read_and_check_value_kind(ValueKind::Enum)?;
-        self.read_expected_enum_variant_header_without_value_kind(expected_discriminator, length)
-    }
-
-    pub fn read_expected_enum_variant_header_without_value_kind(
-        &mut self,
-        expected_discriminator: u8,
-        length: usize,
-    ) -> Result<(), PrepareError> {
-        let discriminator = self.decoder.read_discriminator()?;
-        if discriminator != expected_discriminator {
-            return Err(PrepareError::UnexpectedDiscriminator {
-                expected: expected_discriminator,
-                actual: discriminator,
-            });
-        }
-        self.decoder.read_and_check_size(length)?;
-        Ok(())
     }
 
     pub fn read_array_header(

@@ -38,17 +38,15 @@ impl IntoExecutable for NotarizedTransactionV1 {
     }
 }
 
-impl TransactionPayload for NotarizedTransactionV1 {
-    type Prepared = PreparedNotarizedTransactionV1;
-    type Raw = RawNotarizedTransaction;
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedNotarizedTransactionV1 {
-    pub signed_intent: PreparedSignedIntentV1,
-    pub notary_signature: PreparedNotarySignatureV1,
-    pub summary: Summary,
-}
+define_transaction_payload!(
+    NotarizedTransactionV1,
+    RawNotarizedTransaction,
+    PreparedNotarizedTransactionV1 {
+        signed_intent: PreparedSignedIntentV1,
+        notary_signature: PreparedNotarySignatureV1,
+    },
+    TransactionDiscriminator::V1Notarized,
+);
 
 impl PreparedNotarizedTransactionV1 {
     pub fn validate(
@@ -56,44 +54,6 @@ impl PreparedNotarizedTransactionV1 {
         validator: &TransactionValidator,
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
         validator.validate_notarized_v1(self)
-    }
-}
-
-impl_has_summary!(PreparedNotarizedTransactionV1);
-
-impl TransactionPreparableFromValue for PreparedNotarizedTransactionV1 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as an child, it's SBOR encoded as a struct
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct(
-                decoder,
-                TransactionDiscriminator::V1Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
-    }
-}
-
-impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
-    type Raw = RawNotarizedTransaction;
-
-    fn prepare_from_transaction_enum(
-        decoder: &mut TransactionDecoder,
-    ) -> Result<Self, PrepareError> {
-        // When embedded as full payload, it's SBOR encoded as an enum
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum(
-                decoder,
-                TransactionDiscriminator::V1Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
     }
 }
 

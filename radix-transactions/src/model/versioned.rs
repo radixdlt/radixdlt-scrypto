@@ -413,7 +413,7 @@ mod tests {
         };
         let expected_hash = hash_encoded_sbor_value_body(&intent_header);
         let actual_hash = intent_header
-            .prepare_partial_with_latest_settings()
+            .prepare_partial(PreparationSettings::latest_ref())
             .unwrap()
             .get_summary()
             .hash;
@@ -431,7 +431,7 @@ mod tests {
         };
 
         let actual_hash = blobs_v1
-            .prepare_partial_with_latest_settings()
+            .prepare_partial(PreparationSettings::latest_ref())
             .unwrap()
             .get_summary()
             .hash;
@@ -445,7 +445,7 @@ mod tests {
         let expected_hash = hash_encoded_sbor_value_body(&instructions);
 
         let actual_hash = instructions
-            .prepare_partial_with_latest_settings()
+            .prepare_partial(PreparationSettings::latest_ref())
             .unwrap()
             .get_summary()
             .hash;
@@ -459,7 +459,7 @@ mod tests {
         let expected_hash = hash_encoded_sbor_value_body(&message);
 
         let actual_hash = message
-            .prepare_partial_with_latest_settings()
+            .prepare_partial(PreparationSettings::latest_ref())
             .unwrap()
             .get_summary()
             .hash;
@@ -475,7 +475,7 @@ mod tests {
         let expected_hash = hash(&empty);
 
         let actual_hash = children
-            .prepare_partial_with_latest_settings()
+            .prepare_partial(PreparationSettings::latest_ref())
             .unwrap()
             .get_summary()
             .hash;
@@ -501,7 +501,9 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = blobs_v1.prepare_partial_with_latest_settings().unwrap();
+        let prepared_blobs_v1 = blobs_v1
+            .prepare_partial(PreparationSettings::latest_ref())
+            .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {

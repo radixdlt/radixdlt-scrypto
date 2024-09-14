@@ -76,7 +76,7 @@ impl_has_summary!(PreparedRoundUpdateTransactionV1);
 
 define_raw_transaction_payload!(RawRoundUpdateTransactionV1, TransactionPayloadKind::Other);
 
-impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
+impl PreparedTransaction for PreparedRoundUpdateTransactionV1 {
     type Raw = RawRoundUpdateTransactionV1;
 
     fn prepare_from_transaction_enum(

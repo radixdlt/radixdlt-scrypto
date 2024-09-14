@@ -11,7 +11,7 @@ where
     Self::OwnedVariant: ManifestDecode,
     for<'a> Self::BorrowedVariant<'a>: ManifestEncode,
 {
-    type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
+    type Prepared: PreparedTransaction<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;
 
     fn discriminator() -> u8 {
@@ -38,12 +38,6 @@ where
 pub trait TransactionPartialPrepare: ManifestEncode {
     type Prepared: TransactionPreparableFromValue;
 
-    /// In producion, you should use a TransactionValidator instead, which has
-    /// access to [`PreparationSettings`].
-    fn prepare_partial_with_latest_settings(&self) -> Result<Self::Prepared, PrepareError> {
-        self.prepare_partial(PreparationSettings::latest_ref())
-    }
-
     fn prepare_partial(
         &self,
         settings: &PreparationSettings,
@@ -66,7 +60,13 @@ pub trait TransactionPartialPrepare: ManifestEncode {
 ///   Ideally this means the hash should _not_ include the header byte.
 /// * Ideally the summary should not include costing for reading the value kind byte.
 pub trait TransactionPreparableFromValueBody: HasSummary + Sized {
-    /// Prepares value from a manifest decoder by reading the inner body (without the value kind)
+    /// Most types when read as a value should have a slightly longer length.
+    /// BUT some types (e.g. transaction payloads) must have the same length
+    /// regardless, as this length is used for billing the transaction.
+    const ADDITIONAL_SUMMARY_LENGTH_AS_VALUE: usize = 1usize;
+
+    /// Prepares the transaction from a transaction decoder by reading the inner body
+    /// of the tuple/enum (without the value kind)
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
     fn value_kind() -> ManifestValueKind;
@@ -80,7 +80,7 @@ impl<T: TransactionPreparableFromValueBody> TransactionPreparableFromValue for T
         prepared.summary_mut().effective_length = prepared
             .get_summary()
             .effective_length
-            .checked_add(1)
+            .checked_add(Self::ADDITIONAL_SUMMARY_LENGTH_AS_VALUE)
             .ok_or(PrepareError::LengthOverflow)?;
         Ok(prepared)
     }
@@ -107,10 +107,11 @@ pub trait TransactionPreparableFromValue: HasSummary + Sized {
 /// They should have a hash over a payload which starts with the bytes:
 /// * `TRANSACTION_HASHABLE_PAYLOAD_PREFIX`
 /// * `TransactionDiscriminator::X as u8`
-pub trait TransactionPayloadPreparable: Sized {
+pub trait PreparedTransaction: Sized {
     type Raw: RawTransactionPayload;
 
-    /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
+    /// Prepares value from a transaction decoder by reading the Enum wrapper
+    /// (including its value kind)
     fn prepare_from_transaction_enum(
         decoder: &mut TransactionDecoder,
     ) -> Result<Self, PrepareError>;
@@ -128,7 +129,7 @@ pub trait TransactionPayloadPreparable: Sized {
     }
 }
 
-macro_rules! transaction_payload_v2 {
+macro_rules! define_transaction_payload {
     (
         $transaction:ident,
         $raw:ty,
@@ -158,14 +159,15 @@ macro_rules! transaction_payload_v2 {
             }
         }
 
-        impl TransactionPayloadPreparable for $prepared {
+        impl PreparedTransaction for $prepared {
             type Raw = $raw;
 
             fn prepare_from_transaction_enum(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
                 // When embedded as full payload, it's SBOR encoded as an enum
-                let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_from_transaction_payload_enum(
+                let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_transaction_payload(
                     decoder,
                     $discriminator,
+                    ExpectedHeaderKind::EnumWithValueKind,
                 )?;
                 Ok(Self {
                     $($field_name,)*
@@ -175,12 +177,18 @@ macro_rules! transaction_payload_v2 {
         }
 
         impl TransactionPreparableFromValueBody for $prepared {
+            // Ensure that all manners of preparing the transaction give an
+            // equal effective length, so they can all be turned into an executable
+            // and have the same billed length.
+            const ADDITIONAL_SUMMARY_LENGTH_AS_VALUE: usize = 0;
+
             fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
                 // When embedded as an child body, it's SBOR encoded as a struct body (without value kind)
                 let (($($field_name,)*), summary) =
-                    ConcatenatedDigest::prepare_from_transaction_child_struct_body(
+                    ConcatenatedDigest::prepare_transaction_payload(
                         decoder,
                         $discriminator,
+                        ExpectedHeaderKind::TupleNoValueKind,
                     )?;
                 Ok(Self {
                     $($field_name,)*
@@ -195,7 +203,7 @@ macro_rules! transaction_payload_v2 {
     };
 }
 
-pub(crate) use transaction_payload_v2;
+pub(crate) use define_transaction_payload;
 
 pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
     const KIND: TransactionPayloadKind;

@@ -13,55 +13,15 @@ pub struct SignedIntentV1 {
     pub intent_signatures: IntentSignaturesV1,
 }
 
-impl TransactionPayload for SignedIntentV1 {
-    type Prepared = PreparedSignedIntentV1;
-    type Raw = RawSignedTransactionIntent;
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedSignedIntentV1 {
-    pub intent: PreparedIntentV1,
-    pub intent_signatures: PreparedIntentSignaturesV1,
-    pub summary: Summary,
-}
-
-impl_has_summary!(PreparedSignedIntentV1);
-
-impl TransactionPreparableFromValue for PreparedSignedIntentV1 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as an child, it's SBOR encoded as a struct
-        let ((intent, intent_signatures), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct(
-                decoder,
-                TransactionDiscriminator::V1SignedIntent,
-            )?;
-        Ok(Self {
-            intent,
-            intent_signatures,
-            summary,
-        })
-    }
-}
-
-impl TransactionPayloadPreparable for PreparedSignedIntentV1 {
-    type Raw = RawSignedTransactionIntent;
-
-    fn prepare_from_transaction_enum(
-        decoder: &mut TransactionDecoder,
-    ) -> Result<Self, PrepareError> {
-        // When embedded as full payload, it's SBOR encoded as an enum
-        let ((intent, intent_signatures), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum(
-                decoder,
-                TransactionDiscriminator::V1SignedIntent,
-            )?;
-        Ok(Self {
-            intent,
-            intent_signatures,
-            summary,
-        })
-    }
-}
+define_transaction_payload!(
+    SignedIntentV1,
+    RawSignedTransactionIntent,
+    PreparedSignedIntentV1 {
+        intent: PreparedIntentV1,
+        intent_signatures: PreparedIntentSignaturesV1,
+    },
+    TransactionDiscriminator::V1SignedIntent,
+);
 
 impl HasTransactionIntentHash for PreparedSignedIntentV1 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {

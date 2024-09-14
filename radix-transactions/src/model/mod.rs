@@ -238,10 +238,7 @@ Enum<3u8>(
         assert_eq!(
             validated,
             Err(TransactionValidationError::PrepareError(
-                PrepareError::UnexpectedDiscriminator {
-                    expected: 3,
-                    actual: 4
-                }
+                PrepareError::Other(format!("Unknown transaction payload discriminator byte: 4"))
             ))
         )
     }

@@ -16,7 +16,7 @@ pub struct SignedPartialTransactionV2 {
     pub subintent_signatures: MultipleIntentSignaturesV2,
 }
 
-transaction_payload_v2!(
+define_transaction_payload!(
     SignedPartialTransactionV2,
     RawSignedPartialTransaction,
     PreparedSignedPartialTransactionV2 {
