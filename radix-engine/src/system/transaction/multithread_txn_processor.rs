@@ -1,17 +1,22 @@
 use crate::blueprints::transaction_processor::{
     ResumeResult, TxnProcessorThread, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
 };
-use crate::errors::{KernelError, RuntimeError};
+use crate::errors::{KernelError, RuntimeError, SystemError};
+use crate::internal_prelude::YieldError;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::actor::{Actor, FunctionActor};
 use crate::system::system::SystemService;
 use crate::system::system_callback::{System, SystemBasedKernelApi};
 use crate::system::system_modules::auth::AuthModule;
-use radix_common::constants::TRANSACTION_PROCESSOR_PACKAGE;
+use radix_common::constants::{RESOURCE_PACKAGE, TRANSACTION_PROCESSOR_PACKAGE};
 use radix_common::prelude::{BlueprintId, GlobalAddressReservation};
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_engine_interface::prelude::{
+    ObjectInfo, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT,
+};
+use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 use sbor::prelude::ToString;
@@ -73,6 +78,31 @@ impl MultiThreadedTxnProcessor {
         })
     }
 
+    fn check_yielded_value<Y: SystemBasedKernelApi>(
+        value: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let mut system_service = SystemService::new(api);
+        for node_id in value.owned_nodes() {
+            let object_info: ObjectInfo = system_service.get_object_info(node_id)?;
+
+            let blueprint_id = object_info.blueprint_info.blueprint_id;
+            match (
+                blueprint_id.package_address,
+                blueprint_id.blueprint_name.as_str(),
+            ) {
+                (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT | NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                    return Err(RuntimeError::SystemError(SystemError::YieldError(
+                        YieldError::CannotYieldProof,
+                    )));
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn execute<Y: SystemBasedKernelApi>(&mut self, api: &mut Y) -> Result<(), RuntimeError> {
         let mut cur_thread = 0;
         let mut parent_stack = vec![];
@@ -88,12 +118,10 @@ impl MultiThreadedTxnProcessor {
                     let child = *children_mapping.get(child).unwrap();
                     parent_stack.push(cur_thread);
                     cur_thread = child;
-                    api.kernel_send_to_stack(child, value.clone())?;
                     passed_value = Some(value);
                 }
                 ResumeResult::YieldToParent(value) => {
                     cur_thread = parent_stack.pop().unwrap();
-                    api.kernel_send_to_stack(cur_thread, value.clone())?;
                     passed_value = Some(value);
                 }
                 ResumeResult::Done => {
@@ -103,6 +131,12 @@ impl MultiThreadedTxnProcessor {
                         break;
                     }
                 }
+            }
+
+            // Checked passed values
+            if let Some(passed_value) = &passed_value {
+                Self::check_yielded_value(passed_value, api)?;
+                api.kernel_send_to_stack(cur_thread, passed_value.clone())?;
             }
         }
 

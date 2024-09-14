@@ -293,6 +293,12 @@ pub enum SystemError {
     SystemPanic(String),
 
     CannotLockFeeInChildSubintent(usize),
+    YieldError(YieldError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum YieldError {
+    CannotYieldProof,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
