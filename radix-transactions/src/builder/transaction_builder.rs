@@ -55,7 +55,7 @@ impl TransactionV1Builder {
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
         let prepared = intent
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Intent could be prepared");
         self.intent_signatures
             .push(signer.sign_with_public_key(&prepared.transaction_intent_hash()));
@@ -65,7 +65,7 @@ impl TransactionV1Builder {
     pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
         let intent = self.transaction_intent();
         let prepared = intent
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Intent could be prepared");
         for signer in signers {
             self.intent_signatures
@@ -82,7 +82,7 @@ impl TransactionV1Builder {
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
         let prepared = signed_intent
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Signed intent could be prepared");
         self.notary_signature = Some(
             signer
@@ -162,7 +162,7 @@ impl PartialTransactionV2Builder {
         }
 
         let prepared = signed_partial_transaction
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
@@ -235,7 +235,7 @@ impl PartialTransactionV2Builder {
         if self.prepared_intent.is_none() {
             let prepared = self
                 .create_subintent()
-                .prepare_with_latest_settings()
+                .prepare(PreparationSettings::latest_ref())
                 .expect("Expected that subintent could be prepared");
             self.prepared_intent = Some(prepared);
         }
@@ -325,7 +325,7 @@ impl TransactionV2Builder {
         }
 
         let prepared = signed_partial_transaction
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
@@ -423,7 +423,7 @@ impl TransactionV2Builder {
         if self.prepared_intent.is_none() {
             let prepared = self
                 .create_intent_and_subintent_signatures()
-                .prepare_with_latest_settings()
+                .prepare(PreparationSettings::latest_ref())
                 .expect("Expected that the intent could be prepared");
             self.prepared_intent = Some(prepared);
         }
@@ -477,7 +477,7 @@ impl TransactionV2Builder {
         if self.prepared_intent.is_none() {
             let prepared = self
                 .create_signed_transaction_intent()
-                .prepare_with_latest_settings()
+                .prepare(PreparationSettings::latest_ref())
                 .expect("Expected that signed intent could be prepared");
             self.prepared_signed_intent = Some(prepared);
         }
@@ -537,7 +537,9 @@ mod tests {
             .notarize(&private_key)
             .build();
 
-        let prepared = transaction.prepare_with_latest_settings().unwrap();
+        let prepared = transaction
+            .prepare(PreparationSettings::latest_ref())
+            .unwrap();
         assert_eq!(
             prepared
                 .signed_intent

@@ -44,53 +44,14 @@ define_raw_transaction_payload!(
     TransactionPayloadKind::LedgerTransaction
 );
 
-#[derive(Debug, Copy, Clone)]
-pub enum AcceptedLedgerTransactionKind {
-    Any,
-    UserOnly,
-    GenesisOnly,
-    UserOrRoundChange,
-}
-
-impl AcceptedLedgerTransactionKind {
-    fn permits_genesis(&self) -> bool {
-        match self {
-            AcceptedLedgerTransactionKind::Any => true,
-            AcceptedLedgerTransactionKind::UserOnly => false,
-            AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
-        }
-    }
-
-    fn permits_user(&self) -> bool {
-        match self {
-            AcceptedLedgerTransactionKind::Any => true,
-            AcceptedLedgerTransactionKind::UserOnly => true,
-            AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
-        }
-    }
-
-    fn permits_round_update(&self) -> bool {
-        match self {
-            AcceptedLedgerTransactionKind::Any => true,
-            AcceptedLedgerTransactionKind::UserOnly => false,
-            AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
-        }
-    }
-
-    fn permits_protocol_update(&self) -> bool {
-        match self {
-            AcceptedLedgerTransactionKind::Any => true,
-            AcceptedLedgerTransactionKind::UserOnly => false,
-            AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
-        }
-    }
-}
-
 impl RawLedgerTransaction {
+    pub fn prepare(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedLedgerTransaction, PrepareError> {
+        PreparedLedgerTransaction::prepare(self, settings)
+    }
+
     pub fn validate(
         &self,
         validator: &TransactionValidator,
@@ -185,8 +146,7 @@ impl PreparedLedgerTransaction {
                         "User transaction not permitted at this point".to_string(),
                     ));
                 }
-                let validated = validator.validate(t)?;
-                ValidatedLedgerTransactionInner::User(validated)
+                ValidatedLedgerTransactionInner::User(t.validate(validator)?)
             }
             PreparedLedgerTransactionInner::Validator(t) => {
                 if !accepted_kind.permits_round_update() {
@@ -209,6 +169,52 @@ impl PreparedLedgerTransaction {
             inner: validated_inner,
             summary: self.summary,
         })
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum AcceptedLedgerTransactionKind {
+    Any,
+    UserOnly,
+    GenesisOnly,
+    UserOrRoundChange,
+}
+
+impl AcceptedLedgerTransactionKind {
+    fn permits_genesis(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
+        }
+    }
+
+    fn permits_user(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => true,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
+        }
+    }
+
+    fn permits_round_update(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
+        }
+    }
+
+    fn permits_protocol_update(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
+        }
     }
 }
 
@@ -609,15 +615,15 @@ mod tests {
             .build();
 
         let prepared_notarized = notarized
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .expect("Notarized can be prepared");
 
         let ledger = LedgerTransaction::UserV1(Box::new(notarized));
         let raw_ledger_transaction = ledger.to_raw().expect("Can be encoded");
         LedgerTransaction::from_raw(&raw_ledger_transaction).expect("Can be decoded");
-        let prepared_ledger_transaction =
-            PreparedLedgerTransaction::prepare_with_latest_settings(&raw_ledger_transaction)
-                .expect("Can be prepared");
+        let prepared_ledger_transaction = raw_ledger_transaction
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Can be prepared");
 
         let expected_intent_hash = LedgerTransactionHash::from_hash(hash(
             [

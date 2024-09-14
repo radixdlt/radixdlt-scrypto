@@ -16,6 +16,28 @@ pub struct NotarizedTransactionV1 {
     pub notary_signature: NotarySignatureV1,
 }
 
+impl NotarizedTransactionV1 {
+    pub fn prepare_and_validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
+    }
+}
+
+impl IntoExecutable for NotarizedTransactionV1 {
+    type Error = TransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self.prepare_and_validate(validator)?.get_executable();
+        Ok(executable)
+    }
+}
+
 impl TransactionPayload for NotarizedTransactionV1 {
     type Prepared = PreparedNotarizedTransactionV1;
     type Raw = RawNotarizedTransaction;
@@ -26,6 +48,15 @@ pub struct PreparedNotarizedTransactionV1 {
     pub signed_intent: PreparedSignedIntentV1,
     pub notary_signature: PreparedNotarySignatureV1,
     pub summary: Summary,
+}
+
+impl PreparedNotarizedTransactionV1 {
+    pub fn validate(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
+        validator.validate_notarized_v1(self)
+    }
 }
 
 impl_has_summary!(PreparedNotarizedTransactionV1);

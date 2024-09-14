@@ -1583,7 +1583,7 @@ YIELD_TO_PARENT;
         .to_raw()
         .unwrap();
 
-        let intent_hash = PreparedIntentV1::prepare_with_latest_settings(&intent)
+        let intent_hash = PreparedIntentV1::prepare(&intent, PreparationSettings::latest_ref())
             .unwrap()
             .transaction_intent_hash();
 

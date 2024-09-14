@@ -389,7 +389,9 @@ mod tests {
             .concat(),
         ));
 
-        let prepared = subintent.prepare_with_latest_settings().unwrap();
+        let prepared = subintent
+            .prepare(PreparationSettings::latest_ref())
+            .unwrap();
         let actual_subintent_hash = prepared.subintent_hash();
         assert_eq!(expected_subintent_hash, actual_subintent_hash);
         assert_eq!(
@@ -543,9 +545,11 @@ mod tests {
             VersionedTransactionPayload::SystemTransactionV1(system_transaction_v1)
         );
 
-        let prepared_system_transaction =
-            PreparedSystemTransactionV1::prepare_with_latest_settings(&raw_system_transaction)
-                .unwrap();
+        let prepared_system_transaction = PreparedSystemTransactionV1::prepare(
+            &raw_system_transaction,
+            PreparationSettings::latest_ref(),
+        )
+        .unwrap();
 
         assert_eq!(
             expected_system_transaction_hash,

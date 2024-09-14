@@ -67,7 +67,7 @@ mod tests {
         let encoder = TransactionHashBech32Encoder::for_simulator();
         let transaction = transaction();
         let hash = transaction
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .unwrap()
             .transaction_intent_hash();
 
@@ -87,7 +87,7 @@ mod tests {
         let encoder = TransactionHashBech32Encoder::for_simulator();
         let transaction = transaction();
         let hash = transaction
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .unwrap()
             .signed_transaction_intent_hash();
 
@@ -107,7 +107,7 @@ mod tests {
         let encoder = TransactionHashBech32Encoder::for_simulator();
         let transaction = transaction();
         let hash = transaction
-            .prepare_with_latest_settings()
+            .prepare(PreparationSettings::latest_ref())
             .unwrap()
             .notarized_transaction_hash();
 

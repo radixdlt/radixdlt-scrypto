@@ -164,7 +164,7 @@ Enum<3u8>(
 "###,
         );
 
-        let validated = validator.validate_from_raw(&raw).unwrap();
+        let validated = raw.validate(&validator).unwrap();
         let executable = validated.get_executable();
         let expected_intent_hash = TransactionIntentHash(hash(
             [
@@ -234,7 +234,7 @@ Enum<3u8>(
         let mut amended_payload = payload.to_vec();
         amended_payload[2] = 4;
         let amended_raw = RawNotarizedTransaction(amended_payload);
-        let validated = validator.validate_from_raw(&amended_raw);
+        let validated = amended_raw.validate(&validator);
         assert_eq!(
             validated,
             Err(TransactionValidationError::PrepareError(

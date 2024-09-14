@@ -33,19 +33,6 @@ where
     fn prepare(&self, settings: &PreparationSettings) -> Result<Self::Prepared, PrepareError> {
         Ok(Self::Prepared::prepare(&self.to_raw()?, settings)?)
     }
-
-    fn prepare_with_latest_settings(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_with_latest_settings(
-            &self.to_raw()?,
-        )?)
-    }
-
-    fn prepare_and_validate<V: TransactionPrepare<Self::Raw>>(
-        &self,
-        validator: &V,
-    ) -> Result<V::Validated, TransactionValidationError> {
-        validator.validate_from_raw(&self.to_raw()?)
-    }
 }
 
 pub trait TransactionPartialPrepare: ManifestEncode {
@@ -139,10 +126,6 @@ pub trait TransactionPayloadPreparable: Sized {
         transaction_decoder.check_complete()?;
         Ok(prepared)
     }
-
-    fn prepare_with_latest_settings(raw: &Self::Raw) -> Result<Self, PrepareError> {
-        Self::prepare(raw, PreparationSettings::latest_ref())
-    }
 }
 
 macro_rules! transaction_payload_v2 {
@@ -221,6 +204,8 @@ pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
         self.as_ref()
     }
 }
+
+pub trait ValidatedTransactionPayload: IntoExecutable {}
 
 #[derive(Debug, Copy, Clone)]
 pub enum TransactionPayloadKind {

@@ -11,21 +11,29 @@ use radix_engine_interface::{metadata, metadata_init};
 use radix_transactions::manifest::*;
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::{TransactionPrepare, TransactionValidator};
+use radix_transactions::validation::*;
 use scrypto::prelude::*;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let network = NetworkDefinition::simulator();
-    let compiled_transaction = compiled_notarized_transaction(&network);
+    let raw_transaction = compiled_notarized_transaction(&network);
     let validator = TransactionValidator::new_with_latest_config(&network);
     c.bench_function("transaction_processing::prepare", |b| {
-        b.iter(|| black_box(validator.prepare_from_raw(&compiled_transaction).unwrap()))
+        b.iter(|| {
+            black_box(
+                raw_transaction
+                    .prepare(validator.preparation_settings())
+                    .unwrap(),
+            )
+        })
     });
     c.bench_function("transaction_processing::prepare_and_decompile", |b| {
         b.iter(|| {
             #[allow(deprecated)]
             black_box({
-                let transaction = validator.prepare_from_raw(&compiled_transaction).unwrap();
+                let transaction = raw_transaction
+                    .prepare(validator.preparation_settings())
+                    .unwrap();
                 let PreparedUserTransaction::V1(transaction) = transaction else {
                     unreachable!()
                 };
@@ -50,7 +58,9 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             b.iter(|| {
                 #[allow(deprecated)]
                 black_box({
-                    let transaction = validator.prepare_from_raw(&compiled_transaction).unwrap();
+                    let transaction = raw_transaction
+                        .prepare(validator.preparation_settings())
+                        .unwrap();
                     let PreparedUserTransaction::V1(transaction) = transaction else {
                         unreachable!()
                     };

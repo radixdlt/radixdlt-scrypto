@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
+use radix_transactions::validation::TransactionValidator;
 use scrypto_test::prelude::*;
 
 // We run tests in this file to produce common manifest transformation costs for Core Apps, such as
@@ -45,7 +46,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -111,7 +112,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -155,7 +156,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable(),
+        tx1,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -177,7 +178,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -226,7 +227,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable(),
+        tx1,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -248,7 +249,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -302,7 +303,7 @@ fn estimate_adding_signature() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable(),
+        tx1,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -318,7 +319,7 @@ fn estimate_adding_signature() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -378,7 +379,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
         notary_is_signatory,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable(),
+        tx2,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -407,4 +408,12 @@ fn estimate_notarizing_notary_is_not_signatory() {
 fn estimate_notarizing_notary_is_signatory() {
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
     estimate_notarizing(true, dec!("0.0084273944"));
+}
+
+fn validate_notarized_transaction<'a>(
+    network: &'a NetworkDefinition,
+    transaction: &'a NotarizedTransactionV1,
+) -> ValidatedNotarizedTransactionV1 {
+    let validator = TransactionValidator::new_with_latest_config(network);
+    transaction.prepare_and_validate(&validator).unwrap()
 }

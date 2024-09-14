@@ -2,30 +2,6 @@ use radix_substate_store_interface::interface::SubstateDatabase;
 
 use crate::internal_prelude::*;
 
-pub trait TransactionPrepare<Raw: RawTransactionPayload>:
-    TransactionValidate<Self::Prepared> + TransactionPreparer
-{
-    type Prepared: TransactionPayloadPreparable<Raw = Raw>;
-
-    fn prepare_from_raw(&self, raw: &Raw) -> Result<Self::Prepared, TransactionValidationError> {
-        Ok(Self::Prepared::prepare(raw, self.preparation_settings())?)
-    }
-
-    fn validate_from_raw(&self, raw: &Raw) -> Result<Self::Validated, TransactionValidationError> {
-        let prepared = self.prepare_from_raw(raw)?;
-        self.validate(prepared)
-    }
-}
-
-pub trait TransactionValidate<Prepared: TransactionPayloadPreparable> {
-    type Validated;
-
-    fn validate(
-        &self,
-        transaction: Prepared,
-    ) -> Result<Self::Validated, TransactionValidationError>;
-}
-
 pub trait TransactionPreparer {
     fn preparation_settings(&self) -> &PreparationSettings;
 }
@@ -115,60 +91,11 @@ impl TransactionValidator {
             config: ValidationConfig::latest(network_definition),
         }
     }
-}
 
-impl TransactionPreparer for TransactionValidator {
-    fn preparation_settings(&self) -> &PreparationSettings {
+    pub fn preparation_settings(&self) -> &PreparationSettings {
         &self.config.preparation_settings
     }
-}
 
-impl TransactionPrepare<RawNotarizedTransaction> for TransactionValidator {
-    type Prepared = PreparedUserTransaction;
-}
-
-impl TransactionValidate<PreparedUserTransaction> for TransactionValidator {
-    type Validated = ValidatedUserTransaction;
-
-    fn validate(
-        &self,
-        transaction: PreparedUserTransaction,
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        Ok(match transaction {
-            PreparedUserTransaction::V1(t) => ValidatedUserTransaction::V1(self.validate(t)?),
-            PreparedUserTransaction::V2(t) => ValidatedUserTransaction::V2(self.validate(t)?),
-        })
-    }
-}
-
-impl TransactionValidate<PreparedNotarizedTransactionV1> for TransactionValidator {
-    type Validated = ValidatedNotarizedTransactionV1;
-
-    fn validate(
-        &self,
-        transaction: PreparedNotarizedTransactionV1,
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        self.validate_notarized_v1(transaction)
-    }
-}
-
-impl TransactionPrepare<RawSystemTransaction> for TransactionValidator {
-    type Prepared = PreparedSystemTransactionV1;
-}
-
-impl TransactionValidate<PreparedSystemTransactionV1> for TransactionValidator {
-    type Validated = PreparedSystemTransactionV1;
-
-    fn validate(
-        &self,
-        transaction: PreparedSystemTransactionV1,
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        // No validation is performed on system transactions
-        Ok(transaction)
-    }
-}
-
-impl TransactionValidator {
     #[allow(deprecated)]
     pub fn validate_notarized_v1(
         &self,
@@ -448,16 +375,13 @@ impl TransactionValidator {
         }
         Ok(())
     }
-}
 
-impl TransactionValidate<PreparedNotarizedTransactionV2> for TransactionValidator {
-    type Validated = ValidatedNotarizedTransactionV2;
-
-    fn validate(
+    #[allow(deprecated)]
+    pub fn validate_notarized_v2(
         &self,
         _transaction: PreparedNotarizedTransactionV2,
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        unimplemented!()
+    ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+        todo!()
     }
 }
 
@@ -474,12 +398,8 @@ mod tests {
             let validator = TransactionValidator::new_with_static_config(config);
             assert_eq!(
                 $result,
-                validator
-                    .validate_from_raw(
-                        &create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
-                            .to_raw()
-                            .unwrap()
-                    )
+                create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
+                    .prepare_and_validate(&validator)
                     .expect_err("Should be an error")
             );
         }};
@@ -910,7 +830,7 @@ mod tests {
         let validator =
             TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
         assert_eq!(
-            validator.validate_from_raw(&transaction.to_raw().unwrap()),
+            transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IdValidationError(
                 ManifestIdValidationError::BucketNotFound(ManifestBucket(0))
             ))

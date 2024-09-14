@@ -91,7 +91,7 @@ impl SystemTransactionManifestV1 {
         self,
         unique_hash: Hash,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> SystemTransactionV1WithProofs {
+    ) -> SystemTransactionV1WithProofs<'static> {
         self.into_transaction(unique_hash)
             .with_proofs(initial_proofs)
     }

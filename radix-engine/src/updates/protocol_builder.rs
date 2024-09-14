@@ -1,5 +1,5 @@
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use radix_transactions::{model::TransactionPayload, validation::TransactionValidator};
+use radix_transactions::{model::*, validation::TransactionValidator};
 
 use crate::{
     system::bootstrap::FlashReceipt,
@@ -107,11 +107,13 @@ impl ProtocolUpdateExecutor {
                                 vm_modules,
                                 &execution_config,
                                 transaction
-                                    .prepare_and_validate(&validator)
-                                    .expect("Expected protocol update transaction to be preparable")
-                                    .get_executable(btreeset![system_execution(
+                                    .with_proofs_ref(btreeset![system_execution(
                                         SystemExecution::Protocol
-                                    )]),
+                                    )])
+                                    .into_executable(&validator)
+                                    .expect(
+                                        "Expected protocol update transaction to be preparable",
+                                    ),
                             );
                             receipt.expect_commit_success();
                             receipt

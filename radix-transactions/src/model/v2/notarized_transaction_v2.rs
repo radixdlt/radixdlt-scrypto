@@ -16,6 +16,16 @@ pub struct NotarizedTransactionV2 {
     pub notary_signature: NotarySignatureV1,
 }
 
+impl NotarizedTransactionV2 {
+    pub fn prepare_and_validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
+    }
+}
+
 transaction_payload_v2!(
     NotarizedTransactionV2,
     RawNotarizedTransaction,
@@ -25,6 +35,27 @@ transaction_payload_v2!(
     },
     TransactionDiscriminator::V2Notarized,
 );
+
+impl PreparedNotarizedTransactionV2 {
+    pub fn validate(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+        validator.validate_notarized_v2(self)
+    }
+}
+
+impl IntoExecutable for NotarizedTransactionV2 {
+    type Error = TransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self.prepare_and_validate(validator)?.get_executable();
+        Ok(executable)
+    }
+}
 
 impl HasTransactionIntentHash for PreparedNotarizedTransactionV2 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {

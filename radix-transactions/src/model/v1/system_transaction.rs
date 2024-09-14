@@ -9,13 +9,23 @@ pub struct SystemTransactionV1 {
 }
 
 impl SystemTransactionV1 {
-    pub fn with_proofs(
-        self,
+    pub fn with_proofs_ref(
+        &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> SystemTransactionV1WithProofs {
         SystemTransactionV1WithProofs {
             initial_proofs,
-            transaction: self,
+            transaction: Cow::Borrowed(self),
+        }
+    }
+
+    pub fn with_proofs(
+        self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> SystemTransactionV1WithProofs<'static> {
+        SystemTransactionV1WithProofs {
+            initial_proofs,
+            transaction: Cow::Owned(self),
         }
     }
 }
@@ -28,12 +38,12 @@ impl TransactionPayload for SystemTransactionV1 {
 /// This is mostly so that you can create executables easily.
 /// We can't update SystemTransaction to include these proofs, because
 /// it's already used in genesis.
-pub struct SystemTransactionV1WithProofs {
+pub struct SystemTransactionV1WithProofs<'a> {
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    transaction: SystemTransactionV1,
+    transaction: Cow<'a, SystemTransactionV1>,
 }
 
-impl IntoExecutable for SystemTransactionV1WithProofs {
+impl<'a> IntoExecutable for SystemTransactionV1WithProofs<'a> {
     type Error = PrepareError;
 
     fn into_executable(

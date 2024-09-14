@@ -1251,12 +1251,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
-        let validated = self
-            .transaction_validator
-            .validate_from_raw(raw_transaction)
-            .expect("Expected raw transaction to be valid");
+        let executable = raw_transaction
+            .validate(&self.transaction_validator)
+            .expect("Expected raw transaction to be valid")
+            .get_executable();
         self.execute_transaction(
-            validated.get_executable(),
+            executable,
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -1271,7 +1271,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let nonce = self.next_transaction_nonce();
         let unique_hash = hash(format!("Test runner txn: {}", nonce));
         self.execute_transaction(
-            manifest.into_transaction(unique_hash).with_proofs(proofs),
+            manifest
+                .into_transaction(unique_hash)
+                .with_proofs_ref(proofs),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -2361,14 +2363,6 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
         .notarize(notary)
         .build();
     notarized_transaction
-}
-
-pub fn validate_notarized_transaction<'a>(
-    network: &'a NetworkDefinition,
-    transaction: &'a NotarizedTransactionV1,
-) -> ValidatedUserTransaction {
-    let validator = TransactionValidator::new_with_latest_config(network);
-    transaction.prepare_and_validate(&validator).unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

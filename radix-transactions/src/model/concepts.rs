@@ -26,6 +26,35 @@ define_raw_transaction_payload!(
 );
 define_wrapped_hash!(NotarizedTransactionHash);
 
+impl RawNotarizedTransaction {
+    pub fn prepare(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedUserTransaction, PrepareError> {
+        PreparedUserTransaction::prepare(self, settings)
+    }
+
+    pub fn validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
+    }
+}
+
+impl IntoExecutable for RawNotarizedTransaction {
+    type Error = TransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self.validate(validator)?.get_executable();
+        Ok(executable)
+    }
+}
+
 pub trait HasNotarizedTransactionHash {
     fn notarized_transaction_hash(&self) -> NotarizedTransactionHash;
 }

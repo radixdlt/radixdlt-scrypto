@@ -5,7 +5,7 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
+use radix_transactions::model::*;
 use radix_transactions::prelude::*;
 use radix_transactions::validation::*;
 use rand::Rng;

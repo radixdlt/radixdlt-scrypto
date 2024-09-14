@@ -362,7 +362,7 @@ fn prepare_matching_test_tx_and_preview_intent(
 fn validate<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
-) -> ValidatedUserTransaction {
+) -> ValidatedNotarizedTransactionV1 {
     let validator = TransactionValidator::new_with_latest_config(&network);
     transaction.prepare_and_validate(&validator).unwrap()
 }

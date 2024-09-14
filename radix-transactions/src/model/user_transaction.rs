@@ -10,6 +10,18 @@ pub enum PreparedUserTransaction {
     V2(PreparedNotarizedTransactionV2),
 }
 
+impl PreparedUserTransaction {
+    pub fn validate(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+        Ok(match self {
+            PreparedUserTransaction::V1(t) => ValidatedUserTransaction::V1(t.validate(validator)?),
+            PreparedUserTransaction::V2(t) => ValidatedUserTransaction::V2(t.validate(validator)?),
+        })
+    }
+}
+
 impl HasTransactionIntentHash for PreparedUserTransaction {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {
         match self {

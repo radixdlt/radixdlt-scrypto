@@ -103,7 +103,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
 
     c.bench_function("transaction_validation::validate_manifest", |b| {
-        b.iter(|| black_box(validator.validate_from_raw(&raw_transaction).unwrap()))
+        b.iter(|| black_box(raw_transaction.validate(&validator).unwrap()))
     });
 }
 
