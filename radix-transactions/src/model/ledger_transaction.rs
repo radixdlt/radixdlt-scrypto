@@ -149,7 +149,7 @@ impl PreparedLedgerTransaction {
                 ValidatedLedgerTransactionInner::User(t.validate(validator)?)
             }
             PreparedLedgerTransactionInner::Validator(t) => {
-                if !accepted_kind.permits_round_update() {
+                if !accepted_kind.permits_validator() {
                     return Err(TransactionValidationError::Other(
                         "Round update transaction not permitted at this point".to_string(),
                     ));
@@ -177,7 +177,9 @@ pub enum AcceptedLedgerTransactionKind {
     Any,
     UserOnly,
     GenesisOnly,
-    UserOrRoundChange,
+    ValidatorOnly,
+    ProtocolUpdateOnly,
+    UserOrValidator,
 }
 
 impl AcceptedLedgerTransactionKind {
@@ -185,8 +187,10 @@ impl AcceptedLedgerTransactionKind {
         match self {
             AcceptedLedgerTransactionKind::Any => true,
             AcceptedLedgerTransactionKind::UserOnly => false,
-            AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => true,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => false,
         }
     }
 
@@ -195,16 +199,20 @@ impl AcceptedLedgerTransactionKind {
             AcceptedLedgerTransactionKind::Any => true,
             AcceptedLedgerTransactionKind::UserOnly => true,
             AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => true,
         }
     }
 
-    fn permits_round_update(&self) -> bool {
+    fn permits_validator(&self) -> bool {
         match self {
             AcceptedLedgerTransactionKind::Any => true,
             AcceptedLedgerTransactionKind::UserOnly => false,
             AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => true,
+            AcceptedLedgerTransactionKind::ValidatorOnly => true,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => true,
         }
     }
 
@@ -213,7 +221,9 @@ impl AcceptedLedgerTransactionKind {
             AcceptedLedgerTransactionKind::Any => true,
             AcceptedLedgerTransactionKind::UserOnly => false,
             AcceptedLedgerTransactionKind::GenesisOnly => false,
-            AcceptedLedgerTransactionKind::UserOrRoundChange => false,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => true,
+            AcceptedLedgerTransactionKind::UserOrValidator => false,
         }
     }
 }

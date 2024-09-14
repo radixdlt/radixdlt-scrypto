@@ -157,6 +157,7 @@ where
                 protocol_update_hooks,
                 modules,
             );
+            // Update the validator in case the settings have changed due to the protocol update
             self.validator = TransactionValidator::new(&self.database, &self.network_definition);
 
             self.execute_scenarios_at_new_protocol_version(
