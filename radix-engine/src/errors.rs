@@ -62,6 +62,7 @@ pub enum RejectionReason {
 
     ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     SuccessButFeeLoanNotRepaid,
+    TransactionNotYetSupported,
 }
 
 impl From<BootloadingError> for RejectionReason {

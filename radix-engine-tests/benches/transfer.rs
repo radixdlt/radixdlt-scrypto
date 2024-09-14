@@ -36,10 +36,14 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
-                TestTransaction::new_from_nonce(manifest, 1)
-                    .prepare_with_latest_settings()
-                    .unwrap()
-                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+                TestTransaction::new_v1_from_nonce(
+                    manifest,
+                    1,
+                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                )
+                .prepare_with_latest_settings()
+                .unwrap()
+                .get_executable(),
             )
             .expect_commit(true)
             .new_component_addresses()[0];
@@ -62,10 +66,14 @@ fn bench_transfer(c: &mut Criterion) {
             &mut substate_db,
             &vm_modules,
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
-            TestTransaction::new_from_nonce(manifest.clone(), nonce)
-                .prepare_with_latest_settings()
-                .unwrap()
-                .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+            TestTransaction::new_v1_from_nonce(
+                manifest.clone(),
+                nonce,
+                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+            )
+            .prepare_with_latest_settings()
+            .unwrap()
+            .get_executable(),
         )
         .expect_commit(true);
     }
@@ -85,10 +93,14 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut substate_db,
                 &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
-                TestTransaction::new_from_nonce(manifest.clone(), nonce)
-                    .prepare_with_latest_settings()
-                    .unwrap()
-                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+                TestTransaction::new_v1_from_nonce(
+                    manifest.clone(),
+                    nonce,
+                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                )
+                .prepare_with_latest_settings()
+                .unwrap()
+                .get_executable(),
             );
             receipt.expect_commit_success();
             nonce += 1;

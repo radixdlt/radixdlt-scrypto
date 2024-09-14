@@ -1,7 +1,7 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 1.5580199945 XRD
-├─ Network execution: 0.2833621 XRD, 5667242 execution cost units
+TRANSACTION COST: 1.5457544445 XRD
+├─ Network execution: 0.27109655 XRD, 5421931 execution cost units
 ├─ Network finalization: 0.21131105 XRD, 4226221 finalization cost units
 ├─ Tip: 0 XRD
 ├─ Network Storage: 1.0633468445 XRD
@@ -54,15 +54,15 @@ EVENTS: 8
    )
 ├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
    Event: PayFeeEvent {
-     amount: Decimal("1.5580199945"),
+     amount: Decimal("1.5457544445"),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
    Event: DepositEvent {
-     amount: Decimal("0.77900999725"),
+     amount: Decimal("0.77287722225"),
    }
 └─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: BurnFungibleResourceEvent {
-     amount: Decimal("0.77900999725"),
+     amount: Decimal("0.77287722225"),
    }
 
 STATE UPDATES: 8 entities
@@ -72,7 +72,7 @@ STATE UPDATES: 8 entities
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("2.5667880684825"),
+             0u8 => Decimal("2.5177258684825"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -105,7 +105,7 @@ STATE UPDATES: 8 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("99999999999999989.73284772607")),
+         LiquidFungibleResource(Decimal("99999999999999989.92909652607")),
        )
 ├─ resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn across 7 partitions
   ├─ Partition(1): 1 change
@@ -437,7 +437,7 @@ DEXes allow users to trade assets without the need for a trusted third party. Th
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("5.133576136965")),
+         LiquidFungibleResource(Decimal("5.035451736965")),
        )
 
 OUTPUTS: 3
@@ -451,13 +451,13 @@ OUTPUTS: 3
 BALANCE CHANGES: 3
 ├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: -1.5580199945
+   Change: -1.5457544445
 ├─ Vault: internal_vault_sim1nrukmp5vx6sq3va905gnc6shf85ql9m83cachgjrjf80y54302yl8n
    ResAddr: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn
    Change: +{#1#, #2#, #3#, #4#, #5#, #8#}, -{}
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: 0.77900999725
+   Change: 0.77287722225
 
 NEW ENTITIES: 1
 └─ Resource: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn

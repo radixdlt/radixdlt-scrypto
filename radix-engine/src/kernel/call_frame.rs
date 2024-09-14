@@ -679,6 +679,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         &self.call_frame_data
     }
 
+    pub fn data_mut(&mut self) -> &mut C {
+        &mut self.call_frame_data
+    }
+
     pub fn pin_node<'f, S: CommitableSubstateStore>(
         &mut self,
         substate_io: &mut SubstateIO<S>,

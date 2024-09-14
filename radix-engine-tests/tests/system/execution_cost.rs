@@ -2,6 +2,7 @@
 
 use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
+use radix_engine::updates::*;
 use radix_transactions::manifest::decompile;
 use radix_transactions::prelude::*;
 use sbor::representations::SerializationParameters;
@@ -63,18 +64,42 @@ fn executing_transactions_with_debug_information_outputs_the_detailed_cost_break
 }
 
 #[test]
-fn generate_flamegraph_of_faucet_lock_fee_method() {
-    generate_and_write_flamegraph_and_detailed_breakdown("faucet-lock-fee", |_| {
-        (
-            ManifestBuilder::new().lock_fee_from_faucet().build(),
-            Default::default(),
-        )
-    });
+fn assert_flamegraph_of_faucet_lock_fee_method() {
+    run_faucet_lock_fee(AlignerExecutionMode::Assert);
 }
 
 #[test]
-fn generate_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
-    generate_and_write_flamegraph_and_detailed_breakdown(
+#[ignore = "Run this test to update the generated files"]
+fn update_flamegraph_of_faucet_lock_fee_method() {
+    run_faucet_lock_fee(AlignerExecutionMode::Write);
+}
+
+fn run_faucet_lock_fee(mode: AlignerExecutionMode) {
+    create_flamegraph_and_detailed_breakdown(
+        "faucet-lock-fee",
+        |_| {
+            (
+                ManifestBuilder::new().lock_fee_from_faucet().build(),
+                Default::default(),
+            )
+        },
+        mode,
+    );
+}
+
+#[test]
+fn assert_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
+    run_faucet_lock_fee_and_free_xrd(AlignerExecutionMode::Assert);
+}
+
+#[test]
+#[ignore = "Run this test to update the generated files"]
+fn update_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
+    run_faucet_lock_fee_and_free_xrd(AlignerExecutionMode::Write);
+}
+
+fn run_faucet_lock_fee_and_free_xrd(mode: AlignerExecutionMode) {
+    create_flamegraph_and_detailed_breakdown(
         "faucet-lock-fee-and-free-xrd",
         |ledger| {
             let (pk, _, account) = ledger.new_account(false);
@@ -87,15 +112,22 @@ fn generate_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
                 vec![pk.into()],
             )
         },
+        mode,
     );
 }
 
-fn generate_and_write_flamegraph_and_detailed_breakdown<F>(title: &str, callback: F)
+fn create_flamegraph_and_detailed_breakdown<F>(title: &str, callback: F, mode: AlignerExecutionMode)
 where
     F: FnOnce(&mut DefaultLedgerSimulator) -> (TransactionManifestV1, Vec<PublicKey>),
 {
     let network_definition = NetworkDefinition::simulator();
-    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_babylon(|_| BabylonSettings::test_minimal())
+                .from_bootstrap_to(ProtocolVersion::Bottlenose)
+        })
+        .build();
     let (manifest, signers) = callback(&mut ledger);
     let string_manifest = decompile(&manifest, &network_definition).expect("Can't fail!");
     let receipt = ledger.execute_manifest_with_execution_config(
@@ -106,39 +138,25 @@ where
         ExecutionConfig::for_debug_transaction(),
     );
     receipt.expect_commit_success();
-    receipt
-        .generate_execution_breakdown_flamegraph(
-            PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-                .join("assets")
-                .join("flamegraphs")
-                .join(format!("{}.svg", title)),
-            title,
-            &network_definition,
-        )
+    let root_path = PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
+        .join("assets")
+        .join("flamegraphs");
+    let mut folder =
+        FolderContentAligner::new(root_path, mode, AlignerFolderMode::ExpectOtherContent);
+    let svg_bytes = receipt
+        .generate_execution_breakdown_flamegraph_svg_bytes(title, &network_definition)
         .expect("Must succeed");
-    std::fs::write(
-        PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-            .join("assets")
-            .join("flamegraphs")
-            .join(format!("{}.json", title)),
-        to_json(
-            &receipt
-                .debug_information
-                .as_ref()
-                .unwrap()
-                .detailed_execution_cost_breakdown,
-            &network_definition,
-        ),
-    )
-    .expect("Must succeed");
-    std::fs::write(
-        PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-            .join("assets")
-            .join("flamegraphs")
-            .join(format!("{}.rtm", title)),
-        string_manifest,
-    )
-    .expect("Must succeed")
+    folder.put_file(format!("{}.svg", title), svg_bytes);
+    let json_contents = to_json(
+        &receipt
+            .debug_information
+            .as_ref()
+            .unwrap()
+            .detailed_execution_cost_breakdown,
+        &network_definition,
+    );
+    folder.put_file(format!("{}.json", title), json_contents);
+    folder.put_file(format!("{}.rtm", title), string_manifest);
 }
 
 pub fn to_json<S: ScryptoEncode + ScryptoDescribe>(

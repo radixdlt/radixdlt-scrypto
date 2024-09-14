@@ -1107,6 +1107,7 @@ dependencies = [
  "strum",
  "syn 1.0.109",
  "tempfile",
+ "walkdir",
  "wasmi",
  "wasmparser 0.107.0",
 ]

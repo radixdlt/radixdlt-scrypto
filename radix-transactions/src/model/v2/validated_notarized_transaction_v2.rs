@@ -1,4 +1,5 @@
 use core::iter;
+use std::ops::Deref;
 
 use crate::internal_prelude::*;
 
@@ -86,10 +87,10 @@ impl ValidatedNotarizedTransactionV2 {
                 };
                 let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
-                let executable_intent = ExecutableIntentV2 {
+                let executable_intent = ExecutableIntent {
                     encoded_instructions: validated_info.encoded_instructions.clone(),
                     auth_zone_init,
-                    references: core.instructions.references.clone(),
+                    references: core.instructions.references.deref().clone(),
                     blobs: core.blobs.blobs_by_hash.clone(),
                     children_intent_indices: core
                         .children

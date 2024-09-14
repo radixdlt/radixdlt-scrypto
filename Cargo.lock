@@ -2305,6 +2305,7 @@ dependencies = [
  "syn 1.0.109",
  "tempfile",
  "wabt",
+ "walkdir",
  "wasm-benchmarks-lib",
  "wasmi",
  "wasmparser 0.107.0",

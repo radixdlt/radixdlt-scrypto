@@ -246,6 +246,7 @@ where
                 };
 
                 System {
+                    versioned_system_logic: VersionedSystemLogic::V1,
                     blueprint_cache: NonIterMap::new(),
                     auth_cache: NonIterMap::new(),
                     schema_cache: NonIterMap::new(),
@@ -281,8 +282,6 @@ where
                         pinned_to_heap: Default::default(),
                     },
                     id_allocator,
-                    CallFrame::new_root(Default::default()),
-                    vec![],
                     system_config,
                 )
             },

@@ -317,12 +317,11 @@ fn test_create_proof_from_bucket_of_amount() {
         .as_ref()
         .unwrap();
 
+    println!("{:#?}", execution_trace);
+
     assert_eq!(
         execution_trace
             .execution_traces
-            .get(0)
-            .unwrap()
-            .children
             .get(3)
             .unwrap()
             .output
@@ -384,9 +383,6 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
     assert_eq!(
         execution_trace
             .execution_traces
-            .get(0)
-            .unwrap()
-            .children
             .get(3)
             .unwrap()
             .output

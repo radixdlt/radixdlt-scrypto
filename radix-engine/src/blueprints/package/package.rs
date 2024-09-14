@@ -1583,7 +1583,8 @@ impl PackageAuthNativeBlueprint {
         match auth_config.function_auth {
             FunctionAuth::AllowAll => Ok(ResolvedPermission::AllowAll),
             FunctionAuth::RootOnly => {
-                if api.kernel_get_current_depth() == 0 {
+                let is_root = api.kernel_get_system_state().current_call_frame.is_root();
+                if is_root {
                     Ok(ResolvedPermission::AllowAll)
                 } else {
                     Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
