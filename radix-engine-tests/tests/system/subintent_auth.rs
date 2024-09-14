@@ -1,16 +1,11 @@
 use radix_common::constants::TRANSACTION_PROCESSOR_PACKAGE;
-use radix_common::crypto::Hash;
-use radix_common::prelude::{manifest_encode, FromPublicKey, NonFungibleGlobalId, XRD};
-use radix_common::ManifestSbor;
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_interface::macros::dec;
-use radix_rust::btreeset;
-use radix_rust::prelude::{index_map_new, IndexMap};
 use radix_transactions::builder::{ManifestBuilder, ResolvableArguments};
 use radix_transactions::manifest::YieldToChild;
 use radix_transactions::model::{InstructionV1, ManifestNamedIntentIndex, TestTransaction};
@@ -56,13 +51,7 @@ fn should_not_be_able_to_use_root_auth_in_subintent() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -114,13 +103,7 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_commit_success();
@@ -185,13 +168,7 @@ fn should_not_be_able_to_call_tx_processor_in_subintent() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_specific_failure(|e| {

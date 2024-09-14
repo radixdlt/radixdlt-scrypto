@@ -124,10 +124,6 @@ impl TestTransaction {
         Self::V2(intents)
     }
 
-    pub fn prepare_with_latest_settings(self) -> Result<PreparedTestTransaction, PrepareError> {
-        self.prepare(PreparationSettings::latest_ref())
-    }
-
     #[allow(deprecated)]
     pub fn prepare(
         self,
@@ -164,6 +160,19 @@ impl TestTransaction {
                 Ok(PreparedTestTransaction::V2(prepared))
             }
         }
+    }
+}
+
+impl IntoExecutable for TestTransaction {
+    type Error = PrepareError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self
+            .prepare(validator.preparation_settings())?
+            .get_executable())
     }
 }
 
@@ -245,5 +254,16 @@ impl PreparedTestTransaction {
                 ExecutableTransaction::new_v2(intents, context)
             }
         }
+    }
+}
+
+impl IntoExecutable for PreparedTestTransaction {
+    type Error = core::convert::Infallible;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self.get_executable())
     }
 }

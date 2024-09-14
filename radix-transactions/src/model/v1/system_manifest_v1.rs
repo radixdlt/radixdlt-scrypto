@@ -86,4 +86,13 @@ impl SystemTransactionManifestV1 {
             hash_for_execution: unique_hash,
         }
     }
+
+    pub fn into_transaction_with_proofs(
+        self,
+        unique_hash: Hash,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> SystemTransactionV1WithProofs {
+        self.into_transaction(unique_hash)
+            .with_proofs(initial_proofs)
+    }
 }

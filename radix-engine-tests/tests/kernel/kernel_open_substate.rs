@@ -31,14 +31,12 @@ use scrypto_test::prelude::UniqueTransaction;
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
-    let transaction = TestTransaction::new_v1_from_nonce(
+    let executable = TestTransaction::new_v1_from_nonce(
         ManifestBuilder::new().lock_fee_from_faucet().build(),
         1,
         btreeset![],
     )
-    .prepare_with_latest_settings()
-    .unwrap();
-    let executable = transaction.get_executable();
+    .into_simulator_executable_unwrap();
 
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();

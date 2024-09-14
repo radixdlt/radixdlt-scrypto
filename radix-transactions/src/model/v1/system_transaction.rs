@@ -8,9 +8,44 @@ pub struct SystemTransactionV1 {
     pub hash_for_execution: Hash,
 }
 
+impl SystemTransactionV1 {
+    pub fn with_proofs(
+        self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> SystemTransactionV1WithProofs {
+        SystemTransactionV1WithProofs {
+            initial_proofs,
+            transaction: self,
+        }
+    }
+}
+
 impl TransactionPayload for SystemTransactionV1 {
     type Prepared = PreparedSystemTransactionV1;
     type Raw = RawSystemTransaction;
+}
+
+/// This is mostly so that you can create executables easily.
+/// We can't update SystemTransaction to include these proofs, because
+/// it's already used in genesis.
+pub struct SystemTransactionV1WithProofs {
+    initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    transaction: SystemTransactionV1,
+}
+
+impl IntoExecutable for SystemTransactionV1WithProofs {
+    type Error = PrepareError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self
+            .transaction
+            .prepare(validator.preparation_settings())?
+            .get_executable(self.initial_proofs);
+        Ok(executable)
+    }
 }
 
 #[allow(deprecated)]

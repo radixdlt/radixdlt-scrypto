@@ -375,6 +375,18 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     }
 }
 
+impl IntoExecutable for PreparedLedgerTransaction {
+    type Error = LedgerTransactionExecutableError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.validate(validator, AcceptedLedgerTransactionKind::Any)?
+            .into_executable(validator)
+    }
+}
+
 pub struct ValidatedLedgerTransaction {
     pub inner: ValidatedLedgerTransactionInner,
     pub summary: Summary,
@@ -387,6 +399,18 @@ pub enum ValidatedLedgerTransactionInner {
     ProtocolUpdate(PreparedFlashTransactionV1),
 }
 
+#[derive(Debug, Clone)]
+pub enum LedgerTransactionExecutableError {
+    IsFlashTransaction,
+    ValidationError(TransactionValidationError),
+}
+
+impl From<TransactionValidationError> for LedgerTransactionExecutableError {
+    fn from(value: TransactionValidationError) -> Self {
+        Self::ValidationError(value)
+    }
+}
+
 impl ValidatedLedgerTransaction {
     pub fn intent_hash_if_user(&self) -> Option<TransactionIntentHash> {
         match &self.inner {
@@ -397,21 +421,23 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    /// Note - panics if it's a flash transaction
-    pub fn get_executable(&self) -> ExecutableTransaction {
+    /// Note - returns None if it's a flash transaction
+    pub fn get_executable(
+        &self,
+    ) -> Result<ExecutableTransaction, LedgerTransactionExecutableError> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
                 PreparedGenesisTransaction::Flash(_) => {
-                    panic!("Should not call get_executable on a genesis flash")
+                    Err(LedgerTransactionExecutableError::IsFlashTransaction)
                 }
                 PreparedGenesisTransaction::Transaction(t) => {
-                    t.get_executable(btreeset!(system_execution(SystemExecution::Protocol)))
+                    Ok(t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))))
                 }
             },
-            ValidatedLedgerTransactionInner::User(t) => t.get_executable(),
-            ValidatedLedgerTransactionInner::Validator(t) => t.get_executable(),
+            ValidatedLedgerTransactionInner::User(t) => Ok(t.get_executable()),
+            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.get_executable()),
             ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
-                panic!("Should not call get_executable on a flash transaction")
+                Err(LedgerTransactionExecutableError::IsFlashTransaction)
             }
         }
     }
@@ -442,6 +468,17 @@ impl ValidatedLedgerTransaction {
                 }
             },
         }
+    }
+}
+
+impl IntoExecutable for ValidatedLedgerTransaction {
+    type Error = LedgerTransactionExecutableError;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.get_executable()
     }
 }
 

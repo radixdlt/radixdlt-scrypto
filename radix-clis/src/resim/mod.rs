@@ -69,6 +69,7 @@ use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
 use radix_transactions::manifest::decompile;
 use radix_transactions::prelude::*;
+use radix_transactions::validation::TransactionValidator;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -222,6 +223,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
+            let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
             let transaction = TestTransaction::new_v1_from_nonce(manifest, nonce, initial_proofs);
 
             let receipt = execute_and_commit_transaction(
@@ -229,9 +231,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 &vm_modules,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 transaction
-                    .prepare_with_latest_settings()
-                    .map_err(Error::TransactionPrepareError)?
-                    .get_executable(),
+                    .into_executable(&validator)
+                    .map_err(Error::TransactionPrepareError)?,
             );
 
             if print_receipt {

@@ -168,6 +168,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 scrypto_vm: ScryptoVm::default(),
                 vm_extension: self.custom_extension,
             },
+            transaction_validator: snapshot.transaction_validator,
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
@@ -239,9 +240,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
 
+        let validator = TransactionValidator::new(&substate_db, &Self::network_definition());
+
         let runner = LedgerSimulator {
             vm_modules,
             database: substate_db,
+            transaction_validator: validator,
             next_private_key,
             next_transaction_nonce,
             collected_events: hooks.events,
@@ -264,6 +268,7 @@ pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
 
     next_private_key: u64,
     next_transaction_nonce: u32,
+    transaction_validator: TransactionValidator,
 
     /// Events collected from all the committed transactions
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
@@ -286,6 +291,7 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for LedgerSimulator<E, D> {
 #[derive(Clone)]
 pub struct LedgerSimulatorSnapshot {
     database: InMemorySubstateDatabase,
+    transaction_validator: TransactionValidator,
     next_private_key: u64,
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
@@ -298,6 +304,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> LedgerSimulatorSnapshot {
         LedgerSimulatorSnapshot {
             database: self.database.clone(),
+            transaction_validator: self.transaction_validator.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
@@ -309,6 +316,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
 
     pub fn restore_snapshot(&mut self, snapshot: LedgerSimulatorSnapshot) {
         self.database = snapshot.database;
+        self.transaction_validator = snapshot.transaction_validator;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.collected_events = snapshot.collected_events;
@@ -1133,17 +1141,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
-                initial_proofs.into_iter().collect(),
-            )
-            .prepare_with_latest_settings()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-            ExecutionConfig::for_test_transaction(),
-        )
+        self.execute_test_transaction(TestTransaction::new_v1_from_nonce(
+            manifest,
+            nonce,
+            initial_proofs.into_iter().collect(),
+        ))
     }
 
     pub fn execute_manifest_with_execution_config<T>(
@@ -1161,10 +1163,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 manifest,
                 nonce,
                 initial_proofs.into_iter().collect(),
-            )
-            .prepare_with_latest_settings()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
+            ),
             execution_config,
         )
     }
@@ -1189,10 +1188,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 manifest,
                 nonce,
                 initial_proofs.into_iter().collect(),
-            )
-            .prepare_with_latest_settings()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
+            ),
             config,
         )
     }
@@ -1207,14 +1203,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        let txn = TestTransaction::new_v1_from_nonce(
+        let executable = TestTransaction::new_v1_from_nonce(
             manifest,
             nonce,
             initial_proofs.into_iter().collect(),
         )
-        .prepare_with_latest_settings()
+        .into_executable(&self.transaction_validator)
         .expect("expected transaction to be preparable");
-        let executable = txn.get_executable();
 
         let vm_init = self.vm_modules.create_vm_init();
 
@@ -1256,14 +1251,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
-        let network = NetworkDefinition::simulator();
-        let validator = TransactionValidator::new(&self.database, &network);
-        let validated = validator
+        let validated = self
+            .transaction_validator
             .validate_from_raw(raw_transaction)
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            ExecutionConfig::for_notarized_transaction(network.clone()),
+            ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1277,20 +1271,27 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let nonce = self.next_transaction_nonce();
         let unique_hash = hash(format!("Test runner txn: {}", nonce));
         self.execute_transaction(
-            manifest
-                .into_transaction(unique_hash)
-                .prepare_with_latest_settings()
-                .expect("expected transaction to be preparable")
-                .get_executable(proofs),
+            manifest.into_transaction(unique_hash).with_proofs(proofs),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
 
+    pub fn execute_test_transaction(
+        &mut self,
+        test_transaction: TestTransaction,
+    ) -> TransactionReceipt {
+        self.execute_transaction(test_transaction, ExecutionConfig::for_test_transaction())
+    }
+
     pub fn execute_transaction(
         &mut self,
-        executable: ExecutableTransaction,
+        executable_source: impl IntoExecutable,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
+        let executable = executable_source
+            .into_executable(&self.transaction_validator)
+            .expect("Transaction should be convertible to executable");
+
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
