@@ -7,7 +7,7 @@ impl<T: SborEnumVariantFor<InstructionV2, ManifestCustomValueKind>> From<T> for 
     }
 }
 
-impl ManifestInstruction for InstructionV2 {
+impl ManifestInstructionSet for InstructionV2 {
     fn decompile(
         &self,
         context: &mut DecompilationContext,
@@ -124,6 +124,50 @@ impl From<InstructionV1> for InstructionV2 {
             InstructionV1::DropAllProofs(x) => x.into(),
             InstructionV1::AllocateGlobalAddress(x) => x.into(),
         }
+    }
+}
+
+impl TryFrom<InstructionV2> for InstructionV1 {
+    type Error = ();
+
+    fn try_from(value: InstructionV2) -> Result<Self, Self::Error> {
+        let mapped = match value {
+            InstructionV2::TakeAllFromWorktop(i) => i.into(),
+            InstructionV2::TakeFromWorktop(i) => i.into(),
+            InstructionV2::TakeNonFungiblesFromWorktop(i) => i.into(),
+            InstructionV2::ReturnToWorktop(i) => i.into(),
+            InstructionV2::AssertWorktopContainsAny(i) => i.into(),
+            InstructionV2::AssertWorktopContains(i) => i.into(),
+            InstructionV2::AssertWorktopContainsNonFungibles(i) => i.into(),
+            InstructionV2::AssertWorktopIsEmpty(_) => return Err(()),
+            InstructionV2::PopFromAuthZone(i) => i.into(),
+            InstructionV2::PushToAuthZone(i) => i.into(),
+            InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.into(),
+            InstructionV2::CreateProofFromAuthZoneOfNonFungibles(i) => i.into(),
+            InstructionV2::CreateProofFromAuthZoneOfAll(i) => i.into(),
+            InstructionV2::DropAuthZoneProofs(i) => i.into(),
+            InstructionV2::DropAuthZoneRegularProofs(i) => i.into(),
+            InstructionV2::DropAuthZoneSignatureProofs(i) => i.into(),
+            InstructionV2::CreateProofFromBucketOfAmount(i) => i.into(),
+            InstructionV2::CreateProofFromBucketOfNonFungibles(i) => i.into(),
+            InstructionV2::CreateProofFromBucketOfAll(i) => i.into(),
+            InstructionV2::BurnResource(i) => i.into(),
+            InstructionV2::CloneProof(i) => i.into(),
+            InstructionV2::DropProof(i) => i.into(),
+            InstructionV2::CallFunction(i) => i.into(),
+            InstructionV2::CallMethod(i) => i.into(),
+            InstructionV2::CallRoyaltyMethod(i) => i.into(),
+            InstructionV2::CallMetadataMethod(i) => i.into(),
+            InstructionV2::CallRoleAssignmentMethod(i) => i.into(),
+            InstructionV2::CallDirectVaultMethod(i) => i.into(),
+            InstructionV2::DropNamedProofs(i) => i.into(),
+            InstructionV2::DropAllProofs(i) => i.into(),
+            InstructionV2::AllocateGlobalAddress(i) => i.into(),
+            InstructionV2::YieldToParent(_) => return Err(()),
+            InstructionV2::YieldToChild(_) => return Err(()),
+            InstructionV2::VerifyParent(_) => return Err(()),
+        };
+        Ok(mapped)
     }
 }
 

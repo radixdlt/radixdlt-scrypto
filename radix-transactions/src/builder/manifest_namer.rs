@@ -40,7 +40,7 @@ struct ManifestNamerCore {
     named_proofs: IndexMap<String, ManifestObjectState<ManifestProof>>,
     named_addresses: NonIterMap<String, ManifestObjectState<ManifestAddress>>,
     named_address_reservations: NonIterMap<String, ManifestObjectState<ManifestAddressReservation>>,
-    named_intents: NonIterMap<String, ManifestObjectState<ManifestIntent>>,
+    named_intents: NonIterMap<String, ManifestObjectState<ManifestNamedIntent>>,
     object_names: KnownManifestObjectNames,
 }
 
@@ -366,7 +366,7 @@ impl ManifestNamerCore {
         panic!("Did not resolve a name");
     }
 
-    pub fn resolve_intent(&self, name: impl AsRef<str>) -> ManifestIntent {
+    pub fn resolve_intent(&self, name: impl AsRef<str>) -> ManifestNamedIntent {
         match self.named_intents.get(name.as_ref()) {
             Some(ManifestObjectState::Present(id)) => *id,
             Some(ManifestObjectState::Consumed) => unreachable!("Intent binding has already been consumed"),
@@ -380,7 +380,7 @@ impl ManifestNamerCore {
         if self.namer_id != new.namer_id {
             panic!("NamedManifestIntent cannot be registered against a different ManifestNamer")
         }
-        let id = self.id_allocator.new_intent_id();
+        let id = self.id_allocator.new_named_intent_id();
         match self.named_intents.get_mut(&new.name) {
             Some(allocated @ ManifestObjectState::Unregistered) => {
                 *allocated = ManifestObjectState::Present(id);
@@ -392,7 +392,7 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn check_intent_exists(&self, intent: impl Into<ManifestIntent>) {
+    pub fn check_intent_exists(&self, intent: impl Into<ManifestNamedIntent>) {
         self.object_names
             .intent_names
             .get(&intent.into())
@@ -424,7 +424,7 @@ impl ManifestNameLookup {
         }
     }
 
-    pub fn intent(&self, name: impl AsRef<str>) -> ManifestIntent {
+    pub fn intent(&self, name: impl AsRef<str>) -> ManifestNamedIntent {
         self.core.borrow().resolve_intent(name)
     }
 }
@@ -562,7 +562,7 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().register_intent(new)
     }
 
-    pub fn check_intent_exists(&self, intent: impl Into<ManifestIntent>) {
+    pub fn check_intent_exists(&self, intent: impl Into<ManifestNamedIntent>) {
         self.core.borrow().check_intent_exists(intent)
     }
 
@@ -818,29 +818,29 @@ impl NewManifestIntent for NamedManifestIntent {
 }
 
 pub trait ExistingManifestIntent: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent;
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent;
 }
 
 impl<'a> ExistingManifestIntent for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent {
         registrar.name_lookup().intent(self)
     }
 }
 
 impl<'a> ExistingManifestIntent for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent {
         registrar.name_lookup().intent(self)
     }
 }
 
 impl ExistingManifestIntent for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestIntent {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent {
         registrar.name_lookup().intent(self)
     }
 }
 
-impl ExistingManifestIntent for ManifestIntent {
-    fn resolve(self, _registrar: &ManifestNameRegistrar) -> ManifestIntent {
+impl ExistingManifestIntent for ManifestNamedIntent {
+    fn resolve(self, _registrar: &ManifestNameRegistrar) -> ManifestNamedIntent {
         self
     }
 }

@@ -5,7 +5,9 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::macros::dec;
 use radix_rust::btreeset;
-use radix_transactions::model::{ManifestIntent, TestTransaction};
+use radix_transactions::builder::ResolvableArguments;
+use radix_transactions::manifest::YieldToChild;
+use radix_transactions::model::{ManifestNamedIntentIndex, TestTransaction};
 use radix_transactions::prelude::ManifestBuilder;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
@@ -21,7 +23,11 @@ fn bucket_leak_in_subintent_should_fail() {
         {
             let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
-                .yield_to_child(ManifestIntent(0), ())
+                .add_instruction_advanced(YieldToChild {
+                    child_index: ManifestNamedIntentIndex(0),
+                    args: ().resolve(),
+                })
+                .0
                 .build();
 
             (
@@ -76,7 +82,11 @@ fn proofs_in_subintent_should_autodrop() {
         {
             let manifest = ManifestBuilder::new_v2()
                 .lock_standard_test_fee(account)
-                .yield_to_child(ManifestIntent(0), ())
+                .add_instruction_advanced(YieldToChild {
+                    child_index: ManifestNamedIntentIndex(0),
+                    args: ().resolve(),
+                })
+                .0
                 .build();
 
             (

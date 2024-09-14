@@ -70,6 +70,20 @@ mod test {
                             &self.network_definition,
                         )
                         .unwrap();
+                        // Whilst we're here, let's validate that the manifest can be recompiled
+                        compile_manifest::<SystemTransactionManifestV1>(
+                            &manifest_string,
+                            &self.network_definition,
+                            BlobProvider::new_with_blobs(
+                                transaction
+                                    .blobs
+                                    .blobs
+                                    .iter()
+                                    .map(|b| b.0.clone())
+                                    .collect(),
+                            ),
+                        )
+                        .expect("Expected the system manifest to be re-compilable");
                         self.manifests_folder
                             .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
                     }
@@ -229,7 +243,7 @@ mod test {
             // NB: We purposefully don't write the blobs as they're contained in the raw transactions
             let manifest_string = decompile(&transaction.manifest, network_definition).unwrap();
             // Whilst we're here, let's validate that the manifest can be recompiled
-            compile(
+            compile_manifest_v1(
                 &manifest_string,
                 network_definition,
                 BlobProvider::new_with_blobs(

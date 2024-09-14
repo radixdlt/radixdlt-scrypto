@@ -56,13 +56,14 @@ impl BuildableManifest for TransactionManifestV2 {
     fn set_names(&mut self, names: KnownManifestObjectNames) {
         self.object_names = names.into()
     }
-}
 
-impl BuildableManifestWithChildSupport for TransactionManifestV2 {
-    fn add_child_subintent(&mut self, hash: SubintentHash) {
-        self.children.push(ChildSubintent { hash })
+    fn add_child_subintent(&mut self, hash: SubintentHash) -> Result<(), ManifestBuildError> {
+        self.children.push(ChildSubintent { hash });
+        Ok(())
     }
 }
+
+impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
 
 impl TransactionManifestV2 {
     pub fn from_intent_core(intent: &IntentCoreV2) -> Self {
