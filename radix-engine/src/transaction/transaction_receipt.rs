@@ -31,7 +31,7 @@ define_single_versioned! {
         //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
         // * Change the API to return some kind of explicit extensible preview DTO.
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"), settings(allow_name_changes))]
+        #[sbor_assert(fixed("FILE:receipt_schema_cuttlefish.txt"), settings(allow_name_changes))]
     ],
 }
 
