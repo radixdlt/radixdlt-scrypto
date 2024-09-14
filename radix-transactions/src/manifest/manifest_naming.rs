@@ -99,14 +99,14 @@ pub trait HasManifestObjectNames<'s, 'r> {
         }
     }
 
-    fn known_intent_name(&'s self, intent: ManifestIntent) -> Option<&'r str> {
+    fn known_intent_name(&'s self, intent: ManifestNamedIntent) -> Option<&'r str> {
         match self.as_ref() {
             ManifestObjectNamesRef::Unknown => None,
             ManifestObjectNamesRef::Known(known) => known.known_intent_name(intent),
         }
     }
 
-    fn intent_name(&'s self, intent: ManifestIntent) -> String {
+    fn intent_name(&'s self, intent: ManifestNamedIntent) -> String {
         match self.known_intent_name(intent) {
             Some(name) => name.to_owned(),
             None => format!("intent{}", intent.0 + 1),
@@ -126,7 +126,7 @@ pub struct KnownManifestObjectNames {
     pub proof_names: IndexMap<ManifestProof, String>,
     pub address_reservation_names: IndexMap<ManifestAddressReservation, String>,
     pub address_names: IndexMap<ManifestNamedAddress, String>,
-    pub intent_names: IndexMap<ManifestIntent, String>,
+    pub intent_names: IndexMap<ManifestNamedIntent, String>,
 }
 
 impl<'s> HasManifestObjectNames<'s, 's> for KnownManifestObjectNames {
@@ -155,7 +155,7 @@ impl<'s> HasManifestObjectNames<'s, 's> for KnownManifestObjectNames {
         self.address_names.get(&named_address).map(|n| n.as_str())
     }
 
-    fn known_intent_name(&self, intent: ManifestIntent) -> Option<&str> {
+    fn known_intent_name(&self, intent: ManifestNamedIntent) -> Option<&str> {
         self.intent_names.get(&intent).map(|n| n.as_str())
     }
 }
@@ -262,7 +262,7 @@ impl From<SborBackwardsCompatibleKnownManifestObjectNames> for KnownManifestObje
                 .map(|names| {
                     names
                         .into_iter()
-                        .map(|(key, name)| (ManifestIntent(key), name))
+                        .map(|(key, name)| (ManifestNamedIntent(key), name))
                         .collect()
                 })
                 .unwrap_or_default(),

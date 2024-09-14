@@ -41,11 +41,9 @@ impl ReadableManifest for SubintentManifestV2 {
     }
 }
 
-impl BuildableManifestWithChildSupport for SubintentManifestV2 {
-    fn add_child_subintent(&mut self, hash: SubintentHash) {
-        self.children.push(ChildSubintent { hash })
-    }
-}
+impl BuildableManifestWithParent for SubintentManifestV2 {}
+
+impl BuildableManifestSupportingChildren for SubintentManifestV2 {}
 
 #[deprecated]
 fn temporary_noop_validate() {}
@@ -61,6 +59,11 @@ impl BuildableManifest for SubintentManifestV2 {
 
     fn set_names(&mut self, names: KnownManifestObjectNames) {
         self.object_names = names.into()
+    }
+
+    fn add_child_subintent(&mut self, hash: SubintentHash) -> Result<(), ManifestBuildError> {
+        self.children.push(ChildSubintent { hash });
+        Ok(())
     }
 }
 

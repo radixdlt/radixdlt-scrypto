@@ -56,7 +56,7 @@ pub enum InvocationKind<'a> {
     },
     YieldToParent,
     YieldToChild {
-        child_index: ManifestIntent,
+        child_index: ManifestNamedIntent,
     },
     VerifyParent,
 }

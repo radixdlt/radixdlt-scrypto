@@ -2,21 +2,16 @@ use std::collections::BTreeMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use radix_common::prelude::*;
-use radix_common::prelude::{NetworkDefinition, NonFungibleIdType, NonFungibleLocalId};
 use radix_common::types::Epoch;
 use radix_common::ManifestSbor;
 use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
-use radix_transactions::manifest::{compile, decompile, BlobProvider};
-use radix_transactions::model::{
-    PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
-    TransactionPayloadPreparable,
-};
+use radix_transactions::manifest::*;
+use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use scrypto::prelude::ComponentAddress;
-use scrypto::NonFungibleData;
+use scrypto::prelude::*;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();
@@ -71,7 +66,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                         object_names: Default::default(),
                     };
                     let decompiled = decompile(&manifest, &NetworkDefinition::simulator()).unwrap();
-                    compile(
+                    compile_manifest_v1(
                         &decompiled,
                         &NetworkDefinition::simulator(),
                         BlobProvider::new_with_prehashed_blobs(manifest.blobs),

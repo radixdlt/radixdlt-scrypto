@@ -32,7 +32,7 @@ pub enum ManifestIdValidationError {
     BucketLocked(ManifestBucket),
     AddressReservationNotFound(ManifestAddressReservation),
     AddressNotFound(ManifestNamedAddress),
-    IntentNotFound(ManifestIntent),
+    IntentNotFound(ManifestNamedIntent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

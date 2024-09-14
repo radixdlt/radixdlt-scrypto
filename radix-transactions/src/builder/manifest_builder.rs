@@ -173,7 +173,9 @@ impl SystemManifestV1Builder {
         );
         self.name_lookup().address_reservation(name)
     }
+}
 
+impl<M: BuildableManifestSupportingPreallocatedAddresses> ManifestBuilder<M> {
     pub fn preallocate_address(
         mut self,
         reservation: impl NewManifestAddressReservation,
@@ -202,19 +204,19 @@ impl SystemManifestV1Builder {
             .object_names()
             .address_reservation_names
             .len()
-            > self.manifest.preallocated_addresses.len()
+            > self.manifest.preallocation_count()
         {
             panic!("You cannot call preallocate_address after you've allocated any addresses in the manifest");
         }
         self.manifest
-            .preallocated_addresses
-            .push(PreAllocatedAddress {
+            .add_preallocated_address(PreAllocatedAddress {
                 blueprint_id: BlueprintId {
                     package_address: package_address.into(),
                     blueprint_name: blueprint_name.into(),
                 },
                 address: fixed_address.into(),
-            });
+            })
+            .expect("Expected manifest to support adding preallocated address");
         reservation.register(&self.registrar);
     }
 }
@@ -2247,7 +2249,7 @@ where
     }
 }
 
-impl<M: BuildableManifestWithChildSupport> ManifestBuilder<M>
+impl<M: BuildableManifestSupportingChildren> ManifestBuilder<M>
 where
     M::Instruction: From<InstructionV2>,
 {
@@ -2257,7 +2259,9 @@ where
         subintent_hash: SubintentHash,
     ) -> Self {
         child_name.register(&self.registrar);
-        self.manifest.add_child_subintent(subintent_hash);
+        // Unwrap should be safe because a manifest implementing
+        // BuildableManifestSupportingChildren claims that this returns Ok.
+        self.manifest.add_child_subintent(subintent_hash).unwrap();
         self
     }
 
@@ -2268,7 +2272,7 @@ where
     ) -> Self {
         let intent = child_manifest_intent.resolve(&self.registrar);
         self.add_v2_instruction(YieldToChild {
-            child_index: intent,
+            child_index: ManifestNamedIntentIndex(intent.0),
             args: arguments.resolve(),
         })
     }

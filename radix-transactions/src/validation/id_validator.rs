@@ -1,7 +1,7 @@
 use crate::data::transform;
 use crate::data::TransformHandler;
 use crate::errors::*;
-use crate::model::ManifestIntent;
+use crate::model::ManifestNamedIntent;
 use crate::validation::*;
 use radix_common::data::manifest::model::*;
 use radix_common::data::manifest::*;
@@ -30,7 +30,7 @@ pub struct ManifestValidator {
     /// Set of named global address ids
     address_ids: IndexSet<ManifestNamedAddress>,
     /// Set of named intent hashes
-    intent_ids: IndexSet<ManifestIntent>,
+    intent_ids: IndexSet<ManifestNamedIntent>,
 }
 
 impl ManifestValidator {
@@ -168,8 +168,8 @@ impl ManifestValidator {
         }
     }
 
-    pub fn new_intent(&mut self) -> ManifestIntent {
-        let intent_id = self.id_allocator.new_intent_id();
+    pub fn new_intent(&mut self) -> ManifestNamedIntent {
+        let intent_id = self.id_allocator.new_named_intent_id();
         self.intent_ids.insert(intent_id.clone());
         intent_id
     }

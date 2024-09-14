@@ -6,6 +6,7 @@ pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
+    use compiler::*;
     use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
     use radix_engine_interface::object_modules::ModuleConfig;
@@ -14,7 +15,7 @@ pub mod tests {
 
     #[test]
     fn test_address_allocation() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "address_allocation",
             apply_address_replacements(include_str!(
                 "../../examples/address_allocation/allocate_address.rtm"
@@ -59,7 +60,7 @@ CALL_FUNCTION
 
     #[test]
     fn test_publish_package() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "publish_package",
             apply_address_replacements(include_str!("../../examples/package/publish.rtm")),
             &NetworkDefinition::simulator(),
@@ -87,7 +88,7 @@ PUBLISH_PACKAGE_ADVANCED
 
     #[test]
     fn test_resource_worktop() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "resource_worktop",
             apply_address_replacements(include_str!("../../examples/resources/worktop.rtm")),
             &NetworkDefinition::simulator(),
@@ -143,7 +144,7 @@ CALL_METHOD
 
     #[test]
     fn test_resource_auth_zone() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "resource_auth_zone",
             apply_address_replacements(include_str!("../../examples/resources/auth_zone.rtm")),
             &NetworkDefinition::simulator(),
@@ -238,7 +239,7 @@ CALL_METHOD
 
     #[test]
     fn test_resource_recall() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "resource_recall",
             apply_address_replacements(include_str!("../../examples/resources/recall.rtm")),
             &NetworkDefinition::simulator(),
@@ -256,7 +257,7 @@ RECALL_FROM_VAULT
 
     #[test]
     fn test_vault_freeze() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "vault_freeze",
             apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
             &NetworkDefinition::simulator(),
@@ -318,7 +319,7 @@ UNFREEZE_VAULT
 
     #[test]
     fn test_call_function() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "call_function",
             apply_address_replacements(include_str!("../../examples/call/call_function.rtm")),
             &NetworkDefinition::simulator(),
@@ -338,7 +339,7 @@ CALL_FUNCTION
 
     #[test]
     fn test_resource_recall_nonfungibles() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "resource_recall_nonfungibles",
             apply_address_replacements(include_str!(
                 "../../examples/resources/recall_non_fungibles.rtm"
@@ -361,7 +362,7 @@ RECALL_NON_FUNGIBLES_FROM_VAULT
 
     #[test]
     fn test_call_method() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "call_method",
             apply_address_replacements(include_str!("../../examples/call/call_method.rtm")),
             &NetworkDefinition::simulator(),
@@ -402,7 +403,7 @@ CALL_DIRECT_VAULT_METHOD
 
     #[test]
     fn test_values() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "values",
             apply_address_replacements(include_str!("../../examples/values/values.rtm")),
             &NetworkDefinition::simulator(),
@@ -523,7 +524,7 @@ CALL_METHOD
 
     #[test]
     fn test_royalty() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "royalty",
             apply_address_replacements(include_str!("../../examples/royalty/royalty.rtm")),
             &NetworkDefinition::simulator(),
@@ -552,7 +553,7 @@ CLAIM_COMPONENT_ROYALTIES
 
     #[test]
     fn test_metadata() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "metadata",
             apply_address_replacements(include_str!("../../examples/metadata/metadata.rtm")),
             &NetworkDefinition::simulator(),
@@ -731,7 +732,7 @@ REMOVE_METADATA
 
     #[test]
     fn test_update_role() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "access_rule",
             apply_address_replacements(include_str!("../../examples/access_rule/access_rule.rtm")),
             &NetworkDefinition::simulator(),
@@ -758,7 +759,7 @@ SET_ROLE
 
     #[test]
     fn test_create_fungible_resource_with_initial_supply() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_fungible_resource_with_initial_supply",
             apply_address_replacements(
                 include_str!("../../examples/resources/creation/fungible/with_initial_supply.rtm")
@@ -831,7 +832,7 @@ CALL_METHOD
 
     #[test]
     fn test_create_fungible_resource_with_no_initial_supply() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_fungible_resource_with_no_initial_supply",
             apply_address_replacements(
                 include_str!("../../examples/resources/creation/fungible/no_initial_supply.rtm")
@@ -898,7 +899,7 @@ CREATE_FUNGIBLE_RESOURCE
 
     #[test]
     fn test_create_non_fungible_resource_with_initial_supply() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_non_fungible_resource_with_initial_supply",
             apply_address_replacements(
                 include_str!(
@@ -991,7 +992,7 @@ CALL_METHOD
 
     #[test]
     fn test_create_non_fungible_resource_with_no_initial_supply() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_non_fungible_resource_with_no_initial_supply",
             apply_address_replacements(
                 include_str!(
@@ -1074,7 +1075,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
 
     #[test]
     fn test_mint_fungible() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "mint_fungible",
             apply_address_replacements(include_str!(
                 "../../examples/resources/mint/fungible/mint.rtm"
@@ -1110,7 +1111,7 @@ CALL_METHOD
 
     #[test]
     fn test_mint_non_fungible() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "mint_non_fungible",
             apply_address_replacements(include_str!(
                 "../../examples/resources/mint/non_fungible/mint.rtm"
@@ -1150,7 +1151,7 @@ CALL_METHOD
 
     #[test]
     fn test_create_account() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_account",
             apply_address_replacements(include_str!("../../examples/account/new.rtm")),
             &NetworkDefinition::simulator(),
@@ -1170,7 +1171,7 @@ CREATE_ACCOUNT;
 
     #[test]
     fn test_create_validator() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_validator",
             apply_address_replacements(include_str!("../../examples/validator/new.rtm")),
             &NetworkDefinition::simulator(),
@@ -1200,7 +1201,7 @@ CREATE_VALIDATOR
 
     #[test]
     fn test_create_identity() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_identity",
             apply_address_replacements(include_str!("../../examples/identity/new.rtm")),
             &NetworkDefinition::simulator(),
@@ -1218,7 +1219,7 @@ CREATE_IDENTITY;
 
     #[test]
     fn test_create_access_controller() {
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "create_access_controller",
             apply_address_replacements(include_str!("../../examples/access_controller/new.rtm")),
             &NetworkDefinition::simulator(),
@@ -1272,7 +1273,7 @@ CALL_METHOD
 ;
         "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1306,7 +1307,7 @@ CALL_METHOD
 ;
         "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_new_format",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1349,7 +1350,7 @@ CALL_METHOD
 ;
         "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_with_multiple_locked_fees",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1390,7 +1391,7 @@ CALL_METHOD
 ;
 "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_nft",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1427,7 +1428,7 @@ CALL_METHOD
 ;
 "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_nft_new_format",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1473,7 +1474,7 @@ CALL_METHOD
 ;
 "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_nft_by_id",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1515,7 +1516,7 @@ CALL_METHOD
 ;
 "##,
         );
-        compile_and_decompile_with_inversion_test(
+        compile_and_decompile_with_inversion_test_v1(
             "simple_transfer_nft_by_id_new_format",
             &canonical_manifest,
             &NetworkDefinition::simulator(),
@@ -1524,7 +1525,36 @@ CALL_METHOD
         );
     }
 
-    fn compile_and_decompile_with_inversion_test(
+    #[test]
+    fn test_subintent_v2_with_children() {
+        let canonical_manifest = r##"
+USE_CHILD
+    NamedIntent("my_child")
+    Intent("subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu")
+;
+ASSERT_WORKTOP_IS_EMPTY;
+VERIFY_PARENT
+    Enum<0u8>()
+;
+YIELD_TO_PARENT
+    Tuple()
+    Tuple()
+;
+YIELD_TO_CHILD
+    NamedIntent("my_child")
+;
+YIELD_TO_PARENT;
+"##;
+        compile_and_decompile_with_inversion_test_subintent_v2(
+            "v2_subintent_commands",
+            &include_str!("../../examples/subintents/child.rtm"),
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    fn compile_and_decompile_with_inversion_test_v1(
         name: &str,
         manifest: impl AsRef<str>,
         network: &NetworkDefinition,
@@ -1532,31 +1562,19 @@ CALL_METHOD
         expected_canonical: impl AsRef<str>,
     ) {
         let blob_provider = BlobProvider::new_with_blobs(blobs);
+        let manifest = manifest.as_ref();
+        let expected_canonical = expected_canonical.as_ref();
 
-        let original_string = manifest.as_ref();
-        let original_compiled = compile(original_string, network, blob_provider.clone())
-            .expect("Manifest string could not be compiled");
-        let original_binary =
-            manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
+        compile_and_decompile_with_inversion_test::<TransactionManifestV1>(
+            manifest,
+            network,
+            blob_provider.clone(),
+            expected_canonical,
+        );
 
-        let original_decompiled =
-            decompile(&original_compiled, network).expect("Manifest could not be decompiled");
-        let recompiled = compile(&original_decompiled, network, blob_provider.clone())
-            .expect("Decompiled manifest could not be recompiled");
-        let recompiled_binary =
-            manifest_encode(&recompiled).expect("Recompiled manifest could not be encoded");
+        println!("{}", expected_canonical.trim());
 
-        let recompiled_decompiled =
-            decompile(&recompiled, network).expect("Recompiled manifest could not be decompiled");
-        let re_recompiled = compile(&recompiled_decompiled, network, blob_provider.clone())
-            .expect("Decompiled recompiled manifest could not be re-recompiled");
-        let re_recompiled_binary =
-            manifest_encode(&re_recompiled).expect("Re-recompiled manifest could not be encoded");
-
-        // If you use the following output for test cases, make sure you've checked the diff
-        println!("{}", recompiled_decompiled);
-
-        let intent = build_intent(
+        let intent = build_intent_v1(
             expected_canonical.as_ref(),
             network,
             blob_provider.blobs().into_values().collect(),
@@ -1571,19 +1589,82 @@ CALL_METHOD
 
         print_blob(name, intent);
         print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
+    }
+
+    fn compile_and_decompile_with_inversion_test_subintent_v2(
+        _name: &str,
+        manifest: impl AsRef<str>,
+        network: &NetworkDefinition,
+        blobs: Vec<Vec<u8>>,
+        expected_canonical: impl AsRef<str>,
+    ) {
+        let blob_provider = BlobProvider::new_with_blobs(blobs);
+        let manifest = manifest.as_ref();
+        let expected_canonical = expected_canonical.as_ref();
+
+        compile_and_decompile_with_inversion_test::<SubintentManifestV2>(
+            manifest,
+            network,
+            blob_provider.clone(),
+            expected_canonical,
+        );
+
+        println!("{}", expected_canonical.trim());
+    }
+
+    fn compile_and_decompile_with_inversion_test<M: BuildableManifest>(
+        manifest: &str,
+        network: &NetworkDefinition,
+        blob_provider: BlobProvider,
+        expected_canonical: &str,
+    ) {
+        let error_style = CompileErrorDiagnosticsStyle::PlainText;
+        let original_string = manifest;
+        let original_compiled = compile_manifest_with_pretty_error::<M>(
+            original_string,
+            network,
+            blob_provider.clone(),
+            error_style,
+        )
+        .expect("Manifest string could not be compiled");
+        let original_binary =
+            manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
+
+        let original_decompiled =
+            decompile(&original_compiled, network).expect("Manifest could not be decompiled");
+        let recompiled = compile_manifest_with_pretty_error::<M>(
+            &original_decompiled,
+            network,
+            blob_provider.clone(),
+            error_style,
+        )
+        .expect("Decompiled manifest could not be recompiled");
+        let recompiled_binary =
+            manifest_encode(&recompiled).expect("Recompiled manifest could not be encoded");
+
+        let recompiled_decompiled =
+            decompile(&recompiled, network).expect("Recompiled manifest could not be decompiled");
+        let re_recompiled = compile_manifest_with_pretty_error::<M>(
+            &recompiled_decompiled,
+            network,
+            blob_provider.clone(),
+            error_style,
+        )
+        .expect("Decompiled recompiled manifest could not be re-recompiled");
+        let re_recompiled_binary =
+            manifest_encode(&re_recompiled).expect("Re-recompiled manifest could not be encoded");
 
         // Check round-trip property
+        assert_eq!(original_compiled, recompiled);
         assert_eq!(original_binary, recompiled_binary);
+        assert_eq!(recompiled, re_recompiled);
         assert_eq!(recompiled_binary, re_recompiled_binary);
 
         // Check both canonical decompilations are identical
         assert_eq!(original_decompiled, recompiled_decompiled);
 
         // Assert that the decompiled matches the expected canonical encoding
-        assert_eq!(
-            original_decompiled.trim(),
-            expected_canonical.as_ref().trim()
-        );
+        assert_eq!(original_decompiled.trim(), expected_canonical.trim());
     }
 
     pub fn print_blob(name: &str, blob: Vec<u8>) {
@@ -1602,7 +1683,7 @@ CALL_METHOD
         });
     }
 
-    fn build_intent(
+    fn build_intent_v1(
         manifest: &str,
         network: &NetworkDefinition,
         blobs: Vec<Vec<u8>>,
@@ -1611,7 +1692,8 @@ CALL_METHOD
 
         let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
 
-        let (instructions, blobs) = compile(manifest, &network, blob_provider)?.for_intent();
+        let (instructions, blobs) =
+            compile_manifest_v1(manifest, &network, blob_provider)?.for_intent();
 
         Ok(IntentV1 {
             header: TransactionHeaderV1 {
@@ -1647,7 +1729,7 @@ CALL_METHOD
         let inverted_manifest = {
             let network = NetworkDefinition::simulator();
             let decompiled = decompile(&manifest, &network).unwrap();
-            compile(&decompiled, &network, BlobProvider::new()).unwrap()
+            compile_manifest_v1(&decompiled, &network, BlobProvider::new()).unwrap()
         };
 
         // Assert
