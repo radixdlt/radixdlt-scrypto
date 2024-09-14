@@ -8,28 +8,11 @@ pub trait TransactionPrepare<Raw: RawTransactionPayload>:
     type Prepared: TransactionPayloadPreparable<Raw = Raw>;
 
     fn prepare_from_raw(&self, raw: &Raw) -> Result<Self::Prepared, TransactionValidationError> {
-        self.prepare_from_payload_bytes(raw.as_slice())
-    }
-
-    fn prepare_from_payload_bytes(
-        &self,
-        raw_payload_bytes: &[u8],
-    ) -> Result<Self::Prepared, TransactionValidationError> {
-        Ok(Self::Prepared::prepare_from_payload(
-            raw_payload_bytes,
-            self.preparation_settings(),
-        )?)
+        Ok(Self::Prepared::prepare(raw, self.preparation_settings())?)
     }
 
     fn validate_from_raw(&self, raw: &Raw) -> Result<Self::Validated, TransactionValidationError> {
-        self.validate_from_payload_bytes(raw.as_slice())
-    }
-
-    fn validate_from_payload_bytes(
-        &self,
-        payload_bytes: &[u8],
-    ) -> Result<Self::Validated, TransactionValidationError> {
-        let prepared = self.prepare_from_payload_bytes(payload_bytes)?;
+        let prepared = self.prepare_from_raw(raw)?;
         self.validate(prepared)
     }
 }

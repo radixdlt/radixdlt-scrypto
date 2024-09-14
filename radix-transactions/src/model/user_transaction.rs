@@ -56,7 +56,9 @@ impl HasSummary for PreparedUserTransaction {
 impl TransactionPayloadPreparable for PreparedUserTransaction {
     type Raw = RawNotarizedTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         let offset = decoder.get_offset();
         let slice = decoder.get_input_slice();
         let discriminator_byte = slice.get(offset + 1).ok_or(PrepareError::Other(
@@ -65,10 +67,10 @@ impl TransactionPayloadPreparable for PreparedUserTransaction {
 
         let prepared = match TransactionDiscriminator::from_repr(*discriminator_byte) {
             Some(TransactionDiscriminator::V1Notarized) => PreparedUserTransaction::V1(
-                PreparedNotarizedTransactionV1::prepare_for_payload(decoder)?,
+                PreparedNotarizedTransactionV1::prepare_from_transaction_enum(decoder)?,
             ),
             Some(TransactionDiscriminator::V2Notarized) => PreparedUserTransaction::V2(
-                PreparedNotarizedTransactionV2::prepare_for_payload(decoder)?,
+                PreparedNotarizedTransactionV2::prepare_from_transaction_enum(decoder)?,
             ),
             _ => {
                 return Err(PrepareError::Other(format!(

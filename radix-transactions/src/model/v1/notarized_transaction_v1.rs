@@ -49,7 +49,9 @@ impl TransactionPreparableFromValue for PreparedNotarizedTransactionV1 {
 impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
     type Raw = RawNotarizedTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
         let ((signed_intent, notary_signature), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum(

@@ -19,20 +19,11 @@ where
     }
 
     fn to_raw(&self) -> Result<Self::Raw, EncodeError> {
-        Ok(self.to_payload_bytes()?.into())
-    }
-
-    /// Prefer [`to_raw`] which encapsulates the bytes in a nice wrapper.
-    fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&self.as_encodable_variant())
+        Ok(manifest_encode(&self.as_encodable_variant())?.into())
     }
 
     fn from_raw(raw: &Self::Raw) -> Result<Self, DecodeError> {
-        Self::from_payload_bytes(raw.as_ref())
-    }
-
-    fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(Self::from_decoded_variant(manifest_decode(payload_bytes)?))
+        Ok(Self::from_decoded_variant(manifest_decode(raw.as_ref())?))
     }
 
     fn from_payload_variant(payload_variant: Self::OwnedVariant) -> Self {
@@ -40,15 +31,12 @@ where
     }
 
     fn prepare(&self, settings: &PreparationSettings) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_from_payload(
-            &self.to_payload_bytes()?,
-            settings,
-        )?)
+        Ok(Self::Prepared::prepare(&self.to_raw()?, settings)?)
     }
 
     fn prepare_with_latest_settings(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_from_payload_with_latest_settings(
-            &self.to_payload_bytes()?,
+        Ok(Self::Prepared::prepare_with_latest_settings(
+            &self.to_raw()?,
         )?)
     }
 
@@ -136,36 +124,24 @@ pub trait TransactionPayloadPreparable: Sized {
     type Raw: RawTransactionPayload;
 
     /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError>;
 
-    fn prepare_from_raw(
-        raw: &Self::Raw,
-        settings: &PreparationSettings,
-    ) -> Result<Self, PrepareError> {
-        Self::prepare_from_payload(raw.as_ref(), settings)
-    }
-
-    /// Prepares from a full payload
-    fn prepare_from_payload(
-        payload: &[u8],
-        settings: &PreparationSettings,
-    ) -> Result<Self, PrepareError> {
+    fn prepare(raw: &Self::Raw, settings: &PreparationSettings) -> Result<Self, PrepareError> {
+        let payload = raw.as_slice();
         let mut transaction_decoder = TransactionDecoder::new_transaction(
             payload,
             <Self::Raw as RawTransactionPayload>::KIND,
             settings,
         )?;
-        let prepared = Self::prepare_for_payload(&mut transaction_decoder)?;
+        let prepared = Self::prepare_from_transaction_enum(&mut transaction_decoder)?;
         transaction_decoder.check_complete()?;
         Ok(prepared)
     }
 
-    fn prepare_from_raw_with_latest_settings(raw: &Self::Raw) -> Result<Self, PrepareError> {
-        Self::prepare_from_raw(raw, PreparationSettings::latest_ref())
-    }
-
-    fn prepare_from_payload_with_latest_settings(payload: &[u8]) -> Result<Self, PrepareError> {
-        Self::prepare_from_payload(payload, PreparationSettings::latest_ref())
+    fn prepare_with_latest_settings(raw: &Self::Raw) -> Result<Self, PrepareError> {
+        Self::prepare(raw, PreparationSettings::latest_ref())
     }
 }
 
@@ -202,7 +178,7 @@ macro_rules! transaction_payload_v2 {
         impl TransactionPayloadPreparable for $prepared {
             type Raw = $raw;
 
-            fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+            fn prepare_from_transaction_enum(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
                 // When embedded as full payload, it's SBOR encoded as an enum
                 let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_from_transaction_payload_enum(
                     decoder,

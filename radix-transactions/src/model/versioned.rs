@@ -181,23 +181,22 @@ mod tests {
             .concat(),
         ));
 
-        let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+        let raw_intent_payload = intent_v1.to_raw().unwrap();
 
         println!();
-        print_blob("HC_INTENT", intent_payload_bytes.clone());
-        print_blob("HC_INTENT_HASH", expected_intent_hash.0.to_vec());
+        print_blob("HC_INTENT", raw_intent_payload.as_slice());
+        print_blob("HC_INTENT_HASH", expected_intent_hash.0.as_slice());
 
-        IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
+        IntentV1::from_raw(&raw_intent_payload).expect("Intent can be decoded");
         let intent_as_versioned =
-            manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
+            manifest_decode::<VersionedTransactionPayload>(raw_intent_payload.as_slice()).unwrap();
         assert_eq!(
             intent_as_versioned,
             VersionedTransactionPayload::TransactionIntentV1(intent_v1.clone())
         );
 
         let prepared_intent =
-            PreparedIntentV1::prepare_from_payload(&intent_payload_bytes, &preparation_settings)
-                .unwrap();
+            PreparedIntentV1::prepare(&raw_intent_payload, &preparation_settings).unwrap();
         assert_eq!(
             expected_intent_hash,
             prepared_intent.transaction_intent_hash()
@@ -210,7 +209,7 @@ mod tests {
             "txid_sim16hm8cq74dyusrgy8xg6eg5ss0d3cte9hdj0dhudtzp6vvszh3vjq3amttp"
         );
         assert_eq!(
-            hex::encode(intent_payload_bytes),
+            hex::encode(raw_intent_payload),
             "4d220104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b0100080000202201120020200207040001020307020506220000"
         );
 
@@ -242,21 +241,17 @@ mod tests {
             .concat(),
         ));
 
-        let signed_intent_payload_bytes = signed_intent_v1.to_payload_bytes().unwrap();
-        SignedIntentV1::from_payload_bytes(&signed_intent_payload_bytes)
-            .expect("SignedIntent can be decoded");
+        let raw_signed_intent = signed_intent_v1.to_raw().unwrap();
+
         let signed_intent_as_versioned =
-            manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
+            manifest_decode::<VersionedTransactionPayload>(raw_signed_intent.as_slice()).unwrap();
         assert_eq!(
             signed_intent_as_versioned,
             VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent_v1.clone())
         );
 
-        let prepared_signed_intent = PreparedSignedIntentV1::prepare_from_payload(
-            &signed_intent_payload_bytes,
-            &preparation_settings,
-        )
-        .unwrap();
+        let prepared_signed_intent =
+            PreparedSignedIntentV1::prepare(&raw_signed_intent, &preparation_settings).unwrap();
         assert_eq!(
             expected_signed_intent_hash,
             prepared_signed_intent.signed_transaction_intent_hash()
@@ -273,7 +268,7 @@ mod tests {
             "signedintent_sim1dylyaqctdlpnr8768ve6gy6mhjryd5w46scepdx50nplyk64g28qcy3zxn"
         );
         assert_eq!(
-            hex::encode(signed_intent_payload_bytes),
+            hex::encode(raw_signed_intent),
             "4d2202022104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062200002022020001210120074100ffb4d3532977ad5f561d73ee8febbf4330812bb43063fd61a15e59ad233a13ea2f27b8eda06af0861b18108e4dae6301363b5b243ac1518f482e27f2f32f0bb701022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe26742101200740f0587aa712a637c84b0b2bc929c14cb2ccb3846c330434459205a11be5ff610cadfdbf33fa12b98d8e947f33a350a84068e710672753cdc33315c400db9c4e0f"
         );
 
@@ -302,20 +297,19 @@ mod tests {
             .concat(),
         ));
 
-        let notarized_transaction_payload_bytes =
-            notarized_transaction_v1.to_payload_bytes().unwrap();
-        NotarizedTransactionV1::from_payload_bytes(&notarized_transaction_payload_bytes)
+        let raw_notarized_transaction = notarized_transaction_v1.to_raw().unwrap();
+        NotarizedTransactionV1::from_raw(&raw_notarized_transaction)
             .expect("NotarizedTransaction can be decoded");
         let notarized_transaction_as_versioned =
-            manifest_decode::<VersionedTransactionPayload>(&notarized_transaction_payload_bytes)
+            manifest_decode::<VersionedTransactionPayload>(raw_notarized_transaction.as_slice())
                 .unwrap();
         assert_eq!(
             notarized_transaction_as_versioned,
             VersionedTransactionPayload::NotarizedTransactionV1(notarized_transaction_v1)
         );
 
-        let prepared_notarized_transaction = PreparedNotarizedTransactionV1::prepare_from_payload(
-            &notarized_transaction_payload_bytes,
+        let prepared_notarized_transaction = PreparedNotarizedTransactionV1::prepare(
+            &raw_notarized_transaction,
             &preparation_settings,
         )
         .unwrap();
@@ -338,7 +332,7 @@ mod tests {
             "notarizedtransaction_sim1lhfnzp027gt7ducszxmkl02qpp5lpx25npqwxkrk2qqyhs08raksacmd94"
         );
         assert_eq!(
-            hex::encode(notarized_transaction_payload_bytes),
+            hex::encode(raw_notarized_transaction),
             "4d22030221022104210707f20a01000000000000000a05000000000000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062200002022020001210120074100ffb4d3532977ad5f561d73ee8febbf4330812bb43063fd61a15e59ad233a13ea2f27b8eda06af0861b18108e4dae6301363b5b243ac1518f482e27f2f32f0bb701022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe26742101200740f0587aa712a637c84b0b2bc929c14cb2ccb3846c330434459205a11be5ff610cadfdbf33fa12b98d8e947f33a350a84068e710672753cdc33315c400db9c4e0f2201012101200740321bfd17cac75d0b16fe6fd5aa9bb3e2beaf6521af4607f28815c8bd08718de8078a3fd75750354c400e1ea33cc8986853af6115bc43530cc0550ec9b2696a06"
         );
     }
@@ -538,11 +532,11 @@ mod tests {
             .concat(),
         ));
 
-        let system_transaction_payload_bytes = system_transaction_v1.to_payload_bytes().unwrap();
-        SystemTransactionV1::from_payload_bytes(&system_transaction_payload_bytes)
+        let raw_system_transaction = system_transaction_v1.to_raw().unwrap();
+        SystemTransactionV1::from_raw(&raw_system_transaction)
             .expect("SystemTransaction can be decoded");
         let system_transaction_as_versioned =
-            manifest_decode::<VersionedTransactionPayload>(&system_transaction_payload_bytes)
+            manifest_decode::<VersionedTransactionPayload>(&raw_system_transaction.as_slice())
                 .unwrap();
         assert_eq!(
             system_transaction_as_versioned,
@@ -550,10 +544,8 @@ mod tests {
         );
 
         let prepared_system_transaction =
-            PreparedSystemTransactionV1::prepare_from_payload_with_latest_settings(
-                &system_transaction_payload_bytes,
-            )
-            .unwrap();
+            PreparedSystemTransactionV1::prepare_with_latest_settings(&raw_system_transaction)
+                .unwrap();
 
         assert_eq!(
             expected_system_transaction_hash,
@@ -565,7 +557,7 @@ mod tests {
             "systemtransaction_sim14yf4hrcuqw9y8xrje8jr7h8y3fwnsg9y6nts2f5ru6r8s3yvgguq2da744"
         );
         assert_eq!(
-            hex::encode(system_transaction_payload_bytes),
+            hex::encode(raw_system_transaction),
             "4d22040420220112002020020704000102030702050620210102210280000d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c60c1746756e6769626c655265736f757263654d616e6167657280005da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c62007207646fcb3e6a2dbf0fd4830933c54928d3e8dafaf9f704afdae56336fc67aae0d"
         );
     }

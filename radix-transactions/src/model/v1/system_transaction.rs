@@ -73,7 +73,9 @@ impl HasSystemTransactionHash for PreparedSystemTransactionV1 {
 impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     type Raw = RawSystemTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         let ((prepared_instructions, blobs, pre_allocated_addresses, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
                 PreparedInstructionsV1,

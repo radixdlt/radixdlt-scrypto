@@ -96,8 +96,7 @@ impl RawLedgerTransaction {
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
     ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
-        let prepared =
-            PreparedLedgerTransaction::prepare_from_raw(self, validator.preparation_settings())?;
+        let prepared = PreparedLedgerTransaction::prepare(self, validator.preparation_settings())?;
         prepared.validate(validator, accepted_kind)
     }
 }
@@ -360,7 +359,9 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
 impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     type Raw = RawLedgerTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
         decoder.read_expected_enum_variant_header(TransactionDiscriminator::Ledger as u8, 1)?;
         let inner = PreparedLedgerTransactionInner::prepare_from_value(decoder)?;
@@ -612,13 +613,11 @@ mod tests {
             .expect("Notarized can be prepared");
 
         let ledger = LedgerTransaction::UserV1(Box::new(notarized));
-        let ledger_transaction_bytes = ledger.to_payload_bytes().expect("Can be encoded");
-        LedgerTransaction::from_payload_bytes(&ledger_transaction_bytes).expect("Can be decoded");
+        let raw_ledger_transaction = ledger.to_raw().expect("Can be encoded");
+        LedgerTransaction::from_raw(&raw_ledger_transaction).expect("Can be decoded");
         let prepared_ledger_transaction =
-            PreparedLedgerTransaction::prepare_from_payload_with_latest_settings(
-                &ledger_transaction_bytes,
-            )
-            .expect("Can be prepared");
+            PreparedLedgerTransaction::prepare_with_latest_settings(&raw_ledger_transaction)
+                .expect("Can be prepared");
 
         let expected_intent_hash = LedgerTransactionHash::from_hash(hash(
             [

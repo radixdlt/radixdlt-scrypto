@@ -48,7 +48,9 @@ impl TransactionPreparableFromValue for PreparedFlashTransactionV1 {
 impl TransactionPayloadPreparable for PreparedFlashTransactionV1 {
     type Raw = RawFlashTransactionV1;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         let ((name, state_updates), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
                 SummarizedRawFullValue<String>,

@@ -79,7 +79,9 @@ define_raw_transaction_payload!(RawRoundUpdateTransactionV1, TransactionPayloadK
 impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
     type Raw = RawRoundUpdateTransactionV1;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         let decoded = RoundUpdateTransactionV1::from_payload_variant(decoder.decode()?);
         decoded.prepare(decoder.settings())
     }
