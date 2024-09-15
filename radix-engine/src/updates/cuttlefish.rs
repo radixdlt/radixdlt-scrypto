@@ -1,6 +1,6 @@
 use super::*;
 use crate::system::system_callback::{
-    SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+    SystemBoot, SystemVersion, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
 };
 
 #[derive(Clone)]
@@ -109,7 +109,7 @@ fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V2(
-                                    VersionedSystemLogic::V2,
+                                    SystemVersion::V2,
                                     cur_system_parameters,
                                 )).unwrap()
                             ),

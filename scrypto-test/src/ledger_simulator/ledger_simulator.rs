@@ -1208,24 +1208,20 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
-        let executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
+        // InjectCostingErrorInput wraps latest System, so pair with latest parameters
+        let system_parameters = SystemParameters::latest(NetworkDefinition::simulator());
+
+        let transaction_receipt = BootLoader::<InjectSystemCostingError<E>, _>::execute(
             &self.database,
             InjectCostingErrorInput {
                 system_input: SystemInit {
-                    self_init: SystemSelfInit {
-                        enable_kernel_trace: execution_config.enable_kernel_trace,
-                        enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                        enable_debug_information: execution_config.enable_debug_information,
-                        execution_trace: execution_config.execution_trace,
-                        system_overrides: execution_config.system_overrides.clone(),
-                    },
+                    self_init: SystemSelfInit::new(execution_config, system_parameters),
                     callback_init: vm_init,
                 },
                 error_after_count,
             },
+            executable,
         );
-
-        let transaction_receipt = executor.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit.state_updates.create_database_updates();

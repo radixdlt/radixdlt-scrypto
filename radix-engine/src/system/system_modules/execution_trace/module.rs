@@ -103,8 +103,12 @@ trait SystemModuleApiResourceSnapshotExtension {
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
-    SystemModuleApiResourceSnapshotExtension for SystemModuleApiImpl<'a, K>
+impl<
+        'a,
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelInternalApi<System = System<L, V>>,
+    > SystemModuleApiResourceSnapshotExtension for SystemModuleApiImpl<'a, K>
 {
     fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) =

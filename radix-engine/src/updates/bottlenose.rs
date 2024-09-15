@@ -8,8 +8,6 @@ use crate::kernel::kernel::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
-use crate::system::system_modules::costing::CostingModuleConfig;
-use crate::transaction::*;
 use crate::vm::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -511,12 +509,7 @@ fn generate_protocol_params_to_state_updates(
                     BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
-                                scrypto_encode(&SystemBoot::V1(SystemParameters {
-                                    network_definition,
-                                    costing_module_config: CostingModuleConfig::bottlenose(),
-                                    costing_parameters: CostingParameters::babylon_genesis(),
-                                    limit_parameters: LimitParameters::babylon_genesis(),
-                                })).unwrap()
+                                scrypto_encode(&SystemBoot::bottlenose(network_definition)).unwrap()
                             ),
                         }
                     },

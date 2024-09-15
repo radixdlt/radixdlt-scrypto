@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::package::PackageExport;
 /// Callback object invoked by the system layer
 pub trait SystemCallbackObject: Sized {
     /// Initialization Object
-    type Init: Clone;
+    type Init;
 
     /// Initialize and create the callback object above the system
     fn init<S: BootStore>(store: &S, init_input: Self::Init) -> Result<Self, BootloadingError>;

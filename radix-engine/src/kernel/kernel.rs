@@ -13,6 +13,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::ExecutableTransaction;
 use sbor::rust::mem;
 
 macro_rules! as_read_only {
@@ -42,39 +43,59 @@ impl KernelBoot {
     }
 }
 
-/// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
-    pub id_allocator: IdAllocator,
-    pub track: Track<'h, S>,
-    pub init: M::Init,
-    pub phantom: PhantomData<M>,
+/// A transaction which has a unique id, useful for creating an IdAllocator which
+/// requires a unique input
+pub trait UniqueSeed {
+    fn unique_seed_for_id_allocator(&self) -> Hash;
 }
 
-impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
+impl UniqueSeed for ExecutableTransaction {
+    fn unique_seed_for_id_allocator(&self) -> Hash {
+        *self.unique_hash()
+    }
+}
+
+/// Organizes the radix engine stack to make a function entrypoint available for execution
+pub struct BootLoader<'h, E: KernelTransactionExecutor, S: SubstateDatabase> {
+    id_allocator: IdAllocator,
+    track: Track<'h, S>,
+    system_init: E::Init,
+    phantom: PhantomData<E>,
+}
+
+impl<'s, E: KernelTransactionExecutor<Executable: UniqueSeed>, S: SubstateDatabase>
+    BootLoader<'s, E, S>
+{
     /// Executes a transaction
-    pub fn execute(self, executable: M::Executable) -> M::Receipt {
-        // Start hardware resource usage tracker
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker =
-            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
+    pub fn execute(
+        substate_db: &'s S,
+        system_init: E::Init,
+        executable: E::Executable,
+    ) -> E::Receipt {
+        let boot_loader = Self {
+            id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
+            track: Track::new(substate_db),
+            system_init,
+            phantom: PhantomData,
+        };
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            self.execute_internal(executable)
+            boot_loader.execute_internal(executable)
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         {
-            let mut receipt = self.execute_internal(executable);
+            use crate::kernel::resources_tracker::ResourcesTracker;
 
-            // Stop hardware resource usage tracker
+            let mut resources_tracker = ResourcesTracker::start_measurement();
+            let mut receipt = boot_loader.execute_internal(executable);
             receipt.set_resource_usage(resources_tracker.end_measurement());
-
             receipt
         }
     }
 
-    fn execute_internal(mut self, executable: M::Executable) -> M::Receipt {
+    fn execute_internal(mut self, executable: E::Executable) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -93,7 +114,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
             .unwrap_or(KernelBoot::babylon());
 
         // Upper Layer Initialization
-        let system_init_result = M::init(&mut self.track, &executable, self.init);
+        let system_init_result = E::init(&mut self.track, &executable, self.system_init);
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
@@ -109,9 +130,9 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         );
 
         // Execution
-        let result = || -> Result<M::ExecutionOutput, RuntimeError> {
+        let result = || -> Result<E::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel, executable)?;
+            let output = E::execute(&mut kernel, executable)?;
 
             // Sanity check call frame
             for stack in &kernel.stacks.stacks {
@@ -123,7 +144,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
 
             // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-            kernel.callback.finish(commit_info)?;
+            kernel.callback.finalize(commit_info)?;
 
             Ok(output)
         }()

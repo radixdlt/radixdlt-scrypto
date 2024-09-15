@@ -137,7 +137,7 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
-pub trait KernelTransactionCallbackObject: KernelCallbackObject {
+pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Initialization object
     type Init;
     /// The transaction object
@@ -155,13 +155,13 @@ pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
 
     /// Start execution
-    fn start<Y: KernelApi<CallbackObject = Self>>(
+    fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
         executable: Self::Executable,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
-    fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+    fn finalize(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 
     /// Create final receipt
     fn create_receipt<S: SubstateDatabase>(

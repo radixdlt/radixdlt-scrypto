@@ -57,121 +57,197 @@ pub struct SystemParameters {
     pub limit_parameters: LimitParameters,
 }
 
+impl SystemParameters {
+    pub fn latest(network_definition: NetworkDefinition) -> Self {
+        Self::bottlenose(network_definition)
+    }
+
+    pub fn bottlenose(network_definition: NetworkDefinition) -> Self {
+        Self {
+            network_definition,
+            costing_module_config: CostingModuleConfig::bottlenose(),
+            costing_parameters: CostingParameters::babylon_genesis(),
+            limit_parameters: LimitParameters::babylon_genesis(),
+        }
+    }
+
+    pub fn babylon_genesis(network_definition: NetworkDefinition) -> Self {
+        Self {
+            network_definition,
+            costing_module_config: CostingModuleConfig::babylon_genesis(),
+            costing_parameters: CostingParameters::babylon_genesis(),
+            limit_parameters: LimitParameters::babylon_genesis(),
+        }
+    }
+}
+
 pub type SystemBootSubstate = SystemBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
-    V2(VersionedSystemLogic, SystemParameters),
+    V2(SystemVersion, SystemParameters),
 }
 
 impl SystemBoot {
-    pub fn babylon_genesis(network_definition: NetworkDefinition) -> Self {
-        SystemBoot::V1(SystemParameters {
-            network_definition,
-            costing_parameters: CostingParameters::babylon_genesis(),
-            costing_module_config: CostingModuleConfig::babylon_genesis(),
-            limit_parameters: LimitParameters::babylon_genesis(),
-        })
+    /// Loads system boot from the database, or resolves a fallback..
+    ///
+    /// # Panics
+    /// This method panics if the database is pre-bottlenose and the execution config
+    /// does not specify a network definition.
+    pub fn load(substate_db: &impl SubstateDatabase, execution_config: &ExecutionConfig) -> Self {
+        substate_db
+            .get_substate(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+            )
+            .unwrap_or_else(|| {
+                let overrides = execution_config.system_overrides.as_ref();
+                let network_definition = overrides.and_then(|o| o.network_definition.as_ref())
+                    .expect("Before bottlenose, no SystemBoot substate exists, so a network_definition must be provided in the SystemOverrides of the ExecutionConfig.");
+                SystemBoot::babylon_genesis(network_definition.clone())
+            })
     }
 
-    fn system_logic_version(&self) -> VersionedSystemLogic {
+    pub fn latest(network_definition: NetworkDefinition) -> Self {
+        SystemBoot::V1(SystemParameters::bottlenose(network_definition))
+    }
+
+    pub fn bottlenose(network_definition: NetworkDefinition) -> Self {
+        SystemBoot::V1(SystemParameters::bottlenose(network_definition))
+    }
+
+    pub fn babylon_genesis(network_definition: NetworkDefinition) -> Self {
+        SystemBoot::V1(SystemParameters::babylon_genesis(network_definition))
+    }
+
+    pub fn system_version(&self) -> SystemVersion {
         match self {
-            Self::V1(..) => VersionedSystemLogic::V1,
-            Self::V2(logic, _) => *logic,
+            Self::V1(..) => SystemVersion::V1,
+            Self::V2(version, _) => *version,
+        }
+    }
+
+    pub fn into_parameters(self) -> SystemParameters {
+        match self {
+            Self::V1(parameters) => parameters,
+            Self::V2(_, parameters) => parameters,
         }
     }
 }
 
 /// System logic which may change given a protocol version
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum VersionedSystemLogic {
+pub enum SystemVersion {
     V1,
     V2,
 }
 
-impl VersionedSystemLogic {
-    fn create_auth_module(
-        &self,
-        executable: &ExecutableTransaction,
-    ) -> Result<AuthModule, RejectionReason> {
-        let auth_module = match self {
-            VersionedSystemLogic::V1 => {
-                // This isn't exactly a necessary check as node logic should protect against this
-                // but keep it here for sanity
-                let intent = if executable.intents().len() != 1 {
-                    return Err(RejectionReason::TransactionNotYetSupported);
-                } else {
-                    executable.intents().get(0).unwrap()
-                };
-                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
-            }
-            VersionedSystemLogic::V2 => AuthModule::new(),
-        };
-
-        Ok(auth_module)
-    }
-
+pub trait SystemVersionLogic: Sized + 'static {
     fn execute_transaction<Y: SystemBasedKernelApi>(
-        &self,
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError>;
+
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(api: &mut Y) -> bool;
+
+    fn create_auth_module(
+        executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason>;
+}
+
+#[derive(Default)]
+pub struct SystemVersionLogicV1;
+
+impl SystemVersionLogic for SystemVersionLogicV1 {
+    fn execute_transaction<Y: SystemBasedKernelApi>(
         api: &mut Y,
         executable: ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let output = match self {
-            VersionedSystemLogic::V1 => {
-                let mut system_service = SystemService::new(api);
-                let intent = executable
-                    .intents()
-                    .get(0)
-                    .expect("This should have been checked in init");
-                let rtn = system_service.call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
-                        global_address_reservations,
-                        references: Rc::new(intent.references.clone()),
-                        blobs: intent.blobs.clone(),
-                    })
-                    .unwrap(),
-                )?;
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            }
-            VersionedSystemLogic::V2 => {
-                let mut txn_threads =
-                    MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
-                txn_threads.execute(api)?;
-                let output = txn_threads
-                    .threads
-                    .get_mut(0)
-                    .unwrap()
-                    .0
-                    .outputs
-                    .drain(..)
-                    .collect();
-                txn_threads.cleanup(api)?;
-                output
-            }
+        let mut system_service = SystemService::new(api);
+        let intent = executable
+            .intents()
+            .get(0)
+            .expect("This should have been checked in init");
+        let rtn = system_service.call_function(
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            TRANSACTION_PROCESSOR_RUN_IDENT,
+            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                global_address_reservations,
+                references: Rc::new(intent.references.clone()),
+                blobs: intent.blobs.clone(),
+            })
+            .unwrap(),
+        )?;
+        let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+        Ok(output)
+    }
+
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(api: &mut Y) -> bool {
+        // Skip client-side costing requested by TransactionProcessor
+        if api.kernel_get_current_depth() == 1 {
+            return false;
+        }
+
+        true
+    }
+
+    fn create_auth_module(
+        executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        // This isn't exactly a necessary check as node logic should protect against this
+        // but keep it here for sanity
+        let intent = if executable.intents().len() != 1 {
+            return Err(RejectionReason::TransactionNotYetSupported);
+        } else {
+            executable.intents().get(0).unwrap()
         };
+
+        let auth_module =
+            AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone());
+
+        Ok(auth_module)
+    }
+}
+
+#[derive(Default)]
+pub struct SystemVersionLogicV2;
+
+impl SystemVersionLogic for SystemVersionLogicV2 {
+    fn execute_transaction<Y: SystemBasedKernelApi>(
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let mut txn_threads =
+            MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
+        txn_threads.execute(api)?;
+        let output = txn_threads
+            .threads
+            .get_mut(0)
+            .unwrap()
+            .0
+            .outputs
+            .drain(..)
+            .collect();
+        txn_threads.cleanup(api)?;
 
         Ok(output)
     }
 
-    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
-        match self {
-            VersionedSystemLogic::V1 => {
-                // Skip client-side costing requested by TransactionProcessor
-                if api.kernel_get_current_depth() == 1 {
-                    return false;
-                }
-            }
-            VersionedSystemLogic::V2 => {}
-        }
-
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(_api: &mut Y) -> bool {
         true
+    }
+
+    fn create_auth_module(
+        _executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        Ok(AuthModule::new())
     }
 }
 
@@ -224,7 +300,10 @@ impl SystemLockData {
 }
 
 /// Effectively a trait alias for `KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
-pub trait SystemBasedKernelApi: KernelApi<CallbackObject = System<Self::SystemCallback>> {
+pub trait SystemBasedKernelApi:
+    KernelApi<CallbackObject = System<Self::SystemVersionLogic, Self::SystemCallback>>
+{
+    type SystemVersionLogic: SystemVersionLogic;
     type SystemCallback: SystemCallbackObject;
 
     fn system_service(&mut self) -> SystemService<'_, Self> {
@@ -232,14 +311,21 @@ pub trait SystemBasedKernelApi: KernelApi<CallbackObject = System<Self::SystemCa
     }
 }
 
-impl<V: SystemCallbackObject, K: KernelApi<CallbackObject = System<V>>> SystemBasedKernelApi for K {
+impl<
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelApi<CallbackObject = System<L, V>>,
+    > SystemBasedKernelApi for K
+{
+    type SystemVersionLogic = L;
     type SystemCallback = V;
 }
 
 /// Effectively a trait alias for `KernelInternalApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
 pub trait SystemBasedKernelInternalApi:
-    KernelInternalApi<System = System<Self::SystemCallback>>
+    KernelInternalApi<System = System<Self::SystemVersionLogic, Self::SystemCallback>>
 {
+    type SystemVersionLogic: SystemVersionLogic;
     type SystemCallback: SystemCallbackObject;
 
     fn system_module_api(&mut self) -> SystemModuleApiImpl<Self> {
@@ -247,9 +333,13 @@ pub trait SystemBasedKernelInternalApi:
     }
 }
 
-impl<V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>> SystemBasedKernelInternalApi
-    for K
+impl<
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelInternalApi<System = System<L, V>>,
+    > SystemBasedKernelInternalApi for K
 {
+    type SystemVersionLogic = L;
     type SystemCallback = V;
 }
 
@@ -265,37 +355,74 @@ pub struct SystemSelfInit {
     pub execution_trace: Option<usize>,
     pub enable_debug_information: bool,
 
-    // An override of system configuration
+    // Configuration
+    pub system_parameters: SystemParameters,
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<V: SystemCallbackObject> {
-    pub versioned_system_logic: VersionedSystemLogic,
+impl SystemSelfInit {
+    pub fn new(execution_config: ExecutionConfig, system_parameters: SystemParameters) -> Self {
+        Self {
+            enable_kernel_trace: execution_config.enable_kernel_trace,
+            enable_cost_breakdown: execution_config.enable_cost_breakdown,
+            enable_debug_information: execution_config.enable_debug_information,
+            execution_trace: execution_config.execution_trace,
+            system_overrides: execution_config.system_overrides,
+            system_parameters,
+        }
+    }
+}
+
+pub type SystemV1<V> = System<SystemVersionLogicV1, V>;
+pub type SystemV2<V> = System<SystemVersionLogicV2, V>;
+pub type LatestSystem<V> = SystemV2<V>;
+
+pub struct System<L: SystemVersionLogic, V: SystemCallbackObject> {
     pub callback: V,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
     pub finalization: SystemFinalization,
+    version: PhantomData<L>,
 }
 
 pub trait HasModules {
     fn modules_mut(&mut self) -> &mut SystemModuleMixer;
 }
 
-impl<V: SystemCallbackObject> HasModules for System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> HasModules for System<L, V> {
     #[inline]
     fn modules_mut(&mut self) -> &mut SystemModuleMixer {
         &mut self.modules
     }
 }
 
-#[derive(Default)]
 pub struct SystemFinalization {
-    intent_nullifications: Vec<IntentHashNullification>,
+    pub intent_nullifications: Vec<IntentHashNullification>,
 }
 
-impl<V: SystemCallbackObject> System<V> {
+impl SystemFinalization {
+    pub fn no_nullifications() -> Self {
+        Self {
+            intent_nullifications: vec![],
+        }
+    }
+}
+
+impl<L: SystemVersionLogic, V: SystemCallbackObject> System<L, V> {
+    pub fn new(callback: V, modules: SystemModuleMixer, finalization: SystemFinalization) -> Self {
+        Self {
+            callback,
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            modules,
+            finalization,
+            version: PhantomData,
+        }
+    }
+
     fn on_move_node<Y: SystemBasedKernelApi>(
         node_id: &NodeId,
         is_moving_down: bool,
@@ -344,7 +471,7 @@ impl<V: SystemCallbackObject> System<V> {
     }
 }
 
-impl<V: SystemCallbackObject> System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> System<L, V> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
@@ -746,14 +873,14 @@ impl<V: SystemCallbackObject> System<V> {
     fn update_transaction_tracker<S: SubstateDatabase>(
         track: &mut Track<S>,
         next_epoch: Epoch,
-        intent_hash_nullification: IntentHashNullification,
+        intent_hash_nullifications: Vec<IntentHashNullification>,
         is_success: bool,
     ) {
         // NOTE: In the case of system transactions, we could skip most of this...
         //       except for backwards compatibility, we can't!
 
         // Read the intent hash store
-        let transaction_tracker = track
+        let mut transaction_tracker = track
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -762,59 +889,53 @@ impl<V: SystemCallbackObject> System<V> {
             .unwrap()
             .as_typed::<FieldSubstate<TransactionTrackerSubstate>>()
             .unwrap()
-            .into_payload();
+            .into_payload()
+            .into_v1();
 
-        let mut transaction_tracker = transaction_tracker.into_v1();
-
-        let mark_intent_result = match intent_hash_nullification {
-            IntentHashNullification::TransactionIntent {
-                intent_hash,
-                expiry_epoch,
-                ..
-            } => Some((intent_hash.into_hash(), expiry_epoch)),
-            IntentHashNullification::Subintent {
-                intent_hash,
-                expiry_epoch,
-                ..
-            } => {
-                // Only write subintent nullification on success.
-                // Subintents can't pay fees, so this isn't a problem.
-                if is_success {
-                    Some((intent_hash.into_hash(), expiry_epoch))
-                } else {
-                    None
+        for intent_hash_nullification in intent_hash_nullifications {
+            let (intent_hash, expiry_epoch) = match intent_hash_nullification {
+                IntentHashNullification::TransactionIntent {
+                    intent_hash,
+                    expiry_epoch,
+                    ..
+                } => (intent_hash.into_hash(), expiry_epoch),
+                IntentHashNullification::Subintent {
+                    intent_hash,
+                    expiry_epoch,
+                    ..
+                } => {
+                    // Don't write subintent nullification on failure.
+                    // Subintents can't pay fees, so this isn't abusable.
+                    if !is_success {
+                        continue;
+                    }
+                    (intent_hash.into_hash(), expiry_epoch)
                 }
-            }
-            IntentHashNullification::System => None,
-        };
+            };
 
-        if let Some((intent_hash, expiry_epoch)) = mark_intent_result {
+            let partition_number = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
+                .expect("Validation of the max expiry epoch window should ensure that the expiry epoch is in range for the transaction tracker");
+
             // Update the status of the intent hash
-            if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
-            {
-                track
-                    .set_substate(
-                        TRANSACTION_TRACKER.into_node_id(),
-                        PartitionNumber(partition_number),
-                        SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
-                            KeyValueEntrySubstateV1 {
-                                value: Some(if is_success {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
-                                } else {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
-                                }),
-                                // TODO: maybe make it immutable, but how does this affect partition deletion?
-                                lock_status: LockStatus::Unlocked,
-                            },
-                        )),
-                        &mut |_| -> Result<(), ()> { Ok(()) },
-                    )
-                    .unwrap();
-            } else {
-                panic!("No partition for an expiry epoch")
-            }
+            track
+                .set_substate(
+                    TRANSACTION_TRACKER.into_node_id(),
+                    PartitionNumber(partition_number),
+                    SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                        KeyValueEntrySubstateV1 {
+                            value: Some(if is_success {
+                                TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                            } else {
+                                TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                            }),
+                            // TODO: maybe make it immutable, but how does this affect partition deletion?
+                            lock_status: LockStatus::Unlocked,
+                        },
+                    )),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
+                )
+                .unwrap();
         }
 
         // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
@@ -1134,14 +1255,12 @@ impl<V: SystemCallbackObject> System<V> {
 
         // Update intent hash status
         if let Some(next_epoch) = Self::read_epoch_uncosted(&mut track) {
-            for intent_nullification in system_finalization.intent_nullifications {
-                Self::update_transaction_tracker(
-                    &mut track,
-                    next_epoch,
-                    intent_nullification,
-                    is_success,
-                );
-            }
+            Self::update_transaction_tracker(
+                &mut track,
+                next_epoch,
+                system_finalization.intent_nullifications,
+                is_success,
+            );
         }
 
         // Finalize events and logs
@@ -1253,30 +1372,10 @@ impl<V: SystemCallbackObject> System<V> {
     }
 
     fn resolve_modules(
-        store: &mut impl BootStore,
         executable: &ExecutableTransaction,
         init_input: SystemSelfInit,
-    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceipt> {
-        let system_boot = store
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or_else(|| {
-                let overrides = init_input.system_overrides.as_ref();
-                let network_definition = overrides.and_then(|o| o.network_definition.as_ref())
-                    .expect("Before bottlenose, no SystemBoot substate exists, so a network_definition must be provided in the SystemOverrides of the ExecutionConfig.");
-                SystemBoot::babylon_genesis(network_definition.clone())
-            });
-
-        let system_logic_version = system_boot.system_logic_version();
-        let mut system_parameters = match system_boot {
-            SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
-                system_parameters
-            }
-        };
+    ) -> Result<SystemModuleMixer, TransactionReceiptV1> {
+        let mut system_parameters = init_input.system_parameters;
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
@@ -1345,17 +1444,14 @@ impl<V: SystemCallbackObject> System<V> {
             on_apply_cost: Default::default(),
         };
 
-        let auth_module = system_logic_version
-            .create_auth_module(&executable)
-            .map_err(|reason| {
-                let print_execution_summary =
-                    enabled_modules.contains(EnabledModules::KERNEL_TRACE);
-                Self::create_non_commit_receipt(
-                    TransactionResult::Reject(RejectResult { reason }),
-                    print_execution_summary,
-                    costing_module.clone(),
-                )
-            })?;
+        let auth_module = L::create_auth_module(&executable).map_err(|reason| {
+            let print_execution_summary = enabled_modules.contains(EnabledModules::KERNEL_TRACE);
+            Self::create_non_commit_receipt(
+                TransactionResult::Reject(RejectResult { reason }),
+                print_execution_summary,
+                costing_module.clone(),
+            )
+        })?;
 
         let module_mixer = SystemModuleMixer::new(
             enabled_modules,
@@ -1369,11 +1465,12 @@ impl<V: SystemCallbackObject> System<V> {
             costing_module,
             ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
         );
-        Ok((system_logic_version, module_mixer))
+
+        Ok(module_mixer)
     }
 }
 
-impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelTransactionExecutor for System<L, V> {
     type Init = SystemInit<V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
@@ -1390,8 +1487,7 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
             Self::print_executable(executable);
         }
 
-        let (logic_version, mut modules) =
-            Self::resolve_modules(store, executable, init_input.self_init)?;
+        let mut modules = Self::resolve_modules(executable, init_input.self_init)?;
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
         let callback = match V::init(store, init_input.callback_init) {
@@ -1405,10 +1501,9 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
         }
 
         // Perform runtime validation.
-        // TODO: the following assumptions can be removed with better interface.
-        // We are assuming that intent hash store is ready when epoch manager is ready.
-        let current_epoch = Self::read_epoch_uncosted(store);
-        if let Some(current_epoch) = current_epoch {
+        // NOTE: The epoch doesn't exist yet on the very first transaction, so we skip this
+        if let Some(current_epoch) = Self::read_epoch_uncosted(store) {
+            // We are assuming that intent hash store is ready when epoch manager is ready.
             if let Some(range) = executable.overall_epoch_range() {
                 let epoch_validation_result = Self::validate_epoch_range(
                     current_epoch,
@@ -1454,7 +1549,6 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
                         )
                     }
                 }
-                IntentHashNullification::System => Ok(()),
             };
             match intent_hash_validation_result {
                 Ok(()) => {}
@@ -1471,26 +1565,22 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
             Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
         };
 
-        let system = System {
-            versioned_system_logic: logic_version,
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
+        let system = System::new(
             callback,
             modules,
-            finalization: SystemFinalization {
+            SystemFinalization {
                 intent_nullifications: executable
                     .intent_hash_nullifications()
                     .iter()
                     .cloned()
                     .collect(),
             },
-        };
+        );
 
         Ok((system, call_frame_inits))
     }
 
-    fn start<Y: SystemBasedKernelApi>(
+    fn execute<Y: SystemBasedKernelApi>(
         api: &mut Y,
         executable: ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
@@ -1508,18 +1598,12 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
             global_address_reservations.push(global_address_reservation);
         }
 
-        let system_logic_version = system_service.system().versioned_system_logic;
-
-        let output = system_logic_version.execute_transaction(
-            api,
-            executable,
-            global_address_reservations,
-        )?;
+        let output = L::execute_transaction(api, executable, global_address_reservations)?;
 
         Ok(output)
     }
 
-    fn finish(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finalize(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
         // Note that if a transactions fails during this phase, the costing is
@@ -1604,7 +1688,7 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
     }
 }
 
-impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelCallbackObject for System<L, V> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 

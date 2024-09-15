@@ -36,13 +36,13 @@ macro_rules! panic1 {
     };
 }
 
-pub struct MockKernel<M: SystemCallbackObject>(PhantomData<M>);
+pub struct MockKernel<V: SystemCallbackObject>(PhantomData<V>);
 
-impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
-    type CallbackObject = System<M>;
+impl<V: SystemCallbackObject> KernelApi for MockKernel<V> {
+    type CallbackObject = LatestSystem<V>;
 }
 
-impl<M: SystemCallbackObject> KernelStackApi for MockKernel<M> {
+impl<V: SystemCallbackObject> KernelStackApi for MockKernel<V> {
     type CallFrameData = Actor;
 
     fn kernel_get_stack_id(&self) -> usize {
@@ -62,7 +62,7 @@ impl<M: SystemCallbackObject> KernelStackApi for MockKernel<M> {
     }
 }
 
-impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
+impl<V: SystemCallbackObject> KernelNodeApi for MockKernel<V> {
     fn kernel_pin_node(&mut self, _: NodeId) -> Result<(), RuntimeError> {
         panic1!()
     }
@@ -88,7 +88,7 @@ impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
     }
 }
 
-impl<M: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<M> {
+impl<V: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<V> {
     fn kernel_mark_substate_as_transient(
         &mut self,
         _: NodeId,
@@ -180,7 +180,7 @@ impl<M: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<M
     }
 }
 
-impl<M: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<M> {
+impl<V: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<V> {
     fn kernel_invoke(
         &mut self,
         _: Box<KernelInvocation<Actor>>,
@@ -189,8 +189,8 @@ impl<M: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<M> {
     }
 }
 
-impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
-    type System = System<M>;
+impl<V: SystemCallbackObject> KernelInternalApi for MockKernel<V> {
+    type System = LatestSystem<V>;
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System> {
         panic1!()

@@ -236,17 +236,13 @@ where
                     on_apply_cost: Default::default(),
                 };
 
-                System {
-                    versioned_system_logic: VersionedSystemLogic::V1,
-                    blueprint_cache: NonIterMap::new(),
-                    auth_cache: NonIterMap::new(),
-                    schema_cache: NonIterMap::new(),
-                    callback: Vm {
+                LatestSystem::new(
+                    Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
                         vm_boot,
                     },
-                    modules: SystemModuleMixer::new(
+                    SystemModuleMixer::new(
                         EnabledModules::LIMITS
                             | EnabledModules::AUTH
                             | EnabledModules::TRANSACTION_RUNTIME,
@@ -257,8 +253,8 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    finalization: Default::default(),
-                }
+                    SystemFinalization::no_nullifications(),
+                )
             },
             |system_config, track, id_allocator| {
                 Kernel::kernel_create_kernel_for_testing(

@@ -65,17 +65,13 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(Extension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System {
-        versioned_system_logic: VersionedSystemLogic::V1,
-        blueprint_cache: NonIterMap::new(),
-        auth_cache: NonIterMap::new(),
-        schema_cache: NonIterMap::new(),
-        callback: Vm {
+    let mut system = LatestSystem::new(
+        Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
             vm_boot: VmBoot::latest(),
         },
-        modules: SystemModuleMixer::new(
+        SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
@@ -94,8 +90,8 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
-        finalization: Default::default(),
-    };
+        SystemFinalization::no_nullifications(),
+    );
 
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
@@ -136,17 +132,13 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System {
-        versioned_system_logic: VersionedSystemLogic::V1,
-        blueprint_cache: NonIterMap::new(),
-        auth_cache: NonIterMap::new(),
-        schema_cache: NonIterMap::new(),
-        callback: Vm {
+    let mut system = LatestSystem::new(
+        Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
             vm_boot: VmBoot::latest(),
         },
-        modules: SystemModuleMixer::new(
+        SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
@@ -165,8 +157,8 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
-        finalization: Default::default(),
-    };
+        SystemFinalization::no_nullifications(),
+    );
 
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
