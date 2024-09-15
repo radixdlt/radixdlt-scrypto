@@ -181,10 +181,12 @@ pub trait FromPublicKey: Sized {
 }
 
 impl FromPublicKey for NonFungibleGlobalId {
+    /// Prefer using the `signature` function or the `signature_proof()` method.
     fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self {
         Self::from_public_key_hash(public_key.get_hash())
     }
 
+    /// Prefer using the `signature` function or the `signature_proof()` method.
     fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self {
         match public_key_hash.into_enum() {
             PublicKeyHash::Secp256k1(public_key_hash) => NonFungibleGlobalId::new(

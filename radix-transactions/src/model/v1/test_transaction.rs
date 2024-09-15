@@ -9,7 +9,82 @@ use std::ops::Deref;
 #[derive(ManifestSbor)]
 pub enum TestTransaction {
     V1(TestIntentV1),
-    V2(Vec<TestIntentV2>),
+    V2 {
+        root_intent: TestIntentV2,
+        subintents: Vec<TestIntentV2>,
+    },
+}
+
+pub struct TestTransactionV2Builder {
+    nonce: u32,
+    subintents: IndexMap<SubintentHash, TestIntentV2>,
+}
+
+impl TestTransactionV2Builder {
+    pub fn new(nonce: u32) -> Self {
+        Self {
+            nonce,
+            subintents: Default::default(),
+        }
+    }
+
+    pub fn add_subintent(
+        &mut self,
+        manifest: SubintentManifestV2,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> SubintentHash {
+        let (instructions, blobs, child_intents) = manifest.for_intent();
+        let intent = self.create_intent(instructions, blobs, child_intents, proofs);
+        let hash = intent.hash;
+        self.subintents.insert(SubintentHash(hash), intent);
+        SubintentHash(hash)
+    }
+
+    pub fn finish_with_root_intent(
+        self,
+        manifest: TransactionManifestV2,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> TestTransaction {
+        let (instructions, blobs, child_intents) = manifest.for_intent();
+        let root_intent = self.create_intent(instructions, blobs, child_intents, proofs);
+        TestTransaction::V2 {
+            root_intent,
+            subintents: self.subintents.into_values().collect(),
+        }
+    }
+
+    fn create_intent(
+        &self,
+        instructions: InstructionsV2,
+        blobs: BlobsV1,
+        child_intents: ChildIntentsV2,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> TestIntentV2 {
+        let children_intent_indices = child_intents
+            .children
+            .into_iter()
+            .map(|child| {
+                let subintent_index = self
+                    .subintents
+                    .get_index_of(&child.hash)
+                    .expect("Child subintents should exist already in the Test Transaction");
+                let thread_index = subintent_index + 1;
+                thread_index
+            })
+            .collect();
+        let nonce = self.nonce;
+        let subintent_count = self.subintents.len();
+        let hash = hash(format!(
+            "Test transaction intent: {nonce} - {subintent_count}"
+        ));
+        TestIntentV2 {
+            instructions,
+            blobs,
+            hash,
+            initial_proofs: proofs.into_iter().collect(),
+            children_intent_indices,
+        }
+    }
 }
 
 #[derive(ManifestSbor)]
@@ -45,6 +120,39 @@ pub struct PreparedTestIntent {
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
+impl PreparedTestIntent {
+    #[allow(deprecated)]
+    pub fn from_v1(
+        intent: TestIntentV1,
+        settings: &PreparationSettings,
+    ) -> Result<Self, PrepareError> {
+        let prepared_instructions = intent.instructions.prepare_partial(settings)?;
+        Ok(PreparedTestIntent {
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            references: prepared_instructions.references,
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            hash: intent.hash,
+            children_intent_indices: vec![],
+            initial_proofs: intent.initial_proofs,
+        })
+    }
+
+    pub fn from_v2(
+        intent: TestIntentV2,
+        settings: &PreparationSettings,
+    ) -> Result<Self, PrepareError> {
+        let prepared_instructions = intent.instructions.prepare_partial(settings)?;
+        Ok(PreparedTestIntent {
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            references: prepared_instructions.references.deref().clone(),
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            hash: intent.hash,
+            children_intent_indices: intent.children_intent_indices,
+            initial_proofs: intent.initial_proofs,
+        })
+    }
+}
+
 impl TestTransaction {
     /// The nonce needs to be globally unique amongst test transactions on your ledger
     pub fn new_v1_from_nonce(
@@ -73,55 +181,8 @@ impl TestTransaction {
         })
     }
 
-    pub fn new_v2_from_nonce(
-        intents: Vec<(
-            TransactionManifestV2,
-            u32,
-            Vec<usize>,
-            BTreeSet<NonFungibleGlobalId>,
-        )>,
-    ) -> Self {
-        let intents = intents
-            .into_iter()
-            .map(
-                |(manifest, nonce, children_intent_indices, initial_proofs)| {
-                    (
-                        manifest,
-                        hash(format!("Test transaction: {}", nonce)),
-                        children_intent_indices,
-                        initial_proofs,
-                    )
-                },
-            )
-            .collect();
-        Self::new_v2(intents)
-    }
-
-    pub fn new_v2(
-        intents: Vec<(
-            TransactionManifestV2,
-            Hash,
-            Vec<usize>,
-            BTreeSet<NonFungibleGlobalId>,
-        )>,
-    ) -> Self {
-        let intents = intents
-            .into_iter()
-            .map(
-                |(manifest, hash, children_intent_indices, initial_proofs)| {
-                    let (instructions, blobs, ..) = manifest.for_intent();
-                    TestIntentV2 {
-                        instructions,
-                        blobs,
-                        hash,
-                        children_intent_indices,
-                        initial_proofs,
-                    }
-                },
-            )
-            .collect();
-
-        Self::V2(intents)
+    pub fn new_v2_builder(nonce: u32) -> TestTransactionV2Builder {
+        TestTransactionV2Builder::new(nonce)
     }
 
     #[allow(deprecated)]
@@ -130,31 +191,16 @@ impl TestTransaction {
         settings: &PreparationSettings,
     ) -> Result<PreparedTestTransaction, PrepareError> {
         match self {
-            Self::V1(intent) => {
-                let prepared_instructions = intent.instructions.prepare_partial(settings)?;
-                Ok(PreparedTestTransaction::V1(PreparedTestIntent {
-                    encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
-                    references: prepared_instructions.references,
-                    blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
-                    hash: intent.hash,
-                    children_intent_indices: vec![],
-                    initial_proofs: intent.initial_proofs,
-                }))
-            }
-            Self::V2(intents) => {
-                let mut prepared = vec![];
-                for intent in intents {
-                    let prepared_instructions = intent.instructions.prepare_partial(settings)?;
-                    prepared.push(PreparedTestIntent {
-                        encoded_instructions: Rc::new(manifest_encode(
-                            &prepared_instructions.inner.0,
-                        )?),
-                        references: prepared_instructions.references.deref().clone(),
-                        blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
-                        hash: intent.hash,
-                        children_intent_indices: intent.children_intent_indices,
-                        initial_proofs: intent.initial_proofs,
-                    });
+            Self::V1(intent) => Ok(PreparedTestTransaction::V1(PreparedTestIntent::from_v1(
+                intent, settings,
+            )?)),
+            Self::V2 {
+                root_intent,
+                subintents,
+            } => {
+                let mut prepared = vec![PreparedTestIntent::from_v2(root_intent, settings)?];
+                for intent in subintents {
+                    prepared.push(PreparedTestIntent::from_v2(intent, settings)?);
                 }
 
                 Ok(PreparedTestTransaction::V2(prepared))
