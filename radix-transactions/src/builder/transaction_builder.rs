@@ -182,7 +182,7 @@ impl PartialTransactionV2Builder {
     ) -> Self {
         let mut manifest_builder = SubintentManifestV2Builder::new_typed();
         for (child_name, (hash, _)) in self.children.iter() {
-            manifest_builder = manifest_builder.register_child(child_name, *hash);
+            manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.manifest(build_manifest(manifest_builder).build())
     }
@@ -345,7 +345,7 @@ impl TransactionV2Builder {
     ) -> Self {
         let mut manifest_builder = TransactionManifestV2Builder::new_typed();
         for (child_name, (hash, _)) in self.children.iter() {
-            manifest_builder = manifest_builder.register_child(child_name, *hash);
+            manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.manifest(build_manifest(manifest_builder).build())
     }

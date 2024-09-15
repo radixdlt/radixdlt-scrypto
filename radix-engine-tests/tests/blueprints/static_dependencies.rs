@@ -143,7 +143,7 @@ fn static_resource_should_be_callable() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _priv, account) = ledger.new_account(false);
     let mut manifest_builder = ManifestBuilder::new_system_v1();
-    let reservation = manifest_builder.add_address_preallocation(
+    let reservation = manifest_builder.use_preallocated_address(
         ResourceAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
         RESOURCE_PACKAGE,
         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
