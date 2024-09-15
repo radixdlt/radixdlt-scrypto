@@ -96,11 +96,12 @@ pub struct NewSymbols {
     pub new_address_id: Option<ManifestNamedAddress>,
 }
 
-pub type ManifestV1Builder = ManifestBuilder<TransactionManifestV1>;
-pub type ManifestV2Builder = ManifestBuilder<TransactionManifestV2>;
-pub type SystemV1ManifestBuilder = ManifestBuilder<SystemTransactionManifestV1>;
+pub type TransactionManifestV1Builder = ManifestBuilder<TransactionManifestV1>;
+pub type TransactionManifestV2Builder = ManifestBuilder<TransactionManifestV2>;
+pub type SubintentManifestV2Builder = ManifestBuilder<SubintentManifestV2>;
+pub type SystemManifestV1Builder = ManifestBuilder<SystemTransactionManifestV1>;
 
-impl ManifestV1Builder {
+impl TransactionManifestV1Builder {
     /// To create a Manifest Builder of a specific version, you may
     /// wish to use a specific new method such as `new_v1()`, `new_v2()`
     /// or `new_system_v1()`.
@@ -114,13 +115,13 @@ impl ManifestV1Builder {
     /// This exists so that you can call `ManifestBuilder::new_v1()`.
     /// It is equivalent to:
     /// * `ManifestBuilder::<TransactionManifestV1>::new_typed()`
-    /// * `ManifestV1Builder::new_typed()`
+    /// * `TransactionManifestV1Builder::new_typed()`
     pub fn new_v1() -> Self {
         Self::new_typed()
     }
 }
 
-impl ManifestV2Builder {
+impl TransactionManifestV2Builder {
     /// This exists so that you can call `ManifestBuilder::new_v2()`.
     /// It is equivalent to:
     /// * `ManifestBuilder::<TransactionManifestV2>::new_typed()`
@@ -133,7 +134,20 @@ impl ManifestV2Builder {
     }
 }
 
-impl SystemV1ManifestBuilder {
+impl SubintentManifestV2Builder {
+    /// This exists so that you can call `ManifestBuilder::new_subintent_v2()`.
+    /// It is equivalent to:
+    /// * `ManifestBuilder::<SubintentManifestV2>::new_typed()`
+    /// * `SubintentManifestV2Builder::new_typed()`
+    ///
+    /// For backwards compatibility, we had to keep
+    /// `ManifestBuilder::new()` creating a [`ManifestV1Builder`].
+    pub fn new_subintent_v2() -> Self {
+        Self::new_typed()
+    }
+}
+
+impl SystemManifestV1Builder {
     /// This exists so that you can call `ManifestBuilder::new_v1()`.
     /// It is equivalent to:
     /// * `ManifestBuilder::<SystemTransactionManifestV1>::new_typed()`
@@ -159,7 +173,9 @@ impl SystemV1ManifestBuilder {
         );
         self.name_lookup().address_reservation(name)
     }
+}
 
+impl<M: BuildableManifestSupportingPreallocatedAddresses> ManifestBuilder<M> {
     pub fn preallocate_address(
         mut self,
         reservation: impl NewManifestAddressReservation,
@@ -188,19 +204,19 @@ impl SystemV1ManifestBuilder {
             .object_names()
             .address_reservation_names
             .len()
-            > self.manifest.preallocated_addresses.len()
+            > self.manifest.preallocation_count()
         {
             panic!("You cannot call preallocate_address after you've allocated any addresses in the manifest");
         }
         self.manifest
-            .preallocated_addresses
-            .push(PreAllocatedAddress {
+            .add_preallocated_address(PreAllocatedAddress {
                 blueprint_id: BlueprintId {
                     package_address: package_address.into(),
                     blueprint_name: blueprint_name.into(),
                 },
                 address: fixed_address.into(),
-            });
+            })
+            .expect("Expected manifest to support adding preallocated address");
         reservation.register(&self.registrar);
     }
 }
@@ -2228,20 +2244,46 @@ where
         self.add_instruction(instruction.into())
     }
 
-    pub fn yield_to_parent(self, arguments: impl ResolvableArguments) -> Self {
-        self.add_v2_instruction(YieldToParent {
+    pub fn assert_worktop_is_empty(self) -> Self {
+        self.add_v2_instruction(AssertWorktopIsEmpty {})
+    }
+}
+
+impl<M: BuildableManifestSupportingChildren> ManifestBuilder<M>
+where
+    M::Instruction: From<InstructionV2>,
+{
+    pub fn register_child(
+        mut self,
+        child_name: impl NewManifestIntent,
+        subintent_hash: SubintentHash,
+    ) -> Self {
+        child_name.register(&self.registrar);
+        // Unwrap should be safe because a manifest implementing
+        // BuildableManifestSupportingChildren claims that this returns Ok.
+        self.manifest.add_child_subintent(subintent_hash).unwrap();
+        self
+    }
+
+    pub fn yield_to_child(
+        self,
+        child_manifest_intent: impl ExistingManifestIntent,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        let intent = child_manifest_intent.resolve(&self.registrar);
+        self.add_v2_instruction(YieldToChild {
+            child_index: ManifestNamedIntentIndex(intent.0),
             args: arguments.resolve(),
         })
     }
+}
 
-    // TODO: Replace ManifestIntent with impl ExistingManifestIntent, and have some way to register a child.
-    pub fn yield_to_child(
-        self,
-        child_manifest_intent: ManifestIntent,
-        arguments: impl ResolvableArguments,
-    ) -> Self {
-        self.add_v2_instruction(YieldToChild {
-            child_index: child_manifest_intent,
+impl<M: BuildableManifestWithParent> ManifestBuilder<M>
+where
+    M::Instruction: From<InstructionV2>,
+{
+    pub fn yield_to_parent(self, arguments: impl ResolvableArguments) -> Self {
+        self.add_v2_instruction(YieldToParent {
             args: arguments.resolve(),
         })
     }

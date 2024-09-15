@@ -5,7 +5,7 @@ use radix_engine::utils::{
 };
 use radix_engine_tests::common::*;
 use radix_transactions::manifest::e2e::apply_address_replacements;
-use radix_transactions::manifest::{compile, MockBlobProvider};
+use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 use scrypto::prelude::*;
 use walkdir::WalkDir;
@@ -70,7 +70,7 @@ fn common_manifests_are_all_valid() {
         let manifest_string = std::fs::read_to_string(&path)
             .map(|str| apply_address_replacements(str))
             .unwrap();
-        let manifest = compile(
+        let manifest = compile_manifest_v1(
             &manifest_string,
             &NetworkDefinition::simulator(),
             MockBlobProvider::new(),

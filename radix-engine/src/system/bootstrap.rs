@@ -1080,7 +1080,7 @@ pub fn create_genesis_data_ingestion_transaction(
 fn map_address_allocations_for_manifest(
     genesis_data_chunk: GenesisDataChunk,
 ) -> SystemTransactionManifestV1 {
-    let mut manifest_builder = SystemV1ManifestBuilder::new_system_v1();
+    let mut manifest_builder = SystemManifestV1Builder::new_system_v1();
     let data_chunk = match genesis_data_chunk {
         GenesisDataChunk::Validators(content) => ManifestGenesisDataChunk::Validators(content),
         GenesisDataChunk::Stakes {

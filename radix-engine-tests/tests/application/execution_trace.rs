@@ -216,7 +216,7 @@ fn test_instruction_traces() {
 
     let receipt = ledger.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
-    let mut traces: Vec<ExecutionTrace> = receipt
+    let traces: Vec<ExecutionTrace> = receipt
         .expect_commit_success()
         .execution_trace
         .as_ref()
@@ -225,21 +225,18 @@ fn test_instruction_traces() {
         .clone();
 
     // Expecting a single root trace
-    assert_eq!(1, traces.len());
-
-    let root_trace = traces.remove(0);
-    let child_traces = root_trace.children;
+    assert_eq!(8, traces.len());
 
     // Check traces for the 7 manifest instructions
     {
         // LOCK_FEE
-        let traces = traces_for_instruction(&child_traces, 0);
+        let traces = traces_for_instruction(&traces, 0);
         assert!(traces.is_empty()); // No traces for lock_fee
     }
 
     {
         // CALL_METHOD: free
-        let traces = traces_for_instruction(&child_traces, 1);
+        let traces = traces_for_instruction(&traces, 1);
         // Expecting two traces: an output bucket from the "free" call
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
@@ -280,7 +277,7 @@ fn test_instruction_traces() {
 
     {
         // TAKE_ALL_FROM_WORKTOP
-        let traces = traces_for_instruction(&child_traces, 2);
+        let traces = traces_for_instruction(&traces, 2);
         // Take from worktop is just a single sys call with a single bucket output
         assert_eq!(1, traces.len());
 
@@ -304,7 +301,7 @@ fn test_instruction_traces() {
 
     {
         // CREATE_PROOF_FROM_BUCKET
-        let traces = traces_for_instruction(&child_traces, 3);
+        let traces = traces_for_instruction(&traces, 3);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
@@ -326,7 +323,7 @@ fn test_instruction_traces() {
 
     {
         // DROP_PROOF
-        let traces = traces_for_instruction(&child_traces, 4);
+        let traces = traces_for_instruction(&traces, 4);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
@@ -348,7 +345,7 @@ fn test_instruction_traces() {
 
     {
         // RETURN_TO_WORKTOP
-        let traces = traces_for_instruction(&child_traces, 5);
+        let traces = traces_for_instruction(&traces, 5);
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
@@ -369,7 +366,7 @@ fn test_instruction_traces() {
 
     {
         // CALL_FUNCTION: create_and_fund_a_component
-        let traces = traces_for_instruction(&child_traces, 6);
+        let traces = traces_for_instruction(&traces, 6);
         // Expected two traces: take from worktop and call scrypto function
         assert_eq!(2, traces.len());
 

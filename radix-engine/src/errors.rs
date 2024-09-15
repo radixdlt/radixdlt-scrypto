@@ -62,6 +62,7 @@ pub enum RejectionReason {
 
     ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     SuccessButFeeLoanNotRepaid,
+    TransactionNotYetSupported,
 }
 
 impl From<BootloadingError> for RejectionReason {
@@ -290,6 +291,8 @@ pub enum SystemError {
     ///
     /// Note that this is only used when feature std is used.
     SystemPanic(String),
+
+    CannotLockFeeInChildSubintent(usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

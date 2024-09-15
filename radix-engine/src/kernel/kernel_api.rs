@@ -171,6 +171,24 @@ pub trait KernelInvokeApi<C> {
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
+/// API for managing multiple call frame stacks
+pub trait KernelStackApi {
+    type CallFrameData;
+
+    /// Gets the stack id which is currently being used
+    fn kernel_get_stack_id(&self) -> usize;
+
+    /// Achieves a context switch by switching the underlying callframe/stack
+    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError>;
+
+    /// Sets the call frame data for the current call frame
+    fn kernel_set_call_frame_data(&mut self, data: Self::CallFrameData)
+        -> Result<(), RuntimeError>;
+
+    /// Returns the owned nodes of the current call frame
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError>;
+}
+
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
     pub current_call_frame: &'a M::CallFrameData,
@@ -189,9 +207,6 @@ pub trait KernelInternalApi {
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
-
-    /// Gets the thread id which is currently running
-    fn kernel_get_thread_id(&self) -> usize;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
@@ -212,6 +227,7 @@ pub trait KernelApi:
     KernelNodeApi
     + KernelSubstateApi<<Self::CallbackObject as KernelCallbackObject>::LockData>
     + KernelInvokeApi<<Self::CallbackObject as KernelCallbackObject>::CallFrameData>
+    + KernelStackApi<CallFrameData = <Self::CallbackObject as KernelCallbackObject>::CallFrameData>
     + KernelInternalApi<System = Self::CallbackObject>
 {
     type CallbackObject: KernelCallbackObject;

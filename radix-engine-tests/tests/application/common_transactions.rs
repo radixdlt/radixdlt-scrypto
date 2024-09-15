@@ -6,7 +6,7 @@ use radix_engine_interface::prelude::*;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use radix_engine_tests::common::*;
 use radix_rust::ContextualDisplay;
-use radix_transactions::manifest::{compile, BlobProvider};
+use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto::NonFungibleData;
@@ -341,7 +341,7 @@ where
     // Run the function and get the manifest string
     let (manifest_string, blobs) =
         string_manifest_builder(&component_address, &address_bech32_encoder);
-    let manifest = compile(
+    let manifest = compile_manifest_v1(
         &manifest_string,
         &network,
         BlobProvider::new_with_blobs(blobs),
@@ -425,7 +425,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         &mintable_non_fungible_resource_address,
         &address_bech32_encoder,
     );
-    let manifest = compile(
+    let manifest = compile_manifest_v1(
         &manifest_string,
         &network,
         BlobProvider::new_with_blobs(blobs),
@@ -460,7 +460,7 @@ where
     // Run the function and get the manifest string
     let (manifest_string, blobs) =
         string_manifest_builder(&component_address, &accounts, &address_bech32_encoder);
-    let manifest = compile(
+    let manifest = compile_manifest_v1(
         &manifest_string,
         &network,
         BlobProvider::new_with_blobs(blobs),

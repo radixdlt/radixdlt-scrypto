@@ -1,13 +1,8 @@
 use clap::Parser;
-use radix_common::{
-    data::manifest::manifest_encode,
-    network::{NetworkDefinition, ParseNetworkError},
-};
+use radix_common::prelude::*;
 use radix_engine::utils::*;
-use radix_transactions::manifest::{
-    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
-    BlobProvider,
-};
+use radix_transactions::manifest::*;
+use radix_transactions::prelude::*;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -69,14 +64,12 @@ pub fn run() -> Result<(), String> {
         }
     }
 
-    let manifest =
-        compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
-            compile_error_diagnostics(
-                &content,
-                err,
-                CompileErrorDiagnosticsStyle::TextTerminalColors,
-            )
-        })?;
+    let manifest = compile_manifest_with_pretty_error::<TransactionManifestV1>(
+        &content,
+        &network,
+        BlobProvider::new_with_blobs(blobs),
+        CompileErrorDiagnosticsStyle::TextTerminalColors,
+    )?;
 
     validate_call_arguments_to_native_components(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;

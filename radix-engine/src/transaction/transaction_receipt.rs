@@ -31,7 +31,7 @@ define_single_versioned! {
         //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
         // * Change the API to return some kind of explicit extensible preview DTO.
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"), settings(allow_name_changes))]
+        #[sbor_assert(fixed("FILE:receipt_schema_cuttlefish.txt"), settings(allow_name_changes))]
     ],
 }
 
@@ -64,19 +64,17 @@ pub struct TransactionReceiptV1 {
 
 #[cfg(feature = "std")]
 impl TransactionReceiptV1 {
-    pub fn generate_execution_breakdown_flamegraph(
+    pub fn generate_execution_breakdown_flamegraph_svg_bytes(
         &self,
-        path: impl AsRef<std::path::Path>,
         title: impl AsRef<str>,
         network_definition: &NetworkDefinition,
-    ) -> Result<(), FlamegraphError> {
-        let path = path.as_ref();
-        let title = title.as_ref().to_owned();
+    ) -> Result<Vec<u8>, FlamegraphError> {
+        let title = title.as_ref();
 
         // The options to use when constructing the flamechart.
         let mut opts = inferno::flamegraph::Options::default();
         "Execution Cost Units".clone_into(&mut opts.count_name);
-        opts.title = title;
+        opts.title = title.to_owned();
 
         // Transforming the detailed execution cost breakdown into a string understood by the flamegraph
         // library.
@@ -107,9 +105,7 @@ impl TransactionReceiptV1 {
             result.into_inner()
         };
 
-        std::fs::write(path, result).map_err(FlamegraphError::IOError)?;
-
-        Ok(())
+        Ok(result)
     }
 
     fn transform_detailed_execution_breakdown_into_flamegraph_string(
@@ -1684,7 +1680,7 @@ mod tests {
     #[derive(ScryptoSbor, ScryptoSborAssertion)]
     #[sbor_assert(
         backwards_compatible(
-            bottlenose = "FILE:node_local_transaction_execution_v1_bottlenose.txt"
+            bottlenose = "FILE:node_local_transaction_execution_v1_cuttlefish.txt"
         ),
         settings(allow_name_changes)
     )]

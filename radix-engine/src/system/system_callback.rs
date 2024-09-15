@@ -32,6 +32,7 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
+use crate::system::transaction::multithread_txn_processor::MultiThreadedTxnProcessor;
 use crate::track::*;
 use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
@@ -61,6 +62,108 @@ pub type SystemBootSubstate = SystemBoot;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
+    V2(VersionedSystemLogic, SystemParameters),
+}
+
+impl SystemBoot {
+    fn system_logic(&self) -> VersionedSystemLogic {
+        match self {
+            Self::V1(..) => VersionedSystemLogic::V1,
+            Self::V2(logic, _) => *logic,
+        }
+    }
+}
+
+/// System logic which may change given a protocol version
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum VersionedSystemLogic {
+    V1,
+    V2,
+}
+
+impl VersionedSystemLogic {
+    fn create_auth_module(
+        &self,
+        executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        let auth_module = match self {
+            VersionedSystemLogic::V1 => {
+                // This isn't exactly a necessary check as node logic should protect against this
+                // but keep it here for sanity
+                let intent = if executable.intents().len() != 1 {
+                    return Err(RejectionReason::TransactionNotYetSupported);
+                } else {
+                    executable.intents().get(0).unwrap()
+                };
+                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
+            }
+            VersionedSystemLogic::V2 => AuthModule::new(),
+        };
+
+        Ok(auth_module)
+    }
+
+    fn execute_transaction<Y: SystemBasedKernelApi>(
+        &self,
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let output = match self {
+            VersionedSystemLogic::V1 => {
+                let mut system_service = SystemService::new(api);
+                let intent = executable
+                    .intents()
+                    .get(0)
+                    .expect("This should have been checked in init");
+                let rtn = system_service.call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                        global_address_reservations,
+                        references: Rc::new(intent.references.clone()),
+                        blobs: intent.blobs.clone(),
+                    })
+                    .unwrap(),
+                )?;
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            }
+            VersionedSystemLogic::V2 => {
+                let mut txn_threads =
+                    MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
+                txn_threads.execute(api)?;
+                let output = txn_threads
+                    .threads
+                    .get_mut(0)
+                    .unwrap()
+                    .0
+                    .outputs
+                    .drain(..)
+                    .collect();
+                txn_threads.cleanup(api)?;
+                output
+            }
+        };
+
+        Ok(output)
+    }
+
+    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
+        match self {
+            VersionedSystemLogic::V1 => {
+                // Skip client-side costing requested by TransactionProcessor
+                if api.kernel_get_current_depth() == 1 {
+                    return false;
+                }
+            }
+            VersionedSystemLogic::V2 => {}
+        }
+
+        true
+    }
 }
 
 #[derive(Clone)]
@@ -157,6 +260,7 @@ pub struct SystemInit<C> {
 }
 
 pub struct System<C: SystemCallbackObject> {
+    pub versioned_system_logic: VersionedSystemLogic,
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
@@ -822,63 +926,69 @@ impl<C: SystemCallbackObject> System<C> {
         println!("{:-^120}", "Finish");
     }
 
+    fn reference_check(
+        references: &IndexSet<Reference>,
+        modules: &mut SystemModuleMixer,
+        store: &mut (impl BootStore + CommitableSubstateStore),
+    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
+
+        // Check references
+        for reference in references.iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_preallocated() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let ref_value = store
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                }
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                }
+            }
+        }
+
+        Ok((global_addresses, direct_accesses))
+    }
+
     /// Checks that references exist in the store
     fn build_call_frame_inits_with_reference_check(
-        intents: &ExecutableIntents,
+        intents: &Vec<ExecutableIntent>,
         modules: &mut SystemModuleMixer,
         store: &mut (impl BootStore + CommitableSubstateStore),
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
-        match intents {
-            ExecutableIntents::V1(intent) => {
-                let mut global_addresses = indexset!();
-                let mut direct_accesses = indexset!();
+        let mut init_call_frames = vec![];
+        for intent in intents {
+            let (global_addresses, direct_accesses) =
+                Self::reference_check(&intent.references, modules, store)?;
 
-                // Check references
-                for reference in intent.references.iter() {
-                    let node_id = &reference.0;
-
-                    if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                        // Allow always visible node and do not add reference
-                        continue;
-                    }
-
-                    if node_id.is_global_preallocated() {
-                        // Allow global virtual and add reference
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                        continue;
-                    }
-
-                    let ref_value = store
-                        .read_substate(
-                            node_id,
-                            TYPE_INFO_FIELD_PARTITION,
-                            &TypeInfoField::TypeInfo.into(),
-                        )
-                        .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-                    match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
-                        StableReferenceType::Global => {
-                            global_addresses
-                                .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                        }
-                        StableReferenceType::DirectAccess => {
-                            direct_accesses
-                                .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                        }
-                    }
-                }
-
-                Ok(vec![CallFrameInit {
-                    data: Actor::Root,
-                    global_addresses,
-                    direct_accesses,
-                }])
-            }
-            ExecutableIntents::V2(_) => {
-                unimplemented!();
-            }
+            init_call_frames.push(CallFrameInit {
+                data: Actor::Root,
+                global_addresses,
+                direct_accesses,
+            });
         }
+
+        Ok(init_call_frames)
     }
 
     fn verify_boot_ref_value(
@@ -931,10 +1041,9 @@ impl<C: SystemCallbackObject> System<C> {
 
     fn create_non_commit_receipt(
         result: TransactionResult,
-        modules: SystemModuleMixer,
+        print_execution_summary: bool,
+        costing_module: CostingModule,
     ) -> TransactionReceiptV1 {
-        let print_execution_summary = modules.is_kernel_trace_enabled();
-        let costing_module = modules.unpack_costing();
         let (fee_reserve, cost_breakdown, detailed_cost_breakdown) =
             costing_module.unpack_for_receipt();
         let (finalization_summary, costing_parameters, transaction_costing_parameters) =
@@ -960,7 +1069,8 @@ impl<C: SystemCallbackObject> System<C> {
             TransactionResult::Reject(RejectResult {
                 reason: reason.into(),
             }),
-            modules,
+            modules.is_kernel_trace_enabled(),
+            modules.unpack_costing(),
         )
     }
 
@@ -972,7 +1082,8 @@ impl<C: SystemCallbackObject> System<C> {
             TransactionResult::Abort(AbortResult {
                 reason: reason.into(),
             }),
-            modules,
+            modules.is_kernel_trace_enabled(),
+            modules.unpack_costing(),
         )
     }
 
@@ -1140,7 +1251,7 @@ impl<C: SystemCallbackObject> System<C> {
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
         init_input: &SystemInit<C::Init>,
-    ) -> SystemModuleMixer {
+    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceiptV1> {
         let system_boot = store
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -1155,8 +1266,11 @@ impl<C: SystemCallbackObject> System<C> {
                 limit_parameters: LimitParameters::babylon_genesis(),
             }));
 
+        let system_logic_version = system_boot.system_logic();
         let mut system_parameters = match system_boot {
-            SystemBoot::V1(system_parameters) => system_parameters,
+            SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
+                system_parameters
+            }
         };
 
         let mut enabled_modules = {
@@ -1203,14 +1317,42 @@ impl<C: SystemCallbackObject> System<C> {
             }
         }
 
-        let auth_module = match executable.intents() {
-            ExecutableIntents::V1(intent) => {
-                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
-            }
-            ExecutableIntents::V2(_) => AuthModule::new(),
+        let costing_module = CostingModule {
+            current_depth: 0,
+            fee_reserve: SystemLoanFeeReserve::new(
+                system_parameters.costing_parameters,
+                executable.costing_parameters().clone(),
+            ),
+            fee_table: FeeTable::new(),
+            tx_payload_len: executable.payload_size(),
+            tx_num_of_signature_validations: executable.num_of_signature_validations(),
+            config: system_parameters.costing_module_config,
+            cost_breakdown: if init_input.enable_cost_breakdown {
+                Some(Default::default())
+            } else {
+                None
+            },
+            detailed_cost_breakdown: if init_input.enable_debug_information {
+                Some(Default::default())
+            } else {
+                None
+            },
+            on_apply_cost: Default::default(),
         };
 
-        SystemModuleMixer::new(
+        let auth_module = system_logic_version
+            .create_auth_module(&executable)
+            .map_err(|reason| {
+                let print_execution_summary =
+                    enabled_modules.contains(EnabledModules::KERNEL_TRACE);
+                Self::create_non_commit_receipt(
+                    TransactionResult::Reject(RejectResult { reason }),
+                    print_execution_summary,
+                    costing_module.clone(),
+                )
+            })?;
+
+        let module_mixer = SystemModuleMixer::new(
             enabled_modules,
             KernelTraceModule,
             TransactionRuntimeModule::new(
@@ -1219,32 +1361,10 @@ impl<C: SystemCallbackObject> System<C> {
             ),
             auth_module,
             LimitsModule::from_params(system_parameters.limit_parameters),
-            CostingModule {
-                // The current depth is set to zero since at the start of the execution of transactions
-                // there are no callframes expect for the root callframe.
-                current_depth: 0,
-                fee_reserve: SystemLoanFeeReserve::new(
-                    system_parameters.costing_parameters,
-                    executable.costing_parameters().clone(),
-                ),
-                fee_table: FeeTable::new(),
-                tx_payload_len: executable.payload_size(),
-                tx_num_of_signature_validations: executable.num_of_signature_validations(),
-                config: system_parameters.costing_module_config,
-                cost_breakdown: if init_input.enable_cost_breakdown {
-                    Some(Default::default())
-                } else {
-                    None
-                },
-                detailed_cost_breakdown: if init_input.enable_debug_information {
-                    Some(Default::default())
-                } else {
-                    None
-                },
-                on_apply_cost: Default::default(),
-            },
+            costing_module,
             ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
-        )
+        );
+        Ok((system_logic_version, module_mixer))
     }
 }
 
@@ -1265,7 +1385,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             Self::print_executable(executable);
         }
 
-        let mut modules = Self::resolve_modules(store, executable, &init_input);
+        let (logic_version, mut modules) = Self::resolve_modules(store, executable, &init_input)?;
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
         let callback = match C::init(store, init_input.callback_init) {
@@ -1346,6 +1466,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         };
 
         let system = System {
+            versioned_system_logic: logic_version,
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -1381,28 +1502,13 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             global_address_reservations.push(global_address_reservation);
         }
 
-        let intents = executable.intents();
-        let output = match intents {
-            ExecutableIntents::V1(intent) => {
-                let rtn = system_service.call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
-                        global_address_reservations,
-                        references: intent.references.clone(),
-                        blobs: intent.blobs.clone(),
-                    })
-                    .unwrap(),
-                )?;
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            }
-            ExecutableIntents::V2(_) => {
-                unimplemented!();
-            }
-        };
+        let system_logic_version = system_service.system().versioned_system_logic;
+
+        let output = system_logic_version.execute_transaction(
+            api,
+            executable,
+            global_address_reservations,
+        )?;
 
         Ok(output)
     }

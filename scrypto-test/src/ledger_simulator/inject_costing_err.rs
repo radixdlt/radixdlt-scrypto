@@ -493,6 +493,28 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCosti
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
+    KernelStackApi for WrappedKernelApi<'a, M, K>
+{
+    type CallFrameData = Actor;
+
+    fn kernel_get_stack_id(&self) -> usize {
+        self.api.kernel_get_stack_id()
+    }
+
+    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_stack(id)
+    }
+
+    fn kernel_set_call_frame_data(&mut self, data: Actor) -> Result<(), RuntimeError> {
+        self.api.kernel_set_call_frame_data(data)
+    }
+
+    fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
+        self.api.kernel_get_owned_nodes()
+    }
+}
+
+impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelApi<'a, M, K>
 {
     type System = System<M>;
@@ -504,10 +526,6 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
-        self.api.kernel_get_thread_id()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -555,10 +573,6 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
-    }
-
-    fn kernel_get_thread_id(&self) -> usize {
-        self.api.kernel_get_thread_id()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

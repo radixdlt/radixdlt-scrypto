@@ -554,7 +554,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         intent_hash: IntentHash,
         intent_type: IntentType,
     ) -> ControlFlow<V::Error<'a>> {
-        let new_intent = ManifestIntent(self.intent_state.len() as u32);
+        let new_intent = ManifestNamedIntent(self.intent_state.len() as u32);
         let state = IntentState {
             name: self
                 .manifest
@@ -820,7 +820,7 @@ pub struct OnNewNamedAddress<'s, 'a> {
 }
 
 pub struct OnNewIntent<'s, 'a> {
-    pub intent: ManifestIntent,
+    pub intent: ManifestNamedIntent,
     pub state: &'s IntentState<'a>,
 }
 

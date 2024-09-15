@@ -43,9 +43,9 @@ impl ManifestIdAllocator {
         ManifestNamedAddress(id)
     }
 
-    pub fn new_intent_id(&mut self) -> ManifestIntent {
+    pub fn new_named_intent_id(&mut self) -> ManifestNamedIntent {
         let id = self.next_intent_id;
         self.next_intent_id += 1;
-        ManifestIntent(id)
+        ManifestNamedIntent(id)
     }
 }
