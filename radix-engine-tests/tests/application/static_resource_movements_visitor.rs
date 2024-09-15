@@ -8,7 +8,7 @@ fn simple_account_transfer_with_an_explicit_take_is_correctly_classified() {
     // Arrange
     let account1 = account_address(1);
     let account2 = account_address(2);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw(account1, 100, XRD, 10)
         .take_from_worktop(XRD, 10, "bucket")
         .deposit(account2, "bucket")
@@ -41,7 +41,7 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
     // Arrange
     let account1 = account_address(1);
     let account2 = account_address(2);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw(account1, 100, XRD, 10)
         .take_all_from_worktop(XRD, "bucket")
         .deposit(account2, "bucket")
@@ -74,7 +74,7 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     // Arrange
     let account1 = account_address(1);
     let account2 = account_address(2);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw(account1, 100, XRD, 10)
         .deposit_batch(account2, ManifestExpression::EntireWorktop)
         .build();
@@ -110,7 +110,7 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     let account1 = account_address(1);
     let account2 = account_address(2);
     let non_fungible_address = non_fungible_resource_address(1);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw(account1, 100, non_fungible_address, 10)
         .deposit_batch(account2, ManifestExpression::EntireWorktop)
         .build();
@@ -149,7 +149,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
     let account1 = account_address(1);
     let account2 = account_address(2);
     let non_fungible_address = non_fungible_resource_address(1);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw_non_fungibles(
             account1,
             100,
@@ -195,7 +195,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
 fn assertion_of_any_gives_context_to_visitor() {
     // Arrange
     let account = account_address(1);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .assert_worktop_contains_any(XRD)
         .deposit_batch(account, ManifestExpression::EntireWorktop)
         .build();
@@ -227,7 +227,7 @@ fn assertion_of_ids_gives_context_to_visitor() {
     // Arrange
     let account = account_address(1);
     let non_fungible_address = non_fungible_resource_address(1);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .assert_worktop_contains_non_fungibles(
             non_fungible_address,
             indexset! {
@@ -268,7 +268,7 @@ fn assertion_of_ids_gives_context_to_visitor() {
 fn assertion_of_amount_gives_context_to_visitor() {
     // Arrange
     let account = account_address(1);
-    let manifest = ManifestV2Builder::new_typed()
+    let manifest = ManifestBuilder::new_v2()
         .assert_worktop_contains(XRD, 10)
         .deposit_batch(account, ManifestExpression::EntireWorktop)
         .build();
