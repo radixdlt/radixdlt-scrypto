@@ -23,8 +23,6 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 
 use crate::sdk::PackageFactory;
@@ -112,9 +110,7 @@ where
             /* Global references found in the NodeKeys */
             .add_global_references(
                 database_updates
-                    .node_updates
-                    .keys()
-                    .map(SpreadPrefixKeyMapper::from_db_node_key)
+                    .node_ids()
                     .filter_map(|item| GlobalAddress::try_from(item).ok()),
             )
             /* Global references found in the Substate Values */
@@ -211,17 +207,12 @@ where
             id_allocator,
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
-                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    BOOT_LOADER_PARTITION,
-                );
-                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
-                    BOOT_LOADER_VM_BOOT_FIELD_KEY,
-                ));
-
                 let vm_boot = database
-                    .get_substate(&db_partition_key, &db_sort_key)
-                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                    .read_substate_typed(
+                        TRANSACTION_TRACKER,
+                        BOOT_LOADER_PARTITION,
+                        BOOT_LOADER_VM_BOOT_FIELD_KEY,
+                    )
                     .unwrap_or(VmBoot::babylon());
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(

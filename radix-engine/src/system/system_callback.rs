@@ -44,7 +44,7 @@ use radix_engine_interface::blueprints::hooks::*;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use radix_substate_store_interface::interface::*;
 use radix_transactions::model::*;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
@@ -495,7 +495,7 @@ impl<V: SystemCallbackObject> System<V> {
     }
 
     fn finalize_fees_for_commit<S: SubstateDatabase>(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        track: &mut Track<S>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
     ) -> (
@@ -746,7 +746,7 @@ impl<V: SystemCallbackObject> System<V> {
     }
 
     fn update_transaction_tracker<S: SubstateDatabase>(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        track: &mut Track<S>,
         next_epoch: Epoch,
         intent_hash_nullification: IntentHashNullification,
         is_success: bool,
@@ -1101,7 +1101,7 @@ impl<V: SystemCallbackObject> System<V> {
 
     fn create_commit_receipt<S: SubstateDatabase>(
         outcome: Result<Vec<InstructionOutput>, RuntimeError>,
-        mut track: Track<S, SpreadPrefixKeyMapper>,
+        mut track: Track<S>,
         modules: SystemModuleMixer,
         system_finalization: SystemFinalization,
     ) -> TransactionReceiptV1 {
@@ -1162,8 +1162,7 @@ impl<V: SystemCallbackObject> System<V> {
 
         // Generate state updates from tracked substates
         // Note that this process will prune invalid reads
-        let (new_node_ids, state_updates) =
-            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+        let (new_node_ids, state_updates) = to_state_updates(tracked_substates);
 
         // Summarizes state updates
         let system_structure =
@@ -1569,7 +1568,7 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
 
     fn create_receipt<S: SubstateDatabase>(
         mut self,
-        track: Track<S, SpreadPrefixKeyMapper>,
+        track: Track<S>,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         // Panic if an error is encountered in the system layer or below. The following code

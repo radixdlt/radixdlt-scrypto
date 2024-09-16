@@ -1,9 +1,6 @@
 use crate::internal_prelude::*;
 use radix_engine_interface::types::*;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::ListableSubstateDatabase;
-use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::*;
 
 #[derive(Debug)]
 pub enum KernelDatabaseCheckError {
@@ -34,9 +31,7 @@ impl KernelDatabaseChecker {
     ) -> Result<(), KernelDatabaseCheckError> {
         let mut internal_nodes = BTreeMap::new();
 
-        for db_partition_key in substate_db.list_partition_keys() {
-            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&db_partition_key);
-
+        for (node_id, partition_number) in substate_db.read_partition_keys() {
             let state = internal_nodes
                 .entry(node_id)
                 .or_insert(NodeCheckerState::NoOwner(0u8));
@@ -47,7 +42,9 @@ impl KernelDatabaseChecker {
                 }
             }
 
-            for (_, value) in substate_db.list_entries(&db_partition_key) {
+            for (_, value) in
+                substate_db.read_entries_unknown_key(node_id, partition_number, None::<SubstateKey>)
+            {
                 let value = IndexedScryptoValue::from_vec(value)
                     .map_err(KernelDatabaseCheckError::DecodeError)?;
                 for owned in value.owned_nodes() {

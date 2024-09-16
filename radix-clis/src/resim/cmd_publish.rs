@@ -10,11 +10,8 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::prelude::*;
 use radix_rust::ContextualDisplay;
-use radix_substate_store_interface::interface::DatabaseUpdates;
-use radix_substate_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
-    interface::*,
-};
+use radix_substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::typed_substate_layout::*;
 use std::ffi::OsStr;
 use std::fs;

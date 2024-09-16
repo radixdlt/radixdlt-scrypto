@@ -6,7 +6,6 @@ use flume::Sender;
 use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::prelude::*;
 use rocksdb::{Direction, IteratorMode, Options, DB};
@@ -74,8 +73,7 @@ impl TxnSync {
                     trace,
                 );
                 let state_updates = receipt.into_state_updates();
-                let database_updates =
-                    state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                let database_updates = state_updates.create_database_updates();
 
                 let current_version = database.get_current_version();
                 let new_version = current_version + 1;

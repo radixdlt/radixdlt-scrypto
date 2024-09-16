@@ -12,10 +12,7 @@ use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_
 use radix_engine_interface::types::{BlueprintPartitionOffset, CollectionDescriptor};
 use radix_engine_interface::{prelude::MetadataValue, types::PackagePartitionOffset};
 use radix_rust::ContextualDisplay;
-use radix_substate_store_interface::{
-    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::SubstateDatabase,
-};
+use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::ResourceAccounter;
 use radix_substate_store_queries::typed_substate_layout::*;
 
@@ -38,9 +35,10 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
-        .list_mapped::<SpreadPrefixKeyMapper, PackageCodeOriginalCodeEntrySubstate, MapKey>(
-            package_address.as_node_id(),
+        .read_map_entries_values_typed::<PackageCodeOriginalCodeEntrySubstate>(
+            package_address,
             PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition(),
+            None::<SubstateKey>,
         )
         .next()
         .ok_or(EntityDumpError::PackageNotFound)?;

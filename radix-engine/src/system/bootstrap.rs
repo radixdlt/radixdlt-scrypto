@@ -27,9 +27,6 @@ use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedU
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 use radix_substate_store_interface::interface::*;
-use radix_substate_store_interface::{
-    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
-};
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
 
@@ -399,7 +396,7 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         system_updates,
     });
     let flashed_db = FlashedSubstateDatabase {
-        flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
+        flash_updates: state_updates.create_database_updates(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));

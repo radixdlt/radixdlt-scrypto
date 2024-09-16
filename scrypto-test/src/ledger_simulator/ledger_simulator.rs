@@ -23,8 +23,6 @@ use radix_engine_interface::blueprints::pool::{
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
 use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
@@ -460,12 +458,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
-        let mut node_ids = index_set_new();
-        for pk in self.database.list_partition_keys() {
-            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
-            node_ids.insert(node_id);
-        }
-        node_ids
+        self.database
+            .read_partition_keys()
+            .map(|(node_id, _)| node_id)
+            .collect()
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
@@ -642,13 +638,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
         let node_id: &NodeId = component_address.as_node_id();
-        let component_state = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &ComponentField::State0.into(),
-            );
+        let component_state = self.substate_db().read_substate_typed::<FieldSubstate<T>>(
+            node_id,
+            MAIN_BASE_PARTITION,
+            ComponentField::State0,
+        );
         component_state.unwrap().into_payload()
     }
 
@@ -685,10 +679,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn get_fungible_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
         let total_supply = self
             .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
-                &resource.as_node_id(),
+            .read_substate_typed::<FungibleResourceManagerTotalSupplyFieldSubstate>(
+                resource,
                 MAIN_BASE_PARTITION,
-                &FungibleResourceManagerField::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply,
             )
             .unwrap()
             .into_payload()
@@ -1236,9 +1230,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let transaction_receipt = executor.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());
@@ -1315,9 +1307,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());

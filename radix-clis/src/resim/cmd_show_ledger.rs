@@ -5,10 +5,7 @@ use radix_common::time::Instant;
 use radix_common::time::UtcDateTime;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_substate_store_interface::{
-    db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
-    interface::ListableSubstateDatabase,
-};
+use radix_substate_store_interface::interface::*;
 
 use crate::resim::*;
 
@@ -54,8 +51,7 @@ impl ShowLedger {
         let mut components: Vec<ComponentAddress> = vec![];
         let mut resources: Vec<ResourceAddress> = vec![];
 
-        for key in substate_db.list_partition_keys() {
-            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&key);
+        for (node_id, _) in substate_db.read_partition_keys() {
             if let Ok(address) = PackageAddress::try_from(node_id.as_ref()) {
                 if !packages.contains(&address) {
                     packages.push(address);

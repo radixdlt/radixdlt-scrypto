@@ -11,7 +11,7 @@ use crate::track::interface::*;
 use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
-use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use sbor::rust::mem;
 
@@ -45,7 +45,7 @@ impl KernelBoot {
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
-    pub track: Track<'h, S, SpreadPrefixKeyMapper>,
+    pub track: Track<'h, S>,
     pub init: M::Init,
     pub phantom: PhantomData<M>,
 }

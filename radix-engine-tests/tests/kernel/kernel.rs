@@ -5,10 +5,9 @@ use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::*;
 use radix_engine::kernel::kernel_callback_api::*;
-use radix_engine::track::Track;
+use radix_engine::track::*;
 use radix_engine_interface::prelude::*;
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use scrypto_test::prelude::*;
 
 #[derive(Default)]
 struct TestCallFrameData;
@@ -212,7 +211,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     variation: MoveVariation,
 ) -> Result<(), RuntimeError> {
     let database = InMemorySubstateDatabase::standard();
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut track = Track::<InMemorySubstateDatabase>::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
@@ -349,7 +348,7 @@ fn test_kernel_move_node_via_invoke_with_opened_substate() {
 fn kernel_close_substate_should_fail_if_opened_child_exists() {
     // Arrange
     let database = InMemorySubstateDatabase::standard();
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut track = Track::<InMemorySubstateDatabase>::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);

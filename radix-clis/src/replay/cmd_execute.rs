@@ -7,7 +7,6 @@ use flume;
 use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use std::fs::File;
 use std::path::PathBuf;
@@ -84,8 +83,7 @@ impl TxnExecute {
                     trace,
                 );
                 let state_updates = receipt.into_state_updates();
-                let database_updates =
-                    state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                let database_updates = state_updates.create_database_updates();
                 database.commit(&database_updates);
 
                 let new_state_root_hash = database.get_current_root_hash();

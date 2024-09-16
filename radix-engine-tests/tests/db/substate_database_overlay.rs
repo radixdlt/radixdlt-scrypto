@@ -1,11 +1,9 @@
-use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_engine::vm::NoExtension;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
-use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use radix_transaction_scenarios::executor::*;
 use radix_transactions::builder::*;
@@ -441,16 +439,9 @@ fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>
     database: &D,
 ) -> Hash {
     let mut accumulator_hash = Hash([0; 32]);
-    let reader = SystemDatabaseReader::new(database);
-    for (node_id, partition_number) in reader.partitions_iter() {
-        let db_node_key = SpreadPrefixKeyMapper::to_db_node_key(&node_id);
-        let db_partition_key = DbPartitionKey {
-            node_key: db_node_key,
-            partition_num: partition_number.0,
-        };
-
+    for (node_id, partition_number) in database.read_partition_keys() {
         for (substate_key, substate_value) in
-            SubstateDatabase::list_entries(database, &db_partition_key)
+            database.read_entries_unknown_key(node_id, partition_number, None::<SubstateKey>)
         {
             let entry_hash = hash(
                 scrypto_encode(&(node_id, partition_number, substate_key, substate_value)).unwrap(),
@@ -505,7 +496,7 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
             let database_updates = receipt
                 .expect_commit_success()
                 .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+                .create_database_updates();
             self.ledger_with_overlay
                 .borrow_mut()
                 .substate_db_mut()

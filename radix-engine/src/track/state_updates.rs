@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 use radix_rust::rust::{iter::*, mem};
-use radix_substate_store_interface::{db_key_mapper::DatabaseKeyMapper, interface::DbSortKey};
+use radix_substate_store_interface::interface::*;
 
 use super::TrackedSubstates;
 
@@ -258,9 +258,7 @@ impl TrackedNode {
     }
 }
 
-pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
-    tracked: TrackedSubstates,
-) -> (IndexSet<NodeId>, StateUpdates) {
+pub fn to_state_updates(tracked: TrackedSubstates) -> (IndexSet<NodeId>, StateUpdates) {
     let mut new_nodes = index_set_new();
     let mut system_updates = index_map_new();
     for (node_id, tracked_node) in tracked.tracked_nodes {

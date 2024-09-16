@@ -10,7 +10,7 @@ use crate::transaction::*;
 use crate::vm::*;
 use radix_common::constants::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use radix_substate_store_interface::interface::*;
 use radix_transactions::model::*;
 
 /// Protocol-defined costing parameters
@@ -299,7 +299,7 @@ where
     pub fn execute(self, executable: V::Executable) -> V::Receipt {
         BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
-            track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
+            track: Track::new(self.substate_db),
             init: self.system_init,
             phantom: PhantomData::<V>::default(),
         }
@@ -354,11 +354,7 @@ pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
             executable,
         );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(
-            &commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>(),
-        );
+        substate_db.commit(&commit.state_updates.create_database_updates());
     }
     receipt
 }

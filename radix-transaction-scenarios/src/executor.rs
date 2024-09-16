@@ -6,7 +6,6 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::updates::*;
 use radix_engine::vm::*;
-use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::errors::*;
 use radix_transactions::validation::*;
@@ -322,9 +321,7 @@ where
         );
 
         if let TransactionResult::Commit(commit) = &receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
         };
 

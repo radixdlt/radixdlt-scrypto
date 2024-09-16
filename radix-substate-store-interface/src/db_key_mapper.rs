@@ -1,12 +1,9 @@
-use crate::interface::{
-    CommittableSubstateDatabase, DatabaseUpdates, DbNodeKey, DbPartitionKey, DbPartitionNum,
-    DbSortKey, SubstateDatabase,
-};
+use crate::interface::*;
 use radix_common::prelude::*;
 use radix_rust::copy_u8_array;
 
 /// A mapper between the business ReNode / Partition / Substate IDs and database keys.
-pub trait DatabaseKeyMapper {
+pub trait DatabaseKeyMapper: 'static {
     /// Converts the given Node ID and Partition number to the database partition's key.
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
         DbPartitionKey {
@@ -46,21 +43,39 @@ pub trait DatabaseKeyMapper {
         }
     }
 
+    /// Converts the given [`SubstateKeyRef`] to the database's sort key.
+    /// This is a convenience method, which simply unwraps the [`SubstateKeyRef`] and maps any specific
+    /// type found inside (see `*_to_db_sort_key()` family).
+    fn to_db_sort_key_from_ref(key: SubstateKeyRef) -> DbSortKey {
+        match key {
+            SubstateKeyRef::Field(fields_key) => Self::field_to_db_sort_key(fields_key),
+            SubstateKeyRef::Map(map_key) => Self::map_to_db_sort_key(map_key),
+            SubstateKeyRef::Sorted(sorted_key) => Self::sorted_to_db_sort_key(sorted_key),
+        }
+    }
+
     /// Converts the given database's sort key to a [`SubstateKey`].
     /// This is a convenience method, which simply wraps the type-specific result of an appropriate
     /// `*_from_db_sort_key()` method into a [`SubstateKey`].
+    ///
+    /// ## Examples
+    /// ```ignore
+    /// Mapper::from_db_sort_key::<FieldKey>(&db_sort_key);
+    /// Mapper::from_db_sort_key::<MapKey>(&db_sort_key);
+    /// Mapper::from_db_sort_key::<SortedKey>(&db_sort_key);
+    /// ```
     fn from_db_sort_key<K: SubstateKeyContent + 'static>(db_sort_key: &DbSortKey) -> SubstateKey {
-        match K::get_type() {
-            SubstateKeyTypeContentType::Tuple => {
-                SubstateKey::Field(Self::field_from_db_sort_key(db_sort_key))
-            }
-            SubstateKeyTypeContentType::Map => {
-                SubstateKey::Map(Self::map_from_db_sort_key(db_sort_key))
-            }
-            SubstateKeyTypeContentType::Sorted => {
-                SubstateKey::Sorted(Self::sorted_from_db_sort_key(db_sort_key))
-            }
-        }
+        K::from_db_key::<Self>(db_sort_key).into_typed_key()
+    }
+
+    /// ## Examples
+    /// ```ignore
+    /// Mapper::from_db_sort_key_to_inner::<FieldKey>(&db_sort_key);
+    /// Mapper::from_db_sort_key_to_inner::<MapKey>(&db_sort_key);
+    /// Mapper::from_db_sort_key_to_inner::<SortedKey>(&db_sort_key);
+    /// ```
+    fn from_db_sort_key_to_inner<K: SubstateKeyContent>(db_sort_key: &DbSortKey) -> K {
+        K::from_db_key::<Self>(db_sort_key)
     }
 
     // Type-specific methods for mapping the `SubstateKey` inner data to/from `DbSortKey`:
@@ -163,113 +178,40 @@ impl SpreadPrefixKeyMapper {
     }
 }
 
-/// Convenience methods for direct `SubstateDatabase` readers.
-pub trait MappedSubstateDatabase {
-    /// Gets a scrypto-decoded value by the given business key.
-    fn get_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<D>;
-
-    /// Lists fully-mapped entries (i.e. business substate keys and scrypto-decoded values) of the
-    /// given node partition.
-    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent + 'static>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_>;
-}
-
-impl<S: SubstateDatabase + ?Sized> MappedSubstateDatabase for S {
-    fn get_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<D> {
-        self.get_substate(
-            &M::to_db_partition_key(node_id, partition_num),
-            &M::to_db_sort_key(substate_key),
-        )
-        .map(|buf| scrypto_decode(&buf).unwrap())
-    }
-
-    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent + 'static>(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_> {
-        let mapped_value_iter = self
-            .list_entries(&M::to_db_partition_key(node_id, partition_num))
-            .map(|(db_sort_key, db_value)| {
-                (
-                    M::from_db_sort_key::<K>(&db_sort_key),
-                    scrypto_decode(&db_value).unwrap(),
-                )
-            });
-        Box::new(mapped_value_iter)
-    }
-}
-
-/// Convenience methods for direct `SubstateDatabase` writers.
-pub trait MappedCommittableSubstateDatabase {
-    /// Puts a scrypto-encoded value by the given business key.
-    fn put_mapped<M: DatabaseKeyMapper, E: ScryptoEncode>(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        value: &E,
-    );
-}
-
-impl<S: CommittableSubstateDatabase> MappedCommittableSubstateDatabase for S {
-    fn put_mapped<M: DatabaseKeyMapper, E: ScryptoEncode>(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        value: &E,
-    ) {
-        self.commit(&DatabaseUpdates::from_delta_maps(indexmap!(
-            M::to_db_partition_key(node_id, partition_num) => indexmap!(
-                M::to_db_sort_key(substate_key) => DatabaseUpdate::Set(
-                    scrypto_encode(value).unwrap()
-                )
-            )
-        )))
-    }
-}
-
 // Internal-only trait enabling the concrete `DatabaseKeyMapper` implementations to drive their
 // logic by `SubstateKey`'s inner data type.
 
-pub trait SubstateKeyContent {
-    fn get_type() -> SubstateKeyTypeContentType;
-}
-
-pub enum SubstateKeyTypeContentType {
-    Tuple,
-    Map,
-    Sorted,
+pub trait SubstateKeyContent: Sized + 'static {
+    fn from_db_key<M: DatabaseKeyMapper + ?Sized>(db_sort_key: &DbSortKey) -> Self;
+    fn into_typed_key(self) -> SubstateKey;
 }
 
 impl SubstateKeyContent for MapKey {
-    fn get_type() -> SubstateKeyTypeContentType {
-        SubstateKeyTypeContentType::Map
+    fn from_db_key<M: DatabaseKeyMapper + ?Sized>(db_sort_key: &DbSortKey) -> Self {
+        M::map_from_db_sort_key(db_sort_key)
+    }
+
+    fn into_typed_key(self) -> SubstateKey {
+        SubstateKey::Map(self)
     }
 }
 
 impl SubstateKeyContent for FieldKey {
-    fn get_type() -> SubstateKeyTypeContentType {
-        SubstateKeyTypeContentType::Tuple
+    fn from_db_key<M: DatabaseKeyMapper + ?Sized>(db_sort_key: &DbSortKey) -> Self {
+        M::field_from_db_sort_key(db_sort_key)
+    }
+
+    fn into_typed_key(self) -> SubstateKey {
+        SubstateKey::Field(self)
     }
 }
 
 impl SubstateKeyContent for SortedKey {
-    fn get_type() -> SubstateKeyTypeContentType {
-        SubstateKeyTypeContentType::Sorted
+    fn from_db_key<M: DatabaseKeyMapper + ?Sized>(db_sort_key: &DbSortKey) -> Self {
+        M::sorted_from_db_sort_key(db_sort_key)
+    }
+
+    fn into_typed_key(self) -> SubstateKey {
+        SubstateKey::Sorted(self)
     }
 }
