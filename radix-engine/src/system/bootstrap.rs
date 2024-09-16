@@ -147,7 +147,7 @@ pub struct ManifestGenesisResource {
 // Various helper utilities for constructing and executing genesis
 //==========================================================================================
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone)]
 pub struct GenesisReceipts {
     pub system_flash_receipt: TransactionReceipt,
     pub system_bootstrap_receipt: TransactionReceipt,

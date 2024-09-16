@@ -10,37 +10,17 @@ use crate::system::system_substate_schemas::*;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_transactions::prelude::TransactionCostingParametersReceiptV1;
+use radix_transactions::prelude::*;
 use sbor::representations::*;
 
-define_single_versioned! {
-    /// We define a versioned transaction receipt for encoding in the preview API.
-    /// This allows a new toolkit build to be able to handle both current and future
-    /// receipt versions, allowing us to release a wallet ahead-of-time which is forward
-    /// compatible with a new version of the engine (and so a new transaction receipt).
-    #[derive(Clone, ScryptoSbor)]
-    pub VersionedTransactionReceipt(TransactionReceiptVersions) => TransactionReceipt = TransactionReceiptV1,
-    outer_attributes: [
-        // VersionedTransactionReceipt is currently encoded in the node's preview API.
-        // It is then decoded in lots of different mobile wallets as part of Transaction Review.
-        // We therefore can't make any changes/additions, without breaking this.
-        //
-        // In the interim, we are planning to:
-        // * Temporarily, serialize a PreviewTransactionReceipt which is fixed as just a single v1 versioned
-        //   VersionedTransactionReceipt, and have `impl From<VersionedTransactionReceipt> for PreviewTransactionReceipt`.
-        //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
-        // * Change the API to return some kind of explicit extensible preview DTO.
-        #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(fixed("FILE:receipt_schema_cuttlefish.txt"), settings(allow_name_changes))]
-    ],
-}
-
-#[derive(Clone, ScryptoSbor, PartialEq, Eq)]
-pub struct TransactionReceiptV1 {
+/// This type is not intended to be encoded or have a consistent scrypto encoding.
+/// Some of the parts of it are encoded in the node, but not the receipt itself.
+#[derive(Clone, PartialEq, Eq)]
+pub struct TransactionReceipt {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
-    pub transaction_costing_parameters: TransactionCostingParametersReceiptV1,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV2,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail
@@ -53,17 +33,11 @@ pub struct TransactionReceiptV1 {
     pub resources_usage: Option<ResourcesUsage>,
     /// This field contains debug information about the transaction which is extracted during the
     /// transaction execution.
-    ///
-    /// To maintain backward compatibility this field is skipped in the SBOR encoding, decoding and
-    /// the schema generation. Meaning, the only way to get this field is to execute transactions
-    /// locally (through a ledger simulator) with the appropriate execution config for this field
-    /// to be populated.
-    #[sbor(skip)]
     pub debug_information: Option<TransactionDebugInformation>,
 }
 
 #[cfg(feature = "std")]
-impl TransactionReceiptV1 {
+impl TransactionReceipt {
     pub fn generate_execution_breakdown_flamegraph_svg_bytes(
         &self,
         title: impl AsRef<str>,
@@ -205,7 +179,7 @@ impl TransactionReceiptV1 {
     }
 }
 
-impl ExecutionReceipt for TransactionReceiptV1 {
+impl ExecutionReceipt for TransactionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
         self.resources_usage = Some(resources_usage);
     }
@@ -709,18 +683,12 @@ impl TransactionReceipt {
     }
 
     pub fn effective_execution_cost_unit_price(&self) -> Decimal {
-        let one_percent = Decimal::ONE_HUNDREDTH;
-
         // Below unwraps are safe, no chance to overflow considering current costing parameters
         self.costing_parameters
             .execution_cost_unit_price
             .checked_mul(
                 Decimal::ONE
-                    .checked_add(
-                        one_percent
-                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
-                            .unwrap(),
-                    )
+                    .checked_add(self.transaction_costing_parameters.tip_proportion)
                     .unwrap(),
             )
             .unwrap()
@@ -736,7 +704,7 @@ impl TransactionReceipt {
                 Decimal::ONE
                     .checked_add(
                         one_percent
-                            .checked_mul(self.transaction_costing_parameters.tip_percentage)
+                            .checked_mul(self.transaction_costing_parameters.tip_proportion)
                             .unwrap(),
                     )
                     .unwrap(),
@@ -1669,21 +1637,39 @@ pub enum FlamegraphError {
 
 #[cfg(test)]
 mod tests {
+    use radix_transactions::model::TransactionCostingParametersReceiptV2;
+
     use super::*;
 
-    // This is an effective copy of the V1 contents of the local transaction execution store in the node.
-    // This needs to be decodable!
-    // By all means introduce _new versions_ of the included types, with conversions between them,
-    // and we can introduce a higher LocalTransactionExecutionVX in the node.
-    // But this schema can't change, else we won't be able to decode existing executions in the node.
-    // NOTE: This is just copied here to catch issues / changes earlier; an identical test exists in the node.
-    #[derive(ScryptoSbor, ScryptoSborAssertion)]
-    #[sbor_assert(
-        backwards_compatible(
-            bottlenose = "FILE:node_local_transaction_execution_v1_cuttlefish.txt"
-        ),
-        settings(allow_name_changes)
-    )]
+    define_versioned!(
+        #[derive(ScryptoSbor)]
+        VersionedLocalTransactionExecution(LocalTransactionExecutionVersions) {
+            previous_versions: [
+                1 => LocalTransactionExecutionV1: { updates_to: 2 },
+            ],
+            latest_version: {
+                2 => LocalTransactionExecution = LocalTransactionExecutionV2,
+            },
+        },
+        outer_attributes: [
+            // This is an effective copy of the contents of the local transaction execution store in the node.
+            // This needs to be decodable!
+            // By all means introduce _new versions_, with conversions between them,
+            // and we can do the same in the node.
+            // But this schema can't change, else we won't be able to decode existing executions in the node.
+            // NOTE: This is just copied here to catch issues / changes earlier; an identical test exists in the node.
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(
+                backwards_compatible(
+                    bottlenose = "FILE:node_versioned_local_transaction_execution_bottlenose.bin",
+                    cuttlefish = "FILE:node_versioned_local_transaction_execution_cuttlefish.bin"
+                ),
+                settings(allow_name_changes)
+            )]
+        ],
+    );
+
+    #[derive(ScryptoSbor)]
     struct LocalTransactionExecutionV1 {
         outcome: Result<(), RuntimeError>,
         fee_summary: TransactionFeeSummary,
@@ -1697,5 +1683,40 @@ mod tests {
         substates_system_structure: Vec<SubstateSystemStructure>,
         events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
         next_epoch: Option<EpochChangeEvent>,
+    }
+
+    #[derive(ScryptoSbor)]
+    struct LocalTransactionExecutionV2 {
+        outcome: Result<(), RuntimeError>,
+        fee_summary: TransactionFeeSummary,
+        fee_source: FeeSource,
+        fee_destination: FeeDestination,
+        engine_costing_parameters: CostingParameters,
+        transaction_costing_parameters: TransactionCostingParametersReceiptV2,
+        application_logs: Vec<(Level, String)>,
+        state_update_summary: StateUpdateSummary,
+        global_balance_summary: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+        substates_system_structure: Vec<SubstateSystemStructure>,
+        events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
+        next_epoch: Option<EpochChangeEvent>,
+    }
+
+    impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
+        fn from(value: LocalTransactionExecutionV1) -> Self {
+            Self {
+                outcome: value.outcome,
+                fee_summary: value.fee_summary,
+                fee_source: value.fee_source,
+                fee_destination: value.fee_destination,
+                engine_costing_parameters: value.engine_costing_parameters,
+                transaction_costing_parameters: value.transaction_costing_parameters.into(),
+                application_logs: value.application_logs,
+                state_update_summary: value.state_update_summary,
+                global_balance_summary: value.global_balance_summary,
+                substates_system_structure: value.substates_system_structure,
+                events_system_structure: value.events_system_structure,
+                next_epoch: value.next_epoch,
+            }
+        }
     }
 }
