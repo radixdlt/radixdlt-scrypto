@@ -60,7 +60,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         .from_bootstrap_to_latest()
         .commit_each_protocol_update(&mut substate_db);
 
-    let mut track = Track::<InMemorySubstateDatabase>::new(&substate_db);
+    let mut track = Track::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(Extension);
 
@@ -131,7 +131,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         .from_bootstrap_to_latest()
         .commit_each_protocol_update(&mut substate_db);
 
-    let mut track = Track::<InMemorySubstateDatabase>::new(&substate_db);
+    let mut track = Track::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 

@@ -9,7 +9,7 @@ use radix_engine::kernel::kernel_api::{
 };
 use radix_engine::kernel::kernel_callback_api::*;
 use radix_engine::system::checkers::KernelDatabaseChecker;
-use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
+use radix_engine::track::{CommitableSubstateStore, Track};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
@@ -469,7 +469,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let txn_hash = &seed.to_be_bytes().repeat(4)[..];
     let mut id_allocator = IdAllocator::new(Hash(txn_hash.try_into().unwrap()));
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let mut track = Track::<InMemorySubstateDatabase>::new(&substate_db);
+    let mut track = Track::new(&substate_db);
     let mut callback = TestCallbackObject;
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
 
@@ -488,7 +488,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
 
     let result = track.finalize();
     if let Ok((tracked_substates, _)) = result {
-        let (_, state_updates) = to_state_updates(tracked_substates);
+        let (_, state_updates) = tracked_substates.to_state_updates();
 
         let database_updates = state_updates.create_database_updates();
         substate_db.commit(&database_updates);

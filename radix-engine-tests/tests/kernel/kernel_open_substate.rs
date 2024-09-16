@@ -80,7 +80,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         ),
         finalization: Default::default(),
     };
-    let mut track = Track::<InMemorySubstateDatabase>::new(&database);
+    let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 

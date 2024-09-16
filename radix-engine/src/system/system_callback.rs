@@ -1162,7 +1162,7 @@ impl<V: SystemCallbackObject> System<V> {
 
         // Generate state updates from tracked substates
         // Note that this process will prune invalid reads
-        let (new_node_ids, state_updates) = to_state_updates(tracked_substates);
+        let (new_node_ids, state_updates) = tracked_substates.to_state_updates();
 
         // Summarizes state updates
         let system_structure =
