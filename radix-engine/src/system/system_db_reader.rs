@@ -398,7 +398,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         };
 
         let iterable: Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + 's> = match schema {
-            BlueprintCollectionSchema::KeyValueStore(..) | BlueprintCollectionSchema::Index(..) => {
+            BlueprintCollectionSchema::KeyValueStore(..) => {
                 let iterable = self
                     .substate_db
                     .read_map_entries_values_typed::<KeyValueEntrySubstate<ScryptoRawValue>>(
@@ -411,6 +411,22 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                             SubstateKey::Map(map_key),
                             scrypto_encode(&substate.into_value()?).unwrap(),
                         ))
+                    });
+                Box::new(iterable)
+            }
+            BlueprintCollectionSchema::Index(..) => {
+                let iterable = self
+                    .substate_db
+                    .read_map_entries_values_typed::<IndexEntrySubstate<ScryptoRawValue>>(
+                        node_id,
+                        partition_number,
+                        from_substate_key,
+                    )
+                    .map(|(map_key, substate)| {
+                        (
+                            SubstateKey::Map(map_key),
+                            scrypto_encode(&substate.into_value()).unwrap(),
+                        )
                     });
                 Box::new(iterable)
             }
