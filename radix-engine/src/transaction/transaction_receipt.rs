@@ -36,6 +36,10 @@ pub struct TransactionReceipt {
     pub debug_information: Option<TransactionDebugInformation>,
 }
 
+// Type for backwards compatibility to avoid integrator compile errors
+// when they update.
+pub type TransactionReceiptV1 = TransactionReceipt;
+
 #[cfg(feature = "std")]
 impl TransactionReceipt {
     pub fn generate_execution_breakdown_flamegraph_svg_bytes(
