@@ -24,6 +24,17 @@ impl NotarizedTransactionV1 {
         self.prepare(validator.preparation_settings())?
             .validate(validator)
     }
+
+    pub fn extract_manifests_with_names(
+        &self,
+        names: TransactionObjectNames,
+    ) -> (UserTransactionManifest, Vec<UserSubintentManifest>) {
+        let mut transaction_manifest =
+            TransactionManifestV1::from_intent(&self.signed_intent.intent);
+        transaction_manifest.set_names_if_known(names.root_intent);
+        let subintent_manifests = vec![];
+        (transaction_manifest.into(), subintent_manifests)
+    }
 }
 
 impl IntoExecutable for NotarizedTransactionV1 {
