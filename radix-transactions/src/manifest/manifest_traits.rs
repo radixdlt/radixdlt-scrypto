@@ -16,6 +16,21 @@ pub trait BuildableManifest: ReadableManifest + ManifestEncode + Default + Eq + 
     fn preallocation_count(&self) -> usize {
         0
     }
+
+    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType;
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String>;
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SuggestedExecutionConfigType {
+    Notarized,
+    System,
+    Test,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

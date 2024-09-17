@@ -181,6 +181,30 @@ impl TestTransaction {
         })
     }
 
+    /// ## Example usage
+    /// ```ignore
+    /// # // Ignored as it depends on scrypto_test which isn't a dev dependency
+    /// let mut ledger = LedgerSimulatorBuilder::new().build();
+    /// let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+    ///
+    /// let child = builder.add_subintent(
+    ///     ManifestBuilder::new_subintent_v2()
+    ///         .yield_to_parent(())
+    ///         .build(),
+    ///     [child_public_key.signature_proof()],
+    /// );
+    ///
+    /// let transaction = builder.finish_with_root_intent(
+    ///     ManifestBuilder::new_v2()
+    ///         .use_child("child", child)
+    ///         .lock_standard_test_fee(account)
+    ///         .yield_to_child("child", ())
+    ///         .build(),
+    ///     [public_key.signature_proof()],
+    /// );
+    ///
+    /// let receipt = ledger.execute_test_transaction(transaction);
+    /// ```
     pub fn new_v2_builder(nonce: u32) -> TestTransactionV2Builder {
         TestTransactionV2Builder::new(nonce)
     }

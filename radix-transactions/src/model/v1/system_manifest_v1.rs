@@ -64,6 +64,23 @@ impl BuildableManifest for SystemTransactionManifestV1 {
     fn preallocation_count(&self) -> usize {
         self.preallocated_addresses.len()
     }
+
+    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType {
+        SuggestedExecutionConfigType::System
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        let unique_hash = hash(format!("System txn: {}", nonce));
+        self.into_transaction(unique_hash)
+            .with_proofs_ref(initial_proofs)
+            .into_executable(&validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
+    }
 }
 
 impl BuildableManifestSupportingPreallocatedAddresses for SystemTransactionManifestV1 {}

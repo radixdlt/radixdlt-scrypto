@@ -61,6 +61,22 @@ impl BuildableManifest for TransactionManifestV2 {
         self.children.push(ChildSubintent { hash });
         Ok(())
     }
+
+    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType {
+        SuggestedExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        TestTransaction::new_v2_builder(nonce)
+            .finish_with_root_intent(self, initial_proofs)
+            .into_executable(validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
+    }
 }
 
 impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
