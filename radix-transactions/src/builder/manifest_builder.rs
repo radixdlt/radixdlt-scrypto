@@ -431,8 +431,17 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
         )
     }
 
-    /// Builds a transaction manifest.
-    pub fn build(mut self) -> M {
+    /// Validates the built manifest with the tightest rules, and returns the manifest.
+    /// If you don't wish to validate the manifest, use [`build_no_validate`][Self::build_no_validate] instead.
+    pub fn build(self) -> M {
+        let manifest = self.build_no_validate();
+        manifest.validate().expect("Manifest should be valid");
+        manifest
+    }
+
+    /// Returns the built transaction manifest, without further validation.
+    /// If you also wish to validate the manifest, use [`build`][Self::build] instead.
+    pub fn build_no_validate(mut self) -> M {
         self.manifest.set_names(self.object_names().into());
         #[cfg(feature = "dump_manifest_to_file")]
         {

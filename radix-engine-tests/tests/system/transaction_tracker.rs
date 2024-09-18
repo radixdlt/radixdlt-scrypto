@@ -11,7 +11,7 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
-    let max_epoch_range = ValidationConfig::babylon_simulator().max_epoch_range;
+    let max_epoch_range = ValidationConfig::latest().max_epoch_range;
     let genesis = BabylonSettings::test_default().with_consensus_manager_config(
         ConsensusManagerConfig::test_default().with_epoch_change_condition(EpochChangeCondition {
             min_round_count: rounds_per_epoch,

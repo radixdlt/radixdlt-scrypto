@@ -26,13 +26,17 @@ pub trait IntoExecutable {
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error>;
 
-    fn into_simulator_executable_unwrap(self) -> ExecutableTransaction
+    /// For use in tests as a quick mechanism to get an executable.
+    /// Validates with a network-independent validator, using the latest settings.
+    fn into_executable_unwrap(self) -> ExecutableTransaction
     where
         Self: Sized,
     {
-        self.into_executable(&TransactionValidator::new_with_latest_config(
-            &NetworkDefinition::simulator(),
-        ))
+        self.into_executable(
+            &TransactionValidator::new_with_static_config_network_agnostic(
+                ValidationConfig::latest(),
+            ),
+        )
         .unwrap()
     }
 }

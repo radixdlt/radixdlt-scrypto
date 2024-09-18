@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn calculate_coverage() {
-        let max_epoch_range = ValidationConfig::latest_simulator().max_epoch_range;
+        let max_epoch_range = ValidationConfig::latest().max_epoch_range;
         let covered_epochs = (EPOCHS_PER_PARTITION as f64
             * (PARTITION_RANGE_END as f64 - (PARTITION_RANGE_START as f64 - 1.0) - 1.0))
             .floor() as u64;

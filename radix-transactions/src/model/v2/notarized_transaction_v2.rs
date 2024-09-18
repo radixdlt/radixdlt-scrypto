@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
 #[sbor_assert(
-    fixed("FILE:notarized_transaction_v2_schema.txt"),
+    fixed("FILE:notarized_transaction_v2_schema.bin"),
     settings(allow_name_changes)
 )]
 pub struct NotarizedTransactionV2 {

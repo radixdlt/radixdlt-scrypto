@@ -15,7 +15,7 @@ pub enum HeaderValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
-    TooManySignatures,
+    TooManySignaturesForIntent,
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
@@ -40,6 +40,17 @@ pub enum ManifestIdValidationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ManifestBasicValidatorError {
+    ManifestIdValidationError(ManifestIdValidationError),
+}
+
+impl From<ManifestIdValidationError> for ManifestBasicValidatorError {
+    fn from(value: ManifestIdValidationError) -> Self {
+        Self::ManifestIdValidationError(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     TransactionVersionNotPermitted(usize),
     TransactionTooLarge,
@@ -47,6 +58,7 @@ pub enum TransactionValidationError {
     PrepareError(PrepareError),
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
+    ManifestBasicValidatorError(ManifestBasicValidatorError),
     ManifestValidationError(ManifestValidationError),
     InvalidMessage(InvalidMessageError),
     SubintentError(SubintentValidationError),
@@ -86,6 +98,12 @@ impl From<SignatureValidationError> for TransactionValidationError {
 impl From<HeaderValidationError> for TransactionValidationError {
     fn from(value: HeaderValidationError) -> Self {
         Self::HeaderValidationError(value)
+    }
+}
+
+impl From<ManifestBasicValidatorError> for TransactionValidationError {
+    fn from(value: ManifestBasicValidatorError) -> Self {
+        Self::ManifestBasicValidatorError(value)
     }
 }
 

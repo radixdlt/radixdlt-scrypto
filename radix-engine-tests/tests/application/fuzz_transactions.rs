@@ -36,20 +36,11 @@ impl TransactionFuzzer {
     }
 
     fn execute_single_transaction(&mut self, transaction: NotarizedTransactionV1) {
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
-
-        let validated = transaction
-            .prepare_and_validate(&validator)
-            .expect("transaction to be validatable");
-
-        let execution_config = ExecutionConfig::for_test_transaction();
-
         execute_and_commit_transaction(
             &mut self.substate_db,
             &self.vm_modules,
-            &execution_config,
-            validated.get_executable(),
+            &ExecutionConfig::for_test_transaction(),
+            transaction.into_executable_unwrap(),
         );
     }
 

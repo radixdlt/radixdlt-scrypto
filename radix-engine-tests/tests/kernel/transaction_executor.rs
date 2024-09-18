@@ -108,12 +108,10 @@ fn test_normal_transaction_flow() {
     .to_raw()
     .unwrap();
 
-    let validator =
-        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
-    let validated = raw_transaction
-        .validate(&validator)
+    let validator = TransactionValidator::new_for_latest_simulator();
+    let executable = raw_transaction
+        .into_executable(&validator)
         .expect("Invalid transaction");
-    let executable = validated.create_executable();
     assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act

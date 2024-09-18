@@ -156,6 +156,7 @@ where
                 protocol_update_hooks,
                 modules,
             );
+
             // Update the validator in case the settings have changed due to the protocol update
             self.validator = TransactionValidator::new(&self.database, &self.network_definition);
 

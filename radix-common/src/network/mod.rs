@@ -1,84 +1,83 @@
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 /// Network Definition is intended to be the actual definition of a network
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct NetworkDefinition {
     pub id: u8,
-    pub logical_name: String,
-    pub hrp_suffix: String,
+    pub logical_name: Cow<'static, str>,
+    pub hrp_suffix: Cow<'static, str>,
 }
 
 // NOTE: Most Network Definitions live in the node codebase
 // Some are duplicated here so that they can be easily used by scrypto and resim
 impl NetworkDefinition {
-    pub fn simulator() -> NetworkDefinition {
+    pub const fn simulator() -> NetworkDefinition {
         NetworkDefinition {
             id: 242,
-            logical_name: String::from("simulator"),
-            hrp_suffix: String::from("sim"),
+            logical_name: Cow::Borrowed("simulator"),
+            hrp_suffix: Cow::Borrowed("sim"),
         }
     }
 
     /// The network definition for Alphanet
-    pub fn adapanet() -> NetworkDefinition {
+    pub const fn adapanet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0a,
-            logical_name: String::from("adapanet"),
-            hrp_suffix: String::from("tdx_a_"),
+            logical_name: Cow::Borrowed("adapanet"),
+            hrp_suffix: Cow::Borrowed("tdx_a_"),
         }
     }
 
     /// The network definition for Betanet
-    pub fn nebunet() -> NetworkDefinition {
+    pub const fn nebunet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0b,
-            logical_name: String::from("nebunet"),
-            hrp_suffix: String::from("tdx_b_"),
+            logical_name: Cow::Borrowed("nebunet"),
+            hrp_suffix: Cow::Borrowed("tdx_b_"),
         }
     }
 
     /// The network definition for RCnet v1
-    pub fn kisharnet() -> NetworkDefinition {
+    pub const fn kisharnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0c,
-            logical_name: String::from("kisharnet"),
-            hrp_suffix: String::from("tdx_c_"),
+            logical_name: Cow::Borrowed("kisharnet"),
+            hrp_suffix: Cow::Borrowed("tdx_c_"),
         }
     }
 
     /// The network definition for RCnet v2
-    pub fn ansharnet() -> NetworkDefinition {
+    pub const fn ansharnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0d,
-            logical_name: String::from("ansharnet"),
-            hrp_suffix: String::from("tdx_d_"),
+            logical_name: Cow::Borrowed("ansharnet"),
+            hrp_suffix: Cow::Borrowed("tdx_d_"),
         }
     }
 
     /// The network definition for RCnet v3
-    pub fn zabanet() -> NetworkDefinition {
+    pub const fn zabanet() -> NetworkDefinition {
         NetworkDefinition {
             id: 0x0e,
-            logical_name: String::from("zabanet"),
-            hrp_suffix: String::from("tdx_e_"),
+            logical_name: Cow::Borrowed("zabanet"),
+            hrp_suffix: Cow::Borrowed("tdx_e_"),
         }
     }
 
-    pub fn stokenet() -> NetworkDefinition {
+    pub const fn stokenet() -> NetworkDefinition {
         NetworkDefinition {
             id: 2,
-            logical_name: String::from("stokenet"),
-            hrp_suffix: String::from("tdx_2_"),
+            logical_name: Cow::Borrowed("stokenet"),
+            hrp_suffix: Cow::Borrowed("tdx_2_"),
         }
     }
 
-    pub fn mainnet() -> NetworkDefinition {
+    pub const fn mainnet() -> NetworkDefinition {
         NetworkDefinition {
             id: 1,
-            logical_name: String::from("mainnet"),
-            hrp_suffix: String::from("rdx"),
+            logical_name: Cow::Borrowed("mainnet"),
+            hrp_suffix: Cow::Borrowed("rdx"),
         }
     }
 }

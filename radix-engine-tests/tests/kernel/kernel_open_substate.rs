@@ -35,7 +35,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         1,
         btreeset![],
     )
-    .into_simulator_executable_unwrap();
+    .into_executable_unwrap();
 
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();

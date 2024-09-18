@@ -429,7 +429,7 @@ fn run_mint_nfts_from_manifest(
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        let max_size = ValidationConfig::latest_simulator()
+        let max_size = ValidationConfig::latest()
             .preparation_settings
             .max_user_payload_length;
         if raw_transaction.0.len() > max_size {

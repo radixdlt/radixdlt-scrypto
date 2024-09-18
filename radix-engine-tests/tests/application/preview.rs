@@ -67,7 +67,7 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = ledger.preview(preview_intent, &network).unwrap();
     preview_receipt.expect_commit_success();
     let actual_receipt = ledger.execute_transaction(
-        validate(&network, &notarized_transaction).get_executable(),
+        notarized_transaction,
         ExecutionConfig::for_notarized_transaction(network.clone())
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
@@ -357,12 +357,4 @@ fn prepare_matching_test_tx_and_preview_intent(
     };
 
     (notarized_transaction, preview_intent)
-}
-
-fn validate<'a>(
-    network: &'a NetworkDefinition,
-    transaction: &'a NotarizedTransactionV1,
-) -> ValidatedNotarizedTransactionV1 {
-    let validator = TransactionValidator::new_with_latest_config(&network);
-    transaction.prepare_and_validate(&validator).unwrap()
 }

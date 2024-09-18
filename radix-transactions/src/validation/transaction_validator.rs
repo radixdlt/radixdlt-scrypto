@@ -10,14 +10,15 @@ pub trait TransactionPreparer {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
-    pub network_id: u8,
     pub max_signatures_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
     pub max_instructions: usize,
     pub message_validation: MessageValidationConfig,
+    pub allow_notary_to_duplicate_signer: bool,
     pub preparation_settings: PreparationSettings,
+    pub manifest_validation: ManifestValidationRuleset,
     // V2 settings
     pub v2_transactions_allowed: bool,
     pub min_tip_basis_points: u32,
@@ -29,20 +30,21 @@ pub struct ValidationConfig {
 }
 
 impl ValidationConfig {
-    pub fn latest(network_definition: &NetworkDefinition) -> Self {
-        Self::cuttlefish(network_definition.id)
+    pub const fn latest() -> Self {
+        Self::cuttlefish()
     }
 
-    pub fn babylon(network_id: u8) -> Self {
+    pub const fn babylon() -> Self {
         Self {
-            network_id,
             max_signatures_per_intent: 16,
             min_tip_percentage: 0,
             max_tip_percentage: u16::MAX,
             max_instructions: usize::MAX,
             // ~30 days given 5 minute epochs
             max_epoch_range: 12 * 24 * 30,
-            message_validation: MessageValidationConfig::default(),
+            allow_notary_to_duplicate_signer: true,
+            manifest_validation: ManifestValidationRuleset::BabylonBasicValidator,
+            message_validation: MessageValidationConfig::babylon(),
             preparation_settings: PreparationSettings::babylon(),
             // V2-only settings
             v2_transactions_allowed: true,
@@ -53,26 +55,28 @@ impl ValidationConfig {
         }
     }
 
-    pub fn cuttlefish(network_id: u8) -> Self {
+    pub const fn cuttlefish() -> Self {
         Self {
             v2_transactions_allowed: true,
             max_subintent_count: 128,
             max_subintent_depth: 3,
             min_tip_basis_points: 0,
             max_instructions: 1000,
-            // Tip of 100 times the cost
+            allow_notary_to_duplicate_signer: false,
+            manifest_validation: ManifestValidationRuleset::Interpreter(
+                InterpreterValidationRulesetSpecifier::Cuttlefish,
+            ),
+            // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
-            ..Self::babylon(network_id)
+            ..Self::babylon()
         }
     }
+}
 
-    pub fn babylon_simulator() -> Self {
-        Self::babylon(NetworkDefinition::simulator().id)
-    }
-
-    pub fn latest_simulator() -> Self {
-        Self::latest(&NetworkDefinition::simulator())
-    }
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ManifestValidationRuleset {
+    BabylonBasicValidator,
+    Interpreter(InterpreterValidationRulesetSpecifier),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -83,8 +87,12 @@ pub struct MessageValidationConfig {
     pub max_decryptors: usize,
 }
 
-impl Default for MessageValidationConfig {
-    fn default() -> Self {
+impl MessageValidationConfig {
+    pub const fn latest() -> Self {
+        Self::babylon()
+    }
+
+    pub const fn babylon() -> Self {
         Self {
             max_plaintext_message_length: 2048,
             max_mime_type_length: 128,
@@ -94,9 +102,16 @@ impl Default for MessageValidationConfig {
     }
 }
 
+impl Default for MessageValidationConfig {
+    fn default() -> Self {
+        Self::latest()
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TransactionValidator {
     config: ValidationConfig,
+    required_network_id: Option<u8>,
 }
 
 #[deprecated = "Fix by cuttlefish"]
@@ -114,13 +129,28 @@ impl TransactionValidator {
         fix_resolution_of_validator_config_from_database(network_definition)
     }
 
-    pub fn new_with_static_config(config: ValidationConfig) -> Self {
-        Self { config }
+    pub fn new_for_latest_simulator() -> Self {
+        Self::new_with_static_config(
+            ValidationConfig::latest(),
+            NetworkDefinition::simulator().id,
+        )
     }
 
     pub fn new_with_latest_config(network_definition: &NetworkDefinition) -> Self {
+        Self::new_with_static_config(ValidationConfig::latest(), network_definition.id)
+    }
+
+    pub fn new_with_static_config(config: ValidationConfig, network_id: u8) -> Self {
         Self {
-            config: ValidationConfig::latest(network_definition),
+            config,
+            required_network_id: Some(network_id),
+        }
+    }
+
+    pub fn new_with_static_config_network_agnostic(config: ValidationConfig) -> Self {
+        Self {
+            config,
+            required_network_id: None,
         }
     }
 
@@ -193,11 +223,70 @@ impl TransactionValidator {
     pub fn validate_instructions_v1(
         &self,
         instructions: &[InstructionV1],
-    ) -> Result<(), ManifestValidationError> {
+    ) -> Result<(), TransactionValidationError> {
         if instructions.len() > self.config.max_instructions {
-            return Err(ManifestValidationError::TooManyInstructions);
+            return Err(ManifestValidationError::TooManyInstructions.into());
         }
-        StaticManifestInterpreter::new(ValidationRuleset::v1(), instructions).validate()
+        match self.config.manifest_validation {
+            ManifestValidationRuleset::BabylonBasicValidator => self
+                .validate_instructions_basic_v1(instructions)
+                .map_err(|err| err.into()),
+            ManifestValidationRuleset::Interpreter(specifier) => StaticManifestInterpreter::new(
+                ValidationRuleset::for_specifier(specifier),
+                instructions,
+            )
+            .validate()
+            .map_err(|err| err.into()),
+        }
+    }
+
+    pub fn validate_instructions_basic_v1(
+        &self,
+        instructions: &[InstructionV1],
+    ) -> Result<(), ManifestBasicValidatorError> {
+        let mut id_validator = BasicManifestValidator::new();
+        for instruction in instructions {
+            match instruction.effect() {
+                ManifestInstructionEffect::CreateBucket { .. } => {
+                    let _ = id_validator.new_bucket();
+                }
+                ManifestInstructionEffect::CreateProof { source_amount, .. } => {
+                    let _ = id_validator.new_proof(source_amount.proof_kind())?;
+                }
+                ManifestInstructionEffect::ConsumeBucket {
+                    consumed_bucket: bucket,
+                    ..
+                } => {
+                    id_validator.drop_bucket(&bucket)?;
+                }
+                ManifestInstructionEffect::ConsumeProof {
+                    consumed_proof: proof,
+                    ..
+                } => {
+                    id_validator.drop_proof(&proof)?;
+                }
+                ManifestInstructionEffect::CloneProof { cloned_proof, .. } => {
+                    let _ = id_validator.clone_proof(&cloned_proof)?;
+                }
+                ManifestInstructionEffect::DropManyProofs {
+                    drop_all_named_proofs,
+                    ..
+                } => {
+                    if drop_all_named_proofs {
+                        id_validator.drop_all_named_proofs()?;
+                    }
+                }
+                ManifestInstructionEffect::Invocation { args, .. } => {
+                    id_validator.process_call_data(args)?;
+                }
+                ManifestInstructionEffect::CreateAddressAndReservation { .. } => {
+                    let _ = id_validator.new_address_reservation();
+                    id_validator.new_named_address();
+                }
+                ManifestInstructionEffect::WorktopAssertion { .. } => {}
+            }
+        }
+        Ok(())
     }
 
     pub fn validate_header_v1(
@@ -205,8 +294,10 @@ impl TransactionValidator {
         header: &TransactionHeaderV1,
     ) -> Result<(), HeaderValidationError> {
         // network
-        if header.network_id != self.config.network_id {
-            return Err(HeaderValidationError::InvalidNetwork);
+        if let Some(required_network_id) = self.required_network_id {
+            if header.network_id != required_network_id {
+                return Err(HeaderValidationError::InvalidNetwork);
+            }
         }
 
         // epoch
@@ -239,33 +330,29 @@ impl TransactionValidator {
         let intent_signatures = &transaction.signed_intent.intent_signatures.inner.signatures;
         let header = &transaction.signed_intent.intent.header.inner;
 
-        if intent_signatures.len() > self.config.max_signatures_per_intent {
-            return Err(SignatureValidationError::TooManySignatures);
-        }
-
-        // For backwards compatibility of V1 validation
-        let allow_notary_to_duplicate_signer = true;
-
-        Self::validate_transaction_intent_signatures_v1(
+        self.validate_transaction_intent_signatures_v1(
             transaction.transaction_intent_hash(),
             transaction.signed_transaction_intent_hash(),
             intent_signatures,
             header.notary_is_signatory,
             &header.notary_public_key,
             &transaction.notary_signature.inner.0,
-            allow_notary_to_duplicate_signer,
         )
     }
 
     pub fn validate_transaction_intent_signatures_v1(
+        &self,
         intent_hash: TransactionIntentHash,
         signed_intent_hash: SignedTransactionIntentHash,
         intent_signatures: &[IntentSignatureV1],
         notary_is_signatory: bool,
         notary_public_key: &PublicKey,
         notary_signature: &SignatureV1,
-        allow_notary_to_duplicate_signer: bool,
     ) -> Result<Vec<PublicKey>, SignatureValidationError> {
+        if intent_signatures.len() > self.config.max_signatures_per_intent {
+            return Err(SignatureValidationError::TooManySignaturesForIntent);
+        }
+
         let mut signers = index_set_with_capacity(intent_signatures.len() + 1);
         for intent_signature in intent_signatures.iter() {
             let public_key = recover(&intent_hash.0, &intent_signature.0)
@@ -282,7 +369,7 @@ impl TransactionValidator {
 
         if notary_is_signatory {
             if !signers.insert(notary_public_key.clone()) {
-                if !allow_notary_to_duplicate_signer {
+                if !self.config.allow_notary_to_duplicate_signer {
                     return Err(SignatureValidationError::DuplicateSigner);
                 }
             }
@@ -510,8 +597,10 @@ impl TransactionValidator {
         aggregation: &mut HeaderAggregation,
     ) -> Result<(), HeaderValidationError> {
         // Network
-        if header.network_id != self.config.network_id {
-            return Err(HeaderValidationError::InvalidNetwork);
+        if let Some(required_network_id) = self.required_network_id {
+            if header.network_id != required_network_id {
+                return Err(HeaderValidationError::InvalidNetwork);
+            }
         }
 
         // Epoch
@@ -653,7 +742,7 @@ impl TransactionValidator {
             child_yields: children.iter().map(|child| (child.hash, 0)).collect(),
         };
         StaticManifestInterpreter::new(
-            ValidationRuleset::v2(),
+            ValidationRuleset::cuttlefish(),
             &(instructions, blobs, children, is_subintent),
         )
         .validate_and_apply_visitor(&mut yield_summary)?;
@@ -671,20 +760,15 @@ impl TransactionValidator {
             .signatures;
         let transaction_header = &prepared.signed_intent.root_intent.root_header.inner;
 
-        if transaction_intent_signatures.len() > self.config.max_signatures_per_intent {
-            return Err(SignatureValidationError::TooManySignatures);
-        }
-
-        let allow_notary_to_duplicate_signer = false;
-        let signer_keys = Self::validate_transaction_intent_signatures_v1(
+        let signer_keys = self.validate_transaction_intent_signatures_v1(
             prepared.transaction_intent_hash(),
             prepared.signed_transaction_intent_hash(),
             transaction_intent_signatures,
             transaction_header.notary_is_signatory,
             &transaction_header.notary_public_key,
             &prepared.notary_signature.inner.0,
-            allow_notary_to_duplicate_signer,
         )?;
+
         Ok(SignatureValidations::Validated {
             num_validations: transaction_intent_signatures.len() + 1,
             signer_keys,
@@ -938,12 +1022,12 @@ struct ManifestYieldSummary {
 }
 
 impl ManifestInterpretationVisitor for ManifestYieldSummary {
-    type Error = ManifestValidationError;
+    type Output = ManifestValidationError;
 
     fn on_end_instruction<'a>(
         &mut self,
         details: OnEndInstruction<'a>,
-    ) -> ControlFlow<Self::Error> {
+    ) -> ControlFlow<Self::Output> {
         // Safe from overflow due to checking max instruction count
         match details.effect {
             ManifestInstructionEffect::Invocation {
@@ -1010,8 +1094,7 @@ mod tests {
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
-            let config: ValidationConfig = ValidationConfig::babylon_simulator();
-            let validator = TransactionValidator::new_with_static_config(config);
+            let validator = TransactionValidator::new_for_latest_simulator();
             assert_eq!(
                 $result,
                 create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
@@ -1035,7 +1118,7 @@ mod tests {
             ),
             (
                 Epoch::zero(),
-                Epoch::of(ValidationConfig::babylon_simulator().max_epoch_range + 1),
+                Epoch::of(ValidationConfig::latest().max_epoch_range + 1),
                 5,
                 vec![1],
                 2
@@ -1057,7 +1140,7 @@ mod tests {
     fn test_invalid_signatures() {
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
-                SignatureValidationError::TooManySignatures
+                SignatureValidationError::TooManySignaturesForIntent
             ),
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
@@ -1074,8 +1157,7 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        let validator = TransactionValidator::new_for_latest_simulator();
 
         let preview_intent = PreviewIntentV1 {
             intent: tx.signed_intent.intent,
@@ -1294,8 +1376,7 @@ mod tests {
     fn validate_default(
         transaction: &NotarizedTransactionV1,
     ) -> Result<(), TransactionValidationError> {
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        let validator = TransactionValidator::new_for_latest_simulator();
         transaction.prepare_and_validate(&validator).map(|_| ())
     }
 
@@ -1380,10 +1461,9 @@ mod tests {
                 .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
                 .return_to_worktop("bucket")
                 .drop_proof("proof1")
-                .build(),
+                .build_no_validate(),
         );
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::ManifestValidationError(
@@ -1413,10 +1493,9 @@ mod tests {
                         .return_to_worktop("bucket")
                         .add_raw_instruction_ignoring_all_side_effects(CloneProof { proof_id })
                 })
-                .build(),
+                .build_no_validate(),
         );
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::ManifestValidationError(
@@ -1447,10 +1526,9 @@ mod tests {
                         )
                         .return_to_worktop("bucket")
                 })
-                .build(),
+                .build_no_validate(),
         );
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+        let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::ManifestValidationError(
