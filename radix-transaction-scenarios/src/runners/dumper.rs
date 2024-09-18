@@ -253,8 +253,7 @@ mod test {
                     transaction
                         .transaction_manifest
                         .get_blobs()
-                        .values()
-                        .cloned()
+                        .map(|(_, value)| value.clone())
                         .collect(),
                 );
                 match &transaction.transaction_manifest {
@@ -287,7 +286,10 @@ mod test {
 
                 // Whilst we're here, let's validate that the manifest can be recompiled
                 let blob_provider = BlobProvider::new_with_blobs(
-                    subintent_manifest.get_blobs().values().cloned().collect(),
+                    subintent_manifest
+                        .get_blobs()
+                        .map(|(_, value)| value.clone())
+                        .collect(),
                 );
                 match subintent_manifest {
                     UserSubintentManifest::V2(_) => compile_manifest::<SubintentManifestV2>(

@@ -94,7 +94,7 @@ impl IntentHashNullification {
                 Some(IntentHash::Transaction(*intent_hash))
             }
             IntentHashNullification::Subintent { intent_hash, .. } => {
-                Some(IntentHash::Sub(*intent_hash))
+                Some(IntentHash::Subintent(*intent_hash))
             }
             IntentHashNullification::System => None,
         }

@@ -13,7 +13,7 @@ use crate::internal_prelude::*;
 )]
 pub struct NotarizedTransactionV2 {
     pub signed_intent: SignedTransactionIntentV2,
-    pub notary_signature: NotarySignatureV1,
+    pub notary_signature: NotarySignatureV2,
 }
 
 impl NotarizedTransactionV2 {
@@ -67,10 +67,17 @@ define_transaction_payload!(
     RawNotarizedTransaction,
     PreparedNotarizedTransactionV2 {
         signed_intent: PreparedSignedTransactionIntentV2,
-        notary_signature: PreparedNotarySignatureV1,
+        notary_signature: PreparedNotarySignatureV2,
     },
     TransactionDiscriminator::V2Notarized,
 );
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+#[sbor(transparent)]
+pub struct NotarySignatureV2(pub SignatureV1);
+
+#[allow(deprecated)]
+pub type PreparedNotarySignatureV2 = SummarizedRawValueBody<NotarySignatureV2>;
 
 impl PreparedNotarizedTransactionV2 {
     pub fn validate(
@@ -88,7 +95,7 @@ impl IntoExecutable for NotarizedTransactionV2 {
         self,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        let executable = self.prepare_and_validate(validator)?.get_executable();
+        let executable = self.prepare_and_validate(validator)?.create_executable();
         Ok(executable)
     }
 }

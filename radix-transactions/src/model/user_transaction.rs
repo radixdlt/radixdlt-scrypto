@@ -26,10 +26,10 @@ impl UserTransactionManifest {
         }
     }
 
-    pub fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
+    pub fn get_blobs<'a>(&'a self) -> Box<dyn Iterator<Item = (&'a Hash, &'a Vec<u8>)> + 'a> {
         match self {
-            Self::V1(m) => m.get_blobs(),
-            Self::V2(m) => m.get_blobs(),
+            Self::V1(m) => Box::new(m.get_blobs()),
+            Self::V2(m) => Box::new(m.get_blobs()),
         }
     }
 }
@@ -62,9 +62,9 @@ impl UserSubintentManifest {
         }
     }
 
-    pub fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
+    pub fn get_blobs<'a>(&'a self) -> Box<dyn Iterator<Item = (&'a Hash, &'a Vec<u8>)> + 'a> {
         match self {
-            Self::V2(m) => m.get_blobs(),
+            Self::V2(m) => Box::new(m.get_blobs()),
         }
     }
 }
@@ -132,7 +132,7 @@ impl IntoExecutable for UserTransaction {
         self,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        let executable = self.prepare_and_validate(validator)?.get_executable();
+        let executable = self.prepare_and_validate(validator)?.create_executable();
         Ok(executable)
     }
 }
@@ -261,11 +261,22 @@ impl HasNotarizedTransactionHash for ValidatedUserTransaction {
     }
 }
 
+impl IntoExecutable for ValidatedUserTransaction {
+    type Error = core::convert::Infallible;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self.create_executable())
+    }
+}
+
 impl ValidatedUserTransaction {
-    pub fn get_executable(&self) -> ExecutableTransaction {
+    pub fn create_executable(self) -> ExecutableTransaction {
         match self {
             Self::V1(t) => t.get_executable(),
-            Self::V2(t) => t.get_executable(),
+            Self::V2(t) => t.create_executable(),
         }
     }
 }

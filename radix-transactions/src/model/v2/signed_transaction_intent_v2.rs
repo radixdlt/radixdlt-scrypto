@@ -9,7 +9,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SignedTransactionIntentV2 {
     pub root_intent: TransactionIntentV2,
-    pub root_intent_signatures: IntentSignaturesV1,
+    pub root_intent_signatures: IntentSignaturesV2,
     pub subintent_signatures: MultipleIntentSignaturesV2,
 }
 
@@ -18,7 +18,7 @@ define_transaction_payload!(
     RawSignedTransactionIntent,
     PreparedSignedTransactionIntentV2 {
         root_intent: PreparedTransactionIntentV2,
-        root_intent_signatures: PreparedIntentSignaturesV1,
+        root_intent_signatures: PreparedIntentSignaturesV2,
         subintent_signatures: PreparedMultipleIntentSignaturesV2,
     },
     TransactionDiscriminator::V2SignedTransactionIntent,

@@ -167,7 +167,7 @@ Enum<3u8>(
         );
 
         let validated = raw.validate(&validator).unwrap();
-        let executable = validated.get_executable();
+        let executable = validated.create_executable();
         let expected_intent_hash = TransactionIntentHash(hash(
             [
                 [

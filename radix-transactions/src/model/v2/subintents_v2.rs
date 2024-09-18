@@ -16,7 +16,7 @@ impl TransactionPartialPrepare for SubintentsV2 {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedSubintentsV2 {
-    pub subintents_by_hash: Rc<IndexMap<SubintentHash, PreparedSubintentV2>>,
+    pub subintents: Vec<PreparedSubintentV2>,
     pub summary: Summary,
 }
 
@@ -32,13 +32,8 @@ impl TransactionPreparableFromValueBody for PreparedSubintentsV2 {
                 max_subintents_per_transaction,
             )?;
 
-        let mut subintents_by_hash = index_map_with_capacity(subintents.len());
-        for subintent in subintents {
-            subintents_by_hash.insert(subintent.subintent_hash(), subintent);
-        }
-
         Ok(Self {
-            subintents_by_hash: Rc::new(subintents_by_hash),
+            subintents: subintents.into(),
             summary,
         })
     }

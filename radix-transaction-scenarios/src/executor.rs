@@ -317,7 +317,7 @@ where
             &self.database,
             modules,
             execution_config,
-            validated.get_executable(),
+            validated.create_executable(),
         );
 
         if let TransactionResult::Commit(commit) = &receipt.result {

@@ -50,7 +50,7 @@ impl IntoExecutable for RawNotarizedTransaction {
         self,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        let executable = self.validate(validator)?.get_executable();
+        let executable = self.validate(validator)?.create_executable();
         Ok(executable)
     }
 }
@@ -83,14 +83,26 @@ define_raw_transaction_payload!(RawSignedPartialTransaction, TransactionPayloadK
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum IntentHash {
     Transaction(TransactionIntentHash),
-    Sub(SubintentHash),
+    Subintent(SubintentHash),
+}
+
+impl From<TransactionIntentHash> for IntentHash {
+    fn from(value: TransactionIntentHash) -> Self {
+        Self::Transaction(value)
+    }
+}
+
+impl From<SubintentHash> for IntentHash {
+    fn from(value: SubintentHash) -> Self {
+        Self::Subintent(value)
+    }
 }
 
 impl IntentHash {
     pub fn as_hash(&self) -> &Hash {
         match self {
             IntentHash::Transaction(hash) => hash.as_hash(),
-            IntentHash::Sub(hash) => hash.as_hash(),
+            IntentHash::Subintent(hash) => hash.as_hash(),
         }
     }
 
@@ -101,7 +113,7 @@ impl IntentHash {
                 expiry_epoch,
                 ignore_duplicate: false,
             },
-            IntentHash::Sub(subintent_hash) => IntentHashNullification::Subintent {
+            IntentHash::Subintent(subintent_hash) => IntentHashNullification::Subintent {
                 intent_hash: subintent_hash,
                 expiry_epoch,
                 ignore_duplicate: false,

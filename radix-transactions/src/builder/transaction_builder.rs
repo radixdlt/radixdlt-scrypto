@@ -350,7 +350,7 @@ pub struct TransactionV2Builder {
     intent_signatures: Vec<IntentSignatureV1>,
     signed_intent: Option<SignedTransactionIntentV2>,
     prepared_signed_intent: Option<PreparedSignedTransactionIntentV2>,
-    notary_signature: Option<NotarySignatureV1>,
+    notary_signature: Option<NotarySignatureV2>,
 }
 
 impl TransactionV2Builder {
@@ -527,7 +527,7 @@ impl TransactionV2Builder {
             let signatures = mem::take(&mut self.intent_signatures);
             let signed_intent = SignedTransactionIntentV2 {
                 root_intent,
-                root_intent_signatures: IntentSignaturesV1 { signatures },
+                root_intent_signatures: IntentSignaturesV2 { signatures },
                 subintent_signatures,
             };
             self.signed_intent = Some(signed_intent);
@@ -552,14 +552,14 @@ impl TransactionV2Builder {
         let hash = self
             .create_prepared_signed_transaction_intent()
             .signed_transaction_intent_hash();
-        self.notary_signature = Some(NotarySignatureV1(
+        self.notary_signature = Some(NotarySignatureV2(
             signer.sign_with_public_key(&hash).signature(),
         ));
         self
     }
 
     pub fn notary_signature(mut self, signature: SignatureV1) -> Self {
-        self.notary_signature = Some(NotarySignatureV1(signature));
+        self.notary_signature = Some(NotarySignatureV2(signature));
         self
     }
 

@@ -11,6 +11,7 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
+    let max_epoch_range = ValidationConfig::babylon_simulator().max_epoch_range;
     let genesis = BabylonSettings::test_default().with_consensus_manager_config(
         ConsensusManagerConfig::test_default().with_epoch_change_condition(EpochChangeCondition {
             min_round_count: rounds_per_epoch,
@@ -29,7 +30,7 @@ fn test_transaction_replay_protection() {
     // 1. Run a notarized transaction
     let transaction = create_notarized_transaction(TransactionParams {
         start_epoch_inclusive: init_epoch,
-        end_epoch_exclusive: init_epoch.after(MAX_EPOCH_RANGE).unwrap(),
+        end_epoch_exclusive: init_epoch.after(max_epoch_range).unwrap(),
     });
 
     let validator = TransactionValidator::new_with_latest_config(&NetworkDefinition::simulator());
@@ -45,7 +46,7 @@ fn test_transaction_replay_protection() {
 
     // 2. Force update the epoch (through database layer)
     let new_epoch = init_epoch
-        .after(MAX_EPOCH_RANGE)
+        .after(max_epoch_range)
         .unwrap()
         .previous()
         .unwrap();

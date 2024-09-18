@@ -444,10 +444,10 @@ impl ValidatedLedgerTransaction {
     }
 
     /// Note - returns None if it's a flash transaction
-    pub fn get_executable(
-        &self,
+    pub fn create_executable(
+        self,
     ) -> Result<ExecutableTransaction, LedgerTransactionExecutableError> {
-        match &self.inner {
+        match self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
                 PreparedGenesisTransaction::Flash(_) => {
                     Err(LedgerTransactionExecutableError::IsFlashTransaction)
@@ -456,7 +456,7 @@ impl ValidatedLedgerTransaction {
                     Ok(t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))))
                 }
             },
-            ValidatedLedgerTransactionInner::User(t) => Ok(t.get_executable()),
+            ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
             ValidatedLedgerTransactionInner::Validator(t) => Ok(t.get_executable()),
             ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
                 Err(LedgerTransactionExecutableError::IsFlashTransaction)
@@ -500,7 +500,7 @@ impl IntoExecutable for ValidatedLedgerTransaction {
         self,
         _validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        self.get_executable()
+        self.create_executable()
     }
 }
 

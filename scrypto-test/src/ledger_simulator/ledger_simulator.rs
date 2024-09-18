@@ -1251,7 +1251,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let executable = raw_transaction
             .validate(&self.transaction_validator)
             .expect("Expected raw transaction to be valid")
-            .get_executable();
+            .create_executable();
         self.execute_transaction(
             executable,
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),

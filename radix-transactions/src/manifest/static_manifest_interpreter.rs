@@ -4,10 +4,11 @@ use core::ops::ControlFlow;
 use traversal::*;
 use ManifestInstructionEffect as Effect;
 
-pub struct StaticManifestInterpreter<'a, M: ReadableManifest> {
+pub struct StaticManifestInterpreter<'a, M: ReadableManifest + ?Sized> {
     validation_ruleset: ValidationRuleset,
     manifest: &'a M,
     location: ManifestLocation,
+    registered_blobs: IndexSet<ManifestBlobRef>,
     bucket_state: Vec<BucketState<'a>>,
     proof_state: Vec<ProofState<'a>>,
     address_reservation_state: Vec<AddressReservationState<'a>>,
@@ -15,12 +16,13 @@ pub struct StaticManifestInterpreter<'a, M: ReadableManifest> {
     intent_state: Vec<IntentState<'a>>,
 }
 
-impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
+impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     pub fn new(validation_ruleset: ValidationRuleset, manifest: &'a M) -> Self {
         Self {
             validation_ruleset,
             manifest,
             location: ManifestLocation::Preamble,
+            registered_blobs: Default::default(),
             bucket_state: Default::default(),
             proof_state: Default::default(),
             address_reservation_state: Default::default(),
@@ -29,10 +31,14 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         }
     }
 
-    pub fn interpret_or_err<V: ManifestInterpretationVisitor>(
+    pub fn validate(self) -> Result<(), ManifestValidationError> {
+        self.validate_and_apply_visitor(&mut ())
+    }
+
+    pub fn validate_and_apply_visitor<V: ManifestInterpretationVisitor>(
         self,
         visitor: &mut V,
-    ) -> Result<(), V::Error<'a>> {
+    ) -> Result<(), V::Error> {
         // For some reason ControlFlow doesn't implement Into<Result>
         match self.interpret_internal(visitor) {
             ControlFlow::Continue(()) => Ok(()),
@@ -43,13 +49,14 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     fn interpret_internal<V: ManifestInterpretationVisitor>(
         mut self,
         visitor: &mut V,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         self.handle_preallocated_addresses(visitor, self.manifest.get_preallocated_addresses())?;
         self.handle_child_subintents(visitor, self.manifest.get_child_subintents())?;
         self.handle_blobs(visitor, self.manifest.get_blobs())?;
         for (index, instruction) in self.manifest.get_instructions().iter().enumerate() {
             self.handle_instruction(visitor, index, instruction)?;
         }
+        self.verify_final_instruction::<V>()?;
         self.handle_wrap_up::<V>()
     }
 
@@ -57,7 +64,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         preallocated_addresses: &'a [PreAllocatedAddress],
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         for preallocated_address in preallocated_addresses.iter() {
             let _ = self.handle_new_address_reservation(
                 visitor,
@@ -73,23 +80,30 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         child_subintents: &'a [ChildSubintent],
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         for child_subintent in child_subintents {
             self.handle_new_intent(
                 visitor,
-                IntentHash::Sub(child_subintent.hash),
+                IntentHash::Subintent(child_subintent.hash),
                 IntentType::Child,
             )?;
         }
         ControlFlow::Continue(())
     }
 
-    fn handle_blobs<V: ManifestInterpretationVisitor>(
+    fn handle_blobs<'b, V: ManifestInterpretationVisitor>(
         &mut self,
         visitor: &mut V,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
-    ) -> ControlFlow<V::Error<'a>> {
+        blobs: impl Iterator<Item = (&'b Hash, &'b Vec<u8>)>,
+    ) -> ControlFlow<V::Error> {
         for (hash, content) in blobs {
+            if !self.registered_blobs.insert(ManifestBlobRef(hash.0)) {
+                if self.validation_ruleset.validate_no_duplicate_blobs {
+                    return ControlFlow::Break(
+                        ManifestValidationError::DuplicateBlob(ManifestBlobRef(hash.0)).into(),
+                    );
+                }
+            }
             visitor.on_register_blob(OnRegisterBlob {
                 blob_ref: ManifestBlobRef(hash.0),
                 content: content.as_ref(),
@@ -103,7 +117,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         index: usize,
         instruction: &'a M::Instruction,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let effect = instruction.effect();
         self.location = ManifestLocation::Instruction { index };
         visitor.on_start_instruction(OnStartInstruction { index, effect })?;
@@ -179,14 +193,31 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor.on_end_instruction(OnEndInstruction { index, effect })
     }
 
-    fn handle_wrap_up<V: ManifestInterpretationVisitor>(&mut self) -> ControlFlow<V::Error<'a>> {
+    fn verify_final_instruction<V: ManifestInterpretationVisitor>(
+        &mut self,
+    ) -> ControlFlow<V::Error> {
+        if !self.manifest.is_subintent() {
+            return ControlFlow::Continue(());
+        }
+        match self.manifest.get_instructions().last().map(|i| i.effect()) {
+            Some(ManifestInstructionEffect::Invocation {
+                kind: InvocationKind::YieldToParent,
+                ..
+            }) => ControlFlow::Continue(()),
+            _ => ControlFlow::Break(
+                ManifestValidationError::SubintentDoesNotEndWithYieldToParent.into(),
+            ),
+        }
+    }
+
+    fn handle_wrap_up<V: ManifestInterpretationVisitor>(&mut self) -> ControlFlow<V::Error> {
         if self.validation_ruleset.validate_no_dangling_nodes {
             for (index, state) in self.bucket_state.iter().enumerate() {
                 if state.consumed_at.is_none() {
                     return ControlFlow::Break(
                         ManifestValidationError::DanglingBucket(
                             ManifestBucket(index as u32),
-                            state.clone(),
+                            format!("{state:?}"),
                         )
                         .into(),
                     );
@@ -197,7 +228,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
                     return ControlFlow::Break(
                         ManifestValidationError::DanglingAddressReservation(
                             ManifestAddressReservation(index as u32),
-                            state.clone(),
+                            format!("{state:?}"),
                         )
                         .into(),
                     );
@@ -213,7 +244,55 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         invocation_kind: InvocationKind<'a>,
         args: &'a ManifestValue,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
+        match invocation_kind {
+            InvocationKind::Method { address, .. } => {
+                if self
+                    .validation_ruleset
+                    .validate_dynamic_address_in_command_part
+                {
+                    match address {
+                        DynamicGlobalAddress::Static(_) => {}
+                        DynamicGlobalAddress::Named(named_address) => {
+                            // Check it exists
+                            self.get_existing_named_address::<V>(*named_address)?;
+                        }
+                    }
+                }
+            }
+            InvocationKind::Function { address, .. } => {
+                if self
+                    .validation_ruleset
+                    .validate_dynamic_address_in_command_part
+                {
+                    match address {
+                        DynamicPackageAddress::Static(_) => {}
+                        DynamicPackageAddress::Named(named_address) => {
+                            // Check it exists
+                            self.get_existing_named_address::<V>(*named_address)?;
+                        }
+                    }
+                }
+            }
+            InvocationKind::DirectMethod { .. } => {}
+            InvocationKind::YieldToParent => {
+                if !self.manifest.is_subintent() {
+                    return ControlFlow::Break(
+                        ManifestValidationError::YieldToParentNotSupportedInTransactionIntent
+                            .into(),
+                    );
+                }
+            }
+            InvocationKind::YieldToChild { child_index } => {
+                let index = child_index.0 as usize;
+                if index >= self.manifest.get_child_subintents().len() {
+                    return ControlFlow::Break(
+                        ManifestValidationError::ChildIntentNotRegistered(child_index).into(),
+                    );
+                }
+            }
+            _ => {}
+        }
         let encoded = match manifest_encode(args) {
             Ok(encoded) => encoded,
             Err(error) => {
@@ -266,6 +345,14 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
                                 })?;
                             }
                             ManifestCustomValue::Blob(blob_ref) => {
+                                if self.validation_ruleset.validate_blob_refs {
+                                    if !self.registered_blobs.contains(&blob_ref) {
+                                        return ControlFlow::Break(
+                                            ManifestValidationError::BlobNotRegistered(blob_ref)
+                                                .into(),
+                                        );
+                                    }
+                                }
                                 visitor.on_pass_blob(OnPassBlob {
                                     blob_ref,
                                     destination: BlobDestination::Invocation(invocation_kind),
@@ -302,7 +389,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         source_amount: BucketSourceAmount<'a>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let new_bucket = ManifestBucket(self.bucket_state.len() as u32);
         let state = BucketState {
             name: self
@@ -325,12 +412,13 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     fn get_existing_bucket<V: ManifestInterpretationVisitor>(
         &mut self,
         bucket: ManifestBucket,
-    ) -> ControlFlow<V::Error<'a>, &mut BucketState<'a>> {
+    ) -> ControlFlow<V::Error, &mut BucketState<'a>> {
         match self.bucket_state.get_mut(bucket.0 as usize) {
             Some(state) => {
                 if state.consumed_at.is_some() {
                     ControlFlow::Break(
-                        ManifestValidationError::BucketAlreadyUsed(bucket, state.clone()).into(),
+                        ManifestValidationError::BucketAlreadyUsed(bucket, format!("{state:?}"))
+                            .into(),
                     )
                 } else {
                     ControlFlow::Continue(state)
@@ -345,13 +433,13 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         bucket: ManifestBucket,
         destination: BucketDestination<'a>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let check_proof_locks = self.validation_ruleset.validate_bucket_proof_lock;
         let location = self.location;
         let state = self.get_existing_bucket::<V>(bucket)?;
         if check_proof_locks && state.proof_locks > 0 {
             return ControlFlow::Break(
-                ManifestValidationError::BucketLockedByProof(bucket, state.clone()).into(),
+                ManifestValidationError::BucketLockedByProof(bucket, format!("{state:?}")).into(),
             );
         }
         state.consumed_at = Some(location);
@@ -366,7 +454,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         source_amount: ProofSourceAmount<'a>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         match source_amount.proof_kind() {
             ProofKind::BucketProof(bucket) => {
                 self.get_existing_bucket::<V>(bucket)?.proof_locks += 1;
@@ -394,12 +482,13 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     fn get_existing_proof<V: ManifestInterpretationVisitor>(
         &mut self,
         proof: ManifestProof,
-    ) -> ControlFlow<V::Error<'a>, &mut ProofState<'a>> {
+    ) -> ControlFlow<V::Error, &mut ProofState<'a>> {
         match self.proof_state.get_mut(proof.0 as usize) {
             Some(state) => {
                 if state.consumed_at.is_some() {
                     ControlFlow::Break(
-                        ManifestValidationError::ProofAlreadyUsed(proof, state.clone()).into(),
+                        ManifestValidationError::ProofAlreadyUsed(proof, format!("{state:?}"))
+                            .into(),
                     )
                 } else {
                     ControlFlow::Continue(state)
@@ -413,7 +502,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         cloned_proof: ManifestProof,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let source_amount = self.get_existing_proof::<V>(cloned_proof)?.source_amount;
         self.handle_new_proof(visitor, source_amount)
     }
@@ -423,7 +512,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         proof: ManifestProof,
         destination: ProofDestination<'a>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let location = self.location;
         let state = self.get_existing_proof::<V>(proof)?;
         state.consumed_at = Some(location);
@@ -448,7 +537,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         package_address: &'a PackageAddress,
         blueprint_name: &'a str,
         preallocated_address: Option<&'a GlobalAddress>,
-    ) -> ControlFlow<V::Error<'a>, ManifestAddressReservation> {
+    ) -> ControlFlow<V::Error, ManifestAddressReservation> {
         let new_address_reservation =
             ManifestAddressReservation(self.address_reservation_state.len() as u32);
         let state = AddressReservationState {
@@ -473,7 +562,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     fn get_existing_address_reservation<V: ManifestInterpretationVisitor>(
         &mut self,
         address_reservation: ManifestAddressReservation,
-    ) -> ControlFlow<V::Error<'a>, &mut AddressReservationState<'a>> {
+    ) -> ControlFlow<V::Error, &mut AddressReservationState<'a>> {
         match self
             .address_reservation_state
             .get_mut(address_reservation.0 as usize)
@@ -483,7 +572,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
                     ControlFlow::Break(
                         ManifestValidationError::AddressReservationAlreadyUsed(
                             address_reservation,
-                            state.clone(),
+                            format!("{state:?}"),
                         )
                         .into(),
                     )
@@ -503,7 +592,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         address_reservation: ManifestAddressReservation,
         destination: AddressReservationDestination<'a>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let location = self.location;
         let state = self.get_existing_address_reservation::<V>(address_reservation)?;
         state.consumed_at = Some(location);
@@ -518,7 +607,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         associated_reservation: Option<ManifestAddressReservation>,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let new_named_address = ManifestNamedAddress(self.named_address_state.len() as u32);
         let state = NamedAddressState {
             name: self
@@ -539,7 +628,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     fn get_existing_named_address<V: ManifestInterpretationVisitor>(
         &mut self,
         named_address: ManifestNamedAddress,
-    ) -> ControlFlow<V::Error<'a>, &mut NamedAddressState<'a>> {
+    ) -> ControlFlow<V::Error, &mut NamedAddressState<'a>> {
         match self.named_address_state.get_mut(named_address.0 as usize) {
             Some(state) => ControlFlow::Continue(state),
             None => ControlFlow::Break(
@@ -553,7 +642,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         intent_hash: IntentHash,
         intent_type: IntentType,
-    ) -> ControlFlow<V::Error<'a>> {
+    ) -> ControlFlow<V::Error> {
         let new_intent = ManifestNamedIntent(self.intent_state.len() as u32);
         let state = IntentState {
             name: self
@@ -630,8 +719,11 @@ pub enum IntentType {
 // * validate_preallocated_address_against_blueprint
 // ...
 pub struct ValidationRuleset {
+    pub validate_no_duplicate_blobs: bool,
+    pub validate_blob_refs: bool,
     pub validate_bucket_proof_lock: bool,
     pub validate_no_dangling_nodes: bool,
+    pub validate_dynamic_address_in_command_part: bool,
 }
 
 impl Default for ValidationRuleset {
@@ -643,132 +735,155 @@ impl Default for ValidationRuleset {
 impl ValidationRuleset {
     pub fn all() -> Self {
         Self {
+            validate_no_duplicate_blobs: true,
+            validate_blob_refs: true,
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: true,
+            validate_dynamic_address_in_command_part: true,
         }
     }
 
     pub fn v1() -> Self {
         Self {
+            validate_no_duplicate_blobs: false,
+            validate_blob_refs: false,
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: false,
+            validate_dynamic_address_in_command_part: false,
+        }
+    }
+
+    pub fn v2() -> Self {
+        Self {
+            validate_no_duplicate_blobs: true,
+            validate_blob_refs: true,
+            validate_bucket_proof_lock: true,
+            validate_no_dangling_nodes: true,
+            validate_dynamic_address_in_command_part: true,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ManifestValidationError<'a> {
+pub enum ManifestValidationError {
+    DuplicateBlob(ManifestBlobRef),
+    BlobNotRegistered(ManifestBlobRef),
     BucketNotYetCreated(ManifestBucket),
-    BucketAlreadyUsed(ManifestBucket, BucketState<'a>),
-    BucketLockedByProof(ManifestBucket, BucketState<'a>),
+    BucketAlreadyUsed(ManifestBucket, String),
+    BucketLockedByProof(ManifestBucket, String),
     ProofNotYetCreated(ManifestProof),
-    ProofAlreadyUsed(ManifestProof, ProofState<'a>),
+    ProofAlreadyUsed(ManifestProof, String),
     AddressReservationNotYetCreated(ManifestAddressReservation),
-    AddressReservationAlreadyUsed(ManifestAddressReservation, AddressReservationState<'a>),
+    AddressReservationAlreadyUsed(ManifestAddressReservation, String),
     NamedAddressNotYetCreated(ManifestNamedAddress),
-    DanglingBucket(ManifestBucket, BucketState<'a>),
-    DanglingAddressReservation(ManifestAddressReservation, AddressReservationState<'a>),
+    ChildIntentNotRegistered(ManifestNamedIntent),
+    DanglingBucket(ManifestBucket, String),
+    DanglingAddressReservation(ManifestAddressReservation, String),
     ArgsEncodeError(EncodeError),
     ArgsDecodeError(DecodeError),
+    YieldToParentNotSupportedInTransactionIntent,
+    SubintentDoesNotEndWithYieldToParent,
+    TooManyInstructions,
 }
 
 // We allow unused variables so we don't have to prefix them all with `_`
 #[allow(unused_variables)]
 pub trait ManifestInterpretationVisitor {
-    type Error<'a>: From<ManifestValidationError<'a>>;
+    type Error: From<ManifestValidationError>;
 
     fn on_start_instruction<'a>(
         &mut self,
         details: OnStartInstruction<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_end_instruction<'a>(
         &mut self,
         details: OnEndInstruction<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
-    fn on_new_bucket<'a>(&mut self, details: OnNewBucket<'_, 'a>) -> ControlFlow<Self::Error<'a>> {
+    fn on_new_bucket<'a>(&mut self, details: OnNewBucket<'_, 'a>) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_consume_bucket<'a>(
         &mut self,
         details: OnConsumeBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
-    fn on_new_proof<'a>(&mut self, details: OnNewProof<'_, 'a>) -> ControlFlow<Self::Error<'a>> {
+    fn on_new_proof<'a>(&mut self, details: OnNewProof<'_, 'a>) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_consume_proof<'a>(
         &mut self,
         details: OnConsumeProof<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_new_address_reservation<'a>(
         &mut self,
         details: OnNewAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_consume_address_reservation<'a>(
         &mut self,
         details: OnConsumeAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_new_named_address<'a>(
         &mut self,
         details: OnNewNamedAddress<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
-    fn on_new_intent<'a>(&mut self, details: OnNewIntent<'_, 'a>) -> ControlFlow<Self::Error<'a>> {
+    fn on_new_intent<'a>(&mut self, details: OnNewIntent<'_, 'a>) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_drop_authzone_proofs<'a>(
         &mut self,
         details: OnDropAuthZoneProofs,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_pass_expression<'a>(
         &mut self,
         details: OnPassExpression<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
-    fn on_register_blob<'a>(
-        &mut self,
-        details: OnRegisterBlob<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    fn on_register_blob<'a>(&mut self, details: OnRegisterBlob<'a>) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
-    fn on_pass_blob<'a>(&mut self, details: OnPassBlob<'a>) -> ControlFlow<Self::Error<'a>> {
+    fn on_pass_blob<'a>(&mut self, details: OnPassBlob<'a>) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
 
     fn on_worktop_assertion<'a>(
         &mut self,
         details: OnWorktopAssertion<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Error> {
         ControlFlow::Continue(())
     }
+}
+
+impl ManifestInterpretationVisitor for () {
+    type Error = ManifestValidationError;
 }
 
 pub struct OnStartInstruction<'a> {

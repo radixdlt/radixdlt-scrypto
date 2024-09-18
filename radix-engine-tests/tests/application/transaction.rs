@@ -5,7 +5,6 @@ use radix_engine::transaction::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 use radix_engine_tests::common::*;
-use radix_transactions::validation::*;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -256,7 +255,7 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
         .build();
 
     // Act
-    let rtn = TransactionValidator::validate_instructions_v1(&manifest.instructions);
+    let rtn = manifest.validate();
 
     // Assert
     rtn.expect("Validation of the manifest failed")
@@ -277,7 +276,7 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
         .build();
 
     // Act
-    let rtn = TransactionValidator::validate_instructions_v1(&manifest.instructions);
+    let rtn = manifest.validate();
 
     // Assert
     rtn.expect("Validation of the manifest failed")

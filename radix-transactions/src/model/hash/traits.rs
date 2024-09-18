@@ -63,7 +63,7 @@ impl IsTransactionHash for IntentHash {
     fn hrp<'h>(&self, hrp_set: &'h HrpSet) -> &'h str {
         match self {
             IntentHash::Transaction(_) => TransactionIntentHash::static_hrp(hrp_set),
-            IntentHash::Sub(_) => SubintentHash::static_hrp(hrp_set),
+            IntentHash::Subintent(_) => SubintentHash::static_hrp(hrp_set),
         }
     }
 
@@ -75,7 +75,7 @@ impl IsTransactionHash for IntentHash {
         if hrp == TransactionIntentHash::static_hrp(hrp_set) {
             Ok(IntentHash::Transaction(TransactionIntentHash::from(hash)))
         } else if hrp == SubintentHash::static_hrp(hrp_set) {
-            Ok(IntentHash::Sub(SubintentHash::from(hash)))
+            Ok(IntentHash::Subintent(SubintentHash::from(hash)))
         } else {
             Err(HashCreationError::InvalidHrp)
         }
@@ -84,7 +84,7 @@ impl IsTransactionHash for IntentHash {
     fn as_inner_hash(&self) -> &Hash {
         match self {
             IntentHash::Transaction(inner) => inner.as_hash(),
-            IntentHash::Sub(inner) => inner.as_hash(),
+            IntentHash::Subintent(inner) => inner.as_hash(),
         }
     }
 }
