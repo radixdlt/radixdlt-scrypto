@@ -66,11 +66,9 @@ pub enum SystemBoot {
 }
 
 impl SystemBoot {
-    pub fn fallback_or_panic(overrides: Option<&SystemOverrides>) -> Self {
+    pub fn babylon_genesis(network_definition: NetworkDefinition) -> Self {
         SystemBoot::V1(SystemParameters {
-            network_definition: overrides
-                .and_then(|config| config.network_definition.clone())
-                .expect("If no SystemBoot exists, a network_definition override must be provided"),
+            network_definition,
             costing_parameters: CostingParameters::babylon_genesis(),
             costing_module_config: CostingModuleConfig::babylon_genesis(),
             limit_parameters: LimitParameters::babylon_genesis(),
@@ -1270,9 +1268,12 @@ impl<V: SystemCallbackObject> System<V> {
                 &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(SystemBoot::fallback_or_panic(
-                init_input.system_overrides.as_ref(),
-            ));
+            .unwrap_or_else(|| {
+                let overrides = init_input.system_overrides.as_ref();
+                let network_definition = overrides.and_then(|o| o.network_definition.as_ref())
+                    .expect("Before bottlenose, no SystemBoot substate exists, so a network_definition must be provided in the SystemOverrides of the ExecutionConfig.");
+                SystemBoot::babylon_genesis(network_definition.clone())
+            });
 
         let system_logic_version = system_boot.system_logic_version();
         let mut system_parameters = match system_boot {
