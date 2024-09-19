@@ -8,7 +8,6 @@ use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_engine_profiling::info_alloc::*;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::prelude::*;
 use std::fs::File;
@@ -139,9 +138,7 @@ impl TxnAllocDump {
                 let execution_cost_units = receipt
                     .fee_summary()
                     .map(|x| x.total_execution_cost_units_consumed.clone());
-                let database_updates = receipt
-                    .into_state_updates()
-                    .create_database_updates::<SpreadPrefixKeyMapper>();
+                let database_updates = receipt.into_state_updates().create_database_updates();
                 database.commit(&database_updates);
                 match validated.inner {
                     ValidatedLedgerTransactionInner::User(tx) => {

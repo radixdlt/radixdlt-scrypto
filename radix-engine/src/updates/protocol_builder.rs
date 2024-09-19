@@ -1,4 +1,3 @@
-use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_transactions::{model::*, validation::TransactionValidator};
 
 use crate::{
@@ -66,9 +65,7 @@ impl ProtocolUpdateExecutor {
                 for (transaction_index, transaction) in batch.transactions.into_iter().enumerate() {
                     let receipt = match &transaction {
                         ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
-                            let db_updates = flash
-                                .state_updates
-                                .create_database_updates::<SpreadPrefixKeyMapper>();
+                            let db_updates = flash.state_updates.create_database_updates();
                             let receipt = if H::IS_ENABLED {
                                 let before_store = &*store;
                                 FlashReceipt::from_state_updates(
@@ -302,12 +299,10 @@ impl ProtocolExecutor {
 
     pub fn is_bootstrapped(store: &mut impl SubstateDatabase) -> bool {
         store
-            .get_substate(
-                &SpreadPrefixKeyMapper::to_db_partition_key(
-                    PACKAGE_PACKAGE.as_node_id(),
-                    TYPE_INFO_FIELD_PARTITION,
-                ),
-                &SpreadPrefixKeyMapper::to_db_sort_key(&TypeInfoField::TypeInfo.into()),
+            .get_raw_substate(
+                PACKAGE_PACKAGE,
+                TYPE_INFO_FIELD_PARTITION,
+                TypeInfoField::TypeInfo,
             )
             .is_some()
     }

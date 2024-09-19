@@ -5,10 +5,9 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
+use crate::track::*;
 use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 
 pub trait CallFrameReferences {
@@ -140,7 +139,7 @@ pub trait ExecutionReceipt {
 
 pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
-    type Init: Clone;
+    type Init;
     /// The transaction object
     type Executable;
     /// Output to be returned at the end of execution
@@ -167,7 +166,7 @@ pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Create final receipt
     fn create_receipt<S: SubstateDatabase>(
         self,
-        track: Track<S, SpreadPrefixKeyMapper>,
+        track: Track<S>,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 }

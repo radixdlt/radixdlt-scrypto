@@ -459,7 +459,7 @@ impl SystemMapper {
                     FieldTransience::NotTransient => {}
                 }
 
-                let payload: ScryptoValue =
+                let value: ScryptoRawValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
                 let lock_status = if field.locked {
@@ -468,7 +468,7 @@ impl SystemMapper {
                     LockStatus::Unlocked
                 };
 
-                let substate = FieldSubstate::new_field(payload, lock_status);
+                let substate = FieldSubstate::new_field(value, lock_status);
 
                 let value = IndexedScryptoValue::from_typed(&substate);
                 field_partition.insert(SubstateKey::Field(index), value);
@@ -490,7 +490,7 @@ impl SystemMapper {
 
             for (key, kv_entry) in substates {
                 let kv_entry = if let Some(value) = kv_entry.value {
-                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                    let value: ScryptoRawValue = scrypto_decode(&value).unwrap();
                     let kv_entry = if kv_entry.locked {
                         KeyValueEntrySubstate::locked_entry(value)
                     } else {

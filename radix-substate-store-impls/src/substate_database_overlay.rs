@@ -80,7 +80,7 @@ impl<S: BorrowMut<D>, D: CommittableSubstateDatabase> SubstateDatabaseOverlay<S,
 }
 
 impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOverlay<S, D> {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key @ DbPartitionKey {
             node_key,
@@ -136,11 +136,11 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
             OverlayLookupResult::Found(substate_value) => substate_value.cloned(),
             OverlayLookupResult::NotFound => self
                 .get_readable_root()
-                .get_substate(partition_key, sort_key),
+                .get_raw_substate_by_db_key(partition_key, sort_key),
         }
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key @ DbPartitionKey {
             node_key,
@@ -187,7 +187,7 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
                     Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
                         let underlying = self
                             .get_readable_root()
-                            .list_entries_from(partition_key, from_sort_key.as_ref());
+                            .list_raw_values_from_db_key(partition_key, from_sort_key.as_ref());
 
                         match from_sort_key {
                             // A `from_sort_key` is specified. Only return sort keys that are larger
@@ -224,14 +224,14 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
                     // iterator over the data in the root store.
                     None => self
                         .get_readable_root()
-                        .list_entries_from(partition_key, from_sort_key.as_ref()),
+                        .list_raw_values_from_db_key(partition_key, from_sort_key.as_ref()),
                 }
             }
             // Overlay doesn't contain anything for the provided node key. Return an iterator over
             // the data in the root store.
             None => self
                 .get_readable_root()
-                .list_entries_from(partition_key, from_sort_key.as_ref()),
+                .list_raw_values_from_db_key(partition_key, from_sort_key.as_ref()),
         }
     }
 }

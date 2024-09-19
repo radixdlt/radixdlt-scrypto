@@ -11,7 +11,7 @@ use crate::track::interface::*;
 use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
-use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use sbor::rust::mem;
 
@@ -45,7 +45,7 @@ impl KernelBoot {
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
-    pub track: Track<'h, S, SpreadPrefixKeyMapper>,
+    pub track: Track<'h, S>,
     pub init: M::Init,
     pub phantom: PhantomData<M>,
 }
@@ -93,7 +93,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
             .unwrap_or(KernelBoot::babylon());
 
         // Upper Layer Initialization
-        let system_init_result = M::init(&mut self.track, &executable, self.init.clone());
+        let system_init_result = M::init(&mut self.track, &executable, self.init);
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
@@ -960,7 +960,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -997,7 +997,7 @@ where
     }
 
     #[trace_resources(log=limit)]
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

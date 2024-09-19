@@ -4,10 +4,7 @@ use crate::system::system_db_reader::SystemDatabaseReader;
 use radix_common::data::scrypto::model::*;
 use radix_common::math::*;
 use radix_engine_interface::types::*;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_substate_store_interface::{
-    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
-};
+use radix_substate_store_interface::interface::*;
 use sbor::rust::prelude::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -80,13 +77,7 @@ impl StateUpdateSummary {
                     return false;
                 }
                 let node_previously_existed = base_substate_db
-                    .get_substate(
-                        &SpreadPrefixKeyMapper::to_db_partition_key(
-                            node_id,
-                            type_id_partition_number,
-                        ),
-                        &SpreadPrefixKeyMapper::to_db_sort_key(&type_id_substate_key),
-                    )
+                    .get_raw_substate(node_id, type_id_partition_number, type_id_substate_key)
                     .is_some();
                 return !node_previously_existed;
             })
@@ -249,7 +240,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn calculate_fungible_vault_balance_change(&self, vault_id: &NodeId) -> Option<BalanceChange> {
         self
             .system_reader
-            .fetch_substate::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
+            .fetch_substate::<FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                 vault_id,
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::Balance.into(),
@@ -258,7 +249,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .map(|new_balance| {
                 let old_balance = self
                     .system_reader
-                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<FungibleVaultBalanceFieldPayload>>(
+                    .fetch_substate_from_database::<FieldSubstate<FungibleVaultBalanceFieldPayload>>(
                         vault_id,
                         MAIN_BASE_PARTITION,
                         &FungibleVaultField::Balance.into(),
@@ -295,9 +286,9 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                         for (substate_key, substate_update) in by_substate {
                             let id: NonFungibleLocalId =
                                 scrypto_decode(substate_key.for_map().unwrap()).unwrap();
-                                let previous_value = self
+                            let previous_value = self
                                 .system_reader
-                                .fetch_substate_from_database::<SpreadPrefixKeyMapper, ScryptoValue>(
+                                .fetch_substate_from_database::<ScryptoValue>(
                                     vault_id,
                                     partition_num,
                                     substate_key,
