@@ -1,10 +1,4 @@
 use crate::internal_prelude::*;
-use crate::model::*;
-use radix_common::crypto::hash;
-use radix_common::data::manifest::*;
-use radix_common::types::NonFungibleGlobalId;
-use std::collections::BTreeSet;
-use std::ops::Deref;
 
 #[derive(ManifestSbor)]
 pub enum TestTransaction {
@@ -144,7 +138,7 @@ impl PreparedTestIntent {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
-            references: prepared_instructions.references.deref().clone(),
+            references: prepared_instructions.references.as_ref().clone(),
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
             children_intent_indices: intent.children_intent_indices,
@@ -181,6 +175,30 @@ impl TestTransaction {
         })
     }
 
+    /// ## Example usage
+    /// ```ignore
+    /// # // Ignored as it depends on scrypto_test which isn't a dev dependency
+    /// let mut ledger = LedgerSimulatorBuilder::new().build();
+    /// let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+    ///
+    /// let child = builder.add_subintent(
+    ///     ManifestBuilder::new_subintent_v2()
+    ///         .yield_to_parent(())
+    ///         .build(),
+    ///     [child_public_key.signature_proof()],
+    /// );
+    ///
+    /// let transaction = builder.finish_with_root_intent(
+    ///     ManifestBuilder::new_v2()
+    ///         .use_child("child", child)
+    ///         .lock_standard_test_fee(account)
+    ///         .yield_to_child("child", ())
+    ///         .build(),
+    ///     [public_key.signature_proof()],
+    /// );
+    ///
+    /// let receipt = ledger.execute_test_transaction(transaction);
+    /// ```
     pub fn new_v2_builder(nonce: u32) -> TestTransactionV2Builder {
         TestTransactionV2Builder::new(nonce)
     }

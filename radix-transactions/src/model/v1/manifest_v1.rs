@@ -48,6 +48,21 @@ impl BuildableManifest for TransactionManifestV1 {
     fn set_names(&mut self, names: KnownManifestObjectNames) {
         self.object_names = names.into()
     }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        TestTransaction::new_v1_from_nonce(self, nonce, initial_proofs)
+            .into_executable(&validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
+    }
 }
 
 impl TransactionManifestV1 {

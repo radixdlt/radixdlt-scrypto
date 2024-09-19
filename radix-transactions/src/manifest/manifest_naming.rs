@@ -1,6 +1,23 @@
 use crate::internal_prelude::*;
 
 #[derive(Default, Clone, Debug, ManifestSbor, ScryptoDescribe, PartialEq, Eq)]
+pub struct TransactionObjectNames {
+    pub root_intent: ManifestObjectNames,
+    pub subintents: Vec<ManifestObjectNames>,
+}
+
+impl TransactionObjectNames {
+    pub fn unknown_with_subintent_count(subintents: usize) -> Self {
+        Self {
+            root_intent: ManifestObjectNames::Unknown,
+            subintents: (0..subintents)
+                .map(|_| ManifestObjectNames::Unknown)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug, ManifestSbor, ScryptoDescribe, PartialEq, Eq)]
 pub enum ManifestObjectNames {
     #[default]
     Unknown,

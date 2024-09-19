@@ -175,6 +175,18 @@ pub trait SborEnumVariantFor<TEnum: SborEnum<X>, X: CustomValueKind> {
     /// but not Encode. Really I'd like to say `BorrowedVariant<'a>: VecEncode<X> if Self: VecEncode<X>`
     /// but Rust doesn't support that. Instead, users will need to add the bound on the associated
     /// type themselves.
+    ///
+    /// Instead, you can express a trait bound as such:
+    /// ```ignore
+    /// pub trait MyNewSuperTrait:
+    ///     for<'a> SborEnumVariantFor<
+    ///        TEnum,
+    ///        X,
+    ///        OwnedVariant: ManifestDecode,
+    ///        BorrowedVariant<'a>: ManifestEncode,
+    ///     >
+    /// {}
+    /// ```
     type BorrowedVariant<'a>: IsSborFixedEnumVariant<Self::VariantFieldsRef<'a>>
     where
         Self: 'a,

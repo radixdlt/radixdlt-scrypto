@@ -35,22 +35,12 @@ impl RuntimeToolkitTransactionReceipt {
     }
 }
 
-impl TryFrom<VersionedTransactionReceipt> for RuntimeToolkitTransactionReceipt {
+impl TryFrom<TransactionReceipt> for RuntimeToolkitTransactionReceipt {
     type Error = ToolkitReceiptError;
 
-    fn try_from(value: VersionedTransactionReceipt) -> Result<Self, Self::Error> {
-        match TransactionReceiptVersions::from(value) {
-            TransactionReceiptVersions::V1(receipt) => receipt.try_into(),
-        }
-    }
-}
-
-impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
-    type Error = ToolkitReceiptError;
-
-    fn try_from(value: TransactionReceiptV1) -> Result<Self, Self::Error> {
+    fn try_from(value: TransactionReceipt) -> Result<Self, Self::Error> {
         match value {
-            TransactionReceiptV1 {
+            TransactionReceipt {
                 result:
                     TransactionResult::Commit(CommitResult {
                         outcome: TransactionOutcome::Success(..),
@@ -224,7 +214,7 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
                     non_contingent: execution_trace.fee_locks.lock,
                 },
             }),
-            TransactionReceiptV1 {
+            TransactionReceipt {
                 result:
                     TransactionResult::Commit(CommitResult {
                         outcome: TransactionOutcome::Success(..),
@@ -233,7 +223,7 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
                     }),
                 ..
             } => Err(ToolkitReceiptError::ReceiptLacksExecutionTrace),
-            TransactionReceiptV1 {
+            TransactionReceipt {
                 result:
                     TransactionResult::Commit(CommitResult {
                         outcome: TransactionOutcome::Failure(error),
@@ -243,13 +233,13 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
             } => Ok(Self::CommitFailure {
                 reason: format!("{error:?}"),
             }),
-            TransactionReceiptV1 {
+            TransactionReceipt {
                 result: TransactionResult::Reject(error),
                 ..
             } => Ok(Self::Reject {
                 reason: format!("{error:?}"),
             }),
-            TransactionReceiptV1 {
+            TransactionReceipt {
                 result: TransactionResult::Abort(error),
                 ..
             } => Ok(Self::Abort {

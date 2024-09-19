@@ -61,6 +61,22 @@ impl BuildableManifest for TransactionManifestV2 {
         self.children.push(ChildSubintent { hash });
         Ok(())
     }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        TestTransaction::new_v2_builder(nonce)
+            .finish_with_root_intent(self, initial_proofs)
+            .into_executable(validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
+    }
 }
 
 impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
@@ -82,6 +98,19 @@ impl TransactionManifestV2 {
             ChildIntentsV2 {
                 children: self.children,
             },
+        )
+    }
+
+    pub fn for_intent_with_names(
+        self,
+    ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
+        (
+            InstructionsV2(Rc::new(self.instructions)),
+            self.blobs.into(),
+            ChildIntentsV2 {
+                children: self.children,
+            },
+            self.object_names,
         )
     }
 }

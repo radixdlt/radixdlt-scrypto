@@ -1,9 +1,17 @@
 use crate::internal_prelude::*;
 
-pub trait BuildableManifest: ReadableManifest + ManifestEncode + Default + Eq + Debug {
+pub trait BuildableManifest:
+    ReadableManifest + Into<AnyTransactionManifest> + ManifestEncode + Default + Eq + Debug
+{
     fn add_instruction(&mut self, instruction: Self::Instruction);
     fn add_blob(&mut self, hash: Hash, content: Vec<u8>);
     fn set_names(&mut self, names: KnownManifestObjectNames);
+    fn set_names_if_known(&mut self, names: impl Into<ManifestObjectNames>) {
+        match names.into() {
+            ManifestObjectNames::Unknown => {}
+            ManifestObjectNames::Known(known_names) => self.set_names(known_names),
+        };
+    }
     fn add_child_subintent(&mut self, _hash: SubintentHash) -> Result<(), ManifestBuildError> {
         Err(ManifestBuildError::ChildSubintentsUnsupportedByManifestType)
     }
@@ -16,6 +24,21 @@ pub trait BuildableManifest: ReadableManifest + ManifestEncode + Default + Eq + 
     fn preallocation_count(&self) -> usize {
         0
     }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType;
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String>;
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum DefaultTestExecutionConfigType {
+    Notarized,
+    System,
+    Test,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

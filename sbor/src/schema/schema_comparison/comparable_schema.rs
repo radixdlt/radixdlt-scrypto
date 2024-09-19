@@ -146,6 +146,14 @@ impl<C: ComparableSchema<S>, S: CustomSchema> IntoComparableSchema<C, S> for [u8
     }
 }
 
+impl<C: ComparableSchema<S>, S: CustomSchema, const N: usize> IntoComparableSchema<C, S>
+    for [u8; N]
+{
+    fn into_schema(&self) -> C {
+        C::decode_from_bytes(self.as_slice())
+    }
+}
+
 impl<C: ComparableSchema<S>, S: CustomSchema> IntoComparableSchema<C, S> for Vec<u8> {
     fn into_schema(&self) -> C {
         C::decode_from_bytes(self)

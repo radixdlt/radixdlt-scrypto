@@ -6,10 +6,11 @@ pub trait TransactionPayload:
     ManifestEncode
     + ManifestDecode
     + ManifestCategorize
-    + ManifestSborEnumVariantFor<VersionedTransactionPayload>
-where
-    Self::OwnedVariant: ManifestDecode,
-    for<'a> Self::BorrowedVariant<'a>: ManifestEncode,
+    + for<'a> ManifestSborEnumVariantFor<
+        VersionedTransactionPayload,
+        OwnedVariant: ManifestDecode,
+        BorrowedVariant<'a>: ManifestEncode,
+    >
 {
     type Prepared: PreparedTransaction<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;

@@ -24,6 +24,7 @@ pub fn validate_call_arguments_to_native_components_any(
         AnyTransactionManifest::V1(m) => validate_call_arguments_to_native_components(m),
         AnyTransactionManifest::SystemV1(m) => validate_call_arguments_to_native_components(m),
         AnyTransactionManifest::V2(m) => validate_call_arguments_to_native_components(m),
+        AnyTransactionManifest::SubintentV2(m) => validate_call_arguments_to_native_components(m),
     }
 }
 

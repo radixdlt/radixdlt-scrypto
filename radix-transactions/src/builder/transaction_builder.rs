@@ -140,8 +140,16 @@ impl TransactionV1Builder {
     }
 }
 
+#[derive(Default)]
 pub struct PartialTransactionV2Builder {
-    children: IndexMap<String, (SubintentHash, SignedPartialTransactionV2)>,
+    children: IndexMap<
+        String,
+        (
+            SubintentHash,
+            SignedPartialTransactionV2,
+            TransactionObjectNames,
+        ),
+    >,
     intent_header: Option<IntentHeaderV2>,
     message: Option<MessageV2>,
     manifest: Option<SubintentManifestV2>,
@@ -152,23 +160,29 @@ pub struct PartialTransactionV2Builder {
 }
 
 impl PartialTransactionV2Builder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
-        signed_partial_transaction: SignedPartialTransactionV2,
+        signed_partial_transaction: impl Into<(SignedPartialTransactionV2, TransactionObjectNames)>,
     ) -> Self {
         if self.manifest.is_some() {
             panic!("Call add_signed_child before calling manifest or manifest_builder");
         }
+        let (signed_partial_transaction, object_names) = signed_partial_transaction.into();
 
         let prepared = signed_partial_transaction
             .prepare(PreparationSettings::latest_ref())
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
-        let replaced = self
-            .children
-            .insert(name.to_string(), (hash, signed_partial_transaction));
+        let replaced = self.children.insert(
+            name.to_string(),
+            (hash, signed_partial_transaction, object_names),
+        );
         if replaced.is_some() {
             panic!("Child with name {name} already exists");
         }
@@ -181,7 +195,7 @@ impl PartialTransactionV2Builder {
         build_manifest: impl FnOnce(SubintentManifestV2Builder) -> SubintentManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = SubintentManifestV2Builder::new_typed();
-        for (child_name, (hash, _)) in self.children.iter() {
+        for (child_name, (hash, _, _)) in self.children.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.manifest(build_manifest(manifest_builder).build())
@@ -262,25 +276,32 @@ impl PartialTransactionV2Builder {
         self
     }
 
-    pub fn build(mut self) -> SignedPartialTransactionV2 {
+    pub fn build_with_names(mut self) -> (SignedPartialTransactionV2, TransactionObjectNames) {
         // Ensure subintent has been created
         self.create_subintent();
 
         // Now assemble the signed partial transaction
         let mut aggregated_subintents = vec![];
         let mut aggregated_subintent_signatures = vec![];
-        for (_name, (_hash, child_partial_transaction)) in self.children {
+        let mut aggregated_subintent_object_names = vec![];
+        for (_name, (_hash, child_partial_transaction, object_names)) in self.children {
             let SignedPartialTransactionV2 {
                 partial_transaction,
                 root_intent_signatures,
                 subintent_signatures,
             } = child_partial_transaction;
+            let TransactionObjectNames {
+                root_intent: root_intent_names,
+                subintents: subintent_names,
+            } = object_names;
             aggregated_subintents.push(partial_transaction.root_intent);
             aggregated_subintents.extend(partial_transaction.subintents.0);
             aggregated_subintent_signatures.push(root_intent_signatures);
             aggregated_subintent_signatures.extend(subintent_signatures.by_subintent);
+            aggregated_subintent_object_names.push(root_intent_names);
+            aggregated_subintent_object_names.extend(subintent_names);
         }
-        SignedPartialTransactionV2 {
+        let signed_partial_transaction = SignedPartialTransactionV2 {
             partial_transaction: PartialTransactionV2 {
                 root_intent: self
                     .intent
@@ -293,20 +314,38 @@ impl PartialTransactionV2Builder {
             subintent_signatures: MultipleIntentSignaturesV2 {
                 by_subintent: aggregated_subintent_signatures,
             },
-        }
+        };
+        let object_names = TransactionObjectNames {
+            root_intent: self.manifest.unwrap().object_names,
+            subintents: aggregated_subintent_object_names,
+        };
+        (signed_partial_transaction, object_names)
+    }
+
+    pub fn build(self) -> SignedPartialTransactionV2 {
+        self.build_with_names().0
     }
 }
 
 /// A builder for building a NotarizedTransactionV2.
 /// In future, we may make this into a state-machine style builder.
+#[derive(Default)]
 pub struct TransactionV2Builder {
-    children: IndexMap<String, (SubintentHash, SignedPartialTransactionV2)>,
+    children: IndexMap<
+        String,
+        (
+            SubintentHash,
+            SignedPartialTransactionV2,
+            TransactionObjectNames,
+        ),
+    >,
     transaction_header: Option<TransactionHeaderV2>,
     intent_header: Option<IntentHeaderV2>,
     message: Option<MessageV2>,
     manifest: Option<TransactionManifestV2>,
     // Temporarily cached once created
     intent_and_subintent_signatures: Option<(TransactionIntentV2, MultipleIntentSignaturesV2)>,
+    object_names: Option<TransactionObjectNames>,
     prepared_intent: Option<PreparedTransactionIntentV2>,
     intent_signatures: Vec<IntentSignatureV1>,
     signed_intent: Option<SignedTransactionIntentV2>,
@@ -315,23 +354,30 @@ pub struct TransactionV2Builder {
 }
 
 impl TransactionV2Builder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
-        signed_partial_transaction: SignedPartialTransactionV2,
+        signed_partial_transaction: impl Into<(SignedPartialTransactionV2, TransactionObjectNames)>,
     ) -> Self {
         if self.manifest.is_some() {
             panic!("Call add_signed_child before calling manifest or manifest_builder");
         }
+
+        let (signed_partial_transaction, object_names) = signed_partial_transaction.into();
 
         let prepared = signed_partial_transaction
             .prepare(PreparationSettings::latest_ref())
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
-        let replaced = self
-            .children
-            .insert(name.to_string(), (hash, signed_partial_transaction));
+        let replaced = self.children.insert(
+            name.to_string(),
+            (hash, signed_partial_transaction, object_names),
+        );
         if replaced.is_some() {
             panic!("Child with name {name} already exists");
         }
@@ -344,7 +390,7 @@ impl TransactionV2Builder {
         build_manifest: impl FnOnce(TransactionManifestV2Builder) -> TransactionManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = TransactionManifestV2Builder::new_typed();
-        for (child_name, (hash, _)) in self.children.iter() {
+        for (child_name, (hash, _, _)) in self.children.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.manifest(build_manifest(manifest_builder).build())
@@ -365,28 +411,40 @@ impl TransactionV2Builder {
         self
     }
 
-    pub fn create_intent_and_subintent_signatures(&mut self) -> &TransactionIntentV2 {
+    pub fn transaction_header(mut self, transaction_header: TransactionHeaderV2) -> Self {
+        self.transaction_header = Some(transaction_header);
+        self
+    }
+
+    pub fn create_intent_and_subintent_info(&mut self) -> &TransactionIntentV2 {
         if self.intent_and_subintent_signatures.is_none() {
-            let (instructions, blobs, child_hashes) = self
+            let manifest = self
                 .manifest
-                .as_ref()
-                .expect("Manifest must be provided")
-                .clone()
-                .for_intent();
-            let subintents = core::mem::take(&mut self.children);
+                .take()
+                .expect("Manifest must be provided before this action is performed");
+            let (instructions, blobs, child_hashes, root_object_names) =
+                manifest.for_intent_with_names();
+            let subintents = mem::take(&mut self.children);
 
             let mut aggregated_subintents = vec![];
             let mut aggregated_subintent_signatures = vec![];
-            for (_name, (_hash, child_partial_transaction)) in subintents {
+            let mut aggregated_subintent_object_names = vec![];
+            for (_name, (_hash, child_partial_transaction, object_names)) in subintents {
                 let SignedPartialTransactionV2 {
                     partial_transaction,
                     root_intent_signatures,
                     subintent_signatures,
                 } = child_partial_transaction;
+                let TransactionObjectNames {
+                    root_intent: root_intent_names,
+                    subintents: subintent_names,
+                } = object_names;
                 aggregated_subintents.push(partial_transaction.root_intent);
                 aggregated_subintents.extend(partial_transaction.subintents.0);
                 aggregated_subintent_signatures.push(root_intent_signatures);
                 aggregated_subintent_signatures.extend(subintent_signatures.by_subintent);
+                aggregated_subintent_object_names.push(root_intent_names);
+                aggregated_subintent_object_names.extend(subintent_names);
             }
             let intent = TransactionIntentV2 {
                 root_header: self
@@ -415,6 +473,10 @@ impl TransactionV2Builder {
                 by_subintent: aggregated_subintent_signatures,
             };
             self.intent_and_subintent_signatures = Some((intent, subintent_signatures));
+            self.object_names = Some(TransactionObjectNames {
+                root_intent: root_object_names,
+                subintents: aggregated_subintent_object_names,
+            });
         }
         &self.intent_and_subintent_signatures.as_ref().unwrap().0
     }
@@ -422,7 +484,7 @@ impl TransactionV2Builder {
     pub fn create_prepared_intent(&mut self) -> &PreparedTransactionIntentV2 {
         if self.prepared_intent.is_none() {
             let prepared = self
-                .create_intent_and_subintent_signatures()
+                .create_intent_and_subintent_info()
                 .prepare(PreparationSettings::latest_ref())
                 .expect("Expected that the intent could be prepared");
             self.prepared_intent = Some(prepared);
@@ -457,9 +519,11 @@ impl TransactionV2Builder {
 
     pub fn create_signed_transaction_intent(&mut self) -> &SignedTransactionIntentV2 {
         if self.signed_intent.is_none() {
-            self.create_intent_and_subintent_signatures();
-            let (root_intent, subintent_signatures) =
-                mem::take(&mut self.intent_and_subintent_signatures).unwrap();
+            self.create_intent_and_subintent_info();
+            let (root_intent, subintent_signatures) = self
+                .intent_and_subintent_signatures
+                .take()
+                .expect("Intent was created in create_intent_and_subintent_info()");
             let signatures = mem::take(&mut self.intent_signatures);
             let signed_intent = SignedTransactionIntentV2 {
                 root_intent,
@@ -499,13 +563,18 @@ impl TransactionV2Builder {
         self
     }
 
-    pub fn build(self) -> NotarizedTransactionV2 {
-        NotarizedTransactionV2 {
+    pub fn build_with_names(self) -> (NotarizedTransactionV2, TransactionObjectNames) {
+        let transaction = NotarizedTransactionV2 {
             signed_intent: self.signed_intent.expect("Expected signed intent to exist"),
             notary_signature: self
                 .notary_signature
                 .expect("Expected notary signature to exist"),
-        }
+        };
+        (transaction, self.object_names.unwrap())
+    }
+
+    pub fn build(self) -> NotarizedTransactionV2 {
+        self.build_with_names().0
     }
 }
 

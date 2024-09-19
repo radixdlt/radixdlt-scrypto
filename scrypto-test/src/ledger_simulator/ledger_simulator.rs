@@ -27,6 +27,7 @@ use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
+use radix_transactions::manifest::*;
 use radix_transactions::validation::*;
 use std::path::{Path, PathBuf};
 
@@ -1017,10 +1018,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .build();
 
-        let receipt = self.execute_system_transaction(
-            manifest,
-            btreeset!(system_execution(SystemExecution::Protocol)),
-        );
+        let receipt =
+            self.execute_system_transaction(manifest, [SystemExecution::Protocol.proof()]);
 
         receipt.expect_commit_success();
     }
@@ -1126,89 +1125,88 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         self.publish_package_with_owner(package_dir.as_ref(), owner_badge)
     }
 
-    pub fn execute_manifest<T>(
-        &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        self.execute_test_transaction(TestTransaction::new_v1_from_nonce(
-            manifest,
-            nonce,
-            initial_proofs.into_iter().collect(),
-        ))
+    fn resolve_suggested_config(&self, manifest: &impl BuildableManifest) -> ExecutionConfig {
+        match manifest.default_test_execution_config_type() {
+            DefaultTestExecutionConfigType::Notarized => {
+                ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
+            }
+            DefaultTestExecutionConfigType::System => {
+                ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
+            }
+            DefaultTestExecutionConfigType::Test => ExecutionConfig::for_test_transaction(),
+        }
+        .with_kernel_trace(self.with_kernel_trace)
     }
 
-    pub fn execute_manifest_with_execution_config<T>(
+    pub fn execute_manifest(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        let config = self.resolve_suggested_config(&manifest);
+        self.execute_manifest_with_execution_config(manifest, initial_proofs, config)
+    }
+
+    pub fn execute_manifest_with_execution_config(
+        &mut self,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         execution_config: ExecutionConfig,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
+    ) -> TransactionReceipt {
+        let executable = manifest
+            .into_executable_with_proofs(
+                self.next_transaction_nonce(),
                 initial_proofs.into_iter().collect(),
-            ),
-            execution_config,
-        )
+                &self.transaction_validator,
+            )
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Could not convert manifest into executable transaction: {}",
+                    err
+                )
+            });
+        self.execute_transaction(executable, execution_config)
     }
 
-    pub fn execute_manifest_with_costing_params<T>(
+    pub fn execute_manifest_with_costing_params(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         costing_parameters: CostingParameters,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        let mut config = ExecutionConfig::for_test_transaction();
+    ) -> TransactionReceipt {
+        let mut config = self.resolve_suggested_config(&manifest);
         config.system_overrides = Some(SystemOverrides {
             costing_parameters: Some(costing_parameters),
-            ..Default::default()
+            ..config.system_overrides.unwrap_or_default()
         });
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
-                initial_proofs.into_iter().collect(),
-            ),
-            config,
-        )
+        self.execute_manifest_with_execution_config(manifest, initial_proofs, config)
     }
 
-    pub fn execute_manifest_with_injected_error<'a, T>(
-        &'a mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+    pub fn execute_manifest_with_injected_error(
+        &mut self,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         error_after_count: u64,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        let executable = TestTransaction::new_v1_from_nonce(
-            manifest,
-            nonce,
-            initial_proofs.into_iter().collect(),
-        )
-        .into_executable(&self.transaction_validator)
-        .expect("expected transaction to be preparable");
+    ) -> TransactionReceipt {
+        let mut execution_config = self.resolve_suggested_config(&manifest);
+
+        let executable = manifest
+            .into_executable_with_proofs(
+                self.next_transaction_nonce(),
+                initial_proofs.into_iter().collect(),
+                &self.transaction_validator,
+            )
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Could not convert manifest into executable transaction: {}",
+                    err
+                )
+            });
 
         let vm_init = self.vm_modules.create_vm_init();
 
-        let execution_config =
-            ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
+        // Override the kernel trace config
+        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
         let executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
             &self.database,
@@ -1242,6 +1240,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         transaction_receipt
     }
 
+    /// If you have a non-raw notarized tranasaction, you will need to do:
+    /// ```ignore
+    /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
+    /// ```
     pub fn execute_notarized_transaction(
         &mut self,
         raw_transaction: &RawNotarizedTransaction,
@@ -1261,16 +1263,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_system_transaction(
         &mut self,
         manifest: SystemTransactionManifestV1,
-        proofs: BTreeSet<NonFungibleGlobalId>,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
     ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-        let unique_hash = hash(format!("Test runner txn: {}", nonce));
-        self.execute_transaction(
-            manifest
-                .into_transaction(unique_hash)
-                .with_proofs_ref(proofs),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
+        self.execute_manifest(manifest, initial_proofs)
     }
 
     pub fn execute_test_transaction(

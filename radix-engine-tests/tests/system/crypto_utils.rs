@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::transaction::TransactionReceiptV1;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::vm::NoExtension;
 use radix_engine_tests::common::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -60,7 +60,7 @@ fn crypto_scrypto_bls12381_v1_verify(
     msg: Vec<u8>,
     pub_key: Bls12381G1PublicKey,
     signature: Bls12381G2Signature,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -81,7 +81,7 @@ fn crypto_scrypto_bls12381_v1_aggregate_verify(
     msgs: Vec<Vec<u8>>,
     pub_keys: Vec<Bls12381G1PublicKey>,
     signature: Bls12381G2Signature,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> = pub_keys
         .iter()
         .zip(msgs)
@@ -108,7 +108,7 @@ fn crypto_scrypto_bls12381_v1_fast_aggregate_verify(
     msg: Vec<u8>,
     pub_keys: Vec<Bls12381G1PublicKey>,
     signature: Bls12381G2Signature,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -127,7 +127,7 @@ fn crypto_scrypto_bls12381_g2_signature_aggregate(
     runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     signatures: Vec<Bls12381G2Signature>,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)
@@ -146,7 +146,7 @@ fn crypto_scrypto_keccak256_hash(
     runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     data: Vec<u8>,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(runner.faucet_component(), 500u32)

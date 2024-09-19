@@ -239,20 +239,71 @@ mod test {
                 &transaction.raw_transaction.0,
             );
 
-            // Write manifest
-            // NB: We purposefully don't write the blobs as they're contained in the raw transactions
-            let manifest_string = decompile(&transaction.manifest, network_definition).unwrap();
-            // Whilst we're here, let's validate that the manifest can be recompiled
-            compile_manifest_v1(
-                &manifest_string,
-                network_definition,
-                BlobProvider::new_with_blobs(
-                    transaction.manifest.blobs.values().cloned().collect(),
-                ),
-            )
-            .unwrap();
-            self.manifests_folder
-                .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
+            // Check tranasction manifest
+            {
+                // NB: We purposefully don't write the blobs as they're contained in the raw transactions
+                let manifest_string = match &transaction.transaction_manifest {
+                    UserTransactionManifest::V1(m) => decompile(m, network_definition),
+                    UserTransactionManifest::V2(m) => decompile(m, network_definition),
+                }
+                .expect("Manifest should be decompilable to a string representation");
+
+                // Whilst we're here, let's validate that the manifest can be recompiled
+                let blob_provider = BlobProvider::new_with_blobs(
+                    transaction
+                        .transaction_manifest
+                        .get_blobs()
+                        .values()
+                        .cloned()
+                        .collect(),
+                );
+                match &transaction.transaction_manifest {
+                    UserTransactionManifest::V1(_) => {
+                        compile_manifest_v1(&manifest_string, network_definition, blob_provider)
+                            .map(|_| ())
+                    }
+                    UserTransactionManifest::V2(_) => compile_manifest::<TransactionManifestV2>(
+                        &manifest_string,
+                        network_definition,
+                        blob_provider,
+                    )
+                    .map(|_| ()),
+                }
+                .expect("Decompiled manifest should be recompilable");
+
+                self.manifests_folder
+                    .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
+            }
+
+            // Check subintent manifests
+            for (subintent_index, subintent_manifest) in
+                transaction.subintent_manifests.iter().enumerate()
+            {
+                // NB: We purposefully don't write the blobs as they're contained in the raw transactions
+                let manifest_string = match &subintent_manifest {
+                    UserSubintentManifest::V2(m) => decompile(m, network_definition),
+                }
+                .expect("Subintent manifest should be decompilable to a string representation");
+
+                // Whilst we're here, let's validate that the manifest can be recompiled
+                let blob_provider = BlobProvider::new_with_blobs(
+                    subintent_manifest.get_blobs().values().cloned().collect(),
+                );
+                match subintent_manifest {
+                    UserSubintentManifest::V2(_) => compile_manifest::<SubintentManifestV2>(
+                        &manifest_string,
+                        network_definition,
+                        blob_provider,
+                    )
+                    .map(|_| ()),
+                }
+                .expect("Decompiled manifest should be recompilable");
+
+                self.manifests_folder.put_file(
+                    format!("{transaction_file_prefix}_subintent_{subintent_index}.rtm"),
+                    &manifest_string,
+                );
+            }
 
             // Write receipt
             let address_encoder = AddressBech32Encoder::new(network_definition);

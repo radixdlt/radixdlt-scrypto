@@ -1053,7 +1053,7 @@ impl<V: SystemCallbackObject> System<V> {
         result: TransactionResult,
         print_execution_summary: bool,
         costing_module: CostingModule,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         let (fee_reserve, cost_breakdown, detailed_cost_breakdown) =
             costing_module.unpack_for_receipt();
         let (finalization_summary, costing_parameters, transaction_costing_parameters) =
@@ -1074,7 +1074,7 @@ impl<V: SystemCallbackObject> System<V> {
     fn create_rejection_receipt(
         reason: impl Into<RejectionReason>,
         modules: SystemModuleMixer,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         Self::create_non_commit_receipt(
             TransactionResult::Reject(RejectResult {
                 reason: reason.into(),
@@ -1087,7 +1087,7 @@ impl<V: SystemCallbackObject> System<V> {
     fn create_abort_receipt(
         reason: impl Into<AbortReason>,
         modules: SystemModuleMixer,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         Self::create_non_commit_receipt(
             TransactionResult::Abort(AbortResult {
                 reason: reason.into(),
@@ -1102,7 +1102,7 @@ impl<V: SystemCallbackObject> System<V> {
         mut track: Track<S>,
         modules: SystemModuleMixer,
         system_finalization: SystemFinalization,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         let print_execution_summary = modules.is_kernel_trace_enabled();
         let execution_trace_enabled = modules.is_execution_trace_enabled();
         let (costing_module, runtime_module, execution_trace_module) = modules.unpack();
@@ -1218,13 +1218,9 @@ impl<V: SystemCallbackObject> System<V> {
         transaction_costing_parameters: TransactionCostingParameters,
         fee_summary: TransactionFeeSummary,
         result: TransactionResult,
-    ) -> TransactionReceiptV1 {
-        // TODO - change to TransactionCostingParametersReceiptV1 when we have a plan regarding how
-        //        to break TransactionReceipt compatibility
-        let transaction_costing_parameters = TransactionCostingParametersReceiptV1 {
-            tip_percentage: transaction_costing_parameters
-                .tip
-                .truncate_to_percentage_u16(),
+    ) -> TransactionReceipt {
+        let transaction_costing_parameters = TransactionCostingParametersReceiptV2 {
+            tip_proportion: transaction_costing_parameters.tip.proportion(),
             free_credit_in_xrd: transaction_costing_parameters.free_credit_in_xrd,
         };
 
@@ -1260,7 +1256,7 @@ impl<V: SystemCallbackObject> System<V> {
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
         init_input: SystemSelfInit,
-    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceiptV1> {
+    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceipt> {
         let system_boot = store
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -1381,7 +1377,7 @@ impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
     type Init = SystemInit<V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
-    type Receipt = TransactionReceiptV1;
+    type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,

@@ -308,7 +308,7 @@ where
         transaction: &RawNotarizedTransaction,
         execution_config: &ExecutionConfig,
         modules: &impl VmInitialize,
-    ) -> Result<TransactionReceiptV1, ScenarioExecutorError> {
+    ) -> Result<TransactionReceipt, ScenarioExecutorError> {
         let validated = transaction
             .validate(&self.validator)
             .map_err(ScenarioExecutorError::TransactionValidationError)?;

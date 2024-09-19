@@ -24,6 +24,42 @@ impl NotarizedTransactionV2 {
         self.prepare(validator.preparation_settings())?
             .validate(validator)
     }
+
+    pub fn extract_manifest(&self) -> TransactionManifestV2 {
+        TransactionManifestV2::from_intent_core(&self.signed_intent.root_intent.root_intent_core)
+    }
+
+    pub fn extract_manifests_with_names(
+        &self,
+        names: TransactionObjectNames,
+    ) -> (UserTransactionManifest, Vec<UserSubintentManifest>) {
+        let mut transaction_manifest = TransactionManifestV2::from_intent_core(
+            &self.signed_intent.root_intent.root_intent_core,
+        );
+        transaction_manifest.set_names_if_known(names.root_intent);
+        let subintents = &self.signed_intent.root_intent.subintents.0;
+        if subintents.len() != names.subintents.len() {
+            panic!(
+                "The transaction object names have names for {} subintents but the transaction has {} subintents",
+                names.subintents.len(),
+                subintents.len(),
+            )
+        }
+        let subintent_manifests = self
+            .signed_intent
+            .root_intent
+            .subintents
+            .0
+            .iter()
+            .zip(names.subintents.into_iter())
+            .map(|(subintent, names)| {
+                let mut manifest = SubintentManifestV2::from_intent_core(&subintent.intent_core);
+                manifest.set_names_if_known(names);
+                manifest.into()
+            })
+            .collect();
+        (transaction_manifest.into(), subintent_manifests)
+    }
 }
 
 define_transaction_payload!(
