@@ -2979,7 +2979,7 @@ impl<'a, Y: SystemBasedKernelApi> KernelSubstateApi<SystemLockData> for SystemSe
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2989,7 +2989,7 @@ impl<'a, Y: SystemBasedKernelApi> KernelSubstateApi<SystemLockData> for SystemSe
             .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

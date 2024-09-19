@@ -2,11 +2,7 @@ use crate::internal_prelude::*;
 use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
-use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::*;
-use radix_substate_store_interface::interface::{
-    CommittableSubstateDatabase, ListableSubstateDatabase,
-};
 use sbor::{validate_payload_against_schema, LocalTypeId, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
@@ -130,7 +126,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
     ) -> BTreeMap<BlueprintVersionKey, BlueprintDefinition> {
         let entries = self
             .substate_db
-            .read_map_entries_values_typed::<PackageBlueprintVersionDefinitionEntrySubstate>(
+            .list_map_values::<PackageBlueprintVersionDefinitionEntrySubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -194,7 +190,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
 
         let substate: FieldSubstate<ScryptoValue> = self
             .substate_db
-            .read_substate_typed(node_id, partition_number, SubstateKey::Field(field_index))
+            .get_substate(node_id, partition_number, SubstateKey::Field(field_index))
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
         Ok((
@@ -209,7 +205,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         key: &K,
     ) -> Option<V> {
         self.substate_db
-            .read_substate_typed::<KeyValueEntrySubstate<V>>(
+            .get_substate::<KeyValueEntrySubstate<V>>(
                 node_id,
                 MAIN_BASE_PARTITION,
                 SubstateKey::Map(scrypto_encode(key).unwrap()),
@@ -247,7 +243,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
 
         let substate: FieldSubstate<V> = self
             .substate_db
-            .read_substate_typed(node_id, partition_number, SubstateKey::Field(field_index))
+            .get_substate(node_id, partition_number, SubstateKey::Field(field_index))
             .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
 
         Ok(substate.into_payload())
@@ -294,7 +290,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         let entry = match collection_key {
             ObjectCollectionKey::KeyValue(_, key) => self
                 .substate_db
-                .read_substate_typed::<KeyValueEntrySubstate<V>>(
+                .get_substate::<KeyValueEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     SubstateKey::Map(scrypto_encode(key).unwrap()),
@@ -302,7 +298,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 .and_then(|value| value.into_value()),
             ObjectCollectionKey::Index(_, key) => self
                 .substate_db
-                .read_substate_typed::<IndexEntrySubstate<V>>(
+                .get_substate::<IndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     SubstateKey::Map(scrypto_encode(key).unwrap()),
@@ -310,7 +306,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 .map(|value| value.into_value()),
             ObjectCollectionKey::SortedIndex(_, sort, key) => self
                 .substate_db
-                .read_substate_typed::<SortedIndexEntrySubstate<V>>(
+                .get_substate::<SortedIndexEntrySubstate<V>>(
                     node_id,
                     partition_number,
                     SubstateKey::Sorted((sort.to_be_bytes(), scrypto_encode(key).unwrap())),
@@ -327,7 +323,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         from_key: Option<&MapKey>,
     ) -> Result<Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_>, SystemReaderError> {
         if self.state_updates.is_some() {
-            panic!("substates_iter with overlay not supported.");
+            panic!("key_value_store_iter with overlay not supported.");
         }
 
         match self.get_type_info(node_id)? {
@@ -337,7 +333,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
 
         let iterable = self
             .substate_db
-            .read_map_entries_values_typed::<KeyValueEntrySubstate<ScryptoRawValue>>(
+            .list_map_values::<KeyValueEntrySubstate<ScryptoRawValue>>(
                 node_id,
                 MAIN_BASE_PARTITION,
                 from_key,
@@ -376,7 +372,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         SystemReaderError,
     > {
         if self.state_updates.is_some() {
-            panic!("substates_iter with overlay not supported.");
+            panic!("collection_iter_advanced with overlay not supported.");
         }
 
         let blueprint_id = self.get_blueprint_id(node_id, module_id)?;
@@ -401,7 +397,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             BlueprintCollectionSchema::KeyValueStore(..) => {
                 let iterable = self
                     .substate_db
-                    .read_map_entries_values_typed::<KeyValueEntrySubstate<ScryptoRawValue>>(
+                    .list_map_values::<KeyValueEntrySubstate<ScryptoRawValue>>(
                         node_id,
                         partition_number,
                         from_substate_key,
@@ -417,7 +413,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             BlueprintCollectionSchema::Index(..) => {
                 let iterable = self
                     .substate_db
-                    .read_map_entries_values_typed::<IndexEntrySubstate<ScryptoRawValue>>(
+                    .list_map_values::<IndexEntrySubstate<ScryptoRawValue>>(
                         node_id,
                         partition_number,
                         from_substate_key,
@@ -433,7 +429,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             BlueprintCollectionSchema::SortedIndex(..) => {
                 let iterable = self
                     .substate_db
-                    .read_sorted_entries_values_typed::<SortedIndexEntrySubstate<ScryptoRawValue>>(
+                    .list_sorted_values::<SortedIndexEntrySubstate<ScryptoRawValue>>(
                         node_id,
                         partition_number,
                         from_substate_key,
@@ -917,7 +913,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
-            .read_substate_typed::<D>(node_id, partition_num, key)
+            .get_substate::<D>(node_id, partition_num, key)
     }
 
     pub fn fetch_substate_from_state_updates<D: ScryptoDecode>(
@@ -1102,20 +1098,40 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(descriptors)
     }
 
-    pub fn substates_iter<K: SubstateKeyContent + 'static>(
+    pub fn field_iter(
         &self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_> {
+    ) -> Box<dyn Iterator<Item = (FieldKey, Vec<u8>)> + '_> {
         if self.state_updates.is_some() {
-            panic!("substates_iter with overlay not supported.");
+            panic!("fields_iter with overlay not supported.");
         }
+        self.substate_db
+            .list_field_raw_values(node_id, partition_number, None::<SubstateKey>)
+    }
 
-        let iterable = self
-            .substate_db
-            .read_entries::<K>(node_id, partition_number, None::<SubstateKey>)
-            .map(|(k, v)| (k.into_typed_key(), v));
-        Box::new(iterable)
+    pub fn map_iter(
+        &self,
+        node_id: &NodeId,
+        partition_number: PartitionNumber,
+    ) -> Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_> {
+        if self.state_updates.is_some() {
+            panic!("map_iter with overlay not supported.");
+        }
+        self.substate_db
+            .list_map_raw_values(node_id, partition_number, None::<SubstateKey>)
+    }
+
+    pub fn sorted_iter(
+        &self,
+        node_id: &NodeId,
+        partition_number: PartitionNumber,
+    ) -> Box<dyn Iterator<Item = (SortedKey, Vec<u8>)> + '_> {
+        if self.state_updates.is_some() {
+            panic!("sorted_iter with overlay not supported.");
+        }
+        self.substate_db
+            .list_sorted_raw_values(node_id, partition_number, None::<SubstateKey>)
     }
 }
 

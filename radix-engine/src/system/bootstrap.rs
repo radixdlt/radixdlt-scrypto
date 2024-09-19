@@ -423,7 +423,7 @@ struct FlashedSubstateDatabase {
 }
 
 impl SubstateDatabase for FlashedSubstateDatabase {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -449,7 +449,7 @@ impl SubstateDatabase for FlashedSubstateDatabase {
             })
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,

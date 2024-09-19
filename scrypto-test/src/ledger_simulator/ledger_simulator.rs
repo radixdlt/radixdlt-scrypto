@@ -638,7 +638,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
         let node_id: &NodeId = component_address.as_node_id();
-        let component_state = self.substate_db().read_substate_typed::<FieldSubstate<T>>(
+        let component_state = self.substate_db().get_substate::<FieldSubstate<T>>(
             node_id,
             MAIN_BASE_PARTITION,
             ComponentField::State0,
@@ -679,7 +679,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn get_fungible_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
         let total_supply = self
             .substate_db()
-            .read_substate_typed::<FungibleResourceManagerTotalSupplyFieldSubstate>(
+            .get_substate::<FungibleResourceManagerTotalSupplyFieldSubstate>(
                 resource,
                 MAIN_BASE_PARTITION,
                 FungibleResourceManagerField::TotalSupply,

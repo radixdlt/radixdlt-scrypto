@@ -51,7 +51,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Mapp
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
         self.substate_db
-            .get_substate(&db_partition_key, &db_sort_key)
+            .get_raw_substate_by_db_key(&db_partition_key, &db_sort_key)
             .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
     }
 }
@@ -129,7 +129,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
         canonical_substate_key: CanonicalSubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, E> {
         let result = substate_db
-            .get_substate(partition_key, sort_key)
+            .get_raw_substate_by_db_key(partition_key, sort_key)
             .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
         if let Some(x) = &result {
             on_io_access(IOAccess::ReadFromDb(canonical_substate_key, x.len()))?;
@@ -144,7 +144,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
         'x,
         E: 'x,
         F: FnMut(IOAccess) -> Result<(), E> + 'x,
-        K: SubstateKeyContent + 'static,
+        K: SubstateKeyContent,
     >(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
@@ -157,7 +157,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
             E,
             F: FnMut(IOAccess) -> Result<(), E>,
             M: DatabaseKeyMapper + 'static,
-            K: SubstateKeyContent + 'static,
+            K: SubstateKeyContent,
         > {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             on_io_access: &'a mut F,
@@ -172,7 +172,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
                 E,
                 F: FnMut(IOAccess) -> Result<(), E>,
                 M: DatabaseKeyMapper + 'static,
-                K: SubstateKeyContent + 'static,
+                K: SubstateKeyContent,
             > Iterator for TracedIterator<'a, E, F, M, K>
         {
             type Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>;
@@ -206,7 +206,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
         }
 
         Box::new(TracedIterator {
-            iterator: substate_db.list_entries(partition_key),
+            iterator: substate_db.list_raw_values_from_db_key(partition_key, None),
             on_io_access,
             canonical_partition,
             errored_out: false,
@@ -617,7 +617,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
         Ok(taken)
     }
 
-    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -690,7 +690,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
         Ok(items)
     }
 
-    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
+    fn drain_substates<K: SubstateKeyContent, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_number: PartitionNumber,
@@ -957,7 +957,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
                         TrackedSubstateValue::WriteOnly(write) => {
                             let old_size = self
                                 .substate_db
-                                .get_substate(
+                                .get_raw_substate_by_db_key(
                                     &M::to_db_partition_key(node_id, *partition_number),
                                     db_sort_key,
                                 )

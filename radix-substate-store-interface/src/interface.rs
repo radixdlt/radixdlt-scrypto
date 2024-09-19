@@ -221,15 +221,16 @@ impl DatabaseUpdates {
 
 /// A read interface between Track and a database vendor.
 pub trait SubstateDatabase {
-    /// Reads a substate value by its partition and sort key, or [`Option::None`] if missing.
+    /// Reads a substate value by its db partition and db sort key, or [`Option::None`] if missing.
     ///
     /// ## Alternatives
     ///
-    /// It's likely easier to use the [`read_substate`][SubstateDatabaseExtensions::read_substate] or
-    /// [`read_substate_typed`][SubstateDatabaseExtensions::read_substate_typed] methods instead.
-    /// These should exist on the substate database as long as the [`SubstateDatabaseExtensions`] trait
-    /// is in scope.
-    fn get_substate(
+    /// It's likely easier to use the [`get_substate`][SubstateDatabaseExtensions::get_substate] or
+    /// [`get_raw_substate`][SubstateDatabaseExtensions::get_raw_substate] methods instead, which
+    /// allow providing logical keys.
+    /// These methods should also exist on the database type as long as the
+    /// [`SubstateDatabaseExtensions`] trait is in scope.
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -242,29 +243,13 @@ pub trait SubstateDatabase {
     ///
     /// ## Alternatives
     ///
-    /// There are lots of methods starting `read_` which allow reading entries more easily.
+    /// There are lots of methods starting `list_` which allow iterating using more intuitive abstractions.
     /// These methods are present as long as the [`SubstateDatabaseExtensions`] trait is in scope.
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
-
-    /// Iterates over all entries of the given partition, in a lexicographical order (ascending)
-    /// of the [`DbSortKey`]s.
-    /// This is a convenience method, equivalent to [`Self::list_entries_from()`] with the starting
-    /// key set to [`None`].
-    ///
-    /// ## Alternatives
-    ///
-    /// There are lots of methods starting `read_` which allow reading entries more easily.
-    /// These methods are present as long as the [`SubstateDatabaseExtensions`] trait is in scope.
-    fn list_entries(
-        &self,
-        partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        self.list_entries_from(partition_key, None)
-    }
 }
 
 impl<T: SubstateDatabase + ?Sized> SubstateDatabaseExtensions for T {}
@@ -274,95 +259,97 @@ impl<T: SubstateDatabase + ?Sized> SubstateDatabaseExtensions for T {}
 ///
 /// Generic parameters aren't permitted on object-safe traits.
 pub trait SubstateDatabaseExtensions: SubstateDatabase {
-    fn db_partition_key(
-        node_id: impl AsRef<NodeId>,
-        partition_number: PartitionNumber,
-    ) -> DbPartitionKey {
-        SpreadPrefixKeyMapper::to_db_partition_key(node_id.as_ref(), partition_number)
-    }
-
-    fn db_sort_key<'a>(substate_key: impl ResolvableSubstateKey<'a>) -> DbSortKey {
-        SpreadPrefixKeyMapper::to_db_sort_key_from_ref(
-            substate_key.into_substate_key_or_ref().as_ref(),
-        )
-    }
-
-    fn optional_db_sort_key<'a>(
-        optional_substate_key: impl ResolvableOptionalSubstateKey<'a>,
-    ) -> Option<DbSortKey> {
-        optional_substate_key
-            .into_optional_substate_key_or_ref()
-            .map(|key_or_ref| SpreadPrefixKeyMapper::to_db_sort_key_from_ref(key_or_ref.as_ref()))
-    }
-
-    /// Reads the substate using the default [`SpreadPrefixKeyMapper`].
+    /// Gets the raw bytes of the substate's value, if it exists.
     ///
-    /// ## Example use:
+    /// # Example
     /// ```ignore
-    /// let is_bootstrapped = store.read_substate(
+    /// let is_bootstrapped = db.read_substate(
     ///     PACKAGE_PACKAGE,
     ///     TYPE_INFO_FIELD_PARTITION,
     ///     TypeInfoField::TypeInfo,
     /// ).is_some();
     /// ```
-    fn read_substate<'a>(
+    fn get_raw_substate<'a>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         substate_key: impl ResolvableSubstateKey<'a>,
     ) -> Option<Vec<u8>> {
-        self.get_substate(
-            &Self::db_partition_key(node_id, partition_number),
-            &Self::db_sort_key(substate_key),
+        self.get_raw_substate_by_db_key(
+            &db_partition_key(node_id, partition_number),
+            &db_sort_key(substate_key),
         )
     }
 
-    /// Reads the substate using the default [`SpreadPrefixKeyMapper`], and then
-    /// decodes the substate value. It panics if the value has a decode error.
+    /// Gets the substate's value, if it exists, and returns it decoded as `V`.
     ///
-    /// ## Example use:
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the value into the `V`.
+    ///
+    /// # Example use:
     /// ```ignore
-    /// let type_info_substate: TypeInfoSubstate = store.read_substate_typed(
+    /// let type_info_substate = db.get_substate::<TypeInfoSubstate>(
     ///     PACKAGE_PACKAGE,
     ///     TYPE_INFO_FIELD_PARTITION,
     ///     TypeInfoField::TypeInfo,
-    /// );
+    /// )?;
     /// ```
-    fn read_substate_typed<'a, T: ScryptoDecode>(
+    fn get_substate<'a, V: ScryptoDecode>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         substate_key: impl ResolvableSubstateKey<'a>,
-    ) -> Option<T> {
-        let raw = self.read_substate(node_id, partition_number, substate_key)?;
+    ) -> Option<V> {
+        let raw = self.get_raw_substate(node_id, partition_number, substate_key)?;
         Some(decode_value(&raw))
     }
 
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
+    // ------------------------------------------------------------------------------------
+    // LIST RAW
+    // ------------------------------------------------------------------------------------
+
+    /// Returns an iterator of the substates of a partition from an inclusive start cursor.
+    ///
+    /// The iterator returns raw keys and values.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
     #[inline]
-    fn read_entries_unknown_key<'a>(
+    fn list_raw_values<'a>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
     ) -> Box<dyn Iterator<Item = (DbSortKey, Vec<u8>)> + '_> {
-        self.list_entries_from(
-            &Self::db_partition_key(node_id, partition_number),
-            Self::optional_db_sort_key(from_substate_key_inclusive).as_ref(),
+        self.list_raw_values_from_db_key(
+            &db_partition_key(node_id, partition_number),
+            optional_db_sort_key(from_substate_key_inclusive).as_ref(),
         )
     }
 
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_entries<'a, K: SubstateKeyContent>(
+    // ------------------------------------------------------------------------------------
+    // LIST KINDED PARTITIONS (OF A KNOWN BUT GENERIC KIND)
+    // ------------------------------------------------------------------------------------
+    // NOTE: There is not `list_kinded_entries` because mapping of the key requires knowing
+    // the specific kind of the substate key.
+    // ------------------------------------------------------------------------------------
+
+    /// Returns an iterator of the substates of a partition from an inclusive start cursor.
+    ///
+    /// The iterator returns `K` and the raw value for each substate.
+    /// The caller must specify `K` as [`FieldKey`], [`MapKey`] or [`SortedKey`].
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    fn list_kinded_raw_values<'a, K: SubstateKeyContent>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
     ) -> Box<dyn Iterator<Item = (K, Vec<u8>)> + '_> {
         let iterable = self
-            .list_entries_from(
-                &Self::db_partition_key(node_id, partition_number),
-                Self::optional_db_sort_key(from_substate_key_inclusive).as_ref(),
+            .list_raw_values_from_db_key(
+                &db_partition_key(node_id, partition_number),
+                optional_db_sort_key(from_substate_key_inclusive).as_ref(),
             )
             .map(|(db_sort_key, raw_value)| {
                 (
@@ -373,15 +360,25 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
         Box::new(iterable)
     }
 
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_entries_values_typed<'a, K: SubstateKeyContent, V: ScryptoDecode>(
+    /// Returns an iterator of the substates of a partition from an inclusive start cursor.
+    ///
+    /// The iterator returns `K` and `V` for each substate.
+    /// The caller must specify `K` as [`FieldKey`], [`MapKey`] or [`SortedKey`].
+    /// The value type `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_kinded_values<'a, K: SubstateKeyContent, V: ScryptoDecode>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
     ) -> Box<dyn Iterator<Item = (K, V)> + '_> {
         let iterator = self
-            .read_entries_unknown_key(node_id, partition_number, from_substate_key_inclusive)
+            .list_raw_values(node_id, partition_number, from_substate_key_inclusive)
             .map(|(db_sort_key, raw_value)| {
                 (
                     SpreadPrefixKeyMapper::from_db_sort_key_to_inner::<K>(&db_sort_key),
@@ -391,70 +388,207 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
         Box::new(iterator)
     }
 
-    /// Leaves the key and value raw.
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_map_entries<'a>(
-        &self,
-        node_id: impl AsRef<NodeId>,
-        partition_number: PartitionNumber,
-        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
-    ) -> Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_> {
-        self.read_entries::<MapKey>(node_id, partition_number, from_substate_key_inclusive)
-    }
+    // ------------------------------------------------------------------------------------
+    // LIST FIELD PARTITIONS
+    // ------------------------------------------------------------------------------------
 
-    /// Decodes just the value, leaving the key raw.
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_map_entries_values_typed<'a, V: ScryptoDecode>(
+    /// Returns an iterator of the substates of a field partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `FieldKey = u8` and the raw value for each substate.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    fn list_field_raw_values<'a>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
-    ) -> Box<dyn Iterator<Item = (MapKey, V)> + '_> {
-        self.read_entries_values_typed::<MapKey, V>(
+    ) -> Box<dyn Iterator<Item = (FieldKey, Vec<u8>)> + '_> {
+        self.list_kinded_raw_values::<FieldKey>(
             node_id,
             partition_number,
             from_substate_key_inclusive,
         )
     }
 
-    /// Decodes both the key and value.
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_map_entries_typed<'a, K: ScryptoDecode, V: ScryptoDecode>(
+    /// Returns an iterator of the substates of a field partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `FieldKey = u8` and the decoded value `V` for each substate.
+    /// The value type `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_field_values<'a, V: ScryptoDecode>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
+    ) -> Box<dyn Iterator<Item = (FieldKey, V)> + '_> {
+        self.list_kinded_values::<FieldKey, V>(
+            node_id,
+            partition_number,
+            from_substate_key_inclusive,
+        )
+    }
+
+    /// Returns an iterator of the substates of a field partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the decoded key type `K` and the decoded value `V` for each substate.
+    /// The key type `K` and value types `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error converting the field key byte into `K`.
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_field_entries<'a, K: TryFrom<FieldKey>, V: ScryptoDecode>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
     ) -> Box<dyn Iterator<Item = (K, V)> + '_> {
         let iterator = self
-            .read_map_entries(node_id, partition_number, from_substate_key_inclusive)
-            .map(|(raw_key, raw_value)| (decode_key::<K>(&raw_key), decode_value::<V>(&raw_value)));
+            .list_raw_values(node_id, partition_number, from_substate_key_inclusive)
+            .map(|(db_sort_key, raw_value)| {
+                (
+                    K::try_from(SpreadPrefixKeyMapper::from_db_sort_key_to_inner::<FieldKey>(&db_sort_key))
+                        .unwrap_or_else(|_| panic!("The field key type should be able to be decoded from the substate's key")),
+                    decode_value::<V>(&raw_value),
+                )
+            });
         Box::new(iterator)
     }
 
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_sorted_entries<'a>(
-        &self,
-        node_id: impl AsRef<NodeId>,
-        partition_number: PartitionNumber,
-        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
-    ) -> Box<dyn Iterator<Item = (SortedKey, Vec<u8>)> + '_> {
-        self.read_entries::<SortedKey>(node_id, partition_number, from_substate_key_inclusive)
-    }
+    // ------------------------------------------------------------------------------------
+    // LIST MAP PARTITIONS
+    // ------------------------------------------------------------------------------------
 
-    /// Decodes just the value, leaving the key raw.
-    /// Use `from_substate_key_inclusive: None::<SubstateKey>` to read from start.
-    fn read_sorted_entries_values_typed<'a, V: ScryptoDecode>(
+    /// Returns an iterator of the substates of a map partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `MapKey = Vec<u8>` and the raw value for each substate.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    fn list_map_raw_values<'a>(
         &self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
         from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
-    ) -> Box<dyn Iterator<Item = (SortedKey, V)> + '_> {
-        self.read_entries_values_typed::<SortedKey, V>(
+    ) -> Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_> {
+        self.list_kinded_raw_values::<MapKey>(
             node_id,
             partition_number,
             from_substate_key_inclusive,
         )
     }
+
+    /// Returns an iterator of the substates of a map partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `MapKey = Vec<u8>` and the decoded value `V` for each substate.
+    /// The value type `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_map_values<'a, V: ScryptoDecode>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
+    ) -> Box<dyn Iterator<Item = (MapKey, V)> + '_> {
+        self.list_kinded_values::<MapKey, V>(node_id, partition_number, from_substate_key_inclusive)
+    }
+
+    /// Returns an iterator of the substates of a map partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the decoded key type `K` and the decoded value `V` for each substate.
+    /// The key type `K` and value types `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the field bytes into `K`.
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_map_entries<'a, K: ScryptoDecode, V: ScryptoDecode>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
+    ) -> Box<dyn Iterator<Item = (K, V)> + '_> {
+        let iterator = self
+            .list_map_raw_values(node_id, partition_number, from_substate_key_inclusive)
+            .map(|(raw_key, raw_value)| (decode_key::<K>(&raw_key), decode_value::<V>(&raw_value)));
+        Box::new(iterator)
+    }
+
+    // ------------------------------------------------------------------------------------
+    // LIST SORTED PARTITIONS
+    // ------------------------------------------------------------------------------------
+
+    /// Returns an iterator of the substates of a sorted partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `SortedKey = ([u8; 2], Vec<u8>)` and the raw value for each substate.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    fn list_sorted_raw_values<'a>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
+    ) -> Box<dyn Iterator<Item = (SortedKey, Vec<u8>)> + '_> {
+        self.list_kinded_raw_values::<SortedKey>(
+            node_id,
+            partition_number,
+            from_substate_key_inclusive,
+        )
+    }
+
+    /// Returns an iterator of the substates of a sorted partition from an inclusive start cursor.
+    ///
+    /// The iterator returns the `SortedKey = ([u8; 2], Vec<u8>)` and the decoded value `V`
+    /// for each substate. The value type `V` can be specified or inferred.
+    ///
+    /// Pass `None::<SubstateKey>` as the cursor to iterate from the start of the partition.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * There is an error decoding the value bytes into `V`.
+    fn list_sorted_values<'a, V: ScryptoDecode>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        from_substate_key_inclusive: impl ResolvableOptionalSubstateKey<'a>,
+    ) -> Box<dyn Iterator<Item = (SortedKey, V)> + '_> {
+        self.list_kinded_values::<SortedKey, V>(
+            node_id,
+            partition_number,
+            from_substate_key_inclusive,
+        )
+    }
+}
+
+fn db_partition_key(
+    node_id: impl AsRef<NodeId>,
+    partition_number: PartitionNumber,
+) -> DbPartitionKey {
+    SpreadPrefixKeyMapper::to_db_partition_key(node_id.as_ref(), partition_number)
+}
+
+fn db_sort_key<'a>(substate_key: impl ResolvableSubstateKey<'a>) -> DbSortKey {
+    SpreadPrefixKeyMapper::to_db_sort_key_from_ref(substate_key.into_substate_key_or_ref().as_ref())
+}
+
+fn optional_db_sort_key<'a>(
+    optional_substate_key: impl ResolvableOptionalSubstateKey<'a>,
+) -> Option<DbSortKey> {
+    optional_substate_key
+        .into_optional_substate_key_or_ref()
+        .map(|key_or_ref| SpreadPrefixKeyMapper::to_db_sort_key_from_ref(key_or_ref.as_ref()))
 }
 
 fn decode_key<K: ScryptoDecode>(raw: &[u8]) -> K {

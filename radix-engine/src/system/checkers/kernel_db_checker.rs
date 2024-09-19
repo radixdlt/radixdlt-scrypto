@@ -43,7 +43,7 @@ impl KernelDatabaseChecker {
             }
 
             for (_, value) in
-                substate_db.read_entries_unknown_key(node_id, partition_number, None::<SubstateKey>)
+                substate_db.list_raw_values(node_id, partition_number, None::<SubstateKey>)
             {
                 let value = IndexedScryptoValue::from_vec(value)
                     .map_err(KernelDatabaseCheckError::DecodeError)?;

@@ -49,7 +49,7 @@ fn test_stake_reconciliation() {
     let db = ledger.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
-        let entries = db.list_entries(&key);
+        let entries = db.list_raw_values_from_db_key(&key, None);
         for (sort_key, value) in entries {
             pre_transaction_substates.insert((key.clone(), sort_key), value);
         }
@@ -327,7 +327,7 @@ fn test_stake_reconciliation() {
     }
 
     for key in post_transaction_partitions {
-        let partition_entries = ledger.substate_db().list_entries(&key);
+        let partition_entries = ledger.substate_db().list_raw_values_from_db_key(&key, None);
         for (sort_key, current_value) in partition_entries {
             let full_key = (key.clone(), sort_key.clone());
             let address = AddressBech32Encoder::for_simulator()

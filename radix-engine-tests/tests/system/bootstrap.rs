@@ -265,7 +265,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     } = hooks.into_genesis_receipts();
 
     let total_supply = substate_db
-        .read_substate_typed::<FungibleResourceManagerTotalSupplyFieldSubstate>(
+        .get_substate::<FungibleResourceManagerTotalSupplyFieldSubstate>(
             resource_address,
             MAIN_BASE_PARTITION,
             FungibleResourceManagerField::TotalSupply,

@@ -35,7 +35,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
-        .read_map_entries_values_typed::<PackageCodeOriginalCodeEntrySubstate>(
+        .list_map_values::<PackageCodeOriginalCodeEntrySubstate>(
             package_address,
             PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition(),
             None::<SubstateKey>,

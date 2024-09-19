@@ -161,7 +161,7 @@ impl<M: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<M
         panic1!()
     }
 
-    fn kernel_scan_keys<F: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<F: SubstateKeyContent>(
         &mut self,
         _: &NodeId,
         _: PartitionNumber,
@@ -170,7 +170,7 @@ impl<M: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<M
         panic1!()
     }
 
-    fn kernel_drain_substates<F: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<F: SubstateKeyContent>(
         &mut self,
         _: &NodeId,
         _: PartitionNumber,

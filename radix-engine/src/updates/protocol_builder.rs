@@ -299,7 +299,7 @@ impl ProtocolExecutor {
 
     pub fn is_bootstrapped(store: &mut impl SubstateDatabase) -> bool {
         store
-            .read_substate(
+            .get_raw_substate(
                 PACKAGE_PACKAGE,
                 TYPE_INFO_FIELD_PARTITION,
                 TypeInfoField::TypeInfo,

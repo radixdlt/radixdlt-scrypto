@@ -89,7 +89,7 @@ fn generate_principal_batch(
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let system_boot: SystemBoot = db
-        .read_substate_typed(
+        .get_substate(
             TRANSACTION_TRACKER,
             BOOT_LOADER_PARTITION,
             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),

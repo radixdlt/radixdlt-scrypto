@@ -77,7 +77,7 @@ impl StateUpdateSummary {
                     return false;
                 }
                 let node_previously_existed = base_substate_db
-                    .read_substate(node_id, type_id_partition_number, type_id_substate_key)
+                    .get_raw_substate(node_id, type_id_partition_number, type_id_substate_key)
                     .is_some();
                 return !node_previously_existed;
             })

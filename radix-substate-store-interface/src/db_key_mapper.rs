@@ -64,7 +64,7 @@ pub trait DatabaseKeyMapper: 'static {
     /// Mapper::from_db_sort_key::<MapKey>(&db_sort_key);
     /// Mapper::from_db_sort_key::<SortedKey>(&db_sort_key);
     /// ```
-    fn from_db_sort_key<K: SubstateKeyContent + 'static>(db_sort_key: &DbSortKey) -> SubstateKey {
+    fn from_db_sort_key<K: SubstateKeyContent>(db_sort_key: &DbSortKey) -> SubstateKey {
         K::from_db_key::<Self>(db_sort_key).into_typed_key()
     }
 

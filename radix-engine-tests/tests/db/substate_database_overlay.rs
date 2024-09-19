@@ -33,7 +33,7 @@ fn substates_written_to_root_database_can_be_read() {
     let db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -68,7 +68,7 @@ fn substates_written_to_overlay_can_be_read_later() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -116,7 +116,7 @@ fn substate_deletes_to_overlay_prevent_substate_from_being_read() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -162,7 +162,7 @@ fn partition_deletes_to_overlay_prevent_substate_from_being_read() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -210,7 +210,7 @@ fn partition_resets_to_overlay_return_new_substate_data() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -269,7 +269,7 @@ fn partition_resets_are_not_combined() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -304,7 +304,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_reset_mode() 
     });
 
     // Act
-    let mut substates = db.list_entries_from(
+    let mut substates = db.list_raw_values_from_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -348,7 +348,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_delta_mode() 
     });
 
     // Act
-    let mut substates = db.list_entries_from(
+    let mut substates = db.list_raw_values_from_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -441,7 +441,7 @@ fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>
     let mut accumulator_hash = Hash([0; 32]);
     for (node_id, partition_number) in database.read_partition_keys() {
         for (substate_key, substate_value) in
-            database.read_entries_unknown_key(node_id, partition_number, None::<SubstateKey>)
+            database.list_raw_values(node_id, partition_number, None::<SubstateKey>)
         {
             let entry_hash = hash(
                 scrypto_encode(&(node_id, partition_number, substate_key, substate_value)).unwrap(),

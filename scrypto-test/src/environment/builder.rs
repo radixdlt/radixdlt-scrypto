@@ -208,7 +208,7 @@ where
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
                 let vm_boot = database
-                    .read_substate_typed(
+                    .get_substate(
                         TRANSACTION_TRACKER,
                         BOOT_LOADER_PARTITION,
                         BOOT_LOADER_VM_BOOT_FIELD_KEY,
@@ -415,7 +415,7 @@ impl FlashSubstateDatabase {
 }
 
 impl SubstateDatabase for FlashSubstateDatabase {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -426,7 +426,7 @@ impl SubstateDatabase for FlashSubstateDatabase {
             .cloned()
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
