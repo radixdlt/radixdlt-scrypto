@@ -73,13 +73,13 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
 impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
     for SubstateStoreWithMetrics<S>
 {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         let start = std::time::Instant::now();
-        let ret = self.db.get_substate(partition_key, sort_key);
+        let ret = self.db.get_raw_substate_by_db_key(partition_key, sort_key);
         let duration = start.elapsed();
 
         if let Some(value) = ret {
@@ -95,12 +95,13 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase
         }
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        self.db.list_entries_from(partition_key, from_sort_key)
+        self.db
+            .list_raw_values_from_db_key(partition_key, from_sort_key)
     }
 }
 
@@ -152,7 +153,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatab
                                 )
                             } else {
                                 delete_found = true;
-                                if let Some(value) = self.get_substate(
+                                if let Some(value) = self.get_raw_substate_by_db_key(
                                     &DbPartitionKey {
                                         node_key: node_key.clone(),
                                         partition_num: *partition_num,
