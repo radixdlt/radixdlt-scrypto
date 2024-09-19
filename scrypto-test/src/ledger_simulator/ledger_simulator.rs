@@ -1215,16 +1215,19 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         let execution_config =
             ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
-        let mut executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
+
+        let executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
             &self.database,
             InjectCostingErrorInput {
                 system_input: SystemInit {
-                    enable_kernel_trace: execution_config.enable_kernel_trace,
-                    enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                    enable_debug_information: execution_config.enable_debug_information,
-                    execution_trace: execution_config.execution_trace,
+                    self_init: SystemSelfInit {
+                        enable_kernel_trace: execution_config.enable_kernel_trace,
+                        enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                        enable_debug_information: execution_config.enable_debug_information,
+                        execution_trace: execution_config.execution_trace,
+                        system_overrides: execution_config.system_overrides.clone(),
+                    },
                     callback_init: vm_init,
-                    system_overrides: execution_config.system_overrides.clone(),
                 },
                 error_after_count,
             },

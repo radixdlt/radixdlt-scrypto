@@ -140,7 +140,7 @@ pub trait ExecutionReceipt {
 
 pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
-    type Init: Clone;
+    type Init;
     /// The transaction object
     type Executable;
     /// Output to be returned at the end of execution

@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{System, SystemInit};
+use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::Track;
 use crate::transaction::*;
@@ -296,15 +296,14 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
-        let kernel_boot = BootLoader {
+    pub fn execute(self, executable: V::Executable) -> V::Receipt {
+        BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
-            init: self.system_init.clone(),
+            init: self.system_init,
             phantom: PhantomData::<V>::default(),
-        };
-
-        kernel_boot.execute(executable)
+        }
+        .execute(executable)
     }
 }
 
@@ -315,12 +314,14 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
     let system_init = SystemInit {
-        enable_kernel_trace: execution_config.enable_kernel_trace,
-        enable_cost_breakdown: execution_config.enable_cost_breakdown,
-        enable_debug_information: execution_config.enable_debug_information,
-        execution_trace: execution_config.execution_trace,
+        self_init: SystemSelfInit {
+            enable_kernel_trace: execution_config.enable_kernel_trace,
+            enable_cost_breakdown: execution_config.enable_cost_breakdown,
+            enable_debug_information: execution_config.enable_debug_information,
+            execution_trace: execution_config.execution_trace,
+            system_overrides: execution_config.system_overrides.clone(),
+        },
         callback_init: vm_init,
-        system_overrides: execution_config.system_overrides.clone(),
     };
     TransactionExecutor::<_, System<V>>::new(substate_db, system_init).execute(executable)
 }

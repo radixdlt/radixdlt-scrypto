@@ -93,7 +93,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
             .unwrap_or(KernelBoot::babylon());
 
         // Upper Layer Initialization
-        let system_init_result = M::init(&mut self.track, &executable, self.init.clone());
+        let system_init_result = M::init(&mut self.track, &executable, self.init);
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,

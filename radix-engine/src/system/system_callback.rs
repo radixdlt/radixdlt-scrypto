@@ -66,7 +66,18 @@ pub enum SystemBoot {
 }
 
 impl SystemBoot {
-    fn system_logic(&self) -> VersionedSystemLogic {
+    pub fn fallback_or_panic(overrides: Option<&SystemOverrides>) -> Self {
+        SystemBoot::V1(SystemParameters {
+            network_definition: overrides
+                .and_then(|config| config.network_definition.clone())
+                .expect("If no SystemBoot exists, a network_definition override must be provided"),
+            costing_parameters: CostingParameters::babylon_genesis(),
+            costing_module_config: CostingModuleConfig::babylon_genesis(),
+            limit_parameters: LimitParameters::babylon_genesis(),
+        })
+    }
+
+    fn system_logic_version(&self) -> VersionedSystemLogic {
         match self {
             Self::V1(..) => VersionedSystemLogic::V1,
             Self::V2(logic, _) => *logic,
@@ -244,24 +255,25 @@ impl<V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>> SystemBa
     type SystemCallback = V;
 }
 
-#[derive(Clone)]
-pub struct SystemInit<C> {
+pub struct SystemInit<V> {
+    pub self_init: SystemSelfInit,
+    pub callback_init: V,
+}
+
+pub struct SystemSelfInit {
     // These fields only affect side effects and do not affect ledger state execution
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
     pub enable_debug_information: bool,
 
-    // Higher layer initialization object
-    pub callback_init: C,
-
     // An override of system configuration
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<C: SystemCallbackObject> {
+pub struct System<V: SystemCallbackObject> {
     pub versioned_system_logic: VersionedSystemLogic,
-    pub callback: C,
+    pub callback: V,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
@@ -273,7 +285,7 @@ pub trait HasModules {
     fn modules_mut(&mut self) -> &mut SystemModuleMixer;
 }
 
-impl<C: SystemCallbackObject> HasModules for System<C> {
+impl<V: SystemCallbackObject> HasModules for System<V> {
     #[inline]
     fn modules_mut(&mut self) -> &mut SystemModuleMixer {
         &mut self.modules
@@ -285,7 +297,7 @@ pub struct SystemFinalization {
     intent_nullifications: Vec<IntentHashNullification>,
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<V: SystemCallbackObject> System<V> {
     fn on_move_node<Y: SystemBasedKernelApi>(
         node_id: &NodeId,
         is_moving_down: bool,
@@ -334,7 +346,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<V: SystemCallbackObject> System<V> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
@@ -1250,7 +1262,7 @@ impl<C: SystemCallbackObject> System<C> {
     fn resolve_modules(
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
-        init_input: &SystemInit<C::Init>,
+        init_input: SystemSelfInit,
     ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceiptV1> {
         let system_boot = store
             .read_boot_substate(
@@ -1259,14 +1271,11 @@ impl<C: SystemCallbackObject> System<C> {
                 &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(SystemBoot::V1(SystemParameters {
-                network_definition: NetworkDefinition::mainnet(),
-                costing_parameters: CostingParameters::babylon_genesis(),
-                costing_module_config: CostingModuleConfig::babylon_genesis(),
-                limit_parameters: LimitParameters::babylon_genesis(),
-            }));
+            .unwrap_or(SystemBoot::fallback_or_panic(
+                init_input.system_overrides.as_ref(),
+            ));
 
-        let system_logic_version = system_boot.system_logic();
+        let system_logic_version = system_boot.system_logic_version();
         let mut system_parameters = match system_boot {
             SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
                 system_parameters
@@ -1368,8 +1377,8 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
-    type Init = SystemInit<C::Init>;
+impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
+    type Init = SystemInit<V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceiptV1;
@@ -1377,18 +1386,19 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &ExecutableTransaction,
-        init_input: SystemInit<C::Init>,
+        init_input: SystemInit<V::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if init_input.enable_kernel_trace {
+        if init_input.self_init.enable_kernel_trace {
             Self::print_executable(executable);
         }
 
-        let (logic_version, mut modules) = Self::resolve_modules(store, executable, &init_input)?;
+        let (logic_version, mut modules) =
+            Self::resolve_modules(store, executable, init_input.self_init)?;
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
-        let callback = match C::init(store, init_input.callback_init) {
+        let callback = match V::init(store, init_input.callback_init) {
             Ok(callback) => callback,
             Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
         };
@@ -1598,7 +1608,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
+impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
@@ -1804,7 +1814,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     .expect("Schema should have validated this exists")
                     .clone();
                 let output =
-                    { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
+                    { V::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
                 // Validate output
                 system.validate_blueprint_payload(
@@ -1834,7 +1844,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
-                let output = C::invoke(
+                let output = V::invoke(
                     &blueprint_id.package_address,
                     export.clone(),
                     &input,
