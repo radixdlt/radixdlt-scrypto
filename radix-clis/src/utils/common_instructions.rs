@@ -777,7 +777,7 @@ mod test {
             let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
                 build_and_decode(&arg, type_kind.clone(), type_validation)
                     .expect("Failed to parse arg");
-            let instructions = builder.build().instructions;
+            let instructions = builder.build_no_validate().instructions;
 
             // Assert
             assert_eq!(
@@ -823,7 +823,7 @@ mod test {
             let (builder, parsed_arg): (ManifestBuilder, ManifestBucket) =
                 build_and_decode(&arg, type_kind.clone(), type_validation)
                     .expect("Failed to parse arg");
-            let instructions = builder.build().instructions;
+            let instructions = builder.build_no_validate().instructions;
             let ids = local_ids
                 .map(|id| NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(id)))
                 .to_vec();

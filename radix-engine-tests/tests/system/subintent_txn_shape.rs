@@ -11,8 +11,7 @@ fn simple_subintent_should_work() {
 
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-            //.yield_to_parent(())
+            .yield_to_parent(())
             .build(),
         [],
     );
@@ -46,8 +45,7 @@ fn multiple_flat_subintents_should_work() {
         .map(|_| {
             builder.add_subintent(
                 ManifestBuilder::new_subintent_v2()
-                    // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-                    //.yield_to_parent(())
+                    .yield_to_parent(())
                     .build(),
                 [],
             )
@@ -86,8 +84,7 @@ fn multiple_deep_subintents_should_work() {
     // Create deepest child
     let mut child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-            //.yield_to_parent(())
+            .yield_to_parent(())
             .build(),
         [],
     );
@@ -98,8 +95,7 @@ fn multiple_deep_subintents_should_work() {
             ManifestBuilder::new_subintent_v2()
                 .use_child("child", child)
                 .yield_to_child("child", ())
-                // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-                //.yield_to_parent(())
+                .yield_to_parent(())
                 .build(),
             [],
         );

@@ -39,7 +39,7 @@ where
         std::fs::write(blob_path, blob_content)?;
     }
 
-    manifest.validate()?;
+    manifest.validate(ValidationRuleset::all())?;
 
     Ok(())
 }

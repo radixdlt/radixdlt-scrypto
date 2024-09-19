@@ -71,8 +71,8 @@ pub trait ReadableManifest {
     }
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef;
 
-    fn validate(&self) -> Result<(), ManifestValidationError> {
-        StaticManifestInterpreter::new(ValidationRuleset::all(), self).validate()
+    fn validate(&self, ruleset: ValidationRuleset) -> Result<(), ManifestValidationError> {
+        StaticManifestInterpreter::new(ruleset, self).validate()
     }
 }
 

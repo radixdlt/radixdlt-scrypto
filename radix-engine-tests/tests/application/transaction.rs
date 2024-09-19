@@ -117,7 +117,7 @@ fn test_non_existent_blob_hash() {
                 package_address: None,
             },
         )
-        .build();
+        .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -246,19 +246,13 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(true);
 
-    let manifest = ManifestBuilder::new()
+    ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
         .take_from_worktop(XRD, 73, "XRD")
         .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
         .drop_all_proofs()
         .try_deposit_or_abort(account, None, "XRD")
-        .build();
-
-    // Act
-    let rtn = manifest.validate();
-
-    // Assert
-    rtn.expect("Validation of the manifest failed")
+        .build(); // This asserts the manifest is valid
 }
 
 #[test]
@@ -267,19 +261,13 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(true);
 
-    let manifest = ManifestBuilder::new()
+    ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
         .take_from_worktop(XRD, 73, "XRD")
         .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
         .drop_named_proofs()
         .try_deposit_or_abort(account, None, "XRD")
-        .build();
-
-    // Act
-    let rtn = manifest.validate();
-
-    // Assert
-    rtn.expect("Validation of the manifest failed")
+        .build(); // This asserts the manifest is valid
 }
 
 #[test]

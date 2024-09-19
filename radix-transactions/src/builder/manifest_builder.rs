@@ -435,7 +435,9 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
     /// If you don't wish to validate the manifest, use [`build_no_validate`][Self::build_no_validate] instead.
     pub fn build(self) -> M {
         let manifest = self.build_no_validate();
-        manifest.validate().expect("Manifest should be valid");
+        manifest
+            .validate(ValidationRuleset::all())
+            .expect("Manifest should be valid");
         manifest
     }
 

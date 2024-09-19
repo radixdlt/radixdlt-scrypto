@@ -477,7 +477,11 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         let state = self.get_existing_bucket::<V>(bucket)?;
         if check_proof_locks && state.proof_locks > 0 {
             return ControlFlow::Break(
-                ManifestValidationError::BucketLockedByProof(bucket, format!("{state:?}")).into(),
+                ManifestValidationError::BucketConsumedWhilstLockedByProof(
+                    bucket,
+                    format!("{state:?}"),
+                )
+                .into(),
             );
         }
         state.consumed_at = Some(location);
@@ -832,7 +836,7 @@ pub enum ManifestValidationError {
     BlobNotRegistered(ManifestBlobRef),
     BucketNotYetCreated(ManifestBucket),
     BucketAlreadyUsed(ManifestBucket, String),
-    BucketLockedByProof(ManifestBucket, String),
+    BucketConsumedWhilstLockedByProof(ManifestBucket, String),
     ProofNotYetCreated(ManifestProof),
     ProofAlreadyUsed(ManifestProof, String),
     AddressReservationNotYetCreated(ManifestAddressReservation),

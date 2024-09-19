@@ -215,7 +215,7 @@ impl TransactionValidator {
     ) -> Result<(), TransactionValidationError> {
         self.validate_header_v1(&intent.header.inner)?;
         self.validate_message_v1(&intent.message.inner)?;
-        self.validate_instructions_v1(&intent.instructions.inner.0)?;
+        self.validate_instructions_v1(&intent.instructions.inner.0, &intent.blobs.blobs_by_hash)?;
 
         return Ok(());
     }
@@ -223,17 +223,38 @@ impl TransactionValidator {
     pub fn validate_instructions_v1(
         &self,
         instructions: &[InstructionV1],
+        blobs: &IndexMap<Hash, Vec<u8>>,
     ) -> Result<(), TransactionValidationError> {
         if instructions.len() > self.config.max_instructions {
             return Err(ManifestValidationError::TooManyInstructions.into());
         }
+        impl<'a> ReadableManifest for (&'a [InstructionV1], &'a IndexMap<Hash, Vec<u8>>) {
+            type Instruction = InstructionV1;
+
+            fn is_subintent(&self) -> bool {
+                false
+            }
+
+            fn get_instructions(&self) -> &[Self::Instruction] {
+                self.0
+            }
+
+            fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
+                self.1.iter()
+            }
+
+            fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+                ManifestObjectNamesRef::Unknown
+            }
+        }
+
         match self.config.manifest_validation {
             ManifestValidationRuleset::BabylonBasicValidator => self
                 .validate_instructions_basic_v1(instructions)
                 .map_err(|err| err.into()),
             ManifestValidationRuleset::Interpreter(specifier) => StaticManifestInterpreter::new(
                 ValidationRuleset::for_specifier(specifier),
-                instructions,
+                &(instructions, blobs),
             )
             .validate()
             .map_err(|err| err.into()),
@@ -1467,7 +1488,7 @@ mod tests {
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::ManifestValidationError(
-                ManifestValidationError::BucketLockedByProof(ManifestBucket(0), _,)
+                ManifestValidationError::BucketConsumedWhilstLockedByProof(ManifestBucket(0), _,)
             ))
         ));
     }
