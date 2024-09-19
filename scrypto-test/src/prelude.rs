@@ -34,6 +34,7 @@ pub use radix_engine::system::system_modules::*;
 pub use radix_engine::system::system_substates::*;
 pub use radix_engine::track::*;
 pub use radix_engine::transaction::*;
+pub use radix_engine::updates::*;
 pub use radix_engine::utils::*;
 pub use radix_engine::vm::wasm::*;
 pub use radix_engine::vm::*;

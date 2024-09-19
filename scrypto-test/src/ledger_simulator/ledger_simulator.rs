@@ -1012,7 +1012,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let mut manifest_builder = ManifestBuilder::new_system_v1();
         let reservation =
-            manifest_builder.add_address_preallocation(address, PACKAGE_PACKAGE, PACKAGE_BLUEPRINT);
+            manifest_builder.use_preallocated_address(address, PACKAGE_PACKAGE, PACKAGE_BLUEPRINT);
         let manifest = manifest_builder
             .publish_package_advanced(
                 reservation,
