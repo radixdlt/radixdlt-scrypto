@@ -65,8 +65,8 @@ impl BuildableManifest for SystemTransactionManifestV1 {
         self.preallocated_addresses.len()
     }
 
-    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType {
-        SuggestedExecutionConfigType::System
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::System
     }
 
     fn into_executable_with_proofs(

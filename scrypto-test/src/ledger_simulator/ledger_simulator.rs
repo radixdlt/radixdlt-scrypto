@@ -1126,14 +1126,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     fn resolve_suggested_config(&self, manifest: &impl BuildableManifest) -> ExecutionConfig {
-        match manifest.suggested_execution_config_type() {
-            SuggestedExecutionConfigType::Notarized => {
+        match manifest.default_test_execution_config_type() {
+            DefaultTestExecutionConfigType::Notarized => {
                 ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             }
-            SuggestedExecutionConfigType::System => {
+            DefaultTestExecutionConfigType::System => {
                 ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             }
-            SuggestedExecutionConfigType::Test => ExecutionConfig::for_test_transaction(),
+            DefaultTestExecutionConfigType::Test => ExecutionConfig::for_test_transaction(),
         }
         .with_kernel_trace(self.with_kernel_trace)
     }

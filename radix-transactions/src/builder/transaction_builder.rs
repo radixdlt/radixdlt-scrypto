@@ -418,11 +418,13 @@ impl TransactionV2Builder {
 
     pub fn create_intent_and_subintent_info(&mut self) -> &TransactionIntentV2 {
         if self.intent_and_subintent_signatures.is_none() {
-            let manifest = mem::take(&mut self.manifest)
+            let manifest = self
+                .manifest
+                .take()
                 .expect("Manifest must be provided before this action is performed");
             let (instructions, blobs, child_hashes, root_object_names) =
                 manifest.for_intent_with_names();
-            let subintents = core::mem::take(&mut self.children);
+            let subintents = mem::take(&mut self.children);
 
             let mut aggregated_subintents = vec![];
             let mut aggregated_subintent_signatures = vec![];
@@ -518,8 +520,10 @@ impl TransactionV2Builder {
     pub fn create_signed_transaction_intent(&mut self) -> &SignedTransactionIntentV2 {
         if self.signed_intent.is_none() {
             self.create_intent_and_subintent_info();
-            let (root_intent, subintent_signatures) =
-                mem::take(&mut self.intent_and_subintent_signatures).unwrap();
+            let (root_intent, subintent_signatures) = self
+                .intent_and_subintent_signatures
+                .take()
+                .expect("Intent was created in create_intent_and_subintent_info()");
             let signatures = mem::take(&mut self.intent_signatures);
             let signed_intent = SignedTransactionIntentV2 {
                 root_intent,

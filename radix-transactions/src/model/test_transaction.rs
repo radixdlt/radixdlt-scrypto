@@ -1,10 +1,4 @@
 use crate::internal_prelude::*;
-use crate::model::*;
-use radix_common::crypto::hash;
-use radix_common::data::manifest::*;
-use radix_common::types::NonFungibleGlobalId;
-use std::collections::BTreeSet;
-use std::ops::Deref;
 
 #[derive(ManifestSbor)]
 pub enum TestTransaction {
@@ -144,7 +138,7 @@ impl PreparedTestIntent {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
-            references: prepared_instructions.references.deref().clone(),
+            references: prepared_instructions.references.as_ref().clone(),
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
             children_intent_indices: intent.children_intent_indices,

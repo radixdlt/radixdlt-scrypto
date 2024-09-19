@@ -25,7 +25,7 @@ pub trait BuildableManifest:
         0
     }
 
-    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType;
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType;
     fn into_executable_with_proofs(
         self,
         nonce: u32,
@@ -35,7 +35,7 @@ pub trait BuildableManifest:
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SuggestedExecutionConfigType {
+pub enum DefaultTestExecutionConfigType {
     Notarized,
     System,
     Test,

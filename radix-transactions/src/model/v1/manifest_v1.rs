@@ -49,8 +49,8 @@ impl BuildableManifest for TransactionManifestV1 {
         self.object_names = names.into()
     }
 
-    fn suggested_execution_config_type(&self) -> SuggestedExecutionConfigType {
-        SuggestedExecutionConfigType::Test
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
     }
 
     fn into_executable_with_proofs(
