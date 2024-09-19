@@ -13,7 +13,7 @@ pub struct SignedTransactionIntentV2 {
     pub subintent_signatures: MultipleIntentSignaturesV2,
 }
 
-transaction_payload_v2!(
+define_transaction_payload!(
     SignedTransactionIntentV2,
     RawSignedTransactionIntent,
     PreparedSignedTransactionIntentV2 {

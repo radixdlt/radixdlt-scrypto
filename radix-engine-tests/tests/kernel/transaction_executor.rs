@@ -5,7 +5,6 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
 
 use radix_transactions::validation::*;
@@ -33,10 +32,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     );
 
     // Act
-    let receipt = ledger.execute_transaction(
-        get_validated(&transaction).unwrap().get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_transaction(transaction, ExecutionConfig::for_test_transaction());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -72,10 +68,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     );
 
     // Act
-    let receipt = ledger.execute_transaction(
-        get_validated(&transaction).unwrap().get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_transaction(transaction, ExecutionConfig::for_test_transaction());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -115,9 +108,10 @@ fn test_normal_transaction_flow() {
     .to_raw()
     .unwrap();
 
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-    let validated = validator
-        .validate_from_raw(&raw_transaction)
+    let validator =
+        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+    let validated = raw_transaction
+        .validate(&validator)
         .expect("Invalid transaction");
     let executable = validated.get_executable();
     assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
@@ -132,12 +126,4 @@ fn test_normal_transaction_flow() {
 
     // Assert
     receipt.expect_commit_success();
-}
-
-fn get_validated(
-    transaction: &NotarizedTransactionV1,
-) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-
-    validator.validate(transaction.prepare().unwrap())
 }

@@ -125,14 +125,17 @@ impl TestTransaction {
     }
 
     #[allow(deprecated)]
-    pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
+    pub fn prepare(
+        self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedTestTransaction, PrepareError> {
         match self {
             Self::V1(intent) => {
-                let prepared_instructions = intent.instructions.prepare_partial()?;
+                let prepared_instructions = intent.instructions.prepare_partial(settings)?;
                 Ok(PreparedTestTransaction::V1(PreparedTestIntent {
                     encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
                     references: prepared_instructions.references,
-                    blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
+                    blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
                     hash: intent.hash,
                     children_intent_indices: vec![],
                     initial_proofs: intent.initial_proofs,
@@ -141,13 +144,13 @@ impl TestTransaction {
             Self::V2(intents) => {
                 let mut prepared = vec![];
                 for intent in intents {
-                    let prepared_instructions = intent.instructions.prepare_partial()?;
+                    let prepared_instructions = intent.instructions.prepare_partial(settings)?;
                     prepared.push(PreparedTestIntent {
                         encoded_instructions: Rc::new(manifest_encode(
                             &prepared_instructions.inner.0,
                         )?),
                         references: prepared_instructions.references.deref().clone(),
-                        blobs: intent.blobs.prepare_partial()?.blobs_by_hash,
+                        blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
                         hash: intent.hash,
                         children_intent_indices: intent.children_intent_indices,
                         initial_proofs: intent.initial_proofs,
@@ -157,6 +160,19 @@ impl TestTransaction {
                 Ok(PreparedTestTransaction::V2(prepared))
             }
         }
+    }
+}
+
+impl IntoExecutable for TestTransaction {
+    type Error = PrepareError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self
+            .prepare(validator.preparation_settings())?
+            .get_executable())
     }
 }
 
@@ -238,5 +254,16 @@ impl PreparedTestTransaction {
                 ExecutableTransaction::new_v2(intents, context)
             }
         }
+    }
+}
+
+impl IntoExecutable for PreparedTestTransaction {
+    type Error = core::convert::Infallible;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self.get_executable())
     }
 }

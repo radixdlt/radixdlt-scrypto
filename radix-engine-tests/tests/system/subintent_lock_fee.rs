@@ -47,13 +47,7 @@ fn should_not_be_able_to_lock_fee_in_a_child_subintent() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_specific_failure(|e| {

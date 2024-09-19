@@ -88,13 +88,14 @@ impl TxnExecuteInMemory {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let state_updates = execute_ledger_transaction(
+                let (_validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
                     &tx_payload,
                     trace,
                 );
+                let state_updates = receipt.into_state_updates();
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);

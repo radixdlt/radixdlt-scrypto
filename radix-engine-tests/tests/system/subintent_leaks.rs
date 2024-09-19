@@ -1,15 +1,10 @@
-use radix_common::constants::XRD;
-use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::transaction::ExecutionConfig;
-use radix_engine_interface::macros::dec;
-use radix_rust::btreeset;
 use radix_transactions::builder::ResolvableArguments;
 use radix_transactions::manifest::YieldToChild;
 use radix_transactions::model::{ManifestNamedIntentIndex, TestTransaction};
 use radix_transactions::prelude::ManifestBuilder;
-use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn bucket_leak_in_subintent_should_fail() {
@@ -51,13 +46,7 @@ fn bucket_leak_in_subintent_should_fail() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -110,13 +99,7 @@ fn proofs_in_subintent_should_autodrop() {
         },
     ];
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_commit_success();

@@ -2538,6 +2538,7 @@ dependencies = [
  "radix-common",
  "radix-engine-interface",
  "radix-rust",
+ "radix-substate-store-interface",
  "sbor",
  "scrypto",
  "scrypto-derive",

@@ -73,10 +73,13 @@ impl_has_summary!(PreparedChildIntentsV2);
 
 impl TransactionPreparableFromValueBody for PreparedChildIntentsV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let (hashes, summary) = ConcatenatedDigest::prepare_from_sbor_array_value_body::<
-            Vec<RawHash>,
-            V2_MAX_NUMBER_OF_CHILD_SUBINTENTS_IN_INTENT,
-        >(decoder, ValueType::ChildIntentConstraint)?;
+        let max_child_subintents_per_intent = decoder.settings().max_child_subintents_per_intent;
+        let (hashes, summary) =
+            ConcatenatedDigest::prepare_from_sbor_array_value_body::<Vec<RawHash>>(
+                decoder,
+                ValueType::ChildIntentConstraint,
+                max_child_subintents_per_intent,
+            )?;
 
         Ok(Self {
             children: hashes

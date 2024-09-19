@@ -1,10 +1,8 @@
-use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
-use radix_engine::transaction::ExecutionConfig;
-use radix_rust::btreeset;
+use radix_common::prelude::*;
 use radix_transactions::builder::ResolvableArguments;
 use radix_transactions::manifest::YieldToChild;
 use radix_transactions::model::{ManifestNamedIntentIndex, TestTransaction};
-use radix_transactions::prelude::ManifestBuilder;
+use radix_transactions::prelude::*;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 
 #[test]
@@ -55,13 +53,7 @@ fn test_subintent_txn_shape(children: Vec<Vec<usize>>) {
         ))
     }
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_commit_success();

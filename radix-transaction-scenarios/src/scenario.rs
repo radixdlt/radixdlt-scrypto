@@ -32,13 +32,11 @@ impl NextTransaction {
 
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidatorV1,
-    ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
-        validator
-            .validate_from_raw(&self.raw_transaction)
-            .map_err(|err| {
-                ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
-            })
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, ScenarioError> {
+        self.raw_transaction.validate(validator).map_err(|err| {
+            ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
+        })
     }
 }
 

@@ -12,7 +12,7 @@ pub struct PartialTransactionV2 {
     pub subintents: SubintentsV2,
 }
 
-transaction_payload_v2!(
+define_transaction_payload!(
     PartialTransactionV2,
     RawPartialTransaction,
     PreparedPartialTransactionV2 {

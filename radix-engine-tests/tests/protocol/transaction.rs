@@ -1,6 +1,5 @@
 use radix_common::prelude::*;
 use radix_engine::errors::*;
-use radix_engine::transaction::*;
 use radix_engine::updates::ProtocolVersion;
 use scrypto_test::prelude::*;
 
@@ -27,13 +26,7 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
             )
         })
         .collect();
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
-    );
+    let receipt = ledger.execute_test_transaction(TestTransaction::new_v2_from_nonce(intents));
 
     // Assert
     receipt.expect_specific_rejection(|e| matches!(e, RejectionReason::TransactionNotYetSupported));

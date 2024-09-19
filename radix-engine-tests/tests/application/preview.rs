@@ -4,8 +4,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::rule;
 use scrypto_test::prelude::*;
 
-use radix_transactions::validation::NotarizedTransactionValidatorV1;
-use radix_transactions::validation::{TransactionValidator, ValidationConfig};
+use radix_transactions::validation::*;
 
 #[test]
 fn test_preview_invalid_direct_access() {
@@ -364,7 +363,6 @@ fn validate<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
 ) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-        .validate(transaction.prepare().unwrap())
-        .unwrap()
+    let validator = TransactionValidator::new_with_latest_config(&network);
+    transaction.prepare_and_validate(&validator).unwrap()
 }

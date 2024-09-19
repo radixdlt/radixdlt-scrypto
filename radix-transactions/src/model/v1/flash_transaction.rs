@@ -7,6 +7,8 @@ pub struct FlashTransactionV1 {
     pub state_updates: StateUpdates,
 }
 
+define_raw_transaction_payload!(RawFlashTransaction, TransactionPayloadKind::Other);
+
 pub struct PreparedFlashTransactionV1 {
     pub name: String,
     pub state_updates: StateUpdates,
@@ -15,27 +17,22 @@ pub struct PreparedFlashTransactionV1 {
 
 impl TransactionPayload for FlashTransactionV1 {
     type Prepared = PreparedFlashTransactionV1;
-    type Raw = RawFlashTransactionV1;
+    type Raw = RawFlashTransaction;
 }
-
-define_raw_transaction_payload!(RawFlashTransactionV1);
 
 impl_has_summary!(PreparedFlashTransactionV1);
-
-impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
-    fn flash_transaction_hash(&self) -> FlashTransactionHash {
-        FlashTransactionHash(self.summary.hash)
-    }
-}
 
 #[allow(deprecated)]
 impl TransactionPreparableFromValue for PreparedFlashTransactionV1 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let ((name, state_updates), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct::<(
-                SummarizedRawFullValue<String>,
-                SummarizedRawFullValue<StateUpdates>,
-            )>(decoder, TransactionDiscriminator::V1Flash)?;
+        let ((name, state_updates), summary) = ConcatenatedDigest::prepare_transaction_payload::<(
+            SummarizedRawFullValue<String>,
+            SummarizedRawFullValue<StateUpdates>,
+        )>(
+            decoder,
+            TransactionDiscriminator::V1Flash,
+            ExpectedHeaderKind::TupleWithValueKind,
+        )?;
         Ok(Self {
             name: name.inner,
             state_updates: state_updates.inner,
@@ -45,19 +42,30 @@ impl TransactionPreparableFromValue for PreparedFlashTransactionV1 {
 }
 
 #[allow(deprecated)]
-impl TransactionPayloadPreparable for PreparedFlashTransactionV1 {
-    type Raw = RawFlashTransactionV1;
+impl PreparedTransaction for PreparedFlashTransactionV1 {
+    type Raw = RawFlashTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let ((name, state_updates), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
-                SummarizedRawFullValue<String>,
-                SummarizedRawFullValue<StateUpdates>,
-            )>(decoder, TransactionDiscriminator::V1Flash)?;
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
+        let ((name, state_updates), summary) = ConcatenatedDigest::prepare_transaction_payload::<(
+            SummarizedRawFullValue<String>,
+            SummarizedRawFullValue<StateUpdates>,
+        )>(
+            decoder,
+            TransactionDiscriminator::V1Flash,
+            ExpectedHeaderKind::EnumWithValueKind,
+        )?;
         Ok(Self {
             name: name.inner,
             state_updates: state_updates.inner,
             summary,
         })
+    }
+}
+
+impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
+    fn flash_transaction_hash(&self) -> FlashTransactionHash {
+        FlashTransactionHash(self.summary.hash)
     }
 }

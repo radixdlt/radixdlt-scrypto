@@ -11,7 +11,7 @@ pub struct SubintentV2 {
     pub intent_core: IntentCoreV2,
 }
 
-transaction_payload_v2!(
+define_transaction_payload!(
     SubintentV2,
     RawSubintent,
     PreparedSubintentV2 {

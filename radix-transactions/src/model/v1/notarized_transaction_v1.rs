@@ -16,51 +16,44 @@ pub struct NotarizedTransactionV1 {
     pub notary_signature: NotarySignatureV1,
 }
 
-impl TransactionPayload for NotarizedTransactionV1 {
-    type Prepared = PreparedNotarizedTransactionV1;
-    type Raw = RawNotarizedTransaction;
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedNotarizedTransactionV1 {
-    pub signed_intent: PreparedSignedIntentV1,
-    pub notary_signature: PreparedNotarySignatureV1,
-    pub summary: Summary,
-}
-
-impl_has_summary!(PreparedNotarizedTransactionV1);
-
-impl TransactionPreparableFromValue for PreparedNotarizedTransactionV1 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as an child, it's SBOR encoded as a struct
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct(
-                decoder,
-                TransactionDiscriminator::V1Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
+impl NotarizedTransactionV1 {
+    pub fn prepare_and_validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
     }
 }
 
-impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
-    type Raw = RawNotarizedTransaction;
+impl IntoExecutable for NotarizedTransactionV1 {
+    type Error = TransactionValidationError;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as full payload, it's SBOR encoded as an enum
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum(
-                decoder,
-                TransactionDiscriminator::V1Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self.prepare_and_validate(validator)?.get_executable();
+        Ok(executable)
+    }
+}
+
+define_transaction_payload!(
+    NotarizedTransactionV1,
+    RawNotarizedTransaction,
+    PreparedNotarizedTransactionV1 {
+        signed_intent: PreparedSignedIntentV1,
+        notary_signature: PreparedNotarySignatureV1,
+    },
+    TransactionDiscriminator::V1Notarized,
+);
+
+impl PreparedNotarizedTransactionV1 {
+    pub fn validate(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
+        validator.validate_notarized_v1(self)
     }
 }
 

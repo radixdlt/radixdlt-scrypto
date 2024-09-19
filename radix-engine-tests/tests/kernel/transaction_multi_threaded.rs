@@ -49,9 +49,7 @@ mod multi_threaded_test {
                         hash(format!("Account creation: {i}")),
                         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
                     )
-                    .prepare()
-                    .unwrap()
-                    .get_executable(),
+                    .into_simulator_executable_unwrap(),
                 )
                 .expect_commit(true)
                 .new_component_addresses()[0];
@@ -78,9 +76,7 @@ mod multi_threaded_test {
                     hash(format!("Fill account: {}", nonce)),
                     btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
                 )
-                .prepare()
-                .expect("Expected transaction to be preparable")
-                .get_executable(),
+                .into_simulator_executable_unwrap(),
             )
             .expect_commit(true);
         }
@@ -107,9 +103,7 @@ mod multi_threaded_test {
                             hash(format!("Transfer")),
                             btreeset![NonFungibleGlobalId::from_public_key(&public_key,)],
                         )
-                        .prepare()
-                        .expect("Expected transaction to be preparable")
-                        .get_executable(),
+                        .into_simulator_executable_unwrap(),
                     );
                     receipt.expect_commit_success();
                     println!("receipt = {:?}", receipt);

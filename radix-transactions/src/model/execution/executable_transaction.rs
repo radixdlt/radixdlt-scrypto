@@ -11,6 +11,47 @@ pub struct ExecutableIntent {
     pub children_intent_indices: Vec<usize>,
 }
 
+pub trait IntoExecutable {
+    type Error: Debug;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error>;
+
+    fn into_simulator_executable_unwrap(self) -> ExecutableTransaction
+    where
+        Self: Sized,
+    {
+        self.into_executable(&TransactionValidator::new_with_latest_config(
+            &NetworkDefinition::simulator(),
+        ))
+        .unwrap()
+    }
+}
+
+impl<'a, T: IntoExecutable + Clone> IntoExecutable for &'a T {
+    type Error = T::Error;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.clone().into_executable(validator)
+    }
+}
+
+impl IntoExecutable for ExecutableTransaction {
+    type Error = core::convert::Infallible;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        Ok(self)
+    }
+}
+
 /// This is an executable form of the transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {

@@ -36,7 +36,7 @@ impl ReadableManifest for SystemTransactionManifestV1 {
     }
 
     fn validate(&self) -> Result<(), TransactionValidationError> {
-        NotarizedTransactionValidatorV1::validate_instructions_v1(&self.instructions)
+        TransactionValidator::validate_instructions_v1(&self.instructions)
     }
 }
 
@@ -85,5 +85,14 @@ impl SystemTransactionManifestV1 {
             pre_allocated_addresses: self.preallocated_addresses,
             hash_for_execution: unique_hash,
         }
+    }
+
+    pub fn into_transaction_with_proofs(
+        self,
+        unique_hash: Hash,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> SystemTransactionV1WithProofs<'static> {
+        self.into_transaction(unique_hash)
+            .with_proofs(initial_proofs)
     }
 }

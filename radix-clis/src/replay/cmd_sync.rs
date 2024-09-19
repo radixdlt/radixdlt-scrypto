@@ -66,13 +66,14 @@ impl TxnSync {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for (tx_payload, expected_state_root_hash) in iter {
-                let state_updates = execute_ledger_transaction(
+                let (_validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
                     &tx_payload,
                     trace,
                 );
+                let state_updates = receipt.into_state_updates();
                 let database_updates =
                     state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
 
@@ -131,7 +132,7 @@ impl CommittedTxnReader {
         &mut self,
         from_version: u64,
         to_version: Option<u64>,
-        tx: Sender<(Vec<u8>, Hash)>,
+        tx: Sender<(RawLedgerTransaction, Hash)>,
     ) -> Result<(), Error> {
         match self {
             CommittedTxnReader::StateManagerDatabaseDir(db_dir) => {
@@ -185,8 +186,11 @@ impl CommittedTxnReader {
                             .state_root
                             .0;
 
-                        tx.send((next_txn.1.to_vec(), expected_state_root_hash))
-                            .unwrap();
+                        tx.send((
+                            RawLedgerTransaction(next_txn.1.to_vec()),
+                            expected_state_root_hash,
+                        ))
+                        .unwrap();
                         if let Some(to_version) = to_version {
                             if to_version == next_state_version {
                                 return Ok(());

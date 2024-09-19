@@ -77,6 +77,7 @@ where
     /* Environment */
     /// The substate database that the scenario will be run against.
     database: D,
+    validator: TransactionValidator,
 
     /* Execution */
     /// The first nonce to use in the execution of the scenarios.
@@ -92,9 +93,11 @@ where
     D: SubstateDatabase + CommittableSubstateDatabase,
 {
     pub fn new(database: D, network_definition: NetworkDefinition) -> Self {
+        let validator = TransactionValidator::new(&database, &network_definition);
         Self {
             /* Environment */
             database,
+            validator,
             /* Execution */
             starting_nonce: 0,
             next_scenario_nonce_handling:
@@ -154,6 +157,8 @@ where
                 protocol_update_hooks,
                 modules,
             );
+            // Update the validator in case the settings have changed due to the protocol update
+            self.validator = TransactionValidator::new(&self.database, &self.network_definition);
 
             self.execute_scenarios_at_new_protocol_version(
                 new_protocol_version,
@@ -305,11 +310,8 @@ where
         execution_config: &ExecutionConfig,
         modules: &impl VmInitialize,
     ) -> Result<TransactionReceiptV1, ScenarioExecutorError> {
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(
-            self.network_definition.id,
-        ));
-        let validated = validator
-            .validate_from_raw(transaction)
+        let validated = transaction
+            .validate(&self.validator)
             .map_err(ScenarioExecutorError::TransactionValidationError)?;
 
         let receipt = execute_transaction(

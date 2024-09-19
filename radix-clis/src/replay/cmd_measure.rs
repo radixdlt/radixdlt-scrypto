@@ -97,12 +97,11 @@ impl TxnMeasure {
             let iter = rx.iter();
             for tx_payload in iter {
                 let tx_start_time = std::time::Instant::now();
-                let prepared = prepare_ledger_transaction(&tx_payload);
-                let receipt = execute_prepared_ledger_transaction(
+                let (validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
-                    &prepared,
+                    &tx_payload,
                     trace,
                 );
                 let execution_cost_units = receipt
@@ -116,12 +115,12 @@ impl TxnMeasure {
                     .create_database_updates::<SpreadPrefixKeyMapper>();
                 database.commit(&database_updates);
                 let tx_processing_time = tx_start_time.elapsed();
-                if let PreparedLedgerTransactionInner::UserV1(tx) = prepared.inner {
+                if let ValidatedLedgerTransactionInner::User(tx) = validated.inner {
                     writeln!(
                         output,
                         "{},{},{},{}",
                         TransactionHashBech32Encoder::new(&network)
-                            .encode(&TransactionIntentHash(tx.signed_intent.intent.summary.hash))
+                            .encode(&tx.transaction_intent_hash())
                             .unwrap(),
                         tx_processing_time.as_micros(),
                         execution_cost_units.unwrap(),
