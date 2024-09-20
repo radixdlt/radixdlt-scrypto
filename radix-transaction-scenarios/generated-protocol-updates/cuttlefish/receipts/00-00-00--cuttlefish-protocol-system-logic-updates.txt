@@ -16,7 +16,7 @@ STATE UPDATES: 1 entity
   └─ Partition(32): 1 change
     └─ Set: SystemBoot
        Value: SystemBoot::V2(
-         VersionedSystemLogic::V2,
+         SystemVersion::V2,
          SystemParameters {
            network_definition: NetworkDefinition {
              id: 242u8,
