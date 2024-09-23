@@ -280,7 +280,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         invocation_kind: InvocationKind<'a>,
         args: &'a ManifestValue,
     ) -> ControlFlow<V::Output> {
-        match invocation_kind {
+        let yields_across_intent = match invocation_kind {
             InvocationKind::Method { address, .. } => {
                 if self
                     .validation_ruleset
@@ -294,6 +294,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                         }
                     }
                 }
+                false
             }
             InvocationKind::Function { address, .. } => {
                 if self
@@ -308,15 +309,24 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                         }
                     }
                 }
+                false
             }
-            InvocationKind::DirectMethod { .. } => {}
+            InvocationKind::DirectMethod { .. } => false,
+            InvocationKind::VerifyParent => {
+                if !self.manifest.is_subintent() {
+                    return ControlFlow::Break(
+                        ManifestValidationError::InstructionNotSupportedInTransactionIntent.into(),
+                    );
+                }
+                false
+            }
             InvocationKind::YieldToParent => {
                 if !self.manifest.is_subintent() {
                     return ControlFlow::Break(
-                        ManifestValidationError::YieldToParentNotSupportedInTransactionIntent
-                            .into(),
+                        ManifestValidationError::InstructionNotSupportedInTransactionIntent.into(),
                     );
                 }
+                true
             }
             InvocationKind::YieldToChild { child_index } => {
                 let index = child_index.0 as usize;
@@ -325,9 +335,9 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                         ManifestValidationError::ChildIntentNotRegistered(child_index).into(),
                     );
                 }
+                true
             }
-            _ => {}
-        }
+        };
         let encoded = match manifest_encode(args) {
             Ok(encoded) => encoded,
             Err(error) => {
@@ -367,6 +377,12 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                                 )?;
                             }
                             ManifestCustomValue::Proof(proof) => {
+                                if yields_across_intent {
+                                    return ControlFlow::Break(
+                                        ManifestValidationError::ProofCannotBePassedToAnotherIntent
+                                            .into(),
+                                    );
+                                }
                                 self.consume_proof(
                                     visitor,
                                     proof,
@@ -847,8 +863,9 @@ pub enum ManifestValidationError {
     DanglingAddressReservation(ManifestAddressReservation, String),
     ArgsEncodeError(EncodeError),
     ArgsDecodeError(DecodeError),
-    YieldToParentNotSupportedInTransactionIntent,
+    InstructionNotSupportedInTransactionIntent,
     SubintentDoesNotEndWithYieldToParent,
+    ProofCannotBePassedToAnotherIntent,
     TooManyInstructions,
 }
 
