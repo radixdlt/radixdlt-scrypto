@@ -45,45 +45,42 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
     ) -> Self::Instance {
         #[allow(unused_variables)]
         ScenarioBuilder::new(core, Self::METADATA, config, start_state)
-            .successful_transaction_with_result_handler(
-                |core, config, _| {
-                    core.v2_transaction("create-accounts")
-                        .manifest_builder(|builder| {
-                            builder
-                                .lock_fee_from_faucet()
-                                .allocate_global_address(
-                                    ACCOUNT_PACKAGE,
-                                    ACCOUNT_BLUEPRINT,
-                                    "parent_account",
-                                    "parent_account",
-                                )
-                                .create_account_with_owner(
-                                    "parent_account",
-                                    OwnerRole::Fixed(rule!(require(
-                                        config.parent_account_key.public_key().signature_proof()
-                                    ))),
-                                )
-                                .get_free_xrd_from_faucet()
-                                .take_all_from_worktop(XRD, "free_xrd")
-                                .deposit("parent_account", "free_xrd")
-                                .create_account_with_owner(
-                                    None,
-                                    OwnerRole::Fixed(rule!(require(
-                                        config.child_account_key.public_key().signature_proof()
-                                    ))),
-                                )
-                        })
-                        .sign(&config.parent_account_key)
-                        .complete(core)
-                },
-                |_, _, state, result| {
-                    state
-                        .parent_account
-                        .set(result.new_component_addresses()[0]);
-                    state.child_account.set(result.new_component_addresses()[1]);
-                    Ok(())
-                },
-            )
+            .on_next_transaction_commit(|core, config, state, result| {
+                let component_addresses = result.new_component_addresses();
+                state.parent_account.set(component_addresses[0]);
+                state.child_account.set(component_addresses[1]);
+                Ok(())
+            })
+            .successful_transaction(|core, config, state| {
+                core.v2_transaction("create-accounts")
+                    .manifest_builder(|builder| {
+                        builder
+                            .lock_fee_from_faucet()
+                            .allocate_global_address(
+                                ACCOUNT_PACKAGE,
+                                ACCOUNT_BLUEPRINT,
+                                "parent_account",
+                                "parent_account",
+                            )
+                            .create_account_with_owner(
+                                "parent_account",
+                                OwnerRole::Fixed(rule!(require(
+                                    config.parent_account_key.public_key().signature_proof()
+                                ))),
+                            )
+                            .get_free_xrd_from_faucet()
+                            .take_all_from_worktop(XRD, "free_xrd")
+                            .deposit("parent_account", "free_xrd")
+                            .create_account_with_owner(
+                                None,
+                                OwnerRole::Fixed(rule!(require(
+                                    config.child_account_key.public_key().signature_proof()
+                                ))),
+                            )
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
             .successful_transaction(|core, config, state| {
                 let trivial_child = core
                     .v2_subintent()

@@ -555,6 +555,8 @@ pub struct ScenarioBuilder<Config, State> {
     config: Config,
     state: State,
     transactions: Vec<ScenarioTransaction<Config, State>>,
+    next_commit_handler: Option<Box<TransactionCommitResultHandler<Config, State>>>,
+    next_error_handler: Option<Box<TransactionErrorResultHandler<Config, State>>>,
 }
 
 impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
@@ -570,80 +572,97 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
             config,
             state: start_state,
             transactions: vec![],
+            next_commit_handler: None,
+            next_error_handler: None,
         }
     }
 
-    /// Also checks that the transaction commits successfully
+    pub fn on_next_transaction_commit(
+        mut self,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.next_commit_handler = Some(Box::new(handler));
+        self
+    }
+
     pub fn successful_transaction(
         mut self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
     ) -> Self {
+        let handler: Box<TransactionResultHandler<Config, State>> =
+            match self.next_commit_handler.take() {
+                Some(commit_handler) => Box::new(move |core, config, state, receipt| {
+                    let commit_result = core.check_commit_success(&receipt)?;
+                    commit_handler(core, config, state, commit_result)
+                }),
+                None => Box::new(|core, _, _, receipt| {
+                    core.check_commit_success(&receipt)?;
+                    Ok(())
+                }),
+            };
         self.transactions.push(ScenarioTransaction {
             creator: Box::new(creator),
-            handler: Box::new(|core, _, _, receipt| {
-                core.check_commit_success(&receipt)?;
-                Ok(())
-            }),
+            handler,
         });
         self
     }
 
+    #[deprecated = "Prefer using on_next_transaction_commit(..) and successful_transaction(..) to reduce nesting"]
     pub fn successful_transaction_with_result_handler(
-        mut self,
+        self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
         handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
             + 'static,
     ) -> Self {
+        self.on_next_transaction_commit(handler)
+            .successful_transaction(creator)
+    }
+
+    pub fn on_next_transaction_error(
+        mut self,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.next_error_handler = Some(Box::new(handler));
+        self
+    }
+
+    pub fn failed_transaction(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+    ) -> Self {
+        let handler: Box<TransactionResultHandler<Config, State>> =
+            match self.next_error_handler.take() {
+                Some(error_handler) => Box::new(move |core, config, state, receipt| {
+                    let error = core.check_commit_failure(&receipt)?;
+                    error_handler(core, config, state, error)
+                }),
+                None => Box::new(|core, _, _, receipt| {
+                    core.check_commit_failure(&receipt)?;
+                    Ok(())
+                }),
+            };
         self.transactions.push(ScenarioTransaction {
             creator: Box::new(creator),
-            handler: Box::new(
-                move |core, config, state, receipt| -> Result<(), ScenarioError> {
-                    let commit_result = core.check_commit_success(receipt)?;
-                    handler(core, config, state, commit_result)
-                },
-            ),
+            handler,
         });
         self
     }
 
+    #[deprecated = "Prefer using on_next_transaction_error(..) and failed_transaction(..) to reduce nesting"]
     pub fn failed_transaction_with_error_handler(
-        mut self,
+        self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
         handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
             + 'static,
     ) -> Self {
-        self.transactions.push(ScenarioTransaction {
-            creator: Box::new(creator),
-            handler: Box::new(
-                move |core, config, state, receipt| -> Result<(), ScenarioError> {
-                    let error = core.check_commit_failure(receipt)?;
-                    handler(core, config, state, error)
-                },
-            ),
-        });
-        self
-    }
-
-    pub fn add_transaction_advanced(
-        mut self,
-        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
-            + 'static,
-        handler: impl Fn(
-                &mut ScenarioCore,
-                &Config,
-                &mut State,
-                &TransactionReceipt,
-            ) -> Result<(), ScenarioError>
-            + 'static,
-    ) -> Self {
-        self.transactions.push(ScenarioTransaction {
-            creator: Box::new(creator),
-            handler: Box::new(handler),
-        });
-        self
+        self.on_next_transaction_error(handler)
+            .failed_transaction(creator)
     }
 
     pub fn finalize(
@@ -679,6 +698,10 @@ pub struct ScenarioTransaction<Config, State> {
 type TransactionCreator<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
     + 'static;
 type TransactionResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &TransactionReceipt) -> Result<(), ScenarioError>
+    + 'static;
+type TransactionCommitResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
+    + 'static;
+type TransactionErrorResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
     + 'static;
 type ScenarioFinalizer<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<ScenarioOutput, ScenarioError>
     + 'static;

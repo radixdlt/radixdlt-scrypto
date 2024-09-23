@@ -17,7 +17,6 @@ mod radiswap;
 mod royalties;
 mod transfer_xrd;
 
-// Add new scenarios TO THE BOTTOM OF THE LIST below.
 pub fn all_scenarios_iter() -> impl Iterator<Item = &'static dyn ScenarioCreatorObjectSafe> {
     ALL_SCENARIOS.values().map(|v| v.as_ref())
 }
