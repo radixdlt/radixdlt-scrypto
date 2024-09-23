@@ -22,8 +22,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         .commit_each_protocol_update(&mut database);
 
     // Create kernel
-    let mut system = System::new(
-        SystemVersion::latest(),
+    let mut system = LatestSystem::new(
         Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,

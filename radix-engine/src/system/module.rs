@@ -36,19 +36,27 @@ impl<'a, K: KernelInternalApi + ?Sized> SystemModuleApiImpl<'a, K> {
 }
 
 pub trait SystemModuleApi {
+    type SystemVersionLogic: SystemVersionLogic;
     type SystemCallback: SystemCallbackObject;
 
-    fn system(&mut self) -> &mut System<Self::SystemCallback>;
+    fn system(&mut self) -> &mut System<Self::SystemVersionLogic, Self::SystemCallback>;
 
-    fn system_state(&mut self) -> SystemState<'_, System<Self::SystemCallback>>;
+    fn system_state(
+        &mut self,
+    ) -> SystemState<'_, System<Self::SystemVersionLogic, Self::SystemCallback>>;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn current_stack_depth(&self) -> usize;
 }
 
-impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>> + ?Sized> SystemModuleApi
-    for SystemModuleApiImpl<'a, K>
+impl<
+        'a,
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelInternalApi<System = System<L, V>> + ?Sized,
+    > SystemModuleApi for SystemModuleApiImpl<'a, K>
 {
+    type SystemVersionLogic = L;
     type SystemCallback = V;
 
     fn system(&mut self) -> &mut K::System {
@@ -76,8 +84,9 @@ pub trait SystemModuleApiFor<M: ResolvableSystemModule + ?Sized>: SystemModuleAp
 
 impl<
         'a,
+        L: SystemVersionLogic,
         V: SystemCallbackObject,
-        K: KernelInternalApi<System = System<V>> + ?Sized,
+        K: KernelInternalApi<System = System<L, V>> + ?Sized,
         M: ResolvableSystemModule + ?Sized,
     > SystemModuleApiFor<M> for SystemModuleApiImpl<'a, K>
 {

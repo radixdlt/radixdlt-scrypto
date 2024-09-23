@@ -108,7 +108,7 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
         self.api
     }
 
-    pub fn system(&mut self) -> &mut System<Y::SystemCallback> {
+    pub fn system(&mut self) -> &mut System<Y::SystemVersionLogic, Y::SystemCallback> {
         self.api.kernel_get_system()
     }
 
@@ -2168,12 +2168,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
-        let system_logic = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .versioned_system_logic;
-        if !system_logic.should_consume_cost_units(self.api) {
+        if !Y::SystemVersionLogic::should_consume_cost_units(self.api) {
             return Ok(());
         }
 

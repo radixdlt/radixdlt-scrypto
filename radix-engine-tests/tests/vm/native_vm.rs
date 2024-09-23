@@ -65,8 +65,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(Extension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System::new(
-        SystemVersion::latest(),
+    let mut system = LatestSystem::new(
         Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
@@ -133,8 +132,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System::new(
-        SystemVersion::latest(),
+    let mut system = LatestSystem::new(
         Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,

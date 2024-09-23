@@ -236,8 +236,7 @@ where
                     on_apply_cost: Default::default(),
                 };
 
-                System::new(
-                    SystemVersion::latest(),
+                LatestSystem::new(
                     Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),

@@ -159,88 +159,113 @@ impl SystemVersion {
     pub const fn latest() -> Self {
         Self::V2
     }
+}
+
+pub trait SystemVersionLogic: Sized + 'static {
+    fn execute_transaction<Y: SystemBasedKernelApi>(
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError>;
+
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(api: &mut Y) -> bool;
 
     fn create_auth_module(
-        &self,
         executable: &ExecutableTransaction,
-    ) -> Result<AuthModule, RejectionReason> {
-        let auth_module = match self {
-            SystemVersion::V1 => {
-                // This isn't exactly a necessary check as node logic should protect against this
-                // but keep it here for sanity
-                let intent = if executable.intents().len() != 1 {
-                    return Err(RejectionReason::TransactionNotYetSupported);
-                } else {
-                    executable.intents().get(0).unwrap()
-                };
-                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
-            }
-            SystemVersion::V2 => AuthModule::new(),
-        };
+    ) -> Result<AuthModule, RejectionReason>;
+}
 
-        Ok(auth_module)
-    }
+#[derive(Default)]
+pub struct SystemVersionLogicV1;
 
+impl SystemVersionLogic for SystemVersionLogicV1 {
     fn execute_transaction<Y: SystemBasedKernelApi>(
-        &self,
         api: &mut Y,
         executable: ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let output = match self {
-            SystemVersion::V1 => {
-                let mut system_service = SystemService::new(api);
-                let intent = executable
-                    .intents()
-                    .get(0)
-                    .expect("This should have been checked in init");
-                let rtn = system_service.call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
-                        global_address_reservations,
-                        references: Rc::new(intent.references.clone()),
-                        blobs: intent.blobs.clone(),
-                    })
-                    .unwrap(),
-                )?;
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            }
-            SystemVersion::V2 => {
-                let mut txn_threads =
-                    MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
-                txn_threads.execute(api)?;
-                let output = txn_threads
-                    .threads
-                    .get_mut(0)
-                    .unwrap()
-                    .0
-                    .outputs
-                    .drain(..)
-                    .collect();
-                txn_threads.cleanup(api)?;
-                output
-            }
+        let mut system_service = SystemService::new(api);
+        let intent = executable
+            .intents()
+            .get(0)
+            .expect("This should have been checked in init");
+        let rtn = system_service.call_function(
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            TRANSACTION_PROCESSOR_RUN_IDENT,
+            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                global_address_reservations,
+                references: Rc::new(intent.references.clone()),
+                blobs: intent.blobs.clone(),
+            })
+            .unwrap(),
+        )?;
+        let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+        Ok(output)
+    }
+
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(api: &mut Y) -> bool {
+        // Skip client-side costing requested by TransactionProcessor
+        if api.kernel_get_current_depth() == 1 {
+            return false;
+        }
+
+        true
+    }
+
+    fn create_auth_module(
+        executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        // This isn't exactly a necessary check as node logic should protect against this
+        // but keep it here for sanity
+        let intent = if executable.intents().len() != 1 {
+            return Err(RejectionReason::TransactionNotYetSupported);
+        } else {
+            executable.intents().get(0).unwrap()
         };
+
+        let auth_module =
+            AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone());
+
+        Ok(auth_module)
+    }
+}
+
+#[derive(Default)]
+pub struct SystemVersionLogicV2;
+pub type LatestSystemVersion = SystemVersionLogicV2;
+
+impl SystemVersionLogic for SystemVersionLogicV2 {
+    fn execute_transaction<Y: SystemBasedKernelApi>(
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let mut txn_threads =
+            MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
+        txn_threads.execute(api)?;
+        let output = txn_threads
+            .threads
+            .get_mut(0)
+            .unwrap()
+            .0
+            .outputs
+            .drain(..)
+            .collect();
+        txn_threads.cleanup(api)?;
 
         Ok(output)
     }
 
-    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
-        match self {
-            SystemVersion::V1 => {
-                // Skip client-side costing requested by TransactionProcessor
-                if api.kernel_get_current_depth() == 1 {
-                    return false;
-                }
-            }
-            SystemVersion::V2 => {}
-        }
-
+    fn should_consume_cost_units<Y: SystemBasedKernelApi>(_api: &mut Y) -> bool {
         true
+    }
+
+    fn create_auth_module(
+        _executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        Ok(AuthModule::new())
     }
 }
 
@@ -293,7 +318,10 @@ impl SystemLockData {
 }
 
 /// Effectively a trait alias for `KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
-pub trait SystemBasedKernelApi: KernelApi<CallbackObject = System<Self::SystemCallback>> {
+pub trait SystemBasedKernelApi:
+    KernelApi<CallbackObject = System<Self::SystemVersionLogic, Self::SystemCallback>>
+{
+    type SystemVersionLogic: SystemVersionLogic;
     type SystemCallback: SystemCallbackObject;
 
     fn system_service(&mut self) -> SystemService<'_, Self> {
@@ -301,14 +329,21 @@ pub trait SystemBasedKernelApi: KernelApi<CallbackObject = System<Self::SystemCa
     }
 }
 
-impl<V: SystemCallbackObject, K: KernelApi<CallbackObject = System<V>>> SystemBasedKernelApi for K {
+impl<
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelApi<CallbackObject = System<L, V>>,
+    > SystemBasedKernelApi for K
+{
+    type SystemVersionLogic = L;
     type SystemCallback = V;
 }
 
 /// Effectively a trait alias for `KernelInternalApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
 pub trait SystemBasedKernelInternalApi:
-    KernelInternalApi<System = System<Self::SystemCallback>>
+    KernelInternalApi<System = System<Self::SystemVersionLogic, Self::SystemCallback>>
 {
+    type SystemVersionLogic: SystemVersionLogic;
     type SystemCallback: SystemCallbackObject;
 
     fn system_module_api(&mut self) -> SystemModuleApiImpl<Self> {
@@ -316,15 +351,20 @@ pub trait SystemBasedKernelInternalApi:
     }
 }
 
-impl<V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>> SystemBasedKernelInternalApi
-    for K
+impl<
+        L: SystemVersionLogic,
+        V: SystemCallbackObject,
+        K: KernelInternalApi<System = System<L, V>>,
+    > SystemBasedKernelInternalApi for K
 {
+    type SystemVersionLogic = L;
     type SystemCallback = V;
 }
 
 pub struct SystemInit<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> {
     pub self_init: SystemSelfInit,
     pub callback_init: I,
+    version: SystemVersion,
 }
 
 impl<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> SystemInit<I> {
@@ -336,22 +376,63 @@ impl<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> SystemIni
         callback_init: I,
     ) -> Self {
         let system_boot = SystemBoot::load(substate_db, &execution_config);
-        let self_init = SystemSelfInit::new(
-            execution_config,
-            system_boot.system_version(),
-            system_boot.into_parameters(),
-        );
+        let version = system_boot.system_version();
+        let self_init = SystemSelfInit::new(execution_config, system_boot.into_parameters());
         Self {
             self_init,
             callback_init,
+            version,
+        }
+    }
+
+    pub fn version(&self) -> SystemVersion {
+        self.version
+    }
+
+    pub fn expect_latest(self) -> VersionedSystemInit<LatestSystemVersion, I> {
+        self.with_checked_version(SystemVersion::latest())
+    }
+
+    pub fn expect_v1(self) -> VersionedSystemInit<SystemVersionLogicV1, I> {
+        self.with_checked_version(SystemVersion::V1)
+    }
+
+    pub fn expect_v2(self) -> VersionedSystemInit<SystemVersionLogicV2, I> {
+        self.with_checked_version(SystemVersion::V2)
+    }
+
+    fn with_checked_version<L: SystemVersionLogic>(
+        self,
+        expected_version: SystemVersion,
+    ) -> VersionedSystemInit<L, I> {
+        let loaded_version = self.version;
+        if expected_version != loaded_version {
+            panic!(
+                "{:?} was requested, but it didn't match the loaded system version {:?}",
+                expected_version, loaded_version,
+            );
+        };
+        VersionedSystemInit {
+            self_init: self.self_init,
+            callback_init: self.callback_init,
+            version: PhantomData,
         }
     }
 }
 
-impl<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> InitializationParameters
-    for SystemInit<I>
+pub struct VersionedSystemInit<
+    L: SystemVersionLogic,
+    I: InitializationParameters<For: SystemCallbackObject<Init = I>>,
+> {
+    pub self_init: SystemSelfInit,
+    pub callback_init: I,
+    version: PhantomData<L>,
+}
+
+impl<L: SystemVersionLogic, I: InitializationParameters<For: SystemCallbackObject<Init = I>>>
+    InitializationParameters for VersionedSystemInit<L, I>
 {
-    type For = System<I::For>;
+    type For = System<L, I::For>;
 }
 
 pub struct SystemSelfInit {
@@ -363,43 +444,41 @@ pub struct SystemSelfInit {
 
     // Configuration
     pub system_parameters: SystemParameters,
-    pub system_logic_version: SystemVersion,
     pub system_overrides: Option<SystemOverrides>,
 }
 
 impl SystemSelfInit {
-    pub fn new(
-        execution_config: ExecutionConfig,
-        system_logic_version: SystemVersion,
-        system_parameters: SystemParameters,
-    ) -> Self {
+    pub fn new(execution_config: ExecutionConfig, system_parameters: SystemParameters) -> Self {
         Self {
             enable_kernel_trace: execution_config.enable_kernel_trace,
             enable_cost_breakdown: execution_config.enable_cost_breakdown,
             enable_debug_information: execution_config.enable_debug_information,
             execution_trace: execution_config.execution_trace,
             system_overrides: execution_config.system_overrides,
-            system_logic_version,
             system_parameters,
         }
     }
 }
 
-pub struct System<V: SystemCallbackObject> {
-    pub versioned_system_logic: SystemVersion,
+pub type SystemV1<V> = System<SystemVersionLogicV1, V>;
+pub type SystemV2<V> = System<SystemVersionLogicV2, V>;
+pub type LatestSystem<V> = System<LatestSystemVersion, V>;
+
+pub struct System<L: SystemVersionLogic, V: SystemCallbackObject> {
     pub callback: V,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
     pub finalization: SystemFinalization,
+    version: PhantomData<L>,
 }
 
 pub trait HasModules {
     fn modules_mut(&mut self) -> &mut SystemModuleMixer;
 }
 
-impl<V: SystemCallbackObject> HasModules for System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> HasModules for System<L, V> {
     #[inline]
     fn modules_mut(&mut self) -> &mut SystemModuleMixer {
         &mut self.modules
@@ -418,13 +497,8 @@ impl SystemFinalization {
     }
 }
 
-impl<V: SystemCallbackObject> System<V> {
-    pub fn new(
-        versioned_system_logic: SystemVersion,
-        callback: V,
-        modules: SystemModuleMixer,
-        finalization: SystemFinalization,
-    ) -> Self {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> System<L, V> {
+    pub fn new(callback: V, modules: SystemModuleMixer, finalization: SystemFinalization) -> Self {
         Self {
             callback,
             blueprint_cache: NonIterMap::new(),
@@ -432,7 +506,7 @@ impl<V: SystemCallbackObject> System<V> {
             schema_cache: NonIterMap::new(),
             modules,
             finalization,
-            versioned_system_logic,
+            version: PhantomData,
         }
     }
 
@@ -484,7 +558,7 @@ impl<V: SystemCallbackObject> System<V> {
     }
 }
 
-impl<V: SystemCallbackObject> System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> System<L, V> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
@@ -1389,7 +1463,6 @@ impl<V: SystemCallbackObject> System<V> {
         init_input: SystemSelfInit,
     ) -> Result<SystemModuleMixer, TransactionReceiptV1> {
         let mut system_parameters = init_input.system_parameters;
-        let system_logic_version = init_input.system_logic_version;
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
@@ -1458,17 +1531,14 @@ impl<V: SystemCallbackObject> System<V> {
             on_apply_cost: Default::default(),
         };
 
-        let auth_module = system_logic_version
-            .create_auth_module(&executable)
-            .map_err(|reason| {
-                let print_execution_summary =
-                    enabled_modules.contains(EnabledModules::KERNEL_TRACE);
-                Self::create_non_commit_receipt(
-                    TransactionResult::Reject(RejectResult { reason }),
-                    print_execution_summary,
-                    costing_module.clone(),
-                )
-            })?;
+        let auth_module = L::create_auth_module(&executable).map_err(|reason| {
+            let print_execution_summary = enabled_modules.contains(EnabledModules::KERNEL_TRACE);
+            Self::create_non_commit_receipt(
+                TransactionResult::Reject(RejectResult { reason }),
+                print_execution_summary,
+                costing_module.clone(),
+            )
+        })?;
 
         let module_mixer = SystemModuleMixer::new(
             enabled_modules,
@@ -1487,8 +1557,8 @@ impl<V: SystemCallbackObject> System<V> {
     }
 }
 
-impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
-    type Init = SystemInit<V::Init>;
+impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelTransactionExecutor for System<L, V> {
+    type Init = VersionedSystemInit<L, V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
@@ -1504,7 +1574,6 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             Self::print_executable(executable);
         }
 
-        let logic_version = init_input.self_init.system_logic_version;
         let mut modules = Self::resolve_modules(executable, init_input.self_init)?;
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
@@ -1584,7 +1653,6 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         };
 
         let system = System::new(
-            logic_version,
             callback,
             modules,
             SystemFinalization {
@@ -1617,13 +1685,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             global_address_reservations.push(global_address_reservation);
         }
 
-        let system_logic_version = system_service.system().versioned_system_logic;
-
-        let output = system_logic_version.execute_transaction(
-            api,
-            executable,
-            global_address_reservations,
-        )?;
+        let output = L::execute_transaction(api, executable, global_address_reservations)?;
 
         Ok(output)
     }
@@ -1713,7 +1775,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
     }
 }
 
-impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
+impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelCallbackObject for System<L, V> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 

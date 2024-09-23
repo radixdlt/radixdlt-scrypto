@@ -1208,7 +1208,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         let vm_init = VmInit::load(&self.database, &self.vm_modules);
         let system_init = InjectCostingErrorInit {
-            system_input: SystemInit::load(&self.database, execution_config, vm_init),
+            system_input: SystemInit::load(&self.database, execution_config, vm_init)
+                .expect_latest(),
             error_after_count,
         };
         let kernel_init = KernelInit::load(&self.database, system_init);
