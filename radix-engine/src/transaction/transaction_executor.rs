@@ -1,9 +1,7 @@
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel::KernelInit;
-use crate::kernel::kernel_callback_api::KernelTransactionExecutor;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::*;
 use crate::vm::*;
 use radix_common::constants::*;
@@ -266,78 +264,17 @@ pub fn execute_transaction<'v, V: VmInitialize>(
     execution_config: &ExecutionConfig,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    configure_vm_and_execute(substate_db, vm_modules, execution_config, executable)
-}
-
-/// Ideally these configures would be composable, and might look something
-/// like this, with each taking a generic callback to capture the concrete
-/// type of that layer. But this isn't possible without non-lifetime
-/// higher-ranked types:
-/// ```ignore
-/// configure_vm(
-///     substate_db,
-///     vm_modules,
-///     <V: SystemCallbackObject>|callback_init| configure_system<V>(
-///         substate_db,
-///         callback_init,
-///         execution_config,
-///         <Y: KernelTransactionExecutor>|callback_init| configure_kernel(
-///             substate_db,
-///             callback_init,
-///             <K>|init| init.execute(executable)
-///         )
-///     )
-/// )
-/// ```
-fn configure_vm_and_execute<'g, V: VmInitialize>(
-    substate_db: &impl SubstateDatabase,
-    vm_modules: &'g V,
-    execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
-) -> TransactionReceipt {
-    configure_system_and_execute(
-        substate_db,
-        VmInit::load(substate_db, vm_modules),
-        execution_config,
-        executable,
-    )
-}
-
-fn configure_system_and_execute<
-    I: InitializationParameters<For: SystemCallbackObject<Init = I>>,
->(
-    substate_db: &impl SubstateDatabase,
-    callback_init: I,
-    execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
-) -> TransactionReceipt {
+    let vm_init = VmInit::load(substate_db, vm_modules);
     let (system_version, system_init) =
-        SystemInit::load(substate_db, execution_config.clone(), callback_init);
+        SystemInit::load(substate_db, execution_config.clone(), vm_init);
     match system_version {
         SystemVersion::V1 => {
-            configure_kernel_and_execute(substate_db, system_init.v1(system_version), executable)
+            KernelInit::load(substate_db, system_init.v1(system_version)).execute(executable)
         }
         SystemVersion::V2 => {
-            configure_kernel_and_execute(substate_db, system_init.v2(system_version), executable)
+            KernelInit::load(substate_db, system_init.v2(system_version)).execute(executable)
         }
     }
-}
-
-fn configure_kernel_and_execute<
-    I: InitializationParameters<
-        For: KernelTransactionExecutor<
-            Init = I,
-            Receipt = TransactionReceipt,
-            Executable = ExecutableTransaction,
-        >,
-    >,
->(
-    substate_db: &impl SubstateDatabase,
-    callback_init: I,
-    executable: ExecutableTransaction,
-) -> TransactionReceipt {
-    let kernel_init = KernelInit::load(substate_db, callback_init);
-    kernel_init.execute(executable)
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
