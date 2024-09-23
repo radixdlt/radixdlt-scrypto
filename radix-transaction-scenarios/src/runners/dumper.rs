@@ -3,7 +3,7 @@
 mod test {
     use crate::executor::*;
     use crate::internal_prelude::*;
-    use crate::scenarios::ALL_SCENARIOS;
+    use crate::scenarios::*;
     use fmt::Write;
     use itertools::Itertools;
     use radix_engine::{updates::*, utils::*, vm::*};
@@ -239,7 +239,7 @@ mod test {
                 &transaction.raw_transaction.0,
             );
 
-            // Check tranasction manifest
+            // Check transaction manifest
             {
                 // NB: We purposefully don't write the blobs as they're contained in the raw transactions
                 let manifest_string = match &transaction.transaction_manifest {
@@ -302,7 +302,7 @@ mod test {
                 .expect("Decompiled manifest should be recompilable");
 
                 self.manifests_folder.put_file(
-                    format!("{transaction_file_prefix}_subintent_{subintent_index}.rtm"),
+                    format!("{transaction_file_prefix}--sub-{subintent_index}.rtm"),
                     &manifest_string,
                 );
             }
@@ -387,10 +387,14 @@ mod test {
         }
     }
 
-    pub fn run_all_scenarios(mode: AlignerExecutionMode) {
+    pub fn run_all_scenarios<'a>(
+        mode: AlignerExecutionMode,
+        scenarios: impl IntoIterator<Item = &'a dyn ScenarioCreatorObjectSafe>,
+    ) {
         let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
         let vm_modules = VmModules::default();
-        for (scenario_logical_name, scenario_creator) in ALL_SCENARIOS.iter() {
+        for scenario_creator in scenarios.into_iter() {
+            let scenario_logical_name = scenario_creator.metadata().logical_name;
             let min_requirement = scenario_creator.metadata().protocol_min_requirement;
             let valid_versions = ProtocolVersion::VARIANTS
                 .into_iter()
@@ -401,25 +405,29 @@ mod test {
                 let scenario_folder = FolderContentAligner::new(
                     root_path
                         .join(protocol_version.logical_name())
-                        .join(&*scenario_logical_name),
+                        .join(scenario_logical_name),
                     mode,
                     AlignerFolderMode::ExpectNoOtherContent,
                 );
 
                 // Now execute just the single scenario, after executing protocol updates up to
                 // the given protocol version
-                let mut executor =
-                    TransactionScenarioExecutor::new(db, NetworkDefinition::simulator())
-                        .execute_protocol_updates_and_scenarios(
-                            |builder| builder.from_bootstrap_to(protocol_version),
-                            ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
-                            ScenarioFilter::SpecificScenariosByName(btreeset!(
-                                scenario_logical_name.to_string()
-                            )),
-                            &mut ScenarioDumpingHooks::new(scenario_folder),
-                            &mut (),
-                            &vm_modules,
-                        );
+                TransactionScenarioExecutor::new(db, NetworkDefinition::simulator())
+                    .execute_protocol_updates_and_scenarios(
+                        |builder| builder.from_bootstrap_to(protocol_version),
+                        ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
+                        ScenarioFilter::SpecificScenariosByName(btreeset!(
+                            scenario_logical_name.to_string()
+                        )),
+                        &mut ScenarioDumpingHooks::new(scenario_folder),
+                        &mut (),
+                        &vm_modules,
+                    )
+                    .unwrap_or_else(|err| {
+                        Err(err).expect(&format!(
+                            "Scenario {scenario_logical_name} should execute without error"
+                        ))
+                    });
             }
         }
     }
@@ -427,12 +435,30 @@ mod test {
     #[test]
     #[ignore = "Run this test to update the generated scenarios"]
     pub fn update_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Write)
+        run_all_scenarios(AlignerExecutionMode::Write, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to update a single scenario"]
+    pub fn update_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Write,
+            [get_scenario("basic_subintents")],
+        )
     }
 
     #[test]
     pub fn validate_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Assert)
+        run_all_scenarios(AlignerExecutionMode::Assert, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to validate a single scenario"]
+    pub fn validate_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Assert,
+            [get_scenario("basic_subintents")],
+        )
     }
 
     #[test]

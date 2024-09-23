@@ -7,7 +7,6 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;

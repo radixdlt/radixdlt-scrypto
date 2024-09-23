@@ -95,4 +95,17 @@ impl SubintentManifestV2 {
             },
         )
     }
+
+    pub fn for_intent_with_names(
+        self,
+    ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
+        (
+            InstructionsV2(Rc::new(self.instructions)),
+            self.blobs.into(),
+            ChildIntentsV2 {
+                children: self.children,
+            },
+            self.object_names,
+        )
+    }
 }

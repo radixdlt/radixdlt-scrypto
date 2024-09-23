@@ -4,8 +4,6 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::rule;
 use scrypto_test::prelude::*;
 
-use radix_transactions::validation::*;
-
 #[test]
 fn test_preview_invalid_direct_access() {
     let mut sim = LedgerSimulatorBuilder::new().build();

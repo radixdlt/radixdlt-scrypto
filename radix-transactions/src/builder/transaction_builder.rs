@@ -154,7 +154,7 @@ pub struct PartialTransactionV2Builder {
     message: Option<MessageV2>,
     manifest: Option<SubintentManifestV2>,
     // Cached once created
-    intent: Option<SubintentV2>,
+    intent: Option<(SubintentV2, ManifestObjectNames)>,
     prepared_intent: Option<PreparedSubintentV2>,
     intent_signatures: Vec<IntentSignatureV1>,
 }
@@ -189,20 +189,18 @@ impl PartialTransactionV2Builder {
         self
     }
 
-    /// You should call `add_signed_child` first.
+    /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
+    /// These children will get added to the manifest for you, with the corresponding names.
+    /// We don't have just a `manifest` method as it is too easy to forget to register a child.
     pub fn manifest_builder(
-        self,
+        mut self,
         build_manifest: impl FnOnce(SubintentManifestV2Builder) -> SubintentManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = SubintentManifestV2Builder::new_typed();
         for (child_name, (hash, _, _)) in self.children.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
-        self.manifest(build_manifest(manifest_builder).build())
-    }
-
-    pub fn manifest(mut self, manifest: SubintentManifestV2) -> Self {
-        self.manifest = Some(manifest);
+        self.manifest = Some(build_manifest(manifest_builder).build());
         self
     }
 
@@ -218,31 +216,26 @@ impl PartialTransactionV2Builder {
 
     pub fn create_subintent(&mut self) -> &SubintentV2 {
         if self.intent.is_none() {
-            let (instructions, blobs, children) = self
+            let (instructions, blobs, children, names) = self
                 .manifest
-                .as_ref()
-                .expect("Manifest must be provided")
-                .clone()
-                .for_intent();
-            self.intent = Some(SubintentV2 {
+                .take()
+                .expect("Manifest must be provided before this action is performed")
+                .for_intent_with_names();
+            let subintent = SubintentV2 {
                 intent_core: IntentCoreV2 {
                     header: self
                         .intent_header
-                        .as_ref()
-                        .expect("Intent Header must be provided")
-                        .clone(),
+                        .take()
+                        .expect("Intent Header must be provided before this action is performed"),
                     blobs,
-                    message: self
-                        .message
-                        .as_ref()
-                        .expect("Message must be provided")
-                        .clone(),
+                    message: self.message.take().unwrap_or_default(),
                     children,
                     instructions,
                 },
-            });
+            };
+            self.intent = Some((subintent, names));
         }
-        self.intent.as_ref().unwrap()
+        &self.intent.as_ref().unwrap().0
     }
 
     pub fn create_prepared_subintent(&mut self) -> &PreparedSubintentV2 {
@@ -301,11 +294,12 @@ impl PartialTransactionV2Builder {
             aggregated_subintent_object_names.push(root_intent_names);
             aggregated_subintent_object_names.extend(subintent_names);
         }
+        let (root_intent, root_intent_names) = self
+            .intent
+            .expect("Expected intent to already be compiled by now");
         let signed_partial_transaction = SignedPartialTransactionV2 {
             partial_transaction: PartialTransactionV2 {
-                root_intent: self
-                    .intent
-                    .expect("Expected intent to already be compiled by now"),
+                root_intent,
                 subintents: SubintentsV2(aggregated_subintents),
             },
             root_intent_signatures: IntentSignaturesV2 {
@@ -316,7 +310,7 @@ impl PartialTransactionV2Builder {
             },
         };
         let object_names = TransactionObjectNames {
-            root_intent: self.manifest.unwrap().object_names,
+            root_intent: root_intent_names,
             subintents: aggregated_subintent_object_names,
         };
         (signed_partial_transaction, object_names)
@@ -384,20 +378,18 @@ impl TransactionV2Builder {
         self
     }
 
-    /// If the intent has any children, you should call `add_signed_child` first.
+    /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
+    /// These children will get added to the manifest for you, with the corresponding names.
+    /// We don't have just a `manifest` method as it is too easy to forget to register a child.
     pub fn manifest_builder(
-        self,
+        mut self,
         build_manifest: impl FnOnce(TransactionManifestV2Builder) -> TransactionManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = TransactionManifestV2Builder::new_typed();
         for (child_name, (hash, _, _)) in self.children.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
-        self.manifest(build_manifest(manifest_builder).build())
-    }
-
-    pub fn manifest(mut self, manifest: TransactionManifestV2) -> Self {
-        self.manifest = Some(manifest);
+        self.manifest = Some(build_manifest(manifest_builder).build());
         self
     }
 
@@ -446,29 +438,22 @@ impl TransactionV2Builder {
                 aggregated_subintent_object_names.push(root_intent_names);
                 aggregated_subintent_object_names.extend(subintent_names);
             }
-            let intent = TransactionIntentV2 {
-                root_header: self
-                    .transaction_header
-                    .as_ref()
-                    .expect("Transaction Header must be provided")
-                    .clone(),
-                root_intent_core: IntentCoreV2 {
-                    header: self
-                        .intent_header
-                        .as_ref()
-                        .expect("Intent Header must be provided")
-                        .clone(),
-                    blobs,
-                    message: self
-                        .message
-                        .as_ref()
-                        .expect("Message must be provided")
-                        .clone(),
-                    children: child_hashes,
-                    instructions,
-                },
-                subintents: SubintentsV2(aggregated_subintents),
-            };
+            let intent =
+                TransactionIntentV2 {
+                    root_header: self.transaction_header.take().expect(
+                        "Transaction Header must be provided before this action is performed",
+                    ),
+                    root_intent_core: IntentCoreV2 {
+                        header: self.intent_header.take().expect(
+                            "Intent Header must be provided before this action is performed",
+                        ),
+                        blobs,
+                        message: self.message.take().unwrap_or_default(),
+                        children: child_hashes,
+                        instructions,
+                    },
+                    subintents: SubintentsV2(aggregated_subintents),
+                };
             let subintent_signatures = MultipleIntentSignaturesV2 {
                 by_subintent: aggregated_subintent_signatures,
             };
@@ -538,7 +523,7 @@ impl TransactionV2Builder {
     pub fn create_prepared_signed_transaction_intent(
         &mut self,
     ) -> &PreparedSignedTransactionIntentV2 {
-        if self.prepared_intent.is_none() {
+        if self.prepared_signed_intent.is_none() {
             let prepared = self
                 .create_signed_transaction_intent()
                 .prepare(PreparationSettings::latest_ref())

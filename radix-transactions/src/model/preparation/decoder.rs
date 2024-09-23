@@ -12,6 +12,7 @@ pub enum ValueType {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum PrepareError {
+    TransactionTypeNotSupported,
     TransactionTooLarge,
     DecodeError(DecodeError),
     EncodeError(EncodeError),
@@ -38,6 +39,7 @@ impl From<EncodeError> for PrepareError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreparationSettings {
+    pub v2_transactions_permitted: bool,
     pub max_user_payload_length: usize,
     pub max_ledger_payload_length: usize,
     pub max_child_subintents_per_intent: usize,
@@ -55,6 +57,7 @@ impl PreparationSettings {
     pub const fn babylon() -> Self {
         let max_user_payload_length = 1 * 1024 * 1024;
         Self {
+            v2_transactions_permitted: false,
             max_user_payload_length,
             max_ledger_payload_length: max_user_payload_length + 10,
             max_child_subintents_per_intent: 0,
@@ -65,6 +68,7 @@ impl PreparationSettings {
 
     pub const fn cuttlefish() -> Self {
         Self {
+            v2_transactions_permitted: true,
             max_child_subintents_per_intent: 128,
             max_subintents_per_transaction: 128,
             ..Self::babylon()

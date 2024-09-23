@@ -68,6 +68,7 @@ impl ValidationConfig {
             ),
             // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
+            preparation_settings: PreparationSettings::cuttlefish(),
             ..Self::babylon()
         }
     }

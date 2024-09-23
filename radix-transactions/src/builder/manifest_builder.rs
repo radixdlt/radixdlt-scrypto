@@ -2214,6 +2214,23 @@ where
         )
     }
 
+    pub fn create_account_with_owner(
+        self,
+        address_reservation: impl OptionalExistingManifestAddressReservation,
+        owner_role: OwnerRole,
+    ) -> Self {
+        let address_reservation = address_reservation.resolve(&self.registrar);
+        self.call_function(
+            ACCOUNT_PACKAGE,
+            ACCOUNT_BLUEPRINT,
+            ACCOUNT_CREATE_ADVANCED_IDENT,
+            AccountCreateAdvancedManifestInput {
+                address_reservation,
+                owner_role,
+            },
+        )
+    }
+
     pub fn create_access_controller(
         self,
         controlled_asset: impl ExistingManifestBucket,

@@ -11,7 +11,7 @@ use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
-use scenarios::ALL_SCENARIOS;
+use scenarios::all_scenarios_iter;
 
 #[derive(Clone, Debug)]
 pub enum ScenarioTrigger {
@@ -192,7 +192,7 @@ where
             return Ok(());
         }
 
-        let matching_scenarios = ALL_SCENARIOS.iter().filter(|(logical_name, creator)| {
+        let matching_scenarios = all_scenarios_iter().filter(|creator| {
             let metadata = creator.metadata();
             let is_valid = at_version >= metadata.protocol_min_requirement;
             if !is_valid {
@@ -200,7 +200,7 @@ where
             }
             match filter {
                 ScenarioFilter::SpecificScenariosByName(scenario_names) => {
-                    scenario_names.contains(&**logical_name)
+                    scenario_names.contains(metadata.logical_name)
                 }
                 ScenarioFilter::AllScenariosValidAtProtocolVersion => true,
                 ScenarioFilter::AllScenariosFirstValidAtProtocolVersion => {
@@ -209,13 +209,8 @@ where
             }
         });
 
-        for (_, scenario_creator) in matching_scenarios {
-            self.execute_scenario(
-                scenario_creator.as_ref(),
-                scenario_hooks,
-                modules,
-                at_version,
-            )?;
+        for scenario_creator in matching_scenarios {
+            self.execute_scenario(scenario_creator, scenario_hooks, modules, at_version)?;
         }
 
         Ok(())
