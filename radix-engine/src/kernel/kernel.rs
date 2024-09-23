@@ -37,63 +37,98 @@ pub enum KernelBoot {
 }
 
 impl KernelBoot {
+    /// Loads kernel boot from the database, or resolves a fallback.
+    pub fn load(substate_db: &impl SubstateDatabase) -> Self {
+        substate_db
+            .get_substate(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+            )
+            .unwrap_or_else(|| KernelBoot::babylon())
+    }
+
     pub fn babylon() -> Self {
         Self::V1
     }
 }
 
-/// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
-    pub id_allocator: IdAllocator,
-    pub track: Track<'h, S>,
-    pub init: M::Init,
-    pub phantom: PhantomData<M>,
+pub struct KernelInit<
+    's,
+    S: SubstateDatabase,
+    I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+> {
+    substate_db: &'s S,
+    kernel_boot: KernelBoot,
+    callback_init: I,
 }
 
-impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
-    /// Executes a transaction
-    pub fn execute(self, executable: M::Executable) -> M::Receipt {
-        // Start hardware resource usage tracker
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker =
-            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
-
-        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-        {
-            self.execute_internal(executable)
-        }
-
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        {
-            let mut receipt = self.execute_internal(executable);
-
-            // Stop hardware resource usage tracker
-            receipt.set_resource_usage(resources_tracker.end_measurement());
-
-            receipt
+impl<
+        's,
+        S: SubstateDatabase,
+        I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+    > KernelInit<'s, S, I>
+{
+    pub fn load(substate_db: &'s S, callback_init: I) -> Self {
+        let kernel_boot = KernelBoot::load(substate_db);
+        Self {
+            substate_db,
+            kernel_boot,
+            callback_init,
         }
     }
 
-    fn execute_internal(mut self, executable: M::Executable) -> M::Receipt {
+    /// Executes a transaction
+    pub fn execute(
+        self,
+        executable: <I::For as KernelTransactionExecutor>::Executable,
+    ) -> <I::For as KernelTransactionExecutor>::Receipt {
+        let boot_loader = BootLoader {
+            id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
+            track: Track::new(self.substate_db),
+        };
+
+        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+        {
+            boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable)
+        }
+
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        {
+            use crate::kernel::resources_tracker::ResourcesTracker;
+
+            let mut resources_tracker = ResourcesTracker::start_measurement();
+            let mut receipt =
+                boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable);
+            receipt.set_resource_usage(resources_tracker.end_measurement());
+            receipt
+        }
+    }
+}
+
+/// Organizes the radix engine stack to make a function entrypoint available for execution
+pub struct BootLoader<'h, S: SubstateDatabase> {
+    id_allocator: IdAllocator,
+    track: Track<'h, S>,
+}
+
+impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
+    fn execute<E: KernelTransactionExecutor>(
+        mut self,
+        kernel_boot: KernelBoot,
+        callback_init: E::Init,
+        executable: E::Executable,
+    ) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
-        // Read kernel boot configuration
         // Unused for now
-        let _kernel_boot: KernelBoot = self
-            .track
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(KernelBoot::babylon());
+        let _ = kernel_boot;
 
         // Upper Layer Initialization
-        let system_init_result = M::init(&mut self.track, &executable, self.init);
+        let system_init_result = E::init(&mut self.track, &executable, callback_init);
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
@@ -109,9 +144,9 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         );
 
         // Execution
-        let result = || -> Result<M::ExecutionOutput, RuntimeError> {
+        let result = || -> Result<E::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel, executable)?;
+            let output = E::execute(&mut kernel, executable)?;
 
             // Sanity check call frame
             for stack in &kernel.stacks.stacks {
@@ -123,7 +158,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
 
             // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-            kernel.callback.finish(commit_info)?;
+            kernel.callback.finalize(commit_info)?;
 
             Ok(output)
         }()
@@ -272,11 +307,8 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
-impl<
-        'g,
-        M: KernelCallbackObject<CallFrameData: Default>,
-        S: CommitableSubstateStore + BootStore,
-    > Kernel<'g, M, S>
+impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateStore>
+    Kernel<'g, M, S>
 {
     pub fn new_no_refs(
         store: &'g mut S,
@@ -296,7 +328,7 @@ impl<
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
