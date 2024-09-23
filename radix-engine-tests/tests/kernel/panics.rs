@@ -16,7 +16,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn panics_at_the_system_layer_or_below_can_be_caught() {
     // Arrange
-    let mut kernel = MockKernel(PhantomData::<System<Vm<DefaultWasmEngine, NoExtension>>>);
+    let mut kernel = MockKernel(PhantomData::<LatestSystem<Vm<DefaultWasmEngine, NoExtension>>>);
     let mut system_service = SystemService::new(&mut kernel);
 
     // Act

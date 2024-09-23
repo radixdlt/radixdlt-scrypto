@@ -266,7 +266,14 @@ pub fn execute_transaction<'v, V: VmInitialize>(
 ) -> TransactionReceipt {
     let vm_init = VmInit::load(substate_db, vm_modules);
     let system_init = SystemInit::load(substate_db, execution_config.clone(), vm_init);
-    KernelInit::load(substate_db, system_init).execute(executable)
+    match system_init.version() {
+        SystemVersion::V1 => {
+            KernelInit::load(substate_db, system_init.expect_v1()).execute(executable)
+        }
+        SystemVersion::V2 => {
+            KernelInit::load(substate_db, system_init.expect_v2()).execute(executable)
+        }
+    }
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
