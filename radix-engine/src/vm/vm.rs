@@ -26,13 +26,28 @@ pub enum VmBoot {
 }
 
 impl VmBoot {
+    /// Loads vm boot from the database, or resolves a fallback.
+    pub fn load(substate_db: &impl SubstateDatabase) -> Self {
+        substate_db
+            .get_substate(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BOOT_LOADER_VM_BOOT_FIELD_KEY,
+            )
+            .unwrap_or_else(|| Self::babylon_genesis())
+    }
+
     pub fn latest() -> Self {
+        Self::bottlenose()
+    }
+
+    pub fn bottlenose() -> Self {
         Self::V1 {
-            scrypto_version: ScryptoVmVersion::latest().into(),
+            scrypto_version: ScryptoVmVersion::V1_1.into(),
         }
     }
 
-    pub fn babylon() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self::V1 {
             scrypto_version: ScryptoVmVersion::V1_0.into(),
         }
@@ -66,11 +81,6 @@ pub trait VmInitialize {
     fn get_vm_extension(&self) -> Self::NativeVmExtension;
 
     fn get_scrypto_vm(&self) -> &ScryptoVm<Self::WasmEngine>;
-
-    fn create_vm_init(&self) -> VmInit<Self::WasmEngine, Self::NativeVmExtension> {
-        let vm_extension = self.get_vm_extension();
-        VmInit::new(self.get_scrypto_vm(), vm_extension)
-    }
 }
 
 pub struct VmModules<W: WasmEngine, E: NativeVmExtension> {
@@ -123,22 +133,22 @@ impl<W: WasmEngine, E: NativeVmExtension> VmInitialize for VmModules<W, E> {
 pub struct VmInit<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
     pub native_vm_extension: E,
+    pub vm_boot: VmBoot,
+}
+
+impl<'g, W: WasmEngine, E: NativeVmExtension> InitializationParameters for VmInit<'g, W, E> {
+    type For = Vm<'g, W, E>;
 }
 
 impl<'g, W: WasmEngine, E: NativeVmExtension> VmInit<'g, W, E> {
-    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm_extension: E) -> Self {
+    pub fn load(
+        substate_db: &impl SubstateDatabase,
+        vm_modules: &'g impl VmInitialize<WasmEngine = W, NativeVmExtension = E>,
+    ) -> Self {
         Self {
-            scrypto_vm,
-            native_vm_extension,
-        }
-    }
-}
-
-impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for VmInit<'g, W, E> {
-    fn clone(&self) -> Self {
-        Self {
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension.clone(),
+            scrypto_vm: vm_modules.get_scrypto_vm(),
+            native_vm_extension: vm_modules.get_vm_extension(),
+            vm_boot: VmBoot::load(substate_db),
         }
     }
 }
@@ -160,7 +170,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 &SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(VmBoot::babylon());
+            .unwrap_or(VmBoot::babylon_genesis());
 
         Ok(Self {
             scrypto_vm: vm_init.scrypto_vm,

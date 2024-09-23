@@ -144,6 +144,12 @@ pub enum SystemVersion {
     V2,
 }
 
+impl SystemVersion {
+    pub const fn latest() -> Self {
+        Self::V2
+    }
+}
+
 pub trait SystemVersionLogic: Sized + 'static {
     fn execute_transaction<Y: SystemBasedKernelApi>(
         api: &mut Y,
@@ -217,6 +223,7 @@ impl SystemVersionLogic for SystemVersionLogicV1 {
 
 #[derive(Default)]
 pub struct SystemVersionLogicV2;
+pub type LatestSystemVersion = SystemVersionLogicV2;
 
 impl SystemVersionLogic for SystemVersionLogicV2 {
     fn execute_transaction<Y: SystemBasedKernelApi>(
@@ -343,9 +350,83 @@ impl<
     type SystemCallback = V;
 }
 
-pub struct SystemInit<V> {
+pub struct SystemInit<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> {
     pub self_init: SystemSelfInit,
-    pub callback_init: V,
+    pub callback_init: I,
+}
+
+impl<I: InitializationParameters<For: SystemCallbackObject<Init = I>>> SystemInit<I> {
+    /// This is expected to follow up with a match statement and a call to `v1` / `v2`
+    /// etc, to select the correct concrete generic.
+    pub fn load(
+        substate_db: &impl SubstateDatabase,
+        execution_config: ExecutionConfig,
+        callback_init: I,
+    ) -> (SystemVersion, Self) {
+        let system_boot = SystemBoot::load(substate_db, &execution_config);
+        let version = system_boot.system_version();
+        let self_init =
+            SystemSelfInit::new(execution_config.clone(), system_boot.into_parameters());
+        let init = Self {
+            self_init,
+            callback_init,
+        };
+        (version, init)
+    }
+
+    pub fn load_checked_latest(
+        substate_db: &impl SubstateDatabase,
+        execution_config: ExecutionConfig,
+        callback_init: I,
+    ) -> VersionedSystemInit<LatestSystemVersion, I> {
+        let (version, init) = Self::load(substate_db, execution_config, callback_init);
+        init.latest(version)
+    }
+
+    pub fn latest(
+        self,
+        loaded_version: SystemVersion,
+    ) -> VersionedSystemInit<LatestSystemVersion, I> {
+        self.with_checked_version(loaded_version, SystemVersion::latest())
+    }
+
+    pub fn v1(self, loaded_version: SystemVersion) -> VersionedSystemInit<SystemVersionLogicV1, I> {
+        self.with_checked_version(loaded_version, SystemVersion::V1)
+    }
+
+    pub fn v2(self, loaded_version: SystemVersion) -> VersionedSystemInit<SystemVersionLogicV2, I> {
+        self.with_checked_version(loaded_version, SystemVersion::V2)
+    }
+
+    fn with_checked_version<L: SystemVersionLogic>(
+        self,
+        loaded_version: SystemVersion,
+        expected_version: SystemVersion,
+    ) -> VersionedSystemInit<L, I> {
+        if expected_version != loaded_version {
+            panic!("{expected_version:?} was requested, but it didn't match the loaded system version {loaded_version:?}");
+        };
+        VersionedSystemInit {
+            self_init: self.self_init,
+            callback_init: self.callback_init,
+            version: PhantomData,
+        }
+    }
+}
+
+pub struct VersionedSystemInit<
+    L: SystemVersionLogic,
+    I: InitializationParameters<For: SystemCallbackObject<Init = I>>,
+> {
+    pub self_init: SystemSelfInit,
+    pub callback_init: I,
+    version: PhantomData<L>,
+}
+
+impl<L: SystemVersionLogic, I: InitializationParameters<For: SystemCallbackObject<Init = I>>>
+    InitializationParameters for VersionedSystemInit<L, I>
+{
+    type For = System<L, I::For>;
 }
 
 pub struct SystemSelfInit {
@@ -375,7 +456,7 @@ impl SystemSelfInit {
 
 pub type SystemV1<V> = System<SystemVersionLogicV1, V>;
 pub type SystemV2<V> = System<SystemVersionLogicV2, V>;
-pub type LatestSystem<V> = SystemV2<V>;
+pub type LatestSystem<V> = System<LatestSystemVersion, V>;
 
 pub struct System<L: SystemVersionLogic, V: SystemCallbackObject> {
     pub callback: V,
@@ -1471,7 +1552,7 @@ impl<L: SystemVersionLogic, V: SystemCallbackObject> System<L, V> {
 }
 
 impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelTransactionExecutor for System<L, V> {
-    type Init = SystemInit<V::Init>;
+    type Init = VersionedSystemInit<L, V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
@@ -1479,7 +1560,7 @@ impl<L: SystemVersionLogic, V: SystemCallbackObject> KernelTransactionExecutor f
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &ExecutableTransaction,
-        init_input: SystemInit<V::Init>,
+        init_input: Self::Init,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]

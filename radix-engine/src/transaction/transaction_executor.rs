@@ -1,6 +1,7 @@
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel::BootLoader;
+use crate::kernel::kernel::KernelInit;
+use crate::kernel::kernel_callback_api::KernelTransactionExecutor;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::*;
@@ -259,40 +260,84 @@ impl ExecutionConfig {
     }
 }
 
-pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCallbackObject>(
-    substate_db: &S,
-    vm_init: V::Init,
+pub fn execute_transaction<'v, V: VmInitialize>(
+    substate_db: &impl SubstateDatabase,
+    vm_modules: &'v V,
     execution_config: &ExecutionConfig,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    let system_boot = SystemBoot::load(substate_db, execution_config);
-    let system_version = system_boot.system_version();
-    let system_init = SystemInit {
-        self_init: SystemSelfInit::new(execution_config.clone(), system_boot.into_parameters()),
-        callback_init: vm_init,
-    };
+    configure_vm_and_execute(substate_db, vm_modules, execution_config, executable)
+}
+
+/// Ideally these configures would be composable, and might look something
+/// like this, with each taking a generic callback to capture the concrete
+/// type of that layer. But this isn't possible without non-lifetime
+/// higher-ranked types:
+/// ```ignore
+/// configure_vm(
+///     substate_db,
+///     vm_modules,
+///     <V: SystemCallbackObject>|callback_init| configure_system<V>(
+///         substate_db,
+///         callback_init,
+///         execution_config,
+///         <Y: KernelTransactionExecutor>|callback_init| configure_kernel(
+///             substate_db,
+///             callback_init,
+///             <K>|init| init.execute(executable)
+///         )
+///     )
+/// )
+/// ```
+fn configure_vm_and_execute<'g, V: VmInitialize>(
+    substate_db: &impl SubstateDatabase,
+    vm_modules: &'g V,
+    execution_config: &ExecutionConfig,
+    executable: ExecutableTransaction,
+) -> TransactionReceipt {
+    configure_system_and_execute(
+        substate_db,
+        VmInit::load(substate_db, vm_modules),
+        execution_config,
+        executable,
+    )
+}
+
+fn configure_system_and_execute<
+    I: InitializationParameters<For: SystemCallbackObject<Init = I>>,
+>(
+    substate_db: &impl SubstateDatabase,
+    callback_init: I,
+    execution_config: &ExecutionConfig,
+    executable: ExecutableTransaction,
+) -> TransactionReceipt {
+    let (system_version, system_init) =
+        SystemInit::load(substate_db, execution_config.clone(), callback_init);
     match system_version {
         SystemVersion::V1 => {
-            BootLoader::<SystemV1<V>, S>::execute(substate_db, system_init, executable)
+            configure_kernel_and_execute(substate_db, system_init.v1(system_version), executable)
         }
         SystemVersion::V2 => {
-            BootLoader::<SystemV2<V>, S>::execute(substate_db, system_init, executable)
+            configure_kernel_and_execute(substate_db, system_init.v2(system_version), executable)
         }
     }
 }
 
-pub fn execute_transaction<'s, V: VmInitialize>(
+fn configure_kernel_and_execute<
+    I: InitializationParameters<
+        For: KernelTransactionExecutor<
+            Init = I,
+            Receipt = TransactionReceipt,
+            Executable = ExecutableTransaction,
+        >,
+    >,
+>(
     substate_db: &impl SubstateDatabase,
-    vm_modules: &'s V,
-    execution_config: &ExecutionConfig,
+    callback_init: I,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
-        substate_db,
-        vm_modules.create_vm_init(),
-        execution_config,
-        executable,
-    )
+    let kernel_init = KernelInit::load(substate_db, callback_init);
+    kernel_init.execute(executable)
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
@@ -301,13 +346,7 @@ pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     execution_config: &ExecutionConfig,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    let receipt =
-        execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
-            substate_db,
-            vm_modules.create_vm_init(),
-            execution_config,
-            executable,
-        );
+    let receipt = execute_transaction(substate_db, vm_modules, execution_config, executable);
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(&commit.state_updates.create_database_updates());
     }

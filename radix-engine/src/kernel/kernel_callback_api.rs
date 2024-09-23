@@ -9,6 +9,7 @@ use crate::track::*;
 use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::ExecutableTransaction;
 
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<NodeId>;
@@ -137,11 +138,23 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
+/// A transaction which has a unique id, useful for creating an IdAllocator which
+/// requires a unique input
+pub trait UniqueSeed {
+    fn unique_seed_for_id_allocator(&self) -> Hash;
+}
+
+impl UniqueSeed for ExecutableTransaction {
+    fn unique_seed_for_id_allocator(&self) -> Hash {
+        *self.unique_hash()
+    }
+}
+
 pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Initialization object
     type Init;
     /// The transaction object
-    type Executable;
+    type Executable: UniqueSeed;
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution

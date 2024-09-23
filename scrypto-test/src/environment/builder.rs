@@ -213,7 +213,7 @@ where
                         BOOT_LOADER_PARTITION,
                         BOOT_LOADER_VM_BOOT_FIELD_KEY,
                     )
-                    .unwrap_or(VmBoot::babylon());
+                    .unwrap_or(VmBoot::babylon_genesis());
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),

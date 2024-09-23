@@ -13,7 +13,6 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::ExecutableTransaction;
 use sbor::rust::mem;
 
 macro_rules! as_read_only {
@@ -38,50 +37,60 @@ pub enum KernelBoot {
 }
 
 impl KernelBoot {
+    /// Loads kernel boot from the database, or resolves a fallback.
+    pub fn load(substate_db: &impl SubstateDatabase) -> Self {
+        substate_db
+            .get_substate(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+            )
+            .unwrap_or_else(|| KernelBoot::babylon())
+    }
+
     pub fn babylon() -> Self {
         Self::V1
     }
 }
 
-/// A transaction which has a unique id, useful for creating an IdAllocator which
-/// requires a unique input
-pub trait UniqueSeed {
-    fn unique_seed_for_id_allocator(&self) -> Hash;
+pub struct KernelInit<
+    's,
+    S: SubstateDatabase,
+    I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+> {
+    substate_db: &'s S,
+    kernel_boot: KernelBoot,
+    callback_init: I,
 }
 
-impl UniqueSeed for ExecutableTransaction {
-    fn unique_seed_for_id_allocator(&self) -> Hash {
-        *self.unique_hash()
-    }
-}
-
-/// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'h, E: KernelTransactionExecutor, S: SubstateDatabase> {
-    id_allocator: IdAllocator,
-    track: Track<'h, S>,
-    system_init: E::Init,
-    phantom: PhantomData<E>,
-}
-
-impl<'s, E: KernelTransactionExecutor<Executable: UniqueSeed>, S: SubstateDatabase>
-    BootLoader<'s, E, S>
+impl<
+        's,
+        S: SubstateDatabase,
+        I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+    > KernelInit<'s, S, I>
 {
+    pub fn load(substate_db: &'s S, callback_init: I) -> Self {
+        let kernel_boot = KernelBoot::load(substate_db);
+        Self {
+            substate_db,
+            kernel_boot,
+            callback_init,
+        }
+    }
+
     /// Executes a transaction
     pub fn execute(
-        substate_db: &'s S,
-        system_init: E::Init,
-        executable: E::Executable,
-    ) -> E::Receipt {
-        let boot_loader = Self {
+        self,
+        executable: <I::For as KernelTransactionExecutor>::Executable,
+    ) -> <I::For as KernelTransactionExecutor>::Receipt {
+        let boot_loader = BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
-            track: Track::new(substate_db),
-            system_init,
-            phantom: PhantomData,
+            track: Track::new(self.substate_db),
         };
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            boot_loader.execute_internal(executable)
+            boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable)
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
@@ -89,32 +98,37 @@ impl<'s, E: KernelTransactionExecutor<Executable: UniqueSeed>, S: SubstateDataba
             use crate::kernel::resources_tracker::ResourcesTracker;
 
             let mut resources_tracker = ResourcesTracker::start_measurement();
-            let mut receipt = boot_loader.execute_internal(executable);
+            let mut receipt =
+                boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable);
             receipt.set_resource_usage(resources_tracker.end_measurement());
             receipt
         }
     }
+}
 
-    fn execute_internal(mut self, executable: E::Executable) -> E::Receipt {
+/// Organizes the radix engine stack to make a function entrypoint available for execution
+pub struct BootLoader<'h, S: SubstateDatabase> {
+    id_allocator: IdAllocator,
+    track: Track<'h, S>,
+}
+
+impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
+    fn execute<E: KernelTransactionExecutor>(
+        mut self,
+        kernel_boot: KernelBoot,
+        callback_init: E::Init,
+        executable: E::Executable,
+    ) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
-        // Read kernel boot configuration
         // Unused for now
-        let _kernel_boot: KernelBoot = self
-            .track
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(KernelBoot::babylon());
+        let _ = kernel_boot;
 
         // Upper Layer Initialization
-        let system_init_result = E::init(&mut self.track, &executable, self.system_init);
+        let system_init_result = E::init(&mut self.track, &executable, callback_init);
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
