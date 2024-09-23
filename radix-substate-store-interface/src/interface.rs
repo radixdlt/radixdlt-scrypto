@@ -263,7 +263,7 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
     ///
     /// # Example
     /// ```ignore
-    /// let is_bootstrapped = db.read_substate(
+    /// let is_bootstrapped = db.get_raw_substate(
     ///     PACKAGE_PACKAGE,
     ///     TYPE_INFO_FIELD_PARTITION,
     ///     TypeInfoField::TypeInfo,
