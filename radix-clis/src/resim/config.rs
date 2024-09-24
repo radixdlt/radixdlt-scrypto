@@ -16,6 +16,13 @@ pub struct SimulatorEnvironment {
 }
 
 impl SimulatorEnvironment {
+    pub fn new_reset() -> Result<Self, Error> {
+        let dir = get_data_dir()?;
+        std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
+
+        Self::new()
+    }
+
     pub fn new() -> Result<Self, Error> {
         // Create the database
         let db = RocksdbSubstateStore::standard(get_data_dir()?);
@@ -31,15 +38,6 @@ impl SimulatorEnvironment {
         env.bootstrap();
 
         Ok(env)
-    }
-
-    pub fn reset(self) -> Result<Self, Error> {
-        drop(self);
-
-        let dir = get_data_dir()?;
-        std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
-
-        Self::new()
     }
 
     fn bootstrap(&mut self) {
