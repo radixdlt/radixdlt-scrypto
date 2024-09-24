@@ -34,7 +34,7 @@ pub trait IntoExecutable {
     {
         self.into_executable(
             &TransactionValidator::new_with_static_config_network_agnostic(
-                ValidationConfig::latest(),
+                TransactionValidationConfig::latest(),
             ),
         )
         .unwrap()

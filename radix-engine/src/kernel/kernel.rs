@@ -27,8 +27,6 @@ macro_rules! as_read_only {
     }};
 }
 
-pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
-
 pub type KernelBootSubstate = KernelBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -43,7 +41,7 @@ impl KernelBoot {
             .get_substate(
                 TRANSACTION_TRACKER,
                 BOOT_LOADER_PARTITION,
-                BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+                BootLoaderField::KernelBoot,
             )
             .unwrap_or_else(|| KernelBoot::babylon())
     }

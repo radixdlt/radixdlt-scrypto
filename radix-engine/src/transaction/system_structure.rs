@@ -1,10 +1,7 @@
 use crate::internal_prelude::*;
-use crate::kernel::kernel::*;
-use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 
@@ -32,6 +29,8 @@ pub enum SystemFieldKind {
     VmBoot,
     SystemBoot,
     KernelBoot,
+    TransactionValidationConfiguration,
+    ProtocolUpdateStatusSummary,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -218,21 +217,42 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
             SystemPartitionDescriptor::BootLoader => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
                     field_kind: {
-                        let field_num = key
-                            .for_field()
-                            .expect("BootLoader substates are expected to be fields");
-                        match *field_num {
-                            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY => SystemFieldKind::KernelBoot,
-                            BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => SystemFieldKind::SystemBoot,
-                            BOOT_LOADER_VM_BOOT_FIELD_KEY => SystemFieldKind::VmBoot,
-                            field_num => panic!("Unknown boot loader field kind: {field_num}"),
+                        let field = BootLoaderField::try_from(key)
+                            .unwrap_or_else(|()| panic!("Unknown boot loader field: {key:?}"));
+                        match field {
+                            BootLoaderField::KernelBoot => SystemFieldKind::KernelBoot,
+                            BootLoaderField::SystemBoot => SystemFieldKind::SystemBoot,
+                            BootLoaderField::VmBoot => SystemFieldKind::VmBoot,
+                            BootLoaderField::TransactionValidationConfiguration => {
+                                SystemFieldKind::TransactionValidationConfiguration
+                            }
+                        }
+                    },
+                })
+            }
+            SystemPartitionDescriptor::ProtocolUpdateStatus => {
+                SubstateSystemStructure::SystemField(SystemFieldStructure {
+                    field_kind: {
+                        let field = ProtocolUpdateStatusField::try_from(key).unwrap_or_else(|()| {
+                            panic!("Unknown protocol update status field: {key:?}")
+                        });
+                        match field {
+                            ProtocolUpdateStatusField::Summary => {
+                                SystemFieldKind::ProtocolUpdateStatusSummary
+                            }
                         }
                     },
                 })
             }
             SystemPartitionDescriptor::TypeInfo => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
-                    field_kind: SystemFieldKind::TypeInfo,
+                    field_kind: {
+                        let field = TypeInfoField::try_from(key)
+                            .unwrap_or_else(|()| panic!("Unknown type info field: {key:?}"));
+                        match field {
+                            TypeInfoField::TypeInfo => SystemFieldKind::TypeInfo,
+                        }
+                    },
                 })
             }
             SystemPartitionDescriptor::Schema => SubstateSystemStructure::SystemSchema,

@@ -106,7 +106,7 @@ mod test {
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
             .configure_babylon(|_| BabylonSettings::test_complex())
             .from_bootstrap_to_latest();
-        for protocol_update_exector in protocol_executor.each_protocol_update_executor() {
+        for protocol_update_exector in protocol_executor.each_protocol_update_executor(&db) {
             let protocol_version = protocol_update_exector.protocol_version;
             let mut version_folder = FolderContentAligner::new(
                 root_path.join(protocol_version.logical_name()),
@@ -489,7 +489,7 @@ mod test {
                     ..
                 } = event;
                 if let Some(testnet_run_at) = metadata.testnet_run_at {
-                    if testnet_run_at > ProtocolVersion::EARLIEST {
+                    if testnet_run_at > ProtocolVersion::GENESIS {
                         assert!(
                             metadata.safe_to_run_on_used_ledger,
                             "Scenario \"{}\" is set to run on non-Babylon testnets, but is not marked as `safe_to_run_on_used_ledger`. This could break stokenet. Change the scenario to not use pre-allocated addresses, and set `safe_to_run_on_used_ledger` to `true`.",

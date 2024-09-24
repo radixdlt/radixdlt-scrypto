@@ -37,8 +37,10 @@ impl From<EncodeError> for PrepareError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PreparationSettings {
+pub type PreparationSettings = PreparationSettingsV1;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+pub struct PreparationSettingsV1 {
     pub v2_transactions_permitted: bool,
     pub max_user_payload_length: usize,
     pub max_ledger_payload_length: usize,

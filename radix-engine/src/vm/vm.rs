@@ -15,8 +15,6 @@ use crate::vm::ScryptoVmVersion;
 use super::wasm::DefaultWasmEngine;
 use super::NoExtension;
 
-pub const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
-
 pub type VmBootSubstate = VmBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -31,7 +29,7 @@ impl VmBoot {
             .get_substate(
                 TRANSACTION_TRACKER,
                 BOOT_LOADER_PARTITION,
-                BOOT_LOADER_VM_BOOT_FIELD_KEY,
+                BootLoaderField::VmBoot,
             )
             .unwrap_or_else(|| Self::babylon_genesis())
     }

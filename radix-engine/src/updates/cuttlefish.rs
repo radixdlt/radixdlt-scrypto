@@ -89,7 +89,7 @@ fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     let system_boot: SystemBoot = db.get_existing_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
-        BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+        BootLoaderField::SystemBoot,
     );
 
     let cur_system_parameters = match system_boot {
@@ -100,7 +100,7 @@ fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     StateUpdates::empty().set_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
-        BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+        BootLoaderField::SystemBoot,
         SystemBoot::cuttlefish_for_previous_parameters(cur_system_parameters),
     )
 }

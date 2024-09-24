@@ -1340,6 +1340,14 @@ pub fn format_receipt_substate_value<'a, F: fmt::Write>(
                         KERNEL_BOOT_SUBSTATE_SCHEMA.0,
                         &KERNEL_BOOT_SUBSTATE_SCHEMA.1,
                     ),
+                    SystemFieldKind::TransactionValidationConfiguration => (
+                        TRANSACTION_VALIDATION_CONFIGURATION_SUBSTATE_SCHEMA.0,
+                        &TRANSACTION_VALIDATION_CONFIGURATION_SUBSTATE_SCHEMA.1,
+                    ),
+                    SystemFieldKind::ProtocolUpdateStatusSummary => (
+                        PROTOCOL_UPDATE_STATUS_SUMMARY_SUBSTATE_SCHEMA.0,
+                        &PROTOCOL_UPDATE_STATUS_SUMMARY_SUBSTATE_SCHEMA.1,
+                    ),
                 };
                 let raw_value = scrypto_decode(substate_value).unwrap();
                 return format_scrypto_value_with_schema(

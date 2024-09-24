@@ -13,12 +13,28 @@ use sbor::rust::prelude::*;
 /// Used only with TRANSACTION_TRACKER Node for boot loading
 pub const BOOT_LOADER_PARTITION: PartitionNumber = PartitionNumber(32u8);
 
+const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
+const BOOT_LOADER_SYSTEM_BOOT_FIELD_KEY: FieldKey = 1u8;
+const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
+const BOOT_LOADER_TRANSACTION_VALIDATION_CONFIGURATION_FIELD_KEY: FieldKey = 8u8;
+
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum BootLoaderField {
-    KernelBoot = 0,
-    SystemBoot = 1,
-    VmBoot = 2,
+    KernelBoot = BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+    SystemBoot = BOOT_LOADER_SYSTEM_BOOT_FIELD_KEY,
+    VmBoot = BOOT_LOADER_VM_BOOT_FIELD_KEY,
+    TransactionValidationConfiguration = BOOT_LOADER_TRANSACTION_VALIDATION_CONFIGURATION_FIELD_KEY,
+}
+
+/// Used only with TRANSACTION_TRACKER Node for protocol updating
+pub const PROTOCOL_UPDATE_STATUS_PARTITION: PartitionNumber = PartitionNumber(33u8);
+const PROTOCOL_UPDATE_STATUS_SUMMARY_FIELD_KEY: FieldKey = 0u8;
+
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum ProtocolUpdateStatusField {
+    Summary = PROTOCOL_UPDATE_STATUS_SUMMARY_FIELD_KEY,
 }
 
 pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
@@ -355,6 +371,7 @@ impl CollectionDescriptor for CollectionIndex {
 }
 
 substate_key!(BootLoaderField);
+substate_key!(ProtocolUpdateStatusField);
 substate_key!(TypeInfoField);
 substate_key!(RoyaltyField);
 substate_key!(ComponentField);

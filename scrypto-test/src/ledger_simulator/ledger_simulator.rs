@@ -209,7 +209,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 } = event;
                 self.events
                     .push(receipt.expect_commit_success().application_events.clone());
-                if protocol_version == ProtocolVersion::EARLIEST {
+                if protocol_version == ProtocolVersion::GENESIS {
                     if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
                         self.genesis_next_epoch = Some(next_epoch);
                     }
