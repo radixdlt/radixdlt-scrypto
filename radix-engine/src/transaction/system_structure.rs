@@ -23,7 +23,7 @@ pub struct SystemFieldStructure {
     pub field_kind: SystemFieldKind,
 }
 
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SystemFieldKind {
     TypeInfo,
     VmBoot,

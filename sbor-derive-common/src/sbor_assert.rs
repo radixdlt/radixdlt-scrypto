@@ -416,6 +416,7 @@ fn handle_generate(
     custom_schema: Path,
     test_ident: Ident,
     generation_target: GenerationTarget,
+    is_fixed: bool,
 ) -> Result<TokenStream> {
     let output_content = match generation_target {
         GenerationTarget::Inline => quote! {
@@ -533,9 +534,18 @@ fn handle_generate(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    // We still output the trait impls in generate mode - this is to prevent a chicken-and-egg problem.
+    //
+    // If a user adds bounds that a type implements these traits, then the compilation of the crate
+    // may depend on the type implementing the bounds. If the trait impls get dropped during
+    // (re)generation, then this means that the crate can't compile and (re)generation can't run!
+    //
+    // The test will still fail if it's left in (re)generate mode, so this should be okay.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, is_fixed);
+
     let output = quote! {
+        #trait_impls
+
         #[cfg(test)]
         #[test]
         #[allow(non_snake_case)]
@@ -571,7 +581,7 @@ fn handle_fixed(
                 location.generation_target(is_regenerate)
             }
         };
-        return handle_generate(ident, custom_schema, test_ident, generation_target);
+        return handle_generate(ident, custom_schema, test_ident, generation_target, true);
     }
 
     let comparison_settings = match advanced_settings.settings_resolution {
@@ -598,11 +608,10 @@ fn handle_fixed(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, true);
+
     let output = quote! {
-        impl sbor::schema::CheckedFixedSchema<#custom_schema> for #ident {}
-        impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        #trait_impls
 
         #[cfg(test)]
         #[test]
@@ -691,7 +700,7 @@ fn handle_backwards_compatible(
                 latest_named_schema.schema.generation_target(is_regenerate)
             }
         };
-        return handle_generate(ident, custom_schema, test_ident, generation_target);
+        return handle_generate(ident, custom_schema, test_ident, generation_target, false);
     }
 
     let (comparison_between_current_and_latest, comparison_between_versions) =
@@ -756,10 +765,10 @@ fn handle_backwards_compatible(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, false);
+
     let output = quote! {
-        impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        #trait_impls
 
         #[cfg(test)]
         #[test]
@@ -770,4 +779,19 @@ fn handle_backwards_compatible(
     };
 
     Ok(output)
+}
+
+fn generate_trait_impls(custom_schema: &Path, ident: &Ident, is_fixed: bool) -> TokenStream {
+    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
+    //       to generate the schema from.
+    if is_fixed {
+        quote! {
+            impl sbor::schema::CheckedFixedSchema<#custom_schema> for #ident {}
+            impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        }
+    } else {
+        quote! {
+            impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        }
+    }
 }

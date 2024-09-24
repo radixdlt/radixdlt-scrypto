@@ -396,10 +396,7 @@ mod test {
         for scenario_creator in scenarios.into_iter() {
             let scenario_logical_name = scenario_creator.metadata().logical_name;
             let min_requirement = scenario_creator.metadata().protocol_min_requirement;
-            let valid_versions = ProtocolVersion::VARIANTS
-                .into_iter()
-                .filter(|p| *p >= min_requirement);
-            for protocol_version in valid_versions {
+            for protocol_version in ProtocolVersion::all_from(min_requirement) {
                 let mut db = InMemorySubstateDatabase::standard();
 
                 let scenario_folder = FolderContentAligner::new(

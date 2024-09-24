@@ -17,7 +17,8 @@ use super::NoExtension;
 
 pub type VmBootSubstate = VmBoot;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(cuttlefish = "FILE:vm_boot_substate_cuttlefish_schema.bin",))]
 pub enum VmBoot {
     V1 { scrypto_version: u64 },
 }

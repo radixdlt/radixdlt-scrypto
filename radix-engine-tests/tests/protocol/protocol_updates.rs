@@ -5,7 +5,7 @@ fn protocol_updates_can_be_continued_from_any_complete_update() {
     // This demonstrates that `from_current_to_latest` works correctly, and
     // can be used by e.g. the simulator environment to migrate after a protocol
     // update
-    for stop_after_update in ProtocolVersion::VARIANTS {
+    for stop_after_update in ProtocolVersion::all_from(ProtocolVersion::Unbootstrapped) {
         let mut simulator = LedgerSimulatorBuilder::new()
             .with_custom_protocol(|builder| builder.from_bootstrap_to(stop_after_update))
             .build();

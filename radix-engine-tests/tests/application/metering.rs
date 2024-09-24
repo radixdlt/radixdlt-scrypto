@@ -34,7 +34,7 @@ fn run_cost_tests() {
 fn run_all(mode: CostingTaskMode) {
     use radix_engine_tests::path_local_metering_receipts;
 
-    for protocol_version in ProtocolVersion::VARIANTS.into_iter() {
+    for protocol_version in ProtocolVersion::all_from(ProtocolVersion::GENESIS) {
         let base_path = path_local_metering_receipts!();
         let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
                             file: &'static str| {

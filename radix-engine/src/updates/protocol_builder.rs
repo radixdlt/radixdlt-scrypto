@@ -187,6 +187,7 @@ impl ProtocolUpdateExecutor {
                         batch_group_index,
                         batch_group_name: &batch_group_name,
                         batch_index,
+                        status_update_committed: add_status_update,
                         resultant_store: store,
                     });
                 }
@@ -207,6 +208,13 @@ impl ProtocolUpdateExecutor {
                 ),
             );
         }
+        if H::IS_ENABLED {
+            hooks.on_protocol_update_completed(OnProtocolUpdateCompleted {
+                protocol_version: self.protocol_version,
+                status_update_committed: add_status_update,
+                resultant_store: store,
+            });
+        }
     }
 }
 
@@ -222,6 +230,8 @@ pub trait ProtocolUpdateExecutionHooks {
     fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {}
 
     fn on_transaction_batch_committed(&mut self, event: OnProtocolTransactionBatchCommitted) {}
+
+    fn on_protocol_update_completed(&mut self, event: OnProtocolUpdateCompleted) {}
 }
 
 /// Using a struct allows lots of parameters to be passed, without
@@ -242,6 +252,13 @@ pub struct OnProtocolTransactionBatchCommitted<'a> {
     pub batch_group_index: usize,
     pub batch_group_name: &'a str,
     pub batch_index: usize,
+    pub status_update_committed: bool,
+    pub resultant_store: &'a mut dyn SubstateDatabase,
+}
+
+pub struct OnProtocolUpdateCompleted<'a> {
+    pub protocol_version: ProtocolVersion,
+    pub status_update_committed: bool,
     pub resultant_store: &'a mut dyn SubstateDatabase,
 }
 
@@ -440,11 +457,9 @@ impl ProtocolExecutor {
             }
         };
         let from_protocol_version = starting_at.protocol_version;
-        let until_protocol_version = self.update_until;
-        ProtocolVersion::VARIANTS
-            .into_iter()
+        ProtocolVersion::all_between_inclusive(starting_at.protocol_version, self.update_until)
             .filter_map(move |version| {
-                if from_protocol_version == version && version <= until_protocol_version {
+                if from_protocol_version == version {
                     match &starting_at.update_status {
                         ProtocolUpdateStatus::Complete => None,
                         ProtocolUpdateStatus::InProgress { latest_commit } => Some((
@@ -455,10 +470,8 @@ impl ProtocolExecutor {
                             ),
                         )),
                     }
-                } else if from_protocol_version < version && version <= until_protocol_version {
-                    Some((version, (0, 0)))
                 } else {
-                    None
+                    Some((version, (0, 0)))
                 }
             })
     }

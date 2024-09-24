@@ -338,6 +338,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self.database
     }
 
+    /// This should only be needed if you manually apply protocol
+    /// updates to the underlying database after the LedgerSimulator
+    /// has been built.
+    pub fn update_transaction_validator_after_manual_protocol_update(&mut self) {
+        self.transaction_validator =
+            TransactionValidator::new(&self.database, &NetworkDefinition::simulator())
+    }
+
     pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
         self.collected_events.as_ref()
     }

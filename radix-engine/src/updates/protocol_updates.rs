@@ -2,7 +2,13 @@ use crate::internal_prelude::*;
 
 define_single_versioned! {
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-    pub ProtocolUpdateStatusSummarySubstate(ProtocolUpdateStatusSummaryVersions) => ProtocolUpdateStatusSummary = ProtocolUpdateStatusSummaryV1
+    pub ProtocolUpdateStatusSummarySubstate(ProtocolUpdateStatusSummaryVersions) => ProtocolUpdateStatusSummary = ProtocolUpdateStatusSummaryV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:protocol_update_status_substate_cuttlefish_schema.bin",
+        ))]
+    ]
 }
 
 impl ProtocolUpdateStatusSummarySubstate {
@@ -101,14 +107,6 @@ macro_rules! latest {
     }
 }
 
-macro_rules! earliest {
-    (
-        $enum_ident: ident, $ident: ident, $($other_idents: ident),* $(,)?
-    ) => {
-        $enum_ident::$ident
-    };
-}
-
 macro_rules! define_enum {
     (
         $ident:ident,
@@ -126,13 +124,12 @@ macro_rules! define_enum {
         }
 
         impl $ident {
-            pub const VARIANTS: [Self; count!( $($variant_name),* )] = [
+            const VARIANTS: [Self; count!( $($variant_name),* )] = [
                 $(
                     Self::$variant_name
                 ),*
             ];
 
-            pub const EARLIEST: $ident = earliest!( $ident, $($variant_name),* );
             pub const LATEST: $ident = latest!( $ident, $($variant_name),* );
 
             pub const fn logical_name(&self) -> &'static str {
@@ -246,6 +243,34 @@ define_protocol_version_and_updates! {
 }
 
 impl ProtocolVersion {
+    pub fn all_from(
+        from_version_inclusive: ProtocolVersion,
+    ) -> impl Iterator<Item = ProtocolVersion> {
+        Self::VARIANTS
+            .into_iter()
+            .skip_while(move |v| *v < from_version_inclusive)
+    }
+
+    pub fn all_between_inclusive(
+        from_version_inclusive: ProtocolVersion,
+        to_version_inclusive: ProtocolVersion,
+    ) -> impl Iterator<Item = ProtocolVersion> {
+        Self::VARIANTS
+            .into_iter()
+            .skip_while(move |v| *v < from_version_inclusive)
+            .take_while(move |v| *v <= to_version_inclusive)
+    }
+
+    pub fn all_between(
+        from_version_inclusive: ProtocolVersion,
+        to_version_exclusive: ProtocolVersion,
+    ) -> impl Iterator<Item = ProtocolVersion> {
+        Self::VARIANTS
+            .into_iter()
+            .skip_while(move |v| *v < from_version_inclusive)
+            .take_while(move |v| *v < to_version_exclusive)
+    }
+
     pub fn next(&self) -> Option<Self> {
         Self::VARIANTS
             .iter()
@@ -258,11 +283,6 @@ impl ProtocolVersion {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn assert_earliest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::EARLIEST, ProtocolVersion::Unbootstrapped);
-    }
 
     #[test]
     fn assert_latest_protocol_version_is_as_expected() {
@@ -288,18 +308,40 @@ mod tests {
 
     #[test]
     fn assert_protocol_versions_have_the_expected_order() {
-        let variants = ProtocolVersion::VARIANTS;
+        let variants =
+            ProtocolVersion::all_from(ProtocolVersion::Unbootstrapped).collect::<Vec<_>>();
 
         assert_eq!(
             variants,
-            [
+            vec![
                 ProtocolVersion::Unbootstrapped,
                 ProtocolVersion::Babylon,
                 ProtocolVersion::Anemone,
                 ProtocolVersion::Bottlenose,
                 ProtocolVersion::Cuttlefish,
-            ]
+            ],
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))
+    }
+
+    #[test]
+    fn assert_protocol_version_range_queries_work() {
+        assert_eq!(
+            ProtocolVersion::all_between(ProtocolVersion::Babylon, ProtocolVersion::Bottlenose,)
+                .collect::<Vec<_>>(),
+            vec![ProtocolVersion::Babylon, ProtocolVersion::Anemone,],
+        );
+        assert_eq!(
+            ProtocolVersion::all_between_inclusive(
+                ProtocolVersion::Babylon,
+                ProtocolVersion::Bottlenose,
+            )
+            .collect::<Vec<_>>(),
+            vec![
+                ProtocolVersion::Babylon,
+                ProtocolVersion::Anemone,
+                ProtocolVersion::Bottlenose,
+            ],
+        );
     }
 }

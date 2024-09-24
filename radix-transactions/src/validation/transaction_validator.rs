@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 
-use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::{SubstateDatabase, SubstateDatabaseExtensions};
 
 use crate::internal_prelude::*;
 
@@ -10,7 +10,26 @@ pub trait TransactionPreparer {
 
 define_single_versioned! {
     #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
-    pub TransactionValidationConfigurationSubstate(TransactionValidationConfigurationVersions) => TransactionValidationConfig = TransactionValidationConfigV1
+    pub TransactionValidationConfigurationSubstate(TransactionValidationConfigurationVersions) => TransactionValidationConfig = TransactionValidationConfigV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:transaction_validation_configuration_substate_cuttlefish_schema.bin",
+        ))]
+    ]
+}
+
+impl TransactionValidationConfig {
+    pub fn load(database: &impl SubstateDatabase) -> Self {
+        database
+            .get_substate::<TransactionValidationConfigurationSubstate>(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BootLoaderField::TransactionValidationConfiguration,
+            )
+            .map(|s| s.fully_update_and_into_latest_version())
+            .unwrap_or_else(|| Self::babylon())
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -120,24 +139,15 @@ pub struct TransactionValidator {
     required_network_id: Option<u8>,
 }
 
-#[deprecated = "Fix by cuttlefish"]
-fn fix_resolution_of_validator_config_from_database(
-    network_definition: &NetworkDefinition,
-) -> TransactionValidator {
-    TransactionValidator::new_with_latest_config(network_definition)
-}
-
 impl TransactionValidator {
     /// This is the best constructor to use, as it reads the configuration dynamically
     /// Note that the validator needs recreating every time a protocol update runs,
     /// as the config can get updated then.
-    pub fn new(_store: &impl SubstateDatabase, network_definition: &NetworkDefinition) -> Self {
-        // * TransactionValidationVersion V1/V2 - Not consistent
-        // * SystemBoot - we don't do this
-        // Preferred - separate substates here:
-        // * TransactionValidationConfigurationSubstate V1 { ... } / V2 { ...}
-        // * ProtocolStatusSubstate V1 { protocol_version }
-        fix_resolution_of_validator_config_from_database(network_definition)
+    pub fn new(database: &impl SubstateDatabase, network_definition: &NetworkDefinition) -> Self {
+        Self::new_with_static_config(
+            TransactionValidationConfig::load(database),
+            network_definition.id,
+        )
     }
 
     pub fn new_for_latest_simulator() -> Self {

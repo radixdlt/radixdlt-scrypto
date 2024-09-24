@@ -1325,50 +1325,27 @@ pub fn format_receipt_substate_value<'a, F: fmt::Write>(
     } else {
         let (payload, full_type_id) = match substate_structure {
             SubstateSystemStructure::SystemField(structure) => {
-                let (local_type_id, schema) = match &structure.field_kind {
-                    SystemFieldKind::TypeInfo => {
-                        (TYPE_INFO_SUBSTATE_SCHEMA.0, &TYPE_INFO_SUBSTATE_SCHEMA.1)
-                    }
-                    SystemFieldKind::VmBoot => {
-                        (VM_BOOT_SUBSTATE_SCHEMA.0, &VM_BOOT_SUBSTATE_SCHEMA.1)
-                    }
-                    SystemFieldKind::SystemBoot => (
-                        SYSTEM_BOOT_SUBSTATE_SCHEMA.0,
-                        &SYSTEM_BOOT_SUBSTATE_SCHEMA.1,
-                    ),
-                    SystemFieldKind::KernelBoot => (
-                        KERNEL_BOOT_SUBSTATE_SCHEMA.0,
-                        &KERNEL_BOOT_SUBSTATE_SCHEMA.1,
-                    ),
-                    SystemFieldKind::TransactionValidationConfiguration => (
-                        TRANSACTION_VALIDATION_CONFIGURATION_SUBSTATE_SCHEMA.0,
-                        &TRANSACTION_VALIDATION_CONFIGURATION_SUBSTATE_SCHEMA.1,
-                    ),
-                    SystemFieldKind::ProtocolUpdateStatusSummary => (
-                        PROTOCOL_UPDATE_STATUS_SUMMARY_SUBSTATE_SCHEMA.0,
-                        &PROTOCOL_UPDATE_STATUS_SUMMARY_SUBSTATE_SCHEMA.1,
-                    ),
-                };
+                let single_type_schema = resolve_system_field_schema(structure.field_kind);
                 let raw_value = scrypto_decode(substate_value).unwrap();
                 return format_scrypto_value_with_schema(
                     f,
                     print_mode,
                     raw_value,
                     receipt_context,
-                    &schema,
-                    local_type_id,
+                    &single_type_schema.schema,
+                    single_type_schema.type_id,
                 );
             }
             SubstateSystemStructure::SystemSchema => {
-                let (local_type_id, schema) = (SCHEMA_SUBSTATE_SCHEMA.0, &SCHEMA_SUBSTATE_SCHEMA.1);
+                let single_type_schema = resolve_system_schema_schema();
                 let raw_value = scrypto_decode(substate_value).unwrap();
                 return format_scrypto_value_with_schema(
                     f,
                     print_mode,
                     raw_value,
                     receipt_context,
-                    &schema,
-                    local_type_id,
+                    &single_type_schema.schema,
+                    single_type_schema.type_id,
                 );
             }
             SubstateSystemStructure::KeyValueStoreEntry(structure) => {

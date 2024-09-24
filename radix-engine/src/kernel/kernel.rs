@@ -29,7 +29,10 @@ macro_rules! as_read_only {
 
 pub type KernelBootSubstate = KernelBoot;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(
+    cuttlefish = "FILE:kernel_boot_substate_cuttlefish_schema.bin",
+))]
 pub enum KernelBoot {
     V1,
 }
