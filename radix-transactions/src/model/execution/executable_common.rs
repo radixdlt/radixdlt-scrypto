@@ -81,10 +81,6 @@ pub enum IntentHashNullification {
         expiry_epoch: Epoch,
         ignore_duplicate: bool,
     },
-    /// For system transactions which currently need to go through
-    /// nullification process.
-    /// TODO: Cleanup hash nullification and remove this
-    System,
 }
 
 impl IntentHashNullification {
@@ -96,7 +92,6 @@ impl IntentHashNullification {
             IntentHashNullification::Subintent { intent_hash, .. } => {
                 Some(IntentHash::Subintent(*intent_hash))
             }
-            IntentHashNullification::System => None,
         }
     }
 }

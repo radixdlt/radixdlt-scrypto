@@ -35,20 +35,6 @@ pub enum TrackedSubstateInfo {
     Unmodified,
 }
 
-/// The interface to be used during boot loading
-/// This interface is different from the CommitableSubstateStore in
-/// that these reads should not be tracked / costed since it will
-/// cause a protocol break.
-pub trait BootStore {
-    /// Read a substate from the store
-    fn read_boot_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue>;
-}
-
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.

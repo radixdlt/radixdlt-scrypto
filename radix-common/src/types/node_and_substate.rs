@@ -307,6 +307,16 @@ impl<'a> SubstateKeyOrRef<'a> {
 
 pub trait ResolvableSubstateKey<'a>: Sized {
     fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a>;
+    fn into_substate_key(self) -> SubstateKey {
+        match self.into_substate_key_or_ref() {
+            SubstateKeyOrRef::Owned(key) => key,
+            SubstateKeyOrRef::Borrowed(SubstateKeyRef::Field(key)) => SubstateKey::Field(*key),
+            SubstateKeyOrRef::Borrowed(SubstateKeyRef::Map(key)) => SubstateKey::Map(key.clone()),
+            SubstateKeyOrRef::Borrowed(SubstateKeyRef::Sorted(key)) => {
+                SubstateKey::Sorted(key.clone())
+            }
+        }
+    }
 }
 
 impl<'a> ResolvableSubstateKey<'a> for &'a SubstateKey {

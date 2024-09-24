@@ -89,7 +89,7 @@ fn test_stake_reconciliation() {
     //     let partition_num = PartitionNumber(1);
     //     let substate_key = SubstateKey::Map(ScryptoRawPayload::from_valid_payload(vec![92, 32, 7, 32, 220, 0, 156, 5, 6, 83, 96, 189, 222, 100, 29, 145, 160, 147, 193, 127, 71, 54, 135, 62, 103, 35, 126, 168, 230, 117, 203, 71, 36, 132, 155, 157]));
     //     let value_from_database: ScryptoRawValue = ledger.substate_db()
-    //         .read_substate_typed(&node_id, partition_num, substate_key)
+    //         .get_raw_substate(&node_id, partition_num, substate_key)
     //         .unwrap();
     //     let substate_value = value_from_database.into_payload_bytes();
     //     let state_updates = StateUpdates {
