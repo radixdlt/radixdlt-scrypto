@@ -338,6 +338,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self.database
     }
 
+    pub fn transaction_validator(&self) -> &TransactionValidator {
+        &self.transaction_validator
+    }
+
     /// This should only be needed if you manually apply protocol
     /// updates to the underlying database after the LedgerSimulator
     /// has been built.
@@ -1234,6 +1238,28 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             }
         }
         transaction_receipt
+    }
+
+    pub fn construct_unsigned_notarized_transaction_v1(
+        &mut self,
+        manifest: TransactionManifestV1,
+    ) -> NotarizedTransactionV1 {
+        let notary = Ed25519PrivateKey::from_u64(1337).unwrap();
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        TransactionV1Builder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: current_epoch,
+                end_epoch_exclusive: current_epoch.next().unwrap(),
+                nonce,
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: false,
+                tip_percentage: 0,
+            })
+            .manifest(manifest)
+            .notarize(&notary)
+            .build()
     }
 
     /// If you have a non-raw notarized tranasaction, you will need to do:
