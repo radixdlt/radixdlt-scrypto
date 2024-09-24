@@ -37,7 +37,7 @@ pub fn resolve_system_schema_schema() -> &'static ScryptoSingleTypeSchema {
 
 #[derive(ScryptoSbor, ScryptoSborAssertion)]
 #[sbor_assert(backwards_compatible(cuttlefish = "FILE:schema_substate_cuttlefish_schema.bin",))]
-#[sbor(transparent)]
+#[sbor(transparent, transparent_name)]
 struct SchemaEntrySubstate(PackageSchemaEntrySubstate);
 
 // This is for having schemas to help map system substates
