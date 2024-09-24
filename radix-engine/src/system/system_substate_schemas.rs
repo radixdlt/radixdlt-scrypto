@@ -36,7 +36,7 @@ pub fn resolve_system_schema_schema() -> &'static ScryptoSingleTypeSchema {
 }
 
 #[derive(ScryptoSbor, ScryptoSborAssertion)]
-#[sbor_assert(backwards_compatible(cuttlefish = "FILE:schema_substate_cuttlefish_schema.bin",))]
+#[sbor_assert(backwards_compatible(cuttlefish = "FILE:schema_substate_cuttlefish_schema.bin"))]
 #[sbor(transparent, transparent_name)]
 struct SchemaEntrySubstate(PackageSchemaEntrySubstate);
 
