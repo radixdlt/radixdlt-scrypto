@@ -44,7 +44,7 @@ use radix_engine_interface::blueprints::hooks::*;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use radix_substate_store_interface::interface::*;
 use radix_transactions::model::*;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
@@ -66,7 +66,16 @@ pub enum SystemBoot {
 }
 
 impl SystemBoot {
-    fn system_logic(&self) -> VersionedSystemLogic {
+    pub fn babylon_genesis(network_definition: NetworkDefinition) -> Self {
+        SystemBoot::V1(SystemParameters {
+            network_definition,
+            costing_parameters: CostingParameters::babylon_genesis(),
+            costing_module_config: CostingModuleConfig::babylon_genesis(),
+            limit_parameters: LimitParameters::babylon_genesis(),
+        })
+    }
+
+    fn system_logic_version(&self) -> VersionedSystemLogic {
         match self {
             Self::V1(..) => VersionedSystemLogic::V1,
             Self::V2(logic, _) => *logic,
@@ -244,24 +253,25 @@ impl<V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>> SystemBa
     type SystemCallback = V;
 }
 
-#[derive(Clone)]
-pub struct SystemInit<C> {
+pub struct SystemInit<V> {
+    pub self_init: SystemSelfInit,
+    pub callback_init: V,
+}
+
+pub struct SystemSelfInit {
     // These fields only affect side effects and do not affect ledger state execution
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
     pub enable_debug_information: bool,
 
-    // Higher layer initialization object
-    pub callback_init: C,
-
     // An override of system configuration
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<C: SystemCallbackObject> {
+pub struct System<V: SystemCallbackObject> {
     pub versioned_system_logic: VersionedSystemLogic,
-    pub callback: C,
+    pub callback: V,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
@@ -273,7 +283,7 @@ pub trait HasModules {
     fn modules_mut(&mut self) -> &mut SystemModuleMixer;
 }
 
-impl<C: SystemCallbackObject> HasModules for System<C> {
+impl<V: SystemCallbackObject> HasModules for System<V> {
     #[inline]
     fn modules_mut(&mut self) -> &mut SystemModuleMixer {
         &mut self.modules
@@ -285,7 +295,7 @@ pub struct SystemFinalization {
     intent_nullifications: Vec<IntentHashNullification>,
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<V: SystemCallbackObject> System<V> {
     fn on_move_node<Y: SystemBasedKernelApi>(
         node_id: &NodeId,
         is_moving_down: bool,
@@ -334,7 +344,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<V: SystemCallbackObject> System<V> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
@@ -483,7 +493,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 
     fn finalize_fees_for_commit<S: SubstateDatabase>(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        track: &mut Track<S>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
     ) -> (
@@ -734,7 +744,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 
     fn update_transaction_tracker<S: SubstateDatabase>(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        track: &mut Track<S>,
         next_epoch: Epoch,
         intent_hash_nullification: IntentHashNullification,
         is_success: bool,
@@ -1043,7 +1053,7 @@ impl<C: SystemCallbackObject> System<C> {
         result: TransactionResult,
         print_execution_summary: bool,
         costing_module: CostingModule,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         let (fee_reserve, cost_breakdown, detailed_cost_breakdown) =
             costing_module.unpack_for_receipt();
         let (finalization_summary, costing_parameters, transaction_costing_parameters) =
@@ -1064,7 +1074,7 @@ impl<C: SystemCallbackObject> System<C> {
     fn create_rejection_receipt(
         reason: impl Into<RejectionReason>,
         modules: SystemModuleMixer,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         Self::create_non_commit_receipt(
             TransactionResult::Reject(RejectResult {
                 reason: reason.into(),
@@ -1077,7 +1087,7 @@ impl<C: SystemCallbackObject> System<C> {
     fn create_abort_receipt(
         reason: impl Into<AbortReason>,
         modules: SystemModuleMixer,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         Self::create_non_commit_receipt(
             TransactionResult::Abort(AbortResult {
                 reason: reason.into(),
@@ -1089,10 +1099,10 @@ impl<C: SystemCallbackObject> System<C> {
 
     fn create_commit_receipt<S: SubstateDatabase>(
         outcome: Result<Vec<InstructionOutput>, RuntimeError>,
-        mut track: Track<S, SpreadPrefixKeyMapper>,
+        mut track: Track<S>,
         modules: SystemModuleMixer,
         system_finalization: SystemFinalization,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         let print_execution_summary = modules.is_kernel_trace_enabled();
         let execution_trace_enabled = modules.is_execution_trace_enabled();
         let (costing_module, runtime_module, execution_trace_module) = modules.unpack();
@@ -1150,8 +1160,7 @@ impl<C: SystemCallbackObject> System<C> {
 
         // Generate state updates from tracked substates
         // Note that this process will prune invalid reads
-        let (new_node_ids, state_updates) =
-            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+        let (new_node_ids, state_updates) = tracked_substates.to_state_updates();
 
         // Summarizes state updates
         let system_structure =
@@ -1209,13 +1218,9 @@ impl<C: SystemCallbackObject> System<C> {
         transaction_costing_parameters: TransactionCostingParameters,
         fee_summary: TransactionFeeSummary,
         result: TransactionResult,
-    ) -> TransactionReceiptV1 {
-        // TODO - change to TransactionCostingParametersReceiptV1 when we have a plan regarding how
-        //        to break TransactionReceipt compatibility
-        let transaction_costing_parameters = TransactionCostingParametersReceiptV1 {
-            tip_percentage: transaction_costing_parameters
-                .tip
-                .truncate_to_percentage_u16(),
+    ) -> TransactionReceipt {
+        let transaction_costing_parameters = TransactionCostingParametersReceiptV2 {
+            tip_proportion: transaction_costing_parameters.tip.proportion(),
             free_credit_in_xrd: transaction_costing_parameters.free_credit_in_xrd,
         };
 
@@ -1250,8 +1255,8 @@ impl<C: SystemCallbackObject> System<C> {
     fn resolve_modules(
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
-        init_input: &SystemInit<C::Init>,
-    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceiptV1> {
+        init_input: SystemSelfInit,
+    ) -> Result<(VersionedSystemLogic, SystemModuleMixer), TransactionReceipt> {
         let system_boot = store
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -1259,14 +1264,14 @@ impl<C: SystemCallbackObject> System<C> {
                 &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(SystemBoot::V1(SystemParameters {
-                network_definition: NetworkDefinition::mainnet(),
-                costing_parameters: CostingParameters::babylon_genesis(),
-                costing_module_config: CostingModuleConfig::babylon_genesis(),
-                limit_parameters: LimitParameters::babylon_genesis(),
-            }));
+            .unwrap_or_else(|| {
+                let overrides = init_input.system_overrides.as_ref();
+                let network_definition = overrides.and_then(|o| o.network_definition.as_ref())
+                    .expect("Before bottlenose, no SystemBoot substate exists, so a network_definition must be provided in the SystemOverrides of the ExecutionConfig.");
+                SystemBoot::babylon_genesis(network_definition.clone())
+            });
 
-        let system_logic_version = system_boot.system_logic();
+        let system_logic_version = system_boot.system_logic_version();
         let mut system_parameters = match system_boot {
             SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
                 system_parameters
@@ -1368,27 +1373,28 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
-    type Init = SystemInit<C::Init>;
+impl<V: SystemCallbackObject> KernelTransactionCallbackObject for System<V> {
+    type Init = SystemInit<V::Init>;
     type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
-    type Receipt = TransactionReceiptV1;
+    type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &ExecutableTransaction,
-        init_input: SystemInit<C::Init>,
+        init_input: SystemInit<V::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if init_input.enable_kernel_trace {
+        if init_input.self_init.enable_kernel_trace {
             Self::print_executable(executable);
         }
 
-        let (logic_version, mut modules) = Self::resolve_modules(store, executable, &init_input)?;
+        let (logic_version, mut modules) =
+            Self::resolve_modules(store, executable, init_input.self_init)?;
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
-        let callback = match C::init(store, init_input.callback_init) {
+        let callback = match V::init(store, init_input.callback_init) {
             Ok(callback) => callback,
             Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
         };
@@ -1559,7 +1565,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
 
     fn create_receipt<S: SubstateDatabase>(
         mut self,
-        track: Track<S, SpreadPrefixKeyMapper>,
+        track: Track<S>,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         // Panic if an error is encountered in the system layer or below. The following code
@@ -1598,7 +1604,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
+impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
@@ -1804,7 +1810,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     .expect("Schema should have validated this exists")
                     .clone();
                 let output =
-                    { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
+                    { V::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
                 // Validate output
                 system.validate_blueprint_payload(
@@ -1834,7 +1840,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
-                let output = C::invoke(
+                let output = V::invoke(
                     &blueprint_id.package_address,
                     export.clone(),
                     &input,

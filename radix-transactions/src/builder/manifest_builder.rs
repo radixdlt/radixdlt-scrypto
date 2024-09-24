@@ -148,7 +148,7 @@ impl SubintentManifestV2Builder {
 }
 
 impl SystemManifestV1Builder {
-    /// This exists so that you can call `ManifestBuilder::new_v1()`.
+    /// This exists so that you can call `ManifestBuilder::new_system_v1()`.
     /// It is equivalent to:
     /// * `ManifestBuilder::<SystemTransactionManifestV1>::new_typed()`
     /// * `SystemV1ManifestBuilder::new_typed()`
@@ -156,7 +156,7 @@ impl SystemManifestV1Builder {
         Self::new_typed()
     }
 
-    pub fn add_address_preallocation(
+    pub fn use_preallocated_address(
         &mut self,
         fixed_address: impl Into<GlobalAddress>,
         package_address: impl Into<PackageAddress>,
@@ -2253,7 +2253,7 @@ impl<M: BuildableManifestSupportingChildren> ManifestBuilder<M>
 where
     M::Instruction: From<InstructionV2>,
 {
-    pub fn register_child(
+    pub fn use_child(
         mut self,
         child_name: impl NewManifestIntent,
         subintent_hash: SubintentHash,

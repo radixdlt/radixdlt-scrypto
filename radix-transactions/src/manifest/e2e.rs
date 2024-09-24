@@ -1580,15 +1580,15 @@ YIELD_TO_PARENT;
             blob_provider.blobs().into_values().collect(),
         )
         .expect("Canonical manifest could not be compiled")
-        .to_payload_bytes()
+        .to_raw()
         .unwrap();
 
-        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
+        let intent_hash = PreparedIntentV1::prepare(&intent, PreparationSettings::latest_ref())
             .unwrap()
             .transaction_intent_hash();
 
-        print_blob(name, intent);
-        print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
+        print_blob(name, intent.as_slice());
+        print_blob(&format!("{}_HASH", name), intent_hash.0.as_slice());
     }
 
     fn compile_and_decompile_with_inversion_test_subintent_v2(
@@ -1667,7 +1667,7 @@ YIELD_TO_PARENT;
         assert_eq!(original_decompiled.trim(), expected_canonical.trim());
     }
 
-    pub fn print_blob(name: &str, blob: Vec<u8>) {
+    pub fn print_blob(name: &str, blob: &[u8]) {
         std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
             print!(
                 "pub const TX_{}: [u8; {}] = [",

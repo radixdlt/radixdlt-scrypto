@@ -3040,7 +3040,7 @@ pub impl DefaultLedgerSimulator {
     fn execute_manifest_without_auth(
         &mut self,
         manifest: TransactionManifestV1,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         self.execute_manifest_with_enabled_modules(manifest, true, false)
     }
 
@@ -3049,21 +3049,19 @@ pub impl DefaultLedgerSimulator {
         manifest: TransactionManifestV1,
         disable_auth: bool,
         disable_costing: bool,
-    ) -> TransactionReceiptV1 {
+    ) -> TransactionReceipt {
         let mut execution_config =
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::mainnet());
         execution_config.system_overrides = Some(SystemOverrides {
             disable_auth,
             disable_costing,
-            ..Default::default()
+            ..SystemOverrides::default_for_network(&NetworkDefinition::mainnet())
         });
 
         let nonce = self.next_transaction_nonce();
         let test_transaction =
             TestTransaction::new_v1_from_nonce(manifest, nonce, Default::default());
-        let prepared_transaction = test_transaction.prepare().unwrap();
-        let executable = prepared_transaction.get_executable();
-        self.execute_transaction(executable, execution_config)
+        self.execute_transaction(test_transaction, execution_config)
     }
 }
 

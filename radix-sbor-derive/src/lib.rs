@@ -234,7 +234,7 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// # use radix_sbor_derive::*;
 /// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
-/// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"), generate)]
+/// #[sbor_assert(fixed("FILE:MyType-schema-v1.bin"), generate)]
 /// struct MyType {
 ///     // ...
 /// }
@@ -250,7 +250,7 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// # use radix_sbor_derive::*;
 /// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
-/// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"))]
+/// #[sbor_assert(fixed("FILE:MyType-schema-v1.bin"))]
 /// struct MyType {
 ///     // ...
 /// }
@@ -270,15 +270,15 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(backwards_compatible(
-///     version1 = "FILE:MyType-schema-v1.txt",
-///     version2 = "FILE:MyType-schema-v2.txt",
+///     version1 = "FILE:MyType-schema-v1.bin",
+///     version2 = "FILE:MyType-schema-v2.bin",
 /// ))]
 /// struct MyType {
 ///     // ...
 /// }
 /// ```
 ///
-/// Instead of `"FILE:X"`, you can also use `"INLINE:<hex>"`, `"CONST:<Constant>"` or `"EXPR:<Expression>"`
+/// Instead of `"FILE:X.bin"`, you can also use `"FILE:X.txt"`, `"INLINE:<hex>"`, `"CONST:<Constant>"` or `"EXPR:<Expression>"`
 /// where the expression (such as `generate_schema()`) has to generate a `SingleTypeSchema<ScryptoCustomSchema>`.
 ///
 /// If you wish to configure exactly which schemas are used for comparison of the current schema with
@@ -323,7 +323,7 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(
-///     fixed("FILE:MyType-schema-v1.txt"),
+///     fixed("FILE:MyType-schema-v1.bin"),
 ///     settings(allow_name_changes),
 /// )]
 /// struct MyType {
@@ -333,8 +333,8 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(
 ///     backwards_compatible(
-///         v1 = "FILE:MyType-schema-v1.txt",
-///         v2 = "FILE:MyType-schema-v2.txt",
+///         v1 = "FILE:MyType-schema-v1.bin",
+///         v2 = "FILE:MyType-schema-v2.bin",
 ///     ),
 ///     settings(
 ///         // We allow name changes between versions, but require the current schema to exactly match

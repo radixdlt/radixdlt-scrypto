@@ -23,15 +23,12 @@ use radix_engine_interface::blueprints::pool::{
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
 use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
-use radix_transactions::validation::{
-    NotarizedTransactionValidatorV1, TransactionValidator, ValidationConfig,
-};
+use radix_transactions::manifest::*;
+use radix_transactions::validation::*;
 use std::path::{Path, PathBuf};
 
 use super::Compile;
@@ -170,6 +167,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 scrypto_vm: ScryptoVm::default(),
                 vm_extension: self.custom_extension,
             },
+            transaction_validator: snapshot.transaction_validator,
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
@@ -241,9 +239,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
 
+        let validator = TransactionValidator::new(&substate_db, &Self::network_definition());
+
         let runner = LedgerSimulator {
             vm_modules,
             database: substate_db,
+            transaction_validator: validator,
             next_private_key,
             next_transaction_nonce,
             collected_events: hooks.events,
@@ -266,6 +267,7 @@ pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
 
     next_private_key: u64,
     next_transaction_nonce: u32,
+    transaction_validator: TransactionValidator,
 
     /// Events collected from all the committed transactions
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
@@ -288,6 +290,7 @@ impl<E: NativeVmExtension, D: TestDatabase> Drop for LedgerSimulator<E, D> {
 #[derive(Clone)]
 pub struct LedgerSimulatorSnapshot {
     database: InMemorySubstateDatabase,
+    transaction_validator: TransactionValidator,
     next_private_key: u64,
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
@@ -300,6 +303,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> LedgerSimulatorSnapshot {
         LedgerSimulatorSnapshot {
             database: self.database.clone(),
+            transaction_validator: self.transaction_validator.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
@@ -311,6 +315,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
 
     pub fn restore_snapshot(&mut self, snapshot: LedgerSimulatorSnapshot) {
         self.database = snapshot.database;
+        self.transaction_validator = snapshot.transaction_validator;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.collected_events = snapshot.collected_events;
@@ -454,12 +459,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
-        let mut node_ids = index_set_new();
-        for pk in self.database.list_partition_keys() {
-            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
-            node_ids.insert(node_id);
-        }
-        node_ids
+        self.database
+            .read_partition_keys()
+            .map(|(node_id, _)| node_id)
+            .collect()
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
@@ -636,13 +639,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn component_state<T: ScryptoDecode>(&self, component_address: ComponentAddress) -> T {
         let node_id: &NodeId = component_address.as_node_id();
-        let component_state = self
-            .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<T>>(
-                node_id,
-                MAIN_BASE_PARTITION,
-                &ComponentField::State0.into(),
-            );
+        let component_state = self.substate_db().get_substate::<FieldSubstate<T>>(
+            node_id,
+            MAIN_BASE_PARTITION,
+            ComponentField::State0,
+        );
         component_state.unwrap().into_payload()
     }
 
@@ -679,10 +680,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn get_fungible_resource_total_supply(&self, resource: ResourceAddress) -> Decimal {
         let total_supply = self
             .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
-                &resource.as_node_id(),
+            .get_substate::<FungibleResourceManagerTotalSupplyFieldSubstate>(
+                resource,
                 MAIN_BASE_PARTITION,
-                &FungibleResourceManagerField::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply,
             )
             .unwrap()
             .into_payload()
@@ -1006,7 +1007,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let mut manifest_builder = ManifestBuilder::new_system_v1();
         let reservation =
-            manifest_builder.add_address_preallocation(address, PACKAGE_PACKAGE, PACKAGE_BLUEPRINT);
+            manifest_builder.use_preallocated_address(address, PACKAGE_PACKAGE, PACKAGE_BLUEPRINT);
         let manifest = manifest_builder
             .publish_package_advanced(
                 reservation,
@@ -1017,10 +1018,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .build();
 
-        let receipt = self.execute_system_transaction(
-            manifest,
-            btreeset!(system_execution(SystemExecution::Protocol)),
-        );
+        let receipt =
+            self.execute_system_transaction(manifest, [SystemExecution::Protocol.proof()]);
 
         receipt.expect_commit_success();
     }
@@ -1126,112 +1125,101 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         self.publish_package_with_owner(package_dir.as_ref(), owner_badge)
     }
 
-    pub fn execute_manifest<T>(
-        &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
-                initial_proofs.into_iter().collect(),
-            )
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-            ExecutionConfig::for_test_transaction(),
-        )
+    fn resolve_suggested_config(&self, manifest: &impl BuildableManifest) -> ExecutionConfig {
+        match manifest.default_test_execution_config_type() {
+            DefaultTestExecutionConfigType::Notarized => {
+                ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
+            }
+            DefaultTestExecutionConfigType::System => {
+                ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
+            }
+            DefaultTestExecutionConfigType::Test => ExecutionConfig::for_test_transaction(),
+        }
+        .with_kernel_trace(self.with_kernel_trace)
     }
 
-    pub fn execute_manifest_with_execution_config<T>(
+    pub fn execute_manifest(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        let config = self.resolve_suggested_config(&manifest);
+        self.execute_manifest_with_execution_config(manifest, initial_proofs, config)
+    }
+
+    pub fn execute_manifest_with_execution_config(
+        &mut self,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         execution_config: ExecutionConfig,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
+    ) -> TransactionReceipt {
+        let executable = manifest
+            .into_executable_with_proofs(
+                self.next_transaction_nonce(),
                 initial_proofs.into_iter().collect(),
+                &self.transaction_validator,
             )
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-            execution_config,
-        )
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Could not convert manifest into executable transaction: {}",
+                    err
+                )
+            });
+        self.execute_transaction(executable, execution_config)
     }
 
-    pub fn execute_manifest_with_costing_params<T>(
+    pub fn execute_manifest_with_costing_params(
         &mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         costing_parameters: CostingParameters,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        let mut config = ExecutionConfig::for_test_transaction();
+    ) -> TransactionReceipt {
+        let mut config = self.resolve_suggested_config(&manifest);
         config.system_overrides = Some(SystemOverrides {
             costing_parameters: Some(costing_parameters),
-            ..Default::default()
+            ..config.system_overrides.unwrap_or_default()
         });
-        self.execute_transaction(
-            TestTransaction::new_v1_from_nonce(
-                manifest,
-                nonce,
-                initial_proofs.into_iter().collect(),
-            )
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-            config,
-        )
+        self.execute_manifest_with_execution_config(manifest, initial_proofs, config)
     }
 
-    pub fn execute_manifest_with_injected_error<'a, T>(
-        &'a mut self,
-        manifest: TransactionManifestV1,
-        initial_proofs: T,
+    pub fn execute_manifest_with_injected_error(
+        &mut self,
+        manifest: impl BuildableManifest,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         error_after_count: u64,
-    ) -> TransactionReceipt
-    where
-        T: IntoIterator<Item = NonFungibleGlobalId>,
-    {
-        let nonce = self.next_transaction_nonce();
-        let txn = TestTransaction::new_v1_from_nonce(
-            manifest,
-            nonce,
-            initial_proofs.into_iter().collect(),
-        )
-        .prepare()
-        .expect("expected transaction to be preparable");
-        let executable = txn.get_executable();
+    ) -> TransactionReceipt {
+        let mut execution_config = self.resolve_suggested_config(&manifest);
+
+        let executable = manifest
+            .into_executable_with_proofs(
+                self.next_transaction_nonce(),
+                initial_proofs.into_iter().collect(),
+                &self.transaction_validator,
+            )
+            .unwrap_or_else(|err| {
+                panic!(
+                    "Could not convert manifest into executable transaction: {}",
+                    err
+                )
+            });
 
         let vm_init = self.vm_modules.create_vm_init();
 
-        let execution_config =
-            ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
-        let mut executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
+        // Override the kernel trace config
+        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
+
+        let executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
             &self.database,
             InjectCostingErrorInput {
                 system_input: SystemInit {
-                    enable_kernel_trace: execution_config.enable_kernel_trace,
-                    enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                    enable_debug_information: execution_config.enable_debug_information,
-                    execution_trace: execution_config.execution_trace,
+                    self_init: SystemSelfInit {
+                        enable_kernel_trace: execution_config.enable_kernel_trace,
+                        enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                        enable_debug_information: execution_config.enable_debug_information,
+                        execution_trace: execution_config.execution_trace,
+                        system_overrides: execution_config.system_overrides.clone(),
+                    },
                     callback_init: vm_init,
-                    system_overrides: execution_config.system_overrides.clone(),
                 },
                 error_after_count,
             },
@@ -1240,9 +1228,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let transaction_receipt = executor.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());
@@ -1254,18 +1240,21 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         transaction_receipt
     }
 
+    /// If you have a non-raw notarized tranasaction, you will need to do:
+    /// ```ignore
+    /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
+    /// ```
     pub fn execute_notarized_transaction(
         &mut self,
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
-        let network = NetworkDefinition::simulator();
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id));
-        let validated = validator
-            .validate_from_raw(&raw_transaction)
-            .expect("Expected raw transaction to be valid");
+        let executable = raw_transaction
+            .validate(&self.transaction_validator)
+            .expect("Expected raw transaction to be valid")
+            .get_executable();
         self.execute_transaction(
-            validated.get_executable(),
-            ExecutionConfig::for_notarized_transaction(network.clone()),
+            executable,
+            ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         )
     }
 
@@ -1274,25 +1263,27 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_system_transaction(
         &mut self,
         manifest: SystemTransactionManifestV1,
-        proofs: BTreeSet<NonFungibleGlobalId>,
+        initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
     ) -> TransactionReceipt {
-        let nonce = self.next_transaction_nonce();
-        let unique_hash = hash(format!("Test runner txn: {}", nonce));
-        self.execute_transaction(
-            manifest
-                .into_transaction(unique_hash)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(proofs),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
-        )
+        self.execute_manifest(manifest, initial_proofs)
+    }
+
+    pub fn execute_test_transaction(
+        &mut self,
+        test_transaction: TestTransaction,
+    ) -> TransactionReceipt {
+        self.execute_transaction(test_transaction, ExecutionConfig::for_test_transaction())
     }
 
     pub fn execute_transaction(
         &mut self,
-        executable: ExecutableTransaction,
+        executable_source: impl IntoExecutable,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
+        let executable = executable_source
+            .into_executable(&self.transaction_validator)
+            .expect("Transaction should be convertible to executable");
+
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
@@ -1311,9 +1302,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
             self.collected_events
                 .push(commit.application_events.clone());
@@ -2362,15 +2351,6 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
         .notarize(notary)
         .build();
     notarized_transaction
-}
-
-pub fn validate_notarized_transaction<'a>(
-    network: &'a NetworkDefinition,
-    transaction: &'a NotarizedTransactionV1,
-) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-        .validate(transaction.prepare().unwrap())
-        .unwrap()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {

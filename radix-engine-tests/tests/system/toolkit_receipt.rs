@@ -727,7 +727,7 @@ fn locked_fees_are_mapped_correctly_in_receipt() {
 /// * Checks that the runtime receipt obtained from deserialization equals the runtime receipt
 ///   obtained from direct conversion (roundtrip property)
 fn check_and_convert_receipt_to_runtime_receipt(
-    receipt: TransactionReceiptV1,
+    receipt: TransactionReceipt,
 ) -> RuntimeToolkitTransactionReceipt {
     // Convert to a runtime receipt.
     let runtime_toolkit_receipt = RuntimeToolkitTransactionReceipt::try_from(receipt).unwrap();

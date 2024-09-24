@@ -16,7 +16,16 @@ pub struct SignedPartialTransactionV2 {
     pub subintent_signatures: MultipleIntentSignaturesV2,
 }
 
-transaction_payload_v2!(
+impl From<SignedPartialTransactionV2> for (SignedPartialTransactionV2, TransactionObjectNames) {
+    fn from(value: SignedPartialTransactionV2) -> Self {
+        let object_names = TransactionObjectNames::unknown_with_subintent_count(
+            value.subintent_signatures.by_subintent.len(),
+        );
+        (value, object_names)
+    }
+}
+
+define_transaction_payload!(
     SignedPartialTransactionV2,
     RawSignedPartialTransaction,
     PreparedSignedPartialTransactionV2 {

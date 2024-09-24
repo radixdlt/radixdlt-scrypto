@@ -3,6 +3,7 @@ mod execution;
 mod hash;
 mod ledger_transaction;
 mod preparation;
+mod test_transaction;
 mod user_transaction;
 mod v1;
 mod v2;
@@ -13,6 +14,7 @@ pub use execution::*;
 pub use hash::*;
 pub use ledger_transaction::*;
 pub use preparation::*;
+pub use test_transaction::*;
 pub use user_transaction::*;
 pub use v1::*;
 pub use v2::*;
@@ -65,6 +67,7 @@ mod tests {
     #[test]
     fn reconcile_transaction_payload() {
         let network = NetworkDefinition::mainnet();
+        let validator = TransactionValidator::new_with_latest_config(&network);
         let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
         let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
@@ -97,11 +100,12 @@ mod tests {
             .sign(&sig_2_private_key)
             .notarize(&notary_private_key)
             .build();
-        let mut payload = transaction.to_payload_bytes().unwrap();
+        let raw = transaction.to_raw().unwrap();
+        let payload = raw.as_slice();
         println!("{:?}", payload);
 
         reconcile_manifest_sbor(
-            &payload,
+            payload,
             r###"
 Enum<3u8>(
     Tuple(                  // signed intent
@@ -162,9 +166,7 @@ Enum<3u8>(
 "###,
         );
 
-        let validated = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-            .validate_from_payload_bytes(&payload)
-            .unwrap();
+        let validated = raw.validate(&validator).unwrap();
         let executable = validated.get_executable();
         let expected_intent_hash = TransactionIntentHash(hash(
             [
@@ -231,17 +233,14 @@ Enum<3u8>(
         );
 
         // Test unexpected transaction type
-        payload[2] = 4;
-        let executable =
-            NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-                .validate_from_payload_bytes(&payload);
+        let mut amended_payload = payload.to_vec();
+        amended_payload[2] = 4;
+        let amended_raw = RawNotarizedTransaction(amended_payload);
+        let validated = amended_raw.validate(&validator);
         assert_eq!(
-            executable,
+            validated,
             Err(TransactionValidationError::PrepareError(
-                PrepareError::UnexpectedDiscriminator {
-                    expected: 3,
-                    actual: 4
-                }
+                PrepareError::Other(format!("Unknown transaction payload discriminator byte: 4"))
             ))
         )
     }

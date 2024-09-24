@@ -26,9 +26,12 @@ impl RoundUpdateTransactionV1 {
     }
 
     #[allow(deprecated)]
-    pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
+    pub fn prepare(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
         let prepared_instructions =
-            InstructionsV1(Rc::new(self.create_instructions())).prepare_partial()?;
+            InstructionsV1(Rc::new(self.create_instructions())).prepare_partial(settings)?;
         let encoded_source = manifest_encode(&self)?;
         // Minor TODO - for a slight performance improvement, change this to be read from the decoder
         // As per the other hashes, don't include the prefix byte
@@ -71,21 +74,23 @@ pub struct PreparedRoundUpdateTransactionV1 {
 
 impl_has_summary!(PreparedRoundUpdateTransactionV1);
 
-define_raw_transaction_payload!(RawRoundUpdateTransactionV1);
+define_raw_transaction_payload!(RawRoundUpdateTransactionV1, TransactionPayloadKind::Other);
 
-impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
+impl PreparedTransaction for PreparedRoundUpdateTransactionV1 {
     type Raw = RawRoundUpdateTransactionV1;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         let decoded = RoundUpdateTransactionV1::from_payload_variant(decoder.decode()?);
-        decoded.prepare()
+        decoded.prepare(decoder.settings())
     }
 }
 
 impl TransactionPreparableFromValue for PreparedRoundUpdateTransactionV1 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let decoded = decoder.decode::<RoundUpdateTransactionV1>()?;
-        decoded.prepare()
+        decoded.prepare(decoder.settings())
     }
 }
 

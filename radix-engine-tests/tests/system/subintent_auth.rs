@@ -1,20 +1,4 @@
-use radix_common::constants::TRANSACTION_PROCESSOR_PACKAGE;
-use radix_common::crypto::Hash;
-use radix_common::prelude::{manifest_encode, FromPublicKey, NonFungibleGlobalId, XRD};
-use radix_common::ManifestSbor;
-use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::ExecutionConfig;
-use radix_engine_interface::blueprints::transaction_processor::{
-    TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
-};
-use radix_engine_interface::macros::dec;
-use radix_rust::btreeset;
-use radix_rust::prelude::{index_map_new, IndexMap};
-use radix_transactions::builder::{ManifestBuilder, ResolvableArguments};
-use radix_transactions::manifest::YieldToChild;
-use radix_transactions::model::{InstructionV1, ManifestNamedIntentIndex, TestTransaction};
-use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn should_not_be_able_to_use_root_auth_in_subintent() {
@@ -23,46 +7,27 @@ fn should_not_be_able_to_use_root_auth_in_subintent() {
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let intents = vec![
-        {
-            let manifest = ManifestBuilder::new_v2()
-                .lock_standard_test_fee(account)
-                .add_instruction_advanced(YieldToChild {
-                    child_index: ManifestNamedIntentIndex(0),
-                    args: ().resolve(),
-                })
-                .0
-                .build();
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
 
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![1],
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-            )
-        },
-        {
-            let manifest = ManifestBuilder::new_v2()
-                .withdraw_from_account(account, XRD, dec!(10))
-                .deposit_entire_worktop(account)
-                .build();
-
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![],
-                btreeset!(),
-            )
-        },
-    ];
-
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
+    let child = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            .withdraw_from_account(account, XRD, dec!(10))
+            .deposit_entire_worktop(account)
+            .yield_to_parent(())
+            .build(),
+        [],
     );
+
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .use_child("child", child)
+            .lock_standard_test_fee(account)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
+
+    let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -81,46 +46,28 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
     let (public_key2, _, account2) = ledger.new_allocated_account();
 
     // Act
-    let intents = vec![
-        {
-            let manifest = ManifestBuilder::new_v2()
-                .lock_standard_test_fee(account)
-                .add_instruction_advanced(YieldToChild {
-                    child_index: ManifestNamedIntentIndex(0),
-                    args: ().resolve(),
-                })
-                .0
-                .build();
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
 
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![1],
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-            )
-        },
-        {
-            let manifest = ManifestBuilder::new_v2()
-                .withdraw_from_account(account2, XRD, dec!(10))
-                .deposit_entire_worktop(account2)
-                .build();
-
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![],
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key2)],
-            )
-        },
-    ];
-
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
+    let child = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            .withdraw_from_account(account2, XRD, dec!(10))
+            .deposit_entire_worktop(account2)
+            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
+            //.yield_to_parent(())
+            .build(),
+        [public_key2.signature_proof()],
     );
+
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .use_child("child", child)
+            .lock_standard_test_fee(account)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
+
+    let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
     receipt.expect_commit_success();
@@ -141,57 +88,39 @@ fn should_not_be_able_to_call_tx_processor_in_subintent() {
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let intents = vec![
-        {
-            let manifest = ManifestBuilder::new_v2()
-                .lock_standard_test_fee(account)
-                .add_instruction_advanced(YieldToChild {
-                    child_index: ManifestNamedIntentIndex(0),
-                    args: ().resolve(),
-                })
-                .0
-                .build();
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
 
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![1],
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+    let instructions: Vec<InstructionV1> = Vec::new();
+    let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
+
+    let child = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            .call_function(
+                TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+                TRANSACTION_PROCESSOR_RUN_IDENT,
+                ManifestTransactionProcessorRunInput {
+                    manifest_encoded_instructions,
+                    global_address_reservations: vec![],
+                    references: vec![],
+                    blobs: index_map_new(),
+                },
             )
-        },
-        {
-            let instructions: Vec<InstructionV1> = Vec::new();
-            let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
-            let manifest = ManifestBuilder::new_v2()
-                .call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    ManifestTransactionProcessorRunInput {
-                        manifest_encoded_instructions,
-                        global_address_reservations: vec![],
-                        references: vec![],
-                        blobs: index_map_new(),
-                    },
-                )
-                .build();
-
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![],
-                btreeset![],
-            )
-        },
-    ];
-
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
+            .yield_to_parent(())
+            .build(),
+        [],
     );
+
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .use_child("child", child)
+            .lock_standard_test_fee(account)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
+
+    let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
     receipt.expect_specific_failure(|e| {

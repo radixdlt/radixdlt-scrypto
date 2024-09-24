@@ -1220,7 +1220,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent + 'static, S: CommitableSubstateStore, E>(
+    pub fn scan_keys<'f, K: SubstateKeyContent, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
@@ -1251,7 +1251,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent + 'static, S: CommitableSubstateStore, E>(
+    pub fn drain_substates<'f, K: SubstateKeyContent, S: CommitableSubstateStore, E>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,

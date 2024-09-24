@@ -1,44 +1,59 @@
 use crate::internal_prelude::*;
 
 use crate::accounts::*;
-
 #[derive(Clone, Debug)]
 pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
-    pub manifest: TransactionManifestV1,
+    pub transaction_manifest: UserTransactionManifest,
+    pub subintent_manifests: Vec<UserSubintentManifest>,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
 impl NextTransaction {
-    pub fn of(
-        logical_name: String,
-        stage_counter: usize,
-        names: ManifestObjectNames,
-        transaction: NotarizedTransactionV1,
-    ) -> Self {
-        let mut manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
-        match names {
-            ManifestObjectNames::Unknown => {}
-            ManifestObjectNames::Known(known_names) => manifest.set_names(known_names),
-        }
-        Self {
-            logical_name,
-            stage_counter,
-            manifest,
-            raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
-        }
-    }
-
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidatorV1,
-    ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
-        validator
-            .validate_from_raw(&self.raw_transaction)
-            .map_err(|err| {
-                ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
-            })
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, ScenarioError> {
+        self.raw_transaction.validate(validator).map_err(|err| {
+            ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
+        })
+    }
+}
+
+pub(crate) trait FinalizableSubintentBuilder {
+    type SignedPartialTransaction: Sized;
+    fn finalize(
+        self,
+        core: &mut ScenarioCore,
+    ) -> (Self::SignedPartialTransaction, TransactionObjectNames);
+}
+
+impl FinalizableSubintentBuilder for PartialTransactionV2Builder {
+    type SignedPartialTransaction = SignedPartialTransactionV2;
+    fn finalize(
+        self,
+        core: &mut ScenarioCore,
+    ) -> (Self::SignedPartialTransaction, TransactionObjectNames) {
+        core.finalize_partial_transaction_v2(self)
+    }
+}
+
+pub(crate) trait FinalizableTransactionBuilder {
+    fn finalize(
+        self,
+        logical_name: &str,
+        core: &mut ScenarioCore,
+    ) -> Result<NextTransaction, ScenarioError>;
+}
+
+impl FinalizableTransactionBuilder for TransactionV2Builder {
+    fn finalize(
+        self,
+        logical_name: &str,
+        core: &mut ScenarioCore,
+    ) -> Result<NextTransaction, ScenarioError> {
+        core.finalize_v2(logical_name, self)
     }
 }
 
@@ -82,24 +97,26 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        create_manifest: impl FnOnce(TransactionManifestV1Builder) -> TransactionManifestV1Builder,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let builder = ManifestBuilder::new()
+        let builder = ManifestBuilder::new_v1()
             .lock_fee_from_faucet()
             .then(create_manifest);
-        self.next_transaction(logical_name, builder.build(), signers)
+        self.next_transaction_from_manifest_v1(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_with_faucet_lock_fee_fallible(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilder) -> Result<ManifestBuilder, ScenarioError>,
+        create_manifest: impl FnOnce(
+            TransactionManifestV1Builder,
+        ) -> Result<TransactionManifestV1Builder, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
+        let mut builder = ManifestBuilder::new_v1().lock_fee_from_faucet();
         builder = create_manifest(builder)?;
-        self.next_transaction(logical_name, builder.build(), signers)
+        self.next_transaction_from_manifest_v1(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
@@ -122,7 +139,94 @@ impl ScenarioCore {
         self.nonce
     }
 
-    pub fn next_transaction(
+    /// A builder with headers configured.
+    ///
+    /// It's expected that the caller will:
+    /// * Optionally add children
+    /// * Add a manifest
+    /// * Add any signatures
+    ///
+    /// The transaction will then be notarized at finalization time.
+    ///
+    /// ```ignore
+    /// let child = core.v2_subintent()
+    ///     .manifest(|manifest_builder| manifest_builder
+    ///         .yield_to_parent(())
+    ///     )
+    ///     .finalize(core);
+    /// core.v2_transaction()
+    ///     .add_signed_child("child_1", signed_child)
+    ///     .manifest(|manifest_builder| {
+    ///         manifest_builder
+    ///             .lock_fee_from_faucet()
+    ///             .yield_to_child("child_1", ())
+    ///     })
+    ///     .sign(key)
+    ///     .finalize(core)
+    /// });
+    /// ```
+    pub fn v2_transaction(&mut self) -> TransactionV2Builder {
+        let nonce = self.nonce;
+        self.nonce += 1;
+        TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: self.network.id,
+                start_epoch_inclusive: self.epoch,
+                end_epoch_exclusive: self.epoch.next().unwrap(),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: nonce as u64,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: self.default_notary.public_key(),
+                notary_is_signatory: false,
+                tip_basis_points: 0,
+            })
+    }
+
+    /// For recommended usage, see the docs on [`v2_transaction`][`Self::v2_transaction`].
+    pub fn v2_subintent(&mut self) -> PartialTransactionV2Builder {
+        let nonce = self.nonce;
+        self.nonce += 1;
+        PartialTransactionV2Builder::new().intent_header(IntentHeaderV2 {
+            network_id: self.network.id,
+            start_epoch_inclusive: self.epoch,
+            end_epoch_exclusive: self.epoch.next().unwrap(),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: nonce as u64,
+        })
+    }
+
+    pub fn finalize_v2(
+        &mut self,
+        logical_name: &str,
+        mut builder: TransactionV2Builder,
+    ) -> Result<NextTransaction, ScenarioError> {
+        builder = builder.notarize(&self.default_notary);
+        self.last_transaction_name = Some(logical_name.to_owned());
+        let (transaction, object_names) = builder.build_with_names();
+
+        let raw_transaction = transaction.to_raw().expect("Transaction could be encoded");
+        let (transaction_manifest, subintent_manifests) =
+            transaction.extract_manifests_with_names(object_names);
+        Ok(NextTransaction {
+            logical_name: logical_name.to_owned(),
+            stage_counter: self.stage_counter,
+            transaction_manifest,
+            subintent_manifests,
+            raw_transaction,
+        })
+    }
+
+    pub fn finalize_partial_transaction_v2(
+        &mut self,
+        builder: PartialTransactionV2Builder,
+    ) -> (SignedPartialTransactionV2, TransactionObjectNames) {
+        builder.build_with_names()
+    }
+
+    pub fn next_transaction_from_manifest_v1(
         &mut self,
         logical_name: &str,
         manifest: TransactionManifestV1,
@@ -147,13 +251,15 @@ impl ScenarioCore {
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
         let transaction = builder.build();
-        let names = builder.into_manifest().object_names;
-        Ok(NextTransaction::of(
-            logical_name.to_owned(),
-            self.stage_counter,
-            names,
-            transaction,
-        ))
+        let raw_transaction = transaction.to_raw().expect("Transaction could be encoded");
+        let transaction_manifest = builder.into_manifest().into();
+        Ok(NextTransaction {
+            logical_name: logical_name.to_owned(),
+            stage_counter: self.stage_counter,
+            transaction_manifest,
+            subintent_manifests: vec![],
+            raw_transaction,
+        })
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {

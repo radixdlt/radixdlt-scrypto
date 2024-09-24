@@ -246,6 +246,13 @@ pub enum SubstateKey {
     Sorted(SortedKey),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SubstateKeyRef<'a> {
+    Field(&'a FieldKey),
+    Map(&'a MapKey),
+    Sorted(&'a SortedKey),
+}
+
 impl SubstateKey {
     pub fn for_field(&self) -> Option<&FieldKey> {
         match self {
@@ -273,6 +280,90 @@ impl SubstateKey {
             SubstateKey::Sorted(key) => Some(key),
             _ => None,
         }
+    }
+
+    pub fn as_ref(&self) -> SubstateKeyRef {
+        match self {
+            SubstateKey::Field(key) => SubstateKeyRef::Field(key),
+            SubstateKey::Map(key) => SubstateKeyRef::Map(key),
+            SubstateKey::Sorted(key) => SubstateKeyRef::Sorted(key),
+        }
+    }
+}
+
+pub enum SubstateKeyOrRef<'a> {
+    Owned(SubstateKey),
+    Borrowed(SubstateKeyRef<'a>),
+}
+
+impl<'a> SubstateKeyOrRef<'a> {
+    pub fn as_ref(&self) -> SubstateKeyRef<'_> {
+        match self {
+            SubstateKeyOrRef::Owned(key) => key.as_ref(),
+            SubstateKeyOrRef::Borrowed(key_ref) => *key_ref,
+        }
+    }
+}
+
+pub trait ResolvableSubstateKey<'a>: Sized {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a>;
+}
+
+impl<'a> ResolvableSubstateKey<'a> for &'a SubstateKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Borrowed(self.as_ref())
+    }
+}
+
+impl<T: Into<SubstateKey>> ResolvableSubstateKey<'static> for T {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'static> {
+        SubstateKeyOrRef::Owned(self.into())
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for FieldKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Owned(SubstateKey::Field(self))
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for &'a FieldKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Borrowed(SubstateKeyRef::Field(self))
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for MapKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Owned(SubstateKey::Map(self))
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for &'a MapKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Borrowed(SubstateKeyRef::Map(self))
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for SortedKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Owned(SubstateKey::Sorted(self))
+    }
+}
+
+impl<'a> ResolvableSubstateKey<'a> for &'a SortedKey {
+    fn into_substate_key_or_ref(self) -> SubstateKeyOrRef<'a> {
+        SubstateKeyOrRef::Borrowed(SubstateKeyRef::Sorted(self))
+    }
+}
+
+pub trait ResolvableOptionalSubstateKey<'a> {
+    fn into_optional_substate_key_or_ref(self) -> Option<SubstateKeyOrRef<'a>>;
+}
+
+impl<'a, T: ResolvableSubstateKey<'a>> ResolvableOptionalSubstateKey<'a> for Option<T> {
+    fn into_optional_substate_key_or_ref(self) -> Option<SubstateKeyOrRef<'a>> {
+        self.map(|k| k.into_substate_key_or_ref())
     }
 }
 

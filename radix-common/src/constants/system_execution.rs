@@ -3,10 +3,16 @@ use crate::data::scrypto::model::NonFungibleLocalId;
 use crate::types::*;
 
 /// For definition @see SYSTEM_EXECUTION_RESOURCE
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum SystemExecution {
     Protocol = 0,
     Validator = 1,
+}
+
+impl SystemExecution {
+    pub fn proof(self) -> NonFungibleGlobalId {
+        self.into()
+    }
 }
 
 impl Into<NonFungibleGlobalId> for SystemExecution {

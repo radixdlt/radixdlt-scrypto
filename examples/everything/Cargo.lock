@@ -1228,6 +1228,7 @@ dependencies = [
  "radix-common",
  "radix-engine-interface",
  "radix-rust",
+ "radix-substate-store-interface",
  "sbor",
  "strum",
 ]

@@ -149,7 +149,7 @@ pub trait CommitableSubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of substate keys and database access info
-    fn scan_keys<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
+    fn scan_keys<K: SubstateKeyContent, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -165,7 +165,7 @@ pub trait CommitableSubstateStore {
     /// Otherwise, behavior is undefined.
     ///
     /// Returns list of removed substates with their associated keys and values, as well as database access info
-    fn drain_substates<K: SubstateKeyContent + 'static, E, F: FnMut(IOAccess) -> Result<(), E>>(
+    fn drain_substates<K: SubstateKeyContent, E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

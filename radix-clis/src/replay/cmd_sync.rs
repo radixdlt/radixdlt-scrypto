@@ -6,7 +6,6 @@ use flume::Sender;
 use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::prelude::*;
 use rocksdb::{Direction, IteratorMode, Options, DB};
@@ -66,15 +65,15 @@ impl TxnSync {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for (tx_payload, expected_state_root_hash) in iter {
-                let state_updates = execute_ledger_transaction(
+                let (_validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
                     &tx_payload,
                     trace,
                 );
-                let database_updates =
-                    state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                let state_updates = receipt.into_state_updates();
+                let database_updates = state_updates.create_database_updates();
 
                 let current_version = database.get_current_version();
                 let new_version = current_version + 1;
@@ -131,7 +130,7 @@ impl CommittedTxnReader {
         &mut self,
         from_version: u64,
         to_version: Option<u64>,
-        tx: Sender<(Vec<u8>, Hash)>,
+        tx: Sender<(RawLedgerTransaction, Hash)>,
     ) -> Result<(), Error> {
         match self {
             CommittedTxnReader::StateManagerDatabaseDir(db_dir) => {
@@ -185,8 +184,11 @@ impl CommittedTxnReader {
                             .state_root
                             .0;
 
-                        tx.send((next_txn.1.to_vec(), expected_state_root_hash))
-                            .unwrap();
+                        tx.send((
+                            RawLedgerTransaction(next_txn.1.to_vec()),
+                            expected_state_root_hash,
+                        ))
+                        .unwrap();
                         if let Some(to_version) = to_version {
                             if to_version == next_state_version {
                                 return Ok(());

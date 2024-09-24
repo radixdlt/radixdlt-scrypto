@@ -21,7 +21,6 @@ use radix_engine::vm::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
@@ -31,14 +30,12 @@ use scrypto_test::prelude::UniqueTransaction;
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
-    let transaction = TestTransaction::new_v1_from_nonce(
+    let executable = TestTransaction::new_v1_from_nonce(
         ManifestBuilder::new().lock_fee_from_faucet().build(),
         1,
         btreeset![],
     )
-    .prepare()
-    .unwrap();
-    let executable = transaction.get_executable();
+    .into_simulator_executable_unwrap();
 
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();
@@ -83,7 +80,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         ),
         finalization: Default::default(),
     };
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 

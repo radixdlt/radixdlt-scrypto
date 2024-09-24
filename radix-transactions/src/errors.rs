@@ -51,6 +51,7 @@ pub enum TransactionValidationError {
     IdValidationError(ManifestIdValidationError),
     CallDataValidationError(CallDataValidationError),
     InvalidMessage(InvalidMessageError),
+    Other(String),
 }
 
 impl From<PrepareError> for TransactionValidationError {

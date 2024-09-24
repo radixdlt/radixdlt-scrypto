@@ -135,14 +135,14 @@ pub trait KernelSubstateApi<L> {
         count: u32,
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError>;
 
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError>;
 
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

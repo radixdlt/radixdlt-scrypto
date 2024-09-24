@@ -219,7 +219,7 @@ fn run_read_test<S: SubstateDatabase + CommittableSubstateDatabase>(
             print!("\rRead {}/{}  ", j + 1, data_index_vector.len());
             std::io::stdout().flush().ok();
 
-            let read_value = substate_db.get_substate(&p, &s);
+            let read_value = substate_db.get_raw_substate_by_db_key(&p, &s);
 
             assert!(read_value.is_some());
             assert_eq!(read_value.unwrap().len(), *v);
@@ -275,7 +275,7 @@ fn run_read_not_found_test<S: SubstateDatabase + CommittableSubstateDatabase>(
         data_index_vector.shuffle(&mut rng);
 
         for (p, s) in data_index_vector.iter() {
-            let read_value = substate_db.get_substate(&p, &s);
+            let read_value = substate_db.get_raw_substate_by_db_key(&p, &s);
             assert!(read_value.is_none());
         }
     }

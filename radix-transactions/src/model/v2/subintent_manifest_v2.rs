@@ -65,6 +65,19 @@ impl BuildableManifest for SubintentManifestV2 {
         self.children.push(ChildSubintent { hash });
         Ok(())
     }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        _nonce: u32,
+        _initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        Err("A subintent manifest is not executable by itself. See the docs on `TestTransaction::new_v2_builder` for an alternative approach, to wrap the manifest in a parent test transaction.".to_string())
+    }
 }
 
 impl SubintentManifestV2 {

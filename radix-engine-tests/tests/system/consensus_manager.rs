@@ -2957,12 +2957,12 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let mut manifest_builder = ManifestBuilder::new_system_v1();
-    let consensus_manager_reservation = manifest_builder.add_address_preallocation(
+    let consensus_manager_reservation = manifest_builder.use_preallocated_address(
         CONSENSUS_MANAGER,
         CONSENSUS_MANAGER_PACKAGE,
         CONSENSUS_MANAGER_BLUEPRINT,
     );
-    let validator_owner_reservation = manifest_builder.add_address_preallocation(
+    let validator_owner_reservation = manifest_builder.use_preallocated_address(
         VALIDATOR_OWNER_BADGE,
         RESOURCE_PACKAGE,
         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -3003,7 +3003,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 
     // Act
     let mut manifest_builder = ManifestBuilder::new_system_v1();
-    let consensus_manager_reservation = manifest_builder.add_address_preallocation(
+    let consensus_manager_reservation = manifest_builder.use_preallocated_address(
         // Use a new address here so that we don't overwrite current consensus manager and break invariants
         ComponentAddress::new_or_panic([
             134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247, 188,
@@ -3012,7 +3012,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
         CONSENSUS_MANAGER_PACKAGE,
         CONSENSUS_MANAGER_BLUEPRINT,
     );
-    let validator_owner_reservation = manifest_builder.add_address_preallocation(
+    let validator_owner_reservation = manifest_builder.use_preallocated_address(
         VALIDATOR_OWNER_BADGE,
         RESOURCE_PACKAGE,
         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

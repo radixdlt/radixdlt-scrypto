@@ -11,14 +11,18 @@ use radix_engine_interface::{metadata, metadata_init};
 use radix_transactions::manifest::*;
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
+use radix_transactions::validation::*;
 use scrypto::prelude::*;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
-    let compiled_transaction = compiled_notarized_transaction();
+    let network = NetworkDefinition::simulator();
+    let raw_transaction = compiled_notarized_transaction(&network);
+    let validator = TransactionValidator::new_with_latest_config(&network);
     c.bench_function("transaction_processing::prepare", |b| {
         b.iter(|| {
             black_box(
-                PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
+                raw_transaction
+                    .prepare(validator.preparation_settings())
                     .unwrap(),
             )
         })
@@ -27,9 +31,12 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             #[allow(deprecated)]
             black_box({
-                let transaction: PreparedNotarizedTransactionV1 =
-                    PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
-                        .unwrap();
+                let transaction = raw_transaction
+                    .prepare(validator.preparation_settings())
+                    .unwrap();
+                let PreparedUserTransaction::V1(transaction) = transaction else {
+                    unreachable!()
+                };
                 let manifest = TransactionManifestV1 {
                     instructions: transaction.signed_intent.intent.instructions.inner.into(),
                     blobs: transaction
@@ -51,9 +58,12 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             b.iter(|| {
                 #[allow(deprecated)]
                 black_box({
-                    let transaction =
-                        PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
-                            .unwrap();
+                    let transaction = raw_transaction
+                        .prepare(validator.preparation_settings())
+                        .unwrap();
+                    let PreparedUserTransaction::V1(transaction) = transaction else {
+                        unreachable!()
+                    };
                     let manifest = TransactionManifestV1 {
                         instructions: transaction.signed_intent.intent.instructions.inner.into(),
                         blobs: transaction
@@ -77,7 +87,9 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     );
 }
 
-fn compiled_notarized_transaction() -> Vec<u8> {
+fn compiled_notarized_transaction(
+    network_definition: &NetworkDefinition,
+) -> RawNotarizedTransaction {
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
     let component_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
@@ -102,7 +114,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
             .build()
     };
     let header = TransactionHeaderV1 {
-        network_id: 0xf2,
+        network_id: network_definition.id,
         start_epoch_inclusive: Epoch::of(10),
         end_epoch_exclusive: Epoch::of(13),
         nonce: 0x02,
@@ -115,7 +127,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
         .manifest(manifest)
         .notarize(&private_key)
         .build()
-        .to_payload_bytes()
+        .to_raw()
         .unwrap()
 }
 

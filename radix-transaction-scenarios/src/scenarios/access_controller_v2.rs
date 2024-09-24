@@ -110,7 +110,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction(
+                core.next_transaction_from_manifest_v1(
                     "access-controller-v2-lock-fee-and-recover",
                     ManifestBuilder::new()
                         .call_method(

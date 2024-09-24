@@ -36,7 +36,7 @@ impl ReadableManifest for SystemTransactionManifestV1 {
     }
 
     fn validate(&self) -> Result<(), TransactionValidationError> {
-        NotarizedTransactionValidatorV1::validate_instructions_v1(&self.instructions)
+        TransactionValidator::validate_instructions_v1(&self.instructions)
     }
 }
 
@@ -64,6 +64,23 @@ impl BuildableManifest for SystemTransactionManifestV1 {
     fn preallocation_count(&self) -> usize {
         self.preallocated_addresses.len()
     }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::System
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        let unique_hash = hash(format!("System txn: {}", nonce));
+        self.into_transaction(unique_hash)
+            .with_proofs_ref(initial_proofs)
+            .into_executable(&validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
+    }
 }
 
 impl BuildableManifestSupportingPreallocatedAddresses for SystemTransactionManifestV1 {}
@@ -85,5 +102,14 @@ impl SystemTransactionManifestV1 {
             pre_allocated_addresses: self.preallocated_addresses,
             hash_for_execution: unique_hash,
         }
+    }
+
+    pub fn into_transaction_with_proofs(
+        self,
+        unique_hash: Hash,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> SystemTransactionV1WithProofs<'static> {
+        self.into_transaction(unique_hash)
+            .with_proofs(initial_proofs)
     }
 }

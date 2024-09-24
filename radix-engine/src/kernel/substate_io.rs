@@ -586,7 +586,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(removed)
     }
 
-    pub fn scan_keys<K: SubstateKeyContent + 'static, E>(
+    pub fn scan_keys<K: SubstateKeyContent, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -607,7 +607,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(keys)
     }
 
-    pub fn drain_substates<K: SubstateKeyContent + 'static, E>(
+    pub fn drain_substates<K: SubstateKeyContent, E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,

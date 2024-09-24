@@ -1,67 +1,121 @@
-use radix_common::prelude::{FromPublicKey, NonFungibleGlobalId};
-use radix_engine::transaction::ExecutionConfig;
-use radix_rust::btreeset;
-use radix_transactions::builder::ResolvableArguments;
-use radix_transactions::manifest::YieldToChild;
-use radix_transactions::model::{ManifestNamedIntentIndex, TestTransaction};
-use radix_transactions::prelude::ManifestBuilder;
-use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn simple_subintent_should_work() {
-    test_subintent_txn_shape(vec![vec![1], vec![]]);
-}
-
-#[test]
-fn multiple_flat_subintents_should_work() {
-    test_subintent_txn_shape(vec![vec![1, 2, 3, 4], vec![], vec![], vec![], vec![]]);
-}
-
-#[test]
-fn multiple_deep_subintents_should_work() {
-    test_subintent_txn_shape(vec![vec![1], vec![2], vec![3], vec![4], vec![]]);
-}
-
-fn test_subintent_txn_shape(children: Vec<Vec<usize>>) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let mut intents = vec![];
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
 
-    for (index, intent_children) in children.into_iter().enumerate() {
-        let mut builder = ManifestBuilder::new_v2();
-        if index == 0 {
-            builder = builder.lock_standard_test_fee(account);
-        }
-        for (index, _) in intent_children.iter().enumerate() {
-            builder = builder
-                .add_instruction_advanced(YieldToChild {
-                    child_index: ManifestNamedIntentIndex(index as u32),
-                    args: ().resolve(),
-                })
-                .0
-        }
+    let child = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
+            //.yield_to_parent(())
+            .build(),
+        [],
+    );
 
-        let manifest = builder.build();
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .use_child("child", child)
+            .lock_standard_test_fee(account)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
 
-        let signatures = btreeset![NonFungibleGlobalId::from_public_key(&public_key)];
-        intents.push((
-            manifest,
-            ledger.next_transaction_nonce(),
-            intent_children,
-            signatures,
-        ))
+    let receipt = ledger.execute_test_transaction(transaction);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn multiple_flat_subintents_should_work() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+
+    // Act
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+
+    let children = (0..4)
+        .into_iter()
+        .map(|_| {
+            builder.add_subintent(
+                ManifestBuilder::new_subintent_v2()
+                    // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
+                    //.yield_to_parent(())
+                    .build(),
+                [],
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut root_manifest_builder = ManifestBuilder::new_v2().lock_standard_test_fee(account);
+
+    for (index, child_hash) in children.into_iter().enumerate() {
+        let child_name = format!("child{index}");
+        root_manifest_builder = root_manifest_builder
+            .use_child(&child_name, child_hash)
+            .yield_to_child(&child_name, ());
     }
 
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
+    let transaction = builder.finish_with_root_intent(
+        root_manifest_builder.build(),
+        [public_key.signature_proof()],
     );
+
+    let receipt = ledger.execute_test_transaction(transaction);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn multiple_deep_subintents_should_work() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+
+    // Act
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+
+    // Create deepest child
+    let mut child = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
+            //.yield_to_parent(())
+            .build(),
+        [],
+    );
+
+    // Create middle-layer children
+    for _ in 0..3 {
+        child = builder.add_subintent(
+            ManifestBuilder::new_subintent_v2()
+                .use_child("child", child)
+                .yield_to_child("child", ())
+                // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
+                //.yield_to_parent(())
+                .build(),
+            [],
+        );
+    }
+
+    // Create top-level root manifest
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .lock_standard_test_fee(account)
+            .use_child("child", child)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
+
+    let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
     receipt.expect_commit_success();

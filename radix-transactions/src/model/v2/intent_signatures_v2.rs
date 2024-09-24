@@ -29,10 +29,14 @@ impl_has_summary!(PreparedMultipleIntentSignaturesV2);
 
 impl TransactionPreparableFromValueBody for PreparedMultipleIntentSignaturesV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let max_subintents_per_transaction = decoder.settings().max_subintents_per_transaction;
         let (by_subintent, summary) = ConcatenatedDigest::prepare_from_sbor_array_value_body::<
             Vec<PreparedIntentSignaturesV2>,
-            V2_MAX_NUMBER_OF_SUBINTENTS_IN_TRANSACTION,
-        >(decoder, ValueType::IntentSignatures)?;
+        >(
+            decoder,
+            ValueType::IntentSignatures,
+            max_subintents_per_transaction,
+        )?;
 
         Ok(Self {
             by_subintent,

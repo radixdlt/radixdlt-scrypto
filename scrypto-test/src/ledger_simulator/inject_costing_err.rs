@@ -13,7 +13,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
-use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::ExecutableTransaction;
 
@@ -102,7 +102,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
 
     fn create_receipt<S: SubstateDatabase>(
         self,
-        track: Track<S, SpreadPrefixKeyMapper>,
+        track: Track<S>,
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         self.system.create_receipt(track, result)
@@ -460,7 +460,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<CallbackObject = InjectCostingErr
             .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -470,7 +470,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<CallbackObject = InjectCostingErr
             .kernel_scan_keys::<K>(node_id, partition_num, count)
     }
 
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

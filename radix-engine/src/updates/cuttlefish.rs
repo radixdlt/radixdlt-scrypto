@@ -2,9 +2,6 @@ use super::*;
 use crate::system::system_callback::{
     SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
 };
-use radix_substate_store_interface::db_key_mapper::{
-    MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
 
 #[derive(Clone)]
 pub struct CuttlefishSettings {
@@ -92,10 +89,10 @@ fn generate_principal_batch(
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let system_boot: SystemBoot = db
-        .get_mapped::<SpreadPrefixKeyMapper, _>(
-            &TRANSACTION_TRACKER.into_node_id(),
+        .get_substate(
+            TRANSACTION_TRACKER,
             BOOT_LOADER_PARTITION,
-            &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
         )
         .unwrap();
 
