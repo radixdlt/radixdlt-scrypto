@@ -1,7 +1,5 @@
 use super::*;
-use crate::system::system_callback::{
-    SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
-};
+use crate::system::system_callback::*;
 
 #[derive(Clone)]
 pub struct CuttlefishSettings {
@@ -88,35 +86,21 @@ fn generate_principal_batch(
 }
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
-    let system_boot: SystemBoot = db
-        .get_substate(
-            TRANSACTION_TRACKER,
-            BOOT_LOADER_PARTITION,
-            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
-        )
-        .unwrap();
+    let system_boot: SystemBoot = db.get_existing_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+    );
 
     let cur_system_parameters = match system_boot {
         SystemBoot::V1(parameters) => parameters,
         _ => panic!("Unexpected SystemBoot version"),
     };
 
-    StateUpdates {
-        by_node: indexmap!(
-            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
-                                scrypto_encode(&SystemBoot::V2(
-                                    VersionedSystemLogic::V2,
-                                    cur_system_parameters,
-                                )).unwrap()
-                            ),
-                        }
-                    },
-                }
-            }
-        ),
-    }
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+        SystemBoot::cuttlefish_for_previous_parameters(cur_system_parameters),
+    )
 }
