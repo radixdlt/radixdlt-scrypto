@@ -16,6 +16,12 @@ pub struct StateUpdates {
 }
 
 impl StateUpdates {
+    pub fn empty() -> Self {
+        Self {
+            by_node: Default::default(),
+        }
+    }
+
     /// Starts a Node-level update.
     pub fn of_node(&mut self, node_id: NodeId) -> &mut NodeStateUpdates {
         self.by_node
@@ -23,6 +29,23 @@ impl StateUpdates {
             .or_insert_with(|| NodeStateUpdates::Delta {
                 by_partition: index_map_new(),
             })
+    }
+
+    pub fn set_substate<'a>(
+        mut self,
+        node_id: impl Into<NodeId>,
+        partition_num: PartitionNumber,
+        substate_key: impl ResolvableSubstateKey<'a>,
+        new_value: impl ScryptoEncode,
+    ) -> Self {
+        let new_value = scrypto_encode(&new_value).expect("New substate value should be encodable");
+        self.of_node(node_id.into())
+            .of_partition(partition_num)
+            .update_substates([(
+                substate_key.into_substate_key(),
+                DatabaseUpdate::Set(new_value),
+            )]);
+        self
     }
 
     pub fn rebuild_without_empty_entries(&self) -> Self {

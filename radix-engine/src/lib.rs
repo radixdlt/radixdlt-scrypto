@@ -35,9 +35,12 @@ pub mod vm;
 /// Protocol updates
 pub mod updates;
 
+pub mod init;
+
 pub(crate) mod internal_prelude {
     pub use crate::blueprints::internal_prelude::*;
     pub use crate::errors::*;
+    pub use crate::init::*;
     pub use crate::system::system_substates::*;
     pub use crate::{
         dispatch, event_schema, function_schema, method_auth_template, roles_template,

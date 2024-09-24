@@ -1,11 +1,7 @@
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::id_allocator::IdAllocator;
-use crate::kernel::kernel::BootLoader;
-use crate::kernel::kernel_callback_api::*;
+use crate::kernel::kernel::KernelInit;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::Track;
 use crate::transaction::*;
 use crate::vm::*;
 use radix_common::constants::*;
@@ -262,82 +258,15 @@ impl ExecutionConfig {
     }
 }
 
-/// A transaction which has a unique id, useful for creating an IdAllocator which
-/// requires a unique input
-pub trait UniqueTransaction {
-    fn unique_seed_for_id_allocator(&self) -> Hash;
-}
-
-impl UniqueTransaction for ExecutableTransaction {
-    fn unique_seed_for_id_allocator(&self) -> Hash {
-        *self.unique_hash()
-    }
-}
-
-pub struct TransactionExecutor<'s, S, V: KernelTransactionCallbackObject>
-where
-    S: SubstateDatabase,
-{
-    substate_db: &'s S,
-    system_init: V::Init,
-    phantom: PhantomData<V>,
-}
-
-impl<'s, S, V> TransactionExecutor<'s, S, V>
-where
-    S: SubstateDatabase,
-    V: KernelTransactionCallbackObject<Executable: UniqueTransaction>,
-{
-    pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
-        Self {
-            substate_db,
-            system_init,
-            phantom: PhantomData::default(),
-        }
-    }
-
-    pub fn execute(self, executable: V::Executable) -> V::Receipt {
-        BootLoader {
-            id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
-            track: Track::new(self.substate_db),
-            init: self.system_init,
-            phantom: PhantomData::<V>::default(),
-        }
-        .execute(executable)
-    }
-}
-
-pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCallbackObject>(
-    substate_db: &S,
-    vm_init: V::Init,
-    execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
-) -> TransactionReceipt {
-    let system_init = SystemInit {
-        self_init: SystemSelfInit {
-            enable_kernel_trace: execution_config.enable_kernel_trace,
-            enable_cost_breakdown: execution_config.enable_cost_breakdown,
-            enable_debug_information: execution_config.enable_debug_information,
-            execution_trace: execution_config.execution_trace,
-            system_overrides: execution_config.system_overrides.clone(),
-        },
-        callback_init: vm_init,
-    };
-    TransactionExecutor::<_, System<V>>::new(substate_db, system_init).execute(executable)
-}
-
-pub fn execute_transaction<'s, V: VmInitialize>(
+pub fn execute_transaction<'v, V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
-    vm_modules: &'s V,
+    vm_modules: &'v V,
     execution_config: &ExecutionConfig,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
-        substate_db,
-        vm_modules.create_vm_init(),
-        execution_config,
-        executable,
-    )
+    let vm_init = VmInit::load(substate_db, vm_modules);
+    let system_init = SystemInit::load(substate_db, execution_config.clone(), vm_init);
+    KernelInit::load(substate_db, system_init).execute(executable)
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
@@ -346,13 +275,7 @@ pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     execution_config: &ExecutionConfig,
     executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    let receipt =
-        execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
-            substate_db,
-            vm_modules.create_vm_init(),
-            execution_config,
-            executable,
-        );
+    let receipt = execute_transaction(substate_db, vm_modules, execution_config, executable);
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(&commit.state_updates.create_database_updates());
     }

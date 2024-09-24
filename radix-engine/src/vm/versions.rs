@@ -8,12 +8,20 @@ pub enum ScryptoVmVersion {
 }
 
 impl ScryptoVmVersion {
-    pub fn latest() -> ScryptoVmVersion {
-        ScryptoVmVersion::V1_1
+    pub const fn latest() -> ScryptoVmVersion {
+        Self::anemone()
     }
 
-    pub fn crypto_utils_added() -> ScryptoVmVersion {
-        ScryptoVmVersion::V1_1
+    pub const fn babylon_genesis() -> ScryptoVmVersion {
+        Self::V1_0
+    }
+
+    pub const fn anemone() -> ScryptoVmVersion {
+        Self::V1_1
+    }
+
+    pub const fn crypto_utils_added() -> ScryptoVmVersion {
+        Self::V1_1
     }
 }
 
