@@ -16,9 +16,9 @@ use scrypto::prelude::*;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let network = NetworkDefinition::simulator();
-    let raw_transaction = compiled_notarized_transaction(&network);
+    let raw_transaction = compile_large_notarized_transaction(&network);
     let validator = TransactionValidator::new_with_latest_config(&network);
-    c.bench_function("transaction_processing::prepare", |b| {
+    c.bench_function("large_transaction_processing::prepare", |b| {
         b.iter(|| {
             black_box(
                 raw_transaction
@@ -27,7 +27,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    c.bench_function("transaction_processing::prepare_and_decompile", |b| {
+    c.bench_function("large_transaction_processing::prepare_and_decompile", |b| {
         b.iter(|| {
             #[allow(deprecated)]
             black_box({
@@ -53,7 +53,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
         })
     });
     c.bench_function(
-        "transaction_processing::prepare_and_decompile_and_recompile",
+        "large_transaction_processing::prepare_and_decompile_and_recompile",
         |b| {
             b.iter(|| {
                 #[allow(deprecated)]
@@ -87,7 +87,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     );
 }
 
-fn compiled_notarized_transaction(
+fn compile_large_notarized_transaction(
     network_definition: &NetworkDefinition,
 ) -> RawNotarizedTransaction {
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
