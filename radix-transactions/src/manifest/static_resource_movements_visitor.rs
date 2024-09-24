@@ -49,6 +49,575 @@ impl StaticResourceMovementsVisitor {
     ) {
         (self.account_deposits, self.account_withdraws)
     }
+
+    fn handle_worktop_puts(
+        &mut self,
+        typed_invocation: Option<TypedNativeInvocation>,
+        invocation_inputs: Vec<InvocationIo>,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match typed_invocation {
+            Some(TypedNativeInvocation::AccessControllerPackage(
+                AccessControllerInvocations::AccessControllerBlueprint(
+                    access_controller_invocations,
+                ),
+            )) => {
+                self.handle_access_controller_invocation(access_controller_invocations, index)?;
+            }
+            Some(TypedNativeInvocation::AccountPackage(AccountInvocations::AccountBlueprint(
+                account_invocations,
+            ))) => self.handle_account_invocation(account_invocations, index, invocation_inputs)?,
+            Some(TypedNativeInvocation::ConsensusManagerPackage(
+                ConsensusManagerInvocations::ConsensusManagerBlueprint(
+                    consensus_manager_invocations,
+                ),
+            )) => self.handle_consensus_manager_invocation(consensus_manager_invocations, index)?,
+            Some(TypedNativeInvocation::ConsensusManagerPackage(
+                ConsensusManagerInvocations::ValidatorBlueprint(consensus_manager_invocations),
+            )) => self.handle_validator_invocation(consensus_manager_invocations, index)?,
+            Some(TypedNativeInvocation::IdentityPackage(
+                IdentityInvocations::IdentityBlueprint(identity_invocations),
+            )) => self.handle_identity_invocation(identity_invocations, index)?,
+            Some(TypedNativeInvocation::LockerPackage(
+                LockerInvocations::AccountLockerBlueprint(account_locker_invocations),
+            )) => self.handle_account_locker_invocation(account_locker_invocations, index)?,
+            // Not a native invocation. The worktop will contain unknown resources.
+            None => {
+                self.worktop_uncertainty_sources
+                    .push(WorktopUncertaintySource::Invocation {
+                        instruction_index: index,
+                    });
+            }
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_access_controller_invocation(
+        &mut self,
+        invocation: AccessControllerBlueprintInvocations,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            AccessControllerBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {
+                    AccessControllerFunction::Create(_) => {}
+                }
+            }
+            AccessControllerBlueprintInvocations::Method(_, method_invocations) => {
+                match method_invocations {
+                    // Known effect
+                    AccessControllerMethod::WithdrawRecoveryFee(withdraw_recovery_fee) => {
+                        let fungible_resource_address = FungibleResourceAddress(XRD);
+                        let fungible_bounds =
+                            FungibleBounds::new_exact(withdraw_recovery_fee.amount);
+                        match self
+                            .worktop_fungible_contents
+                            .get_mut(&fungible_resource_address)
+                        {
+                            Some(worktop_content) => {
+                                match worktop_content.combine(fungible_bounds) {
+                                    Some(v) => ControlFlow::Continue(v),
+                                    None => ControlFlow::Break(
+                                        StaticResourceMovementsError::DecimalOverflow,
+                                    ),
+                                }?;
+                            }
+                            None => {
+                                self.worktop_fungible_contents
+                                    .insert(fungible_resource_address, fungible_bounds);
+                            }
+                        }
+                    }
+                    // No effect on worktop.
+                    AccessControllerMethod::CreateProof(..)
+                    | AccessControllerMethod::InitiateRecoveryAsPrimary(..)
+                    | AccessControllerMethod::InitiateRecoveryAsRecovery(..)
+                    | AccessControllerMethod::QuickConfirmPrimaryRoleRecoveryProposal(..)
+                    | AccessControllerMethod::QuickConfirmRecoveryRoleRecoveryProposal(..)
+                    | AccessControllerMethod::TimedConfirmRecovery(..)
+                    | AccessControllerMethod::StopTimedRecovery(..)
+                    | AccessControllerMethod::MintRecoveryBadges(..)
+                    | AccessControllerMethod::LockRecoveryFee(..)
+                    | AccessControllerMethod::ContributeRecoveryFee(..)
+                    | AccessControllerMethod::InitiateBadgeWithdrawAttemptAsPrimary(..)
+                    | AccessControllerMethod::InitiateBadgeWithdrawAttemptAsRecovery(..)
+                    | AccessControllerMethod::CancelPrimaryRoleRecoveryProposal(..)
+                    | AccessControllerMethod::CancelRecoveryRoleRecoveryProposal(..)
+                    | AccessControllerMethod::CancelPrimaryRoleBadgeWithdrawAttempt(..)
+                    | AccessControllerMethod::CancelRecoveryRoleBadgeWithdrawAttempt(..)
+                    | AccessControllerMethod::LockPrimaryRole(..)
+                    | AccessControllerMethod::UnlockPrimaryRole(..) => {}
+                    // Puts worktop in unknown state.
+                    AccessControllerMethod::QuickConfirmPrimaryRoleBadgeWithdrawAttempt(..)
+                    | AccessControllerMethod::QuickConfirmRecoveryRoleBadgeWithdrawAttempt(..) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                }
+            }
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_account_invocation(
+        &mut self,
+        invocation: AccountBlueprintInvocations,
+        index: usize,
+        invocation_inputs: Vec<InvocationIo>,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            AccountBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {
+                    // No effect on worktop.
+                    AccountFunction::CreateAdvanced(_) => {}
+                    // Puts worktop in unknown state.
+                    AccountFunction::Create(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                }
+            }
+            AccountBlueprintInvocations::Method(_, method_invocation) => {
+                match method_invocation {
+                    // Known effect
+                    AccountMethod::WithdrawNonFungibles(AccountWithdrawNonFungiblesInput {
+                        resource_address,
+                        ids,
+                    })
+                    | AccountMethod::LockFeeAndWithdrawNonFungibles(
+                        AccountLockFeeAndWithdrawNonFungiblesInput {
+                            resource_address,
+                            ids,
+                            ..
+                        },
+                    ) => {
+                        let CompositeResourceAddress::NonFungible(non_fungible_resource_address) =
+                            CompositeResourceAddress::from(resource_address)
+                        else {
+                            return ControlFlow::Break(
+                                StaticResourceMovementsError::AccountWithdrawNonFungiblesOnAFungibleResource,
+                            );
+                        };
+                        let bound = NonFungibleBounds::new_exact(ids);
+
+                        match self
+                            .worktop_non_fungible_contents
+                            .get_mut(&non_fungible_resource_address)
+                        {
+                            Some(worktop_non_fungible_bounds) => {
+                                worktop_non_fungible_bounds.combine(bound);
+                            }
+                            None => {
+                                self.worktop_non_fungible_contents
+                                    .insert(non_fungible_resource_address, bound);
+                            }
+                        }
+                    }
+                    AccountMethod::Withdraw(AccountWithdrawInput {
+                        resource_address,
+                        amount,
+                    })
+                    | AccountMethod::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInput {
+                        resource_address,
+                        amount,
+                        ..
+                    }) => {
+                        let composite_resource_address =
+                            CompositeResourceAddress::from(resource_address);
+                        match composite_resource_address {
+                            CompositeResourceAddress::Fungible(fungible_resource_address) => {
+                                let bound = FungibleBounds::new_exact(amount);
+                                match self
+                                    .worktop_fungible_contents
+                                    .get_mut(&fungible_resource_address)
+                                {
+                                    Some(worktop_fungible_bounds) => {
+                                        worktop_fungible_bounds.combine(bound);
+                                    }
+                                    None => {
+                                        self.worktop_fungible_contents
+                                            .insert(fungible_resource_address, bound);
+                                    }
+                                }
+                            }
+                            CompositeResourceAddress::NonFungible(
+                                non_fungible_resource_address,
+                            ) => {
+                                let bound = NonFungibleBounds {
+                                    amount_bounds: FungibleBounds::new_exact(amount),
+                                    id_bounds: NonFungibleIdBounds::Unknown,
+                                };
+                                match self
+                                    .worktop_non_fungible_contents
+                                    .get_mut(&non_fungible_resource_address)
+                                {
+                                    Some(worktop_non_fungible_bounds) => {
+                                        worktop_non_fungible_bounds.combine(bound);
+                                    }
+                                    None => {
+                                        self.worktop_non_fungible_contents
+                                            .insert(non_fungible_resource_address, bound);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    AccountMethod::TryDepositOrRefund(_)
+                    | AccountMethod::TryDepositBatchOrRefund(_) => {
+                        // The case of the InvocationIos all being consumed by the call is
+                        // easy to do. They're just not used and the worktop becomes empty
+                        // of them. Otherwise, we assume that they were all returned back to
+                        // the worktop and we process them all.
+                        for invocation_input in invocation_inputs {
+                            match invocation_input {
+                                InvocationIo::KnownFungible(
+                                    fungible_resource_address,
+                                    fungible_bounds,
+                                ) => {
+                                    // If no entry exists in the worktop content then add
+                                    // one.
+                                    match self
+                                        .worktop_fungible_contents
+                                        .get_mut(&fungible_resource_address)
+                                    {
+                                        Some(fungible_worktop_content) => {
+                                            match (
+                                                fungible_worktop_content.upper,
+                                                fungible_bounds.upper,
+                                            ) {
+                                                (
+                                                    UpperFungibleBound::Amount(ref mut amount1),
+                                                    UpperFungibleBound::Amount(amount2),
+                                                ) => {
+                                                    *amount1 = option_to_control_flow(
+                                                        amount1.checked_add(amount2),
+                                                        StaticResourceMovementsError::DecimalOverflow,
+                                                    )?;
+                                                }
+                                                (_, UpperFungibleBound::Unbounded)
+                                                | (UpperFungibleBound::Unbounded, _) => {
+                                                    fungible_worktop_content.upper =
+                                                        UpperFungibleBound::Unbounded
+                                                }
+                                            }
+                                        }
+                                        None => {
+                                            self.worktop_fungible_contents
+                                                .insert(fungible_resource_address, fungible_bounds);
+                                        }
+                                    }
+                                }
+                                InvocationIo::KnownNonFungible(
+                                    non_fungible_resource_address,
+                                    non_fungible_bounds,
+                                ) => {
+                                    // If no entry exists in the worktop content then add
+                                    // one.
+                                    match self
+                                        .worktop_non_fungible_contents
+                                        .get_mut(&non_fungible_resource_address)
+                                    {
+                                        Some(non_fungible_worktop_content) => {
+                                            // Update the amounts
+                                            match (
+                                                non_fungible_worktop_content.amount_bounds.upper,
+                                                non_fungible_bounds.amount_bounds.upper,
+                                            ) {
+                                                (
+                                                    UpperFungibleBound::Amount(ref mut amount1),
+                                                    UpperFungibleBound::Amount(amount2),
+                                                ) => {
+                                                    *amount1 = option_to_control_flow(
+                                                        amount1.checked_add(amount2),
+                                                        StaticResourceMovementsError::DecimalOverflow,
+                                                    )?;
+                                                }
+                                                (_, UpperFungibleBound::Unbounded)
+                                                | (UpperFungibleBound::Unbounded, _) => {
+                                                    non_fungible_worktop_content
+                                                        .amount_bounds
+                                                        .upper = UpperFungibleBound::Unbounded
+                                                }
+                                            }
+
+                                            // Update the id bounds.
+                                            non_fungible_worktop_content
+                                                .combine(non_fungible_bounds);
+                                        }
+                                        None => {
+                                            self.worktop_non_fungible_contents.insert(
+                                                non_fungible_resource_address,
+                                                non_fungible_bounds,
+                                            );
+                                        }
+                                    }
+                                }
+                                // For the worktop uncertainty sources we just add them back
+                                // to the set of uncertainty sources.
+                                InvocationIo::Unknown(worktop_uncertainty_source) => self
+                                    .worktop_uncertainty_sources
+                                    .push(worktop_uncertainty_source),
+                            }
+                        }
+                    }
+                    // No effect on worktop.
+                    AccountMethod::LockFee(_)
+                    | AccountMethod::LockContingentFee(_)
+                    | AccountMethod::Deposit(_)
+                    | AccountMethod::DepositBatch(_)
+                    | AccountMethod::Burn(_)
+                    | AccountMethod::BurnNonFungibles(_)
+                    | AccountMethod::AddAuthorizedDepositor(_)
+                    | AccountMethod::RemoveAuthorizedDepositor(_)
+                    | AccountMethod::CreateProofOfAmount(_)
+                    | AccountMethod::CreateProofOfNonFungibles(_)
+                    | AccountMethod::SetDefaultDepositRule(_)
+                    | AccountMethod::SetResourcePreference(_)
+                    | AccountMethod::RemoveResourcePreference(_)
+                    | AccountMethod::TryDepositOrAbort(_)
+                    | AccountMethod::TryDepositBatchOrAbort(_) => {}
+                    // Puts worktop in unknown state.
+                    AccountMethod::Securify(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                }
+            }
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_consensus_manager_invocation(
+        &mut self,
+        invocation: ConsensusManagerBlueprintInvocations,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            ConsensusManagerBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {
+                    ConsensusManagerFunction::Create(_) => {}
+                }
+            }
+            ConsensusManagerBlueprintInvocations::Method(_, method_invocation) => {
+                match method_invocation {
+                    // No effect.
+                    ConsensusManagerMethod::GetCurrentEpoch(_)
+                    | ConsensusManagerMethod::Start(_)
+                    | ConsensusManagerMethod::GetCurrentTime(_)
+                    | ConsensusManagerMethod::NextRound(_) => {}
+                    // Puts the worktop in unknown state.
+                    ConsensusManagerMethod::CreateValidator(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                }
+            }
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_validator_invocation(
+        &mut self,
+        invocation: ValidatorBlueprintInvocations,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            ValidatorBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {}
+            }
+            ValidatorBlueprintInvocations::Method(_, method_invocation) => {
+                match method_invocation {
+                    // Unknown effect
+                    ValidatorMethod::StakeAsOwner(_)
+                    | ValidatorMethod::Stake(_)
+                    | ValidatorMethod::Unstake(_)
+                    | ValidatorMethod::ClaimXrd(_)
+                    | ValidatorMethod::FinishUnlockOwnerStakeUnits(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                    // No effect on worktop
+                    ValidatorMethod::Register(_)
+                    | ValidatorMethod::Unregister(_)
+                    | ValidatorMethod::UpdateKey(_)
+                    | ValidatorMethod::UpdateFee(_)
+                    | ValidatorMethod::UpdateAcceptDelegatedStake(_)
+                    | ValidatorMethod::AcceptsDelegatedStake(_)
+                    | ValidatorMethod::TotalStakeXrdAmount(_)
+                    | ValidatorMethod::TotalStakeUnitSupply(_)
+                    | ValidatorMethod::GetRedemptionValue(_)
+                    | ValidatorMethod::SignalProtocolUpdateReadiness(_)
+                    | ValidatorMethod::GetProtocolUpdateReadiness(_)
+                    | ValidatorMethod::LockOwnerStakeUnits(_)
+                    | ValidatorMethod::StartUnlockOwnerStakeUnits(_) => {}
+                }
+            }
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_identity_invocation(
+        &mut self,
+        invocation: IdentityBlueprintInvocations,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            IdentityBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {
+                    IdentityFunction::Create(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                    IdentityFunction::CreateAdvanced(_) => {}
+                }
+            }
+            IdentityBlueprintInvocations::Method(_, method_invocation) => match method_invocation {
+                IdentityMethod::Securify(_) => {
+                    self.worktop_uncertainty_sources
+                        .push(WorktopUncertaintySource::Invocation {
+                            instruction_index: index,
+                        });
+                }
+            },
+        };
+        ControlFlow::Continue(())
+    }
+
+    fn handle_account_locker_invocation(
+        &mut self,
+        invocation: AccountLockerBlueprintInvocations,
+        index: usize,
+    ) -> ControlFlow<StaticResourceMovementsError<'static>> {
+        match invocation {
+            AccountLockerBlueprintInvocations::Function(function_invocation) => {
+                match function_invocation {
+                    AccountLockerFunction::Instantiate(_) => {
+                        self.worktop_uncertainty_sources.push(
+                            WorktopUncertaintySource::Invocation {
+                                instruction_index: index,
+                            },
+                        );
+                    }
+                    AccountLockerFunction::InstantiateSimple(_) => {}
+                }
+            }
+            AccountLockerBlueprintInvocations::Method(_, method_invocation) => {
+                match method_invocation {
+                    // No effect
+                    AccountLockerMethod::Store(_)
+                    | AccountLockerMethod::Airdrop(_)
+                    | AccountLockerMethod::GetAmount(_)
+                    | AccountLockerMethod::GetNonFungibleLocalIds(_) => {}
+                    // Known effect
+                    AccountLockerMethod::Recover(AccountLockerRecoverManifestInput {
+                        resource_address,
+                        amount,
+                        ..
+                    })
+                    | AccountLockerMethod::Claim(AccountLockerClaimManifestInput {
+                        resource_address,
+                        amount,
+                        ..
+                    }) => {
+                        let composite_resource_address =
+                            CompositeResourceAddress::from(resource_address);
+                        match composite_resource_address {
+                            CompositeResourceAddress::Fungible(fungible_resource_address) => {
+                                let bound = FungibleBounds::new_exact(amount);
+                                match self
+                                    .worktop_fungible_contents
+                                    .get_mut(&fungible_resource_address)
+                                {
+                                    Some(worktop_fungible_bounds) => {
+                                        worktop_fungible_bounds.combine(bound);
+                                    }
+                                    None => {
+                                        self.worktop_fungible_contents
+                                            .insert(fungible_resource_address, bound);
+                                    }
+                                }
+                            }
+                            CompositeResourceAddress::NonFungible(
+                                non_fungible_resource_address,
+                            ) => {
+                                let bound = NonFungibleBounds {
+                                    amount_bounds: FungibleBounds::new_exact(amount),
+                                    id_bounds: NonFungibleIdBounds::Unknown,
+                                };
+                                match self
+                                    .worktop_non_fungible_contents
+                                    .get_mut(&non_fungible_resource_address)
+                                {
+                                    Some(worktop_non_fungible_bounds) => {
+                                        worktop_non_fungible_bounds.combine(bound);
+                                    }
+                                    None => {
+                                        self.worktop_non_fungible_contents
+                                            .insert(non_fungible_resource_address, bound);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    AccountLockerMethod::RecoverNonFungibles(
+                        AccountLockerRecoverNonFungiblesManifestInput {
+                            resource_address,
+                            ids,
+                            ..
+                        },
+                    )
+                    | AccountLockerMethod::ClaimNonFungibles(
+                        AccountLockerClaimNonFungiblesManifestInput {
+                            resource_address,
+                            ids,
+                            ..
+                        },
+                    ) => {
+                        let CompositeResourceAddress::NonFungible(non_fungible_resource_address) =
+                            CompositeResourceAddress::from(resource_address)
+                        else {
+                            return ControlFlow::Break(
+                                StaticResourceMovementsError::AccountLockerWithdrawNonFungiblesOnAFungibleResource,
+                            );
+                        };
+                        let bound = NonFungibleBounds::new_exact(ids);
+
+                        match self
+                            .worktop_non_fungible_contents
+                            .get_mut(&non_fungible_resource_address)
+                        {
+                            Some(worktop_non_fungible_bounds) => {
+                                worktop_non_fungible_bounds.combine(bound);
+                            }
+                            None => {
+                                self.worktop_non_fungible_contents
+                                    .insert(non_fungible_resource_address, bound);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        ControlFlow::Continue(())
+    }
 }
 
 impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
@@ -243,532 +812,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
         }
 
         // Handle the worktop puts due to the invocation. Takes are handled by the bucket creation.
-        match typed_native_invocation {
-            Some(TypedNativeInvocation::AccessControllerPackage(
-                AccessControllerInvocations::AccessControllerBlueprint(
-                    access_controller_invocations,
-                ),
-            )) => {
-                match access_controller_invocations {
-                    AccessControllerBlueprintInvocations::Function(function_invocation) => {
-                        match function_invocation {
-                            AccessControllerFunction::Create(_) => {}
-                        }
-                    }
-                    AccessControllerBlueprintInvocations::Method(_, method_invocations) => {
-                        match method_invocations {
-                            // Known effect
-                            AccessControllerMethod::WithdrawRecoveryFee(withdraw_recovery_fee) => {
-                                let fungible_resource_address = FungibleResourceAddress(XRD);
-                                let fungible_bounds = FungibleBounds::new_exact(withdraw_recovery_fee.amount);
-                                match self.worktop_fungible_contents.get_mut(&fungible_resource_address) {
-                                    Some(worktop_content) => {
-                                        match worktop_content.combine(fungible_bounds) {
-                                            Some(v) => ControlFlow::Continue(v),
-                                            None => ControlFlow::Break(Self::Error::DecimalOverflow),
-                                        }?;
-                                    }
-                                    None => {
-                                        self.worktop_fungible_contents
-                                            .insert(fungible_resource_address, fungible_bounds);
-                                    }
-                                }
-                            }
-                            // No effect on worktop.
-                            AccessControllerMethod::CreateProof(..)
-                            | AccessControllerMethod::InitiateRecoveryAsPrimary(..)
-                            | AccessControllerMethod::InitiateRecoveryAsRecovery(..)
-                            | AccessControllerMethod::QuickConfirmPrimaryRoleRecoveryProposal(..)
-                            | AccessControllerMethod::QuickConfirmRecoveryRoleRecoveryProposal(..)
-                            | AccessControllerMethod::TimedConfirmRecovery(..)
-                            | AccessControllerMethod::StopTimedRecovery(..)
-                            | AccessControllerMethod::MintRecoveryBadges(..)
-                            | AccessControllerMethod::LockRecoveryFee(..)
-                            | AccessControllerMethod::ContributeRecoveryFee(..)
-                            | AccessControllerMethod::InitiateBadgeWithdrawAttemptAsPrimary(..)
-                            | AccessControllerMethod::InitiateBadgeWithdrawAttemptAsRecovery(..)
-                            | AccessControllerMethod::CancelPrimaryRoleRecoveryProposal(..)
-                            | AccessControllerMethod::CancelRecoveryRoleRecoveryProposal(..)
-                            | AccessControllerMethod::CancelPrimaryRoleBadgeWithdrawAttempt(..)
-                            | AccessControllerMethod::CancelRecoveryRoleBadgeWithdrawAttempt(..)
-                            | AccessControllerMethod::LockPrimaryRole(..)
-                            | AccessControllerMethod::UnlockPrimaryRole(..) => {}
-                            // Puts worktop in unknown state.
-                            AccessControllerMethod::QuickConfirmPrimaryRoleBadgeWithdrawAttempt(..)
-                            | AccessControllerMethod::QuickConfirmRecoveryRoleBadgeWithdrawAttempt(..) => {
-                                self.worktop_uncertainty_sources
-                                    .push(WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    });
-                            }
-                        }
-                    }
-                }
-            }
-            Some(TypedNativeInvocation::AccountPackage(AccountInvocations::AccountBlueprint(
-                account_invocations,
-            ))) => {
-                match account_invocations {
-                    AccountBlueprintInvocations::Function(function_invocation) => {
-                        match function_invocation {
-                            // No effect on worktop.
-                            AccountFunction::CreateAdvanced(_) => {}
-                            // Puts worktop in unknown state.
-                            AccountFunction::Create(_) => {
-                                self.worktop_uncertainty_sources.push(
-                                    WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    },
-                                );
-                            }
-                        }
-                    }
-                    AccountBlueprintInvocations::Method(_, method_invocation) => {
-                        match method_invocation {
-                            // Known effect
-                            AccountMethod::WithdrawNonFungibles(
-                                AccountWithdrawNonFungiblesInput {
-                                    resource_address,
-                                    ids,
-                                },
-                            )
-                            | AccountMethod::LockFeeAndWithdrawNonFungibles(
-                                AccountLockFeeAndWithdrawNonFungiblesInput {
-                                    resource_address,
-                                    ids,
-                                    ..
-                                },
-                            ) => {
-                                let CompositeResourceAddress::NonFungible(
-                                    non_fungible_resource_address,
-                                ) = CompositeResourceAddress::from(resource_address)
-                                else {
-                                    return ControlFlow::Break(
-                                        StaticResourceMovementsError::AccountWithdrawNonFungiblesOnAFungibleResource,
-                                    );
-                                };
-                                let bound = NonFungibleBounds::new_exact(ids);
-
-                                match self
-                                    .worktop_non_fungible_contents
-                                    .get_mut(&non_fungible_resource_address)
-                                {
-                                    Some(worktop_non_fungible_bounds) => {
-                                        worktop_non_fungible_bounds.combine(bound);
-                                    }
-                                    None => {
-                                        self.worktop_non_fungible_contents
-                                            .insert(non_fungible_resource_address, bound);
-                                    }
-                                }
-                            }
-                            AccountMethod::Withdraw(AccountWithdrawInput {
-                                resource_address,
-                                amount,
-                            })
-                            | AccountMethod::LockFeeAndWithdraw(AccountLockFeeAndWithdrawInput {
-                                resource_address,
-                                amount,
-                                ..
-                            }) => {
-                                let composite_resource_address =
-                                    CompositeResourceAddress::from(resource_address);
-                                match composite_resource_address {
-                                    CompositeResourceAddress::Fungible(
-                                        fungible_resource_address,
-                                    ) => {
-                                        let bound = FungibleBounds::new_exact(amount);
-                                        match self
-                                            .worktop_fungible_contents
-                                            .get_mut(&fungible_resource_address)
-                                        {
-                                            Some(worktop_fungible_bounds) => {
-                                                worktop_fungible_bounds.combine(bound);
-                                            }
-                                            None => {
-                                                self.worktop_fungible_contents
-                                                    .insert(fungible_resource_address, bound);
-                                            }
-                                        }
-                                    }
-                                    CompositeResourceAddress::NonFungible(
-                                        non_fungible_resource_address,
-                                    ) => {
-                                        let bound = NonFungibleBounds {
-                                            amount_bounds: FungibleBounds::new_exact(amount),
-                                            id_bounds: NonFungibleIdBounds::Unknown,
-                                        };
-                                        match self
-                                            .worktop_non_fungible_contents
-                                            .get_mut(&non_fungible_resource_address)
-                                        {
-                                            Some(worktop_non_fungible_bounds) => {
-                                                worktop_non_fungible_bounds.combine(bound);
-                                            }
-                                            None => {
-                                                self.worktop_non_fungible_contents
-                                                    .insert(non_fungible_resource_address, bound);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            AccountMethod::TryDepositOrRefund(_)
-                            | AccountMethod::TryDepositBatchOrRefund(_) => {
-                                // The case of the InvocationIos all being consumed by the call is
-                                // easy to do. They're just not used and the worktop becomes empty
-                                // of them. Otherwise, we assume that they were all returned back to
-                                // the worktop and we process them all.
-                                for invocation_input in invocation_inputs {
-                                    match invocation_input {
-                                        InvocationIo::KnownFungible(
-                                            fungible_resource_address,
-                                            fungible_bounds,
-                                        ) => {
-                                            // If no entry exists in the worktop content then add
-                                            // one.
-                                            match self
-                                                .worktop_fungible_contents
-                                                .get_mut(&fungible_resource_address)
-                                            {
-                                                Some(fungible_worktop_content) => {
-                                                    match (
-                                                        fungible_worktop_content.upper,
-                                                        fungible_bounds.upper,
-                                                    ) {
-                                                        (
-                                                            UpperFungibleBound::Amount(
-                                                                ref mut amount1,
-                                                            ),
-                                                            UpperFungibleBound::Amount(amount2),
-                                                        ) => {
-                                                            *amount1 = option_to_control_flow(
-                                                                amount1.checked_add(amount2),
-                                                                StaticResourceMovementsError::DecimalOverflow,
-                                                            )?;
-                                                        }
-                                                        (_, UpperFungibleBound::Unbounded)
-                                                        | (UpperFungibleBound::Unbounded, _) => {
-                                                            fungible_worktop_content.upper =
-                                                                UpperFungibleBound::Unbounded
-                                                        }
-                                                    }
-                                                }
-                                                None => {
-                                                    self.worktop_fungible_contents.insert(
-                                                        fungible_resource_address,
-                                                        fungible_bounds,
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        InvocationIo::KnownNonFungible(
-                                            non_fungible_resource_address,
-                                            non_fungible_bounds,
-                                        ) => {
-                                            // If no entry exists in the worktop content then add
-                                            // one.
-                                            match self
-                                                .worktop_non_fungible_contents
-                                                .get_mut(&non_fungible_resource_address)
-                                            {
-                                                Some(non_fungible_worktop_content) => {
-                                                    // Update the amounts
-                                                    match (
-                                                        non_fungible_worktop_content
-                                                            .amount_bounds
-                                                            .upper,
-                                                        non_fungible_bounds.amount_bounds.upper,
-                                                    ) {
-                                                        (
-                                                            UpperFungibleBound::Amount(
-                                                                ref mut amount1,
-                                                            ),
-                                                            UpperFungibleBound::Amount(amount2),
-                                                        ) => {
-                                                            *amount1 = option_to_control_flow(
-                                                                amount1.checked_add(amount2),
-                                                                StaticResourceMovementsError::DecimalOverflow,
-                                                            )?;
-                                                        }
-                                                        (_, UpperFungibleBound::Unbounded)
-                                                        | (UpperFungibleBound::Unbounded, _) => {
-                                                            non_fungible_worktop_content
-                                                                .amount_bounds
-                                                                .upper =
-                                                                UpperFungibleBound::Unbounded
-                                                        }
-                                                    }
-
-                                                    // Update the id bounds.
-                                                    non_fungible_worktop_content
-                                                        .combine(non_fungible_bounds);
-                                                }
-                                                None => {
-                                                    self.worktop_non_fungible_contents.insert(
-                                                        non_fungible_resource_address,
-                                                        non_fungible_bounds,
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        // For the worktop uncertainty sources we just add them back
-                                        // to the set of uncertainty sources.
-                                        InvocationIo::Unknown(worktop_uncertainty_source) => self
-                                            .worktop_uncertainty_sources
-                                            .push(worktop_uncertainty_source),
-                                    }
-                                }
-                            }
-                            // No effect on worktop.
-                            AccountMethod::LockFee(_)
-                            | AccountMethod::LockContingentFee(_)
-                            | AccountMethod::Deposit(_)
-                            | AccountMethod::DepositBatch(_)
-                            | AccountMethod::Burn(_)
-                            | AccountMethod::BurnNonFungibles(_)
-                            | AccountMethod::AddAuthorizedDepositor(_)
-                            | AccountMethod::RemoveAuthorizedDepositor(_)
-                            | AccountMethod::CreateProofOfAmount(_)
-                            | AccountMethod::CreateProofOfNonFungibles(_)
-                            | AccountMethod::SetDefaultDepositRule(_)
-                            | AccountMethod::SetResourcePreference(_)
-                            | AccountMethod::RemoveResourcePreference(_)
-                            | AccountMethod::TryDepositOrAbort(_)
-                            | AccountMethod::TryDepositBatchOrAbort(_) => {}
-                            // Puts worktop in unknown state.
-                            AccountMethod::Securify(_) => {
-                                self.worktop_uncertainty_sources.push(
-                                    WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    },
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            Some(TypedNativeInvocation::ConsensusManagerPackage(
-                ConsensusManagerInvocations::ConsensusManagerBlueprint(
-                    consensus_manager_invocations,
-                ),
-            )) => {
-                match consensus_manager_invocations {
-                    ConsensusManagerBlueprintInvocations::Function(function_invocation) => {
-                        match function_invocation {
-                            ConsensusManagerFunction::Create(_) => {}
-                        }
-                    }
-                    ConsensusManagerBlueprintInvocations::Method(_, method_invocation) => {
-                        match method_invocation {
-                            // No effect.
-                            ConsensusManagerMethod::GetCurrentEpoch(_)
-                            | ConsensusManagerMethod::Start(_)
-                            | ConsensusManagerMethod::GetCurrentTime(_)
-                            | ConsensusManagerMethod::NextRound(_) => {}
-                            // Puts the worktop in unknown state.
-                            ConsensusManagerMethod::CreateValidator(_) => {
-                                self.worktop_uncertainty_sources.push(
-                                    WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    },
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            Some(TypedNativeInvocation::ConsensusManagerPackage(
-                ConsensusManagerInvocations::ValidatorBlueprint(consensus_manager_invocations),
-            )) => {
-                match consensus_manager_invocations {
-                    ValidatorBlueprintInvocations::Function(function_invocation) => {
-                        match function_invocation {}
-                    }
-                    ValidatorBlueprintInvocations::Method(_, method_invocation) => {
-                        match method_invocation {
-                            // Unknown effect
-                            ValidatorMethod::StakeAsOwner(_)
-                            | ValidatorMethod::Stake(_)
-                            | ValidatorMethod::Unstake(_)
-                            | ValidatorMethod::ClaimXrd(_)
-                            | ValidatorMethod::FinishUnlockOwnerStakeUnits(_) => {
-                                self.worktop_uncertainty_sources.push(
-                                    WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    },
-                                );
-                            }
-                            // No effect on worktop
-                            ValidatorMethod::Register(_)
-                            | ValidatorMethod::Unregister(_)
-                            | ValidatorMethod::UpdateKey(_)
-                            | ValidatorMethod::UpdateFee(_)
-                            | ValidatorMethod::UpdateAcceptDelegatedStake(_)
-                            | ValidatorMethod::AcceptsDelegatedStake(_)
-                            | ValidatorMethod::TotalStakeXrdAmount(_)
-                            | ValidatorMethod::TotalStakeUnitSupply(_)
-                            | ValidatorMethod::GetRedemptionValue(_)
-                            | ValidatorMethod::SignalProtocolUpdateReadiness(_)
-                            | ValidatorMethod::GetProtocolUpdateReadiness(_)
-                            | ValidatorMethod::LockOwnerStakeUnits(_)
-                            | ValidatorMethod::StartUnlockOwnerStakeUnits(_) => {}
-                        }
-                    }
-                }
-            }
-            Some(TypedNativeInvocation::IdentityPackage(
-                IdentityInvocations::IdentityBlueprint(identity_invocations),
-            )) => match identity_invocations {
-                IdentityBlueprintInvocations::Function(function_invocation) => {
-                    match function_invocation {
-                        IdentityFunction::Create(_) => {
-                            self.worktop_uncertainty_sources.push(
-                                WorktopUncertaintySource::Invocation {
-                                    instruction_index: index,
-                                },
-                            );
-                        }
-                        IdentityFunction::CreateAdvanced(_) => {}
-                    }
-                }
-                IdentityBlueprintInvocations::Method(_, method_invocation) => {
-                    match method_invocation {
-                        IdentityMethod::Securify(_) => {
-                            self.worktop_uncertainty_sources.push(
-                                WorktopUncertaintySource::Invocation {
-                                    instruction_index: index,
-                                },
-                            );
-                        }
-                    }
-                }
-            },
-            Some(TypedNativeInvocation::LockerPackage(
-                LockerInvocations::AccountLockerBlueprint(account_locker_invocations),
-            )) => {
-                match account_locker_invocations {
-                    AccountLockerBlueprintInvocations::Function(function_invocation) => {
-                        match function_invocation {
-                            AccountLockerFunction::Instantiate(_) => {
-                                self.worktop_uncertainty_sources.push(
-                                    WorktopUncertaintySource::Invocation {
-                                        instruction_index: index,
-                                    },
-                                );
-                            }
-                            AccountLockerFunction::InstantiateSimple(_) => {}
-                        }
-                    }
-                    AccountLockerBlueprintInvocations::Method(_, method_invocation) => {
-                        match method_invocation {
-                            // No effect
-                            AccountLockerMethod::Store(_)
-                            | AccountLockerMethod::Airdrop(_)
-                            | AccountLockerMethod::GetAmount(_)
-                            | AccountLockerMethod::GetNonFungibleLocalIds(_) => {}
-                            // Known effect
-                            AccountLockerMethod::Recover(AccountLockerRecoverManifestInput {
-                                resource_address,
-                                amount,
-                                ..
-                            })
-                            | AccountLockerMethod::Claim(AccountLockerClaimManifestInput {
-                                resource_address,
-                                amount,
-                                ..
-                            }) => {
-                                let composite_resource_address =
-                                    CompositeResourceAddress::from(resource_address);
-                                match composite_resource_address {
-                                    CompositeResourceAddress::Fungible(
-                                        fungible_resource_address,
-                                    ) => {
-                                        let bound = FungibleBounds::new_exact(amount);
-                                        match self
-                                            .worktop_fungible_contents
-                                            .get_mut(&fungible_resource_address)
-                                        {
-                                            Some(worktop_fungible_bounds) => {
-                                                worktop_fungible_bounds.combine(bound);
-                                            }
-                                            None => {
-                                                self.worktop_fungible_contents
-                                                    .insert(fungible_resource_address, bound);
-                                            }
-                                        }
-                                    }
-                                    CompositeResourceAddress::NonFungible(
-                                        non_fungible_resource_address,
-                                    ) => {
-                                        let bound = NonFungibleBounds {
-                                            amount_bounds: FungibleBounds::new_exact(amount),
-                                            id_bounds: NonFungibleIdBounds::Unknown,
-                                        };
-                                        match self
-                                            .worktop_non_fungible_contents
-                                            .get_mut(&non_fungible_resource_address)
-                                        {
-                                            Some(worktop_non_fungible_bounds) => {
-                                                worktop_non_fungible_bounds.combine(bound);
-                                            }
-                                            None => {
-                                                self.worktop_non_fungible_contents
-                                                    .insert(non_fungible_resource_address, bound);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            AccountLockerMethod::RecoverNonFungibles(
-                                AccountLockerRecoverNonFungiblesManifestInput {
-                                    resource_address,
-                                    ids,
-                                    ..
-                                },
-                            )
-                            | AccountLockerMethod::ClaimNonFungibles(
-                                AccountLockerClaimNonFungiblesManifestInput {
-                                    resource_address,
-                                    ids,
-                                    ..
-                                },
-                            ) => {
-                                let CompositeResourceAddress::NonFungible(
-                                    non_fungible_resource_address,
-                                ) = CompositeResourceAddress::from(resource_address)
-                                else {
-                                    return ControlFlow::Break(
-                                        StaticResourceMovementsError::AccountLockerWithdrawNonFungiblesOnAFungibleResource,
-                                    );
-                                };
-                                let bound = NonFungibleBounds::new_exact(ids);
-
-                                match self
-                                    .worktop_non_fungible_contents
-                                    .get_mut(&non_fungible_resource_address)
-                                {
-                                    Some(worktop_non_fungible_bounds) => {
-                                        worktop_non_fungible_bounds.combine(bound);
-                                    }
-                                    None => {
-                                        self.worktop_non_fungible_contents
-                                            .insert(non_fungible_resource_address, bound);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // Not a native invocation. The worktop will contain unknown resources.
-            None => {
-                self.worktop_uncertainty_sources
-                    .push(WorktopUncertaintySource::Invocation {
-                        instruction_index: index,
-                    });
-            }
-        }
+        self.handle_worktop_puts(typed_native_invocation, invocation_inputs, index)?;
 
         ControlFlow::Continue(())
     }
