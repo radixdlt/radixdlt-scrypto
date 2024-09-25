@@ -109,3 +109,83 @@ pub struct OnError<'t, T: CustomTraversal> {
     pub error: DecodeError,
     pub location: Location<'t, T>,
 }
+
+// We add this allow so that the placeholder names don't have to start with underscores
+#[allow(unused_variables)]
+pub trait TypedPayloadVisitor<'de, E: CustomExtension> {
+    type Output<'t, 's>
+    where
+        's: 't;
+
+    #[inline]
+    #[must_use]
+    fn on_container_start<'t, 's>(
+        &mut self,
+        details: OnContainerStartTyped<'t, 's, E::CustomTraversal>,
+    ) -> ControlFlow<Self::Output<'t, 's>> {
+        ControlFlow::Continue(())
+    }
+
+    #[inline]
+    #[must_use]
+    fn on_terminal_value<'t, 's>(
+        &mut self,
+        details: OnTerminalValueTyped<'t, 's, 'de, E::CustomTraversal>,
+    ) -> ControlFlow<Self::Output<'t, 's>> {
+        ControlFlow::Continue(())
+    }
+
+    #[inline]
+    #[must_use]
+    fn on_terminal_value_batch<'t, 's>(
+        &mut self,
+        details: OnTerminalValueBatchTyped<'t, 's, 'de, E::CustomTraversal>,
+    ) -> ControlFlow<Self::Output<'t, 's>> {
+        ControlFlow::Continue(())
+    }
+
+    #[inline]
+    #[must_use]
+    fn on_container_end<'t, 's>(
+        &mut self,
+        details: OnContainerEndTyped<'t, 's, E::CustomTraversal>,
+    ) -> ControlFlow<Self::Output<'t, 's>> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_error<'t, 's>(&mut self, details: OnErrorTyped<'t, 's, E>) -> Self::Output<'t, 's>;
+
+    #[must_use]
+    fn on_traversal_end<'t, 's>(&mut self, details: OnTraversalEndTyped) -> Self::Output<'t, 's>;
+}
+
+pub struct OnContainerStartTyped<'t, 's, T: CustomTraversal> {
+    pub local_type_id: LocalTypeId,
+    pub header: ContainerHeader<T>,
+    pub location: TypedLocation<'t, 's, T>,
+}
+
+pub struct OnTerminalValueTyped<'t, 's, 'de, T: CustomTraversal> {
+    pub local_type_id: LocalTypeId,
+    pub value: TerminalValueRef<'de, T>,
+    pub location: TypedLocation<'t, 's, T>,
+}
+
+pub struct OnTerminalValueBatchTyped<'t, 's, 'de, T: CustomTraversal> {
+    pub local_type_id: LocalTypeId,
+    pub value_batch: TerminalValueBatchRef<'de>,
+    pub location: TypedLocation<'t, 's, T>,
+}
+
+pub struct OnContainerEndTyped<'t, 's, T: CustomTraversal> {
+    pub local_type_id: LocalTypeId,
+    pub location: TypedLocation<'t, 's, T>,
+}
+
+pub struct OnTraversalEndTyped {}
+
+pub struct OnErrorTyped<'t, 's, E: CustomExtension> {
+    pub error: TypedTraversalError<E>,
+    pub location: TypedLocation<'t, 's, E::CustomTraversal>,
+}

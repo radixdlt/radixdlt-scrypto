@@ -1,8 +1,4 @@
-use super::*;
-use crate::basic_well_known_types::ANY_TYPE;
-use crate::rust::prelude::*;
-use crate::traversal::*;
-use crate::*;
+use crate::internal_prelude::*;
 
 pub fn traverse_payload_with_types<'de, 's, E: CustomExtension>(
     payload: &'de [u8],
@@ -139,6 +135,66 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
                 schema,
                 root_type_id: type_id,
             },
+        }
+    }
+
+    /// Allows migrating off `next_event` before it's removed
+    pub fn traverse<'t, V: TypedPayloadVisitor<'de, E>>(
+        &'t mut self,
+        visitor: &mut V,
+    ) -> V::Output<'t, 's> {
+        match self.traverse_internal(visitor) {
+            ControlFlow::Continue(_) => unreachable!("Never returns a continue"),
+            ControlFlow::Break(output) => output,
+        }
+    }
+
+    fn traverse_internal<'t, V: TypedPayloadVisitor<'de, E>>(
+        &'t mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<V::Output<'t, 's>> {
+        loop {
+            // SAFETY: Work around the current borrow checker, which is sound as per this thread:
+            // https://users.rust-lang.org/t/mutable-borrow-in-loop-borrow-checker-query/118081/3
+            // Unsafe syntax borrowed from here: https://docs.rs/polonius-the-crab/latest/polonius_the_crab/
+            // Can remove this once the polonius borrow checker hits stable
+            let fixed_self: &mut TypedTraverser<'de, 's, E> = unsafe { &mut *(self as *mut _) };
+            let TypedLocatedTraversalEvent { location, event } = fixed_self.next_event();
+            match event {
+                TypedTraversalEvent::ContainerStart(local_type_id, header) => {
+                    visitor.on_container_start(OnContainerStartTyped {
+                        local_type_id,
+                        header,
+                        location,
+                    })?;
+                }
+                TypedTraversalEvent::ContainerEnd(local_type_id, _header) => {
+                    visitor.on_container_end(OnContainerEndTyped {
+                        local_type_id,
+                        location,
+                    })?;
+                }
+                TypedTraversalEvent::TerminalValue(local_type_id, value) => {
+                    visitor.on_terminal_value(OnTerminalValueTyped {
+                        local_type_id,
+                        value,
+                        location,
+                    })?;
+                }
+                TypedTraversalEvent::TerminalValueBatch(local_type_id, value_batch) => {
+                    visitor.on_terminal_value_batch(OnTerminalValueBatchTyped {
+                        local_type_id,
+                        value_batch,
+                        location,
+                    })?;
+                }
+                TypedTraversalEvent::Error(error) => {
+                    ControlFlow::Break(visitor.on_error(OnErrorTyped { error, location }))?;
+                }
+                TypedTraversalEvent::End => {
+                    ControlFlow::Break(visitor.on_traversal_end(OnTraversalEndTyped {}))?;
+                }
+            }
         }
     }
 

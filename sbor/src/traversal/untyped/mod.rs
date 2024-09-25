@@ -2,13 +2,11 @@ use crate::internal_prelude::*;
 
 mod event_stream_traverser;
 mod events;
-mod traversal_traits;
 mod untyped_traverser;
 mod utility_visitors;
 
 pub use event_stream_traverser::*;
 pub use events::*;
-pub use traversal_traits::*;
 pub use untyped_traverser::*;
 pub use utility_visitors::*;
 

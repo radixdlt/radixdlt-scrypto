@@ -123,6 +123,7 @@ pub(crate) mod internal_prelude {
     // These are mostly used for more advanced use cases,
     // so aren't included in the general prelude
     pub use crate::basic::*;
+    pub use crate::basic_well_known_types::*;
     pub use crate::decoder::*;
     pub use crate::encoder::*;
     pub use crate::payload_validation::*;
