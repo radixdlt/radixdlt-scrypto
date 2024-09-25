@@ -44,6 +44,7 @@ pub fn traverse_partial_payload_with_types<'de, 's, E: CustomExtension>(
 /// It validates that the payload matches the given type kinds,
 /// and adds the relevant type index to the events which are output.
 pub struct TypedTraverser<'de, 's, E: CustomExtension> {
+    #[allow(deprecated)]
     traverser: VecTraverser<'de, E::CustomTraversal>,
     state: TypedTraverserState<'s, E>,
 }
@@ -114,6 +115,7 @@ macro_rules! look_up_type {
     };
 }
 
+#[allow(deprecated)] // Allow use of deprecated VecTraverser
 impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
     pub fn new(
         input: &'de [u8],

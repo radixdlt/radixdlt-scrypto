@@ -122,5 +122,12 @@ pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
     // These are mostly used for more advanced use cases,
     // so aren't included in the general prelude
+    pub use crate::basic::*;
+    pub use crate::decoder::*;
+    pub use crate::encoder::*;
+    pub use crate::payload_validation::*;
+    pub use crate::schema::*;
+    pub use crate::traversal::*;
     pub use crate::vec_traits::*;
+    pub use core::ops::ControlFlow;
 }
