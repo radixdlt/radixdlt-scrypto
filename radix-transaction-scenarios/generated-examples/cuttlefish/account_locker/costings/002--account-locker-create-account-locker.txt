@@ -19,7 +19,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalAccountLocker                                        ,                     2197,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   141654,      2.7%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      0.8%
-- OpenSubstate::GlobalPackage                                              ,                  2741300,     52.1%
+- OpenSubstate::GlobalPackage                                              ,                  2781311,     52.9%
 - OpenSubstate::InternalFungibleVault                                      ,                    96464,      1.8%
 - OpenSubstate::InternalGenericComponent                                   ,                    59999,      1.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.8%
@@ -27,7 +27,7 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,                   353866,      6.7%
 - QueryActor                                                               ,                     2000,      0.0%
 - ReadSubstate                                                             ,                   524681,     10.0%
-- RefCheck                                                                 ,                   120033,      2.3%
+- RefCheck                                                                 ,                    80022,      1.5%
 - RunNativeCode::Worktop_drain                                             ,                    11224,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.3%
 - RunNativeCode::Worktop_put                                               ,                    29033,      0.6%
