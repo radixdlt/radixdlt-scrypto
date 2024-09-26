@@ -1,14 +1,5 @@
-use crate::data::transform;
-use crate::data::TransformHandler;
-use crate::errors::*;
-use crate::model::ManifestNamedIntent;
-use crate::validation::*;
-use radix_common::data::manifest::model::*;
-use radix_common::data::manifest::*;
-use radix_common::data::scrypto::model::Own;
-use radix_common::prelude::Reference;
-use radix_engine_interface::types::NodeId;
-use sbor::rust::collections::*;
+use crate::data::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {
@@ -18,8 +9,10 @@ pub enum ProofKind {
     AuthZoneProof,
 }
 
+/// For advanced validation, you should consider using the
+/// [`StaticManifestInterpreter`] instead.
 #[derive(Default)]
-pub struct ManifestValidator {
+pub struct BasicManifestValidator {
     id_allocator: ManifestIdAllocator,
     /// Bucket id -> lock count
     bucket_ids: NonIterMap<ManifestBucket, usize>,
@@ -33,7 +26,7 @@ pub struct ManifestValidator {
     intent_ids: IndexSet<ManifestNamedIntent>,
 }
 
-impl ManifestValidator {
+impl BasicManifestValidator {
     pub fn new() -> Self {
         Self::default()
     }
@@ -182,7 +175,7 @@ impl ManifestValidator {
     }
 }
 
-impl TransformHandler<ManifestIdValidationError> for ManifestValidator {
+impl TransformHandler<ManifestIdValidationError> for BasicManifestValidator {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, ManifestIdValidationError> {
         self.drop_bucket(&b)?;
         Ok(Own(NodeId([0u8; NodeId::LENGTH])))

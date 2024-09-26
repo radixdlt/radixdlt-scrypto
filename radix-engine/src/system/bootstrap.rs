@@ -193,7 +193,7 @@ impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
             receipt,
             ..
         } = event;
-        if protocol_version == ProtocolVersion::EARLIEST {
+        if protocol_version == ProtocolVersion::GENESIS {
             match batch_group_index {
                 0 => self.bootstrap_receipts.push(receipt.clone()),
                 1 => self.data_ingestion_receipts.push(receipt.clone()),

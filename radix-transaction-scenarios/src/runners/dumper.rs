@@ -3,7 +3,7 @@
 mod test {
     use crate::executor::*;
     use crate::internal_prelude::*;
-    use crate::scenarios::ALL_SCENARIOS;
+    use crate::scenarios::*;
     use fmt::Write;
     use itertools::Itertools;
     use radix_engine::{updates::*, utils::*, vm::*};
@@ -106,7 +106,7 @@ mod test {
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
             .configure_babylon(|_| BabylonSettings::test_complex())
             .from_bootstrap_to_latest();
-        for protocol_update_exector in protocol_executor.each_protocol_update_executor() {
+        for protocol_update_exector in protocol_executor.each_protocol_update_executor(&db) {
             let protocol_version = protocol_update_exector.protocol_version;
             let mut version_folder = FolderContentAligner::new(
                 root_path.join(protocol_version.logical_name()),
@@ -236,10 +236,10 @@ mod test {
 
             self.transactions_folder.put_file(
                 format!("{transaction_file_prefix}.bin"),
-                &transaction.raw_transaction.0,
+                transaction.raw_transaction.as_slice(),
             );
 
-            // Check tranasction manifest
+            // Check transaction manifest
             {
                 // NB: We purposefully don't write the blobs as they're contained in the raw transactions
                 let manifest_string = match &transaction.transaction_manifest {
@@ -253,8 +253,7 @@ mod test {
                     transaction
                         .transaction_manifest
                         .get_blobs()
-                        .values()
-                        .cloned()
+                        .map(|(_, value)| value.clone())
                         .collect(),
                 );
                 match &transaction.transaction_manifest {
@@ -287,7 +286,10 @@ mod test {
 
                 // Whilst we're here, let's validate that the manifest can be recompiled
                 let blob_provider = BlobProvider::new_with_blobs(
-                    subintent_manifest.get_blobs().values().cloned().collect(),
+                    subintent_manifest
+                        .get_blobs()
+                        .map(|(_, value)| value.clone())
+                        .collect(),
                 );
                 match subintent_manifest {
                     UserSubintentManifest::V2(_) => compile_manifest::<SubintentManifestV2>(
@@ -300,7 +302,7 @@ mod test {
                 .expect("Decompiled manifest should be recompilable");
 
                 self.manifests_folder.put_file(
-                    format!("{transaction_file_prefix}_subintent_{subintent_index}.rtm"),
+                    format!("{transaction_file_prefix}--sub-{subintent_index}.rtm"),
                     &manifest_string,
                 );
             }
@@ -385,39 +387,44 @@ mod test {
         }
     }
 
-    pub fn run_all_scenarios(mode: AlignerExecutionMode) {
+    pub fn run_all_scenarios<'a>(
+        mode: AlignerExecutionMode,
+        scenarios: impl IntoIterator<Item = &'a dyn ScenarioCreatorObjectSafe>,
+    ) {
         let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
         let vm_modules = VmModules::default();
-        for (scenario_logical_name, scenario_creator) in ALL_SCENARIOS.iter() {
+        for scenario_creator in scenarios.into_iter() {
+            let scenario_logical_name = scenario_creator.metadata().logical_name;
             let min_requirement = scenario_creator.metadata().protocol_min_requirement;
-            let valid_versions = ProtocolVersion::VARIANTS
-                .into_iter()
-                .filter(|p| *p >= min_requirement);
-            for protocol_version in valid_versions {
+            for protocol_version in ProtocolVersion::all_from(min_requirement) {
                 let mut db = InMemorySubstateDatabase::standard();
 
                 let scenario_folder = FolderContentAligner::new(
                     root_path
                         .join(protocol_version.logical_name())
-                        .join(&*scenario_logical_name),
+                        .join(scenario_logical_name),
                     mode,
                     AlignerFolderMode::ExpectNoOtherContent,
                 );
 
                 // Now execute just the single scenario, after executing protocol updates up to
                 // the given protocol version
-                let mut executor =
-                    TransactionScenarioExecutor::new(db, NetworkDefinition::simulator())
-                        .execute_protocol_updates_and_scenarios(
-                            |builder| builder.from_bootstrap_to(protocol_version),
-                            ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
-                            ScenarioFilter::SpecificScenariosByName(btreeset!(
-                                scenario_logical_name.to_string()
-                            )),
-                            &mut ScenarioDumpingHooks::new(scenario_folder),
-                            &mut (),
-                            &vm_modules,
-                        );
+                TransactionScenarioExecutor::new(db, NetworkDefinition::simulator())
+                    .execute_protocol_updates_and_scenarios(
+                        |builder| builder.from_bootstrap_to(protocol_version),
+                        ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
+                        ScenarioFilter::SpecificScenariosByName(btreeset!(
+                            scenario_logical_name.to_string()
+                        )),
+                        &mut ScenarioDumpingHooks::new(scenario_folder),
+                        &mut (),
+                        &vm_modules,
+                    )
+                    .unwrap_or_else(|err| {
+                        Err(err).expect(&format!(
+                            "Scenario {scenario_logical_name} should execute without error"
+                        ))
+                    });
             }
         }
     }
@@ -425,12 +432,30 @@ mod test {
     #[test]
     #[ignore = "Run this test to update the generated scenarios"]
     pub fn update_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Write)
+        run_all_scenarios(AlignerExecutionMode::Write, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to update a single scenario"]
+    pub fn update_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Write,
+            [get_scenario("basic_subintents")],
+        )
     }
 
     #[test]
     pub fn validate_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Assert)
+        run_all_scenarios(AlignerExecutionMode::Assert, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to validate a single scenario"]
+    pub fn validate_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Assert,
+            [get_scenario("basic_subintents")],
+        )
     }
 
     #[test]
@@ -461,7 +486,7 @@ mod test {
                     ..
                 } = event;
                 if let Some(testnet_run_at) = metadata.testnet_run_at {
-                    if testnet_run_at > ProtocolVersion::EARLIEST {
+                    if testnet_run_at > ProtocolVersion::GENESIS {
                         assert!(
                             metadata.safe_to_run_on_used_ledger,
                             "Scenario \"{}\" is set to run on non-Babylon testnets, but is not marked as `safe_to_run_on_used_ledger`. This could break stokenet. Change the scenario to not use pre-allocated addresses, and set `safe_to_run_on_used_ledger` to `true`.",

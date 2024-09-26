@@ -64,7 +64,7 @@ const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
     // should themselves be `fixed`, e.g. NotarizedTransactionV1
     backwards_compatible(
         bottlenose = "FILE:any_transaction_payload_schema_bottlenose.txt",
-        cuttlefish = "FILE:any_transaction_payload_schema_cuttlefish.txt"
+        cuttlefish = "FILE:any_transaction_payload_schema_cuttlefish.bin"
     ),
     settings(allow_name_changes)
 )]

@@ -204,7 +204,7 @@ where
         let kernel_boot = self.database.get_existing_substate::<KernelBoot>(
             TRANSACTION_TRACKER,
             BOOT_LOADER_PARTITION,
-            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+            BootLoaderField::KernelBoot,
         );
 
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
@@ -214,13 +214,7 @@ where
             id_allocator,
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
-                let vm_boot = database
-                    .get_substate(
-                        TRANSACTION_TRACKER,
-                        BOOT_LOADER_PARTITION,
-                        BOOT_LOADER_VM_BOOT_FIELD_KEY,
-                    )
-                    .unwrap_or(VmBoot::babylon_genesis());
+                let vm_boot = VmBoot::load(database);
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),

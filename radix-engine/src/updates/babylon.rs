@@ -221,6 +221,12 @@ pub struct BabylonBatchGenerator {
 }
 
 impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
+    fn status_tracking_enabled(&self) -> bool {
+        // This was launched without status tracking,
+        // so we can't add it in later to avoid divergence
+        false
+    }
+
     fn generate_batch(
         &self,
         _store: &dyn SubstateDatabase,

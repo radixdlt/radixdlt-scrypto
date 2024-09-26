@@ -114,8 +114,7 @@ impl PreparedRoundUpdateTransactionV1 {
                 },
                 pre_allocated_addresses: vec![],
                 disable_limits_and_costing_modules: true,
-                start_timestamp_inclusive: None,
-                end_timestamp_exclusive: None,
+                proposer_timestamp_range: None,
             },
         )
     }

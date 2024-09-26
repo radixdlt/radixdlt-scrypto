@@ -229,7 +229,7 @@ macro_rules! define_raw_transaction_payload {
         #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Sbor)]
         #[sbor(transparent)]
         $(#[$docs])*
-        pub struct $name(pub Vec<u8>);
+        pub struct $name(Vec<u8>);
 
         impl AsRef<[u8]> for $name {
             fn as_ref(&self) -> &[u8] {
@@ -251,6 +251,36 @@ macro_rules! define_raw_transaction_payload {
 
         impl RawTransactionPayload for $name {
             const KIND: TransactionPayloadKind = $kind;
+        }
+
+        impl $name {
+            pub fn as_slice(&self) -> &[u8] {
+                self.0.as_slice()
+            }
+
+            pub fn len(&self) -> usize {
+                self.as_slice().len()
+            }
+
+            pub fn to_vec(self) -> Vec<u8> {
+                self.0
+            }
+
+            pub fn from_vec(vec: Vec<u8>) -> Self {
+                Self(vec)
+            }
+
+            pub fn from_slice(slice: impl AsRef<[u8]>) -> Self {
+                Self(slice.as_ref().into())
+            }
+
+            pub fn to_hex(&self) -> String {
+                hex::encode(self.as_slice())
+            }
+
+            pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, hex::FromHexError> {
+                Ok(Self(hex::decode(hex)?))
+            }
         }
     };
 }

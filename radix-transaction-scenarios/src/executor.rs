@@ -11,7 +11,7 @@ use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
-use scenarios::ALL_SCENARIOS;
+use scenarios::all_scenarios_iter;
 
 #[derive(Clone, Debug)]
 pub enum ScenarioTrigger {
@@ -147,15 +147,21 @@ where
         modules: &impl VmInitialize,
     ) -> Result<(), ScenarioExecutorError> {
         let protocol_executor = protocol(ProtocolBuilder::for_network(&self.network_definition));
-        let last_version = protocol_executor.each_target_protocol_version().last();
+        let last_version = protocol_executor
+            .each_target_protocol_version(&self.database)
+            .last()
+            .map(|(version, _)| version);
 
-        for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
+        for protocol_update_executor in
+            protocol_executor.each_protocol_update_executor(&self.database)
+        {
             let new_protocol_version = protocol_update_executor.protocol_version;
             protocol_update_executor.run_and_commit_advanced(
                 &mut self.database,
                 protocol_update_hooks,
                 modules,
             );
+
             // Update the validator in case the settings have changed due to the protocol update
             self.validator = TransactionValidator::new(&self.database, &self.network_definition);
 
@@ -191,7 +197,7 @@ where
             return Ok(());
         }
 
-        let matching_scenarios = ALL_SCENARIOS.iter().filter(|(logical_name, creator)| {
+        let matching_scenarios = all_scenarios_iter().filter(|creator| {
             let metadata = creator.metadata();
             let is_valid = at_version >= metadata.protocol_min_requirement;
             if !is_valid {
@@ -199,7 +205,7 @@ where
             }
             match filter {
                 ScenarioFilter::SpecificScenariosByName(scenario_names) => {
-                    scenario_names.contains(&**logical_name)
+                    scenario_names.contains(metadata.logical_name)
                 }
                 ScenarioFilter::AllScenariosValidAtProtocolVersion => true,
                 ScenarioFilter::AllScenariosFirstValidAtProtocolVersion => {
@@ -208,13 +214,8 @@ where
             }
         });
 
-        for (_, scenario_creator) in matching_scenarios {
-            self.execute_scenario(
-                scenario_creator.as_ref(),
-                scenario_hooks,
-                modules,
-                at_version,
-            )?;
+        for scenario_creator in matching_scenarios {
+            self.execute_scenario(scenario_creator, scenario_hooks, modules, at_version)?;
         }
 
         Ok(())
@@ -317,7 +318,7 @@ where
             &self.database,
             modules,
             execution_config,
-            validated.get_executable(),
+            validated.create_executable(),
         );
 
         if let TransactionResult::Commit(commit) = &receipt.result {

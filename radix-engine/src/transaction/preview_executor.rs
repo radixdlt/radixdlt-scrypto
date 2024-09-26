@@ -19,9 +19,7 @@ pub fn execute_preview(
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
 ) -> Result<TransactionReceipt, PreviewError> {
-    let validation_config = ValidationConfig::babylon(network.id);
-
-    let validator = TransactionValidator::new_with_static_config(validation_config);
+    let validator = TransactionValidator::new(substate_db, network);
 
     let mut execution_config = if preview_intent.flags.disable_auth {
         ExecutionConfig::for_preview_no_auth(network.clone())

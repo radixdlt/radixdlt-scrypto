@@ -52,8 +52,7 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
         ManifestBuilder::new_subintent_v2()
             .withdraw_from_account(account2, XRD, dec!(10))
             .deposit_entire_worktop(account2)
-            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-            //.yield_to_parent(())
+            .yield_to_parent(())
             .build(),
         [public_key2.signature_proof()],
     );

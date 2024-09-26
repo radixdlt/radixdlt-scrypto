@@ -122,7 +122,18 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
                     Yield::ToChild(child) => ResumeResult::YieldToChild(child),
-                    Yield::ToParent => ResumeResult::YieldToParent,
+                    Yield::ToParent => {
+                        // TODO: The below is a David workaround to get tests to pass.
+                        // We should fix this better to have a separate processor for main
+                        // intent and subintents and require subintents to end with a yield to parent.
+                        // They can then return a ResumeResult::DoneYieldToParent or something.
+                        if self.instructions.is_empty() {
+                            // Drop worktop and return ResumeResult::Done
+                            break;
+                        } else {
+                            ResumeResult::YieldToParent
+                        }
+                    }
                 };
                 return Ok(result);
             }

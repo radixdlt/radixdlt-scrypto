@@ -99,8 +99,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         raw_transaction.as_slice().len()
     );
 
-    let validator =
-        TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
+    let validator = TransactionValidator::new_for_latest_simulator();
 
     c.bench_function("transaction_validation::validate_manifest", |b| {
         b.iter(|| black_box(raw_transaction.validate(&validator).unwrap()))

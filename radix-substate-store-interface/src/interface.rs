@@ -651,7 +651,7 @@ pub trait CommittableSubstateDatabase {
 impl<T: CommittableSubstateDatabase + ?Sized> CommittableSubstateDatabaseExtensions for T {}
 
 pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
-    fn update_substate<'a>(
+    fn update_substate_raw<'a>(
         &mut self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
@@ -690,7 +690,7 @@ pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
         )))
     }
 
-    fn update_substate_typed<'a, E: ScryptoEncode>(
+    fn update_substate<'a, E: ScryptoEncode>(
         &mut self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
@@ -704,7 +704,7 @@ pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
                 err,
             )
         });
-        self.update_substate(node_id, partition_number, substate_key, encoded_value)
+        self.update_substate_raw(node_id, partition_number, substate_key, encoded_value)
     }
 }
 

@@ -5,7 +5,6 @@ use radix_engine::transaction::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 use radix_engine_tests::common::*;
-use radix_transactions::validation::*;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -118,7 +117,7 @@ fn test_non_existent_blob_hash() {
                 package_address: None,
             },
         )
-        .build();
+        .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -219,8 +218,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
             num_of_signature_validations: 0,
             costing_parameters: Default::default(),
             disable_limits_and_costing_modules: false,
-            start_timestamp_inclusive: None,
-            end_timestamp_exclusive: None,
+            proposer_timestamp_range: None,
         },
     );
 
@@ -247,19 +245,13 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(true);
 
-    let manifest = ManifestBuilder::new()
+    ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
         .take_from_worktop(XRD, 73, "XRD")
         .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
         .drop_all_proofs()
         .try_deposit_or_abort(account, None, "XRD")
-        .build();
-
-    // Act
-    let rtn = TransactionValidator::validate_instructions_v1(&manifest.instructions);
-
-    // Assert
-    rtn.expect("Validation of the manifest failed")
+        .build(); // This asserts the manifest is valid
 }
 
 #[test]
@@ -268,19 +260,13 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(true);
 
-    let manifest = ManifestBuilder::new()
+    ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 73)
         .take_from_worktop(XRD, 73, "XRD")
         .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
         .drop_named_proofs()
         .try_deposit_or_abort(account, None, "XRD")
-        .build();
-
-    // Act
-    let rtn = TransactionValidator::validate_instructions_v1(&manifest.instructions);
-
-    // Assert
-    rtn.expect("Validation of the manifest failed")
+        .build(); // This asserts the manifest is valid
 }
 
 #[test]
