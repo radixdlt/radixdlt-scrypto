@@ -19,10 +19,7 @@ fn consensus_manager_min_rounds_per_epoch_is_1_in_bottlenose_ledger_simulator() 
         .fully_update_and_into_latest_version();
 
     // Assert
-    assert_eq!(
-        dbg!(config).config.epoch_change_condition.min_round_count,
-        1
-    );
+    assert_eq!(config.config.epoch_change_condition.min_round_count, 1);
 }
 
 #[test]
