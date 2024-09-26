@@ -200,6 +200,13 @@ where
             self.database.commit(&database_updates);
         }
 
+        // Getting the kernel boot to use for the kernel creation.
+        let kernel_boot = self.database.get_existing_substate::<KernelBoot>(
+            TRANSACTION_TRACKER,
+            BOOT_LOADER_PARTITION,
+            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY,
+        );
+
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
             self.database,
             scrypto_vm,
@@ -271,6 +278,7 @@ where
                     },
                     id_allocator,
                     system_config,
+                    kernel_boot.always_visible_global_nodes(),
                 )
             },
         ));

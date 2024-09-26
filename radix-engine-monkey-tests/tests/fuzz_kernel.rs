@@ -471,7 +471,12 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(
+        &mut track,
+        &mut id_allocator,
+        &mut callback,
+        &ALWAYS_VISIBLE_GLOBAL_NODES_V2,
+    );
 
     let mut fuzzer = KernelFuzzer::new(seed);
 

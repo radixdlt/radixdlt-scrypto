@@ -34,6 +34,7 @@ pub type KernelBootSubstate = KernelBoot;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
     V1,
+    V2(AlwaysVisibleGlobalNodesVersion),
 }
 
 impl KernelBoot {
@@ -50,6 +51,21 @@ impl KernelBoot {
 
     pub fn babylon() -> Self {
         Self::V1
+    }
+
+    pub fn cuttlefish() -> Self {
+        Self::V2(AlwaysVisibleGlobalNodesVersion::V2)
+    }
+
+    pub fn always_visible_global_nodes_version(&self) -> AlwaysVisibleGlobalNodesVersion {
+        match self {
+            KernelBoot::V1 => AlwaysVisibleGlobalNodesVersion::V1,
+            KernelBoot::V2(version) => *version,
+        }
+    }
+
+    pub fn always_visible_global_nodes(&self) -> &'static IndexSet<NodeId> {
+        always_visible_global_nodes(self.always_visible_global_nodes_version())
     }
 }
 
@@ -124,11 +140,13 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
             v.borrow_mut();
         });
 
-        // Unused for now
-        let _ = kernel_boot;
-
         // Upper Layer Initialization
-        let system_init_result = E::init(&mut self.track, &executable, callback_init);
+        let system_init_result = E::init(
+            &mut self.track,
+            &executable,
+            callback_init,
+            kernel_boot.always_visible_global_nodes(),
+        );
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
@@ -314,6 +332,7 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Self {
         Self::new(
             store,
@@ -323,6 +342,7 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
+                always_visible_global_nodes,
             }],
         )
     }
@@ -1237,12 +1257,14 @@ where
         substate_io: SubstateIO<'g, S>,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Kernel<'g, M, S> {
         Self {
             stacks: KernelStacks::new(vec![CallFrameInit {
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
+                always_visible_global_nodes,
             }]),
             substate_io,
             id_allocator,

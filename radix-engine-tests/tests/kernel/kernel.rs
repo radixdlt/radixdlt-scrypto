@@ -214,7 +214,12 @@ fn kernel_move_node_via_create_with_opened_substate(
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(
+        &mut track,
+        &mut id_allocator,
+        &mut callback,
+        &ALWAYS_VISIBLE_GLOBAL_NODES_V2,
+    );
 
     let child_id = {
         let child_id = kernel
@@ -351,7 +356,12 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(
+        &mut track,
+        &mut id_allocator,
+        &mut callback,
+        &ALWAYS_VISIBLE_GLOBAL_NODES_V2,
+    );
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

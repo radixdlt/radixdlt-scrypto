@@ -71,8 +71,14 @@ impl<
         store: &mut impl CommitableSubstateStore,
         executable: &ExecutableTransaction,
         init_input: Self::Init,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt> {
-        let (mut system, call_frame_inits) = E::init(store, executable, init_input.system_input)?;
+        let (mut system, call_frame_inits) = E::init(
+            store,
+            executable,
+            init_input.system_input,
+            always_visible_global_nodes,
+        )?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules_mut().costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
