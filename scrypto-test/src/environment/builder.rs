@@ -201,11 +201,7 @@ where
         }
 
         // Getting the kernel boot to use for the kernel creation.
-        let kernel_boot = self.database.get_existing_substate::<KernelBoot>(
-            TRANSACTION_TRACKER,
-            BOOT_LOADER_PARTITION,
-            BootLoaderField::KernelBoot,
-        );
+        let kernel_boot = KernelBoot::load(&self.database);
 
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
             self.database,
