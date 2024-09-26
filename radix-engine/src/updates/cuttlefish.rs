@@ -1,6 +1,7 @@
 use radix_transactions::validation::*;
 
 use super::*;
+use crate::blueprints::consensus_manager::*;
 use crate::system::system_callback::*;
 
 #[derive(Clone)]
@@ -9,6 +10,8 @@ pub struct CuttlefishSettings {
     pub system_logic_update: UpdateSetting<NoSettings>,
     /// Add transaction validation changes
     pub transaction_validation_update: UpdateSetting<NoSettings>,
+    /// Lowers the min number of rounds per epoch.
+    pub lower_number_of_min_rounds_per_epoch: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -22,6 +25,9 @@ impl UpdateSettings for CuttlefishSettings {
         Self {
             system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
+            lower_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
+                network,
+            ),
         }
     }
 
@@ -29,6 +35,7 @@ impl UpdateSettings for CuttlefishSettings {
         Self {
             system_logic_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
+            lower_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
         }
     }
 
@@ -80,6 +87,7 @@ fn generate_principal_batch(
     CuttlefishSettings {
         system_logic_update,
         transaction_validation_update,
+        lower_number_of_min_rounds_per_epoch,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
@@ -93,6 +101,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-transaction-validation-updates",
             generate_cuttlefish_transaction_validation_updates(),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &lower_number_of_min_rounds_per_epoch {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-lower-number-of-min-rounds-per-epoch",
+            generate_cuttlefish_lower_min_rounds_per_epoch(store),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -128,5 +142,30 @@ fn generate_cuttlefish_transaction_validation_updates() -> StateUpdates {
                 TransactionValidationConfigV1::cuttlefish(),
             ),
         ),
+    )
+}
+
+fn generate_cuttlefish_lower_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
+    db: &S,
+) -> StateUpdates {
+    let mut consensus_manager_config = db
+        .get_existing_substate::<FieldSubstate<VersionedConsensusManagerConfiguration>>(
+            CONSENSUS_MANAGER,
+            MAIN_BASE_PARTITION,
+            ConsensusManagerField::Configuration,
+        )
+        .into_payload()
+        .fully_update_and_into_latest_version();
+
+    consensus_manager_config
+        .config
+        .epoch_change_condition
+        .min_round_count = 100;
+
+    StateUpdates::empty().set_substate(
+        CONSENSUS_MANAGER,
+        MAIN_BASE_PARTITION,
+        ConsensusManagerField::Configuration,
+        consensus_manager_config.into_locked_substate(),
     )
 }
