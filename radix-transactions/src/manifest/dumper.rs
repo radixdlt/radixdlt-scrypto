@@ -39,7 +39,7 @@ where
         std::fs::write(blob_path, blob_content)?;
     }
 
-    manifest.validate()?;
+    manifest.validate(ValidationRuleset::all())?;
 
     Ok(())
 }
@@ -49,7 +49,7 @@ pub enum DumpManifestError {
     PathPointsToAFile(PathBuf),
     IoError(std::io::Error),
     DecompileError(DecompileError),
-    TransactionValidationError(TransactionValidationError),
+    ManifestValidationError(ManifestValidationError),
 }
 
 impl From<std::io::Error> for DumpManifestError {
@@ -64,8 +64,8 @@ impl From<DecompileError> for DumpManifestError {
     }
 }
 
-impl From<TransactionValidationError> for DumpManifestError {
-    fn from(value: TransactionValidationError) -> Self {
-        Self::TransactionValidationError(value)
+impl From<ManifestValidationError> for DumpManifestError {
+    fn from(value: ManifestValidationError) -> Self {
+        Self::ManifestValidationError(value)
     }
 }

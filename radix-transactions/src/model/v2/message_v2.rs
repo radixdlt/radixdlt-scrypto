@@ -42,7 +42,7 @@ pub struct EncryptedMessageV2 {
     pub encrypted: AesGcmPayload,
     // Note we use a collection here rather than a struct to be forward-compatible to adding more curve types.
     // The engine should validate each DecryptorsByCurve matches the CurveType.
-    pub decryptors_by_curve: IndexMap<CurveType, DecryptorsByCurve>,
+    pub decryptors_by_curve: IndexMap<CurveType, DecryptorsByCurveV2>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]

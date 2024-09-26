@@ -271,10 +271,13 @@ impl TransactionTrackerBlueprint {
 
 #[cfg(test)]
 mod tests {
+    use radix_transactions::validation::ValidationConfig;
+
     use super::*;
 
     #[test]
     fn calculate_coverage() {
+        let max_epoch_range = ValidationConfig::latest().max_epoch_range;
         let covered_epochs = (EPOCHS_PER_PARTITION as f64
             * (PARTITION_RANGE_END as f64 - (PARTITION_RANGE_START as f64 - 1.0) - 1.0))
             .floor() as u64;
@@ -282,7 +285,7 @@ mod tests {
             * 5 // Targeted epoch duration: 5 mins
             / 60
             / 24;
-        assert!(covered_epochs >= MAX_EPOCH_RANGE);
+        assert!(covered_epochs >= max_epoch_range);
         assert_eq!(covered_days, 65);
     }
 

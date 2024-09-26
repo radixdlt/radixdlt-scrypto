@@ -19,12 +19,16 @@ pub struct SubintentManifestV2 {
 impl ReadableManifest for SubintentManifestV2 {
     type Instruction = InstructionV2;
 
+    fn is_subintent(&self) -> bool {
+        true
+    }
+
     fn get_instructions(&self) -> &[Self::Instruction] {
         &self.instructions
     }
 
-    fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+        self.blobs.iter()
     }
 
     fn get_child_subintents(&self) -> &[ChildSubintent] {
@@ -34,19 +38,11 @@ impl ReadableManifest for SubintentManifestV2 {
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
     }
-
-    fn validate(&self) -> Result<(), TransactionValidationError> {
-        temporary_noop_validate();
-        Ok(())
-    }
 }
 
 impl BuildableManifestWithParent for SubintentManifestV2 {}
 
 impl BuildableManifestSupportingChildren for SubintentManifestV2 {}
-
-#[deprecated]
-fn temporary_noop_validate() {}
 
 impl BuildableManifest for SubintentManifestV2 {
     fn add_instruction(&mut self, instruction: Self::Instruction) {
@@ -97,6 +93,19 @@ impl SubintentManifestV2 {
             ChildIntentsV2 {
                 children: self.children,
             },
+        )
+    }
+
+    pub fn for_intent_with_names(
+        self,
+    ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
+        (
+            InstructionsV2(Rc::new(self.instructions)),
+            self.blobs.into(),
+            ChildIntentsV2 {
+                children: self.children,
+            },
+            self.object_names,
         )
     }
 }

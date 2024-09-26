@@ -33,7 +33,7 @@ pub struct EpochRange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProposerTimestampRange {
     pub start_timestamp_inclusive: Option<Instant>,
-    pub end_timestamp_inclusive: Option<Instant>,
+    pub end_timestamp_exclusive: Option<Instant>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -90,7 +90,7 @@ impl IntentHashNullification {
                 Some(IntentHash::Transaction(*intent_hash))
             }
             IntentHashNullification::Subintent { intent_hash, .. } => {
-                Some(IntentHash::Sub(*intent_hash))
+                Some(IntentHash::Subintent(*intent_hash))
             }
         }
     }

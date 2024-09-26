@@ -58,6 +58,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
+        #[allow(unused_variables, deprecated)]
         ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
@@ -110,9 +111,8 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_from_manifest_v1(
-                    "access-controller-v2-lock-fee-and-recover",
-                    ManifestBuilder::new()
+                core.v1_transaction("access-controller-v2-lock-fee-and-recover")
+                    .manifest(ManifestBuilder::new_v1()
                         .call_method(
                             state.access_controller_component_address.unwrap(),
                             ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT,
@@ -134,12 +134,11 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                                 timed_recovery_delay_in_minutes: None,
                             },
                         )
-                        .build(),
-                    vec![
-                        &config.primary_role_private_key,
-                        &config.recovery_role_private_key,
-                    ],
-                )
+                        .build()
+                    )
+                    .sign(&config.primary_role_private_key)
+                    .sign(&config.recovery_role_private_key)
+                    .complete(core)
             })
             .finalize(|_, _, state| {
                 Ok(ScenarioOutput {

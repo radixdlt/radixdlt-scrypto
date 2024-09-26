@@ -60,8 +60,9 @@ pub trait BuildableManifestWithParent: BuildableManifest {}
 
 pub trait ReadableManifest {
     type Instruction: ManifestInstructionSet;
+    fn is_subintent(&self) -> bool;
     fn get_instructions(&self) -> &[Self::Instruction];
-    fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>>;
+    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)>;
     fn get_preallocated_addresses(&self) -> &[PreAllocatedAddress] {
         &NO_PREALLOCATED_ADDRESSES
     }
@@ -70,7 +71,9 @@ pub trait ReadableManifest {
     }
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef;
 
-    fn validate(&self) -> Result<(), TransactionValidationError>;
+    fn validate(&self, ruleset: ValidationRuleset) -> Result<(), ManifestValidationError> {
+        StaticManifestInterpreter::new(ruleset, self).validate()
+    }
 }
 
 static NO_PREALLOCATED_ADDRESSES: [PreAllocatedAddress; 0] = [];

@@ -54,7 +54,7 @@ impl TestTransactionV2Builder {
         child_intents: ChildIntentsV2,
         proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
     ) -> TestIntentV2 {
-        let children_intent_indices = child_intents
+        let children_subintent_indices = child_intents
             .children
             .into_iter()
             .map(|child| {
@@ -62,8 +62,7 @@ impl TestTransactionV2Builder {
                     .subintents
                     .get_index_of(&child.hash)
                     .expect("Child subintents should exist already in the Test Transaction");
-                let thread_index = subintent_index + 1;
-                thread_index
+                SubintentIndex(subintent_index)
             })
             .collect();
         let nonce = self.nonce;
@@ -76,7 +75,7 @@ impl TestTransactionV2Builder {
             blobs,
             hash,
             initial_proofs: proofs.into_iter().collect(),
-            children_intent_indices,
+            children_subintent_indices,
         }
     }
 }
@@ -95,13 +94,16 @@ pub struct TestIntentV2 {
     pub blobs: BlobsV1,
     pub hash: Hash,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    pub children_intent_indices: Vec<usize>,
+    pub children_subintent_indices: Vec<SubintentIndex>,
 }
 
 #[derive(ManifestSbor)]
 pub enum PreparedTestTransaction {
     V1(PreparedTestIntent),
-    V2(Vec<PreparedTestIntent>),
+    V2 {
+        root_intent: PreparedTestIntent,
+        subintents: Vec<PreparedTestIntent>,
+    },
 }
 
 #[derive(ManifestSbor)]
@@ -110,7 +112,7 @@ pub struct PreparedTestIntent {
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub hash: Hash,
-    pub children_intent_indices: Vec<usize>,
+    pub children_subintent_indices: Vec<SubintentIndex>,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
@@ -126,7 +128,7 @@ impl PreparedTestIntent {
             references: prepared_instructions.references,
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
-            children_intent_indices: vec![],
+            children_subintent_indices: vec![],
             initial_proofs: intent.initial_proofs,
         })
     }
@@ -138,12 +140,24 @@ impl PreparedTestIntent {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
-            references: prepared_instructions.references.as_ref().clone(),
+            references: prepared_instructions.references,
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
-            children_intent_indices: intent.children_intent_indices,
+            children_subintent_indices: intent.children_subintent_indices,
             initial_proofs: intent.initial_proofs,
         })
+    }
+
+    pub fn get_executable(&self) -> ExecutableIntent {
+        let auth_zone_init = AuthZoneInit::proofs(self.initial_proofs.clone());
+
+        ExecutableIntent {
+            encoded_instructions: self.encoded_instructions.clone(),
+            auth_zone_init,
+            references: self.references.clone(),
+            blobs: self.blobs.clone(),
+            children_subintent_indices: self.children_subintent_indices.clone(),
+        }
     }
 }
 
@@ -215,14 +229,13 @@ impl TestTransaction {
             Self::V2 {
                 root_intent,
                 subintents,
-            } => {
-                let mut prepared = vec![PreparedTestIntent::from_v2(root_intent, settings)?];
-                for intent in subintents {
-                    prepared.push(PreparedTestIntent::from_v2(intent, settings)?);
-                }
-
-                Ok(PreparedTestTransaction::V2(prepared))
-            }
+            } => Ok(PreparedTestTransaction::V2 {
+                root_intent: PreparedTestIntent::from_v2(root_intent, settings)?,
+                subintents: subintents
+                    .into_iter()
+                    .map(|intent| PreparedTestIntent::from_v2(intent, settings))
+                    .collect::<Result<_, _>>()?,
+            }),
         }
     }
 }
@@ -265,26 +278,31 @@ impl PreparedTestTransaction {
                         },
                         pre_allocated_addresses: vec![],
                         disable_limits_and_costing_modules: false,
-                        start_timestamp_inclusive: None,
-                        end_timestamp_exclusive: None,
+                        proposer_timestamp_range: None,
                     },
                 )
             }
-            PreparedTestTransaction::V2(intents) => {
-                let payload_size = intents
+            PreparedTestTransaction::V2 {
+                root_intent,
+                subintents,
+            } => {
+                let all_intents = core::iter::once(root_intent)
+                    .chain(subintents.iter())
+                    .collect::<Vec<_>>();
+                let payload_size = all_intents
                     .iter()
                     .map(|intent| {
                         intent.encoded_instructions.len()
                             + intent.blobs.values().map(|x| x.len()).sum::<usize>()
                     })
                     .sum();
-                let num_of_signature_validations = intents
+                let num_of_signature_validations = all_intents
                     .iter()
                     .map(|intent| intent.initial_proofs.len())
                     .sum();
 
                 let context = ExecutionContext {
-                    unique_hash: intents.get(0).unwrap().hash,
+                    unique_hash: root_intent.hash,
                     intent_hash_nullifications: vec![],
                     epoch_range: None,
                     payload_size,
@@ -297,25 +315,17 @@ impl PreparedTestTransaction {
                     },
                     pre_allocated_addresses: vec![],
                     disable_limits_and_costing_modules: false,
-                    start_timestamp_inclusive: None,
-                    end_timestamp_exclusive: None,
+                    proposer_timestamp_range: None,
                 };
-                let intents = intents
-                    .iter()
-                    .map(|intent| {
-                        let auth_zone_init = AuthZoneInit::proofs(intent.initial_proofs.clone());
 
-                        ExecutableIntent {
-                            encoded_instructions: intent.encoded_instructions.clone(),
-                            auth_zone_init,
-                            references: intent.references.clone(),
-                            blobs: intent.blobs.clone(),
-                            children_intent_indices: intent.children_intent_indices.clone(),
-                        }
-                    })
-                    .collect();
-
-                ExecutableTransaction::new_v2(intents, context)
+                ExecutableTransaction::new_v2(
+                    root_intent.get_executable(),
+                    subintents
+                        .iter()
+                        .map(|intent| intent.get_executable())
+                        .collect(),
+                    context,
+                )
             }
         }
     }

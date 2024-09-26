@@ -429,10 +429,10 @@ fn run_mint_nfts_from_manifest(
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        let max_size = ValidationConfig::latest_simulator()
+        let max_size = ValidationConfig::latest()
             .preparation_settings
             .max_user_payload_length;
-        if raw_transaction.0.len() > max_size {
+        if raw_transaction.as_slice().len() > max_size {
             high = mid - 1;
         } else {
             let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -452,10 +452,7 @@ fn run_mint_nfts_from_manifest(
         last_fail_receipt.unwrap().1.expect_commit_success();
         unreachable!()
     });
-    println!(
-        "Transaction payload size: {} bytes",
-        raw_transaction.0.len()
-    );
+    println!("Transaction payload size: {} bytes", raw_transaction.len());
     println!(
         "Average NFT size: {} bytes",
         scrypto_encode(&nft_data).unwrap().len()

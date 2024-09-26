@@ -168,11 +168,10 @@ impl SystemVersion {
             SystemVersion::V1 => {
                 // This isn't exactly a necessary check as node logic should protect against this
                 // but keep it here for sanity
-                let intent = if executable.intents().len() != 1 {
-                    return Err(RejectionReason::TransactionNotYetSupported);
-                } else {
-                    executable.intents().get(0).unwrap()
-                };
+                if executable.subintents().len() > 0 {
+                    return Err(RejectionReason::SubintentsNotYetSupported);
+                }
+                let intent = executable.transaction_intent();
                 AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
             }
             SystemVersion::V2 => AuthModule::new(),
@@ -190,10 +189,7 @@ impl SystemVersion {
         let output = match self {
             SystemVersion::V1 => {
                 let mut system_service = SystemService::new(api);
-                let intent = executable
-                    .intents()
-                    .get(0)
-                    .expect("This should have been checked in init");
+                let intent = executable.transaction_intent();
                 let rtn = system_service.call_function(
                     TRANSACTION_PROCESSOR_PACKAGE,
                     TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -1115,8 +1111,8 @@ impl<V: SystemCallbackObject> System<V> {
     }
 
     /// Checks that references exist in the store
-    fn build_call_frame_inits_with_reference_check(
-        intents: &Vec<ExecutableIntent>,
+    fn build_call_frame_inits_with_reference_check<'a>(
+        intents: impl Iterator<Item = &'a ExecutableIntent>,
         modules: &mut SystemModuleMixer,
         store: &mut impl CommitableSubstateStore,
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
@@ -1575,7 +1571,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         }
 
         let call_frame_inits = match Self::build_call_frame_inits_with_reference_check(
-            executable.intents(),
+            executable.all_intents(),
             &mut modules,
             store,
         ) {

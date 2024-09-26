@@ -547,7 +547,7 @@ fn test_pass_named_global_addresses() {
                 )
             },
         )
-        .build();
+        .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
