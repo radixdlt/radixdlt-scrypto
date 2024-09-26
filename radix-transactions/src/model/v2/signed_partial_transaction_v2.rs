@@ -6,20 +6,39 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-/// This isn't actually included in any submitted transaction, but it's useful to
-/// have a canonical encoding of a full subintent tree with its associated signatures,
-/// to enable passing around transaction parts.
+/// An analogue of a [`SignedTransactionIntentV2`], except with a subintent at the root.
+///
+/// This is intended to represent a fully signed, incomplete sub-tree of the transaction,
+/// and be a canonical model for building, storing and transferring this signed subtree.
+///
+/// It contains an unsigned [`PartialTransactionV2`], and signatures for the root subintent,
+/// and each non-root subintent.
+///
+/// It can be prepared and validated using [`self.prepare_and_validate(validator)`][Self::prepare_and_validate],
+/// just like a [`NotarizedTransactionV2`]. Its validated form is a [`ValidatedSignedPartialTransactionV2`].
+///
+/// It can be built with a [`PartialTransactionV2Builder`].
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SignedPartialTransactionV2 {
     pub partial_transaction: PartialTransactionV2,
-    pub root_intent_signatures: IntentSignaturesV2,
-    pub subintent_signatures: MultipleIntentSignaturesV2,
+    pub root_subintent_signatures: IntentSignaturesV2,
+    pub non_root_subintent_signatures: NonRootSubintentSignaturesV2,
+}
+
+impl SignedPartialTransactionV2 {
+    pub fn prepare_and_validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedSignedPartialTransactionV2, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
+    }
 }
 
 impl From<SignedPartialTransactionV2> for (SignedPartialTransactionV2, TransactionObjectNames) {
     fn from(value: SignedPartialTransactionV2) -> Self {
         let object_names = TransactionObjectNames::unknown_with_subintent_count(
-            value.subintent_signatures.by_subintent.len(),
+            value.non_root_subintent_signatures.by_subintent.len(),
         );
         (value, object_names)
     }
@@ -29,15 +48,24 @@ define_transaction_payload!(
     SignedPartialTransactionV2,
     RawSignedPartialTransaction,
     PreparedSignedPartialTransactionV2 {
-        root_intent: PreparedPartialTransactionV2,
-        root_intent_signatures: PreparedIntentSignaturesV2,
-        subintent_signatures: PreparedMultipleIntentSignaturesV2,
+        partial_transaction: PreparedPartialTransactionV2,
+        root_subintent_signatures: PreparedIntentSignaturesV2,
+        non_root_subintent_signatures: PreparedNonRootSubintentSignaturesV2,
     },
     TransactionDiscriminator::V2SignedPartialTransaction,
 );
 
 impl HasSubintentHash for PreparedSignedPartialTransactionV2 {
     fn subintent_hash(&self) -> SubintentHash {
-        self.root_intent.subintent_hash()
+        self.partial_transaction.subintent_hash()
+    }
+}
+
+impl PreparedSignedPartialTransactionV2 {
+    pub fn validate(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedSignedPartialTransactionV2, TransactionValidationError> {
+        validator.validate_signed_partial_transaction_v2(self)
     }
 }

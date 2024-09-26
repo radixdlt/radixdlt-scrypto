@@ -99,6 +99,13 @@ impl From<SubintentHash> for IntentHash {
 }
 
 impl IntentHash {
+    pub fn is_for_subintent(&self) -> bool {
+        match self {
+            IntentHash::Transaction(_) => false,
+            IntentHash::Subintent(_) => true,
+        }
+    }
+
     pub fn as_hash(&self) -> &Hash {
         match self {
             IntentHash::Transaction(hash) => hash.as_hash(),

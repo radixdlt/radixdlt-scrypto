@@ -3,11 +3,31 @@ use crate::internal_prelude::*;
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ValidatedNotarizedTransactionV2 {
     pub prepared: PreparedNotarizedTransactionV2,
-    pub overall_epoch_range: EpochRange,
-    pub overall_start_timestamp_inclusive: Option<Instant>,
-    pub overall_end_timestamp_exclusive: Option<Instant>,
+    pub overall_validity_range: OverallValidityRangeV2,
     pub transaction_intent_info: ValidatedIntentInformationV2,
-    pub subintents_info: Vec<ValidatedIntentInformationV2>,
+    pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct ValidatedSignedPartialTransactionV2 {
+    pub prepared: PreparedSignedPartialTransactionV2,
+    pub overall_validity_range: OverallValidityRangeV2,
+    pub root_subintent_info: ValidatedIntentInformationV2,
+    pub root_subintent_yield_to_parent_count: usize,
+    pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
+}
+
+pub struct ValidatedPartialTransactionTreeV2 {
+    pub overall_validity_range: OverallValidityRangeV2,
+    pub root_intent_info: ValidatedIntentInformationV2,
+    pub root_yield_to_parent_count: usize,
+    pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct OverallValidityRangeV2 {
+    pub epoch_range: EpochRange,
+    pub proposer_timestamp_range: ProposerTimestampRange,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -60,13 +80,14 @@ impl IntoExecutable for ValidatedNotarizedTransactionV2 {
 
 impl ValidatedNotarizedTransactionV2 {
     pub fn create_executable(self) -> ExecutableTransaction {
-        let transaction_intent = self.prepared.signed_intent.root_intent;
+        let transaction_intent = self.prepared.signed_intent.transaction_intent;
         let transaction_intent_hash = transaction_intent.transaction_intent_hash();
-        let transaction_header = transaction_intent.root_header.inner;
+        let transaction_header = transaction_intent.transaction_header.inner;
         let summary = self.prepared.summary;
-        let subintents = transaction_intent.subintents.subintents;
+        let subintents = transaction_intent.non_root_subintents.subintents;
 
-        let mut intent_hash_nullifications = Vec::with_capacity(self.subintents_info.len() + 1);
+        let mut intent_hash_nullifications =
+            Vec::with_capacity(self.non_root_subintents_info.len() + 1);
         intent_hash_nullifications.push(
             IntentHash::from(transaction_intent_hash).to_nullification(
                 transaction_intent
@@ -89,7 +110,7 @@ impl ValidatedNotarizedTransactionV2 {
         );
         let executable_subintents = subintents
             .into_iter()
-            .zip(self.subintents_info.into_iter())
+            .zip(self.non_root_subintents_info.into_iter())
             .map(|(subintent, info)| create_executable_intent(subintent.intent_core, info))
             .collect();
 
@@ -108,9 +129,10 @@ impl ValidatedNotarizedTransactionV2 {
                 },
                 pre_allocated_addresses: vec![],
                 disable_limits_and_costing_modules: false,
-                epoch_range: Some(self.overall_epoch_range.clone()),
-                start_timestamp_inclusive: self.overall_start_timestamp_inclusive,
-                end_timestamp_exclusive: self.overall_end_timestamp_exclusive,
+                epoch_range: Some(self.overall_validity_range.epoch_range.clone()),
+                proposer_timestamp_range: Some(
+                    self.overall_validity_range.proposer_timestamp_range.clone(),
+                ),
             },
         )
     }

@@ -226,8 +226,7 @@ Enum<3u8>(
                         abort_when_loan_repaid: false,
                     },
                     disable_limits_and_costing_modules: false,
-                    start_timestamp_inclusive: None,
-                    end_timestamp_exclusive: None,
+                    proposer_timestamp_range: None,
                 },
             )
         );
@@ -235,7 +234,7 @@ Enum<3u8>(
         // Test unexpected transaction type
         let mut amended_payload = payload.to_vec();
         amended_payload[2] = 4;
-        let amended_raw = RawNotarizedTransaction(amended_payload);
+        let amended_raw = RawNotarizedTransaction::from_vec(amended_payload);
         let validated = amended_raw.validate(&validator);
         assert_eq!(
             validated,

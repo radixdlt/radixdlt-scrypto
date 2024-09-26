@@ -236,7 +236,7 @@ mod test {
 
             self.transactions_folder.put_file(
                 format!("{transaction_file_prefix}.bin"),
-                &transaction.raw_transaction.0,
+                transaction.raw_transaction.as_slice(),
             );
 
             // Check transaction manifest

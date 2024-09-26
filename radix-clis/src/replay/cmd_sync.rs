@@ -185,7 +185,7 @@ impl CommittedTxnReader {
                             .0;
 
                         tx.send((
-                            RawLedgerTransaction(next_txn.1.to_vec()),
+                            RawLedgerTransaction::from_slice(next_txn.1.to_vec()),
                             expected_state_root_hash,
                         ))
                         .unwrap();

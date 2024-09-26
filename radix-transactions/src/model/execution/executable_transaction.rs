@@ -80,8 +80,7 @@ pub struct ExecutionContext {
     pub num_of_signature_validations: usize,
     pub costing_parameters: TransactionCostingParameters,
     pub epoch_range: Option<EpochRange>,
-    pub start_timestamp_inclusive: Option<Instant>,
-    pub end_timestamp_exclusive: Option<Instant>,
+    pub proposer_timestamp_range: Option<ProposerTimestampRange>,
     pub disable_limits_and_costing_modules: bool,
     pub intent_hash_nullifications: Vec<IntentHashNullification>,
 }
@@ -203,12 +202,8 @@ impl ExecutableTransaction {
         self.context.epoch_range.as_ref()
     }
 
-    pub fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
-        self.context.start_timestamp_inclusive
-    }
-
-    pub fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
-        self.context.end_timestamp_exclusive
+    pub fn overall_proposer_timestamp_range(&self) -> Option<&ProposerTimestampRange> {
+        self.context.proposer_timestamp_range.as_ref()
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {

@@ -6,27 +6,42 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
+/// A [`SignedTransactionIntentV2`] is inner model for a [`NotarizedTransactionV2`].
+///
+/// It includes two parts:
+/// * The [`TransactionIntentV2`] which contains a representention of an intent tree
+/// with a root transaction intent, and other subintent descendents. These subintents are
+/// flattened into an array in the model.
+/// * It also includes intent signatures, some for this transaction intent, and separately,
+/// an array of signatures for each each flattened subintents.
+///
+/// ## Similar models
+///
+/// A [`SignedPartialTransactionV2`] is a similar structure for a fully signed partial subtree
+/// of a transaction, but with a subintent root. Whilst useful for constructing a
+/// transaction, it doesn't appear under a [`NotarizedTransactionV2`] because the subintents
+/// get flattened.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SignedTransactionIntentV2 {
-    pub root_intent: TransactionIntentV2,
-    pub root_intent_signatures: IntentSignaturesV2,
-    pub subintent_signatures: MultipleIntentSignaturesV2,
+    pub transaction_intent: TransactionIntentV2,
+    pub transaction_intent_signatures: IntentSignaturesV2,
+    pub non_root_subintent_signatures: NonRootSubintentSignaturesV2,
 }
 
 define_transaction_payload!(
     SignedTransactionIntentV2,
     RawSignedTransactionIntent,
     PreparedSignedTransactionIntentV2 {
-        root_intent: PreparedTransactionIntentV2,
-        root_intent_signatures: PreparedIntentSignaturesV2,
-        subintent_signatures: PreparedMultipleIntentSignaturesV2,
+        transaction_intent: PreparedTransactionIntentV2,
+        transaction_intent_signatures: PreparedIntentSignaturesV2,
+        non_root_subintent_signatures: PreparedNonRootSubintentSignaturesV2,
     },
     TransactionDiscriminator::V2SignedTransactionIntent,
 );
 
 impl HasTransactionIntentHash for PreparedSignedTransactionIntentV2 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {
-        self.root_intent.transaction_intent_hash()
+        self.transaction_intent.transaction_intent_hash()
     }
 }
 

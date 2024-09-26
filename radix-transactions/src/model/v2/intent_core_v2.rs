@@ -13,7 +13,7 @@ use crate::internal_prelude::*;
 pub struct IntentCoreV2 {
     pub header: IntentHeaderV2,
     pub blobs: BlobsV1,
-    pub message: MessageV2, // Increase size of the key
+    pub message: MessageV2,
     pub children: ChildIntentsV2,
     pub instructions: InstructionsV2,
 }

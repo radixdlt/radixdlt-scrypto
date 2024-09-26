@@ -157,8 +157,7 @@ impl PreparedSystemTransactionV1 {
                 },
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
                 disable_limits_and_costing_modules: true,
-                start_timestamp_inclusive: None,
-                end_timestamp_exclusive: None,
+                proposer_timestamp_range: None,
             },
         )
     }
