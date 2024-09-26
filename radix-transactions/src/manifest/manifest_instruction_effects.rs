@@ -36,6 +36,9 @@ pub enum ManifestInstructionEffect<'a> {
     WorktopAssertion {
         assertion: WorktopAssertion<'a>,
     },
+    Verification {
+        verification: VerificationKind,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -58,7 +61,11 @@ pub enum InvocationKind<'a> {
     YieldToChild {
         child_index: ManifestNamedIntent,
     },
-    VerifyParent,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum VerificationKind {
+    Parent,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

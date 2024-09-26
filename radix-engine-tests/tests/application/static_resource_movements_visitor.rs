@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_transactions::manifest::static_resource_movements_visitor::*;
+use radix_transactions::manifest::static_resource_movements::*;
 use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 
@@ -332,5 +332,6 @@ fn statically_analyze<M: ReadableManifest>(
     let interpreter = StaticManifestInterpreter::new(ValidationRuleset::v1(), manifest);
     let mut visitor = StaticResourceMovementsVisitor::new(true);
     interpreter.interpret_or_err(&mut visitor).expect("Error");
-    visitor.output()
+    let output = visitor.output();
+    (output.account_deposits(), output.account_withdraws())
 }

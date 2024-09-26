@@ -418,6 +418,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
             // implementing this edge case.
             ManifestInstructionEffect::Invocation { .. } => {}
             ManifestInstructionEffect::WorktopAssertion { .. } => {}
+            ManifestInstructionEffect::Verification { .. } => {}
         };
 
         (

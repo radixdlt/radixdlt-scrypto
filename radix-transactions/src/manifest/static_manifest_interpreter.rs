@@ -174,6 +174,9 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
             Effect::WorktopAssertion { assertion } => {
                 visitor.on_worktop_assertion(OnWorktopAssertion { assertion })?;
             }
+            Effect::Verification { verification } => {
+                visitor.on_verification(OnVerification { kind: verification })?;
+            }
         }
 
         visitor.on_end_instruction(OnEndInstruction { index, effect })
@@ -769,6 +772,10 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
+    fn on_verification<'a>(&mut self, details: OnVerification) -> ControlFlow<Self::Error<'a>> {
+        ControlFlow::Continue(())
+    }
 }
 
 pub struct OnStartInstruction<'a> {
@@ -846,4 +853,8 @@ pub struct OnPassBlob<'a> {
 
 pub struct OnWorktopAssertion<'a> {
     pub assertion: WorktopAssertion<'a>,
+}
+
+pub struct OnVerification {
+    pub kind: VerificationKind,
 }

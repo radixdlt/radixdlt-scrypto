@@ -1197,9 +1197,8 @@ impl ManifestInstruction for VerifyParent {
     }
 
     fn effect(&self) -> Effect {
-        Effect::Invocation {
-            kind: InvocationKind::VerifyParent,
-            args: &self.access_rule,
+        Effect::Verification {
+            verification: VerificationKind::Parent,
         }
     }
 }

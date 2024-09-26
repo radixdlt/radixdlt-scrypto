@@ -16,7 +16,7 @@ mod manifest_naming;
 mod manifest_traits;
 pub mod parser;
 mod static_manifest_interpreter;
-pub mod static_resource_movements_visitor;
+pub mod static_resource_movements;
 pub mod token;
 
 pub use any_manifest::*;

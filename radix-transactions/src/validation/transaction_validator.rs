@@ -217,6 +217,7 @@ impl TransactionValidator {
                     id_validator.new_named_address();
                 }
                 ManifestInstructionEffect::WorktopAssertion { .. } => {}
+                ManifestInstructionEffect::Verification { .. } => {}
             }
         }
 
