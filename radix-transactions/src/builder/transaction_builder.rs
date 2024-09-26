@@ -358,9 +358,7 @@ impl PartialTransactionV2Builder {
         self,
     ) -> (SignedPartialTransactionV2, TransactionObjectNames) {
         let (transaction, names) = self.build_with_names();
-        let validator = TransactionValidator::new_with_static_config_network_agnostic(
-            TransactionValidationConfig::latest(),
-        );
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built partial transaction should be valid. Use `build()` to skip validation if needed.");
         (transaction, names)
@@ -386,9 +384,7 @@ impl PartialTransactionV2Builder {
     /// You can use [`build()`][Self::build] to skip this validation.
     pub fn build_and_validate(self) -> SignedPartialTransactionV2 {
         let transaction = self.build();
-        let validator = TransactionValidator::new_with_static_config_network_agnostic(
-            TransactionValidationConfig::latest(),
-        );
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built partial transaction should be valid. Use `build()` to skip validation if needed.");
         transaction
@@ -678,9 +674,7 @@ impl TransactionV2Builder {
     /// You can use [`build_with_names_no_validate()`][Self::build_with_names_no_validate] to skip this validation.
     pub fn build_with_names(self) -> (NotarizedTransactionV2, TransactionObjectNames) {
         let (transaction, names) = self.build_with_names_no_validate();
-        let validator = TransactionValidator::new_with_static_config_network_agnostic(
-            TransactionValidationConfig::latest(),
-        );
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built transaction should be valid. Use `build_with_names_no_validate()` to skip validation if needed.");
         (transaction, names)
@@ -701,9 +695,7 @@ impl TransactionV2Builder {
     /// You can use [`build_no_validate()`][Self::build_no_validate] to skip this validation.
     pub fn build(self) -> NotarizedTransactionV2 {
         let transaction = self.build_no_validate();
-        let validator = TransactionValidator::new_with_static_config_network_agnostic(
-            TransactionValidationConfig::latest(),
-        );
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built transaction should be valid. Use `build_no_validate()` to skip validation if needed.");
         transaction

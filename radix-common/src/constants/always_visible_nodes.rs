@@ -16,7 +16,7 @@ pub use radix_common::constants::*;
 // - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
 //
 lazy_static! {
-    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES_V1: IndexSet<NodeId> = {
+    static ref ALWAYS_VISIBLE_GLOBAL_NODES_V1: IndexSet<NodeId> = {
         indexset!(
             // resource managers
             XRD.into(),
@@ -50,7 +50,7 @@ lazy_static! {
         )
     };
 
-    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES_V2: IndexSet<NodeId> = {
+    static ref ALWAYS_VISIBLE_GLOBAL_NODES_V2: IndexSet<NodeId> = {
         indexset!(
             // resource managers
             XRD.into(),
@@ -90,6 +90,12 @@ lazy_static! {
 pub enum AlwaysVisibleGlobalNodesVersion {
     V1,
     V2,
+}
+
+impl AlwaysVisibleGlobalNodesVersion {
+    pub const fn latest() -> Self {
+        Self::V2
+    }
 }
 
 pub fn always_visible_global_nodes(

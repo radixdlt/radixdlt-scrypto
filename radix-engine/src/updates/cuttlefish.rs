@@ -8,7 +8,7 @@ pub struct CuttlefishSettings {
     /// Add configuration for system logic versioning
     pub system_logic_update: UpdateSetting<NoSettings>,
     /// Updating the always visible global nodes to include the account locker package.
-    pub always_visible_global_nodes_update: UpdateSetting<NoSettings>,
+    pub kernel_version_update: UpdateSetting<NoSettings>,
     /// Add transaction validation changes
     pub transaction_validation_update: UpdateSetting<NoSettings>,
 }
@@ -23,9 +23,7 @@ impl UpdateSettings for CuttlefishSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
-            always_visible_global_nodes_update: UpdateSetting::enabled_as_default_for_network(
-                network,
-            ),
+            kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
         }
     }
@@ -33,7 +31,7 @@ impl UpdateSettings for CuttlefishSettings {
     fn all_disabled() -> Self {
         Self {
             system_logic_update: UpdateSetting::Disabled,
-            always_visible_global_nodes_update: UpdateSetting::Disabled,
+            kernel_version_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
         }
     }
@@ -85,7 +83,7 @@ fn generate_principal_batch(
     store: &dyn SubstateDatabase,
     CuttlefishSettings {
         system_logic_update,
-        always_visible_global_nodes_update,
+        kernel_version_update: always_visible_global_nodes_update,
         transaction_validation_update,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
@@ -98,7 +96,7 @@ fn generate_principal_batch(
     }
     if let UpdateSetting::Enabled(_settings) = &always_visible_global_nodes_update {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
-            "cuttlefish-protocol-update-always-visible-global-nodes",
+            "cuttlefish-protocol-kernel-version-update",
             generate_always_visible_global_nodes_updates(store),
         ));
     }

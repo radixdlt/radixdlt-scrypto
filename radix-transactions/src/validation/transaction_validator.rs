@@ -168,6 +168,10 @@ impl TransactionValidator {
         }
     }
 
+    pub fn new_with_latest_config_network_agnostic() -> Self {
+        Self::new_with_static_config_network_agnostic(TransactionValidationConfig::latest())
+    }
+
     pub fn new_with_static_config_network_agnostic(config: TransactionValidationConfig) -> Self {
         Self {
             config,

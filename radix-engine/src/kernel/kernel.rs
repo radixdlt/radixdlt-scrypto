@@ -326,6 +326,7 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
+#[cfg(feature = "radix_engine_tests")]
 impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateStore>
     Kernel<'g, M, S>
 {
@@ -333,7 +334,6 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Self {
         Self::new(
             store,
@@ -343,7 +343,9 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
-                always_visible_global_nodes,
+                always_visible_global_nodes: always_visible_global_nodes(
+                    AlwaysVisibleGlobalNodesVersion::latest(),
+                ),
             }],
         )
     }
