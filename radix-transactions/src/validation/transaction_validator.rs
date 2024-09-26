@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 
-use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::{SubstateDatabase, SubstateDatabaseExtensions};
 
 use crate::internal_prelude::*;
 
@@ -8,8 +8,32 @@ pub trait TransactionPreparer {
     fn preparation_settings(&self) -> &PreparationSettings;
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct ValidationConfig {
+define_single_versioned! {
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
+    pub TransactionValidationConfigurationSubstate(TransactionValidationConfigurationVersions) => TransactionValidationConfig = TransactionValidationConfigV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:transaction_validation_configuration_substate_cuttlefish_schema.bin",
+        ))]
+    ]
+}
+
+impl TransactionValidationConfig {
+    pub fn load(database: &impl SubstateDatabase) -> Self {
+        database
+            .get_substate::<TransactionValidationConfigurationSubstate>(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BootLoaderField::TransactionValidationConfiguration,
+            )
+            .map(|s| s.fully_update_and_into_latest_version())
+            .unwrap_or_else(|| Self::babylon())
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
+pub struct TransactionValidationConfigV1 {
     pub max_signatures_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
@@ -17,7 +41,7 @@ pub struct ValidationConfig {
     pub max_instructions: usize,
     pub message_validation: MessageValidationConfig,
     pub allow_notary_to_duplicate_signer: bool,
-    pub preparation_settings: PreparationSettings,
+    pub preparation_settings: PreparationSettingsV1,
     pub manifest_validation: ManifestValidationRuleset,
     // V2 settings
     pub v2_transactions_allowed: bool,
@@ -29,7 +53,7 @@ pub struct ValidationConfig {
     pub max_subintent_depth: usize,
 }
 
-impl ValidationConfig {
+impl TransactionValidationConfig {
     pub const fn latest() -> Self {
         Self::cuttlefish()
     }
@@ -74,13 +98,13 @@ impl ValidationConfig {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum ManifestValidationRuleset {
     BabylonBasicValidator,
     Interpreter(InterpreterValidationRulesetSpecifier),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub struct MessageValidationConfig {
     pub max_plaintext_message_length: usize,
     pub max_encrypted_message_length: usize,
@@ -111,44 +135,40 @@ impl Default for MessageValidationConfig {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TransactionValidator {
-    config: ValidationConfig,
+    config: TransactionValidationConfig,
     required_network_id: Option<u8>,
-}
-
-#[deprecated = "Fix by cuttlefish"]
-fn fix_resolution_of_validator_config_from_database(
-    network_definition: &NetworkDefinition,
-) -> TransactionValidator {
-    TransactionValidator::new_with_latest_config(network_definition)
 }
 
 impl TransactionValidator {
     /// This is the best constructor to use, as it reads the configuration dynamically
     /// Note that the validator needs recreating every time a protocol update runs,
     /// as the config can get updated then.
-    pub fn new(_store: &impl SubstateDatabase, network_definition: &NetworkDefinition) -> Self {
-        fix_resolution_of_validator_config_from_database(network_definition)
+    pub fn new(database: &impl SubstateDatabase, network_definition: &NetworkDefinition) -> Self {
+        Self::new_with_static_config(
+            TransactionValidationConfig::load(database),
+            network_definition.id,
+        )
     }
 
     pub fn new_for_latest_simulator() -> Self {
         Self::new_with_static_config(
-            ValidationConfig::latest(),
+            TransactionValidationConfig::latest(),
             NetworkDefinition::simulator().id,
         )
     }
 
     pub fn new_with_latest_config(network_definition: &NetworkDefinition) -> Self {
-        Self::new_with_static_config(ValidationConfig::latest(), network_definition.id)
+        Self::new_with_static_config(TransactionValidationConfig::latest(), network_definition.id)
     }
 
-    pub fn new_with_static_config(config: ValidationConfig, network_id: u8) -> Self {
+    pub fn new_with_static_config(config: TransactionValidationConfig, network_id: u8) -> Self {
         Self {
             config,
             required_network_id: Some(network_id),
         }
     }
 
-    pub fn new_with_static_config_network_agnostic(config: ValidationConfig) -> Self {
+    pub fn new_with_static_config_network_agnostic(config: TransactionValidationConfig) -> Self {
         Self {
             config,
             required_network_id: None,
@@ -1236,7 +1256,7 @@ mod tests {
             ),
             (
                 Epoch::zero(),
-                Epoch::of(ValidationConfig::latest().max_epoch_range + 1),
+                Epoch::of(TransactionValidationConfig::latest().max_epoch_range + 1),
                 5,
                 vec![1],
                 2

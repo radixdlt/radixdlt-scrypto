@@ -147,9 +147,14 @@ where
         modules: &impl VmInitialize,
     ) -> Result<(), ScenarioExecutorError> {
         let protocol_executor = protocol(ProtocolBuilder::for_network(&self.network_definition));
-        let last_version = protocol_executor.each_target_protocol_version().last();
+        let last_version = protocol_executor
+            .each_target_protocol_version(&self.database)
+            .last()
+            .map(|(version, _)| version);
 
-        for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
+        for protocol_update_executor in
+            protocol_executor.each_protocol_update_executor(&self.database)
+        {
             let new_protocol_version = protocol_update_executor.protocol_version;
             protocol_update_executor.run_and_commit_advanced(
                 &mut self.database,

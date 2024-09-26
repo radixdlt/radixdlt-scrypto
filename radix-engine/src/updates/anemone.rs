@@ -62,6 +62,12 @@ pub struct AnemoneBatchGenerator {
 }
 
 impl ProtocolUpdateBatchGenerator for AnemoneBatchGenerator {
+    fn status_tracking_enabled(&self) -> bool {
+        // This was launched without status tracking,
+        // so we can't add it in later to avoid divergence
+        false
+    }
+
     fn generate_batch(
         &self,
         store: &dyn SubstateDatabase,
@@ -343,24 +349,14 @@ fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase + ?Siz
 }
 
 fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates {
-    let substate = scrypto_encode(&VmBoot::V1 {
-        scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
-    })
-    .unwrap();
-
-    StateUpdates {
-        by_node: indexmap!(
-            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY) => DatabaseUpdate::Set(substate)
-                        }
-                    },
-                }
-            }
-        ),
-    }
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::VmBoot,
+        VmBoot::V1 {
+            scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
+        },
+    )
 }
 
 /// Generates the state updates required to update the pool package from the v1.0 to the v1.1

@@ -6,7 +6,7 @@ use radix_engine::updates::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
-use radix_transactions::validation::ValidationConfig;
+use radix_transactions::validation::TransactionValidationConfig;
 use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
@@ -34,7 +34,7 @@ fn run_cost_tests() {
 fn run_all(mode: CostingTaskMode) {
     use radix_engine_tests::path_local_metering_receipts;
 
-    for protocol_version in ProtocolVersion::VARIANTS.into_iter() {
+    for protocol_version in ProtocolVersion::all_from(ProtocolVersion::GENESIS) {
         let base_path = path_local_metering_receipts!();
         let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
                             file: &'static str| {
@@ -429,7 +429,7 @@ fn run_mint_nfts_from_manifest(
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        let max_size = ValidationConfig::latest()
+        let max_size = TransactionValidationConfig::latest()
             .preparation_settings
             .max_user_payload_length;
         if raw_transaction.as_slice().len() > max_size {

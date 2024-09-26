@@ -3,6 +3,7 @@ use radix_engine::blueprints::transaction_tracker::{
 };
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::object_modules::metadata::MetadataEntryEntryPayload;
+use radix_engine::updates::ProtocolUpdateStatusSummarySubstate;
 use radix_engine_interface::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
@@ -35,6 +36,7 @@ pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
 pub use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::TransactionIntentHash;
+use radix_transactions::validation::TransactionValidationConfigurationSubstate;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -85,6 +87,7 @@ use radix_transactions::prelude::TransactionIntentHash;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     BootLoader(TypedBootLoaderSubstateKey),
+    ProtocolUpdateStatus(TypedProtocolUpdateStatusSubstateKey),
     TypeInfo(TypedTypeInfoSubstateKey),
     Schema(TypedSchemaSubstateKey),
     RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
@@ -113,6 +116,11 @@ impl TypedSubstateKey {
 #[derive(Debug, Clone)]
 pub enum TypedBootLoaderSubstateKey {
     BootLoaderField(BootLoaderField),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedProtocolUpdateStatusSubstateKey {
+    ProtocolUpdateStatusField(ProtocolUpdateStatusField),
 }
 
 #[derive(Debug, Clone)]
@@ -183,6 +191,12 @@ pub fn to_typed_substate_key(
                 BootLoaderField::try_from(substate_key).map_err(|_| error("BootLoaderField"))?,
             ))
         }
+        PROTOCOL_UPDATE_STATUS_PARTITION => TypedSubstateKey::ProtocolUpdateStatus(
+            TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
+                ProtocolUpdateStatusField::try_from(substate_key)
+                    .map_err(|_| error("ProtocolUpdateStatusField"))?,
+            ),
+        ),
         TYPE_INFO_FIELD_PARTITION => {
             TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
                 TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
@@ -382,6 +396,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug)]
 pub enum TypedSubstateValue {
     BootLoader(BootLoaderSubstateValue),
+    ProtocolUpdateStatus(ProtocolUpdateStatusSubstateValue),
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
     Schema(KeyValueEntrySubstate<VersionedScryptoSchema>),
     RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
@@ -395,6 +410,12 @@ pub enum BootLoaderSubstateValue {
     Kernel(KernelBoot),
     System(SystemBoot),
     Vm(VmBoot),
+    TransactionValidation(TransactionValidationConfigurationSubstate),
+}
+
+#[derive(Debug)]
+pub enum ProtocolUpdateStatusSubstateValue {
+    Summary(ProtocolUpdateStatusSummarySubstate),
 }
 
 #[derive(Debug)]
@@ -480,6 +501,19 @@ fn to_typed_substate_value_internal(
                     BootLoaderSubstateValue::System(scrypto_decode(data)?)
                 }
                 BootLoaderField::VmBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
+                BootLoaderField::TransactionValidationConfiguration => {
+                    BootLoaderSubstateValue::TransactionValidation(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedSubstateKey::ProtocolUpdateStatus(protocol_update_status_key) => {
+            let TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
+                protocol_update_status_field,
+            ) = protocol_update_status_key;
+            TypedSubstateValue::ProtocolUpdateStatus(match protocol_update_status_field {
+                ProtocolUpdateStatusField::Summary => {
+                    ProtocolUpdateStatusSubstateValue::Summary(scrypto_decode(data)?)
+                }
             })
         }
         TypedSubstateKey::TypeInfo(type_info_key) => {

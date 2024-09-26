@@ -37,6 +37,7 @@ pub enum ObjectPartitionDescriptor {
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescriptor {
     BootLoader,
+    ProtocolUpdateStatus,
     TypeInfo,
     Schema,
     KeyValueStore,
@@ -976,6 +977,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             descriptors.push(SystemPartitionDescriptor::BootLoader);
         }
 
+        if partition_num.eq(&PROTOCOL_UPDATE_STATUS_PARTITION) {
+            descriptors.push(SystemPartitionDescriptor::ProtocolUpdateStatus);
+        }
+
         if partition_num.eq(&TYPE_INFO_FIELD_PARTITION) {
             descriptors.push(SystemPartitionDescriptor::TypeInfo);
         }
@@ -1231,7 +1236,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             PartitionDescription::Physical(partition_number) => *partition_number,
         };
 
-        self.substate_db.update_substate_typed(
+        self.substate_db.update_substate(
             node_id,
             partition_number,
             SubstateKey::Field(field_index),

@@ -801,7 +801,7 @@ impl Default for ValidationRuleset {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub enum InterpreterValidationRulesetSpecifier {
     AllValidations,
     Cuttlefish,

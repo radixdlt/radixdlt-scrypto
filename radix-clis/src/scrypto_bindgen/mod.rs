@@ -43,10 +43,11 @@ pub fn run() -> Result<(), Error> {
     // Everything will be written to the std-out
     let mut out = std::io::stdout();
 
-    let mut env = SimulatorEnvironment::new().map_err(Error::ResimError)?;
-    if args.reset_ledger {
-        env = env.reset().map_err(Error::ResimError)?;
-    }
+    let env = if args.reset_ledger {
+        SimulatorEnvironment::new_reset().map_err(Error::ResimError)?
+    } else {
+        SimulatorEnvironment::new().map_err(Error::ResimError)?
+    };
     let db = env.db;
 
     let blueprint_replacement_map = types::prepare_replacement_map(&args.func_sig_change);

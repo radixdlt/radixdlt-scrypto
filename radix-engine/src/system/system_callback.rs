@@ -47,8 +47,6 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::model::*;
 
-pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SystemParameters {
     pub network_definition: NetworkDefinition,
@@ -83,7 +81,10 @@ impl SystemParameters {
 
 pub type SystemBootSubstate = SystemBoot;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(
+    cuttlefish = "FILE:system_boot_substate_cuttlefish_schema.bin",
+))]
 pub enum SystemBoot {
     V1(SystemParameters),
     V2(SystemVersion, SystemParameters),
@@ -100,7 +101,7 @@ impl SystemBoot {
             .get_substate(
                 TRANSACTION_TRACKER,
                 BOOT_LOADER_PARTITION,
-                BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+                BootLoaderField::SystemBoot,
             )
             .unwrap_or_else(|| {
                 let overrides = execution_config.system_overrides.as_ref();

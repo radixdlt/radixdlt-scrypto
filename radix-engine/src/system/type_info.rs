@@ -3,7 +3,8 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use radix_engine_interface::api::field_api::LockFlags;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(cuttlefish = "FILE:type_info_substate_cuttlefish_schema.bin",))]
 pub enum TypeInfoSubstate {
     Object(ObjectInfo),
     KeyValueStore(KeyValueStoreInfo),
