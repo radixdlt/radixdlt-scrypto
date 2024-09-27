@@ -240,22 +240,22 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
         },
         PACKAGE_OF_DIRECT_CALLER_RESOURCE => MetadataUpdates {
             name: Some(MetadataValue::String("Package of Direct Caller Resource".into())),
-            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by specific code. It can be used with rule!(require(package_of_direct_caller(<PACKAGE_ADDRESS>))). At access rule resolution time, the Radix Engine includes an implicit proof of a specific non-fungible local id under this resource representing the specific package. See the info_url for further information.".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by specific code. See the info_url for further information.".into())),
             icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_resource.png".into())))
         },
         GLOBAL_CALLER_RESOURCE => MetadataUpdates {
             name: Some(MetadataValue::String("Global Caller Resource".into())),
-            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a specific global caller. In cases where you wish to find out the global caller, you can require the caller to pass their claimed global address into the method, and then verify it with this rule. It can be used with rule!(require(global_caller(<COMPONENT_ADDRESS>))) or rule!(require(global_caller(BlueprintId::new(<PACKAGE_ADDRESS>, “<BLUEPRINT_NAME>“))))). At access rule resolution time, the Radix Engine includes an implicit proof of a specific non-fungible local id under this resource representing the global ancestor of the local call frame which called you. See the info_url for further information.".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a specific global caller. In cases where you wish to find out the global caller, you can require the caller to pass their claimed global address into the method, and then verify it with this rule. See the info_url for further information.".into())),
             icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-global_caller_resource.png".into())))
         },
         SECP256K1_SIGNATURE_RESOURCE => MetadataUpdates {
             name: Some(MetadataValue::String("ECDSA Secp256k1 Signature Resource".into())),
-            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest of an intent signed with the given ECDSA Secp256k1 key hash. It can be used with rule!(require(signature(<PUBLIC_KEY_HASH or PUBLIC_KEY>))). At access rule resolution time, if a manifest is your global caller, the Radix Engine includes implicit proofs of a specific non-fungible local ids under this resource representing the public key hash of each signature of the intent. See the info_url for further information.".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest signed with the given ECDSA Secp256k1 key hash. See the info_url for further information.".into())),
             icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_resource.png".into())))
         },
         ED25519_SIGNATURE_RESOURCE => MetadataUpdates {
             name: Some(MetadataValue::String("EdDSA Ed25519 Signature Resource".into())),
-            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest signed with the given EdDSA Ed25519 key hash. It can be used with rule!(require(signature(<PUBLIC_KEY_HASH or PUBLIC_KEY>))). At access rule resolution time, if a manifest is your global caller, the Radix Engine includes implicit proofs of a specific non-fungible local ids under this resource representing the public key hash of each signature of the intent. See the info_url for further information.".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest signed with the given EdDSA Ed25519 key hash. See the info_url for further information.".into())),
             icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_resource.png".into())))
         },
         SYSTEM_EXECUTION_RESOURCE => MetadataUpdates {
