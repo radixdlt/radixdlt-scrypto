@@ -48,14 +48,16 @@ impl UpdateSettings for CuttlefishSettings {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct UpdateNumberOfMinRoundsPerEpochSettings {
-    pub new_min_rounds_per_epoch: u64,
+pub enum UpdateNumberOfMinRoundsPerEpochSettings {
+    Set { value: u64 },
+    SetIfEquals { if_equals: u64, to_value: u64 },
 }
 
 impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
     fn default() -> Self {
-        Self {
-            new_min_rounds_per_epoch: 100,
+        Self::SetIfEquals {
+            if_equals: 500,
+            to_value: 100,
         }
     }
 }
@@ -119,13 +121,10 @@ fn generate_principal_batch(
             generate_cuttlefish_transaction_validation_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(UpdateNumberOfMinRoundsPerEpochSettings {
-        new_min_rounds_per_epoch,
-    }) = &update_number_of_min_rounds_per_epoch
-    {
+    if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-update-number-of-min-rounds-per-epoch",
-            generate_cuttlefish_update_min_rounds_per_epoch(store, *new_min_rounds_per_epoch),
+            generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -166,7 +165,7 @@ fn generate_cuttlefish_transaction_validation_updates() -> StateUpdates {
 
 fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
     db: &S,
-    min_rounds_per_epoch: u64,
+    settings: UpdateNumberOfMinRoundsPerEpochSettings,
 ) -> StateUpdates {
     let mut consensus_manager_config = db
         .get_existing_substate::<FieldSubstate<VersionedConsensusManagerConfiguration>>(
@@ -176,11 +175,22 @@ fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>
         )
         .into_payload()
         .fully_update_and_into_latest_version();
-
-    consensus_manager_config
+    let min_rounds_per_epoch = &mut consensus_manager_config
         .config
         .epoch_change_condition
-        .min_round_count = min_rounds_per_epoch;
+        .min_round_count;
+
+    match settings {
+        UpdateNumberOfMinRoundsPerEpochSettings::Set { value } => *min_rounds_per_epoch = value,
+        UpdateNumberOfMinRoundsPerEpochSettings::SetIfEquals {
+            if_equals,
+            to_value,
+        } => {
+            if *min_rounds_per_epoch == if_equals {
+                *min_rounds_per_epoch = to_value
+            }
+        }
+    }
 
     StateUpdates::empty().set_substate(
         CONSENSUS_MANAGER,
