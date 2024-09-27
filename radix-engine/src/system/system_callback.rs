@@ -1071,6 +1071,7 @@ impl<V: SystemCallbackObject> System<V> {
         references: &IndexSet<Reference>,
         modules: &mut SystemModuleMixer,
         store: &mut impl CommitableSubstateStore,
+        always_visible_global_nodes: &IndexSet<NodeId>,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
@@ -1079,7 +1080,7 @@ impl<V: SystemCallbackObject> System<V> {
         for reference in references.iter() {
             let node_id = &reference.0;
 
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+            if always_visible_global_nodes.contains(node_id) {
                 // Allow always visible node and do not add reference
                 continue;
             }
@@ -1116,16 +1117,22 @@ impl<V: SystemCallbackObject> System<V> {
         intents: impl Iterator<Item = &'a ExecutableIntent>,
         modules: &mut SystemModuleMixer,
         store: &mut impl CommitableSubstateStore,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
         let mut init_call_frames = vec![];
         for intent in intents {
-            let (global_addresses, direct_accesses) =
-                Self::reference_check(&intent.references, modules, store)?;
+            let (global_addresses, direct_accesses) = Self::reference_check(
+                &intent.references,
+                modules,
+                store,
+                always_visible_global_nodes,
+            )?;
 
             init_call_frames.push(CallFrameInit {
                 data: Actor::Root,
                 global_addresses,
                 direct_accesses,
+                always_visible_global_nodes,
             });
         }
 
@@ -1494,6 +1501,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         store: &mut impl CommitableSubstateStore,
         executable: &ExecutableTransaction,
         init_input: Self::Init,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
@@ -1575,6 +1583,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             executable.all_intents(),
             &mut modules,
             store,
+            always_visible_global_nodes,
         ) {
             Ok(call_frame_inits) => call_frame_inits,
             Err(error) => return Err(Self::create_rejection_receipt(error, modules)),

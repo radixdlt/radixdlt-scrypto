@@ -165,6 +165,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
         store: &mut impl CommitableSubstateStore,
         executable: &Self::Executable,
         init: Self::Init,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
 
     /// Start execution

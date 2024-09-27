@@ -1,6 +1,7 @@
 use radix_transactions::validation::*;
 
 use super::*;
+use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
@@ -9,6 +10,8 @@ use crate::system::system_db_reader::*;
 pub struct CuttlefishSettings {
     /// Add configuration for system logic versioning
     pub system_logic_update: UpdateSetting<NoSettings>,
+    /// Updating the always visible global nodes to include the account locker package.
+    pub kernel_version_update: UpdateSetting<NoSettings>,
     /// Add transaction validation changes
     pub transaction_validation_update: UpdateSetting<NoSettings>,
     /// Update the metadata for cuttlefish
@@ -25,6 +28,7 @@ impl UpdateSettings for CuttlefishSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
+            kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
             update_metadata: UpdateSetting::enabled_as_default_for_network(network),
         }
@@ -33,6 +37,7 @@ impl UpdateSettings for CuttlefishSettings {
     fn all_disabled() -> Self {
         Self {
             system_logic_update: UpdateSetting::Disabled,
+            kernel_version_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
             update_metadata: UpdateSetting::Disabled,
         }
@@ -85,6 +90,7 @@ fn generate_principal_batch(
     store: &dyn SubstateDatabase,
     CuttlefishSettings {
         system_logic_update,
+        kernel_version_update,
         transaction_validation_update,
         update_metadata,
     }: &CuttlefishSettings,
@@ -94,6 +100,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-protocol-system-logic-updates",
             generate_system_logic_v2_updates(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(_settings) = &kernel_version_update {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-protocol-kernel-version-update",
+            generate_always_visible_global_nodes_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &transaction_validation_update {
@@ -128,6 +140,25 @@ fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
         SystemBoot::cuttlefish_for_previous_parameters(cur_system_parameters),
+    )
+}
+
+fn generate_always_visible_global_nodes_updates<S: SubstateDatabase + ?Sized>(
+    db: &S,
+) -> StateUpdates {
+    let KernelBoot::V1 = db.get_existing_substate::<KernelBoot>(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::KernelBoot,
+    ) else {
+        panic!("Unexpected KernelBoot version")
+    };
+
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::KernelBoot,
+        KernelBoot::cuttlefish(),
     )
 }
 

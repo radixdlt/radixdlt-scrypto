@@ -504,6 +504,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "locker-factory"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "logger"
 version = "1.0.0"
 dependencies = [
