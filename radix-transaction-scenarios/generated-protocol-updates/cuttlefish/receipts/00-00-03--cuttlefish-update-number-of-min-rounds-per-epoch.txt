@@ -20,7 +20,7 @@ STATE UPDATES: 1 entity
            config: ConsensusManagerConfig {
              max_validators: 100u32,
              epoch_change_condition: EpochChangeCondition {
-               min_round_count: 500u64,
+               min_round_count: 100u64,
                max_round_count: 3000u64,
                target_duration_millis: 300000u64,
              },
