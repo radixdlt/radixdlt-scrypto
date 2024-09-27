@@ -56,6 +56,23 @@ pub struct ConsensusManagerConfig {
 }
 
 impl ConsensusManagerConfig {
+    pub fn mainnet_genesis() -> Self {
+        Self {
+            max_validators: 100,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 500,
+                max_round_count: 3000,
+                target_duration_millis: 300000,
+            },
+            num_unstake_epochs: 2016,
+            total_emission_xrd_per_epoch: dec!("2853.881278538812785388"),
+            min_validator_reliability: Decimal::one(),
+            num_owner_stake_units_unlock_epochs: 8064,
+            num_fee_increase_delay_epochs: 4032,
+            validator_creation_usd_cost: dec!(1000),
+        }
+    }
+
     pub fn test_default() -> Self {
         ConsensusManagerConfig {
             max_validators: 10,

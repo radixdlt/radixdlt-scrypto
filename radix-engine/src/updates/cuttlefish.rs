@@ -1,6 +1,7 @@
 use radix_transactions::validation::*;
 
 use super::*;
+use crate::blueprints::consensus_manager::*;
 use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
@@ -16,6 +17,9 @@ pub struct CuttlefishSettings {
     pub transaction_validation_update: UpdateSetting<NoSettings>,
     /// Update the metadata for cuttlefish
     pub update_metadata: UpdateSetting<NoSettings>,
+    /// updates the min number of rounds per epoch.
+    pub update_number_of_min_rounds_per_epoch:
+        UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -31,6 +35,9 @@ impl UpdateSettings for CuttlefishSettings {
             kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
             update_metadata: UpdateSetting::enabled_as_default_for_network(network),
+            update_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
+                network,
+            ),
         }
     }
 
@@ -40,6 +47,7 @@ impl UpdateSettings for CuttlefishSettings {
             kernel_version_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
             update_metadata: UpdateSetting::Disabled,
+            update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
         }
     }
 
@@ -49,6 +57,23 @@ impl UpdateSettings for CuttlefishSettings {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub enum UpdateNumberOfMinRoundsPerEpochSettings {
+    Set { value: u64 },
+    SetIfEquals { if_equals: u64, to_value: u64 },
+}
+
+impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
+    fn default() -> Self {
+        Self::SetIfEquals {
+            if_equals: 500,
+            to_value: 100,
+        }
+    }
+}
+
+impl UpdateSettingMarker for UpdateNumberOfMinRoundsPerEpochSettings {}
 
 #[derive(Clone)]
 pub struct CuttlefishBatchGenerator {
@@ -93,6 +118,7 @@ fn generate_principal_batch(
         kernel_version_update,
         transaction_validation_update,
         update_metadata,
+        update_number_of_min_rounds_per_epoch,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
@@ -118,6 +144,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-update-metadata",
             generate_cuttlefish_metadata_fix(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-update-number-of-min-rounds-per-epoch",
+            generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -256,4 +288,41 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     }
 
     state_updates
+}
+
+fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
+    db: &S,
+    settings: UpdateNumberOfMinRoundsPerEpochSettings,
+) -> StateUpdates {
+    let mut consensus_manager_config = db
+        .get_existing_substate::<FieldSubstate<VersionedConsensusManagerConfiguration>>(
+            CONSENSUS_MANAGER,
+            MAIN_BASE_PARTITION,
+            ConsensusManagerField::Configuration,
+        )
+        .into_payload()
+        .fully_update_and_into_latest_version();
+    let min_rounds_per_epoch = &mut consensus_manager_config
+        .config
+        .epoch_change_condition
+        .min_round_count;
+
+    match settings {
+        UpdateNumberOfMinRoundsPerEpochSettings::Set { value } => *min_rounds_per_epoch = value,
+        UpdateNumberOfMinRoundsPerEpochSettings::SetIfEquals {
+            if_equals,
+            to_value,
+        } => {
+            if *min_rounds_per_epoch == if_equals {
+                *min_rounds_per_epoch = to_value
+            }
+        }
+    }
+
+    StateUpdates::empty().set_substate(
+        CONSENSUS_MANAGER,
+        MAIN_BASE_PARTITION,
+        ConsensusManagerField::Configuration,
+        consensus_manager_config.into_locked_substate(),
+    )
 }

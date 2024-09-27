@@ -25,13 +25,13 @@ STATE UPDATES: 6 entities
     ├─ Set: "name"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Package Caller Resource",
+           "Package of Direct Caller Resource",
          ),
        )
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.",
+           "This is an implicit proof resource, intended for verifying access by specific code. It can be used with rule!(require(package_of_direct_caller(<PACKAGE_ADDRESS>))). At access rule resolution time, the Radix Engine includes an implicit proof of a specific non-fungible local id under this resource representing the specific package. See the info_url for further information.",
          ),
        )
     └─ Set: "icon_url"
@@ -51,7 +51,7 @@ STATE UPDATES: 6 entities
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.",
+           "This is an implicit proof resource, intended for verifying access by a specific global caller. In cases where you wish to find out the global caller, you can require the caller to pass their claimed global address into the method, and then verify it with this rule. It can be used with rule!(require(global_caller(<COMPONENT_ADDRESS>))) or rule!(require(global_caller(BlueprintId::new(<PACKAGE_ADDRESS>, “<BLUEPRINT_NAME>“))))). At access rule resolution time, the Radix Engine includes an implicit proof of a specific non-fungible local id under this resource representing the global ancestor of the local call frame which called you. See the info_url for further information.",
          ),
        )
     └─ Set: "icon_url"
@@ -71,7 +71,7 @@ STATE UPDATES: 6 entities
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Badges generated automatically by the Radix system to represent ECDSA Secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.",
+           "This is an implicit proof resource, intended for verifying access by a manifest of an intent signed with the given ECDSA Secp256k1 key hash. It can be used with rule!(require(signature(<PUBLIC_KEY_HASH or PUBLIC_KEY>))). At access rule resolution time, if a manifest is your global caller, the Radix Engine includes implicit proofs of a specific non-fungible local ids under this resource representing the public key hash of each signature of the intent. See the info_url for further information.",
          ),
        )
     └─ Set: "icon_url"
@@ -85,13 +85,13 @@ STATE UPDATES: 6 entities
     ├─ Set: "name"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "EdDSA Ed25519 Resource",
+           "EdDSA Ed25519 Signature Resource",
          ),
        )
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.",
+           "This is an implicit proof resource, intended for verifying access by a manifest signed with the given EdDSA Ed25519 key hash. It can be used with rule!(require(signature(<PUBLIC_KEY_HASH or PUBLIC_KEY>))). At access rule resolution time, if a manifest is your global caller, the Radix Engine includes implicit proofs of a specific non-fungible local ids under this resource representing the public key hash of each signature of the intent. See the info_url for further information.",
          ),
        )
     └─ Set: "icon_url"
@@ -111,7 +111,7 @@ STATE UPDATES: 6 entities
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.",
+           "This is an implicit proof resource, intended for verifying access by a manifest of a certain type of system transaction, such as a protocol update or a validator transaction. See the info_url for further information.",
          ),
        )
     └─ Set: "icon_url"
