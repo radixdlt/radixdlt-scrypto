@@ -46,6 +46,11 @@ pub enum NativeCodeId {
     /// * Changes   : Update `try_deposit` logic
     AccountCode2 = 20u64,
 
+    /// * Introduced: Cuttlefish
+    /// * Coverage  : Account getters
+    /// * Changes   : Adds getters to the account blueprint
+    AccountCode3 = 24u64,
+
     /// * Introduced: Babylon
     /// * Coverage  : All access controller blueprints
     /// * Changes   : N/A
