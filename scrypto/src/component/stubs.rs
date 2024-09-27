@@ -222,6 +222,17 @@ extern_blueprint_internal! {
         );
         fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
         fn remove_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
+        fn balance(&mut self, resource_address: ResourceAddress) -> Decimal;
+        fn non_fungible_local_ids(
+            &mut self,
+            resource_address: ResourceAddress,
+            limit: u32,
+        ) -> Vec<NonFungibleLocalId>;
+        fn has_non_fungible(
+            &mut self,
+            resource_address: ResourceAddress,
+            local_id: NonFungibleLocalId,
+        ) -> bool;
     }
 }
 
