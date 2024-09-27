@@ -18,17 +18,17 @@ STATE UPDATES: 1 entity
        Value: LOCKED ConsensusManagerConfigurationFieldPayload::V1(
          ConsensusManagerConfigSubstate {
            config: ConsensusManagerConfig {
-             max_validators: 10u32,
+             max_validators: 100u32,
              epoch_change_condition: EpochChangeCondition {
                min_round_count: 100u64,
-               max_round_count: 1u64,
-               target_duration_millis: 0u64,
+               max_round_count: 3000u64,
+               target_duration_millis: 300000u64,
              },
-             num_unstake_epochs: 1u64,
-             total_emission_xrd_per_epoch: Decimal("1"),
+             num_unstake_epochs: 2016u64,
+             total_emission_xrd_per_epoch: Decimal("2853.881278538812785388"),
              min_validator_reliability: Decimal("1"),
-             num_owner_stake_units_unlock_epochs: 2u64,
-             num_fee_increase_delay_epochs: 1u64,
+             num_owner_stake_units_unlock_epochs: 8064u64,
+             num_fee_increase_delay_epochs: 4032u64,
              validator_creation_usd_cost: Decimal("100"),
            },
          },

@@ -181,7 +181,7 @@ impl BabylonSettings {
         Self {
             genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
-            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            consensus_manager_config: ConsensusManagerConfig::mainnet_genesis(),
             initial_time_ms: 1,
             initial_current_leader: Some(0),
             faucet_supply: Decimal::zero(),
