@@ -27,6 +27,20 @@ impl BabylonSettings {
         }
     }
 
+    pub fn test_mainnet() -> Self {
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        let genesis_epoch = Epoch::of(1);
+        let consensus_manager_config = ConsensusManagerConfig::mainnet_genesis();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            Decimal::zero(),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
+            genesis_epoch,
+            consensus_manager_config,
+        )
+    }
+
     pub fn test_default() -> Self {
         let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let genesis_epoch = Epoch::of(1);

@@ -11,7 +11,8 @@ pub struct CuttlefishSettings {
     /// Add transaction validation changes
     pub transaction_validation_update: UpdateSetting<NoSettings>,
     /// updates the min number of rounds per epoch.
-    pub update_number_of_min_rounds_per_epoch: UpdateSetting<NoSettings>,
+    pub update_number_of_min_rounds_per_epoch:
+        UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -45,6 +46,21 @@ impl UpdateSettings for CuttlefishSettings {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+struct UpdateNumberOfMinRoundsPerEpochSettings {
+    pub new_min_rounds_per_epoch: u64,
+}
+
+impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
+    fn default() -> Self {
+        Self {
+            new_min_rounds_per_epoch: 100,
+        }
+    }
+}
+
+impl UpdateSettingMarker for UpdateNumberOfMinRoundsPerEpochSettings {}
 
 #[derive(Clone)]
 pub struct CuttlefishBatchGenerator {
@@ -103,10 +119,13 @@ fn generate_principal_batch(
             generate_cuttlefish_transaction_validation_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(NoSettings) = &update_number_of_min_rounds_per_epoch {
+    if let UpdateSetting::Enabled(UpdateNumberOfMinRoundsPerEpochSettings {
+        new_min_rounds_per_epoch,
+    }) = &update_number_of_min_rounds_per_epoch
+    {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-update-number-of-min-rounds-per-epoch",
-            generate_cuttlefish_update_min_rounds_per_epoch(store),
+            generate_cuttlefish_update_min_rounds_per_epoch(store, *new_min_rounds_per_epoch),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -147,6 +166,7 @@ fn generate_cuttlefish_transaction_validation_updates() -> StateUpdates {
 
 fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
     db: &S,
+    min_rounds_per_epoch: u64,
 ) -> StateUpdates {
     let mut consensus_manager_config = db
         .get_existing_substate::<FieldSubstate<VersionedConsensusManagerConfiguration>>(
@@ -160,7 +180,7 @@ fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>
     consensus_manager_config
         .config
         .epoch_change_condition
-        .min_round_count = 100;
+        .min_round_count = min_rounds_per_epoch;
 
     StateUpdates::empty().set_substate(
         CONSENSUS_MANAGER,
