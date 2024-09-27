@@ -37,8 +37,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
-pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
-
 enum ActorStateRef {
     SELF,
     OuterObject,

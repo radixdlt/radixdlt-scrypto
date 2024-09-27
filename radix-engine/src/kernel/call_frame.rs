@@ -395,6 +395,9 @@ pub struct CallFrame<C, L> {
 
     next_handle: SubstateHandle,
     open_substates: IndexMap<SubstateHandle, OpenedSubstate<L>>,
+
+    /// The set of nodes that are always globally visible.
+    always_visible_global_nodes: &'static IndexSet<NodeId>,
 }
 
 /// Represents an error when creating a new frame.
@@ -557,11 +560,12 @@ pub enum SubstateDiffError {
     ContainsDuplicateOwns,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct CallFrameInit<C> {
     pub data: C,
     pub global_addresses: IndexSet<GlobalAddress>,
     pub direct_accesses: IndexSet<InternalAddress>,
+    pub always_visible_global_nodes: &'static IndexSet<NodeId>,
 }
 
 impl<C, L: Clone> CallFrame<C, L> {
@@ -574,6 +578,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             owned_root_nodes: index_set_new(),
             next_handle: 0u32,
             open_substates: index_map_new(),
+            always_visible_global_nodes: init.always_visible_global_nodes,
         };
 
         for global_ref in init.global_addresses {
@@ -600,6 +605,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             owned_root_nodes: index_set_new(),
             next_handle: 0u32,
             open_substates: index_map_new(),
+            always_visible_global_nodes: parent.always_visible_global_nodes,
         };
 
         // Copy references and move nodes
@@ -1384,7 +1390,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         if let Some(reference_type) = self.stable_references.get(node_id) {
             visibilities.insert(Visibility::StableReference(reference_type.clone()));
         }
-        if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+        if self.always_visible_global_nodes.contains(node_id) {
             visibilities.insert(Visibility::StableReference(StableReferenceType::Global));
         }
 

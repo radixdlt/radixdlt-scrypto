@@ -4,6 +4,7 @@ use internal_prelude::*;
 mod access_controller_v2;
 mod account_authorized_depositors;
 mod account_locker;
+mod basic_subintents;
 mod fungible_resource;
 mod global_n_owned;
 mod kv_store_with_remote_type;
@@ -16,9 +17,16 @@ mod radiswap;
 mod royalties;
 mod transfer_xrd;
 
-// Add new scenarios TO THE BOTTOM OF THE LIST below.
+pub fn all_scenarios_iter() -> impl Iterator<Item = &'static dyn ScenarioCreatorObjectSafe> {
+    ALL_SCENARIOS.values().map(|v| v.as_ref())
+}
+
+pub fn get_scenario(logical_name: &str) -> &'static dyn ScenarioCreatorObjectSafe {
+    ALL_SCENARIOS.get(logical_name).unwrap().as_ref()
+}
+
 lazy_static::lazy_static! {
-    pub static ref ALL_SCENARIOS: IndexMap<String, Box<dyn ScenarioCreatorObjectSafe>> = {
+    static ref ALL_SCENARIOS: IndexMap<String, Box<dyn ScenarioCreatorObjectSafe>> = {
         fn add<C: ScenarioCreatorObjectSafe>(map: &mut IndexMap<String, Box<dyn ScenarioCreatorObjectSafe>>, creator: C) {
             map.insert(
                 creator.metadata().logical_name.to_string(),
@@ -49,6 +57,7 @@ lazy_static::lazy_static! {
         add(&mut map, account_locker::AccountLockerScenarioCreator);
         add(&mut map, maya_router::MayaRouterScenarioCreator);
         add(&mut map, access_controller_v2::AccessControllerV2ScenarioCreator);
+        add(&mut map, basic_subintents::BasicSubintentsScenarioCreator);
 
         map
     };

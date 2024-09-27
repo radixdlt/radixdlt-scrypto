@@ -7,7 +7,6 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -36,20 +35,11 @@ impl TransactionFuzzer {
     }
 
     fn execute_single_transaction(&mut self, transaction: NotarizedTransactionV1) {
-        let validator =
-            TransactionValidator::new_with_static_config(ValidationConfig::babylon_simulator());
-
-        let validated = transaction
-            .prepare_and_validate(&validator)
-            .expect("transaction to be validatable");
-
-        let execution_config = ExecutionConfig::for_test_transaction();
-
         execute_and_commit_transaction(
             &mut self.substate_db,
             &self.vm_modules,
-            &execution_config,
-            validated.get_executable(),
+            &ExecutionConfig::for_test_transaction(),
+            transaction.into_executable_unwrap(),
         );
     }
 

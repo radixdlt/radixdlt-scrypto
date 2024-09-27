@@ -59,6 +59,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
+        #[allow(unused_variables, deprecated)]
         ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {

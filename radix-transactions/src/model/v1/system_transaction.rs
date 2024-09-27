@@ -146,7 +146,7 @@ impl PreparedSystemTransactionV1 {
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: self.hash_for_execution.hash,
-                intent_hash_nullifications: vec![IntentHashNullification::System],
+                intent_hash_nullifications: vec![],
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
@@ -157,8 +157,7 @@ impl PreparedSystemTransactionV1 {
                 },
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
                 disable_limits_and_costing_modules: true,
-                start_timestamp_inclusive: None,
-                end_timestamp_exclusive: None,
+                proposer_timestamp_range: None,
             },
         )
     }

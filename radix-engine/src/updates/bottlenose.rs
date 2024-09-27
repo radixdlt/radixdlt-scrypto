@@ -8,8 +8,6 @@ use crate::kernel::kernel::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
-use crate::system::system_modules::costing::CostingModuleConfig;
-use crate::transaction::*;
 use crate::vm::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -107,6 +105,12 @@ pub struct BottlenoseBatchGenerator {
 }
 
 impl ProtocolUpdateBatchGenerator for BottlenoseBatchGenerator {
+    fn status_tracking_enabled(&self) -> bool {
+        // This was launched without status tracking,
+        // so we can't add it in later to avoid divergence
+        false
+    }
+
     fn generate_batch(
         &self,
         store: &dyn SubstateDatabase,
@@ -504,26 +508,12 @@ fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase + ?Si
 fn generate_protocol_params_to_state_updates(
     network_definition: NetworkDefinition,
 ) -> StateUpdates {
-    StateUpdates {
-        by_node: indexmap!(
-            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
-                                scrypto_encode(&SystemBoot::V1(SystemParameters {
-                                    network_definition,
-                                    costing_module_config: CostingModuleConfig::bottlenose(),
-                                    costing_parameters: CostingParameters::babylon_genesis(),
-                                    limit_parameters: LimitParameters::babylon_genesis(),
-                                })).unwrap()
-                            ),
-                        }
-                    },
-                }
-            }
-        ),
-    }
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+        SystemBoot::bottlenose(network_definition),
+    )
 }
 
 fn generate_access_controller_state_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
@@ -984,19 +974,10 @@ fn generate_transaction_processor_blob_limits_state_updates<S: SubstateDatabase 
 
 /// Generates the state updates required for introducing deferred reference check costs
 fn generate_ref_check_costs_state_updates() -> StateUpdates {
-    let substate = scrypto_encode(&KernelBoot::V1).unwrap();
-
-    StateUpdates {
-        by_node: indexmap!(
-            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY) => DatabaseUpdate::Set(substate)
-                        }
-                    },
-                }
-            }
-        ),
-    }
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::KernelBoot,
+        KernelBoot::V1,
+    )
 }

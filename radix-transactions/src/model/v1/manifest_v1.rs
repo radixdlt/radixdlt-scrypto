@@ -19,20 +19,20 @@ pub struct TransactionManifestV1 {
 impl ReadableManifest for TransactionManifestV1 {
     type Instruction = InstructionV1;
 
+    fn is_subintent(&self) -> bool {
+        false
+    }
+
     fn get_instructions(&self) -> &[Self::Instruction] {
         &self.instructions
     }
 
-    fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+        self.blobs.iter()
     }
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
-    }
-
-    fn validate(&self) -> Result<(), TransactionValidationError> {
-        TransactionValidator::validate_instructions_v1(&self.instructions)
     }
 }
 

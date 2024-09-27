@@ -193,7 +193,7 @@ impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
             receipt,
             ..
         } = event;
-        if protocol_version == ProtocolVersion::EARLIEST {
+        if protocol_version == ProtocolVersion::GENESIS {
             match batch_group_index {
                 0 => self.bootstrap_receipts.push(receipt.clone()),
                 1 => self.data_ingestion_receipts.push(receipt.clone()),
@@ -338,7 +338,7 @@ pub fn create_system_bootstrap_flash(
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
                 false,
-                &VmBoot::babylon(),
+                &VmBoot::babylon_genesis(),
             )
             .unwrap_or_else(|err| {
                 panic!(

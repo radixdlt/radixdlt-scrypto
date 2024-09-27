@@ -40,12 +40,12 @@ impl From<SubintentManifestV2> for AnyTransactionManifest {
 }
 
 impl AnyTransactionManifest {
-    pub fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
+    pub fn get_blobs<'a>(&'a self) -> Box<dyn Iterator<Item = (&'a Hash, &'a Vec<u8>)> + 'a> {
         match self {
-            AnyTransactionManifest::V1(m) => m.get_blobs(),
-            AnyTransactionManifest::SystemV1(m) => m.get_blobs(),
-            AnyTransactionManifest::V2(m) => m.get_blobs(),
-            AnyTransactionManifest::SubintentV2(m) => m.get_blobs(),
+            AnyTransactionManifest::V1(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::SystemV1(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::V2(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::SubintentV2(m) => Box::new(m.get_blobs()),
         }
     }
 }

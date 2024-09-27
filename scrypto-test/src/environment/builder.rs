@@ -200,6 +200,9 @@ where
             self.database.commit(&database_updates);
         }
 
+        // Getting the kernel boot to use for the kernel creation.
+        let kernel_boot = KernelBoot::load(&self.database);
+
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
             self.database,
             scrypto_vm,
@@ -207,13 +210,7 @@ where
             id_allocator,
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
-                let vm_boot = database
-                    .get_substate(
-                        TRANSACTION_TRACKER,
-                        BOOT_LOADER_PARTITION,
-                        BOOT_LOADER_VM_BOOT_FIELD_KEY,
-                    )
-                    .unwrap_or(VmBoot::babylon());
+                let vm_boot = VmBoot::load(database);
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),
@@ -236,17 +233,14 @@ where
                     on_apply_cost: Default::default(),
                 };
 
-                System {
-                    versioned_system_logic: VersionedSystemLogic::V1,
-                    blueprint_cache: NonIterMap::new(),
-                    auth_cache: NonIterMap::new(),
-                    schema_cache: NonIterMap::new(),
-                    callback: Vm {
+                System::new(
+                    SystemVersion::latest(),
+                    Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
                         vm_boot,
                     },
-                    modules: SystemModuleMixer::new(
+                    SystemModuleMixer::new(
                         EnabledModules::LIMITS
                             | EnabledModules::AUTH
                             | EnabledModules::TRANSACTION_RUNTIME,
@@ -257,8 +251,8 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    finalization: Default::default(),
-                }
+                    SystemFinalization::no_nullifications(),
+                )
             },
             |system_config, track, id_allocator| {
                 Kernel::kernel_create_kernel_for_testing(
@@ -274,6 +268,7 @@ where
                     },
                     id_allocator,
                     system_config,
+                    kernel_boot.always_visible_global_nodes(),
                 )
             },
         ));

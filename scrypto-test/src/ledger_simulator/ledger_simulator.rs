@@ -209,7 +209,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 } = event;
                 self.events
                     .push(receipt.expect_commit_success().application_events.clone());
-                if protocol_version == ProtocolVersion::EARLIEST {
+                if protocol_version == ProtocolVersion::GENESIS {
                     if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
                         self.genesis_next_epoch = Some(next_epoch);
                     }
@@ -336,6 +336,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn substate_db_mut(&mut self) -> &mut D {
         &mut self.database
+    }
+
+    pub fn transaction_validator(&self) -> &TransactionValidator {
+        &self.transaction_validator
+    }
+
+    /// This should only be needed if you manually apply protocol
+    /// updates to the underlying database after the LedgerSimulator
+    /// has been built.
+    pub fn update_transaction_validator_after_manual_protocol_update(&mut self) {
+        self.transaction_validator =
+            TransactionValidator::new(&self.database, &NetworkDefinition::simulator())
     }
 
     pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
@@ -1203,29 +1215,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 )
             });
 
-        let vm_init = self.vm_modules.create_vm_init();
-
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
-        let executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
-            &self.database,
-            InjectCostingErrorInput {
-                system_input: SystemInit {
-                    self_init: SystemSelfInit {
-                        enable_kernel_trace: execution_config.enable_kernel_trace,
-                        enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                        enable_debug_information: execution_config.enable_debug_information,
-                        execution_trace: execution_config.execution_trace,
-                        system_overrides: execution_config.system_overrides.clone(),
-                    },
-                    callback_init: vm_init,
-                },
-                error_after_count,
-            },
-        );
+        let vm_init = VmInit::load(&self.database, &self.vm_modules);
+        let system_init = InjectCostingErrorInit {
+            system_input: SystemInit::load(&self.database, execution_config, vm_init),
+            error_after_count,
+        };
+        let kernel_init = KernelInit::load(&self.database, system_init);
 
-        let transaction_receipt = executor.execute(executable);
+        let transaction_receipt = kernel_init.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit.state_updates.create_database_updates();
@@ -1240,6 +1240,28 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         transaction_receipt
     }
 
+    pub fn construct_unsigned_notarized_transaction_v1(
+        &mut self,
+        manifest: TransactionManifestV1,
+    ) -> NotarizedTransactionV1 {
+        let notary = Ed25519PrivateKey::from_u64(1337).unwrap();
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        TransactionV1Builder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: current_epoch,
+                end_epoch_exclusive: current_epoch.next().unwrap(),
+                nonce,
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: false,
+                tip_percentage: 0,
+            })
+            .manifest(manifest)
+            .notarize(&notary)
+            .build()
+    }
+
     /// If you have a non-raw notarized tranasaction, you will need to do:
     /// ```ignore
     /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
@@ -1251,7 +1273,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let executable = raw_transaction
             .validate(&self.transaction_validator)
             .expect("Expected raw transaction to be valid")
-            .get_executable();
+            .create_executable();
         self.execute_transaction(
             executable,
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),

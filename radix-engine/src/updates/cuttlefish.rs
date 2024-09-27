@@ -1,12 +1,21 @@
+use radix_transactions::validation::*;
+
 use super::*;
-use crate::system::system_callback::{
-    SystemBoot, VersionedSystemLogic, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
-};
+use crate::blueprints::consensus_manager::*;
+use crate::kernel::kernel::KernelBoot;
+use crate::system::system_callback::*;
 
 #[derive(Clone)]
 pub struct CuttlefishSettings {
     /// Add configuration for system logic versioning
     pub system_logic_update: UpdateSetting<NoSettings>,
+    /// Updating the always visible global nodes to include the account locker package.
+    pub kernel_version_update: UpdateSetting<NoSettings>,
+    /// Add transaction validation changes
+    pub transaction_validation_update: UpdateSetting<NoSettings>,
+    /// updates the min number of rounds per epoch.
+    pub update_number_of_min_rounds_per_epoch:
+        UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -19,12 +28,20 @@ impl UpdateSettings for CuttlefishSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
+            kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
+            transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
+            update_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
+                network,
+            ),
         }
     }
 
     fn all_disabled() -> Self {
         Self {
             system_logic_update: UpdateSetting::Disabled,
+            kernel_version_update: UpdateSetting::Disabled,
+            transaction_validation_update: UpdateSetting::Disabled,
+            update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
         }
     }
 
@@ -34,6 +51,23 @@ impl UpdateSettings for CuttlefishSettings {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub enum UpdateNumberOfMinRoundsPerEpochSettings {
+    Set { value: u64 },
+    SetIfEquals { if_equals: u64, to_value: u64 },
+}
+
+impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
+    fn default() -> Self {
+        Self::SetIfEquals {
+            if_equals: 500,
+            to_value: 100,
+        }
+    }
+}
+
+impl UpdateSettingMarker for UpdateNumberOfMinRoundsPerEpochSettings {}
 
 #[derive(Clone)]
 pub struct CuttlefishBatchGenerator {
@@ -75,48 +109,124 @@ fn generate_principal_batch(
     store: &dyn SubstateDatabase,
     CuttlefishSettings {
         system_logic_update,
+        kernel_version_update: always_visible_global_nodes_update,
+        transaction_validation_update,
+        update_number_of_min_rounds_per_epoch,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
-    if let UpdateSetting::Enabled(_settings) = &system_logic_update {
+    if let UpdateSetting::Enabled(NoSettings) = &system_logic_update {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-protocol-system-logic-updates",
             generate_system_logic_v2_updates(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(_settings) = &always_visible_global_nodes_update {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-protocol-kernel-version-update",
+            generate_always_visible_global_nodes_updates(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &transaction_validation_update {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-transaction-validation-updates",
+            generate_cuttlefish_transaction_validation_updates(),
+        ));
+    }
+    if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-update-number-of-min-rounds-per-epoch",
+            generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
         ));
     }
     ProtocolUpdateBatch { transactions }
 }
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
-    let system_boot: SystemBoot = db
-        .get_substate(
-            TRANSACTION_TRACKER,
-            BOOT_LOADER_PARTITION,
-            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
-        )
-        .unwrap();
+    let system_boot: SystemBoot = db.get_existing_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+    );
 
     let cur_system_parameters = match system_boot {
         SystemBoot::V1(parameters) => parameters,
         _ => panic!("Unexpected SystemBoot version"),
     };
 
-    StateUpdates {
-        by_node: indexmap!(
-            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
-                                scrypto_encode(&SystemBoot::V2(
-                                    VersionedSystemLogic::V2,
-                                    cur_system_parameters,
-                                )).unwrap()
-                            ),
-                        }
-                    },
-                }
-            }
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+        SystemBoot::cuttlefish_for_previous_parameters(cur_system_parameters),
+    )
+}
+
+fn generate_always_visible_global_nodes_updates<S: SubstateDatabase + ?Sized>(
+    db: &S,
+) -> StateUpdates {
+    let KernelBoot::V1 = db.get_existing_substate::<KernelBoot>(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::KernelBoot,
+    ) else {
+        panic!("Unexpected KernelBoot version")
+    };
+
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::KernelBoot,
+        KernelBoot::cuttlefish(),
+    )
+}
+
+fn generate_cuttlefish_transaction_validation_updates() -> StateUpdates {
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::TransactionValidationConfiguration,
+        TransactionValidationConfigurationSubstate::new(
+            TransactionValidationConfigurationVersions::V1(
+                TransactionValidationConfigV1::cuttlefish(),
+            ),
         ),
+    )
+}
+
+fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
+    db: &S,
+    settings: UpdateNumberOfMinRoundsPerEpochSettings,
+) -> StateUpdates {
+    let mut consensus_manager_config = db
+        .get_existing_substate::<FieldSubstate<VersionedConsensusManagerConfiguration>>(
+            CONSENSUS_MANAGER,
+            MAIN_BASE_PARTITION,
+            ConsensusManagerField::Configuration,
+        )
+        .into_payload()
+        .fully_update_and_into_latest_version();
+    let min_rounds_per_epoch = &mut consensus_manager_config
+        .config
+        .epoch_change_condition
+        .min_round_count;
+
+    match settings {
+        UpdateNumberOfMinRoundsPerEpochSettings::Set { value } => *min_rounds_per_epoch = value,
+        UpdateNumberOfMinRoundsPerEpochSettings::SetIfEquals {
+            if_equals,
+            to_value,
+        } => {
+            if *min_rounds_per_epoch == if_equals {
+                *min_rounds_per_epoch = to_value
+            }
+        }
     }
+
+    StateUpdates::empty().set_substate(
+        CONSENSUS_MANAGER,
+        MAIN_BASE_PARTITION,
+        ConsensusManagerField::Configuration,
+        consensus_manager_config.into_locked_substate(),
+    )
 }

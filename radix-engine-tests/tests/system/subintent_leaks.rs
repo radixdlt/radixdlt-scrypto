@@ -13,8 +13,7 @@ fn bucket_leak_in_subintent_should_fail() {
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
             .withdraw_from_account(account2, XRD, 10)
-            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-            //.yield_to_parent(())
+            .yield_to_parent(())
             .build(),
         [public_key2.signature_proof()],
     );
@@ -54,8 +53,7 @@ fn proofs_in_subintent_should_autodrop() {
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
             .create_proof_from_account_of_amount(account2, XRD, 10)
-            // TODO-CUTTLEFISH: Fix the test / behaviour so this line can be uncommented
-            //.yield_to_parent(())
+            .yield_to_parent(())
             .build(),
         [public_key2.signature_proof()],
     );

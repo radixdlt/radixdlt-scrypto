@@ -109,8 +109,8 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
         )
         .build();
 
-    let transaction = TestTransaction::new_v1_from_nonce(manifest, 10, btreeset!())
-        .into_simulator_executable_unwrap();
+    let transaction =
+        TestTransaction::new_v1_from_nonce(manifest, 10, btreeset!()).into_executable_unwrap();
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
         let mut limit_parameters = LimitParameters::babylon_genesis();

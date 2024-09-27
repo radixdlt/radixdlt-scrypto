@@ -314,7 +314,7 @@ pub fn generate_manifest<B, M: BuildableManifest>(
 where
     B: IsBlobProvider,
 {
-    let mut id_validator = ManifestValidator::new();
+    let mut id_validator = BasicManifestValidator::new();
     let mut name_resolver = NameResolver::new();
 
     let mut manifest = M::default();
@@ -355,7 +355,7 @@ where
 fn generate_pseudo_instructions(
     manifest: &mut impl BuildableManifest,
     instructions_iter: &mut Peekable<core::slice::Iter<ast::InstructionWithSpan>>,
-    id_validator: &mut ManifestValidator,
+    id_validator: &mut BasicManifestValidator,
     name_resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     transaction_bech32_decoder: &TransactionHashBech32Decoder,
@@ -477,7 +477,7 @@ fn generate_id_validation_error(
 
 pub fn generate_instruction<B>(
     instruction: &ast::InstructionWithSpan,
-    id_validator: &mut ManifestValidator,
+    id_validator: &mut BasicManifestValidator,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -2233,7 +2233,7 @@ mod tests {
                 .unwrap()
                 .parse_instruction()
                 .unwrap();
-            let mut id_validator = ManifestValidator::new();
+            let mut id_validator = BasicManifestValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(
@@ -2855,7 +2855,7 @@ mod tests {
             .unwrap()
             .parse_instruction()
             .unwrap();
-        let mut id_validator = ManifestValidator::new();
+        let mut id_validator = BasicManifestValidator::new();
         let mut resolver = NameResolver::new();
         resolver
             .named_buckets

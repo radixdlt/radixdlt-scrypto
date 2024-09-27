@@ -34,7 +34,8 @@ fn drop_auth_zone_proofs_should_not_drop_named_proofs() {
 
 #[test]
 fn drop_all_proofs_should_drop_named_proofs() {
-    // NB: we're leveraging the fact that test runner does not statically validate the manifest.
+    // NB: We disable validation in the manifest builder and leverage the fact that the test runner
+    // does not statically validate the manifest.
     // In production, a transaction like what's created here should be rejected because it
     // refers to undefined proof ids.
 
@@ -53,11 +54,8 @@ fn drop_all_proofs_should_drop_named_proofs() {
             let proof = lookup.proof("proof");
             builder.drop_all_proofs().drop_proof(proof) // Proof should fail after DROP_AUTH_ZONE_PROOFS
         })
-        .build();
-    let receipt = ledger.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+        .build_no_validate();
+    let receipt = ledger.execute_manifest(manifest, [public_key.signature_proof()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

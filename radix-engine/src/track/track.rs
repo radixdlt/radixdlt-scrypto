@@ -4,7 +4,6 @@ use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::state_updates::*;
-use crate::track::BootStore;
 use radix_engine_interface::types::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::DbPartitionKey;
@@ -38,22 +37,6 @@ pub struct MappedTrack<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> 
     transient_substates: TransientSubstates,
 
     phantom_data: PhantomData<M>,
-}
-
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for MappedTrack<'s, S, M> {
-    fn read_boot_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let db_sort_key = M::to_db_sort_key(&substate_key);
-
-        self.substate_db
-            .get_raw_substate_by_db_key(&db_partition_key, &db_sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
-    }
 }
 
 /// Records all the substates that have been read or written into, and all the partitions to delete.

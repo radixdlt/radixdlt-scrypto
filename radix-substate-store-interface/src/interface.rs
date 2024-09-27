@@ -263,7 +263,7 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
     ///
     /// # Example
     /// ```ignore
-    /// let is_bootstrapped = db.read_substate(
+    /// let is_bootstrapped = db.get_raw_substate(
     ///     PACKAGE_PACKAGE,
     ///     TYPE_INFO_FIELD_PARTITION,
     ///     TypeInfoField::TypeInfo,
@@ -281,7 +281,8 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
         )
     }
 
-    /// Gets the substate's value, if it exists, and returns it decoded as `V`.
+    /// Gets the substate's value, if it exists, and returns it decoded as `Some(V)`.
+    /// If it doesn't exist, `None` is returned.
     ///
     /// # Panics
     /// This method panics if:
@@ -303,6 +304,36 @@ pub trait SubstateDatabaseExtensions: SubstateDatabase {
     ) -> Option<V> {
         let raw = self.get_raw_substate(node_id, partition_number, substate_key)?;
         Some(decode_value(&raw))
+    }
+
+    /// Gets the value of a subsate which is expected to exist, returns it decoded as `V`.
+    ///
+    /// # Panics
+    /// This method panics if:
+    /// * The substate doesn't exist in the database.
+    /// * There is an error decoding the value into the `V`.
+    ///
+    /// # Example use:
+    /// ```ignore
+    /// let existing_type_info_substate: TypeInfoSubstate = db.get_existing_substate(
+    ///     PACKAGE_PACKAGE,
+    ///     TYPE_INFO_FIELD_PARTITION,
+    ///     TypeInfoField::TypeInfo,
+    /// )?;
+    /// ```
+    fn get_existing_substate<'a, V: ScryptoDecode>(
+        &self,
+        node_id: impl AsRef<NodeId>,
+        partition_number: PartitionNumber,
+        substate_key: impl ResolvableSubstateKey<'a>,
+    ) -> V {
+        let substate_value = self.get_substate(node_id, partition_number, substate_key);
+        substate_value.unwrap_or_else(|| {
+            panic!(
+                "Expected substate of type {} to already exist.",
+                core::any::type_name::<V>(),
+            )
+        })
     }
 
     // ------------------------------------------------------------------------------------
@@ -620,7 +651,7 @@ pub trait CommittableSubstateDatabase {
 impl<T: CommittableSubstateDatabase + ?Sized> CommittableSubstateDatabaseExtensions for T {}
 
 pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
-    fn update_substate<'a>(
+    fn update_substate_raw<'a>(
         &mut self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
@@ -659,7 +690,7 @@ pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
         )))
     }
 
-    fn update_substate_typed<'a, E: ScryptoEncode>(
+    fn update_substate<'a, E: ScryptoEncode>(
         &mut self,
         node_id: impl AsRef<NodeId>,
         partition_number: PartitionNumber,
@@ -673,7 +704,7 @@ pub trait CommittableSubstateDatabaseExtensions: CommittableSubstateDatabase {
                 err,
             )
         });
-        self.update_substate(node_id, partition_number, substate_key, encoded_value)
+        self.update_substate_raw(node_id, partition_number, substate_key, encoded_value)
     }
 }
 

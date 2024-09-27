@@ -1,15 +1,22 @@
+use std::iter;
+
 use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ExecutableIntent {
     pub encoded_instructions: Rc<Vec<u8>>,
     pub auth_zone_init: AuthZoneInit,
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-    /// Indices against the parent Executable.
-    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
-    pub children_intent_indices: Vec<usize>,
+    /// An index of the subintent in the parent ExecutableTransaction
+    /// Validation ensures that each subintent has a unique parent
+    /// and a unique path from the transaction intent.
+    pub children_subintent_indices: Vec<SubintentIndex>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+#[sbor(transparent)]
+pub struct SubintentIndex(pub usize);
 
 pub trait IntoExecutable {
     type Error: Debug;
@@ -19,13 +26,17 @@ pub trait IntoExecutable {
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error>;
 
-    fn into_simulator_executable_unwrap(self) -> ExecutableTransaction
+    /// For use in tests as a quick mechanism to get an executable.
+    /// Validates with a network-independent validator, using the latest settings.
+    fn into_executable_unwrap(self) -> ExecutableTransaction
     where
         Self: Sized,
     {
-        self.into_executable(&TransactionValidator::new_with_latest_config(
-            &NetworkDefinition::simulator(),
-        ))
+        self.into_executable(
+            &TransactionValidator::new_with_static_config_network_agnostic(
+                TransactionValidationConfig::latest(),
+            ),
+        )
         .unwrap()
     }
 }
@@ -53,13 +64,14 @@ impl IntoExecutable for ExecutableTransaction {
 }
 
 /// This is an executable form of the transaction, post stateless validation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ExecutableTransaction {
-    pub(crate) intents: Vec<ExecutableIntent>,
+    pub(crate) transaction_intent: ExecutableIntent,
+    pub(crate) subintents: Vec<ExecutableIntent>,
     pub(crate) context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ExecutionContext {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     pub unique_hash: Hash,
@@ -68,8 +80,7 @@ pub struct ExecutionContext {
     pub num_of_signature_validations: usize,
     pub costing_parameters: TransactionCostingParameters,
     pub epoch_range: Option<EpochRange>,
-    pub start_timestamp_inclusive: Option<Instant>,
-    pub end_timestamp_exclusive: Option<Instant>,
+    pub proposer_timestamp_range: Option<ProposerTimestampRange>,
     pub disable_limits_and_costing_modules: bool,
     pub intent_hash_nullifications: Vec<IntentHashNullification>,
 }
@@ -103,18 +114,34 @@ impl ExecutableTransaction {
 
         Self {
             context,
-            intents: vec![ExecutableIntent {
+            transaction_intent: ExecutableIntent {
                 encoded_instructions: encoded_instructions_v1,
                 references,
                 blobs,
                 auth_zone_init,
-                children_intent_indices: vec![],
-            }],
+                children_subintent_indices: vec![],
+            },
+            subintents: vec![],
         }
     }
 
-    pub fn new_v2(mut intents: Vec<ExecutableIntent>, context: ExecutionContext) -> Self {
-        for intent in &mut intents {
+    pub fn new_v2(
+        mut transaction_intent: ExecutableIntent,
+        mut subintents: Vec<ExecutableIntent>,
+        context: ExecutionContext,
+    ) -> Self {
+        {
+            let intent = &mut transaction_intent;
+            for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
+                intent
+                    .references
+                    .insert(proof.resource_address().clone().into());
+            }
+            for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
+                intent.references.insert(resource.clone().into());
+            }
+        }
+        for intent in &mut subintents {
             for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
                 intent
                     .references
@@ -128,19 +155,21 @@ impl ExecutableTransaction {
         // Pre-allocated addresses are currently only used by the protocol (ie genesis + protocol updates).
         // Since there's no reason for the protocol to use child subintents, we only assign pre-allocated
         // addresses to the root subintent
-        if let Some(root) = intents.get_mut(0) {
-            for preallocated_address in &context.pre_allocated_addresses {
-                root.references.insert(
-                    preallocated_address
-                        .blueprint_id
-                        .package_address
-                        .clone()
-                        .into(),
-                );
-            }
+        for preallocated_address in &context.pre_allocated_addresses {
+            transaction_intent.references.insert(
+                preallocated_address
+                    .blueprint_id
+                    .package_address
+                    .clone()
+                    .into(),
+            );
         }
 
-        Self { context, intents }
+        Self {
+            context,
+            transaction_intent,
+            subintents,
+        }
     }
 
     // Consuming builder-like customization methods:
@@ -173,12 +202,8 @@ impl ExecutableTransaction {
         self.context.epoch_range.as_ref()
     }
 
-    pub fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
-        self.context.start_timestamp_inclusive
-    }
-
-    pub fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
-        self.context.end_timestamp_exclusive
+    pub fn overall_proposer_timestamp_range(&self) -> Option<&ProposerTimestampRange> {
+        self.context.proposer_timestamp_range.as_ref()
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {
@@ -201,18 +226,26 @@ impl ExecutableTransaction {
         self.context.disable_limits_and_costing_modules
     }
 
-    pub fn intents(&self) -> &Vec<ExecutableIntent> {
-        &self.intents
+    pub fn transaction_intent(&self) -> &ExecutableIntent {
+        &self.transaction_intent
     }
 
-    pub fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
+    pub fn subintents(&self) -> &[ExecutableIntent] {
+        &self.subintents
+    }
+
+    pub fn all_intents(&self) -> impl Iterator<Item = &ExecutableIntent> {
+        iter::once(&self.transaction_intent).chain(self.subintents.iter())
+    }
+
+    pub fn intent_hash_nullifications(&self) -> &[IntentHashNullification] {
         &self.context.intent_hash_nullifications
     }
 
     pub fn all_blob_hashes(&self) -> IndexSet<Hash> {
         let mut hashes = indexset!();
 
-        for intent in self.intents() {
+        for intent in self.all_intents() {
             for hash in intent.blobs.keys() {
                 hashes.insert(*hash);
             }
@@ -220,10 +253,11 @@ impl ExecutableTransaction {
 
         hashes
     }
+
     pub fn all_references(&self) -> IndexSet<Reference> {
         let mut references = indexset!();
 
-        for intent in self.intents() {
+        for intent in self.all_intents() {
             for reference in intent.references.iter() {
                 references.insert(reference.clone());
             }

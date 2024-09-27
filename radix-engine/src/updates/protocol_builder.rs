@@ -12,6 +12,8 @@ pub struct ProtocolUpdateExecutor {
     pub network_definition: NetworkDefinition,
     pub protocol_version: ProtocolVersion,
     pub batch_generator: Box<dyn ProtocolUpdateBatchGenerator>,
+    pub start_at_batch_group_index: usize,
+    pub start_at_batch_index_in_first_group: usize,
 }
 
 impl ProtocolUpdateExecutor {
@@ -22,6 +24,24 @@ impl ProtocolUpdateExecutor {
             network_definition,
             protocol_version,
             batch_generator,
+            start_at_batch_group_index: 0,
+            start_at_batch_index_in_first_group: 0,
+        }
+    }
+
+    pub fn continue_for_version(
+        protocol_version: ProtocolVersion,
+        settings: &ProtocolSettings,
+        from_inclusive: (usize, usize),
+    ) -> Self {
+        let network_definition = settings.network_definition.clone();
+        let batch_generator = settings.resolve_batch_generator_for_update(&protocol_version);
+        Self {
+            network_definition,
+            protocol_version,
+            batch_generator,
+            start_at_batch_group_index: from_inclusive.0,
+            start_at_batch_index_in_first_group: from_inclusive.1,
         }
     }
 
@@ -35,6 +55,8 @@ impl ProtocolUpdateExecutor {
             network_definition,
             protocol_version,
             batch_generator,
+            start_at_batch_group_index: 0,
+            start_at_batch_index_in_first_group: 0,
         }
     }
 
@@ -52,13 +74,21 @@ impl ProtocolUpdateExecutor {
         hooks: &mut H,
         vm_modules: &M,
     ) {
+        let add_status_update = self.batch_generator.status_tracking_enabled();
+
         for (batch_group_index, batch_group_name) in self
             .batch_generator
             .batch_group_descriptors()
             .into_iter()
             .enumerate()
+            .skip(self.start_at_batch_group_index)
         {
-            for batch_index in 0..self.batch_generator.batch_count(batch_group_index) {
+            let start_at_batch = if batch_group_index == self.start_at_batch_group_index {
+                self.start_at_batch_index_in_first_group
+            } else {
+                0
+            };
+            for batch_index in start_at_batch..self.batch_generator.batch_count(batch_group_index) {
                 let batch =
                     self.batch_generator
                         .generate_batch(store, batch_group_index, batch_index);
@@ -130,7 +160,60 @@ impl ProtocolUpdateExecutor {
                         });
                     }
                 }
+
+                if add_status_update {
+                    // In the node's executor, this will likely need to be in a separate transaction,
+                    // so it gets tracked properly by the merkle tree etc
+                    store.update_substate(
+                        TRANSACTION_TRACKER,
+                        PROTOCOL_UPDATE_STATUS_PARTITION,
+                        ProtocolUpdateStatusField::Summary,
+                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                            ProtocolUpdateStatusSummaryV1 {
+                                protocol_version: self.protocol_version,
+                                update_status: ProtocolUpdateStatus::InProgress {
+                                    latest_commit: LatestProtocolUpdateCommitBatch {
+                                        batch_group_index,
+                                        batch_index,
+                                    },
+                                },
+                            },
+                        ),
+                    );
+                }
+                if H::IS_ENABLED {
+                    hooks.on_transaction_batch_committed(OnProtocolTransactionBatchCommitted {
+                        protocol_version: self.protocol_version,
+                        batch_group_index,
+                        batch_group_name: &batch_group_name,
+                        batch_index,
+                        status_update_committed: add_status_update,
+                        resultant_store: store,
+                    });
+                }
             }
+        }
+        if add_status_update {
+            // In the node's executor, this will likely need to be in a separate transaction,
+            // so it gets tracked properly by the merkle tree etc
+            store.update_substate(
+                TRANSACTION_TRACKER,
+                PROTOCOL_UPDATE_STATUS_PARTITION,
+                ProtocolUpdateStatusField::Summary,
+                ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                    ProtocolUpdateStatusSummaryV1 {
+                        protocol_version: self.protocol_version,
+                        update_status: ProtocolUpdateStatus::Complete,
+                    },
+                ),
+            );
+        }
+        if H::IS_ENABLED {
+            hooks.on_protocol_update_completed(OnProtocolUpdateCompleted {
+                protocol_version: self.protocol_version,
+                status_update_committed: add_status_update,
+                resultant_store: store,
+            });
         }
     }
 }
@@ -145,6 +228,10 @@ pub trait ProtocolUpdateExecutionHooks {
     }
 
     fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {}
+
+    fn on_transaction_batch_committed(&mut self, event: OnProtocolTransactionBatchCommitted) {}
+
+    fn on_protocol_update_completed(&mut self, event: OnProtocolUpdateCompleted) {}
 }
 
 /// Using a struct allows lots of parameters to be passed, without
@@ -157,6 +244,21 @@ pub struct OnProtocolTransactionExecuted<'a> {
     pub transaction_index: usize,
     pub transaction: &'a ProtocolUpdateTransactionDetails,
     pub receipt: &'a TransactionReceipt,
+    pub resultant_store: &'a mut dyn SubstateDatabase,
+}
+
+pub struct OnProtocolTransactionBatchCommitted<'a> {
+    pub protocol_version: ProtocolVersion,
+    pub batch_group_index: usize,
+    pub batch_group_name: &'a str,
+    pub batch_index: usize,
+    pub status_update_committed: bool,
+    pub resultant_store: &'a mut dyn SubstateDatabase,
+}
+
+pub struct OnProtocolUpdateCompleted<'a> {
+    pub protocol_version: ProtocolVersion,
+    pub status_update_committed: bool,
     pub resultant_store: &'a mut dyn SubstateDatabase,
 }
 
@@ -184,6 +286,7 @@ impl ProtocolSettings {
         protocol_version: &ProtocolVersion,
     ) -> Box<dyn ProtocolUpdateBatchGenerator> {
         match protocol_version {
+            ProtocolVersion::Unbootstrapped => Box::new(NoOpBatchGenerator),
             ProtocolVersion::Babylon => Box::new(self.babylon.create_batch_generator()),
             ProtocolVersion::Anemone => Box::new(self.anemone.create_batch_generator()),
             ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_batch_generator()),
@@ -246,11 +349,14 @@ impl ProtocolBuilder {
     }
 
     pub fn unbootstrapped(self) -> ProtocolExecutor {
-        ProtocolExecutor::new(None, None, self.settings)
+        self.from_to(
+            ProtocolVersion::Unbootstrapped,
+            ProtocolVersion::Unbootstrapped,
+        )
     }
 
     pub fn from_bootstrap_to(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
-        ProtocolExecutor::new(None, Some(protocol_version), self.settings)
+        self.from_to(ProtocolVersion::Unbootstrapped, protocol_version)
     }
 
     pub fn from_bootstrap_to_latest(self) -> ProtocolExecutor {
@@ -258,7 +364,7 @@ impl ProtocolBuilder {
     }
 
     pub fn only_babylon(self) -> ProtocolExecutor {
-        self.from_bootstrap_to(ProtocolVersion::EARLIEST)
+        self.from_bootstrap_to(ProtocolVersion::Babylon)
     }
 
     /// The `start_protocol_version` is assumed to be currently active.
@@ -269,25 +375,42 @@ impl ProtocolBuilder {
         end_protocol_version: ProtocolVersion,
     ) -> ProtocolExecutor {
         ProtocolExecutor::new(
-            Some(start_protocol_version),
-            Some(end_protocol_version),
+            ProtocolExecutorStart::FromCompleted(start_protocol_version),
+            end_protocol_version,
+            self.settings,
+        )
+    }
+
+    /// Discovers the start point from the database
+    pub fn from_current_to_latest(self) -> ProtocolExecutor {
+        self.from_current_to(ProtocolVersion::LATEST)
+    }
+
+    /// Discovers the start point from the database
+    pub fn from_current_to(self, end_protocol_version: ProtocolVersion) -> ProtocolExecutor {
+        ProtocolExecutor::new(
+            ProtocolExecutorStart::ResumeFromCurrent,
+            end_protocol_version,
             self.settings,
         )
     }
 }
 
+enum ProtocolExecutorStart {
+    FromCompleted(ProtocolVersion),
+    ResumeFromCurrent,
+}
+
 pub struct ProtocolExecutor {
-    /// Note: `None` means start from unbootstrapped
-    starting_at: Option<ProtocolVersion>,
-    /// Note: `None` means end unbootstrapped
-    update_until: Option<ProtocolVersion>,
+    starting_at: ProtocolExecutorStart,
+    update_until: ProtocolVersion,
     settings: ProtocolSettings,
 }
 
 impl ProtocolExecutor {
     fn new(
-        starting_at: Option<ProtocolVersion>,
-        update_until: Option<ProtocolVersion>,
+        starting_at: ProtocolExecutorStart,
+        update_until: ProtocolVersion,
         settings: ProtocolSettings,
     ) -> Self {
         Self {
@@ -297,21 +420,11 @@ impl ProtocolExecutor {
         }
     }
 
-    pub fn is_bootstrapped(store: &mut impl SubstateDatabase) -> bool {
-        store
-            .get_raw_substate(
-                PACKAGE_PACKAGE,
-                TYPE_INFO_FIELD_PARTITION,
-                TypeInfoField::TypeInfo,
-            )
-            .is_some()
-    }
-
     pub fn commit_each_protocol_update(
         self,
         store: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     ) {
-        for update_execution in self.each_protocol_update_executor() {
+        for update_execution in self.each_protocol_update_executor(&*store) {
             update_execution.run_and_commit(store);
         }
     }
@@ -325,27 +438,55 @@ impl ProtocolExecutor {
         hooks: &mut impl ProtocolUpdateExecutionHooks,
         modules: &impl VmInitialize,
     ) {
-        for update_execution in self.each_protocol_update_executor() {
+        for update_execution in self.each_protocol_update_executor(&*store) {
             update_execution.run_and_commit_advanced(store, hooks, modules);
         }
     }
 
-    pub fn each_target_protocol_version(&self) -> impl Iterator<Item = ProtocolVersion> {
-        let starting_at = self.starting_at;
-        let until_protocol_version = self.update_until;
-        ProtocolVersion::VARIANTS
-            .into_iter()
-            .filter(move |version| {
-                let satisfies_lower_bound = starting_at.is_none()
-                    || starting_at.is_some_and(|start_version| start_version < *version);
-                let satisfies_upper_bound =
-                    until_protocol_version.is_some_and(|end_version| *version <= end_version);
-                satisfies_lower_bound && satisfies_upper_bound
+    pub fn each_target_protocol_version(
+        &self,
+        store: &impl SubstateDatabase,
+    ) -> impl Iterator<Item = (ProtocolVersion, (usize, usize))> {
+        let starting_at = match self.starting_at {
+            ProtocolExecutorStart::FromCompleted(protocol_version) => ProtocolUpdateStatusSummary {
+                protocol_version,
+                update_status: ProtocolUpdateStatus::Complete,
+            },
+            ProtocolExecutorStart::ResumeFromCurrent => {
+                ProtocolUpdateStatusSummarySubstate::load(store).into_unique_version()
+            }
+        };
+        let from_protocol_version = starting_at.protocol_version;
+        ProtocolVersion::all_between_inclusive(starting_at.protocol_version, self.update_until)
+            .filter_map(move |version| {
+                if from_protocol_version == version {
+                    match &starting_at.update_status {
+                        ProtocolUpdateStatus::Complete => None,
+                        ProtocolUpdateStatus::InProgress { latest_commit } => Some((
+                            version,
+                            (
+                                latest_commit.batch_group_index,
+                                latest_commit.batch_index + 1,
+                            ),
+                        )),
+                    }
+                } else {
+                    Some((version, (0, 0)))
+                }
             })
     }
 
-    pub fn each_protocol_update_executor(self) -> impl Iterator<Item = ProtocolUpdateExecutor> {
-        self.each_target_protocol_version()
-            .map(move |version| ProtocolUpdateExecutor::new_for_version(version, &self.settings))
+    pub fn each_protocol_update_executor(
+        self,
+        store: &impl SubstateDatabase,
+    ) -> impl Iterator<Item = ProtocolUpdateExecutor> {
+        self.each_target_protocol_version(store)
+            .map(move |(version, start_from_inclusive)| {
+                ProtocolUpdateExecutor::continue_for_version(
+                    version,
+                    &self.settings,
+                    start_from_inclusive,
+                )
+            })
     }
 }

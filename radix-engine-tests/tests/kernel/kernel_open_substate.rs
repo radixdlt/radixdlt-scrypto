@@ -1,31 +1,7 @@
-use radix_common::prelude::*;
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::Kernel;
-use radix_engine::kernel::kernel_api::KernelSubstateApi;
-use radix_engine::system::system_callback::{System, SystemLockData, VersionedSystemLogic};
-use radix_engine::system::system_modules::auth::AuthModule;
-use radix_engine::system::system_modules::costing::{
-    CostingModule, CostingModuleConfig, FeeTable, SystemLoanFeeReserve,
-};
-use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
 use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use radix_engine::system::system_modules::{EnabledModules, SystemModuleMixer};
-use radix_engine::track::Track;
-use radix_engine::updates::ProtocolBuilder;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::*;
-use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::prelude::*;
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_queries::typed_substate_layout::{
-    BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
-};
-use radix_transactions::prelude::*;
-use scrypto_test::prelude::UniqueTransaction;
+use scrypto_test::prelude::*;
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
@@ -35,7 +11,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         1,
         btreeset![],
     )
-    .into_simulator_executable_unwrap();
+    .into_executable_unwrap();
 
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();
@@ -46,17 +22,14 @@ pub fn test_open_substate_of_invisible_package_address() {
         .commit_each_protocol_update(&mut database);
 
     // Create kernel
-    let mut system = System {
-        versioned_system_logic: VersionedSystemLogic::V1,
-        blueprint_cache: NonIterMap::new(),
-        auth_cache: NonIterMap::new(),
-        schema_cache: NonIterMap::new(),
-        callback: Vm {
+    let mut system = System::new(
+        SystemVersion::latest(),
+        Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
             vm_boot: VmBoot::latest(),
         },
-        modules: SystemModuleMixer::new(
+        SystemModuleMixer::new(
             EnabledModules::for_test_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(
@@ -78,8 +51,8 @@ pub fn test_open_substate_of_invisible_package_address() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
-        finalization: Default::default(),
-    };
+        SystemFinalization::no_nullifications(),
+    );
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);

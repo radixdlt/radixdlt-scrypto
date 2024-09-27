@@ -16,6 +16,13 @@ pub struct SimulatorEnvironment {
 }
 
 impl SimulatorEnvironment {
+    pub fn new_reset() -> Result<Self, Error> {
+        let dir = get_data_dir()?;
+        std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
+
+        Self::new()
+    }
+
     pub fn new() -> Result<Self, Error> {
         // Create the database
         let db = RocksdbSubstateStore::standard(get_data_dir()?);
@@ -33,24 +40,12 @@ impl SimulatorEnvironment {
         Ok(env)
     }
 
-    pub fn reset(self) -> Result<Self, Error> {
-        drop(self);
-
-        let dir = get_data_dir()?;
-        std::fs::remove_dir_all(dir).map_err(Error::IOError)?;
-
-        Self::new()
-    }
-
     fn bootstrap(&mut self) {
-        // Ideally if we stored "protocol update state" in the substate database we could actually
-        // automate discovery of where the protocol should start; and we then can simply
-        // "update to latest" here automatically.
-        if !ProtocolExecutor::is_bootstrapped(&mut self.db) {
-            ProtocolBuilder::for_network(&self.network_definition)
-                .from_bootstrap_to_latest()
-                .commit_each_protocol_update(&mut self.db)
-        }
+        // Note: from_current_to_latest discovers the current status from the database,
+        // and auto-migrates
+        ProtocolBuilder::for_network(&self.network_definition)
+            .from_current_to_latest()
+            .commit_each_protocol_update(&mut self.db)
     }
 }
 

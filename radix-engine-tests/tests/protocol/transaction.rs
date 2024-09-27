@@ -27,5 +27,5 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
     let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
-    receipt.expect_specific_rejection(|e| matches!(e, RejectionReason::TransactionNotYetSupported));
+    receipt.expect_specific_rejection(|e| matches!(e, RejectionReason::SubintentsNotYetSupported));
 }

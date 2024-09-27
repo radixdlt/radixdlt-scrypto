@@ -74,7 +74,7 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                tx.get_executable(),
+                tx.clone().create_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }

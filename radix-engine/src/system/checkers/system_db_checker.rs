@@ -105,6 +105,7 @@ pub enum SystemPartitionCheckError {
     InvalidSchemaKey,
     InvalidSchemaValue,
     InvalidBootLoaderPartition,
+    InvalidProtocolUpdateStatusPartition,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -485,6 +486,20 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         .ne(TRANSACTION_TRACKER.as_node_id())
                     {
                         return Err(SystemPartitionCheckError::InvalidBootLoaderPartition);
+                    }
+
+                    for _ in reader.field_iter(&node_checker_state.node_id, partition_number) {
+                        substate_count += 1;
+                    }
+                }
+                SystemPartitionDescriptor::ProtocolUpdateStatus => {
+                    if node_checker_state
+                        .node_id
+                        .ne(TRANSACTION_TRACKER.as_node_id())
+                    {
+                        return Err(
+                            SystemPartitionCheckError::InvalidProtocolUpdateStatusPartition,
+                        );
                     }
 
                     for _ in reader.field_iter(&node_checker_state.node_id, partition_number) {

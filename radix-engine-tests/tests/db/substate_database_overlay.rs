@@ -502,6 +502,64 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
                 .substate_db_mut()
                 .commit(&database_updates);
         }
+
+        fn on_transaction_batch_committed(&mut self, event: OnProtocolTransactionBatchCommitted) {
+            let OnProtocolTransactionBatchCommitted {
+                status_update_committed,
+                protocol_version,
+                batch_group_index,
+                batch_index,
+                ..
+            } = event;
+            if status_update_committed {
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .substate_db_mut()
+                    .update_substate(
+                        TRANSACTION_TRACKER,
+                        PROTOCOL_UPDATE_STATUS_PARTITION,
+                        ProtocolUpdateStatusField::Summary,
+                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                            ProtocolUpdateStatusSummaryV1 {
+                                protocol_version: protocol_version,
+                                update_status: ProtocolUpdateStatus::InProgress {
+                                    latest_commit: LatestProtocolUpdateCommitBatch {
+                                        batch_group_index,
+                                        batch_index,
+                                    },
+                                },
+                            },
+                        ),
+                    );
+            }
+        }
+
+        fn on_protocol_update_completed(&mut self, event: OnProtocolUpdateCompleted) {
+            let OnProtocolUpdateCompleted {
+                protocol_version,
+                status_update_committed,
+                ..
+            } = event;
+            if status_update_committed {
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .substate_db_mut()
+                    .update_substate(
+                        TRANSACTION_TRACKER,
+                        PROTOCOL_UPDATE_STATUS_PARTITION,
+                        ProtocolUpdateStatusField::Summary,
+                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                            ProtocolUpdateStatusSummaryV1 {
+                                protocol_version: protocol_version,
+                                update_status: ProtocolUpdateStatus::Complete,
+                            },
+                        ),
+                    );
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .update_transaction_validator_after_manual_protocol_update();
+            }
+        }
     }
 
     struct ScenarioHooks<'a, F: DatabaseComparisonScenarioCheck> {
