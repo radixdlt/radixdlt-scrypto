@@ -1,0 +1,128 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 6 entities
+├─ resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-xrd.png"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l across 1 partitions
+  └─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Package Caller Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.",
+         ),
+       )
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_resource.png"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l across 1 partitions
+  └─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Global Caller Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.",
+         ),
+       )
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-global_caller_resource.png"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5 across 1 partitions
+  └─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "ECDSA Secp256k1 Signature Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Badges generated automatically by the Radix system to represent ECDSA Secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.",
+         ),
+       )
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_resource.png"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5 across 1 partitions
+  └─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "EdDSA Ed25519 Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.",
+         ),
+       )
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_resource.png"),
+         ),
+       )
+└─ resource_sim1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxw002k0 across 1 partitions
+  └─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "System Execution Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.",
+         ),
+       )
+    └─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-system_execution_resource.png"),
+         ),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0
