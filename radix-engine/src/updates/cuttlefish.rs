@@ -265,6 +265,125 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
         },
     };
 
+    // We would like to add an `info_url` entry for the various entities that we have. The this is
+    // the mapping that we're using.
+    let info_url_metadata = [
+        (XRD.into_node_id(), "https://go.radixdlt.com/xrd-info"),
+        (
+            SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/secp256k1-signature-resouce-info",
+        ),
+        (
+            ED25519_SIGNATURE_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/ed25519-signature-resource-info",
+        ),
+        (
+            PACKAGE_OF_DIRECT_CALLER_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/package-of-direct-caller-resource-info",
+        ),
+        (
+            GLOBAL_CALLER_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/global-caller-resource-info",
+        ),
+        (
+            SYSTEM_EXECUTION_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/system-execution-resource-info",
+        ),
+        (
+            PACKAGE_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/package-owner-badge-info",
+        ),
+        (
+            VALIDATOR_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/validator-owner-badge-info",
+        ),
+        (
+            ACCOUNT_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/account-owner-badge-info",
+        ),
+        (
+            IDENTITY_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/identity-owner-badge-info",
+        ),
+        (
+            PACKAGE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/package-package-info",
+        ),
+        (
+            RESOURCE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/resource-package-info",
+        ),
+        (
+            ACCOUNT_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/account-package-info",
+        ),
+        (
+            IDENTITY_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/identity-package-info",
+        ),
+        (
+            CONSENSUS_MANAGER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/consensus-manager-package-info",
+        ),
+        (
+            ACCESS_CONTROLLER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/access-controller-package-info",
+        ),
+        (
+            POOL_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/pool-package-info",
+        ),
+        (
+            TRANSACTION_PROCESSOR_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/transaction-processor-package-info",
+        ),
+        (
+            METADATA_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/metadata-module-package-info",
+        ),
+        (
+            ROYALTY_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/royalty-module-package-info",
+        ),
+        (
+            ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/role-assignment-module-package-info",
+        ),
+        (
+            TEST_UTILS_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/test-utils-package-info",
+        ),
+        (
+            GENESIS_HELPER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/genesis-helper-package-info",
+        ),
+        (
+            FAUCET_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/faucet-package-info",
+        ),
+        (
+            TRANSACTION_TRACKER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/transaction-tracker-package-info",
+        ),
+        (
+            LOCKER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/locker-package-info",
+        ),
+        (
+            CONSENSUS_MANAGER.into_node_id(),
+            "https://go.radixdlt.com/consensus-manager-info",
+        ),
+        (
+            GENESIS_HELPER.into_node_id(),
+            "https://go.radixdlt.com/genesis-helper-info",
+        ),
+        (FAUCET.into_node_id(), "https://go.radixdlt.com/faucet-info"),
+        (
+            TRANSACTION_TRACKER.into_node_id(),
+            "https://go.radixdlt.com/transaction-tracker-info",
+        ),
+    ];
+
     let mut state_updates = StateUpdates::empty();
     for (resource_address, metadata_updates) in metadata_updates.into_iter() {
         for (key, value) in metadata_updates.into_map().into_iter() {
@@ -285,6 +404,27 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
                 value.into_locked_substate(),
             );
         }
+    }
+    for (node_id, info_url) in info_url_metadata.into_iter() {
+        let partition_number = reader
+            .get_partition_of_collection(
+                &node_id,
+                ModuleId::Metadata,
+                MetadataCollection::EntryKeyValue.collection_index(),
+            )
+            .unwrap();
+
+        state_updates = state_updates.set_substate(
+            node_id,
+            partition_number,
+            SubstateKey::Map(
+                scrypto_encode(&MetadataEntryKeyPayload {
+                    content: "info_url".to_owned(),
+                })
+                .unwrap(),
+            ),
+            MetadataValue::Url(UncheckedUrl(info_url.into())).into_locked_substate(),
+        );
     }
 
     state_updates
