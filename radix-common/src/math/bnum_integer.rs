@@ -366,6 +366,15 @@ macro_rules! op_impl {
                     }
                 }
 
+                impl SaturatingAdd for $t
+                {
+                    type Output = $t;
+
+                    fn saturating_add(self, other: Self) -> Self::Output {
+                        Self(self.0.saturating_add(other.0))
+                    }
+                }
+
                 impl CheckedSub for $t
                 {
                     type Output = $t;

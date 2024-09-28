@@ -11,6 +11,7 @@ macro_rules! define_typed_invocations {
     (
         $(
             $package_name: ident => {
+                package: $package_address: expr,
                 $(
                     $blueprint_name: ident => {
                         type: $type: ty,
@@ -42,12 +43,12 @@ macro_rules! define_typed_invocations {
 
             impl TypedNativeInvocation {
                 pub fn from_method_invocation(
-                    address: &NodeId,
+                    address: &GlobalAddress,
                     module_id: ::radix_engine_interface::prelude::ModuleId,
                     method_name: &str,
                     args: &::radix_common::prelude::ManifestValue
                 ) -> Option<Self> {
-                    match (address.entity_type(), module_id) {
+                    match (address.as_node_id().entity_type(), module_id) {
                         $(
                             $(
                                 (Some($entity_type_pat), $module_id) => {
@@ -71,30 +72,29 @@ macro_rules! define_typed_invocations {
                 }
 
                 pub fn from_function_invocation(
-                    address: &NodeId,
+                    package_address: &PackageAddress,
                     blueprint_name: &str,
                     function_name: &str,
                     args: &::radix_common::prelude::ManifestValue
                 ) -> Option<Self> {
-                    match (address.entity_type(), blueprint_name) {
-                        $(
-                            $(
-                                (Some($entity_type_pat), stringify!($blueprint_name)) => {
-                                    [< $blueprint_name Function >]
-                                        ::from_invocation(
-                                            function_name,
-                                            args
-                                        )
-                                        .map(
-                                            [< $blueprint_name BlueprintInvocations >]::Function
-                                        )
-                                        .map([< $package_name Invocations >]::[< $blueprint_name Blueprint >])
-                                        .map(Self::[< $package_name Package >])
+                    match *package_address {
+                        $($package_address => match blueprint_name {
+                            $(stringify!($blueprint_name) => {
+                                [< $blueprint_name Function >]
+                                    ::from_invocation(
+                                        function_name,
+                                        args
+                                    )
+                                    .map(
+                                        [< $blueprint_name BlueprintInvocations >]::Function
+                                    )
+                                    .map([< $package_name Invocations >]::[< $blueprint_name Blueprint >])
+                                    .map(Self::[< $package_name Package >])
 
-                                }
-                            )*
-                        )*
-                        _ => None
+                            },)*
+                            _ => None,
+                        },)*
+                        _ => None,
                     }
                 }
             }
@@ -128,6 +128,8 @@ macro_rules! define_typed_invocations {
                                 $(
                                     Self::$method_ident(..) => $method_name,
                                 )*
+                                // AVOIDS [E0004] when the enum is empty "note: references are always considered inhabited"
+                                // https://github.com/rust-lang/unsafe-code-guidelines/issues/413
                                 _ => unreachable!()
                             }
                         }
@@ -161,6 +163,8 @@ macro_rules! define_typed_invocations {
                                 $(
                                     Self::$func_ident(..) => $func_name,
                                 )*
+                                // AVOIDS [E0004] when the enum is empty "note: references are always considered inhabited"
+                                // https://github.com/rust-lang/unsafe-code-guidelines/issues/413
                                 _ => unreachable!()
                             }
                         }
@@ -189,6 +193,7 @@ macro_rules! define_typed_invocations {
 
 define_typed_invocations! {
     AccessController => {
+        package: ACCESS_CONTROLLER_PACKAGE,
         AccessController => {
             type: ComponentAddress,
             entity_type_pat: EntityType::GlobalAccessController,
@@ -288,6 +293,7 @@ define_typed_invocations! {
         }
     },
     Account => {
+        package: ACCOUNT_PACKAGE,
         Account => {
             type: ComponentAddress,
             entity_type_pat:
@@ -323,7 +329,7 @@ define_typed_invocations! {
                     account::ACCOUNT_DEPOSIT_IDENT
                 ),
                 DepositBatch => (
-                    ManifestValue,
+                    account::AccountDepositBatchManifestInput,
                     account::ACCOUNT_DEPOSIT_BATCH_IDENT
                 ),
                 Withdraw => (
@@ -367,7 +373,7 @@ define_typed_invocations! {
                     account::ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
                 ),
                 TryDepositBatchOrRefund => (
-                    ManifestValue,
+                    account::AccountTryDepositBatchOrRefundManifestInput,
                     account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
                 ),
                 TryDepositOrAbort => (
@@ -375,7 +381,7 @@ define_typed_invocations! {
                     account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
                 ),
                 TryDepositBatchOrAbort => (
-                    ManifestValue,
+                    account::AccountTryDepositBatchOrAbortManifestInput,
                     account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
                 ),
                 Burn => (
@@ -398,6 +404,7 @@ define_typed_invocations! {
         },
     },
     ConsensusManager => {
+        package: CONSENSUS_MANAGER_PACKAGE,
         Validator => {
             type: ComponentAddress,
             entity_type_pat: EntityType::GlobalValidator,
@@ -513,6 +520,7 @@ define_typed_invocations! {
         }
     },
     Identity => {
+        package: IDENTITY_PACKAGE,
         Identity => {
             type: ComponentAddress,
             entity_type_pat:
@@ -539,6 +547,7 @@ define_typed_invocations! {
         },
     },
     Locker => {
+        package: LOCKER_PACKAGE,
         AccountLocker => {
             type: ComponentAddress,
             entity_type_pat: EntityType::GlobalAccountLocker,

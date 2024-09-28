@@ -85,7 +85,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             self.handle_instruction(visitor, index, instruction)?;
         }
         self.verify_final_instruction::<V>()?;
-        self.handle_wrap_up::<V>()
+        self.handle_wrap_up(visitor)?;
+        ControlFlow::Continue(())
     }
 
     #[must_use]
@@ -257,7 +258,10 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     }
 
     #[must_use]
-    fn handle_wrap_up<V: ManifestInterpretationVisitor>(&mut self) -> ControlFlow<V::Output> {
+    fn handle_wrap_up<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<V::Output> {
         if self.validation_ruleset.validate_no_dangling_nodes {
             for (index, state) in self.bucket_state.iter().enumerate() {
                 if state.consumed_at.is_none() {
@@ -282,6 +286,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 }
             }
         }
+        visitor.on_finish(OnFinish)?;
 
         ControlFlow::Continue(())
     }
@@ -984,7 +989,13 @@ pub trait ManifestInterpretationVisitor {
         ControlFlow::Continue(())
     }
 
-    fn on_verification<'a>(&mut self, details: OnVerification) -> ControlFlow<Self::Output> {
+    #[must_use]
+    fn on_verification(&mut self, details: OnVerification) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_finish<'a>(&mut self, details: OnFinish) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 }
@@ -1073,3 +1084,5 @@ pub struct OnWorktopAssertion<'a> {
 pub struct OnVerification {
     pub kind: VerificationKind,
 }
+
+pub struct OnFinish;

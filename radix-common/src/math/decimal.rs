@@ -364,6 +364,15 @@ impl CheckedAdd<Decimal> for Decimal {
     }
 }
 
+impl SaturatingAdd<Decimal> for Decimal {
+    type Output = Self;
+
+    #[inline]
+    fn saturating_add(self, other: Self) -> Self::Output {
+        Self(self.0.saturating_add(other.0))
+    }
+}
+
 impl CheckedSub<Decimal> for Decimal {
     type Output = Self;
 

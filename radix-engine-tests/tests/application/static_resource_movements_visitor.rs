@@ -4,18 +4,18 @@ use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 
 #[test]
-fn simple_account_transfer_with_an_explicit_take_is_correctly_classified() {
+fn simple_account_transfer_with_an_explicit_take_all_is_correctly_classified() {
     // Arrange
     let account1 = account_address(1);
     let account2 = account_address(2);
     let manifest = ManifestBuilder::new_v2()
         .lock_fee_and_withdraw(account1, 100, XRD, 10)
-        .take_from_worktop(XRD, 10, "bucket")
+        .take_all_from_worktop(XRD, "bucket")
         .deposit(account2, "bucket")
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 1);
@@ -26,13 +26,107 @@ fn simple_account_transfer_with_an_explicit_take_is_correctly_classified() {
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::KnownFungible(
-            XRD,
-            FungibleBounds {
-                lower: LowerFungibleBound::Amount(10.into()),
-                upper: UpperFungibleBound::Amount(10.into())
-            }
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_empty()
+                // A take all will inherit the change source from the worktop
+                .add_resource(
+                    XRD,
+                    ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                )
+                .unwrap()
         )])
+    );
+}
+
+#[test]
+fn simple_account_transfer_with_an_explicit_take_exact_is_correctly_classified() {
+    // Arrange
+    let account1 = account_address(1);
+    let account2 = account_address(2);
+    let manifest = ManifestBuilder::new_v2()
+        .lock_fee_and_withdraw(account1, 100, XRD, 10)
+        .take_from_worktop(XRD, 10, "bucket")
+        .deposit(account2, "bucket")
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 1);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(
+        withdraws.get(&account1),
+        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+    );
+    assert_eq!(
+        deposits.get(&account2),
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_empty()
+                // A take specific amount will have a new change source (and the worktop history with inherit a take)
+                .add_resource(
+                    XRD,
+                    ResourceBound::exact_amount(10, [ChangeSource::bucket_at(1)]).unwrap()
+                )
+                .unwrap()
+        )])
+    );
+}
+
+#[test]
+fn simple_account_transfer_with_two_deposits_is_correctly_classified() {
+    // Arrange
+    let account1 = account_address(1);
+    let account2 = account_address(2);
+    let manifest = ManifestBuilder::new_v2()
+        .lock_fee_and_withdraw(account1, 100, XRD, 10)
+        .take_from_worktop(XRD, 2, "bucket")
+        .take_all_from_worktop(XRD, "bucket2")
+        .deposit(account2, "bucket2")
+        .deposit(account2, "bucket")
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 1);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(
+        withdraws.get(&account1),
+        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+    );
+    assert_eq!(
+        deposits.get(&account2),
+        Some(&vec![
+            AccountDeposit(
+                ResourceBounds::new_empty()
+                    .add_resource(
+                        XRD,
+                        ResourceBound::new_advanced(
+                            ResourceAddAmount::exact_amount(8).unwrap(),
+                            ResourceChangeHistory::empty()
+                                .record_add(
+                                    ResourceAddAmount::exact_amount(10).unwrap(),
+                                    [ChangeSource::invocation_at(0)]
+                                )
+                                .record_take(
+                                    ResourceTakeAmount::exact_amount(2).unwrap(),
+                                    ChangeSource::bucket_at(1)
+                                )
+                        )
+                    )
+                    .unwrap()
+            ),
+            AccountDeposit(
+                ResourceBounds::new_empty()
+                    .add_resource(
+                        XRD,
+                        ResourceBound::exact_amount(2, [ChangeSource::bucket_at(1)]).unwrap()
+                    )
+                    .unwrap()
+            ),
+        ])
     );
 }
 
@@ -48,7 +142,7 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 1);
@@ -59,12 +153,13 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::KnownFungible(
-            XRD,
-            FungibleBounds {
-                lower: LowerFungibleBound::Amount(10.into()),
-                upper: UpperFungibleBound::Amount(10.into())
-            }
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_empty()
+                .add_resource(
+                    XRD,
+                    ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                )
+                .unwrap()
         )])
     );
 }
@@ -74,13 +169,14 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     // Arrange
     let account1 = account_address(1);
     let account2 = account_address(2);
-    let manifest = ManifestBuilder::new_v2()
+    let manifest = ManifestBuilder::new_subintent_v2()
         .lock_fee_and_withdraw(account1, 100, XRD, 10)
         .deposit_batch(account2, ManifestExpression::EntireWorktop)
+        .yield_to_parent(())
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 1);
@@ -91,16 +187,16 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![
-            AccountDeposit::KnownFungible(
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_including_unspecified_resources([
+                ChangeSource::InitialYieldFromParent
+            ])
+            .add_resource(
                 XRD,
-                FungibleBounds {
-                    lower: LowerFungibleBound::Amount(10.into()),
-                    upper: UpperFungibleBound::Amount(10.into())
-                }
-            ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+                ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+            )
+            .unwrap()
+        )])
     );
 }
 
@@ -110,13 +206,14 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     let account1 = account_address(1);
     let account2 = account_address(2);
     let non_fungible_address = non_fungible_resource_address(1);
-    let manifest = ManifestBuilder::new_v2()
+    let manifest = ManifestBuilder::new_subintent_v2()
         .lock_fee_and_withdraw(account1, 100, non_fungible_address, 10)
         .deposit_batch(account2, ManifestExpression::EntireWorktop)
+        .yield_to_parent(())
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 1);
@@ -130,16 +227,16 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![
-            AccountDeposit::KnownNonFungible(
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_including_unspecified_resources([
+                ChangeSource::InitialYieldFromParent
+            ])
+            .add_resource(
                 non_fungible_address,
-                NonFungibleBounds {
-                    amount_bounds: FungibleBounds::new_exact(10.into()),
-                    id_bounds: NonFungibleIdBounds::Unknown
-                }
-            ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+                ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+            )
+            .unwrap()
+        )]),
     );
 }
 
@@ -162,7 +259,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 1);
@@ -176,23 +273,22 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![
-            AccountDeposit::KnownNonFungible(
-                non_fungible_address,
-                NonFungibleBounds {
-                    amount_bounds: FungibleBounds::new_exact(1.into()),
-                    id_bounds: NonFungibleIdBounds::FullyKnown(indexset! {
-                        NonFungibleLocalId::integer(1)
-                    })
-                }
-            ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_empty()
+                .add_resource(
+                    non_fungible_address,
+                    ResourceBound::non_fungibles(
+                        [NonFungibleLocalId::integer(1)],
+                        [ChangeSource::invocation_at(0)],
+                    )
+                )
+                .unwrap()
+        )]),
     );
 }
 
 #[test]
-fn assertion_of_any_gives_context_to_visitor() {
+fn assertion_of_any_with_nothing_on_worktop_does_nothing() {
     // Arrange
     let account = account_address(1);
     let manifest = ManifestBuilder::new_v2()
@@ -201,24 +297,63 @@ fn assertion_of_any_gives_context_to_visitor() {
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let error = statically_analyze(&manifest).unwrap_err();
 
     // Assert
+    assert_eq!(
+        error,
+        StaticResourceMovementsError::AssertionCannotBeSatisfied
+    );
+}
+
+#[test]
+fn assertion_of_any_with_unknown_on_worktop_gives_context_to_visitor() {
+    // Arrange
+    let account = account_address(1);
+    let manifest = ManifestBuilder::new_v2()
+        .call_method(component_address(1), "random", ())
+        .call_method(component_address(1), "random2", ())
+        .assert_worktop_contains_any(XRD)
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    let expected_uncertainties = [
+        ChangeSource::Invocation {
+            instruction_index: 0,
+        },
+        ChangeSource::Invocation {
+            instruction_index: 1,
+        },
+    ];
     assert_eq!(withdraws.len(), 0);
     assert_eq!(deposits.len(), 1);
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![
-            AccountDeposit::KnownFungible(
-                XRD,
-                FungibleBounds {
-                    lower: LowerFungibleBound::NonZero,
-                    upper: UpperFungibleBound::Unbounded
-                }
-            ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_empty()
+                .add_resource(
+                    XRD,
+                    ResourceBound::new_advanced(
+                        ResourceAddAmount::non_zero_amount(),
+                        ResourceChangeHistory::empty()
+                            .record_add(
+                                ResourceAddAmount::zero_or_more(),
+                                expected_uncertainties.clone()
+                            )
+                            .record_assertion(
+                                ResourceAssertion::non_zero_amount(),
+                                ChangeSource::assertion_at(2)
+                            ),
+                    )
+                )
+                .unwrap()
+                .add_unspecified_resources(expected_uncertainties)
+        )]),
     );
 }
 
@@ -228,17 +363,16 @@ fn assertion_of_ids_gives_context_to_visitor() {
     let account = account_address(1);
     let non_fungible_address = non_fungible_resource_address(1);
     let manifest = ManifestBuilder::new_v2()
+        .call_method(component_address(1), "random", ())
         .assert_worktop_contains_non_fungibles(
             non_fungible_address,
-            indexset! {
-                NonFungibleLocalId::integer(1)
-            },
+            [NonFungibleLocalId::integer(1)],
         )
         .deposit_batch(account, ManifestExpression::EntireWorktop)
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 0);
@@ -246,35 +380,48 @@ fn assertion_of_ids_gives_context_to_visitor() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![
-            AccountDeposit::KnownNonFungible(
-                non_fungible_address,
-                NonFungibleBounds {
-                    amount_bounds: FungibleBounds {
-                        lower: LowerFungibleBound::Amount(1.into()),
-                        upper: UpperFungibleBound::Unbounded,
-                    },
-                    id_bounds: NonFungibleIdBounds::PartiallyKnown(indexset! {
-                        NonFungibleLocalId::integer(1)
-                    })
-                }
-            ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+        Some(&vec![AccountDeposit(
+            ResourceBounds::new_including_unspecified_resources([ChangeSource::invocation_at(0)])
+                .add_resource(
+                    non_fungible_address,
+                    ResourceBound::new_advanced(
+                        ResourceAddAmount::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
+                        ResourceChangeHistory::empty() // NB: Appends to an unspecified add from the blanket add above
+                            .record_assertion(
+                                ResourceAssertion::at_least_non_fungibles([
+                                    NonFungibleLocalId::integer(1)
+                                ]),
+                                ChangeSource::assertion_at(1)
+                            ),
+                    )
+                )
+                .unwrap()
+        )]),
     );
 }
 
 #[test]
-fn assertion_of_amount_gives_context_to_visitor() {
+fn complex_assertion_of_amount_gives_context_to_visitor() {
     // Arrange
     let account = account_address(1);
-    let manifest = ManifestBuilder::new_v2()
-        .assert_worktop_contains(XRD, 10)
+    let resource_address = fungible_resource_address(5);
+    let resource_address2 = fungible_resource_address(8);
+    let builder = ManifestBuilder::new_v2();
+    let lookup = builder.name_lookup();
+    let manifest = builder
+        .call_method(component_address(1), "random", ())
+        .assert_worktop_contains(resource_address, 10)
+        .assert_worktop_contains(resource_address2, 5)
+        .take_from_worktop(resource_address, 10, "bucket")
+        .take_from_worktop(resource_address2, 7, "bucket2")
+        .deposit_batch(account, [lookup.bucket("bucket")])
+        .assert_worktop_is_empty()
+        .return_to_worktop("bucket2")
         .deposit_batch(account, ManifestExpression::EntireWorktop)
         .build();
 
     // Act
-    let (deposits, withdraws) = statically_analyze(&manifest);
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
     assert_eq!(withdraws.len(), 0);
@@ -283,15 +430,23 @@ fn assertion_of_amount_gives_context_to_visitor() {
     assert_eq!(
         deposits.get(&account),
         Some(&vec![
-            AccountDeposit::KnownFungible(
-                XRD,
-                FungibleBounds {
-                    lower: LowerFungibleBound::Amount(10.into()),
-                    upper: UpperFungibleBound::Unbounded
-                }
+            AccountDeposit(
+                ResourceBounds::new_empty()
+                    .add_resource(
+                        resource_address,
+                        ResourceBound::exact_amount(10, [ChangeSource::bucket_at(3)]).unwrap()
+                    )
+                    .unwrap()
             ),
-            AccountDeposit::Unknown(WorktopUncertaintySource::YieldFromParent)
-        ])
+            AccountDeposit(
+                ResourceBounds::new_empty()
+                    .add_resource(
+                        resource_address2,
+                        ResourceBound::exact_amount(7, [ChangeSource::bucket_at(4)]).unwrap()
+                    )
+                    .unwrap()
+            ),
+        ]),
     );
 }
 
@@ -325,15 +480,17 @@ fn node_id(entity_type: EntityType, id: u64) -> NodeId {
 
 fn statically_analyze<M: ReadableManifest>(
     manifest: &M,
-) -> (
-    IndexMap<ComponentAddress, Vec<AccountDeposit>>,
-    IndexMap<ComponentAddress, Vec<AccountWithdraw>>,
-) {
+) -> Result<
+    (
+        IndexMap<ComponentAddress, Vec<AccountDeposit>>,
+        IndexMap<ComponentAddress, Vec<AccountWithdraw>>,
+    ),
+    StaticResourceMovementsError,
+> {
     let interpreter = StaticManifestInterpreter::new(ValidationRuleset::all(), manifest);
-    let mut visitor = StaticResourceMovementsVisitor::new(true);
-    interpreter
-        .validate_and_apply_visitor(&mut visitor)
-        .expect("Error");
+    let mut visitor: StaticResourceMovementsVisitor =
+        StaticResourceMovementsVisitor::new(manifest.is_subintent());
+    interpreter.validate_and_apply_visitor(&mut visitor)?;
     let output = visitor.output();
-    (output.account_deposits(), output.account_withdraws())
+    Ok((output.account_deposits(), output.account_withdraws()))
 }
