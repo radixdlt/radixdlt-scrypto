@@ -251,9 +251,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
             account1,
             100,
             non_fungible_address,
-            indexset! {
-                NonFungibleLocalId::integer(1)
-            },
+            [NonFungibleLocalId::integer(1)],
         )
         .deposit_batch(account2, ManifestExpression::EntireWorktop)
         .build();
@@ -268,7 +266,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
         withdraws.get(&account1),
         Some(&vec![AccountWithdraw::Ids(
             non_fungible_address,
-            indexset! { NonFungibleLocalId::integer(1) }
+            [NonFungibleLocalId::integer(1)].into_iter().collect(),
         )])
     );
     assert_eq!(
