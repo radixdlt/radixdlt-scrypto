@@ -329,9 +329,11 @@ fn statically_analyze<M: ReadableManifest>(
     IndexMap<ComponentAddress, Vec<AccountDeposit>>,
     IndexMap<ComponentAddress, Vec<AccountWithdraw>>,
 ) {
-    let interpreter = StaticManifestInterpreter::new(ValidationRuleset::v1(), manifest);
+    let interpreter = StaticManifestInterpreter::new(ValidationRuleset::all(), manifest);
     let mut visitor = StaticResourceMovementsVisitor::new(true);
-    interpreter.interpret_or_err(&mut visitor).expect("Error");
+    interpreter
+        .validate_and_apply_visitor(&mut visitor)
+        .expect("Error");
     let output = visitor.output();
     (output.account_deposits(), output.account_withdraws())
 }

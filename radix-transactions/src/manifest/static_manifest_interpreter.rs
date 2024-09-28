@@ -221,6 +221,16 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 visitor.on_worktop_assertion(OnWorktopAssertion { assertion })?;
             }
             Effect::Verification { verification } => {
+                match verification {
+                    VerificationKind::Parent => {
+                        if !self.manifest.is_subintent() {
+                            return ControlFlow::Break(
+                                ManifestValidationError::InstructionNotSupportedInTransactionIntent
+                                    .into(),
+                            );
+                        }
+                    }
+                }
                 visitor.on_verification(OnVerification { kind: verification })?;
             }
         }
@@ -315,14 +325,6 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 false
             }
             InvocationKind::DirectMethod { .. } => false,
-            InvocationKind::VerifyParent => {
-                if !self.manifest.is_subintent() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InstructionNotSupportedInTransactionIntent.into(),
-                    );
-                }
-                false
-            }
             InvocationKind::YieldToParent => {
                 if !self.manifest.is_subintent() {
                     return ControlFlow::Break(
@@ -734,7 +736,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum ManifestLocation {
+pub enum ManifestLocation {
     Preamble,
     Instruction { index: usize },
 }
@@ -982,7 +984,7 @@ pub trait ManifestInterpretationVisitor {
         ControlFlow::Continue(())
     }
 
-    fn on_verification<'a>(&mut self, details: OnVerification) -> ControlFlow<Self::Error<'a>> {
+    fn on_verification<'a>(&mut self, details: OnVerification) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 }

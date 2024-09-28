@@ -2,18 +2,18 @@ use crate::manifest::ManifestValidationError;
 use radix_common::prelude::*;
 
 #[derive(Clone, Debug)]
-pub enum StaticResourceMovementsError<'a> {
+pub enum StaticResourceMovementsError {
     DecimalOverflow,
     NonFungibleIdsTakeOnFungibleResource,
     NonFungibleIdsAssertionOnFungibleResource,
     AccountWithdrawNonFungiblesOnAFungibleResource,
     AccountLockerWithdrawNonFungiblesOnAFungibleResource,
     BucketDoesntExist(ManifestBucket),
-    ManifestValidationError(ManifestValidationError<'a>),
+    ManifestValidationError(ManifestValidationError),
 }
 
-impl<'a> From<ManifestValidationError<'a>> for StaticResourceMovementsError<'a> {
-    fn from(value: ManifestValidationError<'a>) -> Self {
+impl<'a> From<ManifestValidationError> for StaticResourceMovementsError {
+    fn from(value: ManifestValidationError) -> Self {
         Self::ManifestValidationError(value)
     }
 }

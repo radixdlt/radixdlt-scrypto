@@ -48,7 +48,7 @@ impl StaticResourceMovementsVisitor {
         kind: InvocationKind<'_>,
         args: &ManifestValue,
         index: usize,
-    ) -> ControlFlow<StaticResourceMovementsError<'static>, InvocationStaticInformation> {
+    ) -> ControlFlow<StaticResourceMovementsError, InvocationStaticInformation> {
         // Creating a new invocation static information which will be returned back to the caller at
         // the end of this handling.
         let mut invocation_information = InvocationStaticInformation {
@@ -162,7 +162,7 @@ impl StaticResourceMovementsVisitor {
     fn resolve_args_into_invocation_io(
         &mut self,
         args: &ManifestValue,
-    ) -> ControlFlow<StaticResourceMovementsError<'static>, Vec<InvocationIo>> {
+    ) -> ControlFlow<StaticResourceMovementsError, Vec<InvocationIo>> {
         // Getting all of the buckets and expressions in the arguments.
         let (buckets, expressions) = {
             let encoded = match manifest_encode(args) {
@@ -254,13 +254,13 @@ impl StaticResourceMovementsVisitor {
 }
 
 impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
-    type Error<'a> = StaticResourceMovementsError<'a>;
+    type Output = StaticResourceMovementsError;
 
     // region:Invocation
     fn on_start_instruction<'a>(
         &mut self,
         OnStartInstruction { index, effect }: OnStartInstruction<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Output> {
         // We only care about invocations. Ignore anything that is not an invocation.
         let ManifestInstructionEffect::Invocation { kind, args } = effect else {
             return ControlFlow::Continue(());
@@ -281,7 +281,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     fn on_new_bucket<'a>(
         &mut self,
         OnNewBucket { bucket, state }: OnNewBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Output> {
         // Converting the resource address into a composite resource address and then acting based
         // on whether the resource is fungible or non-fungible.
         let composite_resource_address =
@@ -462,7 +462,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
             destination,
             ..
         }: OnConsumeBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Output> {
         // Try to get the bucket information. If the bucket information doesn't exist then throw an
         // error. There's no way for a bucket to be created without us catching its creation and
         // adding it to the tracked buckets.
@@ -530,7 +530,7 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
     fn on_worktop_assertion<'a>(
         &mut self,
         OnWorktopAssertion { assertion }: OnWorktopAssertion<'a>,
-    ) -> ControlFlow<Self::Error<'a>> {
+    ) -> ControlFlow<Self::Output> {
         // Handle the ability to empty the worktop.
         let resource_address = match assertion {
             WorktopAssertion::AnyAmountGreaterThanZero { resource_address }
@@ -700,20 +700,13 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
                 CompositeResourceAddress::Fungible(..),
                 WorktopAssertion::AtLeastNonFungibles { .. },
             ) => {
-                ControlFlow::Break(Self::Error::NonFungibleIdsAssertionOnFungibleResource)?;
+                ControlFlow::Break(Self::Output::NonFungibleIdsAssertionOnFungibleResource)?;
             }
         }
 
         ControlFlow::Continue(())
     }
     // endregion:Assertions
-}
-
-fn option_to_control_flow<T, E>(option: Option<T>, error: E) -> ControlFlow<E, T> {
-    match option {
-        Some(value) => ControlFlow::Continue(value),
-        None => ControlFlow::Break(error),
-    }
 }
 
 fn result_to_control_flow<T, E>(result: Result<T, E>) -> ControlFlow<E, T> {
