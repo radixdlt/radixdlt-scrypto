@@ -150,6 +150,8 @@ jobs:
           path: ${{ format('./target/release/deps_{0}', matrix.bin-cache) }}
           key: ${{ format('{0}-build-cache-{1}-radix-engine-tests-{2}', runner.os, matrix.bin-cache, github.run_id) }}
           fail-on-cache-miss: true
+      - name: Tree
+        run: tree . 
       - name: Run radix-engine-tests using QEMU
         run: |
              mkdir /tmp/scrypto-resources-usage
