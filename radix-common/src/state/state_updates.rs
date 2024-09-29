@@ -31,6 +31,15 @@ impl StateUpdates {
             })
     }
 
+    pub fn set_node_updates(
+        mut self,
+        node_id: impl Into<NodeId>,
+        node_updates: NodeStateUpdates,
+    ) -> Self {
+        self.by_node.insert(node_id.into(), node_updates);
+        self
+    }
+
     pub fn set_substate<'a>(
         mut self,
         node_id: impl Into<NodeId>,
@@ -88,6 +97,28 @@ impl Default for NodeStateUpdates {
 }
 
 impl NodeStateUpdates {
+    pub fn empty() -> Self {
+        Self::Delta {
+            by_partition: Default::default(),
+        }
+    }
+
+    pub fn set_substate<'a>(
+        mut self,
+        partition_num: PartitionNumber,
+        key: impl ResolvableSubstateKey<'a>,
+        value: impl ScryptoEncode,
+    ) -> Self {
+        let Self::Delta {
+            ref mut by_partition,
+        } = self;
+        by_partition
+            .entry(partition_num)
+            .or_default()
+            .set_substate(key.into_substate_key(), value);
+        self
+    }
+
     /// Starts a Partition-level update.
     pub fn of_partition(&mut self, partition_num: PartitionNumber) -> &mut PartitionStateUpdates {
         match self {
@@ -150,6 +181,24 @@ impl Default for PartitionStateUpdates {
 }
 
 impl PartitionStateUpdates {
+    pub fn set_substate<'a>(
+        &mut self,
+        key: impl ResolvableSubstateKey<'a>,
+        value: impl ScryptoEncode,
+    ) {
+        let value = scrypto_encode(&value).expect("New substate value should be encodable");
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => {
+                by_substate.insert(key.into_substate_key(), DatabaseUpdate::Set(value));
+            }
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            }) => {
+                new_substate_values.insert(key.into_substate_key(), value);
+            }
+        }
+    }
+
     /// Resets the partition to an empty state.
     pub fn delete(&mut self) {
         *self = PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
