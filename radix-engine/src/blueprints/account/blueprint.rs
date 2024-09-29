@@ -1526,7 +1526,7 @@ impl AccountBlueprintCuttlefishExtension {
         functions.insert(
             ACCOUNT_BALANCE_IDENT.to_string(),
             FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<AccountBalanceInput>(),
                 ),
@@ -1540,7 +1540,7 @@ impl AccountBlueprintCuttlefishExtension {
         functions.insert(
             ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
             FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<AccountNonFungibleLocalIdsInput>(),
                 ),
@@ -1554,7 +1554,7 @@ impl AccountBlueprintCuttlefishExtension {
         functions.insert(
             ACCOUNT_HAS_NON_FUNGIBLE_IDENT.to_string(),
             FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<AccountHasNonFungibleInput>(),
                 ),
