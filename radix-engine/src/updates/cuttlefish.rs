@@ -314,23 +314,15 @@ fn generate_cuttlefish_account_getters_extension_state_updates<S: SubstateDataba
     };
 
     // Getting the partition number of the various collections that we're updating
-    let [blueprint_version_definition_partition_number, code_vm_type_partition_number, code_original_code_partition_number, schema_partition_number, blueprint_version_auth_config_partition_number] =
-        [
-            PackageCollection::BlueprintVersionDefinitionKeyValue,
-            PackageCollection::CodeVmTypeKeyValue,
-            PackageCollection::CodeOriginalCodeKeyValue,
-            PackageCollection::SchemaKeyValue,
-            PackageCollection::BlueprintVersionAuthConfigKeyValue,
-        ]
-        .map(|package_collection| {
-            reader
-                .get_partition_of_collection(
-                    &node_id,
-                    ObjectModuleId::Main,
-                    package_collection.collection_index(),
-                )
-                .unwrap()
-        });
+    let blueprint_version_definition_partition_number =
+        PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition();
+    let code_vm_type_partition_number =
+        PackagePartitionOffset::CodeVmTypeKeyValue.as_main_partition();
+    let code_original_code_partition_number =
+        PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition();
+    let schema_partition_number = SCHEMAS_PARTITION.at_offset(PartitionOffset(0)).unwrap();
+    let blueprint_version_auth_config_partition_number =
+        PackagePartitionOffset::BlueprintVersionAuthConfigKeyValue.as_main_partition();
 
     // Generating the state updates
     StateUpdates::empty().set_node_updates(
