@@ -3,5 +3,6 @@
 mod always_visible_global_nodes;
 mod consensus_manager;
 mod cuttlefish_transaction_changes;
+mod metadata;
 mod protocol_updates;
 mod transaction;
