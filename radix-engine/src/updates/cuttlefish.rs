@@ -5,6 +5,7 @@ use super::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::kernel::kernel::KernelBoot;
+use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
 
@@ -18,6 +19,8 @@ pub struct CuttlefishSettings {
     pub transaction_validation_update: UpdateSetting<NoSettings>,
     /// Adds getter methods for the account blueprint.
     pub account_getter_methods: UpdateSetting<NoSettings>,
+    /// Update the metadata for cuttlefish
+    pub update_metadata: UpdateSetting<NoSettings>,
     /// updates the min number of rounds per epoch.
     pub update_number_of_min_rounds_per_epoch:
         UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
@@ -36,6 +39,7 @@ impl UpdateSettings for CuttlefishSettings {
             kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
             account_getter_methods: UpdateSetting::enabled_as_default_for_network(network),
+            update_metadata: UpdateSetting::enabled_as_default_for_network(network),
             update_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
                 network,
             ),
@@ -48,6 +52,7 @@ impl UpdateSettings for CuttlefishSettings {
             kernel_version_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
             account_getter_methods: UpdateSetting::Disabled,
+            update_metadata: UpdateSetting::Disabled,
             update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
         }
     }
@@ -116,9 +121,10 @@ fn generate_principal_batch(
     store: &dyn SubstateDatabase,
     CuttlefishSettings {
         system_logic_update,
-        kernel_version_update: always_visible_global_nodes_update,
+        kernel_version_update,
         transaction_validation_update,
         account_getter_methods,
+        update_metadata,
         update_number_of_min_rounds_per_epoch,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
@@ -129,7 +135,7 @@ fn generate_principal_batch(
             generate_system_logic_v2_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_settings) = &always_visible_global_nodes_update {
+    if let UpdateSetting::Enabled(_settings) = &kernel_version_update {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-protocol-kernel-version-update",
             generate_always_visible_global_nodes_updates(store),
@@ -145,6 +151,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-account-getter-methods",
             generate_cuttlefish_account_getters_extension_state_updates(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &update_metadata {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-update-metadata",
+            generate_cuttlefish_metadata_fix(store),
         ));
     }
     if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
@@ -345,6 +357,229 @@ fn generate_cuttlefish_account_getters_extension_state_updates<S: SubstateDataba
                 auth_config,
             ),
     )
+}
+
+fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
+    struct MetadataUpdates {
+        pub name: Option<MetadataValue>,
+        pub description: Option<MetadataValue>,
+        pub icon_url: Option<MetadataValue>,
+    }
+
+    impl MetadataUpdates {
+        pub fn into_map(self) -> IndexMap<String, MetadataValue> {
+            [
+                self.name.map(|value| ("name", value)),
+                self.description.map(|value| ("description", value)),
+                self.icon_url.map(|value| ("icon_url", value)),
+            ]
+            .into_iter()
+            .flatten()
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect()
+        }
+    }
+
+    let reader = SystemDatabaseReader::new(db);
+
+    // The metadata entries that we would like to update and the values that we would like to update
+    // them to be.
+    let metadata_updates = indexmap! {
+        XRD => MetadataUpdates {
+            name: None,
+            description: None,
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-xrd.png".into())))
+        },
+        PACKAGE_OF_DIRECT_CALLER_RESOURCE => MetadataUpdates {
+            name: Some(MetadataValue::String("Package of Direct Caller Resource".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by specific code. See the info_url for further information.".into())),
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_resource.png".into())))
+        },
+        GLOBAL_CALLER_RESOURCE => MetadataUpdates {
+            name: Some(MetadataValue::String("Global Caller Resource".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a specific global caller. In cases where you wish to find out the global caller, you can require the caller to pass their claimed global address into the method, and then verify it with this rule. See the info_url for further information.".into())),
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-global_caller_resource.png".into())))
+        },
+        SECP256K1_SIGNATURE_RESOURCE => MetadataUpdates {
+            name: Some(MetadataValue::String("ECDSA Secp256k1 Signature Resource".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest signed with the given ECDSA Secp256k1 key hash. See the info_url for further information.".into())),
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_resource.png".into())))
+        },
+        ED25519_SIGNATURE_RESOURCE => MetadataUpdates {
+            name: Some(MetadataValue::String("EdDSA Ed25519 Signature Resource".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest signed with the given EdDSA Ed25519 key hash. See the info_url for further information.".into())),
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_resource.png".into())))
+        },
+        SYSTEM_EXECUTION_RESOURCE => MetadataUpdates {
+            name: Some(MetadataValue::String("System Execution Resource".into())),
+            description: Some(MetadataValue::String("This is an implicit proof resource, intended for verifying access by a manifest of a certain type of system transaction, such as a protocol update or a validator transaction. See the info_url for further information.".into())),
+            icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-system_execution_resource.png".into())))
+        },
+    };
+
+    // We would like to add an `info_url` entry for the various entities that we have. The this is
+    // the mapping that we're using.
+    let info_url_metadata = [
+        (XRD.into_node_id(), "https://go.radixdlt.com/xrd-info"),
+        (
+            SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/secp256k1-signature-resouce-info",
+        ),
+        (
+            ED25519_SIGNATURE_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/ed25519-signature-resource-info",
+        ),
+        (
+            PACKAGE_OF_DIRECT_CALLER_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/package-of-direct-caller-resource-info",
+        ),
+        (
+            GLOBAL_CALLER_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/global-caller-resource-info",
+        ),
+        (
+            SYSTEM_EXECUTION_RESOURCE.into_node_id(),
+            "https://go.radixdlt.com/system-execution-resource-info",
+        ),
+        (
+            PACKAGE_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/package-owner-badge-info",
+        ),
+        (
+            VALIDATOR_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/validator-owner-badge-info",
+        ),
+        (
+            ACCOUNT_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/account-owner-badge-info",
+        ),
+        (
+            IDENTITY_OWNER_BADGE.into_node_id(),
+            "https://go.radixdlt.com/identity-owner-badge-info",
+        ),
+        (
+            PACKAGE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/package-package-info",
+        ),
+        (
+            RESOURCE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/resource-package-info",
+        ),
+        (
+            ACCOUNT_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/account-package-info",
+        ),
+        (
+            IDENTITY_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/identity-package-info",
+        ),
+        (
+            CONSENSUS_MANAGER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/consensus-manager-package-info",
+        ),
+        (
+            ACCESS_CONTROLLER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/access-controller-package-info",
+        ),
+        (
+            POOL_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/pool-package-info",
+        ),
+        (
+            TRANSACTION_PROCESSOR_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/transaction-processor-package-info",
+        ),
+        (
+            METADATA_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/metadata-module-package-info",
+        ),
+        (
+            ROYALTY_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/royalty-module-package-info",
+        ),
+        (
+            ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/role-assignment-module-package-info",
+        ),
+        (
+            TEST_UTILS_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/test-utils-package-info",
+        ),
+        (
+            GENESIS_HELPER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/genesis-helper-package-info",
+        ),
+        (
+            FAUCET_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/faucet-package-info",
+        ),
+        (
+            TRANSACTION_TRACKER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/transaction-tracker-package-info",
+        ),
+        (
+            LOCKER_PACKAGE.into_node_id(),
+            "https://go.radixdlt.com/locker-package-info",
+        ),
+        (
+            CONSENSUS_MANAGER.into_node_id(),
+            "https://go.radixdlt.com/consensus-manager-info",
+        ),
+        (
+            GENESIS_HELPER.into_node_id(),
+            "https://go.radixdlt.com/genesis-helper-info",
+        ),
+        (FAUCET.into_node_id(), "https://go.radixdlt.com/faucet-info"),
+        (
+            TRANSACTION_TRACKER.into_node_id(),
+            "https://go.radixdlt.com/transaction-tracker-info",
+        ),
+    ];
+
+    let mut state_updates = StateUpdates::empty();
+    for (resource_address, metadata_updates) in metadata_updates.into_iter() {
+        for (key, value) in metadata_updates.into_map().into_iter() {
+            let partition_number = reader
+                .get_partition_of_collection(
+                    resource_address.as_node_id(),
+                    ModuleId::Metadata,
+                    MetadataCollection::EntryKeyValue.collection_index(),
+                )
+                .unwrap();
+
+            state_updates = state_updates.set_substate(
+                resource_address,
+                partition_number,
+                SubstateKey::Map(
+                    scrypto_encode(&MetadataEntryKeyPayload { content: key }).unwrap(),
+                ),
+                value.into_locked_substate(),
+            );
+        }
+    }
+    for (node_id, info_url) in info_url_metadata.into_iter() {
+        let partition_number = reader
+            .get_partition_of_collection(
+                &node_id,
+                ModuleId::Metadata,
+                MetadataCollection::EntryKeyValue.collection_index(),
+            )
+            .unwrap();
+
+        state_updates = state_updates.set_substate(
+            node_id,
+            partition_number,
+            SubstateKey::Map(
+                scrypto_encode(&MetadataEntryKeyPayload {
+                    content: "info_url".to_owned(),
+                })
+                .unwrap(),
+            ),
+            MetadataValue::Url(UncheckedUrl(info_url.into())).into_locked_substate(),
+        );
+    }
+
+    state_updates
 }
 
 fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>(
