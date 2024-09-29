@@ -156,15 +156,6 @@ fn generate_principal_batch(
     ProtocolUpdateBatch { transactions }
 }
 
-/// A quick macro for encoding and unwrapping.
-macro_rules! scrypto_encode {
-    (
-        $expr: expr
-    ) => {
-        ::radix_common::prelude::scrypto_encode($expr).unwrap()
-    };
-}
-
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let system_boot: SystemBoot = db.get_existing_substate(
         TRANSACTION_TRACKER,
