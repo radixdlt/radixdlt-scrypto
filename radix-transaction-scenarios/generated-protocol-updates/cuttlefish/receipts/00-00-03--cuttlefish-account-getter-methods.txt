@@ -748,7 +748,7 @@ STATE UPDATES: 1 entity
                "balance" => FunctionSchema {
                  receiver: Option::Some(
                    ReceiverInfo {
-                     receiver: Receiver::SelfRefMut,
+                     receiver: Receiver::SelfRef,
                      ref_types: RefTypes {
                        bits: 1u32,
                      },
@@ -774,7 +774,7 @@ STATE UPDATES: 1 entity
                "non_fungible_local_ids" => FunctionSchema {
                  receiver: Option::Some(
                    ReceiverInfo {
-                     receiver: Receiver::SelfRefMut,
+                     receiver: Receiver::SelfRef,
                      ref_types: RefTypes {
                        bits: 1u32,
                      },
@@ -800,7 +800,7 @@ STATE UPDATES: 1 entity
                "has_non_fungible" => FunctionSchema {
                  receiver: Option::Some(
                    ReceiverInfo {
-                     receiver: Receiver::SelfRefMut,
+                     receiver: Receiver::SelfRef,
                      ref_types: RefTypes {
                        bits: 1u32,
                      },
