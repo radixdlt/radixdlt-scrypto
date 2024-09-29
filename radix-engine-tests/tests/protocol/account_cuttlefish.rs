@@ -207,3 +207,35 @@ fn has_non_fungible_returns_true_if_the_account_has_the_non_fungible() {
         .output::<AccountHasNonFungibleOutput>(1);
     assert!(has_non_fungible)
 }
+
+#[test]
+fn has_non_fungible_returns_false_if_the_non_fungibles_have_been_withdrawn() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .withdraw_from_account(account, resource_address, 3)
+            .call_method(
+                account,
+                ACCOUNT_HAS_NON_FUNGIBLE_IDENT,
+                AccountHasNonFungibleInput {
+                    resource_address,
+                    local_id: NonFungibleLocalId::integer(3),
+                },
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&pk)],
+    );
+
+    // Assert
+    let has_non_fungible = receipt
+        .expect_commit_success()
+        .output::<AccountHasNonFungibleOutput>(2);
+    assert!(!has_non_fungible)
+}
