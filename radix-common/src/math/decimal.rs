@@ -74,6 +74,10 @@ impl Decimal {
     pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
     pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
 
+    pub const fn from_attos(attos: I192) -> Self {
+        Self(attos)
+    }
+
     /// Returns `Decimal` of 0.
     pub const fn zero() -> Self {
         Self::ZERO

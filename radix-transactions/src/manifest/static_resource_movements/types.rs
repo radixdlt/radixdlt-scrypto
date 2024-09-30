@@ -186,7 +186,7 @@ impl TrackedResources {
         resource: ResourceAddress,
         amount: TrackedResource,
     ) -> Result<(), StaticResourceMovementsError> {
-        if resource.is_fungible() && amount.known_ids().len() > 0 {
+        if resource.is_fungible() && amount.bounds().includes_non_fungible_details() {
             return Err(
                 StaticResourceMovementsError::NonFungibleIdsSpecifiedAgainstFungibleResource,
             );
@@ -377,7 +377,7 @@ impl ResourceTakeAmount {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TrackedResource {
     /// The current known bounds on the resource balance.
-    resource_bounds: ResourceBounds,
+    bounds: ResourceBounds,
     /// This history is only maintained since the last time we knew the balance was zero.
     history: ResourceChangeHistory,
 }
@@ -386,7 +386,7 @@ impl TrackedResource {
     // Constructors
     pub fn zero() -> Self {
         Self {
-            resource_bounds: ResourceBounds::zero(),
+            bounds: ResourceBounds::zero(),
             history: ResourceChangeHistory::empty(),
         }
     }
@@ -446,40 +446,29 @@ impl TrackedResource {
     /// This is only pub so that it can be used in tests
     pub fn new_advanced(add_amount: ResourceBounds, history: ResourceChangeHistory) -> Self {
         Self {
-            resource_bounds: add_amount,
+            bounds: add_amount,
             history,
         }
     }
 
     // Deconstructors
     pub fn deconstruct(self) -> (ResourceBounds, ResourceChangeHistory) {
-        (self.resource_bounds, self.history)
+        (self.bounds, self.history)
     }
 
     // &self methods
-    pub fn resource_bounds(&self) -> &ResourceBounds {
-        &self.resource_bounds
-    }
-
-    pub fn inclusive_bounds(&self) -> (Decimal, Decimal) {
-        (
-            self.resource_bounds.lower_inclusive,
-            self.resource_bounds.upper_inclusive,
-        )
-    }
-
-    pub fn known_ids(&self) -> &IndexSet<NonFungibleLocalId> {
-        &self.resource_bounds.certain_ids
+    pub fn bounds(&self) -> &ResourceBounds {
+        &self.bounds
     }
 
     /// Returns true if the bound is known to be zero
     pub fn is_zero(&self) -> bool {
-        self.resource_bounds.is_zero()
+        self.bounds.is_zero()
     }
 
     /// Verifies that the bounds are equal, but ignores the sources of those bounds.
     pub fn eq_ignoring_history(&self, other: &TrackedResource) -> bool {
-        self.resource_bounds == other.resource_bounds
+        self.bounds == other.bounds
     }
 
     pub fn history(&self) -> &ResourceChangeHistory {
@@ -493,13 +482,12 @@ impl TrackedResource {
         &mut self,
         existing: TrackedResource,
     ) -> Result<(), StaticResourceMovementsError> {
-        self.resource_bounds
-            .mut_add(existing.resource_bounds.clone())?;
+        self.bounds.mut_add(existing.bounds.clone())?;
         if self.is_zero() {
             self.history.mut_clear();
         } else {
             self.history
-                .mut_record_add_with_history(existing.resource_bounds, existing.history);
+                .mut_record_add_with_history(existing.bounds, existing.history);
         }
         Ok(())
     }
@@ -509,7 +497,7 @@ impl TrackedResource {
         amount: ResourceBounds,
         change_sources: impl IntoIterator<Item = ChangeSource>,
     ) -> Result<(), StaticResourceMovementsError> {
-        self.resource_bounds.mut_add(amount.clone())?;
+        self.bounds.mut_add(amount.clone())?;
 
         if self.is_zero() {
             self.history.mut_clear();
@@ -532,7 +520,7 @@ impl TrackedResource {
                 return Ok(core::mem::replace(self, Self::zero()));
             }
             _ => {
-                let taken_amount = self.resource_bounds.mut_take(take_amount.clone())?;
+                let taken_amount = self.bounds.mut_take(take_amount.clone())?;
                 if self.is_zero() {
                     self.history.mut_clear();
                 } else {
@@ -554,8 +542,7 @@ impl TrackedResource {
         assertion: ResourceBounds,
         source: ChangeSource,
     ) -> Result<(), StaticResourceMovementsError> {
-        self.resource_bounds
-            .mut_handle_assertion(assertion.clone())?;
+        self.bounds.mut_handle_assertion(assertion.clone())?;
 
         if self.is_zero() {
             self.history.mut_clear();
@@ -598,8 +585,8 @@ impl TrackedResource {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceBounds {
     certain_ids: IndexSet<NonFungibleLocalId>,
-    lower_inclusive: Decimal,
-    upper_inclusive: Decimal,
+    lower_bound: LowerBound,
+    upper_bound: UpperBound,
     allowed_ids: AllowedIds,
 }
 
@@ -618,19 +605,29 @@ impl Default for ResourceBounds {
 impl ResourceBounds {
     pub fn zero() -> Self {
         Self {
-            lower_inclusive: Decimal::ZERO,
-            upper_inclusive: Decimal::ZERO,
             certain_ids: Default::default(),
+            lower_bound: LowerBound::zero(),
+            upper_bound: UpperBound::zero(),
             allowed_ids: AllowedIds::Any,
         }
     }
 
     pub fn zero_or_more() -> Self {
-        Self::at_least_amount(Decimal::ZERO).unwrap()
+        Self {
+            certain_ids: Default::default(),
+            lower_bound: LowerBound::zero(),
+            upper_bound: UpperBound::unbounded(),
+            allowed_ids: AllowedIds::Any,
+        }
     }
 
     pub fn non_zero() -> Self {
-        Self::at_least_amount(Decimal(I192::ONE)).unwrap()
+        Self {
+            certain_ids: Default::default(),
+            lower_bound: LowerBound::non_zero(),
+            upper_bound: UpperBound::unbounded(),
+            allowed_ids: AllowedIds::Any,
+        }
     }
 
     pub fn exact_amount(
@@ -641,9 +638,9 @@ impl ResourceBounds {
             return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
         }
         Ok(Self {
-            lower_inclusive: amount,
-            upper_inclusive: amount,
             certain_ids: Default::default(),
+            lower_bound: LowerBound::at_least(amount),
+            upper_bound: UpperBound::at_most(amount),
             allowed_ids: AllowedIds::Any,
         })
     }
@@ -656,64 +653,71 @@ impl ResourceBounds {
             return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
         }
         Ok(Self {
-            lower_inclusive: amount,
-            upper_inclusive: Decimal::MAX,
             certain_ids: Default::default(),
+            lower_bound: LowerBound::at_least(amount),
+            upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
         })
     }
 
     pub fn exact_non_fungibles(ids: impl IntoIterator<Item = NonFungibleLocalId>) -> Self {
-        let known_ids = ids.into_iter().collect::<IndexSet<_>>();
+        let ids = ids.into_iter().collect::<IndexSet<_>>();
+        let amount_of_ids: Decimal = ids.len().into();
         Self {
-            lower_inclusive: known_ids.len().into(),
-            upper_inclusive: known_ids.len().into(),
-            certain_ids: known_ids.clone(),
-            allowed_ids: AllowedIds::Allowlist(known_ids),
+            certain_ids: ids.clone(),
+            lower_bound: LowerBound::at_least(amount_of_ids),
+            upper_bound: UpperBound::at_most(amount_of_ids),
+            allowed_ids: AllowedIds::Allowlist(ids),
         }
     }
 
     pub fn at_least_non_fungibles(
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
-        let known_ids = required_ids.into_iter().collect::<IndexSet<_>>();
+        let ids = required_ids.into_iter().collect::<IndexSet<_>>();
+        let amount_of_ids: Decimal = ids.len().into();
         Self {
-            lower_inclusive: known_ids.len().into(),
-            upper_inclusive: Decimal::MAX,
-            certain_ids: known_ids,
+            certain_ids: ids,
+            lower_bound: LowerBound::at_least(amount_of_ids),
+            upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
         }
     }
 
     pub fn general_no_id_allowlist(
-        lower_inclusive: Decimal,
-        upper_inclusive: Decimal,
         known_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: LowerBound,
+        upper_bound: UpperBound,
     ) -> Result<Self, StaticResourceMovementsError> {
         let required_ids = known_ids.into_iter().collect::<IndexSet<_>>();
-        if Decimal::from(required_ids.len()) > lower_inclusive || lower_inclusive > upper_inclusive
+        let number_of_required_ids = Decimal::from(required_ids.len());
+        if number_of_required_ids > lower_bound.equivalent_decimal()
+            || lower_bound.equivalent_decimal() > upper_bound.equivalent_decimal()
         {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
         Ok(Self {
-            lower_inclusive,
-            upper_inclusive,
             certain_ids: required_ids,
+            lower_bound,
+            upper_bound,
             allowed_ids: AllowedIds::Any,
         })
     }
 
     pub fn general_with_id_allowlist(
-        lower_inclusive: Decimal,
-        upper_inclusive: Decimal,
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: LowerBound,
+        upper_bound: UpperBound,
         id_allowlist: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let required_ids = required_ids.into_iter().collect::<IndexSet<_>>();
+        let number_of_required_ids = Decimal::from(required_ids.len());
         let id_allowlist = id_allowlist.into_iter().collect::<IndexSet<_>>();
-        if Decimal::from(required_ids.len()) > lower_inclusive
-            || lower_inclusive > upper_inclusive
-            || upper_inclusive > Decimal::from(id_allowlist.len())
+        let number_of_allowed_ids = Decimal::from(id_allowlist.len());
+
+        if number_of_required_ids > lower_bound.equivalent_decimal()
+            || lower_bound.equivalent_decimal() > upper_bound.equivalent_decimal()
+            || upper_bound.equivalent_decimal() > number_of_allowed_ids
         {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
@@ -721,20 +725,45 @@ impl ResourceBounds {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
         Ok(Self {
-            lower_inclusive,
-            upper_inclusive,
             certain_ids: required_ids,
+            lower_bound,
+            upper_bound,
             allowed_ids: AllowedIds::Allowlist(id_allowlist),
         })
     }
 
-    // &self methods
-    pub fn inclusive_bounds(&self) -> (Decimal, Decimal) {
-        (self.lower_inclusive, self.upper_inclusive)
+    pub fn deconstruct(
+        self,
+    ) -> (
+        IndexSet<NonFungibleLocalId>,
+        LowerBound,
+        UpperBound,
+        AllowedIds,
+    ) {
+        (
+            self.certain_ids,
+            self.lower_bound,
+            self.upper_bound,
+            self.allowed_ids,
+        )
     }
 
-    pub fn known_ids(&self) -> &IndexSet<NonFungibleLocalId> {
+    // &self methods
+    pub fn numeric_bounds(&self) -> (LowerBound, UpperBound) {
+        (self.lower_bound, self.upper_bound)
+    }
+
+    pub fn certain_ids(&self) -> &IndexSet<NonFungibleLocalId> {
         &self.certain_ids
+    }
+
+    pub fn allowed_ids(&self) -> &AllowedIds {
+        &self.allowed_ids
+    }
+
+    pub fn includes_non_fungible_details(&self) -> bool {
+        let is_fungible = self.certain_ids.is_empty() && self.allowed_ids == AllowedIds::Any;
+        !is_fungible
     }
 
     /// Returns true if the bound is known to be zero
@@ -749,16 +778,14 @@ impl ResourceBounds {
     }
 
     pub fn mut_add(&mut self, other: Self) -> Result<(), StaticResourceMovementsError> {
-        self.lower_inclusive = self
-            .lower_inclusive
-            .checked_add(other.lower_inclusive)
-            .ok_or(StaticResourceMovementsError::DecimalOverflow)?;
-        self.upper_inclusive = self.upper_inclusive.saturating_add(other.upper_inclusive);
+        self.lower_bound = self.lower_bound.add(other.lower_bound)?;
+        self.upper_bound = self.upper_bound.add(other.upper_bound)?;
         for id in other.certain_ids.into_iter() {
             if !self.certain_ids.insert(id) {
                 return Err(StaticResourceMovementsError::DuplicateNonFungibleId);
             }
         }
+
         match (&mut self.allowed_ids, other.allowed_ids) {
             (AllowedIds::Any, _) => {} // If all ids are allowed, keep it that way
             (self_permitted_ids, AllowedIds::Any) => *self_permitted_ids = AllowedIds::Any,
@@ -767,6 +794,7 @@ impl ResourceBounds {
                 allow_list.extend(other_allow_list);
             }
         }
+
         Ok(())
     }
 
@@ -783,38 +811,31 @@ impl ResourceBounds {
         amount: ResourceTakeAmount,
     ) -> Result<Self, StaticResourceMovementsError> {
         match amount {
-            ResourceTakeAmount::Amount(taken_amount) => {
-                if taken_amount.is_negative() {
+            ResourceTakeAmount::Amount(take_amount) => {
+                if take_amount.is_negative() {
                     return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
                 }
-                if taken_amount > self.upper_inclusive {
-                    return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
-                }
-                self.upper_inclusive -= taken_amount;
-                self.lower_inclusive = Decimal::zero().max(self.lower_inclusive - taken_amount);
-                // For known ids, we don't know which ids were taken, so we have to clear them
+                self.upper_bound.take_amount(take_amount)?;
+                self.lower_bound.take_amount(take_amount)?;
+
+                // For known ids, we don't know which ids were taken, so we have to clear them.
                 // But the allowed ids stay as-is
-                if taken_amount > Decimal::zero() {
+                if take_amount.is_positive() {
                     self.certain_ids.clear();
                 }
+
                 // Taken amount
-                Self::exact_amount(taken_amount)
+                Self::exact_amount(take_amount)
             }
             ResourceTakeAmount::NonFungibles(taken_ids) => {
-                let taken_count = Decimal::from(taken_ids.len());
-                if taken_count > self.upper_inclusive {
-                    return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
-                }
-                self.upper_inclusive -= taken_count;
-                self.lower_inclusive = Decimal::zero().max(self.lower_inclusive - taken_count);
+                let take_amount = Decimal::from(taken_ids.len());
+
+                self.lower_bound.take_amount(take_amount)?;
+                self.upper_bound.take_amount(take_amount)?;
 
                 // Remove any taken ids from the list of known/required ids.
                 // It's okay if some of the taken ids weren't required to be present.
-                // We error if, after taking all matching ids, we now are required to have too many.
                 self.certain_ids = self.certain_ids.difference(&taken_ids).cloned().collect();
-                if Decimal::from(self.certain_ids.len()) > self.upper_inclusive {
-                    return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
-                }
 
                 // Finally, we check all the taken ids are in the allow list (if it exists) and these ids
                 // are removed from the allow list.
@@ -823,6 +844,13 @@ impl ResourceBounds {
                         return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
                     }
                     *allow_list = allow_list.difference(&taken_ids).cloned().collect();
+                }
+
+                // We check remaining invariants: it's an error if, after taking all matching ids,
+                // we now are required to have too many.
+                // e.g. This catches "Add A, 1 of 1; Take B, C"
+                if Decimal::from(self.certain_ids.len()) > self.lower_bound.equivalent_decimal() {
+                    return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
                 }
 
                 // Taken amount
@@ -848,8 +876,8 @@ impl ResourceBounds {
         assertion: ResourceBounds,
     ) -> Result<(), StaticResourceMovementsError> {
         // Possibly increase lower bound and decrease upper bound
-        self.lower_inclusive = self.lower_inclusive.max(assertion.lower_inclusive);
-        self.upper_inclusive = self.upper_inclusive.min(assertion.upper_inclusive);
+        self.lower_bound = self.lower_bound.handle_assertion(assertion.lower_bound);
+        self.upper_bound = self.upper_bound.handle_assertion(assertion.upper_bound);
 
         // Handle the allow list
         if let AllowedIds::Allowlist(assertion_allowlist) = assertion.allowed_ids {
@@ -871,7 +899,9 @@ impl ResourceBounds {
             }
         }
 
-        // Expand the known ids
+        // We've already checked that our certain ids are in the assertion allowlist
+        // (and therefore, using the invariant, are in the intersection).
+        // We now need to complete processing by expanding the known ids list according to the assertion.
         for required_id in assertion.certain_ids.iter() {
             self.certain_ids.insert(required_id.clone());
         }
@@ -885,17 +915,266 @@ impl ResourceBounds {
         // We still need to check two more which could now have been invalidated:
         // * self.lower_inclusive <= self.upper_inclusive
         // * self.upper_inclusive <= self.allowlist.len()
-        if self.lower_inclusive > self.upper_inclusive {
+        if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
             return Err(StaticResourceMovementsError::AssertionCannotBeSatisfied);
         }
 
         if let AllowedIds::Allowlist(allowlist) = &self.allowed_ids {
-            if self.upper_inclusive > Decimal::from(allowlist.len()) {
+            if self.upper_bound.equivalent_decimal() > Decimal::from(allowlist.len()) {
                 return Err(StaticResourceMovementsError::AssertionCannotBeSatisfied);
             }
         }
 
         Ok(())
+    }
+
+    /// For situations where someone has taken an unknown amount from the balance.
+    pub fn replace_lower_bounds_with_zero(mut self) -> Self {
+        self.mut_replace_lower_bounds_with_zero();
+        self
+    }
+
+    /// For situations where someone has taken an unknown amount from the balance.
+    pub fn mut_replace_lower_bounds_with_zero(&mut self) {
+        self.certain_ids = Default::default();
+        self.lower_bound = LowerBound::zero();
+    }
+}
+
+/// ## Invariants
+/// * The `amount` in `LowerBound::AmountInclusive(amount) is required to be non-negative.
+///
+/// ## Trait Implementations
+/// * [`Ord`], [`PartialOrd`] - Satisfies `AmountInclusive(Zero) < NonZero < AmountInclusive(AnyPositive)`
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LowerBound {
+    AmountInclusive(Decimal),
+    NonZero,
+}
+
+impl PartialOrd for LowerBound {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for LowerBound {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        match (self, other) {
+            (
+                LowerBound::AmountInclusive(self_lower_inclusive),
+                LowerBound::AmountInclusive(other_lower_inclusive),
+            ) => self_lower_inclusive.cmp(other_lower_inclusive),
+            (LowerBound::AmountInclusive(self_lower_inclusive), LowerBound::NonZero) => {
+                if self_lower_inclusive.is_positive() {
+                    core::cmp::Ordering::Greater
+                } else {
+                    core::cmp::Ordering::Less
+                }
+            }
+            (LowerBound::NonZero, LowerBound::AmountInclusive(other_lower_inclusive)) => {
+                if other_lower_inclusive.is_positive() {
+                    core::cmp::Ordering::Less
+                } else {
+                    core::cmp::Ordering::Greater
+                }
+            }
+            (LowerBound::NonZero, LowerBound::NonZero) => core::cmp::Ordering::Equal,
+        }
+    }
+}
+
+impl LowerBound {
+    pub const fn zero() -> Self {
+        Self::AmountInclusive(Decimal::ZERO)
+    }
+
+    pub const fn non_zero() -> Self {
+        Self::NonZero
+    }
+
+    pub fn cmp_upper(&self, other: &UpperBound) -> core::cmp::Ordering {
+        match (self, other) {
+            (
+                LowerBound::AmountInclusive(lower_bound_inclusive),
+                UpperBound::AmountInclusive(upper_bound_inclusive),
+            ) => lower_bound_inclusive.cmp(upper_bound_inclusive),
+            (_, UpperBound::Unbounded) => core::cmp::Ordering::Less,
+            (LowerBound::NonZero, UpperBound::AmountInclusive(upper_bound_inclusive)) => {
+                if upper_bound_inclusive.is_zero() {
+                    core::cmp::Ordering::Greater
+                } else {
+                    core::cmp::Ordering::Less
+                }
+            }
+        }
+    }
+
+    /// ## Panics
+    /// * Panics if the decimal is not resolvable or is non-negative
+    pub fn at_least(decimal: impl ResolvableDecimal) -> Self {
+        let decimal = decimal.resolve();
+        if decimal.is_negative() {
+            panic!("An at_least bound is negative");
+        }
+        Self::AmountInclusive(decimal)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.eq(&Self::zero())
+    }
+
+    pub fn is_positive(&self) -> bool {
+        !self.is_zero()
+    }
+
+    fn add(self, other: Self) -> Result<Self, StaticResourceMovementsError> {
+        let bound = match (self, other) {
+            (
+                LowerBound::AmountInclusive(self_lower_bound),
+                LowerBound::AmountInclusive(other_lower_bound),
+            ) => {
+                let lower_bound_inclusive = self_lower_bound
+                    .checked_add(other_lower_bound)
+                    .ok_or(StaticResourceMovementsError::DecimalOverflow)?;
+                LowerBound::AmountInclusive(lower_bound_inclusive)
+            }
+            (LowerBound::AmountInclusive(amount), LowerBound::NonZero)
+            | (LowerBound::NonZero, LowerBound::AmountInclusive(amount)) => {
+                if amount.is_zero() {
+                    LowerBound::NonZero
+                } else {
+                    LowerBound::AmountInclusive(amount)
+                }
+            }
+            (LowerBound::NonZero, LowerBound::NonZero) => LowerBound::NonZero,
+        };
+
+        Ok(bound)
+    }
+
+    /// PRECONDITION: take_amount must be positive
+    fn take_amount(self, take_amount: Decimal) -> Result<Self, StaticResourceMovementsError> {
+        let bound = match self {
+            LowerBound::AmountInclusive(lower_bound_inclusive) => {
+                if take_amount > lower_bound_inclusive {
+                    Self::zero()
+                } else {
+                    LowerBound::AmountInclusive(lower_bound_inclusive - take_amount)
+                }
+            }
+            LowerBound::NonZero => {
+                if take_amount.is_zero() {
+                    LowerBound::NonZero
+                } else {
+                    Self::zero()
+                }
+            }
+        };
+
+        Ok(bound)
+    }
+
+    fn handle_assertion(self, assertion_bound: LowerBound) -> Self {
+        self.max(assertion_bound)
+    }
+
+    pub fn equivalent_decimal(&self) -> Decimal {
+        match self {
+            LowerBound::AmountInclusive(decimal) => *decimal,
+            LowerBound::NonZero => Decimal::from_attos(I192::ONE),
+        }
+    }
+}
+
+/// ## Trait Implementations
+/// * [`Ord`], [`PartialOrd`] - Satisfies `AmountInclusive(Any) < Unbounded`
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UpperBound {
+    AmountInclusive(Decimal),
+    Unbounded,
+}
+
+impl PartialOrd for UpperBound {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for UpperBound {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        match (self, other) {
+            (
+                UpperBound::AmountInclusive(upper_bound_inclusive),
+                UpperBound::AmountInclusive(other_upper_bound_inclusive),
+            ) => upper_bound_inclusive.cmp(other_upper_bound_inclusive),
+            (UpperBound::AmountInclusive(_), UpperBound::Unbounded) => core::cmp::Ordering::Less,
+            (UpperBound::Unbounded, UpperBound::AmountInclusive(_)) => core::cmp::Ordering::Greater,
+            (UpperBound::Unbounded, UpperBound::Unbounded) => core::cmp::Ordering::Equal,
+        }
+    }
+}
+
+impl UpperBound {
+    pub const fn unbounded() -> Self {
+        Self::Unbounded
+    }
+
+    pub const fn zero() -> Self {
+        Self::AmountInclusive(Decimal::ZERO)
+    }
+
+    /// ## Panics
+    /// * Panics if the decimal is not resolvable or is non-negative
+    pub fn at_most(decimal: impl ResolvableDecimal) -> Self {
+        let decimal = decimal.resolve();
+        if decimal.is_negative() {
+            panic!("An at_most bound is negative");
+        }
+        Self::AmountInclusive(decimal.resolve())
+    }
+
+    fn add(self, other: Self) -> Result<Self, StaticResourceMovementsError> {
+        let bound = match (self, other) {
+            (
+                UpperBound::AmountInclusive(self_upper_bound_inclusive),
+                UpperBound::AmountInclusive(other_upper_bound_inclusive),
+            ) => {
+                let upper_bound_inclusive = self_upper_bound_inclusive
+                    .checked_add(other_upper_bound_inclusive)
+                    .ok_or(StaticResourceMovementsError::DecimalOverflow)?;
+                UpperBound::AmountInclusive(upper_bound_inclusive)
+            }
+            (_, UpperBound::Unbounded) | (UpperBound::Unbounded, _) => UpperBound::Unbounded,
+        };
+
+        Ok(bound)
+    }
+
+    /// PRECONDITION: take_amount must be positive
+    fn take_amount(self, take_amount: Decimal) -> Result<Self, StaticResourceMovementsError> {
+        let bound = match self {
+            UpperBound::AmountInclusive(upper_bound_inclusive) => {
+                if take_amount > upper_bound_inclusive {
+                    return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
+                }
+                UpperBound::AmountInclusive(upper_bound_inclusive - take_amount)
+            }
+            UpperBound::Unbounded => UpperBound::Unbounded,
+        };
+
+        Ok(bound)
+    }
+
+    fn handle_assertion(self, assertion_bound: UpperBound) -> Self {
+        self.min(assertion_bound)
+    }
+
+    pub fn equivalent_decimal(&self) -> Decimal {
+        match self {
+            UpperBound::AmountInclusive(decimal) => *decimal,
+            UpperBound::Unbounded => Decimal::MAX,
+        }
     }
 }
 
@@ -1099,13 +1378,16 @@ impl StaticResourceMovementsOutput {
                 if resources.len() != 1 {
                     panic!("Account withdraw output should have exactly one resource");
                 }
-                let (resource_address, bound) = resources.first().unwrap();
+                let (resource_address, specified_resource) = resources.first().unwrap();
                 if is_non_fungible_withdraw {
-                    AccountWithdraw::Ids(*resource_address, bound.known_ids().clone())
+                    AccountWithdraw::Ids(
+                        *resource_address,
+                        specified_resource.bounds().certain_ids().clone(),
+                    )
                 } else {
                     AccountWithdraw::Amount(
                         *resource_address,
-                        bound.resource_bounds.lower_inclusive,
+                        specified_resource.bounds.lower_bound.equivalent_decimal(),
                     )
                 }
             };
@@ -1250,8 +1532,63 @@ pub enum AccountWithdraw {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AccountDeposit {
-    specified_resources: IndexMap<ResourceAddress, ResourceBounds>,
+    specified_resources: IndexMap<ResourceAddress, SimpleResourceBounds>,
     unspecified_resources: UnspecifiedResourceKnowledge,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SimpleResourceBounds {
+    ExactAmount(Decimal),
+    AmountRange(LowerBound, UpperBound),
+    ExactNonFungibles(IndexSet<NonFungibleLocalId>),
+    GeneralNonFungibleBounds(ResourceBounds),
+}
+
+impl From<SimpleResourceBounds> for ResourceBounds {
+    fn from(value: SimpleResourceBounds) -> Self {
+        match value {
+            SimpleResourceBounds::ExactAmount(amount) => {
+                ResourceBounds::exact_amount(amount).unwrap()
+            }
+            SimpleResourceBounds::AmountRange(lower_bound, upper_bound) => {
+                ResourceBounds::general_no_id_allowlist([], lower_bound, upper_bound).unwrap()
+            }
+            SimpleResourceBounds::ExactNonFungibles(ids) => {
+                ResourceBounds::exact_non_fungibles(ids)
+            }
+            SimpleResourceBounds::GeneralNonFungibleBounds(resource_bounds) => resource_bounds,
+        }
+    }
+}
+
+impl From<ResourceBounds> for SimpleResourceBounds {
+    fn from(value: ResourceBounds) -> Self {
+        if value.includes_non_fungible_details() {
+            match value.allowed_ids() {
+                // Note - IndexSet equality does a set equality, ignoring order
+                AllowedIds::Allowlist(allowlist) if value.certain_ids() == allowlist => {
+                    let (certain_ids, _, _, _) = value.deconstruct();
+                    SimpleResourceBounds::ExactNonFungibles(certain_ids)
+                }
+                AllowedIds::Any | AllowedIds::Allowlist(_) => {
+                    SimpleResourceBounds::GeneralNonFungibleBounds(value)
+                }
+            }
+        } else {
+            let (lower_bound, upper_bound) = value.numeric_bounds();
+            if lower_bound.cmp_upper(&upper_bound).is_eq() {
+                SimpleResourceBounds::ExactAmount(lower_bound.equivalent_decimal())
+            } else {
+                SimpleResourceBounds::AmountRange(lower_bound, upper_bound)
+            }
+        }
+    }
+}
+
+impl SimpleResourceBounds {
+    pub fn to_bounds(self) -> SimpleResourceBounds {
+        self.into()
+    }
 }
 
 impl AccountDeposit {
@@ -1264,7 +1601,8 @@ impl AccountDeposit {
 
     /// Should only be used if it doesn't already exist
     pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
-        self.specified_resources.insert(resource_address, bounds);
+        self.specified_resources
+            .insert(resource_address, bounds.into());
         self
     }
 
@@ -1274,7 +1612,7 @@ impl AccountDeposit {
 
     pub fn bounds_for(&self, resource_address: ResourceAddress) -> ResourceBounds {
         match self.specified_resources.get(&resource_address) {
-            Some(resource_bounds) => resource_bounds.clone(),
+            Some(bounds) => bounds.clone().into(),
             None => self.unspecified_resources.resource_bounds(),
         }
     }

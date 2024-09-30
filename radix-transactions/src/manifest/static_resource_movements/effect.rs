@@ -501,9 +501,10 @@ fn handle_possible_refund(
             ResourceTakeAmount::All,
             details.source,
         )?;
-        let (_lower_bound, upper_bound) = attempted_deposit.inclusive_bounds();
-        let refunded_amount =
-            ResourceBounds::general_no_id_allowlist(Decimal::ZERO, upper_bound, [])?;
+        let (bounds, _history) = attempted_deposit.deconstruct();
+        // Either nothing or everything is returned, but we can't currently model a fork in
+        // the timeline, so instead we handle it as a return of some amount between 0 and the sent amount.
+        let refunded_amount = bounds.replace_lower_bounds_with_zero();
         refunded_resources.mut_add_resource(
             known_resource,
             TrackedResource::general(refunded_amount, [details.source]),
