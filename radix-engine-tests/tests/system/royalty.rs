@@ -46,7 +46,7 @@ fn test_component_royalty() {
     receipt.expect_commit(true);
     assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("3"));
     let account_post_balance = ledger.get_component_balance(account, XRD);
-    let component_royalty = ledger.inspect_component_royalty(component_address);
+    let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -106,7 +106,7 @@ fn test_component_royalty_in_usd() {
             .unwrap()
     );
     let account_post_balance = ledger.get_component_balance(account, XRD);
-    let component_royalty = ledger.inspect_component_royalty(component_address);
+    let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -146,7 +146,7 @@ fn test_package_royalty() {
     );
     let account_post_balance = ledger.get_component_balance(account, XRD);
     let package_royalty = ledger.inspect_package_royalty(package_address).unwrap();
-    let component_royalty = ledger.inspect_component_royalty(component_address);
+    let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
         account_pre_balance
             .checked_sub(account_post_balance)
@@ -181,7 +181,10 @@ fn test_royalty_accumulation_when_success() {
         ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
-    assert_eq!(ledger.inspect_component_royalty(component_address), dec!(1));
+    assert_eq!(
+        ledger.inspect_component_royalty(component_address).unwrap(),
+        dec!(1)
+    );
 }
 
 #[test]
@@ -209,7 +212,7 @@ fn test_royalty_accumulation_when_failure() {
         Some(Decimal::zero())
     );
     assert_eq!(
-        ledger.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address).unwrap(),
         Decimal::zero()
     );
 }
@@ -232,7 +235,10 @@ fn test_claim_royalty() {
         ledger.inspect_package_royalty(package_address),
         Some(dec!("2"))
     );
-    assert_eq!(ledger.inspect_component_royalty(component_address), dec!(1));
+    assert_eq!(
+        ledger.inspect_component_royalty(component_address).unwrap(),
+        dec!(1)
+    );
 
     // Claim package royalty
     let receipt = ledger.execute_manifest(
@@ -267,7 +273,7 @@ fn test_claim_royalty() {
         Some(dec!("0"))
     );
     assert_eq!(
-        ledger.inspect_component_royalty(component_address),
+        ledger.inspect_component_royalty(component_address).unwrap(),
         dec!("0")
     );
 }

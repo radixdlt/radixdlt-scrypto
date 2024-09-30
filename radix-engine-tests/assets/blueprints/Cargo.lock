@@ -413,6 +413,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "identity"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
