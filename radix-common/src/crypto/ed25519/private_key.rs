@@ -1,6 +1,6 @@
 use super::Ed25519Signature;
 use crate::internal_prelude::*;
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
+use ed25519_dalek::{SecretKey, Signer, SigningKey};
 use zeroize::Zeroize;
 
 #[derive(Zeroize)]
@@ -11,29 +11,29 @@ impl Ed25519PrivateKey {
     pub const LENGTH: usize = 32;
 
     pub fn public_key(&self) -> Ed25519PublicKey {
-        Ed25519PublicKey(PublicKey::from(&self.0).to_bytes())
+        Ed25519PublicKey(SigningKey::from(&self.0).verifying_key().to_bytes())
     }
 
     pub fn sign(&self, msg_hash: &impl IsHash) -> Ed25519Signature {
-        let keypair = Keypair {
-            secret: SecretKey::from_bytes(self.0.as_bytes()).expect("From a valid key bytes"),
-            public: PublicKey::from(&self.0),
-        };
+        let signing_key = SigningKey::from(&self.0);
 
         // SHA512 is used here
 
-        Ed25519Signature(keypair.sign(msg_hash.as_ref()).to_bytes())
+        Ed25519Signature(signing_key.sign(msg_hash.as_ref()).to_bytes())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+        self.0.to_vec()
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
         if slice.len() != Ed25519PrivateKey::LENGTH {
             return Err(());
         }
-        Ok(Self(SecretKey::from_bytes(slice).map_err(|_| ())?))
+
+        let signing_key = SigningKey::try_from(slice).map_err(|_| ())?;
+
+        Ok(Self(signing_key.to_bytes()))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
@@ -41,7 +41,7 @@ impl Ed25519PrivateKey {
         (&mut bytes[Ed25519PrivateKey::LENGTH - 8..Ed25519PrivateKey::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
-        Ok(Self(SecretKey::from_bytes(&bytes).map_err(|_| ())?))
+        Ok(Self(bytes))
     }
 }
 
