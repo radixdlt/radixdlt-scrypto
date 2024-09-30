@@ -268,119 +268,122 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     // We would like to add an `info_url` entry for the various entities that we have. The this is
     // the mapping that we're using.
     let info_url_metadata = [
-        (XRD.into_node_id(), "https://go.radixdlt.com/xrd-info"),
+        (XRD.into_node_id(), "https://www.radixdlt.com/info-url/xrd"),
         (
             SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/secp256k1-signature-resouce-info",
+            "https://www.radixdlt.com/info-url/secp256k1-signature-resource",
         ),
         (
             ED25519_SIGNATURE_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/ed25519-signature-resource-info",
+            "https://www.radixdlt.com/info-url/ed25519-signature-resource",
         ),
         (
             PACKAGE_OF_DIRECT_CALLER_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/package-of-direct-caller-resource-info",
+            "https://www.radixdlt.com/info-url/package-of-direct-caller-resource",
         ),
         (
             GLOBAL_CALLER_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/global-caller-resource-info",
+            "https://www.radixdlt.com/info-url/global-caller-resource",
         ),
         (
             SYSTEM_EXECUTION_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/system-execution-resource-info",
+            "https://www.radixdlt.com/info-url/system-execution-resource",
         ),
         (
             PACKAGE_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/package-owner-badge-info",
+            "https://www.radixdlt.com/info-url/package-owner-badge",
         ),
         (
             VALIDATOR_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/validator-owner-badge-info",
+            "https://www.radixdlt.com/info-url/validator-owner-badge",
         ),
         (
             ACCOUNT_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/account-owner-badge-info",
+            "https://www.radixdlt.com/info-url/account-owner-badge",
         ),
         (
             IDENTITY_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/identity-owner-badge-info",
+            "https://www.radixdlt.com/info-url/identity-owner-badge",
         ),
         (
             PACKAGE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/package-package-info",
+            "https://www.radixdlt.com/info-url/package-package",
         ),
         (
             RESOURCE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/resource-package-info",
+            "https://www.radixdlt.com/info-url/resource-package",
         ),
         (
             ACCOUNT_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/account-package-info",
+            "https://www.radixdlt.com/info-url/account-package",
         ),
         (
             IDENTITY_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/identity-package-info",
+            "https://www.radixdlt.com/info-url/identity-package",
         ),
         (
             CONSENSUS_MANAGER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/consensus-manager-package-info",
+            "https://www.radixdlt.com/info-url/consensus-manager-package",
         ),
         (
             ACCESS_CONTROLLER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/access-controller-package-info",
+            "https://www.radixdlt.com/info-url/access-controller-package",
         ),
         (
             POOL_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/pool-package-info",
+            "https://www.radixdlt.com/info-url/pool-package",
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/transaction-processor-package-info",
+            "https://www.radixdlt.com/info-url/transaction-processor-package",
         ),
         (
             METADATA_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/metadata-module-package-info",
+            "https://www.radixdlt.com/info-url/metadata-module-package",
         ),
         (
             ROYALTY_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/royalty-module-package-info",
+            "https://www.radixdlt.com/info-url/royalty-module-package",
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/role-assignment-module-package-info",
+            "https://www.radixdlt.com/info-url/role-assignment-module-package",
         ),
         (
             TEST_UTILS_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/test-utils-package-info",
+            "https://www.radixdlt.com/info-url/test-utils-package",
         ),
         (
             GENESIS_HELPER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/genesis-helper-package-info",
+            "https://www.radixdlt.com/info-url/genesis-helper-package",
         ),
         (
             FAUCET_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/faucet-package-info",
+            "https://www.radixdlt.com/info-url/faucet-package",
         ),
         (
             TRANSACTION_TRACKER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/transaction-tracker-package-info",
+            "https://www.radixdlt.com/info-url/transaction-tracker-package",
         ),
         (
             LOCKER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/locker-package-info",
+            "https://www.radixdlt.com/info-url/locker-package",
         ),
         (
             CONSENSUS_MANAGER.into_node_id(),
-            "https://go.radixdlt.com/consensus-manager-info",
+            "https://www.radixdlt.com/info-url/consensus-manager",
         ),
         (
             GENESIS_HELPER.into_node_id(),
-            "https://go.radixdlt.com/genesis-helper-info",
+            "https://www.radixdlt.com/info-url/genesis-helper",
         ),
-        (FAUCET.into_node_id(), "https://go.radixdlt.com/faucet-info"),
+        (
+            FAUCET.into_node_id(),
+            "https://www.radixdlt.com/info-url/faucet",
+        ),
         (
             TRANSACTION_TRACKER.into_node_id(),
-            "https://go.radixdlt.com/transaction-tracker-info",
+            "https://www.radixdlt.com/info-url/transaction-tracker",
         ),
     ];
 
