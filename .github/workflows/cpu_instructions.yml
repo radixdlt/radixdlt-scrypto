@@ -15,70 +15,70 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
-  #     - name: Build radix-engine-tests
-  #       run: |
-  #            cd radix-engine-tests
-  #            cargo test --release --no-run --features resource_tracker
-  #            rm -f ../target/release/deps/transaction_multi_threaded-*
-  #            rm -f ../target/release/deps/*.d
-  #            rm -f ../target/release/deps/*.o
-  #            rm -f ../target/release/deps/*.rlib
-  #            rm -f ../target/release/deps/*.rmeta
-  #     - name: Preapare files for cache
-  #       run: |
-  #            cd target/release
-  #            mkdir deps_1
-  #            cd deps
-  #            count=`ls | wc -l`
-  #            half=`echo $(($count / 2))`
-  #            ls | head -n$half | xargs mv -t ../deps_1
-  #            cd ..
-  #            mv deps deps_2
-  #     - name: Cache build results 1
-  #       uses: RDXWorks-actions/cache/save@main
-  #       with:
-  #         path: ./target/release/deps_1
-  #         key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}
-  #     - name: Cache build results 2
-  #       uses: RDXWorks-actions/cache/save@main
-  #       with:
-  #         path: ./target/release/deps_2
-  #         key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
+      - name: Build radix-engine-tests
+        run: |
+             cd radix-engine-tests
+             cargo test --release --no-run --features resource_tracker
+             rm -f ../target/release/deps/transaction_multi_threaded-*
+             rm -f ../target/release/deps/*.d
+             rm -f ../target/release/deps/*.o
+             rm -f ../target/release/deps/*.rlib
+             rm -f ../target/release/deps/*.rmeta
+      - name: Preapare files for cache
+        run: |
+             cd target/release
+             mkdir deps_1
+             cd deps
+             count=`ls | wc -l`
+             half=`echo $(($count / 2))`
+             ls | head -n$half | xargs mv -t ../deps_1
+             cd ..
+             mv deps deps_2
+      - name: Cache build results 1
+        uses: RDXWorks-actions/cache/save@main
+        with:
+          path: ./target/release/deps_1
+          key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}
+      - name: Cache build results 2
+        uses: RDXWorks-actions/cache/save@main
+        with:
+          path: ./target/release/deps_2
+          key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
 
-  # build-other-tests:
-  #   name: Build other tests
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - uses: RDXWorks-actions/checkout@main
-  #     - name: Setup environment
-  #       uses: ./.github/actions/setup-env
-  #     - name: Build tests
-  #       run: |
-  #            cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
-  #            rm -f ./target/release/deps/*.d
-  #            rm -f ./target/release/deps/*.o
-  #            rm -f ./target/release/deps/*.rlib
-  #            rm -f ./target/release/deps/*.rmeta
-  #     - name: Preapare files for cache
-  #       run: |
-  #            cd target/release
-  #            mkdir deps_3
-  #            cd deps
-  #            count=`ls fuzz* | wc -l`
-  #            half=`echo $(($count / 2))`
-  #            ls fuzz* | head -n$half | xargs mv -t ../deps_3
-  #            cd ..
-  #            mv deps deps_4
-  #     - name: Cache build results 1
-  #       uses: RDXWorks-actions/cache/save@main
-  #       with:
-  #         path: ./target/release/deps_3
-  #         key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
-  #     - name: Cache build results 2
-  #       uses: RDXWorks-actions/cache/save@main
-  #       with:
-  #         path: ./target/release/deps_4
-  #         key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}
+  build-other-tests:
+    name: Build other tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Build tests
+        run: |
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-tests
+             rm -f ./target/release/deps/*.d
+             rm -f ./target/release/deps/*.o
+             rm -f ./target/release/deps/*.rlib
+             rm -f ./target/release/deps/*.rmeta
+      - name: Preapare files for cache
+        run: |
+             cd target/release
+             mkdir deps_3
+             cd deps
+             count=`ls fuzz* | wc -l`
+             half=`echo $(($count / 2))`
+             ls fuzz* | head -n$half | xargs mv -t ../deps_3
+             cd ..
+             mv deps deps_4
+      - name: Cache build results 1
+        uses: RDXWorks-actions/cache/save@main
+        with:
+          path: ./target/release/deps_3
+          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
+      - name: Cache build results 2
+        uses: RDXWorks-actions/cache/save@main
+        with:
+          path: ./target/release/deps_4
+          key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}
 
   # qemu-build:
   #   name: QEMU build
@@ -165,6 +165,7 @@ jobs:
     name: Generate results
     runs-on: ubuntu-22.04
     # needs: qemu-costing-evaluation-run
+    needs: [build-radix-engine-tests, build-other-tests]
     steps:
       # - uses: RDXWorks-actions/checkout@main
       # - name: Setup dependencies
@@ -173,29 +174,29 @@ jobs:
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/1
-          key: Linux-build-cache-1-radix-engine-tests-11095446664
-          # key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}-qemu-results
+          # key: Linux-build-cache-1-radix-engine-tests-11095446664
+          key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Read cache QEMU run 2 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/2
-          key: Linux-build-cache-2-radix-engine-tests-11095446664
-          # key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}-qemu-results
+          # key: Linux-build-cache-2-radix-engine-tests-11095446664
+          key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Read cache QEMU run 3 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/3
-          key: Linux-build-cache-3-radix-engine-tests-11095446664
-          # key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
+          # key: Linux-build-cache-3-radix-engine-tests-11095446664
+          key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Read cache QEMU run 4 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/4
-          key: Linux-build-cache-4-radix-engine-tests-11095446664
-          # key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}-qemu-results
+          # key: Linux-build-cache-4-radix-engine-tests-11095446664
+          key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Upload cache
         uses: RDXWorks-actions/upload-artifact@main
