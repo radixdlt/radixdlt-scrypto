@@ -384,7 +384,7 @@ impl StaticInvocationResourcesOutput for AccountSecurifyInput {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
-                    TrackedResource::non_fungibles([local_id], [details.source]),
+                    TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )
             }
             InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
@@ -426,7 +426,7 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty().add_resource(
             self.resource_address,
-            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -450,7 +450,7 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesIn
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty().add_resource(
             self.resource_address,
-            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -764,7 +764,7 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
-                    TrackedResource::non_fungibles([local_id], [details.source]),
+                    TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )?
             }
             InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
@@ -826,7 +826,7 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifes
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty().add_resource(
             self.resource_address,
-            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -850,7 +850,7 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty().add_resource(
             self.resource_address,
-            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
