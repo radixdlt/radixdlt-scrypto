@@ -325,8 +325,8 @@ impl StaticResourceMovementsVisitor {
 
     fn handle_finish(&mut self, OnFinish: OnFinish) -> Result<(), StaticResourceMovementsError> {
         // We should report an error if we know for sure that the worktop is not empty
-        for (_resource, bounds) in self.worktop.known_resource_bounds() {
-            let (lower_bound, _upper_bound) = bounds.inclusive_bounds();
+        for (_resource, resource_bound) in self.worktop.specified_resources() {
+            let (lower_bound, _upper_bound) = resource_bound.inclusive_bounds();
             if lower_bound.is_positive() {
                 return Err(StaticResourceMovementsError::WorktopEndsWithKnownResourcesPresent);
             }

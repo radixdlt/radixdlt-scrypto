@@ -48,12 +48,12 @@ impl ResourceBounds {
     }
 
     // &self methods
-    pub fn known_resource_bounds(&self) -> &IndexMap<ResourceAddress, ResourceBound> {
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ResourceBound> {
         &self.specified_resources
     }
 
-    pub fn can_include_unspecified_resources(&self) -> bool {
-        !self.unspecified_resources.none_are_present()
+    pub fn unspecified_resources(&self) -> &UnspecifiedResourceKnowledge {
+        &self.unspecified_resources
     }
 
     /// Verifies that the bounds are equal, but ignores the sources of those bounds.
@@ -257,6 +257,13 @@ impl UnspecifiedResourceKnowledge {
         match self {
             Self::NonePresent => true,
             Self::SomeBalancesMayBePresent(_) => false,
+        }
+    }
+
+    pub fn may_be_present(&self) -> bool {
+        match self {
+            Self::NonePresent => false,
+            Self::SomeBalancesMayBePresent(_) => true,
         }
     }
 
@@ -902,7 +909,7 @@ pub enum ResourceChange {
 
 //====================================================
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StaticResourceMovementsOutput {
     pub invocation_static_information: IndexMap<usize, InvocationStaticInformation>,
 }
@@ -928,10 +935,10 @@ impl StaticResourceMovementsOutput {
                 continue;
             }
             let account_withdrawal = {
-                if invocation.output.can_include_unspecified_resources() {
+                if invocation.output.unspecified_resources().may_be_present() {
                     panic!("Account withdraw output should not have unspecified resources");
                 }
-                let resources = invocation.output.known_resource_bounds();
+                let resources = invocation.output.specified_resources();
                 if resources.len() != 1 {
                     panic!("Account withdraw output should have exactly one resource");
                 }

@@ -488,9 +488,9 @@ fn handle_possible_refund(
     let mut sent_resources = details.sent_resources.clone();
     let mut refunded_resources = ResourceBounds::new_empty();
 
-    // Handle the specified resources
+    // Handle the specified resources. First dump the resource keys to work around the borrow checker...
     let known_resources = sent_resources
-        .known_resource_bounds()
+        .specified_resources()
         .keys()
         .cloned()
         .collect::<Vec<_>>();
@@ -508,7 +508,9 @@ fn handle_possible_refund(
         )?;
     }
     // Handle the possible refund of the remaining unspecified resources
-    refunded_resources.add(sent_resources)?;
+    if sent_resources.unspecified_resources().may_be_present() {
+        refunded_resources.mut_add_unspecified_resources([details.source]);
+    }
 
     Ok(refunded_resources)
 }
