@@ -149,6 +149,42 @@ fn non_fungible_local_ids_method_returns_expected_set() {
 }
 
 #[test]
+fn non_fungible_local_ids_method_returns_expected_set_respecting_limit() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                account,
+                ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                AccountNonFungibleLocalIdsInput {
+                    resource_address,
+                    limit: 2,
+                },
+            )
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    let ids = receipt
+        .expect_commit_success()
+        .output::<AccountNonFungibleLocalIdsOutput>(1);
+    assert_eq!(
+        ids,
+        [2, 3]
+            .into_iter()
+            .map(NonFungibleLocalId::integer)
+            .collect::<IndexSet<_>>()
+    );
+}
+
+#[test]
 fn has_non_fungible_returns_false_if_the_account_doesnt_have_the_non_fungible() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
