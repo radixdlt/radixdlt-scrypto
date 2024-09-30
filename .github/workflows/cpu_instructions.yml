@@ -173,28 +173,28 @@ jobs:
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/1
-          key: Linux-build-cache-1-radix-engine-tests-11072431854
+          key: Linux-build-cache-1-radix-engine-tests-11095446664
           # key: ${{ runner.os }}-build-cache-1-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 2 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/2
-          key: Linux-build-cache-2-radix-engine-tests-11072431854
+          key: Linux-build-cache-2-radix-engine-tests-11095446664
           # key: ${{ runner.os }}-build-cache-2-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 3 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/3
-          key: Linux-build-cache-3-radix-engine-tests-11072431854
+          key: Linux-build-cache-3-radix-engine-tests-11095446664
           # key: ${{ runner.os }}-build-cache-3-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Read cache QEMU run 4 results
         uses: RDXWorks-actions/cache/restore@main
         with:
           path: /tmp/scrypto-resources-usage/4
-          key: Linux-build-cache-4-radix-engine-tests-11072431854
+          key: Linux-build-cache-4-radix-engine-tests-11095446664
           # key: ${{ runner.os }}-build-cache-4-radix-engine-tests-${{ github.run_id }}-qemu-results
           fail-on-cache-miss: true
       - name: Upload cache
