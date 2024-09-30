@@ -185,18 +185,17 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
         withdraws.get(&account1),
         Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
     );
+    let account_deposits = deposits.get(&account2).unwrap();
+    assert_eq!(account_deposits.len(), 1);
     assert_eq!(
-        deposits.get(&account2),
-        Some(&vec![AccountDeposit(
-            TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                ChangeSource::InitialYieldFromParent
-            ])
-            .add_resource(
-                XRD,
-                TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
-            )
-            .unwrap()
-        )])
+        account_deposits[0].unspecified_resources(),
+        UnspecifiedResourceKnowledge::none()
+            .add_possible_resource_balance([ChangeSource::InitialYieldFromParent])
+    );
+    assert_eq!(
+        account_deposits[0].bounds_for(XRD),
+        // At least 10 because we could receive some from the parent at the start of the subintent
+        ResourceBounds::at_least_amount(10).unwrap(),
     );
 }
 
@@ -225,18 +224,17 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
             10.into()
         )])
     );
+    let account_deposits = deposits.get(&account2).unwrap();
+    assert_eq!(account_deposits.len(), 1);
     assert_eq!(
-        deposits.get(&account2),
-        Some(&vec![AccountDeposit(
-            TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                ChangeSource::InitialYieldFromParent
-            ])
-            .add_resource(
-                non_fungible_address,
-                TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
-            )
-            .unwrap()
-        )]),
+        account_deposits[0].unspecified_resources(),
+        UnspecifiedResourceKnowledge::none()
+            .add_possible_resource_balance([ChangeSource::InitialYieldFromParent])
+    );
+    assert_eq!(
+        account_deposits[0].bounds_for(non_fungible_address),
+        // At least 10 because we could receive some from the parent at the start of the subintent
+        ResourceBounds::at_least_amount(10).unwrap(),
     );
 }
 
@@ -319,39 +317,21 @@ fn assertion_of_any_with_unknown_on_worktop_gives_context_to_visitor() {
     let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
 
     // Assert
-    let expected_uncertainties = [
-        ChangeSource::Invocation {
-            instruction_index: 0,
-        },
-        ChangeSource::Invocation {
-            instruction_index: 1,
-        },
-    ];
     assert_eq!(withdraws.len(), 0);
     assert_eq!(deposits.len(), 1);
     assert_eq!(withdraws.get(&account), None);
+    let account_deposits = deposits.get(&account).unwrap();
+    assert_eq!(account_deposits.len(), 1);
     assert_eq!(
-        deposits.get(&account),
-        Some(&vec![AccountDeposit(
-            TrackedResources::new_empty()
-                .add_resource(
-                    XRD,
-                    TrackedResource::new_advanced(
-                        ResourceBounds::non_zero(),
-                        ResourceChangeHistory::empty()
-                            .record_add(
-                                ResourceBounds::zero_or_more(),
-                                expected_uncertainties.clone()
-                            )
-                            .record_assertion(
-                                ResourceBounds::non_zero(),
-                                ChangeSource::assertion_at(2)
-                            ),
-                    )
-                )
-                .unwrap()
-                .add_unspecified_resources(expected_uncertainties)
-        )]),
+        account_deposits[0].unspecified_resources(),
+        UnspecifiedResourceKnowledge::none().add_possible_resource_balance([
+            ChangeSource::invocation_at(0),
+            ChangeSource::invocation_at(1)
+        ]),
+    );
+    assert_eq!(
+        account_deposits[0].bounds_for(XRD),
+        ResourceBounds::non_zero(),
     );
 }
 
@@ -376,27 +356,16 @@ fn assertion_of_ids_gives_context_to_visitor() {
     assert_eq!(withdraws.len(), 0);
     assert_eq!(deposits.len(), 1);
     assert_eq!(withdraws.get(&account), None);
+    let account_deposits = deposits.get(&account).unwrap();
+    assert_eq!(account_deposits.len(), 1);
     assert_eq!(
-        deposits.get(&account),
-        Some(&vec![AccountDeposit(
-            TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                ChangeSource::invocation_at(0)
-            ])
-            .add_resource(
-                non_fungible_address,
-                TrackedResource::new_advanced(
-                    ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
-                    ResourceChangeHistory::empty() // NB: Appends to an unspecified add from the blanket add above
-                        .record_assertion(
-                            ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(
-                                1
-                            )]),
-                            ChangeSource::assertion_at(1)
-                        ),
-                )
-            )
-            .unwrap()
-        )]),
+        account_deposits[0].unspecified_resources(),
+        UnspecifiedResourceKnowledge::none()
+            .add_possible_resource_balance([ChangeSource::invocation_at(0)]),
+    );
+    assert_eq!(
+        account_deposits[0].bounds_for(non_fungible_address),
+        ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
     );
 }
 

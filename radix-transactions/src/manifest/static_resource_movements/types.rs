@@ -72,31 +72,33 @@ impl TrackedResources {
         // bounds of a specified resource in A have the same bound in B (specified or unspecified),
         // AND we check the other way around too.
         for (resource, bound) in self.specified_resources.iter() {
-            if !other.resource_bound(resource).eq_ignoring_history(bound) {
+            if !other.resource_status(resource).eq_ignoring_history(bound) {
                 return false;
             }
         }
         for (resource, bound) in other.specified_resources.iter() {
-            if !self.resource_bound(resource).eq_ignoring_history(bound) {
+            if !self.resource_status(resource).eq_ignoring_history(bound) {
                 return false;
             }
         }
         return true;
     }
 
-    fn resource_bound(&self, resource: &ResourceAddress) -> Cow<TrackedResource> {
+    /// Works for any resource, specified and unspecified.
+    fn resource_status(&self, resource: &ResourceAddress) -> Cow<TrackedResource> {
         match self.specified_resources.get(resource) {
             Some(bound) => Cow::Borrowed(bound),
-            None => Cow::Owned(self.unspecified_resources.tracked_resource()),
+            None => Cow::Owned(self.unspecified_resources.resource_status()),
         }
     }
 
-    // &mut self methods (check that resource bound aligns with resource type)
-    fn resource_bound_mut(&mut self, resource: ResourceAddress) -> &mut TrackedResource {
+    /// Works for any resource, specified and unspecified.
+    /// If the resource is unspecified, it makes it specified, then returns a reference to the entry.
+    fn resource_status_mut(&mut self, resource: ResourceAddress) -> &mut TrackedResource {
         match self.specified_resources.entry(resource) {
             indexmap::map::Entry::Occupied(occupied_entry) => occupied_entry.into_mut(),
             indexmap::map::Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(self.unspecified_resources.tracked_resource())
+                vacant_entry.insert(self.unspecified_resources.resource_status())
             }
         }
     }
@@ -108,7 +110,7 @@ impl TrackedResources {
     pub fn normalize(self) -> Self {
         let mut unspecified_resources = self.unspecified_resources;
         let mut normalized_bounds: IndexMap<ResourceAddress, TrackedResource> = Default::default();
-        let unspecified_resource_bound = unspecified_resources.tracked_resource();
+        let unspecified_resource_bound = unspecified_resources.resource_status();
         for (resource_address, bound) in self.specified_resources {
             if bound.eq_ignoring_history(&unspecified_resource_bound) {
                 // We filter out this resource as it's identical
@@ -116,7 +118,8 @@ impl TrackedResources {
                     let possible_balance_sources = bound
                         .history
                         .all_additive_change_sources_since_was_last_zero();
-                    unspecified_resources.add_possible_resource_balance(possible_balance_sources);
+                    unspecified_resources
+                        .mut_add_possible_resource_balance(possible_balance_sources);
                 }
             } else {
                 normalized_bounds.insert(resource_address, bound);
@@ -142,7 +145,7 @@ impl TrackedResources {
         change_sources: impl IntoIterator<Item = ChangeSource>,
     ) {
         self.unspecified_resources
-            .add(UnspecifiedResourceKnowledge::SomeBalancesMayBePresent(
+            .mut_add(UnspecifiedResourceKnowledge::SomeBalancesMayBePresent(
                 change_sources.into_iter().collect(),
             ));
     }
@@ -154,14 +157,15 @@ impl TrackedResources {
             for (resource, resource_bound) in &mut self.specified_resources {
                 // If an existing resource isn't specified in other, we have to add its unspecified constraints instead
                 if !other.specified_resources.contains_key(resource) {
-                    resource_bound.add_from(other.unspecified_resources.tracked_resource())?;
+                    resource_bound.add_from(other.unspecified_resources.resource_status())?;
                 }
             }
-            self.unspecified_resources.add(other.unspecified_resources);
+            self.unspecified_resources
+                .mut_add(other.unspecified_resources);
         }
 
         for (other_resource, other_resource_bound) in other.specified_resources {
-            self.resource_bound_mut(other_resource)
+            self.resource_status_mut(other_resource)
                 .add_from(other_resource_bound)?;
         }
 
@@ -187,7 +191,7 @@ impl TrackedResources {
                 StaticResourceMovementsError::NonFungibleIdsSpecifiedAgainstFungibleResource,
             );
         }
-        self.resource_bound_mut(resource).add_from(amount)
+        self.resource_status_mut(resource).add_from(amount)
     }
 
     pub fn take_resource(
@@ -196,7 +200,7 @@ impl TrackedResources {
         amount: ResourceTakeAmount,
         source: ChangeSource,
     ) -> Result<TrackedResource, StaticResourceMovementsError> {
-        self.resource_bound_mut(resource).take(amount, source)
+        self.resource_status_mut(resource).take(amount, source)
     }
 
     pub fn take_all(&mut self) -> Self {
@@ -211,21 +215,23 @@ impl TrackedResources {
         // FUTURE TWEAK: Could return an optional set of constraints using all_changes
         match worktop_assertion {
             WorktopAssertion::AnyAmountGreaterThanZero { resource_address } => self
-                .resource_bound_mut(*resource_address)
+                .resource_status_mut(*resource_address)
                 .handle_assertion(ResourceBounds::non_zero(), source),
             WorktopAssertion::AtLeastAmount {
                 resource_address,
                 amount,
             } => self
-                .resource_bound_mut(*resource_address)
+                .resource_status_mut(*resource_address)
                 .handle_assertion(ResourceBounds::at_least_amount(amount)?, source),
             WorktopAssertion::AtLeastNonFungibles {
                 resource_address,
                 ids,
-            } => self.resource_bound_mut(*resource_address).handle_assertion(
-                ResourceBounds::at_least_non_fungibles(ids.iter().cloned()),
-                source,
-            ),
+            } => self
+                .resource_status_mut(*resource_address)
+                .handle_assertion(
+                    ResourceBounds::at_least_non_fungibles(ids.iter().cloned()),
+                    source,
+                ),
             WorktopAssertion::IsEmpty => {
                 for bound in self.specified_resources.values_mut() {
                     // First we handle the assertions to check that it's possible for everything to be zero.
@@ -250,16 +256,27 @@ pub enum UnspecifiedResourceKnowledge {
 }
 
 impl UnspecifiedResourceKnowledge {
+    pub fn none() -> Self {
+        Self::NonePresent
+    }
+
     pub fn clear(&mut self) {
         *self = Self::NonePresent;
     }
 
-    pub fn tracked_resource(&self) -> TrackedResource {
+    pub fn resource_status(&self) -> TrackedResource {
         match self {
             Self::NonePresent => TrackedResource::zero(),
             Self::SomeBalancesMayBePresent(sources) => {
                 TrackedResource::zero_or_more(sources.iter().cloned())
             }
+        }
+    }
+
+    pub fn resource_bounds(&self) -> ResourceBounds {
+        match self {
+            Self::NonePresent => ResourceBounds::zero(),
+            Self::SomeBalancesMayBePresent(_) => ResourceBounds::zero_or_more(),
         }
     }
 
@@ -278,6 +295,14 @@ impl UnspecifiedResourceKnowledge {
     }
 
     pub fn add_possible_resource_balance(
+        mut self,
+        sources: impl IntoIterator<Item = ChangeSource>,
+    ) -> Self {
+        self.mut_add_possible_resource_balance(sources);
+        self
+    }
+
+    pub fn mut_add_possible_resource_balance(
         &mut self,
         sources: impl IntoIterator<Item = ChangeSource>,
     ) {
@@ -291,11 +316,16 @@ impl UnspecifiedResourceKnowledge {
         }
     }
 
-    pub fn add(&mut self, other: Self) {
+    pub fn add(mut self, other: Self) -> Self {
+        self.mut_add(other);
+        self
+    }
+
+    pub fn mut_add(&mut self, other: Self) {
         match other {
             Self::NonePresent => {}
             Self::SomeBalancesMayBePresent(other_sources) => {
-                self.add_possible_resource_balance(other_sources);
+                self.mut_add_possible_resource_balance(other_sources);
             }
         }
     }
@@ -1110,7 +1140,13 @@ impl StaticResourceMovementsOutput {
                 continue;
             }
 
-            let account_deposit = AccountDeposit(invocation.input.clone().normalize());
+            let (specified_resources, unspecified_resources) =
+                invocation.input.clone().normalize().deconstruct();
+            let mut account_deposit = AccountDeposit::empty(unspecified_resources);
+            for (resource_address, tracked_resource) in specified_resources {
+                let (bounds, _history) = tracked_resource.deconstruct();
+                account_deposit = account_deposit.set(resource_address, bounds);
+            }
 
             deposits
                 .entry(account_address)
@@ -1212,5 +1248,34 @@ pub enum AccountWithdraw {
     Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AccountDeposit(pub TrackedResources);
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AccountDeposit {
+    specified_resources: IndexMap<ResourceAddress, ResourceBounds>,
+    unspecified_resources: UnspecifiedResourceKnowledge,
+}
+
+impl AccountDeposit {
+    pub fn empty(unspecified_resources: UnspecifiedResourceKnowledge) -> Self {
+        Self {
+            specified_resources: Default::default(),
+            unspecified_resources,
+        }
+    }
+
+    /// Should only be used if it doesn't already exist
+    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
+        self.specified_resources.insert(resource_address, bounds);
+        self
+    }
+
+    pub fn unspecified_resources(&self) -> UnspecifiedResourceKnowledge {
+        self.unspecified_resources.clone()
+    }
+
+    pub fn bounds_for(&self, resource_address: ResourceAddress) -> ResourceBounds {
+        match self.specified_resources.get(&resource_address) {
+            Some(resource_bounds) => resource_bounds.clone(),
+            None => self.unspecified_resources.resource_bounds(),
+        }
+    }
+}
