@@ -1,20 +1,22 @@
 use super::*;
+use crate::internal_prelude::*;
 use crate::manifest::*;
-use crate::prelude::*;
 use core::ops::*;
-use radix_common::prelude::*;
+use radix_engine_interface::prelude::*;
 
 /// A [`ManifestInterpretationVisitor`] that statically tracks the resources in the worktop and
 /// reports the account withdraws and deposits made.
 pub struct StaticResourceMovementsVisitor {
     /// The resource content of the worktop.
     worktop: ResourceBounds,
-    /// The buckets tracked by the by the visitor.
+    /// Bounds against all existing buckets tracked by the visitor.
     tracked_buckets: IndexMap<ManifestBucket, (ResourceAddress, ResourceBound)>,
+    /// The blueprint of all running named addresses
+    tracked_named_addresses: IndexMap<ManifestNamedAddress, BlueprintId>,
     /// The information about the invocations observed in this manifest. This will be surfaced to
     /// the user when they call the output function.
     invocation_static_information: IndexMap<usize, InvocationStaticInformation>,
-    /// Details about the currently running transaction
+    /// Details about the currently running instruction. Has a value between OnStartInstruction and OnEndInstruction.
     current_instruction: Option<CurrentInstruction>,
 }
 
@@ -55,6 +57,7 @@ impl StaticResourceMovementsVisitor {
         Self {
             worktop,
             tracked_buckets: Default::default(),
+            tracked_named_addresses: Default::default(),
             invocation_static_information: Default::default(),
             current_instruction: None,
         }
@@ -68,30 +71,73 @@ impl StaticResourceMovementsVisitor {
 
     fn handle_invocation_end(
         &mut self,
-        kind: InvocationKind<'_>,
+        invocation_kind: InvocationKind<'_>,
         args: &ManifestValue,
         current_instruction: CurrentInstruction,
     ) -> Result<InvocationStaticInformation, StaticResourceMovementsError> {
-        // Get the invocation inputs based on the arguments.
+        // Get the invocation inputs from the aggregated resources sent during the current instruction.
         let invocation_input = current_instruction.sent_resources;
 
         let change_source = ChangeSource::Invocation {
             instruction_index: current_instruction.index,
         };
 
+        let invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
+            Some((matched_invocation, receiver)) => {
+                matched_invocation.output(InvocationDetails {
+                    receiver,
+                    sent_resources: &invocation_input,
+                    source: change_source,
+                })?
+            }
+            None => {
+                ResourceBounds::new_with_possible_balance_of_unspecified_resources([change_source])
+            }
+        };
+
+        // Add the returned resources to the worktop
+        self.worktop.add(invocation_output.clone())?;
+
+        Ok(InvocationStaticInformation {
+            kind: invocation_kind.into(),
+            input: invocation_input,
+            output: invocation_output,
+        })
+    }
+
+    fn resolve_native_invocation(
+        &self,
+        invocation_kind: InvocationKind,
+        args: &ManifestValue,
+    ) -> Result<Option<(TypedNativeInvocation, InvocationReceiver)>, StaticResourceMovementsError>
+    {
         // Creating a typed native invocation to use in interpreting the invocation.
-        let typed_native_invocation = match kind {
+        Ok(match invocation_kind {
             InvocationKind::Method {
                 address: DynamicGlobalAddress::Static(global_address),
-                module_id,
+                module_id: ModuleId::Main,
                 method,
-            } => TypedNativeInvocation::from_method_invocation(
+            } => TypedNativeInvocation::from_main_module_method_invocation(
                 global_address,
-                module_id,
                 method,
                 args,
-            )
-            .map(|value| (value, Some(*global_address))),
+            )?
+            .map(|value| (value, InvocationReceiver::GlobalMethod(*global_address))),
+            InvocationKind::Method {
+                address: DynamicGlobalAddress::Named(named_address),
+                module_id: ModuleId::Main,
+                method,
+            } => {
+                let blueprint_id = self.tracked_named_addresses.get(named_address)
+                    .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
+                TypedNativeInvocation::from_blueprint_method_invocation(
+                    &blueprint_id.package_address,
+                    blueprint_id.blueprint_name.as_str(),
+                    method,
+                    args,
+                )?
+                .map(|value| (value, InvocationReceiver::GlobalMethodOnReservedAddress))
+            }
             InvocationKind::Function {
                 address: DynamicPackageAddress::Static(package_address),
                 blueprint,
@@ -101,35 +147,14 @@ impl StaticResourceMovementsVisitor {
                 blueprint,
                 function,
                 args,
-            )
-            .map(|value| (value, None)),
+            )?
+            .map(|value| (value, InvocationReceiver::BlueprintFunction)),
             // Can't convert into a typed native invocation.
             InvocationKind::DirectMethod { .. }
             | InvocationKind::YieldToParent
             | InvocationKind::YieldToChild { .. }
             | InvocationKind::Method { .. }
             | InvocationKind::Function { .. } => None,
-        };
-
-        let invocation_output = match typed_native_invocation {
-            Some((matched_invocation, receiver)) => {
-                matched_invocation.output(InvocationDetails {
-                    receiver,
-                    sent_resources: &invocation_input,
-                    source: change_source,
-                })?
-            }
-            None => ResourceBounds::new_including_unspecified_resources([change_source]),
-        };
-
-        // Add to worktop
-        self.worktop.add(invocation_output.clone())?;
-
-        // Return the invocation static information.
-        Ok(InvocationStaticInformation {
-            kind: kind.into(),
-            input: invocation_input,
-            output: invocation_output,
         })
     }
 
@@ -282,6 +307,22 @@ impl StaticResourceMovementsVisitor {
             .handle_worktop_assertion(assertion, change_source)
     }
 
+    fn handle_new_named_address(
+        &mut self,
+        OnNewNamedAddress {
+            named_address,
+            package_address,
+            blueprint_name,
+            ..
+        }: OnNewNamedAddress,
+    ) -> Result<(), StaticResourceMovementsError> {
+        self.tracked_named_addresses.insert(
+            named_address,
+            BlueprintId::new(package_address, blueprint_name),
+        );
+        Ok(())
+    }
+
     fn handle_finish(&mut self, OnFinish: OnFinish) -> Result<(), StaticResourceMovementsError> {
         // We should report an error if we know for sure that the worktop is not empty
         for (_resource, bounds) in self.worktop.known_resource_bounds() {
@@ -311,35 +352,36 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
         }
     }
 
-    fn on_new_bucket<'a>(&mut self, event: OnNewBucket<'_, 'a>) -> ControlFlow<Self::Output> {
+    fn on_new_bucket(&mut self, event: OnNewBucket) -> ControlFlow<Self::Output> {
         match self.handle_new_bucket(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }
     }
 
-    fn on_consume_bucket<'a>(
-        &mut self,
-        event: OnConsumeBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_consume_bucket(&mut self, event: OnConsumeBucket) -> ControlFlow<Self::Output> {
         match self.handle_consume_bucket(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }
     }
 
-    fn on_pass_expression<'a>(&mut self, event: OnPassExpression<'a>) -> ControlFlow<Self::Output> {
+    fn on_pass_expression(&mut self, event: OnPassExpression) -> ControlFlow<Self::Output> {
         match self.handle_pass_expression(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }
     }
 
-    fn on_worktop_assertion<'a>(
-        &mut self,
-        event: OnWorktopAssertion<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_worktop_assertion(&mut self, event: OnWorktopAssertion) -> ControlFlow<Self::Output> {
         match self.handle_worktop_assertion(event) {
+            Ok(()) => ControlFlow::Continue(()),
+            Err(err) => ControlFlow::Break(err),
+        }
+    }
+
+    fn on_new_named_address(&mut self, event: OnNewNamedAddress) -> ControlFlow<Self::Output> {
+        match self.handle_new_named_address(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }

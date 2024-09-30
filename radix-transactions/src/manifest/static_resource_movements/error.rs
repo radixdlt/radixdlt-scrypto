@@ -11,6 +11,22 @@ pub enum StaticResourceMovementsError {
     DecimalOverflow,
     DuplicateNonFungibleId,
     WorktopEndsWithKnownResourcesPresent,
+    NativeArgumentsEncodeError(EncodeError),
+    NativeArgumentsDecodeError(DecodeError),
+    UnknownNativeBlueprint {
+        package: PackageAddress,
+        blueprint: String,
+    },
+    UnknownNativeMethod {
+        package: PackageAddress,
+        blueprint: String,
+        method: String,
+    },
+    UnknownNativeFunction {
+        package: PackageAddress,
+        blueprint: String,
+        function: String,
+    },
     ManifestValidationError(ManifestValidationError),
 }
 

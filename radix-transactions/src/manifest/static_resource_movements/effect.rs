@@ -18,9 +18,16 @@ pub trait StaticInvocationResourcesOutput {
 }
 
 pub struct InvocationDetails<'a> {
-    pub receiver: Option<GlobalAddress>,
+    pub receiver: InvocationReceiver,
     pub sent_resources: &'a ResourceBounds,
     pub source: ChangeSource,
+}
+
+pub enum InvocationReceiver {
+    GlobalMethod(GlobalAddress),
+    GlobalMethodOnReservedAddress,
+    DirectAccess(InternalAddress),
+    BlueprintFunction,
 }
 
 // region:Typed Invocation
@@ -42,7 +49,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                                 }
                             }
                         }
-                        AccessControllerBlueprintInvocations::Method(_, access_controller_method) => {
+                        AccessControllerBlueprintInvocations::Method(access_controller_method) => {
                             match access_controller_method {
                                 AccessControllerMethod::CreateProof(input) => {
                                     input.output(details)
@@ -123,7 +130,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                                 input.output(details)
                             }
                         },
-                        AccountBlueprintInvocations::Method(_, account_method) => match account_method {
+                        AccountBlueprintInvocations::Method(account_method) => match account_method {
                             AccountMethod::Securify(input) => {
                                 input.output(details)
                             }
@@ -189,7 +196,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                             ValidatorBlueprintInvocations::Function(validator_function) => {
                                 match *validator_function {}
                             }
-                            ValidatorBlueprintInvocations::Method(_, validator_method) => {
+                            ValidatorBlueprintInvocations::Method(validator_method) => {
                                 match validator_method {
                                     ValidatorMethod::Register(input) => {
                                         input.output(details)
@@ -259,7 +266,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                                 }
                             }
                         }
-                        ConsensusManagerBlueprintInvocations::Method(_, consensus_manager_method) => {
+                        ConsensusManagerBlueprintInvocations::Method(consensus_manager_method) => {
                             match consensus_manager_method {
                                 ConsensusManagerMethod::GetCurrentEpoch(input) => {
                                     input.output(details)
@@ -294,7 +301,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                                 }
                             }
                         }
-                        IdentityBlueprintInvocations::Method(_, identity_method) => match identity_method {
+                        IdentityBlueprintInvocations::Method(identity_method) => match identity_method {
                             IdentityMethod::Securify(input) => {
                                 input.output(details)
                             }
@@ -315,7 +322,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                                 }
                             }
                         }
-                        AccountLockerBlueprintInvocations::Method(_, account_locker_method) => {
+                        AccountLockerBlueprintInvocations::Method(account_locker_method) => {
                             match account_locker_method {
                                 AccountLockerMethod::Store(input) => {
                                     input.output(details)
@@ -359,12 +366,10 @@ impl StaticInvocationResourcesOutput for AccountCreateInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             ACCOUNT_OWNER_BADGE,
             ResourceBound::exact_amount(1, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -373,13 +378,23 @@ impl StaticInvocationResourcesOutput for AccountSecurifyInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        let local_id = NonFungibleLocalId::bytes(details.receiver.unwrap().as_bytes()).unwrap();
-        bounds.mut_add_resource(
-            ACCOUNT_OWNER_BADGE,
-            ResourceBound::non_fungibles([local_id], [details.source]),
-        )?;
-        Ok(bounds)
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(global_address) => {
+                let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
+                ResourceBounds::new_empty().add_resource(
+                    ACCOUNT_OWNER_BADGE,
+                    ResourceBound::non_fungibles([local_id], [details.source]),
+                )
+            }
+            InvocationReceiver::GlobalMethodOnReservedAddress => ResourceBounds::new_empty()
+                .add_resource(
+                    ACCOUNT_OWNER_BADGE,
+                    ResourceBound::exact_amount(1, [details.source])?,
+                ),
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                unreachable!()
+            }
+        }
     }
 }
 
@@ -396,12 +411,10 @@ impl StaticInvocationResourcesOutput for AccountWithdrawInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::exact_amount(self.amount, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -410,12 +423,10 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -424,12 +435,10 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::exact_amount(self.amount, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -438,12 +447,10 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesIn
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -556,9 +563,7 @@ impl StaticInvocationResourcesOutput
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The withdrawn badge is of an unknown resource
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -570,9 +575,7 @@ impl StaticInvocationResourcesOutput
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The withdrawn badge is of an unknown resource
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -604,9 +607,7 @@ impl StaticInvocationResourcesOutput for AccessControllerMintRecoveryBadgesInput
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The minted badge is of a new / unknown resource
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -617,12 +618,10 @@ impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeInpu
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             XRD,
             ResourceBound::exact_amount(self.amount, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -647,12 +646,10 @@ impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifest
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             VALIDATOR_OWNER_BADGE,
             ResourceBound::exact_amount(1, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -666,9 +663,7 @@ impl StaticInvocationResourcesOutput for ValidatorStakeAsOwnerManifestInput {
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The validator stake unit resource is unknown at static validation time
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -678,9 +673,7 @@ impl StaticInvocationResourcesOutput for ValidatorStakeManifestInput {
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The validator stake unit resource is unknown at static validation time
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -690,9 +683,7 @@ impl StaticInvocationResourcesOutput for ValidatorUnstakeManifestInput {
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // The validator unstake receipt is unknown at static validation time
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -701,9 +692,7 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(XRD, ResourceBound::zero_or_more([details.source]))?;
-        Ok(bounds)
+        ResourceBounds::new_empty().add_resource(XRD, ResourceBound::zero_or_more([details.source]))
     }
 }
 
@@ -739,9 +728,7 @@ impl StaticInvocationResourcesOutput for ValidatorFinishUnlockOwnerStakeUnitsInp
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // This can return validator stake units which are an unknown resource at static validation time
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 // endregion:Consensus Manager
@@ -754,12 +741,10 @@ impl StaticInvocationResourcesOutput for IdentityCreateInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             IDENTITY_OWNER_BADGE,
             ResourceBound::exact_amount(1, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -768,13 +753,23 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        let local_id = NonFungibleLocalId::bytes(details.receiver.unwrap().as_bytes()).unwrap();
-        bounds.mut_add_resource(
-            IDENTITY_OWNER_BADGE,
-            ResourceBound::non_fungibles([local_id], [details.source]),
-        )?;
-        Ok(bounds)
+        Ok(match details.receiver {
+            InvocationReceiver::GlobalMethod(global_address) => {
+                let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
+                ResourceBounds::new_empty().add_resource(
+                    IDENTITY_OWNER_BADGE,
+                    ResourceBound::non_fungibles([local_id], [details.source]),
+                )?
+            }
+            InvocationReceiver::GlobalMethodOnReservedAddress => ResourceBounds::new_empty()
+                .add_resource(
+                    IDENTITY_OWNER_BADGE,
+                    ResourceBound::exact_amount(1, [details.source])?,
+                )?,
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                unreachable!()
+            }
+        })
     }
 }
 // endregion:Identity
@@ -788,9 +783,7 @@ impl StaticInvocationResourcesOutput for AccountLockerInstantiateSimpleManifestI
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
         // This generates and returns a new badge resource, which is unknowable at static time
-        Ok(ResourceBounds::new_including_unspecified_resources([
-            details.source,
-        ]))
+        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -813,12 +806,10 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::exact_amount(self.amount, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -827,12 +818,10 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifes
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -841,12 +830,10 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::exact_amount(self.amount, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -855,12 +842,10 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             self.resource_address,
             ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -875,12 +860,10 @@ impl StaticInvocationResourcesOutput for PackagePublishWasmManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(
+        ResourceBounds::new_empty().add_resource(
             PACKAGE_OWNER_BADGE,
             ResourceBound::exact_amount(1, [details.source])?,
-        )?;
-        Ok(bounds)
+        )
     }
 }
 
@@ -893,9 +876,7 @@ impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesInput {
         &self,
         details: InvocationDetails,
     ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        let mut bounds = ResourceBounds::new_empty();
-        bounds.mut_add_resource(XRD, ResourceBound::zero_or_more([details.source]))?;
-        Ok(bounds)
+        ResourceBounds::new_empty().add_resource(XRD, ResourceBound::zero_or_more([details.source]))
     }
 }
 // endregion:Package

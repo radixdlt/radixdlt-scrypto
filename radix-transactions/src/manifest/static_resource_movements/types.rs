@@ -4,11 +4,20 @@ use indexmap::IndexSet;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
 
-/// Used for the worktop, and for any instruction input/output.
+/// A type representing partial knowledge of the balances of some number of resources.
+///
+/// This type can be used to model the worktop, and can be used for modelling the inbound/
+/// outbound resources for any instruction.
+///
+/// The knowledge is split between specified resources (where we store a [`ResourceBound`]
+/// for each resource), and unspecified resources, captured by an [`UnspecifiedResourceKnowledge`].
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ResourceBounds {
-    bounds: IndexMap<ResourceAddress, ResourceBound>,
-    unspecified_resource_sources: IndexSet<ChangeSource>,
+    /// Captures the bounds of explicitly tracked resources.
+    /// Some of these may be
+    specified_resources: IndexMap<ResourceAddress, ResourceBound>,
+    /// Captures the bounds of unspecified resources.
+    unspecified_resources: UnspecifiedResourceKnowledge,
 }
 
 impl ResourceBounds {
@@ -17,12 +26,14 @@ impl ResourceBounds {
         Default::default()
     }
 
-    pub fn new_including_unspecified_resources(
+    pub fn new_with_possible_balance_of_unspecified_resources(
         change_sources: impl IntoIterator<Item = ChangeSource>,
     ) -> Self {
         Self {
-            bounds: Default::default(),
-            unspecified_resource_sources: change_sources.into_iter().collect(),
+            specified_resources: Default::default(),
+            unspecified_resources: UnspecifiedResourceKnowledge::SomeBalancesMayBePresent(
+                change_sources.into_iter().collect(),
+            ),
         }
     }
 
@@ -31,58 +42,81 @@ impl ResourceBounds {
         self,
     ) -> (
         IndexMap<ResourceAddress, ResourceBound>,
-        IndexSet<ChangeSource>,
+        UnspecifiedResourceKnowledge,
     ) {
-        (self.bounds, self.unspecified_resource_sources)
+        (self.specified_resources, self.unspecified_resources)
     }
 
     // &self methods
     pub fn known_resource_bounds(&self) -> &IndexMap<ResourceAddress, ResourceBound> {
-        &self.bounds
+        &self.specified_resources
     }
 
     pub fn can_include_unspecified_resources(&self) -> bool {
-        !self.unspecified_resource_sources.is_empty()
+        !self.unspecified_resources.none_are_present()
     }
 
-    pub fn unspecified_resource_sources(&self) -> impl Iterator<Item = &ChangeSource> {
-        self.unspecified_resource_sources.iter()
+    /// Verifies that the bounds are equal, but ignores the sources of those bounds.
+    pub fn eq_ignoring_history(&self, other: &Self) -> bool {
+        if !self
+            .unspecified_resources
+            .eq_ignoring_history(&other.unspecified_resources)
+        {
+            return false;
+        }
+
+        // We can't assume self or other are normalized, so it may be that self has a specified resource
+        // with a bound equivalent to an unspecified resource bound. Such a resource doesn't need to
+        // exist as specified in B.
+        // Therefore, instead of just comparing specified_resources, we instead simply check that all
+        // bounds of a specified resource in A have the same bound in B (specified or unspecified),
+        // AND we check the other way around too.
+        for (resource, bound) in self.specified_resources.iter() {
+            if !other.resource_bound(resource).eq_ignoring_history(bound) {
+                return false;
+            }
+        }
+        for (resource, bound) in other.specified_resources.iter() {
+            if !self.resource_bound(resource).eq_ignoring_history(bound) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    fn resource_bound(&self, resource: &ResourceAddress) -> Cow<ResourceBound> {
+        match self.specified_resources.get(resource) {
+            Some(bound) => Cow::Borrowed(bound),
+            None => Cow::Owned(self.unspecified_resources.resource_bound()),
+        }
     }
 
     // &mut self methods (check that resource bound aligns with resource type)
     fn resource_bound_mut(&mut self, resource: ResourceAddress) -> &mut ResourceBound {
-        match self.bounds.entry(resource) {
+        match self.specified_resources.entry(resource) {
             indexmap::map::Entry::Occupied(occupied_entry) => occupied_entry.into_mut(),
             indexmap::map::Entry::Vacant(vacant_entry) => {
-                if self.unspecified_resource_sources.is_empty() {
-                    vacant_entry.insert(ResourceBound::zero())
-                } else {
-                    vacant_entry.insert(ResourceBound::zero_or_more(
-                        self.unspecified_resource_sources.iter().cloned(),
-                    ))
-                }
+                vacant_entry.insert(self.unspecified_resources.resource_bound())
             }
         }
     }
 
     /// Removes any specific resources whose bounds are identical to the default.
+    ///
+    /// We also ensure that any resources that get filtered out have their balance sources
+    /// added to the sources for unspecified balances.
     pub fn normalize(self) -> Self {
-        let default_is_any = self.can_include_unspecified_resources();
-        let mut unspecified_resource_sources = self.unspecified_resource_sources;
+        let mut unspecified_resources = self.unspecified_resources;
         let mut normalized_bounds: IndexMap<ResourceAddress, ResourceBound> = Default::default();
-        for (resource_address, bound) in self.bounds {
-            let filter_out = if default_is_any {
-                bound.is_any()
-            } else {
-                bound.is_zero()
-            };
-            if filter_out {
-                if bound.is_any() {
-                    unspecified_resource_sources.extend(
-                        bound
-                            .history
-                            .all_additive_change_sources_since_was_last_zero(),
-                    );
+        let unspecified_resource_bound = unspecified_resources.resource_bound();
+        for (resource_address, bound) in self.specified_resources {
+            if bound.eq_ignoring_history(&unspecified_resource_bound) {
+                // We filter out this resource as it's identical
+                if !bound.is_zero() {
+                    let possible_balance_sources = bound
+                        .history
+                        .all_additive_change_sources_since_was_last_zero();
+                    unspecified_resources.add_possible_resource_balance(possible_balance_sources);
                 }
             } else {
                 normalized_bounds.insert(resource_address, bound);
@@ -90,8 +124,8 @@ impl ResourceBounds {
         }
 
         Self {
-            unspecified_resource_sources,
-            bounds: normalized_bounds,
+            specified_resources: normalized_bounds,
+            unspecified_resources,
         }
     }
 
@@ -107,12 +141,14 @@ impl ResourceBounds {
         &mut self,
         change_sources: impl IntoIterator<Item = ChangeSource>,
     ) {
-        self.unspecified_resource_sources
-            .extend(change_sources.into_iter());
+        self.unspecified_resources
+            .add(UnspecifiedResourceKnowledge::SomeBalancesMayBePresent(
+                change_sources.into_iter().collect(),
+            ));
     }
 
     pub fn add(&mut self, resources: ResourceBounds) -> Result<(), StaticResourceMovementsError> {
-        for (resource, resource_bound) in resources.bounds {
+        for (resource, resource_bound) in resources.specified_resources {
             if resource.is_fungible() && resource_bound.known_ids().len() > 0 {
                 return Err(
                     StaticResourceMovementsError::NonFungibleIdsSpecifiedAgainstFungibleResource,
@@ -120,8 +156,8 @@ impl ResourceBounds {
             }
             self.resource_bound_mut(resource).add_from(resource_bound)?;
         }
-        self.unspecified_resource_sources
-            .extend(resources.unspecified_resource_sources);
+        self.unspecified_resources
+            .add(resources.unspecified_resources);
         Ok(())
     }
 
@@ -184,12 +220,76 @@ impl ResourceBounds {
                 source,
             ),
             WorktopAssertion::IsEmpty => {
-                for bound in self.bounds.values_mut() {
+                for bound in self.specified_resources.values_mut() {
                     bound.handle_assertion(ResourceAssertion::zero(), source)?;
                 }
-                self.unspecified_resource_sources.clear();
+                self.unspecified_resources.clear();
                 Ok(())
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum UnspecifiedResourceKnowledge {
+    /// There are no unspecified resources present
+    #[default]
+    NonePresent,
+    /// There might be non-zero balances of unspecified resources present
+    SomeBalancesMayBePresent(IndexSet<ChangeSource>),
+}
+
+impl UnspecifiedResourceKnowledge {
+    pub fn clear(&mut self) {
+        *self = Self::NonePresent;
+    }
+
+    pub fn resource_bound(&self) -> ResourceBound {
+        match self {
+            Self::NonePresent => ResourceBound::zero(),
+            Self::SomeBalancesMayBePresent(sources) => {
+                ResourceBound::zero_or_more(sources.iter().cloned())
+            }
+        }
+    }
+
+    pub fn none_are_present(&self) -> bool {
+        match self {
+            Self::NonePresent => true,
+            Self::SomeBalancesMayBePresent(_) => false,
+        }
+    }
+
+    pub fn add_possible_resource_balance(
+        &mut self,
+        sources: impl IntoIterator<Item = ChangeSource>,
+    ) {
+        match self {
+            mutself @ Self::NonePresent => {
+                *mutself = Self::SomeBalancesMayBePresent(sources.into_iter().collect());
+            }
+            Self::SomeBalancesMayBePresent(self_sources) => {
+                self_sources.extend(sources);
+            }
+        }
+    }
+
+    pub fn add(&mut self, other: Self) {
+        match other {
+            Self::NonePresent => {}
+            Self::SomeBalancesMayBePresent(other_sources) => {
+                self.add_possible_resource_balance(other_sources);
+            }
+        }
+    }
+
+    /// Verifies that the bounds are equal, but ignores the sources of those bounds.
+    pub fn eq_ignoring_history(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::NonePresent, Self::NonePresent)
+            | (Self::SomeBalancesMayBePresent(_), Self::SomeBalancesMayBePresent(_)) => true,
+            (Self::NonePresent, Self::SomeBalancesMayBePresent(_))
+            | (Self::SomeBalancesMayBePresent(_), Self::NonePresent) => false,
         }
     }
 }
@@ -327,18 +427,19 @@ impl ResourceBound {
         &self.known_ids
     }
 
-    /// Returns true if there is no knowledge about this amount
-    pub fn is_any(&self) -> bool {
-        self.lower_inclusive == Decimal::ZERO
-            && self.upper_inclusive == Decimal::MAX
-            && self.known_ids.is_empty()
-    }
-
     /// Returns true if the bound is known to be zero
     pub fn is_zero(&self) -> bool {
         self.lower_inclusive == Decimal::ZERO
             && self.upper_inclusive == Decimal::ZERO
             && self.known_ids.is_empty()
+    }
+
+    /// Verifies that the bounds are equal, but ignores the sources of those bounds.
+    pub fn eq_ignoring_history(&self, other: &ResourceBound) -> bool {
+        self.lower_inclusive == other.lower_inclusive
+            && self.upper_inclusive == other.upper_inclusive
+            // Indexset equality is just set equality, and ignores order, as we want
+            && self.known_ids.eq(&other.known_ids)
     }
 
     pub fn history(&self) -> &ResourceChangeHistory {

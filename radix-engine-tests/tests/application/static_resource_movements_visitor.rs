@@ -188,7 +188,7 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_including_unspecified_resources([
+            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
                 ChangeSource::InitialYieldFromParent
             ])
             .add_resource(
@@ -228,7 +228,7 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_including_unspecified_resources([
+            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
                 ChangeSource::InitialYieldFromParent
             ])
             .add_resource(
@@ -379,21 +379,23 @@ fn assertion_of_ids_gives_context_to_visitor() {
     assert_eq!(
         deposits.get(&account),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_including_unspecified_resources([ChangeSource::invocation_at(0)])
-                .add_resource(
-                    non_fungible_address,
-                    ResourceBound::new_advanced(
-                        ResourceAddAmount::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
-                        ResourceChangeHistory::empty() // NB: Appends to an unspecified add from the blanket add above
-                            .record_assertion(
-                                ResourceAssertion::at_least_non_fungibles([
-                                    NonFungibleLocalId::integer(1)
-                                ]),
-                                ChangeSource::assertion_at(1)
-                            ),
-                    )
+            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
+                ChangeSource::invocation_at(0)
+            ])
+            .add_resource(
+                non_fungible_address,
+                ResourceBound::new_advanced(
+                    ResourceAddAmount::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
+                    ResourceChangeHistory::empty() // NB: Appends to an unspecified add from the blanket add above
+                        .record_assertion(
+                            ResourceAssertion::at_least_non_fungibles([
+                                NonFungibleLocalId::integer(1)
+                            ]),
+                            ChangeSource::assertion_at(1)
+                        ),
                 )
-                .unwrap()
+            )
+            .unwrap()
         )]),
     );
 }
