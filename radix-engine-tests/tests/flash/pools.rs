@@ -279,7 +279,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                         named_address,
                         MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                         MultiResourcePoolContributeManifestInput {
-                            buckets: vec![bucket1, bucket2],
+                            buckets: BucketBatch::ManifestBuckets(vec![bucket1, bucket2]),
                         },
                     )
                     .call_method(
@@ -326,7 +326,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                     pool_address,
                     MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     MultiResourcePoolContributeManifestInput {
-                        buckets: vec![bucket1, bucket2],
+                        buckets: BucketBatch::ManifestBuckets(vec![bucket1, bucket2]),
                     },
                 )
             })
@@ -368,7 +368,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                     pool_address,
                     MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     MultiResourcePoolContributeManifestInput {
-                        buckets: vec![bucket1, bucket2],
+                        buckets: BucketBatch::ManifestBuckets(vec![bucket1, bucket2]),
                     },
                 )
             })

@@ -135,7 +135,7 @@ pub struct AccountDepositBatchInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountDepositBatchManifestInput {
-    pub buckets: Vec<ManifestBucket>,
+    pub buckets: BucketBatch,
 }
 
 pub type AccountDepositBatchOutput = ();
@@ -301,7 +301,7 @@ pub struct AccountTryDepositBatchOrRefundInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrRefundManifestInput {
-    pub buckets: Vec<ManifestBucket>,
+    pub buckets: BucketBatch,
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
@@ -341,7 +341,7 @@ pub struct AccountTryDepositBatchOrAbortInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrAbortManifestInput {
-    pub buckets: Vec<ManifestBucket>,
+    pub buckets: BucketBatch,
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
