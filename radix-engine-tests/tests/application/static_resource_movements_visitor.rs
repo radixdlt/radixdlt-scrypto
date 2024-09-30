@@ -27,11 +27,11 @@ fn simple_account_transfer_with_an_explicit_take_all_is_correctly_classified() {
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_empty()
+            TrackedResources::new_empty()
                 // A take all will inherit the change source from the worktop
                 .add_resource(
                     XRD,
-                    ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                    TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
                 )
                 .unwrap()
         )])
@@ -62,11 +62,11 @@ fn simple_account_transfer_with_an_explicit_take_exact_is_correctly_classified()
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_empty()
+            TrackedResources::new_empty()
                 // A take specific amount will have a new change source (and the worktop history with inherit a take)
                 .add_resource(
                     XRD,
-                    ResourceBound::exact_amount(10, [ChangeSource::bucket_at(1)]).unwrap()
+                    TrackedResource::exact_amount(10, [ChangeSource::bucket_at(1)]).unwrap()
                 )
                 .unwrap()
         )])
@@ -100,14 +100,14 @@ fn simple_account_transfer_with_two_deposits_is_correctly_classified() {
         deposits.get(&account2),
         Some(&vec![
             AccountDeposit(
-                ResourceBounds::new_empty()
+                TrackedResources::new_empty()
                     .add_resource(
                         XRD,
-                        ResourceBound::new_advanced(
-                            ResourceAddAmount::exact_amount(8).unwrap(),
+                        TrackedResource::new_advanced(
+                            ResourceBounds::exact_amount(8).unwrap(),
                             ResourceChangeHistory::empty()
                                 .record_add(
-                                    ResourceAddAmount::exact_amount(10).unwrap(),
+                                    ResourceBounds::exact_amount(10).unwrap(),
                                     [ChangeSource::invocation_at(0)]
                                 )
                                 .record_take(
@@ -119,10 +119,10 @@ fn simple_account_transfer_with_two_deposits_is_correctly_classified() {
                     .unwrap()
             ),
             AccountDeposit(
-                ResourceBounds::new_empty()
+                TrackedResources::new_empty()
                     .add_resource(
                         XRD,
-                        ResourceBound::exact_amount(2, [ChangeSource::bucket_at(1)]).unwrap()
+                        TrackedResource::exact_amount(2, [ChangeSource::bucket_at(1)]).unwrap()
                     )
                     .unwrap()
             ),
@@ -154,10 +154,10 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_empty()
+            TrackedResources::new_empty()
                 .add_resource(
                     XRD,
-                    ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                    TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
                 )
                 .unwrap()
         )])
@@ -188,12 +188,12 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
+            TrackedResources::new_with_possible_balance_of_unspecified_resources([
                 ChangeSource::InitialYieldFromParent
             ])
             .add_resource(
                 XRD,
-                ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
             )
             .unwrap()
         )])
@@ -228,12 +228,12 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
+            TrackedResources::new_with_possible_balance_of_unspecified_resources([
                 ChangeSource::InitialYieldFromParent
             ])
             .add_resource(
                 non_fungible_address,
-                ResourceBound::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
+                TrackedResource::exact_amount(10, [ChangeSource::invocation_at(0)]).unwrap()
             )
             .unwrap()
         )]),
@@ -272,10 +272,10 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
     assert_eq!(
         deposits.get(&account2),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_empty()
+            TrackedResources::new_empty()
                 .add_resource(
                     non_fungible_address,
-                    ResourceBound::non_fungibles(
+                    TrackedResource::non_fungibles(
                         [NonFungibleLocalId::integer(1)],
                         [ChangeSource::invocation_at(0)],
                     )
@@ -333,18 +333,18 @@ fn assertion_of_any_with_unknown_on_worktop_gives_context_to_visitor() {
     assert_eq!(
         deposits.get(&account),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_empty()
+            TrackedResources::new_empty()
                 .add_resource(
                     XRD,
-                    ResourceBound::new_advanced(
-                        ResourceAddAmount::non_zero_amount(),
+                    TrackedResource::new_advanced(
+                        ResourceBounds::non_zero(),
                         ResourceChangeHistory::empty()
                             .record_add(
-                                ResourceAddAmount::zero_or_more(),
+                                ResourceBounds::zero_or_more(),
                                 expected_uncertainties.clone()
                             )
                             .record_assertion(
-                                ResourceAssertion::non_zero_amount(),
+                                ResourceBounds::non_zero(),
                                 ChangeSource::assertion_at(2)
                             ),
                     )
@@ -379,18 +379,18 @@ fn assertion_of_ids_gives_context_to_visitor() {
     assert_eq!(
         deposits.get(&account),
         Some(&vec![AccountDeposit(
-            ResourceBounds::new_with_possible_balance_of_unspecified_resources([
+            TrackedResources::new_with_possible_balance_of_unspecified_resources([
                 ChangeSource::invocation_at(0)
             ])
             .add_resource(
                 non_fungible_address,
-                ResourceBound::new_advanced(
-                    ResourceAddAmount::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
+                TrackedResource::new_advanced(
+                    ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1)]),
                     ResourceChangeHistory::empty() // NB: Appends to an unspecified add from the blanket add above
                         .record_assertion(
-                            ResourceAssertion::at_least_non_fungibles([
-                                NonFungibleLocalId::integer(1)
-                            ]),
+                            ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(
+                                1
+                            )]),
                             ChangeSource::assertion_at(1)
                         ),
                 )
@@ -431,22 +431,62 @@ fn complex_assertion_of_amount_gives_context_to_visitor() {
         deposits.get(&account),
         Some(&vec![
             AccountDeposit(
-                ResourceBounds::new_empty()
+                TrackedResources::new_empty()
                     .add_resource(
                         resource_address,
-                        ResourceBound::exact_amount(10, [ChangeSource::bucket_at(3)]).unwrap()
+                        TrackedResource::exact_amount(10, [ChangeSource::bucket_at(3)]).unwrap()
                     )
                     .unwrap()
             ),
             AccountDeposit(
-                ResourceBounds::new_empty()
+                TrackedResources::new_empty()
                     .add_resource(
                         resource_address2,
-                        ResourceBound::exact_amount(7, [ChangeSource::bucket_at(4)]).unwrap()
+                        TrackedResource::exact_amount(7, [ChangeSource::bucket_at(4)]).unwrap()
                     )
                     .unwrap()
             ),
         ]),
+    );
+}
+
+#[test]
+fn two_buckets_with_separate_histories_are_combined() {
+    // Arrange
+    let account = account_address(1);
+    let resource_address = fungible_resource_address(5);
+    let builder = ManifestBuilder::new_v2();
+    let lookup = builder.name_lookup();
+    let manifest = builder
+        .call_method(component_address(1), "unknown_method", (1,))
+        .assert_worktop_contains(resource_address, 5)
+        .take_from_worktop(resource_address, 2, "call1_2")
+        .take_all_from_worktop(resource_address, "call1_remainder")
+        .call_method(component_address(1), "unknown_method", (2,))
+        .assert_worktop_contains_any(resource_address)
+        .return_to_worktop("call1_remainder")
+        .take_all_from_worktop(resource_address, "total")
+        .deposit_batch(account, [lookup.bucket("total"), lookup.bucket("call1_2")])
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account).unwrap()[0]
+            .0
+            .specified_resources()
+            .get(&resource_address)
+            .unwrap()
+            .resource_bounds(),
+        &ResourceBounds::at_least_amount(5)
+            .unwrap()
+            .add(ResourceBounds::non_zero())
+            .unwrap(),
     );
 }
 

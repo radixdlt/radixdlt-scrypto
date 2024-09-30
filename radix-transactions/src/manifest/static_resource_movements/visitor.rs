@@ -8,9 +8,9 @@ use radix_engine_interface::prelude::*;
 /// reports the account withdraws and deposits made.
 pub struct StaticResourceMovementsVisitor {
     /// The resource content of the worktop.
-    worktop: ResourceBounds,
+    worktop: TrackedResources,
     /// Bounds against all existing buckets tracked by the visitor.
-    tracked_buckets: IndexMap<ManifestBucket, (ResourceAddress, ResourceBound)>,
+    tracked_buckets: IndexMap<ManifestBucket, (ResourceAddress, TrackedResource)>,
     /// The blueprint of all running named addresses
     tracked_named_addresses: IndexMap<ManifestNamedAddress, BlueprintId>,
     /// The information about the invocations observed in this manifest. This will be surfaced to
@@ -22,7 +22,7 @@ pub struct StaticResourceMovementsVisitor {
 
 pub struct CurrentInstruction {
     index: usize,
-    sent_resources: ResourceBounds,
+    sent_resources: TrackedResources,
 }
 
 /// Created by the visitor, generally references a particular instruction, or maybe an initial YIELD_TO_PARENT.
@@ -50,7 +50,7 @@ impl ChangeSource {
 
 impl StaticResourceMovementsVisitor {
     pub fn new(initial_worktop_state_is_unknown: bool) -> Self {
-        let mut worktop = ResourceBounds::new_empty();
+        let mut worktop = TrackedResources::new_empty();
         if initial_worktop_state_is_unknown {
             worktop.mut_add_unspecified_resources([ChangeSource::InitialYieldFromParent])
         }
@@ -90,9 +90,9 @@ impl StaticResourceMovementsVisitor {
                     source: change_source,
                 })?
             }
-            None => {
-                ResourceBounds::new_with_possible_balance_of_unspecified_resources([change_source])
-            }
+            None => TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                change_source,
+            ]),
         };
 
         // Add the returned resources to the worktop
@@ -165,7 +165,7 @@ impl StaticResourceMovementsVisitor {
             .index
     }
 
-    fn current_instruction_sent_resources(&mut self) -> &mut ResourceBounds {
+    fn current_instruction_sent_resources(&mut self) -> &mut TrackedResources {
         &mut self
             .current_instruction
             .as_mut()
@@ -179,7 +179,7 @@ impl StaticResourceMovementsVisitor {
     ) -> Result<(), StaticResourceMovementsError> {
         self.current_instruction = Some(CurrentInstruction {
             index,
-            sent_resources: ResourceBounds::new_empty(),
+            sent_resources: TrackedResources::new_empty(),
         });
         Ok(())
     }

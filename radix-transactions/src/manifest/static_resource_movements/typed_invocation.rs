@@ -33,6 +33,7 @@ macro_rules! define_typed_invocations {
         paste::paste! {
             // There's a single typed invocation type that captures all of
             // the packages that we support.
+            #[derive(Debug)]
             pub enum TypedNativeInvocation {
                 $(
                     [< $package_name Package >]([< $package_name Invocations >])
@@ -116,6 +117,7 @@ macro_rules! define_typed_invocations {
             $(
                 // For each package we define an invocation type that has all of the blueprints that
                 // this package has.
+                #[derive(Debug)]
                 pub enum [< $package_name Invocations >] {
                     $(
                         [< $blueprint_name Blueprint >]([< $blueprint_name BlueprintInvocations >])
@@ -124,11 +126,13 @@ macro_rules! define_typed_invocations {
 
                 $(
                     // For each blueprint we define a type that's made up of the method and function
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name BlueprintInvocations >] {
                         Function([< $blueprint_name Function >]),
                         Method([< $blueprint_name Method >]),
                     }
 
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name Method >] {
                         $(
                             $method_ident($method_input)
@@ -171,6 +175,7 @@ macro_rules! define_typed_invocations {
                         }
                     }
 
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name Function >] {
                         $(
                             $func_ident($func_input)

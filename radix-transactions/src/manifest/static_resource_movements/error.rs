@@ -5,7 +5,7 @@ use radix_common::prelude::*;
 pub enum StaticResourceMovementsError {
     DecimalAmountIsNegative,
     NonFungibleIdsSpecifiedAgainstFungibleResource,
-    AssertionBoundsInvalid,
+    ConstraintBoundsInvalid,
     AssertionCannotBeSatisfied,
     TakeCannotBeSatisfied,
     DecimalOverflow,

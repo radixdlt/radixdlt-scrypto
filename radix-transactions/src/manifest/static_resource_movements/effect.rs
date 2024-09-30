@@ -11,18 +11,19 @@ pub trait StaticInvocationResourcesOutput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         let _ = details;
-        Ok(ResourceBounds::new_empty())
+        Ok(TrackedResources::new_empty())
     }
 }
 
 pub struct InvocationDetails<'a> {
     pub receiver: InvocationReceiver,
-    pub sent_resources: &'a ResourceBounds,
+    pub sent_resources: &'a TrackedResources,
     pub source: ChangeSource,
 }
 
+#[derive(Debug)]
 pub enum InvocationReceiver {
     GlobalMethod(GlobalAddress),
     GlobalMethodOnReservedAddress,
@@ -35,7 +36,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match self {
             TypedNativeInvocation::AccessControllerPackage(access_controller_invocations) => {
                 match access_controller_invocations {
@@ -365,10 +366,10 @@ impl StaticInvocationResourcesOutput for AccountCreateInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             ACCOUNT_OWNER_BADGE,
-            ResourceBound::exact_amount(1, [details.source])?,
+            TrackedResource::exact_amount(1, [details.source])?,
         )
     }
 }
@@ -377,19 +378,19 @@ impl StaticInvocationResourcesOutput for AccountSecurifyInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match details.receiver {
             InvocationReceiver::GlobalMethod(global_address) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
-                ResourceBounds::new_empty().add_resource(
+                TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
-                    ResourceBound::non_fungibles([local_id], [details.source]),
+                    TrackedResource::non_fungibles([local_id], [details.source]),
                 )
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => ResourceBounds::new_empty()
+            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
                 .add_resource(
                     ACCOUNT_OWNER_BADGE,
-                    ResourceBound::exact_amount(1, [details.source])?,
+                    TrackedResource::exact_amount(1, [details.source])?,
                 ),
             InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
                 unreachable!()
@@ -410,10 +411,10 @@ impl StaticInvocationResourcesOutput for AccountWithdrawInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::exact_amount(self.amount, [details.source])?,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
 }
@@ -422,10 +423,10 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -434,10 +435,10 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::exact_amount(self.amount, [details.source])?,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
 }
@@ -446,10 +447,10 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesIn
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -468,7 +469,7 @@ impl StaticInvocationResourcesOutput for AccountTryDepositOrRefundManifestInput 
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         handle_possible_refund(details)
     }
 }
@@ -477,16 +478,16 @@ impl StaticInvocationResourcesOutput for AccountTryDepositBatchOrRefundManifestI
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         handle_possible_refund(details)
     }
 }
 
 fn handle_possible_refund(
     details: InvocationDetails,
-) -> Result<ResourceBounds, StaticResourceMovementsError> {
+) -> Result<TrackedResources, StaticResourceMovementsError> {
     let mut sent_resources = details.sent_resources.clone();
-    let mut refunded_resources = ResourceBounds::new_empty();
+    let mut refunded_resources = TrackedResources::new_empty();
 
     // Handle the specified resources. First dump the resource keys to work around the borrow checker...
     let known_resources = sent_resources
@@ -501,10 +502,11 @@ fn handle_possible_refund(
             details.source,
         )?;
         let (_lower_bound, upper_bound) = attempted_deposit.inclusive_bounds();
-        let refunded_amount = ResourceAddAmount::general(Decimal::ZERO, upper_bound, [])?;
+        let refunded_amount =
+            ResourceBounds::general_no_id_allowlist(Decimal::ZERO, upper_bound, [])?;
         refunded_resources.mut_add_resource(
             known_resource,
-            ResourceBound::general(refunded_amount, [details.source]),
+            TrackedResource::general(refunded_amount, [details.source]),
         )?;
     }
     // Handle the possible refund of the remaining unspecified resources
@@ -563,9 +565,9 @@ impl StaticInvocationResourcesOutput
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The withdrawn badge is of an unknown resource
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -575,9 +577,9 @@ impl StaticInvocationResourcesOutput
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The withdrawn badge is of an unknown resource
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -607,9 +609,9 @@ impl StaticInvocationResourcesOutput for AccessControllerMintRecoveryBadgesInput
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The minted badge is of a new / unknown resource
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -619,10 +621,10 @@ impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeInpu
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             XRD,
-            ResourceBound::exact_amount(self.amount, [details.source])?,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
 }
@@ -647,10 +649,10 @@ impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifest
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             VALIDATOR_OWNER_BADGE,
-            ResourceBound::exact_amount(1, [details.source])?,
+            TrackedResource::exact_amount(1, [details.source])?,
         )
     }
 }
@@ -663,9 +665,9 @@ impl StaticInvocationResourcesOutput for ValidatorStakeAsOwnerManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The validator stake unit resource is unknown at static validation time
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -673,9 +675,9 @@ impl StaticInvocationResourcesOutput for ValidatorStakeManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The validator stake unit resource is unknown at static validation time
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -683,9 +685,9 @@ impl StaticInvocationResourcesOutput for ValidatorUnstakeManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // The validator unstake receipt is unknown at static validation time
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -693,8 +695,9 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(XRD, ResourceBound::zero_or_more([details.source]))
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty()
+            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
     }
 }
 
@@ -728,9 +731,9 @@ impl StaticInvocationResourcesOutput for ValidatorFinishUnlockOwnerStakeUnitsInp
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // This can return validator stake units which are an unknown resource at static validation time
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 // endregion:Consensus Manager
@@ -742,10 +745,10 @@ impl StaticInvocationResourcesOutput for IdentityCreateInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             IDENTITY_OWNER_BADGE,
-            ResourceBound::exact_amount(1, [details.source])?,
+            TrackedResource::exact_amount(1, [details.source])?,
         )
     }
 }
@@ -754,19 +757,19 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         Ok(match details.receiver {
             InvocationReceiver::GlobalMethod(global_address) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
-                ResourceBounds::new_empty().add_resource(
+                TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
-                    ResourceBound::non_fungibles([local_id], [details.source]),
+                    TrackedResource::non_fungibles([local_id], [details.source]),
                 )?
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => ResourceBounds::new_empty()
+            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
                 .add_resource(
                     IDENTITY_OWNER_BADGE,
-                    ResourceBound::exact_amount(1, [details.source])?,
+                    TrackedResource::exact_amount(1, [details.source])?,
                 )?,
             InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
                 unreachable!()
@@ -783,9 +786,9 @@ impl StaticInvocationResourcesOutput for AccountLockerInstantiateSimpleManifestI
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // This generates and returns a new badge resource, which is unknowable at static time
-        Ok(ResourceBounds::new_with_possible_balance_of_unspecified_resources([details.source]))
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -795,7 +798,7 @@ impl StaticInvocationResourcesOutput for AccountLockerAirdropManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         // This behaves roughly like a possible refund...
         // We could be even more exact... We can subtract the claimants from the bucket to calculate what gets returned.
         // But this is good enough for now.
@@ -807,10 +810,10 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::exact_amount(self.amount, [details.source])?,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
 }
@@ -819,10 +822,10 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifes
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -831,10 +834,10 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::exact_amount(self.amount, [details.source])?,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
 }
@@ -843,10 +846,10 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             self.resource_address,
-            ResourceBound::non_fungibles(self.ids.clone(), [details.source]),
+            TrackedResource::non_fungibles(self.ids.clone(), [details.source]),
         )
     }
 }
@@ -861,10 +864,10 @@ impl StaticInvocationResourcesOutput for PackagePublishWasmManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
             PACKAGE_OWNER_BADGE,
-            ResourceBound::exact_amount(1, [details.source])?,
+            TrackedResource::exact_amount(1, [details.source])?,
         )
     }
 }
@@ -877,8 +880,9 @@ impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesInput {
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<ResourceBounds, StaticResourceMovementsError> {
-        ResourceBounds::new_empty().add_resource(XRD, ResourceBound::zero_or_more([details.source]))
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty()
+            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
     }
 }
 // endregion:Package
