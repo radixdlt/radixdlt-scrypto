@@ -23,7 +23,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/xrd-info"),
+           Url("https://www.radixdlt.com/info-url/xrd"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l across 1 partitions
@@ -49,7 +49,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/package-of-direct-caller-resource-info"),
+           Url("https://www.radixdlt.com/info-url/package-of-direct-caller-resource"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l across 1 partitions
@@ -75,7 +75,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/global-caller-resource-info"),
+           Url("https://www.radixdlt.com/info-url/global-caller-resource"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5 across 1 partitions
@@ -101,7 +101,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/secp256k1-signature-resouce-info"),
+           Url("https://www.radixdlt.com/info-url/secp256k1-signature-resource"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5 across 1 partitions
@@ -127,7 +127,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/ed25519-signature-resource-info"),
+           Url("https://www.radixdlt.com/info-url/ed25519-signature-resource"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxw002k0 across 1 partitions
@@ -153,7 +153,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/system-execution-resource-info"),
+           Url("https://www.radixdlt.com/info-url/system-execution-resource"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxpkgwnrxxxxxxxxx002558553505xxxxxxxxxlah0rl across 1 partitions
@@ -161,7 +161,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/package-owner-badge-info"),
+           Url("https://www.radixdlt.com/info-url/package-owner-badge"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxjxu0rl across 1 partitions
@@ -169,7 +169,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/validator-owner-badge-info"),
+           Url("https://www.radixdlt.com/info-url/validator-owner-badge"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl across 1 partitions
@@ -177,7 +177,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/account-owner-badge-info"),
+           Url("https://www.radixdlt.com/info-url/account-owner-badge"),
          ),
        )
 ├─ resource_sim1nfxxxxxxxxxxdntwnrxxxxxxxxx002876444928xxxxxxxxxnc50rl across 1 partitions
@@ -185,7 +185,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/identity-owner-badge-info"),
+           Url("https://www.radixdlt.com/info-url/identity-owner-badge"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9 across 1 partitions
@@ -193,7 +193,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/package-package-info"),
+           Url("https://www.radixdlt.com/info-url/package-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9 across 1 partitions
@@ -201,7 +201,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/resource-package-info"),
+           Url("https://www.radixdlt.com/info-url/resource-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6 across 1 partitions
@@ -209,7 +209,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/account-package-info"),
+           Url("https://www.radixdlt.com/info-url/account-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6 across 1 partitions
@@ -217,7 +217,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/identity-package-info"),
+           Url("https://www.radixdlt.com/info-url/identity-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl across 1 partitions
@@ -225,7 +225,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/consensus-manager-package-info"),
+           Url("https://www.radixdlt.com/info-url/consensus-manager-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l across 1 partitions
@@ -233,7 +233,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/access-controller-package-info"),
+           Url("https://www.radixdlt.com/info-url/access-controller-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6 across 1 partitions
@@ -241,7 +241,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/pool-package-info"),
+           Url("https://www.radixdlt.com/info-url/pool-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxtxnpxrxxxxxxxxx002962227406xxxxxxxxx4dvqkl across 1 partitions
@@ -249,7 +249,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/transaction-processor-package-info"),
+           Url("https://www.radixdlt.com/info-url/transaction-processor-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxmtdataxxxxxxxxx005246577269xxxxxxxxx9qjump across 1 partitions
@@ -257,7 +257,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/metadata-module-package-info"),
+           Url("https://www.radixdlt.com/info-url/metadata-module-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxryaltyxxxxxxxxx003849573396xxxxxxxxxa0z7mc across 1 partitions
@@ -265,7 +265,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/royalty-module-package-info"),
+           Url("https://www.radixdlt.com/info-url/royalty-module-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxarulesxxxxxxxxx002304462983xxxxxxxxxrgr7fv across 1 partitions
@@ -273,7 +273,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/role-assignment-module-package-info"),
+           Url("https://www.radixdlt.com/info-url/role-assignment-module-package"),
          ),
        )
 ├─ package_sim1phua8spmaxapwq56stduucrvztk92gxzjy9c98h0qemfjec00a6qza across 1 partitions
@@ -281,7 +281,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/test-utils-package-info"),
+           Url("https://www.radixdlt.com/info-url/test-utils-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxgenssxxxxxxxxxx004372642773xxxxxxxxxkjv3q6 across 1 partitions
@@ -289,7 +289,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/genesis-helper-package-info"),
+           Url("https://www.radixdlt.com/info-url/genesis-helper-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh across 1 partitions
@@ -297,7 +297,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/faucet-package-info"),
+           Url("https://www.radixdlt.com/info-url/faucet-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxx4d5zd2 across 1 partitions
@@ -305,7 +305,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/transaction-tracker-package-info"),
+           Url("https://www.radixdlt.com/info-url/transaction-tracker-package"),
          ),
        )
 ├─ package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6 across 1 partitions
@@ -313,7 +313,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/locker-package-info"),
+           Url("https://www.radixdlt.com/info-url/locker-package"),
          ),
        )
 ├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
@@ -321,7 +321,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/consensus-manager-info"),
+           Url("https://www.radixdlt.com/info-url/consensus-manager"),
          ),
        )
 ├─ component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6 across 1 partitions
@@ -329,7 +329,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/genesis-helper-info"),
+           Url("https://www.radixdlt.com/info-url/genesis-helper"),
          ),
        )
 ├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
@@ -337,7 +337,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/faucet-info"),
+           Url("https://www.radixdlt.com/info-url/faucet"),
          ),
        )
 └─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
@@ -345,7 +345,7 @@ STATE UPDATES: 30 entities
     └─ Set: "info_url"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::Url(
-           Url("https://go.radixdlt.com/transaction-tracker-info"),
+           Url("https://www.radixdlt.com/info-url/transaction-tracker"),
          ),
        )
 
