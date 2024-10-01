@@ -45,18 +45,18 @@ impl From<TransactionProcessorError> for RuntimeError {
 pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
-    Done(IndexedScryptoValue),
+    RootIntentDone,
 }
 
-pub struct TxnProcessorThread<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
-    instructions: VecDeque<I>,
+pub struct IntentProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
+    remaining_instructions: VecDeque<I>,
     worktop: Worktop,
-    objects: TxnProcessorObjects,
+    objects: IntentProcessorObjects,
     pub instruction_index: usize,
     pub outputs: Vec<InstructionOutput>,
 }
 
-impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread<I> {
+impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         manifest_encoded_instructions: Rc<Vec<u8>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -96,12 +96,15 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                 // space calling this function if/when possible
                 RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
             })?;
-        let objects =
-            TxnProcessorObjects::new(blobs, global_address_reservations, max_total_size_of_blobs);
+        let objects = IntentProcessorObjects::new(
+            blobs,
+            global_address_reservations,
+            max_total_size_of_blobs,
+        );
         let outputs = Vec::new();
 
         Ok(Self {
-            instructions: instructions.into_iter().collect(),
+            remaining_instructions: instructions.into_iter().collect(),
             instruction_index: 0usize,
             worktop,
             objects,
@@ -119,9 +122,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                 .handle_call_return_data(&received_value, &self.worktop, api)?;
         }
 
-        let mut done_return_value = None;
-
-        while let Some(instruction) = self.instructions.pop_front() {
+        while let Some(instruction) = self.remaining_instructions.pop_front() {
             api.update_instruction_index(self.instruction_index)?;
             let (output, yield_instruction) =
                 instruction.execute(&mut self.worktop, &mut self.objects, api)?;
@@ -135,10 +136,8 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                     ),
                     Yield::ToParent(value) => {
                         // Child subintents must end with a yield to parent
-                        if self.instructions.is_empty() {
-                            done_return_value =
-                                Some(IndexedScryptoValue::from_scrypto_value(value));
-                            break;
+                        if self.remaining_instructions.is_empty() {
+                            self.worktop.drop(api)?;
                         }
 
                         ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(value))
@@ -149,13 +148,11 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
         }
 
         self.worktop.drop(api)?;
-        Ok(ResumeResult::Done(
-            done_return_value.unwrap_or(IndexedScryptoValue::unit()),
-        ))
+        Ok(ResumeResult::RootIntentDone)
     }
 }
 
-pub struct TxnProcessorObjects {
+pub struct IntentProcessorObjects {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     pub proof_mapping: IndexMap<ManifestProof, NodeId>,
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
@@ -165,7 +162,7 @@ pub struct TxnProcessorObjects {
     max_total_size_of_blobs: usize,
 }
 
-impl TxnProcessorObjects {
+impl IntentProcessorObjects {
     fn new(
         blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -387,15 +384,15 @@ impl TxnProcessorObjects {
     }
 }
 
-pub struct TxnProcessorObjectsWithApi<'a, 'p, 'w, Y: SystemApi<RuntimeError>> {
+pub struct IntentProcessorObjectsWithApi<'a, 'p, 'w, Y: SystemApi<RuntimeError>> {
     pub(crate) worktop: &'w mut Worktop,
-    pub(crate) objects: &'p mut TxnProcessorObjects,
+    pub(crate) objects: &'p mut IntentProcessorObjects,
     pub(crate) api: &'a mut Y,
     pub(crate) current_total_size_of_blobs: usize,
 }
 
 impl<'a, 'p, 'w, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
-    for TxnProcessorObjectsWithApi<'a, 'p, 'w, Y>
+    for IntentProcessorObjectsWithApi<'a, 'p, 'w, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
         self.objects.take_bucket(&b).map(|x| x.0)

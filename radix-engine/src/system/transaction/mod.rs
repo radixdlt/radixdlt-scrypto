@@ -1,3 +1,3 @@
 pub mod instructions;
-pub mod multithread_txn_processor;
-pub mod txn_processor;
+pub mod intent_processor;
+pub mod multithread_intent_processor;

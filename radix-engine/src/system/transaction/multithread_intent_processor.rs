@@ -1,5 +1,5 @@
 use crate::blueprints::transaction_processor::{
-    ResumeResult, TxnProcessorThread, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+    IntentProcessor, ResumeResult, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
 };
 use crate::errors::{KernelError, RuntimeError, SystemError};
 use crate::internal_prelude::YieldError;
@@ -21,12 +21,12 @@ use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 use sbor::prelude::ToString;
 
-/// Multi-thread transaction processor for executing multiple subintents
-pub struct MultiThreadedTxnProcessor {
-    pub threads: Vec<(TxnProcessorThread<InstructionV2>, Vec<usize>)>,
+/// Multi-thread intent processor for executing multiple subintents
+pub struct MultiThreadIntentProcessor {
+    pub threads: Vec<(IntentProcessor<InstructionV2>, Vec<usize>)>,
 }
 
-impl MultiThreadedTxnProcessor {
+impl MultiThreadIntentProcessor {
     pub fn init<Y: SystemBasedKernelApi>(
         executable: ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
@@ -39,17 +39,17 @@ impl MultiThreadedTxnProcessor {
             api.kernel_switch_stack(thread_id)?;
 
             let mut system_service = SystemService::new(api);
-            let virtual_resources = intent
+            let simulate_every_proof_under_resources = intent
                 .auth_zone_init
                 .simulate_every_proof_under_resources
                 .clone();
-            let virtual_non_fungibles =
+            let initial_non_fungible_id_proofs =
                 intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
             let auth_zone = AuthModule::create_auth_zone(
                 &mut system_service,
                 None,
-                virtual_resources,
-                virtual_non_fungibles,
+                simulate_every_proof_under_resources,
+                initial_non_fungible_id_proofs,
             )?;
 
             api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
@@ -62,7 +62,7 @@ impl MultiThreadedTxnProcessor {
             }))?;
 
             let mut system_service = SystemService::new(api);
-            let txn_processor = TxnProcessorThread::<InstructionV2>::init(
+            let txn_processor = IntentProcessor::<InstructionV2>::init(
                 intent.encoded_instructions.clone(),
                 global_address_reservations.clone(),
                 intent.blobs.clone(),
@@ -133,10 +133,9 @@ impl MultiThreadedTxnProcessor {
                     cur_thread = parent_stack.pop().unwrap();
                     passed_value = Some(value);
                 }
-                ResumeResult::Done(value) => {
+                ResumeResult::RootIntentDone => {
                     if let Some(parent) = parent_stack.pop() {
                         cur_thread = parent;
-                        passed_value = Some(value);
                     } else {
                         break;
                     }

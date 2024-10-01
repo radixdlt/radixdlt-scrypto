@@ -1,4 +1,4 @@
-use crate::blueprints::transaction_processor::{ResumeResult, TxnProcessorThread};
+use crate::blueprints::transaction_processor::{IntentProcessor, ResumeResult};
 use crate::errors::RuntimeError;
 use crate::internal_prelude::{Sbor, ScryptoEncode, ScryptoSbor};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -57,7 +57,7 @@ impl TransactionProcessorBlueprint {
             TransactionProcessorV1MinorVersion::Zero => usize::MAX,
             TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
         };
-        let mut txn_processor_single_thread = TxnProcessorThread::<InstructionV1>::init(
+        let mut txn_processor_single_thread = IntentProcessor::<InstructionV1>::init(
             Rc::new(manifest_encoded_instructions),
             global_address_reservations,
             Rc::new(blobs),
@@ -65,7 +65,7 @@ impl TransactionProcessorBlueprint {
             api,
         )?;
         let resume_result = txn_processor_single_thread.resume(None, api)?;
-        if !matches!(resume_result, ResumeResult::Done(..)) {
+        if !matches!(resume_result, ResumeResult::RootIntentDone) {
             panic!("Unexpected yield occurred in v1 transaction processing");
         }
         Ok(txn_processor_single_thread.outputs)
