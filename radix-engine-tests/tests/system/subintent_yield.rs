@@ -1,7 +1,7 @@
+use radix_common::crypto::HasPublicKeyHash;
+use radix_common::manifest_args;
 use radix_common::prelude::ManifestArgs;
 use radix_common::prelude::XRD;
-use radix_common::manifest_args;
-use radix_common::crypto::HasPublicKeyHash;
 use radix_engine_interface::macros::dec;
 use radix_transactions::builder::ManifestBuilder;
 use radix_transactions::model::TestTransaction;
@@ -21,7 +21,7 @@ fn can_send_resources_to_child_subintent() {
             .deposit_entire_worktop(account)
             .yield_to_parent(())
             .build(),
-        [public_key.signature_proof()]
+        [public_key.signature_proof()],
     );
     let transaction = builder.finish_with_root_intent(
         ManifestBuilder::new_v2()
@@ -53,11 +53,9 @@ fn can_send_resources_to_parent_subintent() {
         ManifestBuilder::new_subintent_v2()
             .withdraw_from_account(account, XRD, dec!(10))
             .take_all_from_worktop(XRD, "xrd")
-            .with_name_lookup(|builder, lookup| {
-                builder.yield_to_parent((lookup.bucket("xrd"),))
-            })
+            .with_name_lookup(|builder, lookup| builder.yield_to_parent((lookup.bucket("xrd"),)))
             .build(),
-        [public_key.signature_proof()]
+        [public_key.signature_proof()],
     );
     let transaction = builder.finish_with_root_intent(
         ManifestBuilder::new_v2()
@@ -90,9 +88,8 @@ fn can_send_and_receive_resources_as_subintent() {
                 builder.yield_to_parent(manifest_args!(lookup.bucket("xrd")))
             })
             .build(),
-        [public_key.signature_proof()]
+        [public_key.signature_proof()],
     );
-
     let transaction = builder.finish_with_root_intent(
         ManifestBuilder::new_v2()
             .use_child("child", child)
@@ -107,7 +104,6 @@ fn can_send_and_receive_resources_as_subintent() {
             .build(),
         [public_key.signature_proof()],
     );
-
     let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert

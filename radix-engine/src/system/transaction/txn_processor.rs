@@ -136,7 +136,8 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                     Yield::ToParent(value) => {
                         // Child subintents must end with a yield to parent
                         if self.instructions.is_empty() {
-                            done_return_value = Some(IndexedScryptoValue::from_scrypto_value(value));
+                            done_return_value =
+                                Some(IndexedScryptoValue::from_scrypto_value(value));
                             break;
                         }
 
@@ -148,7 +149,9 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
         }
 
         self.worktop.drop(api)?;
-        Ok(ResumeResult::Done(done_return_value.unwrap_or(IndexedScryptoValue::unit())))
+        Ok(ResumeResult::Done(
+            done_return_value.unwrap_or(IndexedScryptoValue::unit()),
+        ))
     }
 }
 
