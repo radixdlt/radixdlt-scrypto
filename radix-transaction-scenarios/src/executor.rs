@@ -6,13 +6,12 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::updates::*;
 use radix_engine::vm::*;
-use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
-use scenarios::ALL_SCENARIOS;
+use scenarios::all_scenarios_iter;
 
 #[derive(Clone, Debug)]
 pub enum ScenarioTrigger {
@@ -77,6 +76,7 @@ where
     /* Environment */
     /// The substate database that the scenario will be run against.
     database: D,
+    validator: TransactionValidator,
 
     /* Execution */
     /// The first nonce to use in the execution of the scenarios.
@@ -92,9 +92,11 @@ where
     D: SubstateDatabase + CommittableSubstateDatabase,
 {
     pub fn new(database: D, network_definition: NetworkDefinition) -> Self {
+        let validator = TransactionValidator::new(&database, &network_definition);
         Self {
             /* Environment */
             database,
+            validator,
             /* Execution */
             starting_nonce: 0,
             next_scenario_nonce_handling:
@@ -145,15 +147,23 @@ where
         modules: &impl VmInitialize,
     ) -> Result<(), ScenarioExecutorError> {
         let protocol_executor = protocol(ProtocolBuilder::for_network(&self.network_definition));
-        let last_version = protocol_executor.each_target_protocol_version().last();
+        let last_version = protocol_executor
+            .each_target_protocol_version(&self.database)
+            .last()
+            .map(|(version, _)| version);
 
-        for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
+        for protocol_update_executor in
+            protocol_executor.each_protocol_update_executor(&self.database)
+        {
             let new_protocol_version = protocol_update_executor.protocol_version;
             protocol_update_executor.run_and_commit_advanced(
                 &mut self.database,
                 protocol_update_hooks,
                 modules,
             );
+
+            // Update the validator in case the settings have changed due to the protocol update
+            self.validator = TransactionValidator::new(&self.database, &self.network_definition);
 
             self.execute_scenarios_at_new_protocol_version(
                 new_protocol_version,
@@ -187,7 +197,7 @@ where
             return Ok(());
         }
 
-        let matching_scenarios = ALL_SCENARIOS.iter().filter(|(logical_name, creator)| {
+        let matching_scenarios = all_scenarios_iter().filter(|creator| {
             let metadata = creator.metadata();
             let is_valid = at_version >= metadata.protocol_min_requirement;
             if !is_valid {
@@ -195,7 +205,7 @@ where
             }
             match filter {
                 ScenarioFilter::SpecificScenariosByName(scenario_names) => {
-                    scenario_names.contains(&**logical_name)
+                    scenario_names.contains(metadata.logical_name)
                 }
                 ScenarioFilter::AllScenariosValidAtProtocolVersion => true,
                 ScenarioFilter::AllScenariosFirstValidAtProtocolVersion => {
@@ -204,13 +214,8 @@ where
             }
         });
 
-        for (_, scenario_creator) in matching_scenarios {
-            self.execute_scenario(
-                scenario_creator.as_ref(),
-                scenario_hooks,
-                modules,
-                at_version,
-            )?;
+        for scenario_creator in matching_scenarios {
+            self.execute_scenario(scenario_creator, scenario_hooks, modules, at_version)?;
         }
 
         Ok(())
@@ -304,25 +309,20 @@ where
         transaction: &RawNotarizedTransaction,
         execution_config: &ExecutionConfig,
         modules: &impl VmInitialize,
-    ) -> Result<TransactionReceiptV1, ScenarioExecutorError> {
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(
-            self.network_definition.id,
-        ));
-        let validated = validator
-            .validate_from_raw(transaction)
+    ) -> Result<TransactionReceipt, ScenarioExecutorError> {
+        let validated = transaction
+            .validate(&self.validator)
             .map_err(ScenarioExecutorError::TransactionValidationError)?;
 
         let receipt = execute_transaction(
             &self.database,
             modules,
             execution_config,
-            validated.get_executable(),
+            validated.create_executable(),
         );
 
         if let TransactionResult::Commit(commit) = &receipt.result {
-            let database_updates = commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+            let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
         };
 

@@ -2,7 +2,7 @@ use crate::internal_prelude::*;
 
 // This file is for concepts which are version-independent
 
-define_raw_transaction_payload!(RawTransactionIntent);
+define_raw_transaction_payload!(RawTransactionIntent, TransactionPayloadKind::Other);
 define_wrapped_hash!(
     /// A hash of the primary intent of a transaction, used as the transaction id.
     /// The engine guarantees each intent hash can only be committed once.
@@ -13,21 +13,53 @@ pub trait HasTransactionIntentHash {
     fn transaction_intent_hash(&self) -> TransactionIntentHash;
 }
 
-define_raw_transaction_payload!(RawSignedTransactionIntent);
+define_raw_transaction_payload!(RawSignedTransactionIntent, TransactionPayloadKind::Other);
 define_wrapped_hash!(SignedTransactionIntentHash);
 
 pub trait HasSignedTransactionIntentHash {
     fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash;
 }
 
-define_raw_transaction_payload!(RawNotarizedTransaction);
+define_raw_transaction_payload!(
+    RawNotarizedTransaction,
+    TransactionPayloadKind::CompleteUserTransaction
+);
 define_wrapped_hash!(NotarizedTransactionHash);
+
+impl RawNotarizedTransaction {
+    pub fn prepare(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedUserTransaction, PrepareError> {
+        PreparedUserTransaction::prepare(self, settings)
+    }
+
+    pub fn validate(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+        self.prepare(validator.preparation_settings())?
+            .validate(validator)
+    }
+}
+
+impl IntoExecutable for RawNotarizedTransaction {
+    type Error = TransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        let executable = self.validate(validator)?.create_executable();
+        Ok(executable)
+    }
+}
 
 pub trait HasNotarizedTransactionHash {
     fn notarized_transaction_hash(&self) -> NotarizedTransactionHash;
 }
 
-define_raw_transaction_payload!(RawSubintent);
+define_raw_transaction_payload!(RawSubintent, TransactionPayloadKind::Other);
 define_wrapped_hash!(
     /// A hash of the subintent.
     /// The engine guarantees each intent hash can only be committed once.
@@ -40,8 +72,8 @@ pub trait HasSubintentHash {
 
 // There are no associated hashes for these things, because they don't need them.
 // A solver can work out their own passing strategy
-define_raw_transaction_payload!(RawPartialTransaction);
-define_raw_transaction_payload!(RawSignedPartialTransaction);
+define_raw_transaction_payload!(RawPartialTransaction, TransactionPayloadKind::Other);
+define_raw_transaction_payload!(RawSignedPartialTransaction, TransactionPayloadKind::Other);
 
 /// Note - Because transaction hashes do _not_ have a reserved first byte,
 /// we can't encode them to bech32m unless we know their type.
@@ -51,14 +83,33 @@ define_raw_transaction_payload!(RawSignedPartialTransaction);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum IntentHash {
     Transaction(TransactionIntentHash),
-    Sub(SubintentHash),
+    Subintent(SubintentHash),
+}
+
+impl From<TransactionIntentHash> for IntentHash {
+    fn from(value: TransactionIntentHash) -> Self {
+        Self::Transaction(value)
+    }
+}
+
+impl From<SubintentHash> for IntentHash {
+    fn from(value: SubintentHash) -> Self {
+        Self::Subintent(value)
+    }
 }
 
 impl IntentHash {
+    pub fn is_for_subintent(&self) -> bool {
+        match self {
+            IntentHash::Transaction(_) => false,
+            IntentHash::Subintent(_) => true,
+        }
+    }
+
     pub fn as_hash(&self) -> &Hash {
         match self {
             IntentHash::Transaction(hash) => hash.as_hash(),
-            IntentHash::Sub(hash) => hash.as_hash(),
+            IntentHash::Subintent(hash) => hash.as_hash(),
         }
     }
 
@@ -69,7 +120,7 @@ impl IntentHash {
                 expiry_epoch,
                 ignore_duplicate: false,
             },
-            IntentHash::Sub(subintent_hash) => IntentHashNullification::Subintent {
+            IntentHash::Subintent(subintent_hash) => IntentHashNullification::Subintent {
                 intent_hash: subintent_hash,
                 expiry_epoch,
                 ignore_duplicate: false,
@@ -78,14 +129,14 @@ impl IntentHash {
     }
 }
 
-define_raw_transaction_payload!(RawSystemTransaction);
+define_raw_transaction_payload!(RawSystemTransaction, TransactionPayloadKind::Other);
 define_wrapped_hash!(SystemTransactionHash);
 
 pub trait HasSystemTransactionHash {
     fn system_transaction_hash(&self) -> SystemTransactionHash;
 }
 
-define_raw_transaction_payload!(RawFlashTransaction);
+define_raw_transaction_payload!(RawFlashTransaction, TransactionPayloadKind::Other);
 define_wrapped_hash!(FlashTransactionHash);
 
 pub trait HasFlashTransactionHash {

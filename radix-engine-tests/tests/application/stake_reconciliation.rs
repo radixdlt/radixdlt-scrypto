@@ -49,7 +49,7 @@ fn test_stake_reconciliation() {
     let db = ledger.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
-        let entries = db.list_entries(&key);
+        let entries = db.list_raw_values_from_db_key(&key, None);
         for (sort_key, value) in entries {
             pre_transaction_substates.insert((key.clone(), sort_key), value);
         }
@@ -89,7 +89,7 @@ fn test_stake_reconciliation() {
     //     let partition_num = PartitionNumber(1);
     //     let substate_key = SubstateKey::Map(ScryptoRawPayload::from_valid_payload(vec![92, 32, 7, 32, 220, 0, 156, 5, 6, 83, 96, 189, 222, 100, 29, 145, 160, 147, 193, 127, 71, 54, 135, 62, 103, 35, 126, 168, 230, 117, 203, 71, 36, 132, 155, 157]));
     //     let value_from_database: ScryptoRawValue = ledger.substate_db()
-    //         .get_mapped::<SpreadPrefixKeyMapper, _>(&node_id, partition_num, &substate_key)
+    //         .get_raw_substate(&node_id, partition_num, substate_key)
     //         .unwrap();
     //     let substate_value = value_from_database.into_payload_bytes();
     //     let state_updates = StateUpdates {
@@ -327,7 +327,7 @@ fn test_stake_reconciliation() {
     }
 
     for key in post_transaction_partitions {
-        let partition_entries = ledger.substate_db().list_entries(&key);
+        let partition_entries = ledger.substate_db().list_raw_values_from_db_key(&key, None);
         for (sort_key, current_value) in partition_entries {
             let full_key = (key.clone(), sort_key.clone());
             let address = AddressBech32Encoder::for_simulator()

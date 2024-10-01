@@ -139,7 +139,7 @@ impl ScryptoResourceManager for ResourceManager {
     }
 
     fn set_burnable(&self, access_rule: AccessRule) {
-        self.0.set_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
+        self.0.set_role(BURNER_ROLE, access_rule);
     }
 
     fn set_withdrawable(&self, access_rule: AccessRule) {

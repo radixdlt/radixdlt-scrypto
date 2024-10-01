@@ -22,7 +22,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
-use radix_substate_store_interface::db_key_mapper::*;
 use radix_transactions::prelude::*;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 
@@ -61,22 +60,19 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         .from_bootstrap_to_latest()
         .commit_each_protocol_update(&mut substate_db);
 
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
+    let mut track = Track::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(Extension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System {
-        versioned_system_logic: VersionedSystemLogic::V1,
-        blueprint_cache: NonIterMap::new(),
-        auth_cache: NonIterMap::new(),
-        schema_cache: NonIterMap::new(),
-        callback: Vm {
+    let mut system = System::new(
+        SystemVersion::latest(),
+        Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
             vm_boot: VmBoot::latest(),
         },
-        modules: SystemModuleMixer::new(
+        SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
@@ -95,8 +91,8 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
-        finalization: Default::default(),
-    };
+        SystemFinalization::no_nullifications(),
+    );
 
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
@@ -132,22 +128,19 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         .from_bootstrap_to_latest()
         .commit_each_protocol_update(&mut substate_db);
 
-    let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
+    let mut track = Track::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 
     let intent_hash = Hash([0; 32]);
-    let mut system = System {
-        versioned_system_logic: VersionedSystemLogic::V1,
-        blueprint_cache: NonIterMap::new(),
-        auth_cache: NonIterMap::new(),
-        schema_cache: NonIterMap::new(),
-        callback: Vm {
+    let mut system = System::new(
+        SystemVersion::latest(),
+        Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
             vm_boot: VmBoot::latest(),
         },
-        modules: SystemModuleMixer::new(
+        SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
@@ -166,8 +159,8 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
-        finalization: Default::default(),
-    };
+        SystemFinalization::no_nullifications(),
+    );
 
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);

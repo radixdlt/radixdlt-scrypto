@@ -21,7 +21,46 @@ const ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 2;
 const FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 3;
 const USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 4;
 
-define_raw_transaction_payload!(RawLedgerTransaction);
+enum LedgerTransactionKind {
+    Genesis,
+    User,
+    Validator,
+    ProtocolUpdate,
+}
+
+impl LedgerTransactionKind {
+    fn discriminator_for_hash(&self) -> u8 {
+        match self {
+            LedgerTransactionKind::Genesis => GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR,
+            LedgerTransactionKind::User => USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
+            LedgerTransactionKind::Validator => ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
+            LedgerTransactionKind::ProtocolUpdate => FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
+        }
+    }
+}
+
+define_raw_transaction_payload!(
+    RawLedgerTransaction,
+    TransactionPayloadKind::LedgerTransaction
+);
+
+impl RawLedgerTransaction {
+    pub fn prepare(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedLedgerTransaction, PrepareError> {
+        PreparedLedgerTransaction::prepare(self, settings)
+    }
+
+    pub fn validate(
+        &self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+        let prepared = PreparedLedgerTransaction::prepare(self, validator.preparation_settings())?;
+        prepared.validate(validator, accepted_kind)
+    }
+}
 
 impl TransactionPayload for LedgerTransaction {
     type Prepared = PreparedLedgerTransaction;
@@ -45,16 +84,16 @@ pub struct PreparedLedgerTransaction {
 }
 
 impl PreparedLedgerTransaction {
-    pub fn into_user(self) -> Option<Box<PreparedNotarizedTransactionV1>> {
+    pub fn into_user(self) -> Option<PreparedUserTransaction> {
         match self.inner {
-            PreparedLedgerTransactionInner::UserV1(t) => Some(t),
+            PreparedLedgerTransactionInner::User(t) => Some(t),
             _ => None,
         }
     }
 
-    pub fn as_user(&self) -> Option<&PreparedNotarizedTransactionV1> {
+    pub fn as_user(&self) -> Option<&PreparedUserTransaction> {
         match &self.inner {
-            PreparedLedgerTransactionInner::UserV1(t) => Some(t.as_ref()),
+            PreparedLedgerTransactionInner::User(t) => Some(t),
             _ => None,
         }
     }
@@ -68,50 +107,148 @@ impl PreparedLedgerTransaction {
                         system_transaction_hash: t.system_transaction_hash(),
                     }
                 }
-                PreparedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
+                PreparedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.transaction_intent_hash(),
                     signed_intent_hash: t.signed_transaction_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
-                PreparedLedgerTransactionInner::RoundUpdateV1(t) => {
+                PreparedLedgerTransactionInner::Validator(t) => {
                     TypedTransactionIdentifiers::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
-                PreparedLedgerTransactionInner::FlashV1(t) => {
+                PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
                     TypedTransactionIdentifiers::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
-                PreparedLedgerTransactionInner::UserV2(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
-                },
             },
+        }
+    }
+
+    fn validate(
+        self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+        let validated_inner = match self.inner {
+            PreparedLedgerTransactionInner::Genesis(t) => {
+                if !accepted_kind.permits_genesis() {
+                    return Err(TransactionValidationError::Other(
+                        "Genesis transaction not permitted at this point".to_string(),
+                    ));
+                }
+                ValidatedLedgerTransactionInner::Genesis(t)
+            }
+            PreparedLedgerTransactionInner::User(t) => {
+                if !accepted_kind.permits_user() {
+                    return Err(TransactionValidationError::Other(
+                        "User transaction not permitted at this point".to_string(),
+                    ));
+                }
+                ValidatedLedgerTransactionInner::User(t.validate(validator)?)
+            }
+            PreparedLedgerTransactionInner::Validator(t) => {
+                if !accepted_kind.permits_validator() {
+                    return Err(TransactionValidationError::Other(
+                        "Round update transaction not permitted at this point".to_string(),
+                    ));
+                }
+                ValidatedLedgerTransactionInner::Validator(t)
+            }
+            PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
+                if !accepted_kind.permits_protocol_update() {
+                    return Err(TransactionValidationError::Other(
+                        "Protocol update transaction not permitted at this point".to_string(),
+                    ));
+                }
+                ValidatedLedgerTransactionInner::ProtocolUpdate(t)
+            }
+        };
+        Ok(ValidatedLedgerTransaction {
+            inner: validated_inner,
+            summary: self.summary,
+        })
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum AcceptedLedgerTransactionKind {
+    Any,
+    UserOnly,
+    GenesisOnly,
+    ValidatorOnly,
+    ProtocolUpdateOnly,
+    UserOrValidator,
+}
+
+impl AcceptedLedgerTransactionKind {
+    fn permits_genesis(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => true,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => false,
+        }
+    }
+
+    fn permits_user(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => true,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => true,
+        }
+    }
+
+    fn permits_validator(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::ValidatorOnly => true,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => false,
+            AcceptedLedgerTransactionKind::UserOrValidator => true,
+        }
+    }
+
+    fn permits_protocol_update(&self) -> bool {
+        match self {
+            AcceptedLedgerTransactionKind::Any => true,
+            AcceptedLedgerTransactionKind::UserOnly => false,
+            AcceptedLedgerTransactionKind::GenesisOnly => false,
+            AcceptedLedgerTransactionKind::ValidatorOnly => false,
+            AcceptedLedgerTransactionKind::ProtocolUpdateOnly => true,
+            AcceptedLedgerTransactionKind::UserOrValidator => false,
         }
     }
 }
 
 impl_has_summary!(PreparedLedgerTransaction);
 
-#[derive(BasicCategorize)]
 pub enum PreparedLedgerTransactionInner {
-    #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    Genesis(Box<PreparedGenesisTransaction>),
-    #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    UserV1(Box<PreparedNotarizedTransactionV1>),
-    #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
-    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    FlashV1(Box<PreparedFlashTransactionV1>),
-    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    UserV2(Box<PreparedNotarizedTransactionV2>),
+    Genesis(PreparedGenesisTransaction),
+    User(PreparedUserTransaction),
+    Validator(PreparedRoundUpdateTransactionV1),
+    ProtocolUpdate(PreparedFlashTransactionV1),
 }
 
 impl PreparedLedgerTransactionInner {
+    fn get_kind(&self) -> LedgerTransactionKind {
+        match self {
+            Self::Genesis(_) => LedgerTransactionKind::Genesis,
+            Self::User(_) => LedgerTransactionKind::User,
+            Self::Validator(_) => LedgerTransactionKind::Validator,
+            Self::ProtocolUpdate(_) => LedgerTransactionKind::ProtocolUpdate,
+        }
+    }
+
     pub fn get_ledger_hash(&self) -> LedgerTransactionHash {
-        LedgerTransactionHash::for_kind(self.get_discriminator(), &self.get_summary().hash)
+        LedgerTransactionHash::for_kind(self.get_kind(), &self.get_summary().hash)
     }
 }
 
@@ -119,20 +256,18 @@ impl HasSummary for PreparedLedgerTransactionInner {
     fn get_summary(&self) -> &Summary {
         match self {
             Self::Genesis(t) => t.get_summary(),
-            Self::UserV1(t) => t.get_summary(),
-            Self::RoundUpdateV1(t) => t.get_summary(),
-            Self::FlashV1(t) => t.get_summary(),
-            Self::UserV2(t) => t.get_summary(),
+            Self::User(t) => t.get_summary(),
+            Self::Validator(t) => t.get_summary(),
+            Self::ProtocolUpdate(t) => t.get_summary(),
         }
     }
 
     fn summary_mut(&mut self) -> &mut Summary {
         match self {
             Self::Genesis(t) => t.summary_mut(),
-            Self::UserV1(t) => t.summary_mut(),
-            Self::RoundUpdateV1(t) => t.summary_mut(),
-            Self::FlashV1(t) => t.summary_mut(),
-            Self::UserV2(t) => t.summary_mut(),
+            Self::User(t) => t.summary_mut(),
+            Self::Validator(t) => t.summary_mut(),
+            Self::ProtocolUpdate(t) => t.summary_mut(),
         }
     }
 }
@@ -157,31 +292,31 @@ impl TransactionPreparableFromValue for PreparedLedgerTransactionInner {
                     GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR => {
                         check_length(length, 1)?;
                         let prepared = PreparedSystemTransactionV1::prepare_from_value(decoder)?;
-                        PreparedGenesisTransaction::Transaction(Box::new(prepared))
+                        PreparedGenesisTransaction::Transaction(prepared)
                     }
                     _ => return Err(unknown_discriminator(discriminator)),
                 };
-                PreparedLedgerTransactionInner::Genesis(Box::new(genesis_transaction))
+                PreparedLedgerTransactionInner::Genesis(genesis_transaction)
             }
             USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
                 let prepared = PreparedNotarizedTransactionV1::prepare_from_value(decoder)?;
-                PreparedLedgerTransactionInner::UserV1(Box::new(prepared))
+                PreparedLedgerTransactionInner::User(PreparedUserTransaction::V1(prepared))
             }
             ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
                 let prepared = PreparedRoundUpdateTransactionV1::prepare_from_value(decoder)?;
-                PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
+                PreparedLedgerTransactionInner::Validator(prepared)
             }
             FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
                 let prepared = PreparedFlashTransactionV1::prepare_from_value(decoder)?;
-                PreparedLedgerTransactionInner::FlashV1(Box::new(prepared))
+                PreparedLedgerTransactionInner::ProtocolUpdate(prepared)
             }
             USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
                 let prepared = PreparedNotarizedTransactionV2::prepare_from_value(decoder)?;
-                PreparedLedgerTransactionInner::UserV2(Box::new(prepared))
+                PreparedLedgerTransactionInner::User(PreparedUserTransaction::V2(prepared))
             }
             _ => return Err(unknown_discriminator(discriminator)),
         };
@@ -207,7 +342,7 @@ fn unknown_discriminator(discriminator: u8) -> PrepareError {
 
 pub enum PreparedGenesisTransaction {
     Flash(Summary),
-    Transaction(Box<PreparedSystemTransactionV1>),
+    Transaction(PreparedSystemTransactionV1),
 }
 
 impl HasSummary for PreparedGenesisTransaction {
@@ -237,12 +372,19 @@ impl HasSystemTransactionHash for PreparedGenesisTransaction {
     }
 }
 
-impl TransactionPayloadPreparable for PreparedLedgerTransaction {
+impl PreparedTransaction for PreparedLedgerTransaction {
     type Raw = RawLedgerTransaction;
 
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
-        decoder.read_expected_enum_variant_header(TransactionDiscriminator::V1Ledger as u8, 1)?;
+        decoder.read_header(
+            ExpectedTupleHeader::EnumWithValueKind {
+                discriminator: TransactionDiscriminator::Ledger as u8,
+            },
+            1,
+        )?;
         let inner = PreparedLedgerTransactionInner::prepare_from_value(decoder)?;
         decoder.track_stack_depth_decrease()?;
 
@@ -255,53 +397,70 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     }
 }
 
+impl IntoExecutable for PreparedLedgerTransaction {
+    type Error = LedgerTransactionExecutableError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.validate(validator, AcceptedLedgerTransactionKind::Any)?
+            .into_executable(validator)
+    }
+}
+
 pub struct ValidatedLedgerTransaction {
     pub inner: ValidatedLedgerTransactionInner,
     pub summary: Summary,
 }
 
-#[derive(BasicCategorize)]
 pub enum ValidatedLedgerTransactionInner {
-    #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    Genesis(Box<PreparedGenesisTransaction>),
-    #[sbor(discriminator(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    UserV1(Box<ValidatedNotarizedTransactionV1>),
-    #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
-    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    FlashV1(Box<PreparedFlashTransactionV1>),
-    #[sbor(discriminator(USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR))]
-    UserV2(Box<ValidatedNotarizedTransactionV2>),
+    Genesis(PreparedGenesisTransaction),
+    User(ValidatedUserTransaction),
+    Validator(PreparedRoundUpdateTransactionV1),
+    ProtocolUpdate(PreparedFlashTransactionV1),
+}
+
+#[derive(Debug, Clone)]
+pub enum LedgerTransactionExecutableError {
+    IsFlashTransaction,
+    ValidationError(TransactionValidationError),
+}
+
+impl From<TransactionValidationError> for LedgerTransactionExecutableError {
+    fn from(value: TransactionValidationError) -> Self {
+        Self::ValidationError(value)
+    }
 }
 
 impl ValidatedLedgerTransaction {
     pub fn intent_hash_if_user(&self) -> Option<TransactionIntentHash> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(_) => None,
-            ValidatedLedgerTransactionInner::UserV1(t) => Some(t.transaction_intent_hash()),
-            ValidatedLedgerTransactionInner::RoundUpdateV1(_) => None,
-            ValidatedLedgerTransactionInner::FlashV1(_) => None,
-            ValidatedLedgerTransactionInner::UserV2(t) => Some(t.transaction_intent_hash()),
+            ValidatedLedgerTransactionInner::User(t) => Some(t.transaction_intent_hash()),
+            ValidatedLedgerTransactionInner::Validator(_) => None,
+            ValidatedLedgerTransactionInner::ProtocolUpdate(_) => None,
         }
     }
 
-    /// Note - panics if it's a genesis flash
-    pub fn get_executable(&self) -> ExecutableTransaction {
-        match &self.inner {
-            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
+    /// Note - returns None if it's a flash transaction
+    pub fn create_executable(
+        self,
+    ) -> Result<ExecutableTransaction, LedgerTransactionExecutableError> {
+        match self.inner {
+            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
                 PreparedGenesisTransaction::Flash(_) => {
-                    panic!("Should not call get_executable on a genesis flash")
+                    Err(LedgerTransactionExecutableError::IsFlashTransaction)
                 }
-                PreparedGenesisTransaction::Transaction(t) => t
-                    .get_executable(btreeset!(system_execution(SystemExecution::Protocol)))
-                    .into(),
+                PreparedGenesisTransaction::Transaction(t) => {
+                    Ok(t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))))
+                }
             },
-            ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable().into(),
-            ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable().into(),
-            ValidatedLedgerTransactionInner::FlashV1(_) => {
-                panic!("Should not call get_executable on a flash transaction")
+            ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
+            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.get_executable()),
+            ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
+                Err(LedgerTransactionExecutableError::IsFlashTransaction)
             }
-            ValidatedLedgerTransactionInner::UserV2(t) => t.get_executable().into(),
         }
     }
 
@@ -314,28 +473,34 @@ impl ValidatedLedgerTransaction {
                         system_transaction_hash: t.system_transaction_hash(),
                     }
                 }
-                ValidatedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
+                ValidatedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.transaction_intent_hash(),
                     signed_intent_hash: t.signed_transaction_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
-                ValidatedLedgerTransactionInner::RoundUpdateV1(t) => {
+                ValidatedLedgerTransactionInner::Validator(t) => {
                     TypedTransactionIdentifiers::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
-                ValidatedLedgerTransactionInner::FlashV1(t) => {
+                ValidatedLedgerTransactionInner::ProtocolUpdate(t) => {
                     TypedTransactionIdentifiers::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
-                ValidatedLedgerTransactionInner::UserV2(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
-                },
             },
         }
+    }
+}
+
+impl IntoExecutable for ValidatedLedgerTransaction {
+    type Error = LedgerTransactionExecutableError;
+
+    fn into_executable(
+        self,
+        _validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.create_executable()
     }
 }
 
@@ -397,24 +562,24 @@ define_wrapped_hash!(LedgerTransactionHash);
 
 impl LedgerTransactionHash {
     pub fn for_genesis(hash: &SystemTransactionHash) -> Self {
-        Self::for_kind(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+        Self::for_kind(LedgerTransactionKind::Genesis, &hash.0)
     }
 
-    pub fn for_user_v1(hash: &NotarizedTransactionHash) -> Self {
-        Self::for_kind(USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+    pub fn for_user(hash: &NotarizedTransactionHash) -> Self {
+        Self::for_kind(LedgerTransactionKind::User, &hash.0)
     }
 
-    pub fn for_round_update_v1(hash: &RoundUpdateTransactionHash) -> Self {
-        Self::for_kind(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR, &hash.0)
+    pub fn for_round_update(hash: &RoundUpdateTransactionHash) -> Self {
+        Self::for_kind(LedgerTransactionKind::Validator, &hash.0)
     }
 
-    fn for_kind(discriminator: u8, inner: &Hash) -> Self {
+    fn for_kind(kind: LedgerTransactionKind, inner: &Hash) -> Self {
         Self(
             HashAccumulator::new()
                 .concat([
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                    TransactionDiscriminator::V1Ledger as u8,
-                    discriminator,
+                    TransactionDiscriminator::Ledger as u8,
+                    kind.discriminator_for_hash(),
                 ])
                 .concat(inner.as_slice())
                 .finalize(),
@@ -464,20 +629,22 @@ mod tests {
             .notarize(&notary_private_key)
             .build();
 
-        let prepared_notarized = notarized.prepare().expect("Notarized can be prepared");
+        let prepared_notarized = notarized
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Notarized can be prepared");
 
         let ledger = LedgerTransaction::UserV1(Box::new(notarized));
-        let ledger_transaction_bytes = ledger.to_payload_bytes().expect("Can be encoded");
-        LedgerTransaction::from_payload_bytes(&ledger_transaction_bytes).expect("Can be decoded");
-        let prepared_ledger_transaction =
-            PreparedLedgerTransaction::prepare_from_payload(&ledger_transaction_bytes)
-                .expect("Can be prepared");
+        let raw_ledger_transaction = ledger.to_raw().expect("Can be encoded");
+        LedgerTransaction::from_raw(&raw_ledger_transaction).expect("Can be decoded");
+        let prepared_ledger_transaction = raw_ledger_transaction
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Can be prepared");
 
         let expected_intent_hash = LedgerTransactionHash::from_hash(hash(
             [
                 [
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                    TransactionDiscriminator::V1Ledger as u8,
+                    TransactionDiscriminator::Ledger as u8,
                     USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
                 ]
                 .as_slice(),
@@ -490,7 +657,7 @@ mod tests {
             expected_intent_hash
         );
         assert_eq!(
-            LedgerTransactionHash::for_user_v1(&prepared_notarized.notarized_transaction_hash()),
+            LedgerTransactionHash::for_user(&prepared_notarized.notarized_transaction_hash()),
             expected_intent_hash
         );
     }

@@ -13,9 +13,6 @@ use radix_engine::updates::{BabylonSettings, ProtocolBuilder};
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_interface::db_key_mapper::{
-    MappedSubstateDatabase, SpreadPrefixKeyMapper,
-};
 use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::prelude::*;
 use scrypto_test::prelude::*;
@@ -268,10 +265,10 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     } = hooks.into_genesis_receipts();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
-            &resource_address.as_node_id(),
+        .get_substate::<FungibleResourceManagerTotalSupplyFieldSubstate>(
+            resource_address,
             MAIN_BASE_PARTITION,
-            &FungibleResourceManagerField::TotalSupply.into(),
+            FungibleResourceManagerField::TotalSupply,
         )
         .unwrap()
         .into_payload()
@@ -310,7 +307,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         // check if the metadata exists and is locked
         let reader = SystemDatabaseReader::new(&substate_db);
         let substate = reader
-            .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedMetadataEntry>>(
+            .fetch_substate::<KeyValueEntrySubstate<VersionedMetadataEntry>>(
                 created_owner_badge.as_node_id(),
                 METADATA_BASE_PARTITION,
                 &SubstateKey::Map(scrypto_encode("tags").unwrap()),

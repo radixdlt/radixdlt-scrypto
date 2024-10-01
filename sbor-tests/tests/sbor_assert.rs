@@ -33,6 +33,13 @@ pub enum MyTestEnum_FixedSchema_Test4 {
     Hello { state: u32 },
 }
 
+#[derive(BasicSborAssertion, BasicSbor)]
+#[sbor_assert(fixed("FILE:test_enum_v1_schema.bin"))]
+#[sbor(type_name = "MyTestEnum")]
+pub enum MyTestEnum_FixedSchema_Test5 {
+    Hello { state: u32 },
+}
+
 const TEST_ENUM_V2_SCHEMA: &'static str = "5b210222000121032022010f012307200200220100010709012200202101022201010c0a4d7954657374456e756d2201012201012307210200022201010c0548656c6c6f220101220001200c0105737461746501022201010c05576f726c6422000020220100002201010a0000000000000000";
 
 #[derive(BasicSborAssertion, BasicSbor)]

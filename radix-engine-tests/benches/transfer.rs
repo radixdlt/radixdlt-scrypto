@@ -9,14 +9,17 @@ use radix_engine_interface::rule;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::model::TestTransaction;
 use radix_transactions::prelude::*;
+use radix_transactions::validation::TransactionValidator;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
     let mut substate_db = InMemorySubstateDatabase::standard();
+    let network = NetworkDefinition::simulator();
     let vm_modules = VmModules::default();
-    ProtocolBuilder::for_simulator()
+    ProtocolBuilder::for_network(&network)
         .from_bootstrap_to_latest()
         .commit_each_protocol_update(&mut substate_db);
+    let validator = TransactionValidator::new(&substate_db, &network);
 
     // Create a key pair
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -41,9 +44,8 @@ fn bench_transfer(c: &mut Criterion) {
                     1,
                     btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
                 )
-                .prepare()
-                .unwrap()
-                .get_executable(),
+                .into_executable(&validator)
+                .unwrap(),
             )
             .expect_commit(true)
             .new_component_addresses()[0];
@@ -71,9 +73,8 @@ fn bench_transfer(c: &mut Criterion) {
                 nonce,
                 btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
             )
-            .prepare()
-            .unwrap()
-            .get_executable(),
+            .into_executable(&validator)
+            .unwrap(),
         )
         .expect_commit(true);
     }
@@ -98,9 +99,8 @@ fn bench_transfer(c: &mut Criterion) {
                     nonce,
                     btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
                 )
-                .prepare()
-                .unwrap()
-                .get_executable(),
+                .into_executable(&validator)
+                .unwrap(),
             );
             receipt.expect_commit_success();
             nonce += 1;

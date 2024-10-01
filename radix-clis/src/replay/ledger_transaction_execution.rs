@@ -39,33 +39,17 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
     database: &S,
     vm_modules: &impl VmInitialize,
     network: &NetworkDefinition,
-    tx_payload: &[u8],
+    raw: &RawLedgerTransaction,
     trace: bool,
-) -> StateUpdates {
-    let prepared = prepare_ledger_transaction(tx_payload);
-    execute_prepared_ledger_transaction(database, vm_modules, network, &prepared, trace)
-        .into_state_updates()
-}
+) -> (ValidatedLedgerTransaction, LedgerTransactionReceipt) {
+    let validator = TransactionValidator::new(database, network);
+    let validated = raw
+        .validate(&validator, AcceptedLedgerTransactionKind::Any)
+        .expect("Ledger transaction should be valid");
 
-pub fn prepare_ledger_transaction(tx_payload: &[u8]) -> PreparedLedgerTransaction {
-    let transaction =
-        LedgerTransaction::from_payload_bytes(&tx_payload).expect("Failed to decode transaction");
-    let prepared = transaction
-        .prepare()
-        .expect("Failed to prepare transaction");
-    prepared
-}
-
-pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
-    database: &S,
-    vm_modules: &impl VmInitialize,
-    network: &NetworkDefinition,
-    prepared: &PreparedLedgerTransaction,
-    trace: bool,
-) -> LedgerTransactionReceipt {
-    match &prepared.inner {
-        PreparedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
-            match prepared_genesis_tx.as_ref() {
+    let receipt = match &validated.inner {
+        ValidatedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
+            match prepared_genesis_tx {
                 PreparedGenesisTransaction::Flash(_) => {
                     let receipt = create_substate_flash_for_genesis();
                     LedgerTransactionReceipt::Flash(receipt)
@@ -83,21 +67,18 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 }
             }
         }
-        PreparedLedgerTransactionInner::UserV1(tx) => {
+        ValidatedLedgerTransactionInner::User(tx) => {
             let receipt = execute_transaction(
                 database,
                 vm_modules,
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
-                    .validate(tx.as_ref().clone())
-                    .expect("Transaction validation failure")
-                    .get_executable(),
+                tx.clone().create_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }
-        PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
+        ValidatedLedgerTransactionInner::Validator(tx) => {
             let receipt = execute_transaction(
                 database,
                 vm_modules,
@@ -108,22 +89,10 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
             );
             LedgerTransactionReceipt::Standard(receipt)
         }
-        PreparedLedgerTransactionInner::FlashV1(tx) => {
+        ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
             LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates.clone())
         }
-        PreparedLedgerTransactionInner::UserV2(tx) => {
-            let receipt = execute_transaction(
-                database,
-                vm_modules,
-                &ExecutionConfig::for_notarized_transaction(network.clone())
-                    .with_kernel_trace(trace)
-                    .with_cost_breakdown(trace),
-                NotarizedTransactionValidatorV2::new(ValidationConfig::default(network.id))
-                    .validate(tx.as_ref().clone())
-                    .expect("Transaction validation failure")
-                    .get_executable(),
-            );
-            LedgerTransactionReceipt::Standard(receipt)
-        }
-    }
+    };
+
+    (validated, receipt)
 }

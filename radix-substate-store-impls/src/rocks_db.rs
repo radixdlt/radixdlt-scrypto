@@ -43,7 +43,7 @@ impl RocksdbSubstateStore {
 }
 
 impl SubstateDatabase for RocksdbSubstateStore {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -52,7 +52,7 @@ impl SubstateDatabase for RocksdbSubstateStore {
         self.db.get_cf(self.cf(), &key_bytes).expect("IO Error")
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,

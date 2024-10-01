@@ -23,8 +23,6 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 
 use crate::sdk::PackageFactory;
@@ -112,9 +110,7 @@ where
             /* Global references found in the NodeKeys */
             .add_global_references(
                 database_updates
-                    .node_updates
-                    .keys()
-                    .map(SpreadPrefixKeyMapper::from_db_node_key)
+                    .node_ids()
                     .filter_map(|item| GlobalAddress::try_from(item).ok()),
             )
             /* Global references found in the Substate Values */
@@ -204,6 +200,9 @@ where
             self.database.commit(&database_updates);
         }
 
+        // Getting the kernel boot to use for the kernel creation.
+        let kernel_boot = KernelBoot::load(&self.database);
+
         let mut env = TestEnvironment(EncapsulatedRadixEngine::create(
             self.database,
             scrypto_vm,
@@ -211,18 +210,7 @@ where
             id_allocator,
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
-                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    BOOT_LOADER_PARTITION,
-                );
-                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
-                    BOOT_LOADER_VM_BOOT_FIELD_KEY,
-                ));
-
-                let vm_boot = database
-                    .get_substate(&db_partition_key, &db_sort_key)
-                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or(VmBoot::babylon());
+                let vm_boot = VmBoot::load(database);
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),
@@ -245,17 +233,14 @@ where
                     on_apply_cost: Default::default(),
                 };
 
-                System {
-                    versioned_system_logic: VersionedSystemLogic::V1,
-                    blueprint_cache: NonIterMap::new(),
-                    auth_cache: NonIterMap::new(),
-                    schema_cache: NonIterMap::new(),
-                    callback: Vm {
+                System::new(
+                    SystemVersion::latest(),
+                    Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
                         vm_boot,
                     },
-                    modules: SystemModuleMixer::new(
+                    SystemModuleMixer::new(
                         EnabledModules::LIMITS
                             | EnabledModules::AUTH
                             | EnabledModules::TRANSACTION_RUNTIME,
@@ -266,8 +251,8 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    finalization: Default::default(),
-                }
+                    SystemFinalization::no_nullifications(),
+                )
             },
             |system_config, track, id_allocator| {
                 Kernel::kernel_create_kernel_for_testing(
@@ -283,6 +268,7 @@ where
                     },
                     id_allocator,
                     system_config,
+                    kernel_boot.always_visible_global_nodes(),
                 )
             },
         ));
@@ -424,7 +410,7 @@ impl FlashSubstateDatabase {
 }
 
 impl SubstateDatabase for FlashSubstateDatabase {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -435,7 +421,7 @@ impl SubstateDatabase for FlashSubstateDatabase {
             .cloned()
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,

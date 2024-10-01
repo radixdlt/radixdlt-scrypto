@@ -1,11 +1,9 @@
-use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_engine::vm::NoExtension;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
-use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use radix_transaction_scenarios::executor::*;
 use radix_transactions::builder::*;
@@ -35,7 +33,7 @@ fn substates_written_to_root_database_can_be_read() {
     let db = SubstateDatabaseOverlay::new_unmergeable(&root);
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -70,7 +68,7 @@ fn substates_written_to_overlay_can_be_read_later() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -118,7 +116,7 @@ fn substate_deletes_to_overlay_prevent_substate_from_being_read() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -164,7 +162,7 @@ fn partition_deletes_to_overlay_prevent_substate_from_being_read() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -212,7 +210,7 @@ fn partition_resets_to_overlay_return_new_substate_data() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -271,7 +269,7 @@ fn partition_resets_are_not_combined() {
     });
 
     // Act
-    let substate = db.get_substate(
+    let substate = db.get_raw_substate_by_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -306,7 +304,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_reset_mode() 
     });
 
     // Act
-    let mut substates = db.list_entries_from(
+    let mut substates = db.list_raw_values_from_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -350,7 +348,7 @@ fn from_sort_key_in_list_entries_from_works_when_the_overlay_is_in_delta_mode() 
     });
 
     // Act
-    let mut substates = db.list_entries_from(
+    let mut substates = db.list_raw_values_from_db_key(
         &DbPartitionKey {
             node_key: b"some-node".to_vec(),
             partition_num: 0,
@@ -441,16 +439,9 @@ fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>
     database: &D,
 ) -> Hash {
     let mut accumulator_hash = Hash([0; 32]);
-    let reader = SystemDatabaseReader::new(database);
-    for (node_id, partition_number) in reader.partitions_iter() {
-        let db_node_key = SpreadPrefixKeyMapper::to_db_node_key(&node_id);
-        let db_partition_key = DbPartitionKey {
-            node_key: db_node_key,
-            partition_num: partition_number.0,
-        };
-
+    for (node_id, partition_number) in database.read_partition_keys() {
         for (substate_key, substate_value) in
-            SubstateDatabase::list_entries(database, &db_partition_key)
+            database.list_raw_values(node_id, partition_number, None::<SubstateKey>)
         {
             let entry_hash = hash(
                 scrypto_encode(&(node_id, partition_number, substate_key, substate_value)).unwrap(),
@@ -505,11 +496,69 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
             let database_updates = receipt
                 .expect_commit_success()
                 .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>();
+                .create_database_updates();
             self.ledger_with_overlay
                 .borrow_mut()
                 .substate_db_mut()
                 .commit(&database_updates);
+        }
+
+        fn on_transaction_batch_committed(&mut self, event: OnProtocolTransactionBatchCommitted) {
+            let OnProtocolTransactionBatchCommitted {
+                status_update_committed,
+                protocol_version,
+                batch_group_index,
+                batch_index,
+                ..
+            } = event;
+            if status_update_committed {
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .substate_db_mut()
+                    .update_substate(
+                        TRANSACTION_TRACKER,
+                        PROTOCOL_UPDATE_STATUS_PARTITION,
+                        ProtocolUpdateStatusField::Summary,
+                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                            ProtocolUpdateStatusSummaryV1 {
+                                protocol_version: protocol_version,
+                                update_status: ProtocolUpdateStatus::InProgress {
+                                    latest_commit: LatestProtocolUpdateCommitBatch {
+                                        batch_group_index,
+                                        batch_index,
+                                    },
+                                },
+                            },
+                        ),
+                    );
+            }
+        }
+
+        fn on_protocol_update_completed(&mut self, event: OnProtocolUpdateCompleted) {
+            let OnProtocolUpdateCompleted {
+                protocol_version,
+                status_update_committed,
+                ..
+            } = event;
+            if status_update_committed {
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .substate_db_mut()
+                    .update_substate(
+                        TRANSACTION_TRACKER,
+                        PROTOCOL_UPDATE_STATUS_PARTITION,
+                        ProtocolUpdateStatusField::Summary,
+                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
+                            ProtocolUpdateStatusSummaryV1 {
+                                protocol_version: protocol_version,
+                                update_status: ProtocolUpdateStatus::Complete,
+                            },
+                        ),
+                    );
+                self.ledger_with_overlay
+                    .borrow_mut()
+                    .update_transaction_validator_after_manual_protocol_update();
+            }
         }
     }
 

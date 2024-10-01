@@ -19,12 +19,16 @@ pub struct TransactionManifestV2 {
 impl ReadableManifest for TransactionManifestV2 {
     type Instruction = InstructionV2;
 
+    fn is_subintent(&self) -> bool {
+        false
+    }
+
     fn get_instructions(&self) -> &[Self::Instruction] {
         &self.instructions
     }
 
-    fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+        self.blobs.iter()
     }
 
     fn get_child_subintents(&self) -> &[ChildSubintent] {
@@ -34,15 +38,7 @@ impl ReadableManifest for TransactionManifestV2 {
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
     }
-
-    fn validate(&self) -> Result<(), TransactionValidationError> {
-        temporary_noop_validate();
-        Ok(())
-    }
 }
-
-#[deprecated]
-fn temporary_noop_validate() {}
 
 impl BuildableManifest for TransactionManifestV2 {
     fn add_instruction(&mut self, instruction: Self::Instruction) {
@@ -60,6 +56,22 @@ impl BuildableManifest for TransactionManifestV2 {
     fn add_child_subintent(&mut self, hash: SubintentHash) -> Result<(), ManifestBuildError> {
         self.children.push(ChildSubintent { hash });
         Ok(())
+    }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        TestTransaction::new_v2_builder(nonce)
+            .finish_with_root_intent(self, initial_proofs)
+            .into_executable(validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
     }
 }
 
@@ -82,6 +94,19 @@ impl TransactionManifestV2 {
             ChildIntentsV2 {
                 children: self.children,
             },
+        )
+    }
+
+    pub fn for_intent_with_names(
+        self,
+    ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
+        (
+            InstructionsV2(Rc::new(self.instructions)),
+            self.blobs.into(),
+            ChildIntentsV2 {
+                children: self.children,
+            },
+            self.object_names,
         )
     }
 }

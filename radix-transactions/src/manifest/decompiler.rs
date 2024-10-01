@@ -112,6 +112,7 @@ pub fn decompile_any(
         AnyTransactionManifest::V1(m) => decompile(m, network),
         AnyTransactionManifest::SystemV1(m) => decompile(m, network),
         AnyTransactionManifest::V2(m) => decompile(m, network),
+        AnyTransactionManifest::SubintentV2(m) => decompile(m, network),
     }
 }
 

@@ -8,7 +8,6 @@ use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_engine_profiling::info_alloc::*;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::prelude::*;
 use std::fs::File;
@@ -121,16 +120,14 @@ impl TxnAllocDump {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let prepared = prepare_ledger_transaction(&tx_payload);
-
                 INFO_ALLOC.set_enable(true);
                 INFO_ALLOC.reset_counters();
 
-                let receipt = execute_prepared_ledger_transaction(
+                let (validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
-                    &prepared,
+                    &tx_payload,
                     trace,
                 );
 
@@ -141,12 +138,10 @@ impl TxnAllocDump {
                 let execution_cost_units = receipt
                     .fee_summary()
                     .map(|x| x.total_execution_cost_units_consumed.clone());
-                let database_updates = receipt
-                    .into_state_updates()
-                    .create_database_updates::<SpreadPrefixKeyMapper>();
+                let database_updates = receipt.into_state_updates().create_database_updates();
                 database.commit(&database_updates);
-                match prepared.inner {
-                    PreparedLedgerTransactionInner::UserV1(tx) => {
+                match validated.inner {
+                    ValidatedLedgerTransactionInner::User(tx) => {
                         if dump_user {
                             writeln!(
                                 output,
@@ -162,7 +157,7 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    PreparedLedgerTransactionInner::Genesis(tx) => {
+                    ValidatedLedgerTransactionInner::Genesis(tx) => {
                         if dump_genesis {
                             writeln!(
                                 output,
@@ -176,7 +171,7 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
+                    ValidatedLedgerTransactionInner::Validator(tx) => {
                         if dump_round {
                             writeln!(
                                 output,
@@ -190,29 +185,13 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    PreparedLedgerTransactionInner::FlashV1(tx) => {
+                    ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
                         if dump_round {
                             writeln!(
                                 output,
                                 "flash,{},{},{},{},{}",
                                 tx.summary.hash,
                                 execution_cost_units.unwrap_or_default(),
-                                heap_allocations_sum,
-                                heap_current_level,
-                                heap_peak_memory
-                            )
-                            .map_err(Error::IOError)?
-                        }
-                    }
-                    PreparedLedgerTransactionInner::UserV2(tx) => {
-                        if dump_user {
-                            writeln!(
-                                output,
-                                "user,{},{},{},{},{}",
-                                address_encoder
-                                    .encode(&tx.transaction_intent_hash())
-                                    .unwrap(),
-                                execution_cost_units.unwrap(),
                                 heap_allocations_sum,
                                 heap_current_level,
                                 heap_peak_memory

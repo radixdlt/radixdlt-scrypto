@@ -35,8 +35,7 @@ impl MultiThreadedTxnProcessor {
         let mut txn_processors = vec![];
 
         // Setup
-        let intents = executable.intents();
-        for (thread_id, intent) in intents.iter().enumerate() {
+        for (thread_id, intent) in executable.all_intents().enumerate() {
             api.kernel_switch_stack(thread_id)?;
 
             let mut system_service = SystemService::new(api);
@@ -71,7 +70,17 @@ impl MultiThreadedTxnProcessor {
                 &mut system_service,
             )?;
 
-            txn_processors.push((txn_processor, intent.children_intent_indices.clone()));
+            txn_processors.push((
+                txn_processor,
+                intent
+                    .children_subintent_indices
+                    .iter()
+                    .map(|index| {
+                        let thread_index = index.0 + 1;
+                        thread_index
+                    })
+                    .collect::<Vec<_>>(),
+            ));
         }
         Ok(Self {
             threads: txn_processors,
@@ -124,9 +133,10 @@ impl MultiThreadedTxnProcessor {
                     cur_thread = parent_stack.pop().unwrap();
                     passed_value = Some(value);
                 }
-                ResumeResult::Done => {
+                ResumeResult::Done(value) => {
                     if let Some(parent) = parent_stack.pop() {
                         cur_thread = parent;
+                        passed_value = Some(value);
                     } else {
                         break;
                     }

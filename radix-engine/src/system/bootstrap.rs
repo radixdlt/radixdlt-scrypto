@@ -27,9 +27,6 @@ use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedU
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 use radix_substate_store_interface::interface::*;
-use radix_substate_store_interface::{
-    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
-};
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
 
@@ -150,7 +147,7 @@ pub struct ManifestGenesisResource {
 // Various helper utilities for constructing and executing genesis
 //==========================================================================================
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone)]
 pub struct GenesisReceipts {
     pub system_flash_receipt: TransactionReceipt,
     pub system_bootstrap_receipt: TransactionReceipt,
@@ -196,7 +193,7 @@ impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
             receipt,
             ..
         } = event;
-        if protocol_version == ProtocolVersion::EARLIEST {
+        if protocol_version == ProtocolVersion::GENESIS {
             match batch_group_index {
                 0 => self.bootstrap_receipts.push(receipt.clone()),
                 1 => self.data_ingestion_receipts.push(receipt.clone()),
@@ -341,7 +338,7 @@ pub fn create_system_bootstrap_flash(
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
                 false,
-                &VmBoot::babylon(),
+                &VmBoot::babylon_genesis(),
             )
             .unwrap_or_else(|err| {
                 panic!(
@@ -399,7 +396,7 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         system_updates,
     });
     let flashed_db = FlashedSubstateDatabase {
-        flash_updates: state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
+        flash_updates: state_updates.create_database_updates(),
     };
     let mut substate_schema_mapper =
         SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
@@ -426,7 +423,7 @@ struct FlashedSubstateDatabase {
 }
 
 impl SubstateDatabase for FlashedSubstateDatabase {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -452,7 +449,7 @@ impl SubstateDatabase for FlashedSubstateDatabase {
             })
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
@@ -504,7 +501,7 @@ pub fn create_system_bootstrap_transaction(
 
     // XRD Token
     {
-        let xrd_reservation = manifest_builder.add_address_preallocation(
+        let xrd_reservation = manifest_builder.use_preallocated_address(
             XRD,
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -546,7 +543,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Package of Direct Caller
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             PACKAGE_OF_DIRECT_CALLER_RESOURCE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -582,7 +579,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Global Caller Resource
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             GLOBAL_CALLER_RESOURCE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -618,7 +615,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Owner Resource
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             PACKAGE_OWNER_BADGE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -654,7 +651,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Identity
     {
-        let badge_reservation = manifest_builder.add_address_preallocation(
+        let badge_reservation = manifest_builder.use_preallocated_address(
             IDENTITY_OWNER_BADGE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -687,7 +684,7 @@ pub fn create_system_bootstrap_transaction(
             },
         );
 
-        let package_reservation = manifest_builder.add_address_preallocation(
+        let package_reservation = manifest_builder.use_preallocated_address(
             IDENTITY_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -710,7 +707,7 @@ pub fn create_system_bootstrap_transaction(
 
     // ConsensusManager Package
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             CONSENSUS_MANAGER_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -733,7 +730,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Account Package
     {
-        let badge_reservation = manifest_builder.add_address_preallocation(
+        let badge_reservation = manifest_builder.use_preallocated_address(
             ACCOUNT_OWNER_BADGE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -769,7 +766,7 @@ pub fn create_system_bootstrap_transaction(
             },
         );
 
-        let package_reservation = manifest_builder.add_address_preallocation(
+        let package_reservation = manifest_builder.use_preallocated_address(
             ACCOUNT_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -792,7 +789,7 @@ pub fn create_system_bootstrap_transaction(
 
     // AccessController Package
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             ACCESS_CONTROLLER_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -815,7 +812,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Pool Package
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             POOL_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -838,7 +835,7 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA Secp256k1
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             SECP256K1_SIGNATURE_RESOURCE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -868,7 +865,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Ed25519
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             ED25519_SIGNATURE_RESOURCE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -898,7 +895,7 @@ pub fn create_system_bootstrap_transaction(
 
     // System Execution Resource
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             SYSTEM_EXECUTION_RESOURCE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -928,7 +925,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Faucet Package
     {
-        let reservation: ManifestAddressReservation = manifest_builder.add_address_preallocation(
+        let reservation: ManifestAddressReservation = manifest_builder.use_preallocated_address(
             FAUCET_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -947,7 +944,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             GENESIS_HELPER_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -966,12 +963,12 @@ pub fn create_system_bootstrap_transaction(
 
     // Create ConsensusManager
     {
-        let badge_reservation = manifest_builder.add_address_preallocation(
+        let badge_reservation = manifest_builder.use_preallocated_address(
             VALIDATOR_OWNER_BADGE,
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
         );
-        let manager_reservation = manifest_builder.add_address_preallocation(
+        let manager_reservation = manifest_builder.use_preallocated_address(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_PACKAGE,
             CONSENSUS_MANAGER_BLUEPRINT,
@@ -993,7 +990,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Create GenesisHelper
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             GENESIS_HELPER,
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
@@ -1012,7 +1009,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Transaction tracker package
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             TRANSACTION_TRACKER_PACKAGE,
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
@@ -1032,7 +1029,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Intent Hash Store component
     {
-        let reservation = manifest_builder.add_address_preallocation(
+        let reservation = manifest_builder.use_preallocated_address(
             TRANSACTION_TRACKER,
             TRANSACTION_TRACKER_PACKAGE,
             TRANSACTION_TRACKER_BLUEPRINT,
@@ -1050,7 +1047,7 @@ pub fn create_system_bootstrap_transaction(
     // transaction scenarios to be injected into the ledger in the node before genesis wrap-up occurs
     {
         let reservation =
-            manifest_builder.add_address_preallocation(FAUCET, FAUCET_PACKAGE, FAUCET_BLUEPRINT);
+            manifest_builder.use_preallocated_address(FAUCET, FAUCET_PACKAGE, FAUCET_BLUEPRINT);
         // Mint XRD for the faucet, and then deposit it into the new faucet
         // Note - on production environments, the faucet will be empty
         manifest_builder = manifest_builder
@@ -1094,7 +1091,7 @@ fn map_address_allocations_for_manifest(
             let resources = genesis_resources
                 .into_iter()
                 .map(|genesis_resource| ManifestGenesisResource {
-                    resource_address_reservation: manifest_builder.add_address_preallocation(
+                    resource_address_reservation: manifest_builder.use_preallocated_address(
                         genesis_resource.reserved_resource_address,
                         RESOURCE_PACKAGE,
                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

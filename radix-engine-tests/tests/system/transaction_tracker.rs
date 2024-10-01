@@ -3,7 +3,6 @@ use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::updates::BabylonSettings;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
-use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
 
 use radix_transactions::validation::*;
@@ -12,6 +11,7 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
+    let max_epoch_range = TransactionValidationConfig::latest().max_epoch_range;
     let genesis = BabylonSettings::test_default().with_consensus_manager_config(
         ConsensusManagerConfig::test_default().with_epoch_change_condition(EpochChangeCondition {
             min_round_count: rounds_per_epoch,
@@ -30,9 +30,14 @@ fn test_transaction_replay_protection() {
     // 1. Run a notarized transaction
     let transaction = create_notarized_transaction(TransactionParams {
         start_epoch_inclusive: init_epoch,
-        end_epoch_exclusive: init_epoch.after(MAX_EPOCH_RANGE).unwrap(),
+        end_epoch_exclusive: init_epoch.after(max_epoch_range).unwrap(),
     });
-    let validated = get_validated(&transaction).unwrap();
+
+    let validator = TransactionValidator::new_with_latest_config(&NetworkDefinition::simulator());
+    let validated = transaction
+        .prepare_and_validate(&validator)
+        .expect("Transaction should be validatable");
+
     let receipt = ledger.execute_transaction(
         validated.get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
@@ -41,7 +46,7 @@ fn test_transaction_replay_protection() {
 
     // 2. Force update the epoch (through database layer)
     let new_epoch = init_epoch
-        .after(MAX_EPOCH_RANGE)
+        .after(max_epoch_range)
         .unwrap()
         .previous()
         .unwrap();
@@ -91,14 +96,6 @@ fn test_transaction_replay_protection() {
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
-}
-
-fn get_validated(
-    transaction: &NotarizedTransactionV1,
-) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-
-    validator.validate(transaction.prepare().unwrap())
 }
 
 struct TransactionParams {

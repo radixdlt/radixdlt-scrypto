@@ -93,19 +93,16 @@ fn bench_transaction_validation(c: &mut Criterion) {
         )
         .notarize(&signer)
         .build();
-    let transaction_bytes = transaction.to_payload_bytes().unwrap();
-    println!("Transaction size: {} bytes", transaction_bytes.len());
+    let raw_transaction = transaction.to_raw().unwrap();
+    println!(
+        "Transaction size: {} bytes",
+        raw_transaction.as_slice().len()
+    );
 
-    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
+    let validator = TransactionValidator::new_for_latest_simulator();
 
     c.bench_function("transaction_validation::validate_manifest", |b| {
-        b.iter(|| {
-            black_box(
-                validator
-                    .validate_from_payload_bytes(&transaction_bytes)
-                    .unwrap(),
-            )
-        })
+        b.iter(|| black_box(raw_transaction.validate(&validator).unwrap()))
     });
 }
 

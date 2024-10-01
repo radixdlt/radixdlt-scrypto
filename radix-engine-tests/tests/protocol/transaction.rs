@@ -1,7 +1,3 @@
-use radix_common::prelude::*;
-use radix_engine::errors::*;
-use radix_engine::transaction::*;
-use radix_engine::updates::ProtocolVersion;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -13,28 +9,23 @@ fn bottlenose_protocol_should_not_support_v2_transactions() {
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let intents = (0..2)
-        .into_iter()
-        .map(|_| {
-            let manifest = ManifestBuilder::new_v2()
-                .lock_standard_test_fee(account)
-                .build();
-            (
-                manifest,
-                ledger.next_transaction_nonce(),
-                vec![],
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-            )
-        })
-        .collect();
-    let receipt = ledger.execute_transaction(
-        TestTransaction::new_v2_from_nonce(intents)
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(),
-        ExecutionConfig::for_test_transaction(),
+    let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+    let child_one = builder.add_subintent(
+        ManifestBuilder::new_subintent_v2()
+            .yield_to_parent(())
+            .build(),
+        [],
     );
+    let transaction = builder.finish_with_root_intent(
+        ManifestBuilder::new_v2()
+            .use_child("child", child_one)
+            .lock_standard_test_fee(account)
+            .yield_to_child("child", ())
+            .build(),
+        [public_key.signature_proof()],
+    );
+    let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
-    receipt.expect_specific_rejection(|e| matches!(e, RejectionReason::TransactionNotYetSupported));
+    receipt.expect_specific_rejection(|e| matches!(e, RejectionReason::SubintentsNotYetSupported));
 }

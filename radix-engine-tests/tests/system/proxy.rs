@@ -110,7 +110,7 @@ fn get_price_in_oracle_directly(
     ledger: &mut DefaultLedgerSimulator,
     oracle_address: ComponentAddress,
     resources: &IndexMap<String, ResourceAddress>,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -131,7 +131,7 @@ fn get_price_in_oracle_via_oracle_proxy(
     ledger: &mut DefaultLedgerSimulator,
     proxy_address: ComponentAddress,
     resources: &IndexMap<String, ResourceAddress>,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -259,7 +259,7 @@ fn get_price_in_oracle_via_generic_proxy(
     ledger: &mut DefaultLedgerSimulator,
     proxy_address: ComponentAddress,
     resources: &IndexMap<String, ResourceAddress>,
-) -> TransactionReceiptV1 {
+) -> TransactionReceipt {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(

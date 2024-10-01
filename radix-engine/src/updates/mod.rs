@@ -155,6 +155,10 @@ impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
 // TODO AFTER MERGE WITH NODE: Merge with UpdateBatchGenerator
 /// This must be stateless, to allow the update to be resumed.
 pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
+    fn status_tracking_enabled(&self) -> bool {
+        true
+    }
+
     /// Generate a batch of transactions to be committed atomically with a proof.
     /// *Panics* if the given batch index is outside the range (see [`Self::batch_count()`]).
     ///
@@ -204,5 +208,27 @@ where
 impl Clone for Box<dyn ProtocolUpdateBatchGenerator> {
     fn clone(&self) -> Box<dyn ProtocolUpdateBatchGenerator> {
         self.clone_box()
+    }
+}
+
+#[derive(Clone)]
+struct NoOpBatchGenerator;
+
+impl ProtocolUpdateBatchGenerator for NoOpBatchGenerator {
+    fn generate_batch(
+        &self,
+        _store: &dyn SubstateDatabase,
+        _batch_group_index: usize,
+        _batch_index: usize,
+    ) -> ProtocolUpdateBatch {
+        panic!("This should not be called because batch_group_descriptors is empty")
+    }
+
+    fn batch_group_descriptors(&self) -> Vec<String> {
+        vec![]
+    }
+
+    fn batch_count(&self, _batch_group_index: usize) -> usize {
+        0
     }
 }

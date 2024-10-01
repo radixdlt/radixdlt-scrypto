@@ -69,6 +69,7 @@ use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
 use radix_transactions::manifest::decompile;
 use radix_transactions::prelude::*;
+use radix_transactions::validation::TransactionValidator;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -156,6 +157,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     let nonce = get_nonce()?;
     let unique_hash = hash(format!("Simulator system transaction: {}", nonce));
     let transaction = manifest.into_transaction(unique_hash);
+    let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
 
     let receipt = execute_and_commit_transaction(
         &mut db,
@@ -163,9 +165,9 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
         transaction
-            .prepare()
-            .map_err(Error::TransactionPrepareError)?
-            .get_executable(initial_proofs),
+            .with_proofs(initial_proofs)
+            .into_executable(&validator)
+            .map_err(Error::TransactionPrepareError)?,
     );
 
     if print_receipt {
@@ -222,6 +224,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
+            let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
             let transaction = TestTransaction::new_v1_from_nonce(manifest, nonce, initial_proofs);
 
             let receipt = execute_and_commit_transaction(
@@ -229,9 +232,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 &vm_modules,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 transaction
-                    .prepare()
-                    .map_err(Error::TransactionPrepareError)?
-                    .get_executable(),
+                    .into_executable(&validator)
+                    .map_err(Error::TransactionPrepareError)?,
             );
 
             if print_receipt {

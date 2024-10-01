@@ -433,10 +433,14 @@ fn can_return_locked_bucket() {
 
 #[test]
 fn can_pass_locked_bucket_into_method_call_and_back() {
-    // This method demonstrates the surprising number of things you can do with a locked bucket,
-    // whilst there is an outstanding proof against the bucket.
+    // This method demonstrates the surprising number of things you can do with a locked bucket
+    // in the engine, whilst there is an outstanding proof against the bucket.
     //
-    // Instead, the main protection mechanisms are currently three-fold:
+    // At validation time:
+    // * The transaction validator prevents this for user transactions (but doesn't run for test transactions)
+    // * We have to use `build_no_validate()` in the manifest builder to avoid its auto-validation on build
+    //
+    // At runtime, the main protection mechanisms are currently three-fold:
     // * An error when passing non-global-non-direct-references via argument payloads, meaning the
     //   only way to pass references is on substates of owned objects.
     //   See `test_send_and_receive_reference_from_child_call_frame` in `references.rs`
@@ -466,53 +470,55 @@ fn can_pass_locked_bucket_into_method_call_and_back() {
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let builder = ManifestBuilder::new();
+    let lookup = builder.name_lookup();
+    let manifest = builder
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!(1))
         .take_all_from_worktop(resource_address, "bucket1")
         .create_proof_from_bucket_of_all("bucket1", "proof1_for_holding")
         .create_proof_from_bucket_of_all("bucket1", "proof1_for_auth_zone")
         .push_to_auth_zone("proof1_for_auth_zone")
-        .call_function_with_name_lookup(
+        .call_function(
             package_address,
             "BucketProof",
             "check_balance_and_bounce",
-            |lookup| manifest_args!(lookup.bucket("bucket1"), dec!(1)),
+            (lookup.bucket("bucket1"), dec!(1)),
         )
         .take_all_from_worktop(resource_address, "bucket2")
         .create_proof_from_bucket_of_all("bucket2", "proof2_for_holding")
         .create_proof_from_bucket_of_all("bucket2", "proof2_for_auth_zone")
         .push_to_auth_zone("proof2_for_auth_zone")
-        .call_function_with_name_lookup(
+        .call_function(
             package_address,
             "BucketProof",
             "check_balance_and_bounce",
-            |lookup| manifest_args!(lookup.bucket("bucket2"), dec!(1)),
+            (lookup.bucket("bucket2"), dec!(1)),
         )
         // Now we check the proofs
-        .call_function_with_name_lookup(
+        .call_function(
             package_address,
             "BucketProof",
             "check_proof_amount_and_drop",
-            |lookup| manifest_args!(lookup.proof("proof1_for_holding"), dec!(1)),
+            (lookup.proof("proof1_for_holding"), dec!(1)),
         )
-        .call_function_with_name_lookup(
+        .call_function(
             package_address,
             "BucketProof",
             "check_proof_amount_and_drop",
-            |lookup| manifest_args!(lookup.proof("proof2_for_holding"), dec!(1)),
+            (lookup.proof("proof2_for_holding"), dec!(1)),
         )
         // Create composite proof -- note this proof is just of the single bucket (going by two names), so has a total of 1
         .create_proof_from_auth_zone_of_all(resource_address, "proof_total")
-        .call_function_with_name_lookup(
+        .call_function(
             package_address,
             "BucketProof",
             "check_proof_amount_and_drop",
-            |lookup| manifest_args!(lookup.proof("proof_total"), dec!(1)),
+            (lookup.proof("proof_total"), dec!(1)),
         )
         .drop_auth_zone_proofs()
         .try_deposit_entire_worktop_or_abort(account, None)
-        .build();
+        .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

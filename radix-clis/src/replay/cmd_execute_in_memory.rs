@@ -8,7 +8,6 @@ use radix_common::prelude::*;
 use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
 use std::fs::File;
 use std::path::PathBuf;
@@ -88,15 +87,15 @@ impl TxnExecuteInMemory {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let state_updates = execute_ledger_transaction(
+                let (_validated, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
                     &tx_payload,
                     trace,
                 );
-                let database_updates =
-                    state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                let state_updates = receipt.into_state_updates();
+                let database_updates = state_updates.create_database_updates();
                 database.commit(&database_updates);
 
                 let new_state_root_hash = database.get_current_root_hash();

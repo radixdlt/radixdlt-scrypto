@@ -37,8 +37,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
-pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
-
 enum ActorStateRef {
     SELF,
     OuterObject,
@@ -2979,7 +2977,7 @@ impl<'a, Y: SystemBasedKernelApi> KernelSubstateApi<SystemLockData> for SystemSe
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2989,7 +2987,7 @@ impl<'a, Y: SystemBasedKernelApi> KernelSubstateApi<SystemLockData> for SystemSe
             .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

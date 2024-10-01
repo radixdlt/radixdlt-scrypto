@@ -370,7 +370,7 @@ impl ManifestNamerCore {
         match self.named_intents.get(name.as_ref()) {
             Some(ManifestObjectState::Present(id)) => *id,
             Some(ManifestObjectState::Consumed) => unreachable!("Intent binding has already been consumed"),
-            _ => panic!("You cannot reference an intent with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
+            _ => panic!("You cannot reference an intent with name \"{}\" before it has been created with a relevant instruction in the manifest builder, or parent transaction builder", name.as_ref()),
         }
     }
 
@@ -978,6 +978,24 @@ pub trait ResolvableComponentAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
 }
 
+impl<'a> ResolvableComponentAddress for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvableComponentAddress for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvableComponentAddress for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
 impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
         let address = self
@@ -1013,6 +1031,24 @@ impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResource
     }
 }
 
+impl<'a> ResolvableResourceAddress for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvableResourceAddress for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvableResourceAddress for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
 pub trait ResolvablePackageAddress: Sized {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
 
@@ -1038,6 +1074,24 @@ impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAd
     }
 }
 
+impl<'a> ResolvablePackageAddress for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvablePackageAddress for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
+impl<'a> ResolvablePackageAddress for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
+        registrar.name_lookup().named_address_id(self).into()
+    }
+}
+
 pub trait ResolvableGlobalAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
 }
@@ -1052,89 +1106,21 @@ impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddr
     }
 }
 
-//=====================
-// TRANSACTION SIGNATURES
-//=====================
-
-/// This is created so that you can put TransactionSignatures::None in your LedgerSimulator
-/// Because [] can't resolve the correct generic when used as a trait impl
-pub enum TransactionSignatures {
-    None,
-    Some(Vec<NonFungibleGlobalId>),
-}
-
-pub trait ResolvableTransactionSignatures {
-    fn resolve(self) -> Vec<NonFungibleGlobalId>;
-}
-
-impl ResolvableTransactionSignatures for TransactionSignatures {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        match self {
-            TransactionSignatures::None => vec![],
-            TransactionSignatures::Some(signatures) => signatures,
-        }
+impl<'a> ResolvableGlobalAddress for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
+        registrar.name_lookup().named_address_id(self).into()
     }
 }
 
-impl ResolvableTransactionSignatures for Vec<NonFungibleGlobalId> {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self
+impl<'a> ResolvableGlobalAddress for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
+        registrar.name_lookup().named_address_id(self).into()
     }
 }
 
-impl<const N: usize> ResolvableTransactionSignatures for [NonFungibleGlobalId; N] {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self.into()
-    }
-}
-
-impl ResolvableTransactionSignatures for NonFungibleGlobalId {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        vec![self]
-    }
-}
-
-impl ResolvableTransactionSignatures for Vec<PublicKey> {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self.into_iter()
-            .map(|key| NonFungibleGlobalId::from_public_key(&key))
-            .collect()
-    }
-}
-
-impl<const N: usize> ResolvableTransactionSignatures for [PublicKey; N] {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self.into_iter()
-            .map(|key| NonFungibleGlobalId::from_public_key(&key))
-            .collect()
-    }
-}
-
-impl ResolvableTransactionSignatures for PublicKey {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        vec![NonFungibleGlobalId::from_public_key(&self)]
-    }
-}
-
-impl ResolvableTransactionSignatures for Vec<PublicKeyHash> {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self.into_iter()
-            .map(|key_hash| NonFungibleGlobalId::from_public_key_hash(key_hash))
-            .collect()
-    }
-}
-
-impl<const N: usize> ResolvableTransactionSignatures for [PublicKeyHash; N] {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        self.into_iter()
-            .map(|key_hash| NonFungibleGlobalId::from_public_key_hash(key_hash))
-            .collect()
-    }
-}
-
-impl ResolvableTransactionSignatures for PublicKeyHash {
-    fn resolve(self) -> Vec<NonFungibleGlobalId> {
-        vec![NonFungibleGlobalId::from_public_key_hash(self)]
+impl<'a> ResolvableGlobalAddress for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
+        registrar.name_lookup().named_address_id(self).into()
     }
 }
 

@@ -34,6 +34,7 @@ pub use radix_engine::system::system_modules::*;
 pub use radix_engine::system::system_substates::*;
 pub use radix_engine::track::*;
 pub use radix_engine::transaction::*;
+pub use radix_engine::updates::*;
 pub use radix_engine::utils::*;
 pub use radix_engine::vm::wasm::*;
 pub use radix_engine::vm::*;
@@ -86,6 +87,7 @@ pub use sbor::*;
 /* Types */
 pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
+pub use radix_transactions::manifest::ReadableManifest;
 pub use radix_transactions::prelude::*;
 
 /* Scrypto exports which don't clash with this crate's */

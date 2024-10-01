@@ -12,6 +12,7 @@ pub enum AnyTransactionManifest {
     V1(TransactionManifestV1),
     SystemV1(SystemTransactionManifestV1),
     V2(TransactionManifestV2),
+    SubintentV2(SubintentManifestV2),
 }
 
 impl From<TransactionManifestV1> for AnyTransactionManifest {
@@ -32,12 +33,19 @@ impl From<TransactionManifestV2> for AnyTransactionManifest {
     }
 }
 
+impl From<SubintentManifestV2> for AnyTransactionManifest {
+    fn from(value: SubintentManifestV2) -> Self {
+        Self::SubintentV2(value)
+    }
+}
+
 impl AnyTransactionManifest {
-    pub fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
+    pub fn get_blobs<'a>(&'a self) -> Box<dyn Iterator<Item = (&'a Hash, &'a Vec<u8>)> + 'a> {
         match self {
-            AnyTransactionManifest::V1(m) => m.get_blobs(),
-            AnyTransactionManifest::SystemV1(m) => m.get_blobs(),
-            AnyTransactionManifest::V2(m) => m.get_blobs(),
+            AnyTransactionManifest::V1(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::SystemV1(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::V2(m) => Box::new(m.get_blobs()),
+            AnyTransactionManifest::SubintentV2(m) => Box::new(m.get_blobs()),
         }
     }
 }

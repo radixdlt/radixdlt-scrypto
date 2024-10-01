@@ -13,7 +13,7 @@ use crate::internal_prelude::*;
 pub struct IntentCoreV2 {
     pub header: IntentHeaderV2,
     pub blobs: BlobsV1,
-    pub message: MessageV2, // Increase size of the key
+    pub message: MessageV2,
     pub children: ChildIntentsV2,
     pub instructions: InstructionsV2,
 }
@@ -36,6 +36,9 @@ impl_has_summary!(PreparedIntentCoreV2);
 
 impl TransactionPreparableFromValueBody for PreparedIntentCoreV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        if !decoder.settings().v2_transactions_permitted {
+            return Err(PrepareError::TransactionTypeNotSupported);
+        }
         // When embedded as an child, it's SBOR encoded as a struct
         let ((header, blobs, message, children, instructions), summary) =
             ConcatenatedDigest::prepare_from_sbor_tuple_value_body(decoder)?;

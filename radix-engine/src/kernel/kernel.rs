@@ -11,7 +11,7 @@ use crate::track::interface::*;
 use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
-use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use sbor::rust::mem;
 
@@ -27,73 +27,127 @@ macro_rules! as_read_only {
     }};
 }
 
-pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
-
 pub type KernelBootSubstate = KernelBoot;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(
+    cuttlefish = "FILE:kernel_boot_substate_cuttlefish_schema.bin",
+))]
 pub enum KernelBoot {
     V1,
+    V2(AlwaysVisibleGlobalNodesVersion),
 }
 
 impl KernelBoot {
+    /// Loads kernel boot from the database, or resolves a fallback.
+    pub fn load(substate_db: &impl SubstateDatabase) -> Self {
+        substate_db
+            .get_substate(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BootLoaderField::KernelBoot,
+            )
+            .unwrap_or_else(|| KernelBoot::babylon())
+    }
+
     pub fn babylon() -> Self {
         Self::V1
+    }
+
+    pub fn cuttlefish() -> Self {
+        Self::V2(AlwaysVisibleGlobalNodesVersion::V2)
+    }
+
+    pub fn always_visible_global_nodes_version(&self) -> AlwaysVisibleGlobalNodesVersion {
+        match self {
+            KernelBoot::V1 => AlwaysVisibleGlobalNodesVersion::V1,
+            KernelBoot::V2(version) => *version,
+        }
+    }
+
+    pub fn always_visible_global_nodes(&self) -> &'static IndexSet<NodeId> {
+        always_visible_global_nodes(self.always_visible_global_nodes_version())
+    }
+}
+
+pub struct KernelInit<
+    's,
+    S: SubstateDatabase,
+    I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+> {
+    substate_db: &'s S,
+    kernel_boot: KernelBoot,
+    callback_init: I,
+}
+
+impl<
+        's,
+        S: SubstateDatabase,
+        I: InitializationParameters<For: KernelTransactionExecutor<Init = I>>,
+    > KernelInit<'s, S, I>
+{
+    pub fn load(substate_db: &'s S, callback_init: I) -> Self {
+        let kernel_boot = KernelBoot::load(substate_db);
+        Self {
+            substate_db,
+            kernel_boot,
+            callback_init,
+        }
+    }
+
+    /// Executes a transaction
+    pub fn execute(
+        self,
+        executable: <I::For as KernelTransactionExecutor>::Executable,
+    ) -> <I::For as KernelTransactionExecutor>::Receipt {
+        let boot_loader = BootLoader {
+            id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
+            track: Track::new(self.substate_db),
+        };
+
+        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+        {
+            boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable)
+        }
+
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        {
+            use crate::kernel::resources_tracker::ResourcesTracker;
+
+            let mut resources_tracker = ResourcesTracker::start_measurement();
+            let mut receipt =
+                boot_loader.execute::<I::For>(self.kernel_boot, self.callback_init, executable);
+            receipt.set_resource_usage(resources_tracker.end_measurement());
+            receipt
+        }
     }
 }
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
-    pub id_allocator: IdAllocator,
-    pub track: Track<'h, S, SpreadPrefixKeyMapper>,
-    pub init: M::Init,
-    pub phantom: PhantomData<M>,
+pub struct BootLoader<'h, S: SubstateDatabase> {
+    id_allocator: IdAllocator,
+    track: Track<'h, S>,
 }
 
-impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
-    /// Executes a transaction
-    pub fn execute(self, executable: M::Executable) -> M::Receipt {
-        // Start hardware resource usage tracker
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker =
-            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
-
-        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-        {
-            self.execute_internal(executable)
-        }
-
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        {
-            let mut receipt = self.execute_internal(executable);
-
-            // Stop hardware resource usage tracker
-            receipt.set_resource_usage(resources_tracker.end_measurement());
-
-            receipt
-        }
-    }
-
-    fn execute_internal(mut self, executable: M::Executable) -> M::Receipt {
+impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
+    fn execute<E: KernelTransactionExecutor>(
+        mut self,
+        kernel_boot: KernelBoot,
+        callback_init: E::Init,
+        executable: E::Executable,
+    ) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
-        // Read kernel boot configuration
-        // Unused for now
-        let _kernel_boot: KernelBoot = self
-            .track
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(KernelBoot::babylon());
-
         // Upper Layer Initialization
-        let system_init_result = M::init(&mut self.track, &executable, self.init.clone());
+        let system_init_result = E::init(
+            &mut self.track,
+            &executable,
+            callback_init,
+            kernel_boot.always_visible_global_nodes(),
+        );
 
         let (mut system, call_frame_inits) = match system_init_result {
             Ok(success) => success,
@@ -109,9 +163,9 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         );
 
         // Execution
-        let result = || -> Result<M::ExecutionOutput, RuntimeError> {
+        let result = || -> Result<E::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel, executable)?;
+            let output = E::execute(&mut kernel, executable)?;
 
             // Sanity check call frame
             for stack in &kernel.stacks.stacks {
@@ -123,7 +177,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
 
             // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-            kernel.callback.finish(commit_info)?;
+            kernel.callback.finalize(commit_info)?;
 
             Ok(output)
         }()
@@ -272,11 +326,9 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
-impl<
-        'g,
-        M: KernelCallbackObject<CallFrameData: Default>,
-        S: CommitableSubstateStore + BootStore,
-    > Kernel<'g, M, S>
+#[cfg(feature = "radix_engine_tests")]
+impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateStore>
+    Kernel<'g, M, S>
 {
     pub fn new_no_refs(
         store: &'g mut S,
@@ -291,12 +343,15 @@ impl<
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
+                always_visible_global_nodes: always_visible_global_nodes(
+                    AlwaysVisibleGlobalNodesVersion::latest(),
+                ),
             }],
         )
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
@@ -960,7 +1015,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -997,7 +1052,7 @@ where
     }
 
     #[trace_resources(log=limit)]
-    fn kernel_drain_substates<K: SubstateKeyContent + 'static>(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1221,12 +1276,14 @@ where
         substate_io: SubstateIO<'g, S>,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Kernel<'g, M, S> {
         Self {
             stacks: KernelStacks::new(vec![CallFrameInit {
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
+                always_visible_global_nodes,
             }]),
             substate_io,
             id_allocator,

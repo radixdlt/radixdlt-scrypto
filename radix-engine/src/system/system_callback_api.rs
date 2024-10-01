@@ -2,17 +2,16 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::*;
-use crate::track::BootStore;
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageExport;
 
 /// Callback object invoked by the system layer
 pub trait SystemCallbackObject: Sized {
     /// Initialization Object
-    type Init: Clone;
+    type Init: InitializationParameters<For = Self>;
 
     /// Initialize and create the callback object above the system
-    fn init<S: BootStore>(store: &S, init_input: Self::Init) -> Result<Self, BootloadingError>;
+    fn init(init_input: Self::Init) -> Result<Self, BootloadingError>;
 
     /// Invoke a function
     fn invoke<

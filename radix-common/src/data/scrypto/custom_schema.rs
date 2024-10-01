@@ -4,12 +4,26 @@ pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
 pub type ScryptoLocalTypeKind = LocalTypeKind<ScryptoCustomSchema>;
 pub type ScryptoAggregatorTypeKind = AggregatorTypeKind<ScryptoCustomSchema>;
 pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
+pub type ScryptoSingleTypeSchema = SingleTypeSchema<ScryptoCustomSchema>;
+pub type ScryptoTypeCollectionSchema = TypeCollectionSchema<ScryptoCustomSchema>;
 pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 pub type ScryptoLocalTypeData = LocalTypeData<ScryptoCustomSchema>;
 pub type ScryptoAggregatorTypeData = AggregatorTypeData<ScryptoCustomSchema>;
 pub type ScryptoTypeValidation = TypeValidation<ScryptoCustomTypeValidation>;
 pub type ScryptoTypeAggregator = TypeAggregator<ScryptoCustomTypeKind>;
+
+pub trait ScryptoCheckedFixedSchema: CheckedFixedSchema<ScryptoCustomSchema> {}
+impl<T: CheckedFixedSchema<ScryptoCustomSchema>> ScryptoCheckedFixedSchema for T {}
+
+pub trait ScryptoCheckedBackwardsCompatibleSchema:
+    CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>
+{
+}
+impl<T: CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>>
+    ScryptoCheckedBackwardsCompatibleSchema for T
+{
+}
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]

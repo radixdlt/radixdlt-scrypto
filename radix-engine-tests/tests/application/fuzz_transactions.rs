@@ -5,11 +5,8 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
+use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::{
-    NotarizedTransactionValidatorV1, TransactionValidator, ValidationConfig,
-};
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -38,19 +35,11 @@ impl TransactionFuzzer {
     }
 
     fn execute_single_transaction(&mut self, transaction: NotarizedTransactionV1) {
-        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
-
-        let validated = validator
-            .validate(transaction.prepare().expect("transaction to be preparable"))
-            .expect("transaction to be validatable");
-
-        let execution_config = ExecutionConfig::for_test_transaction();
-
         execute_and_commit_transaction(
             &mut self.substate_db,
             &self.vm_modules,
-            &execution_config,
-            validated.get_executable(),
+            &ExecutionConfig::for_test_transaction(),
+            transaction.into_executable_unwrap(),
         );
     }
 

@@ -5,18 +5,22 @@ use sbor::*;
 pub enum HeaderValidationError {
     UnknownVersion(u8),
     InvalidEpochRange,
+    InvalidTimestampRange,
     InvalidNetwork,
     InvalidCostUnitLimit,
-    InvalidTipPercentage,
+    InvalidTip,
+    NoValidEpochRangeAcrossAllIntents,
+    NoValidTimestampRangeAcrossAllIntents,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
-    TooManySignatures,
+    TooManySignaturesForIntent,
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
     SerializationError(EncodeError),
+    IncorrectNumberOfSubintentSignatureBatches,
 }
 
 impl From<EncodeError> for SignatureValidationError {
@@ -36,21 +40,29 @@ pub enum ManifestIdValidationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CallDataValidationError {
-    DecodeError(DecodeError),
-    IdValidationError(ManifestIdValidationError),
+pub enum ManifestBasicValidatorError {
+    ManifestIdValidationError(ManifestIdValidationError),
+}
+
+impl From<ManifestIdValidationError> for ManifestBasicValidatorError {
+    fn from(value: ManifestIdValidationError) -> Self {
+        Self::ManifestIdValidationError(value)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
+    TransactionVersionNotPermitted(usize),
     TransactionTooLarge,
     EncodeError(EncodeError),
     PrepareError(PrepareError),
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
-    IdValidationError(ManifestIdValidationError),
-    CallDataValidationError(CallDataValidationError),
+    ManifestBasicValidatorError(ManifestBasicValidatorError),
+    ManifestValidationError(ManifestValidationError),
     InvalidMessage(InvalidMessageError),
+    SubintentError(SubintentValidationError),
+    Other(String),
 }
 
 impl From<PrepareError> for TransactionValidationError {
@@ -68,6 +80,36 @@ impl From<EncodeError> for TransactionValidationError {
 impl From<InvalidMessageError> for TransactionValidationError {
     fn from(value: InvalidMessageError) -> Self {
         Self::InvalidMessage(value)
+    }
+}
+
+impl From<SubintentValidationError> for TransactionValidationError {
+    fn from(value: SubintentValidationError) -> Self {
+        Self::SubintentError(value)
+    }
+}
+
+impl From<SignatureValidationError> for TransactionValidationError {
+    fn from(value: SignatureValidationError) -> Self {
+        Self::SignatureValidationError(value)
+    }
+}
+
+impl From<HeaderValidationError> for TransactionValidationError {
+    fn from(value: HeaderValidationError) -> Self {
+        Self::HeaderValidationError(value)
+    }
+}
+
+impl From<ManifestBasicValidatorError> for TransactionValidationError {
+    fn from(value: ManifestBasicValidatorError) -> Self {
+        Self::ManifestBasicValidatorError(value)
+    }
+}
+
+impl From<ManifestValidationError> for TransactionValidationError {
+    fn from(value: ManifestValidationError) -> Self {
+        Self::ManifestValidationError(value)
     }
 }
 
@@ -97,4 +139,15 @@ pub enum InvalidMessageError {
     NoDecryptorsForCurveType {
         curve_type: CurveType,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SubintentValidationError {
+    TooManySubintents { limit: usize, actual: usize },
+    DuplicateSubintent(SubintentHash),
+    SubintentHasMultipleParents(SubintentHash),
+    ChildSubintentNotIncludedInTransaction(SubintentHash),
+    SubintentExceedsMaxDepth(SubintentHash),
+    SubintentIsNotReachableFromTheTransactionIntent(SubintentHash),
+    MismatchingYieldChildAndYieldParentCountsForSubintent(SubintentHash),
 }

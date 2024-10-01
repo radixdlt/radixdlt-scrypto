@@ -10,6 +10,10 @@ pub trait HasPublicKeyHash {
     type TypedPublicKeyHash: IsPublicKeyHash;
 
     fn get_hash(&self) -> Self::TypedPublicKeyHash;
+
+    fn signature_proof(&self) -> NonFungibleGlobalId {
+        NonFungibleGlobalId::from_public_key_hash(self.get_hash())
+    }
 }
 
 pub trait IsPublicKeyHash: Copy {

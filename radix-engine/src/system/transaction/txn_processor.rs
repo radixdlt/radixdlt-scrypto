@@ -45,7 +45,7 @@ impl From<TransactionProcessorError> for RuntimeError {
 pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
-    Done,
+    Done(IndexedScryptoValue),
 }
 
 pub struct TxnProcessorThread<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
@@ -119,6 +119,8 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                 .handle_call_return_data(&received_value, &self.worktop, api)?;
         }
 
+        let mut done_return_value = None;
+
         while let Some(instruction) = self.instructions.pop_front() {
             api.update_instruction_index(self.instruction_index)?;
             let (output, yield_instruction) =
@@ -132,6 +134,12 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
                         IndexedScryptoValue::from_scrypto_value(value),
                     ),
                     Yield::ToParent(value) => {
+                        // Child subintents must end with a yield to parent
+                        if self.instructions.is_empty() {
+                            done_return_value = Some(IndexedScryptoValue::from_scrypto_value(value));
+                            break;
+                        }
+
                         ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(value))
                     }
                 };
@@ -140,8 +148,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> TxnProcessorThread
         }
 
         self.worktop.drop(api)?;
-
-        Ok(ResumeResult::Done)
+        Ok(ResumeResult::Done(done_return_value.unwrap_or(IndexedScryptoValue::unit())))
     }
 }
 

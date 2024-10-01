@@ -85,13 +85,16 @@ pub fn run() -> Result<(), String> {
                     }
                     VersionedTransactionPayload::SignedTransactionIntentV2(signed_intent) => {
                         TransactionManifestV2::from_intent_core(
-                            &signed_intent.root_intent.root_intent_core,
+                            &signed_intent.transaction_intent.root_intent_core,
                         )
                         .into()
                     }
                     VersionedTransactionPayload::NotarizedTransactionV2(notarized) => {
                         TransactionManifestV2::from_intent_core(
-                            &notarized.signed_intent.root_intent.root_intent_core,
+                            &notarized
+                                .signed_transaction_intent
+                                .transaction_intent
+                                .root_intent_core,
                         )
                         .into()
                     }

@@ -17,7 +17,6 @@ mod round_update_transaction;
 mod signed_intent;
 mod system_manifest_v1;
 mod system_transaction;
-mod test_transaction;
 mod validated_notarized_transaction;
 
 pub use blobs::*;
@@ -37,5 +36,4 @@ pub use round_update_transaction::*;
 pub use signed_intent::*;
 pub use system_manifest_v1::*;
 pub use system_transaction::*;
-pub use test_transaction::*;
 pub use validated_notarized_transaction::*;

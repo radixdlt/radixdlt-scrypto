@@ -82,7 +82,6 @@ pub enum SystemPartitionCheckError {
     MissingKeyValueStoreValueSchema(SystemReaderError),
     InvalidKeyValueStoreKey,
     InvalidKeyValueStoreValue,
-    InvalidFieldKey,
     ContainsFieldWhichShouldNotExist(BlueprintId, NodeId, u8),
     InvalidFieldValue,
     MissingFieldSchema(SystemReaderError),
@@ -106,6 +105,7 @@ pub enum SystemPartitionCheckError {
     InvalidSchemaKey,
     InvalidSchemaValue,
     InvalidBootLoaderPartition,
+    InvalidProtocolUpdateStatusPartition,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -488,19 +488,30 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         return Err(SystemPartitionCheckError::InvalidBootLoaderPartition);
                     }
 
-                    for _ in reader
-                        .substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number)
+                    for _ in reader.field_iter(&node_checker_state.node_id, partition_number) {
+                        substate_count += 1;
+                    }
+                }
+                SystemPartitionDescriptor::ProtocolUpdateStatus => {
+                    if node_checker_state
+                        .node_id
+                        .ne(TRANSACTION_TRACKER.as_node_id())
                     {
+                        return Err(
+                            SystemPartitionCheckError::InvalidProtocolUpdateStatusPartition,
+                        );
+                    }
+
+                    for _ in reader.field_iter(&node_checker_state.node_id, partition_number) {
                         substate_count += 1;
                     }
                 }
                 SystemPartitionDescriptor::TypeInfo => {
-                    for (key, value) in reader
-                        .substates_iter::<FieldKey>(&node_checker_state.node_id, partition_number)
+                    for (key, value) in
+                        reader.field_iter(&node_checker_state.node_id, partition_number)
                     {
-                        match key {
-                            SubstateKey::Field(0u8) => {}
-                            _ => return Err(SystemPartitionCheckError::InvalidTypeInfoKey),
+                        if key != 0 {
+                            return Err(SystemPartitionCheckError::InvalidTypeInfoKey);
                         };
 
                         let _type_info: TypeInfoSubstate = scrypto_decode(&value)
@@ -510,13 +521,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                     }
                 }
                 SystemPartitionDescriptor::Schema => {
-                    for (key, value) in reader
-                        .substates_iter::<MapKey>(&node_checker_state.node_id, partition_number)
+                    for (map_key, value) in
+                        reader.map_iter(&node_checker_state.node_id, partition_number)
                     {
-                        let map_key = match key {
-                            SubstateKey::Map(map_key) => map_key,
-                            _ => return Err(SystemPartitionCheckError::InvalidSchemaKey),
-                        };
                         let _schema_hash: Hash = scrypto_decode(&map_key)
                             .map_err(|_| SystemPartitionCheckError::InvalidSchemaKey)?;
 
@@ -538,17 +545,11 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         .get_kv_store_payload_schema(&type_target, KeyOrValue::Value)
                         .map_err(SystemPartitionCheckError::MissingKeyValueStoreValueSchema)?;
 
-                    for (key, value) in reader
-                        .substates_iter::<MapKey>(&node_checker_state.node_id, partition_number)
+                    for (map_key, value) in
+                        reader.map_iter(&node_checker_state.node_id, partition_number)
                     {
                         // Key Check
                         {
-                            let map_key = match key {
-                                SubstateKey::Map(map_key) => map_key,
-                                _ => {
-                                    return Err(SystemPartitionCheckError::InvalidKeyValueStoreKey)
-                                }
-                            };
                             reader
                                 .validate_payload(
                                     &map_key,
@@ -601,15 +602,9 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 
                     match object_partition_descriptor {
                         ObjectPartitionDescriptor::Fields => {
-                            for (key, value) in reader.substates_iter::<FieldKey>(
-                                &node_checker_state.node_id,
-                                partition_number,
-                            ) {
-                                let field_index = match key {
-                                    SubstateKey::Field(field_index) => field_index,
-                                    _ => return Err(SystemPartitionCheckError::InvalidFieldKey),
-                                };
-
+                            for (field_index, value) in
+                                reader.field_iter(&node_checker_state.node_id, partition_number)
+                            {
                                 expected_fields.remove(&(module_id, field_index));
                                 if module_id.eq(&ModuleId::Main)
                                     && excluded_fields.contains(&field_index)
@@ -676,19 +671,11 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .map_err(SystemPartitionCheckError::MissingIndexCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<MapKey>(
-                                &node_checker_state.node_id,
-                                partition_number,
-                            ) {
+                            for (map_key, value) in
+                                reader.map_iter(&node_checker_state.node_id, partition_number)
+                            {
                                 // Key Check
                                 let key = {
-                                    let map_key = match key {
-                                        SubstateKey::Map(map_key) => map_key,
-                                        _ => return Err(
-                                            SystemPartitionCheckError::InvalidIndexCollectionKey,
-                                        ),
-                                    };
-
                                     reader
                                         .validate_payload(
                                             &map_key,
@@ -760,18 +747,11 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .map_err(SystemPartitionCheckError::MissingKeyValueCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<MapKey>(
-                                &node_checker_state.node_id,
-                                partition_number,
-                            ) {
+                            for (map_key, value) in
+                                reader.map_iter(&node_checker_state.node_id, partition_number)
+                            {
                                 // Key check
                                 let key = {
-                                    let map_key = match key {
-                                        SubstateKey::Map(map_key) => map_key,
-                                        _ => return Err(
-                                            SystemPartitionCheckError::InvalidKeyValueCollectionKey,
-                                        ),
-                                    };
                                     reader
                                         .validate_payload(
                                             &map_key,
@@ -832,19 +812,11 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                                     .map_err(SystemPartitionCheckError::MissingSortedIndexCollectionValueSchema)?
                             };
 
-                            for (key, value) in reader.substates_iter::<SortedKey>(
-                                &node_checker_state.node_id,
-                                partition_number,
-                            ) {
+                            for (sorted_key, value) in
+                                reader.sorted_iter(&node_checker_state.node_id, partition_number)
+                            {
                                 // Key Check
                                 let key = {
-                                    let sorted_key = match key {
-                                        SubstateKey::Sorted(sorted_key) => sorted_key,
-                                        _ => return Err(
-                                            SystemPartitionCheckError::InvalidSortedIndexCollectionKey,
-                                        ),
-                                    };
-
                                     reader.validate_payload(
                                         &sorted_key.1,
                                         &key_schema,

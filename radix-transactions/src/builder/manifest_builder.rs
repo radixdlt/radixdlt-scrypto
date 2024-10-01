@@ -148,7 +148,7 @@ impl SubintentManifestV2Builder {
 }
 
 impl SystemManifestV1Builder {
-    /// This exists so that you can call `ManifestBuilder::new_v1()`.
+    /// This exists so that you can call `ManifestBuilder::new_system_v1()`.
     /// It is equivalent to:
     /// * `ManifestBuilder::<SystemTransactionManifestV1>::new_typed()`
     /// * `SystemV1ManifestBuilder::new_typed()`
@@ -156,7 +156,7 @@ impl SystemManifestV1Builder {
         Self::new_typed()
     }
 
-    pub fn add_address_preallocation(
+    pub fn use_preallocated_address(
         &mut self,
         fixed_address: impl Into<GlobalAddress>,
         package_address: impl Into<PackageAddress>,
@@ -431,8 +431,19 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
         )
     }
 
-    /// Builds a transaction manifest.
-    pub fn build(mut self) -> M {
+    /// Validates the built manifest with the tightest rules, and returns the manifest.
+    /// If you don't wish to validate the manifest, use [`build_no_validate`][Self::build_no_validate] instead.
+    pub fn build(self) -> M {
+        let manifest = self.build_no_validate();
+        manifest
+            .validate(ValidationRuleset::all())
+            .expect("Manifest should be valid");
+        manifest
+    }
+
+    /// Returns the built transaction manifest, without further validation.
+    /// If you also wish to validate the manifest, use [`build`][Self::build] instead.
+    pub fn build_no_validate(mut self) -> M {
         self.manifest.set_names(self.object_names().into());
         #[cfg(feature = "dump_manifest_to_file")]
         {
@@ -2203,6 +2214,23 @@ where
         )
     }
 
+    pub fn create_account_with_owner(
+        self,
+        address_reservation: impl OptionalExistingManifestAddressReservation,
+        owner_role: OwnerRole,
+    ) -> Self {
+        let address_reservation = address_reservation.resolve(&self.registrar);
+        self.call_function(
+            ACCOUNT_PACKAGE,
+            ACCOUNT_BLUEPRINT,
+            ACCOUNT_CREATE_ADVANCED_IDENT,
+            AccountCreateAdvancedManifestInput {
+                address_reservation,
+                owner_role,
+            },
+        )
+    }
+
     pub fn create_access_controller(
         self,
         controlled_asset: impl ExistingManifestBucket,
@@ -2253,7 +2281,7 @@ impl<M: BuildableManifestSupportingChildren> ManifestBuilder<M>
 where
     M::Instruction: From<InstructionV2>,
 {
-    pub fn register_child(
+    pub fn use_child(
         mut self,
         child_name: impl NewManifestIntent,
         subintent_hash: SubintentHash,

@@ -5,11 +5,11 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
+use crate::track::*;
 use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::ExecutableTransaction;
 
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<NodeId>;
@@ -138,36 +138,49 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
-pub trait KernelTransactionCallbackObject: KernelCallbackObject {
+/// A transaction which has a unique id, useful for creating an IdAllocator which
+/// requires a unique input
+pub trait UniqueSeed {
+    fn unique_seed_for_id_allocator(&self) -> Hash;
+}
+
+impl UniqueSeed for ExecutableTransaction {
+    fn unique_seed_for_id_allocator(&self) -> Hash {
+        *self.unique_hash()
+    }
+}
+
+pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Initialization object
-    type Init: Clone;
+    type Init;
     /// The transaction object
-    type Executable;
+    type Executable: UniqueSeed;
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution
     type Receipt: ExecutionReceipt;
 
     /// Create the callback object (system layer) and the initial call frame configuration for each intent
-    fn init<S: BootStore + CommitableSubstateStore>(
-        store: &mut S,
+    fn init(
+        store: &mut impl CommitableSubstateStore,
         executable: &Self::Executable,
         init: Self::Init,
+        always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
 
     /// Start execution
-    fn start<Y: KernelApi<CallbackObject = Self>>(
+    fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
         executable: Self::Executable,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
-    fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+    fn finalize(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 
     /// Create final receipt
     fn create_receipt<S: SubstateDatabase>(
         self,
-        track: Track<S, SpreadPrefixKeyMapper>,
+        track: Track<S>,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 }

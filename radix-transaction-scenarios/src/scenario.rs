@@ -1,44 +1,57 @@
 use crate::internal_prelude::*;
 
 use crate::accounts::*;
-
 #[derive(Clone, Debug)]
 pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
-    pub manifest: TransactionManifestV1,
+    pub transaction_manifest: UserTransactionManifest,
+    pub subintent_manifests: Vec<UserSubintentManifest>,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
 impl NextTransaction {
-    pub fn of(
-        logical_name: String,
-        stage_counter: usize,
-        names: ManifestObjectNames,
-        transaction: NotarizedTransactionV1,
-    ) -> Self {
-        let mut manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
-        match names {
-            ManifestObjectNames::Unknown => {}
-            ManifestObjectNames::Known(known_names) => manifest.set_names(known_names),
-        }
-        Self {
-            logical_name,
-            stage_counter,
-            manifest,
-            raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
-        }
-    }
-
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidatorV1,
-    ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
-        validator
-            .validate_from_raw(&self.raw_transaction)
-            .map_err(|err| {
-                ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
-            })
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedUserTransaction, ScenarioError> {
+        self.raw_transaction.validate(validator).map_err(|err| {
+            ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
+        })
+    }
+}
+
+pub(crate) trait CompletableSubintentBuilder {
+    type SignedPartialTransaction: Sized;
+    fn complete(
+        self,
+        core: &mut ScenarioCore,
+    ) -> (Self::SignedPartialTransaction, TransactionObjectNames);
+}
+
+impl CompletableSubintentBuilder for PartialTransactionV2Builder {
+    type SignedPartialTransaction = SignedPartialTransactionV2;
+    fn complete(
+        self,
+        core: &mut ScenarioCore,
+    ) -> (Self::SignedPartialTransaction, TransactionObjectNames) {
+        core.complete_partial_transaction_v2(self)
+    }
+}
+
+pub(crate) trait CompletableTransactionBuilder {
+    fn complete(self, core: &mut ScenarioCore) -> Result<NextTransaction, ScenarioError>;
+}
+
+impl CompletableTransactionBuilder for TransactionV1Builder {
+    fn complete(self, core: &mut ScenarioCore) -> Result<NextTransaction, ScenarioError> {
+        core.complete_v1(self)
+    }
+}
+
+impl CompletableTransactionBuilder for TransactionV2Builder {
+    fn complete(self, core: &mut ScenarioCore) -> Result<NextTransaction, ScenarioError> {
+        core.complete_v2(self)
     }
 }
 
@@ -59,6 +72,7 @@ pub struct ScenarioCore {
     nonce: u32,
     default_notary: PrivateKey,
     last_transaction_name: Option<String>,
+    next_transaction_name: Option<String>,
     stage_counter: usize,
 }
 
@@ -70,6 +84,7 @@ impl ScenarioCore {
             nonce: starting_nonce,
             default_notary: ed25519_account_1().key,
             last_transaction_name: None,
+            next_transaction_name: None,
             stage_counter: 0,
         }
     }
@@ -82,24 +97,26 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
+        create_manifest: impl FnOnce(TransactionManifestV1Builder) -> TransactionManifestV1Builder,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let builder = ManifestBuilder::new()
+        let builder = ManifestBuilder::new_v1()
             .lock_fee_from_faucet()
             .then(create_manifest);
-        self.next_transaction(logical_name, builder.build(), signers)
+        self.next_transaction_from_manifest_v1(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_with_faucet_lock_fee_fallible(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilder) -> Result<ManifestBuilder, ScenarioError>,
+        create_manifest: impl FnOnce(
+            TransactionManifestV1Builder,
+        ) -> Result<TransactionManifestV1Builder, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
+        let mut builder = ManifestBuilder::new_v1().lock_fee_from_faucet();
         builder = create_manifest(builder)?;
-        self.next_transaction(logical_name, builder.build(), signers)
+        self.next_transaction_from_manifest_v1(logical_name, builder.build(), signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
@@ -118,42 +135,148 @@ impl ScenarioCore {
         )
     }
 
-    pub fn next_nonce(&self) -> u32 {
-        self.nonce
-    }
-
-    pub fn next_transaction(
+    pub fn next_transaction_from_manifest_v1(
         &mut self,
         logical_name: &str,
         manifest: TransactionManifestV1,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let nonce = self.nonce;
-        self.nonce += 1;
-        let mut builder = TransactionBuilder::new()
-            .header(TransactionHeaderV1 {
-                network_id: self.network.id,
-                start_epoch_inclusive: self.epoch,
-                end_epoch_exclusive: self.epoch.next().unwrap(),
-                nonce,
-                notary_public_key: self.default_notary.public_key(),
-                notary_is_signatory: false,
-                tip_percentage: 0,
-            })
-            .manifest(manifest);
+        let mut builder = self.v1_transaction(logical_name).manifest(manifest);
         for signer in signers {
             builder = builder.sign(signer);
         }
+        builder.complete(self)
+    }
+
+    pub fn v1_transaction(&mut self, transaction_name: impl Into<String>) -> TransactionV1Builder {
+        let nonce = self.nonce;
+        self.nonce += 1;
+        self.next_transaction_name = Some(transaction_name.into());
+        TransactionBuilder::new().header(TransactionHeaderV1 {
+            network_id: self.network.id,
+            start_epoch_inclusive: self.epoch,
+            end_epoch_exclusive: self.epoch.next().unwrap(),
+            nonce,
+            notary_public_key: self.default_notary.public_key(),
+            notary_is_signatory: false,
+            tip_percentage: 0,
+        })
+    }
+
+    pub fn complete_v1(
+        &mut self,
+        mut builder: TransactionV1Builder,
+    ) -> Result<NextTransaction, ScenarioError> {
+        let logical_name = self
+            .next_transaction_name
+            .take()
+            .expect("Expected next transaction name to be set when the transaction was created");
+        self.last_transaction_name = Some(logical_name.to_owned());
+
+        builder = builder.notarize(&self.default_notary);
+        let transaction = builder.build();
+        let raw_transaction = transaction.to_raw().expect("Transaction could be encoded");
+        let transaction_manifest = builder.into_manifest().into();
+        Ok(NextTransaction {
+            logical_name: logical_name.to_owned(),
+            stage_counter: self.stage_counter,
+            transaction_manifest,
+            subintent_manifests: vec![],
+            raw_transaction,
+        })
+    }
+
+    /// A builder with headers configured.
+    ///
+    /// It's expected that the caller will:
+    /// * Optionally add children
+    /// * Add a manifest
+    /// * Add any signatures
+    ///
+    /// The transaction will then be notarized at finalization time.
+    ///
+    /// ```ignore
+    /// let child = core.v2_subintent()
+    ///     .manifest(|manifest_builder| manifest_builder
+    ///         .yield_to_parent(())
+    ///     )
+    ///     .finalize(core);
+    /// core.v2_transaction()
+    ///     .add_signed_child("child_1", signed_child)
+    ///     .manifest(|manifest_builder| {
+    ///         manifest_builder
+    ///             .lock_fee_from_faucet()
+    ///             .yield_to_child("child_1", ())
+    ///     })
+    ///     .sign(key)
+    ///     .finalize(core)
+    /// });
+    /// ```
+    pub fn v2_transaction(&mut self, transaction_name: impl Into<String>) -> TransactionV2Builder {
+        let nonce = self.nonce;
+        self.nonce += 1;
+        self.next_transaction_name = Some(transaction_name.into());
+        TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: self.network.id,
+                start_epoch_inclusive: self.epoch,
+                end_epoch_exclusive: self.epoch.next().unwrap(),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: nonce as u64,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: self.default_notary.public_key(),
+                notary_is_signatory: false,
+                tip_basis_points: 0,
+            })
+    }
+
+    pub fn complete_v2(
+        &mut self,
+        mut builder: TransactionV2Builder,
+    ) -> Result<NextTransaction, ScenarioError> {
+        let logical_name = self
+            .next_transaction_name
+            .take()
+            .expect("Expected next transaction name to be set when the transaction was created");
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        let transaction = builder.build();
-        let names = builder.into_manifest().object_names;
-        Ok(NextTransaction::of(
-            logical_name.to_owned(),
-            self.stage_counter,
-            names,
-            transaction,
-        ))
+        let (transaction, object_names) = builder.build_with_names();
+
+        let raw_transaction = transaction
+            .to_raw()
+            .expect("Transaction should be encodable");
+        let (transaction_manifest, subintent_manifests) =
+            transaction.extract_manifests_with_names(object_names);
+        Ok(NextTransaction {
+            logical_name,
+            stage_counter: self.stage_counter,
+            transaction_manifest,
+            subintent_manifests,
+            raw_transaction,
+        })
+    }
+
+    /// For recommended usage, see the docs on [`v2_transaction`][`Self::v2_transaction`].
+    pub fn v2_subintent(&mut self) -> PartialTransactionV2Builder {
+        let nonce = self.nonce;
+        self.nonce += 1;
+        PartialTransactionV2Builder::new().intent_header(IntentHeaderV2 {
+            network_id: self.network.id,
+            start_epoch_inclusive: self.epoch,
+            end_epoch_exclusive: self.epoch.next().unwrap(),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: nonce as u64,
+        })
+    }
+
+    pub fn complete_partial_transaction_v2(
+        &mut self,
+        builder: PartialTransactionV2Builder,
+    ) -> (SignedPartialTransactionV2, TransactionObjectNames) {
+        builder.build_with_names()
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {
@@ -432,6 +555,8 @@ pub struct ScenarioBuilder<Config, State> {
     config: Config,
     state: State,
     transactions: Vec<ScenarioTransaction<Config, State>>,
+    next_commit_handler: Option<Box<TransactionCommitResultHandler<Config, State>>>,
+    next_error_handler: Option<Box<TransactionErrorResultHandler<Config, State>>>,
 }
 
 impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
@@ -447,80 +572,97 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
             config,
             state: start_state,
             transactions: vec![],
+            next_commit_handler: None,
+            next_error_handler: None,
         }
     }
 
-    /// Also checks that the transaction commits successfully
+    pub fn on_next_transaction_commit(
+        mut self,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.next_commit_handler = Some(Box::new(handler));
+        self
+    }
+
     pub fn successful_transaction(
         mut self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
     ) -> Self {
+        let handler: Box<TransactionResultHandler<Config, State>> =
+            match self.next_commit_handler.take() {
+                Some(commit_handler) => Box::new(move |core, config, state, receipt| {
+                    let commit_result = core.check_commit_success(&receipt)?;
+                    commit_handler(core, config, state, commit_result)
+                }),
+                None => Box::new(|core, _, _, receipt| {
+                    core.check_commit_success(&receipt)?;
+                    Ok(())
+                }),
+            };
         self.transactions.push(ScenarioTransaction {
             creator: Box::new(creator),
-            handler: Box::new(|core, _, _, receipt| {
-                core.check_commit_success(&receipt)?;
-                Ok(())
-            }),
+            handler,
         });
         self
     }
 
+    #[deprecated = "Prefer using on_next_transaction_commit(..) and successful_transaction(..) to reduce nesting"]
     pub fn successful_transaction_with_result_handler(
-        mut self,
+        self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
         handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
             + 'static,
     ) -> Self {
+        self.on_next_transaction_commit(handler)
+            .successful_transaction(creator)
+    }
+
+    pub fn on_next_transaction_error(
+        mut self,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.next_error_handler = Some(Box::new(handler));
+        self
+    }
+
+    pub fn failed_transaction(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+    ) -> Self {
+        let handler: Box<TransactionResultHandler<Config, State>> =
+            match self.next_error_handler.take() {
+                Some(error_handler) => Box::new(move |core, config, state, receipt| {
+                    let error = core.check_commit_failure(&receipt)?;
+                    error_handler(core, config, state, error)
+                }),
+                None => Box::new(|core, _, _, receipt| {
+                    core.check_commit_failure(&receipt)?;
+                    Ok(())
+                }),
+            };
         self.transactions.push(ScenarioTransaction {
             creator: Box::new(creator),
-            handler: Box::new(
-                move |core, config, state, receipt| -> Result<(), ScenarioError> {
-                    let commit_result = core.check_commit_success(receipt)?;
-                    handler(core, config, state, commit_result)
-                },
-            ),
+            handler,
         });
         self
     }
 
+    #[deprecated = "Prefer using on_next_transaction_error(..) and failed_transaction(..) to reduce nesting"]
     pub fn failed_transaction_with_error_handler(
-        mut self,
+        self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
             + 'static,
         handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
             + 'static,
     ) -> Self {
-        self.transactions.push(ScenarioTransaction {
-            creator: Box::new(creator),
-            handler: Box::new(
-                move |core, config, state, receipt| -> Result<(), ScenarioError> {
-                    let error = core.check_commit_failure(receipt)?;
-                    handler(core, config, state, error)
-                },
-            ),
-        });
-        self
-    }
-
-    pub fn add_transaction_advanced(
-        mut self,
-        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
-            + 'static,
-        handler: impl Fn(
-                &mut ScenarioCore,
-                &Config,
-                &mut State,
-                &TransactionReceipt,
-            ) -> Result<(), ScenarioError>
-            + 'static,
-    ) -> Self {
-        self.transactions.push(ScenarioTransaction {
-            creator: Box::new(creator),
-            handler: Box::new(handler),
-        });
-        self
+        self.on_next_transaction_error(handler)
+            .failed_transaction(creator)
     }
 
     pub fn finalize(
@@ -556,6 +698,10 @@ pub struct ScenarioTransaction<Config, State> {
 type TransactionCreator<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
     + 'static;
 type TransactionResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &TransactionReceipt) -> Result<(), ScenarioError>
+    + 'static;
+type TransactionCommitResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
+    + 'static;
+type TransactionErrorResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
     + 'static;
 type ScenarioFinalizer<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<ScenarioOutput, ScenarioError>
     + 'static;

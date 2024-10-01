@@ -19,20 +19,20 @@ pub struct TransactionManifestV1 {
 impl ReadableManifest for TransactionManifestV1 {
     type Instruction = InstructionV1;
 
+    fn is_subintent(&self) -> bool {
+        false
+    }
+
     fn get_instructions(&self) -> &[Self::Instruction] {
         &self.instructions
     }
 
-    fn get_blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+        self.blobs.iter()
     }
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
-    }
-
-    fn validate(&self) -> Result<(), TransactionValidationError> {
-        NotarizedTransactionValidatorV1::validate_instructions_v1(&self.instructions)
     }
 }
 
@@ -47,6 +47,21 @@ impl BuildableManifest for TransactionManifestV1 {
 
     fn set_names(&mut self, names: KnownManifestObjectNames) {
         self.object_names = names.into()
+    }
+
+    fn default_test_execution_config_type(&self) -> DefaultTestExecutionConfigType {
+        DefaultTestExecutionConfigType::Test
+    }
+
+    fn into_executable_with_proofs(
+        self,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, String> {
+        TestTransaction::new_v1_from_nonce(self, nonce, initial_proofs)
+            .into_executable(&validator)
+            .map_err(|err| format!("Could not prepare: {err:?}"))
     }
 }
 

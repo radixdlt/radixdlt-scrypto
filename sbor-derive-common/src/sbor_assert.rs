@@ -45,7 +45,7 @@ pub fn handle_sbor_assert_derive(
     Ok(output)
 }
 
-const GENERAL_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(..))]` OR `#[sbor_assert(backwards_compatible(..))]`, with optional additional parameters `generate`, `regenerate`, and `settings(..)`. A command such as `#[sbor_assert(fixed(\"FILE:my_schema.txt\"), generate)]` can be used to generate the schema initially.";
+const GENERAL_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(..))]` OR `#[sbor_assert(backwards_compatible(..))]`, with optional additional parameters `generate`, `regenerate`, and `settings(..)`. A command such as `#[sbor_assert(fixed(\"FILE:my_schema.bin\"), generate)]` can be used to generate the schema initially.";
 
 fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, AdvancedSettings)> {
     // When we come to extract fixed named types,
@@ -118,7 +118,7 @@ fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, Advanced
 
 const GENERATE_PARSE_ERROR_MESSAGE: &'static str = "Expected just `generate` or `regenerate` without any value, for example: `#[sbor_assert(fixed(..), generate)]` OR `#[sbor_assert(backwards_compatible(..), settings(..), regenerate)]`";
 
-const FIXED_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }";
+const FIXED_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }";
 
 fn extract_fixed_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
@@ -145,7 +145,7 @@ fn extract_fixed_schema_parameters(
     return Err(Error::new(error_span, FIXED_PARSE_ERROR_MESSAGE));
 }
 
-const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &'static str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }\nOR `#[sbor_assert(backwards_compatible(\"EXPR:Y\"))]` where `Y` is some expression such as `params_builder()` generating a `SingleTypeSchemaCompatibilityParameters<S>` for `S` the custom schema.";
+const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &'static str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded-schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }\nOR `#[sbor_assert(backwards_compatible(\"EXPR:Y\"))]` where `Y` is some expression such as `params_builder()` generating a `SingleTypeSchemaCompatibilityParameters<S>` for `S` the custom schema.";
 
 fn extract_backwards_compatible_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
@@ -416,6 +416,7 @@ fn handle_generate(
     custom_schema: Path,
     test_ident: Ident,
     generation_target: GenerationTarget,
+    is_fixed: bool,
 ) -> Result<TokenStream> {
     let output_content = match generation_target {
         GenerationTarget::Inline => quote! {
@@ -453,7 +454,18 @@ fn handle_generate(
                 }
             };
 
+            let contents = match FileFormat::derive(&file_path) {
+                FileFormat::Hex => quote! {
+                    type_schema.encode_to_hex()
+                },
+                FileFormat::Bytes => quote! {
+                    type_schema.encode_to_bytes()
+                },
+            };
+
             quote! {
+                let contents = #contents;
+
                 use std::path::{Path, PathBuf};
                 use std::fs::OpenOptions;
                 use std::io::Write;
@@ -509,7 +521,7 @@ fn handle_generate(
 
                 let mut file = #file_open_code;
 
-                file.write_all(hex.as_ref())
+                file.write_all(contents.as_ref())
                     .unwrap_or_else(|err| panic!(
                         "Schema could not be written to {} - Error: {}",
                         full_file_path.display(),
@@ -522,15 +534,23 @@ fn handle_generate(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    // We still output the trait impls in generate mode - this is to prevent a chicken-and-egg problem.
+    //
+    // If a user adds bounds that a type implements these traits, then the compilation of the crate
+    // may depend on the type implementing the bounds. If the trait impls get dropped during
+    // (re)generation, then this means that the crate can't compile and (re)generation can't run!
+    //
+    // The test will still fail if it's left in (re)generate mode, so this should be okay.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, is_fixed);
+
     let output = quote! {
+        #trait_impls
+
         #[cfg(test)]
         #[test]
         #[allow(non_snake_case)]
         pub fn #test_ident() {
             let type_schema = sbor::schema::SingleTypeSchema::<#custom_schema>::for_type::<#ident>();
-            let hex = type_schema.encode_to_hex();
             #output_content
         }
     };
@@ -561,7 +581,7 @@ fn handle_fixed(
                 location.generation_target(is_regenerate)
             }
         };
-        return handle_generate(ident, custom_schema, test_ident, generation_target);
+        return handle_generate(ident, custom_schema, test_ident, generation_target, true);
     }
 
     let comparison_settings = match advanced_settings.settings_resolution {
@@ -588,11 +608,10 @@ fn handle_fixed(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, true);
+
     let output = quote! {
-        impl sbor::schema::CheckedFixedSchema<#custom_schema> for #ident {}
-        impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        #trait_impls
 
         #[cfg(test)]
         #[test]
@@ -626,11 +645,36 @@ fn schema_location_to_single_type_schema_code(params: &SchemaLocation) -> TokenS
         } => {
             quote! { sbor::schema::SingleTypeSchema::from(#fixed_schema) }
         }
-        SchemaLocation::StringFromFile { file_path } => {
-            quote! { sbor::schema::SingleTypeSchema::from(include_str!(#file_path)) }
-        }
+        SchemaLocation::StringFromFile { file_path } => match FileFormat::derive(file_path) {
+            FileFormat::Hex => quote! {
+                sbor::schema::SingleTypeSchema::from(include_str!(#file_path))
+            },
+            FileFormat::Bytes => quote! {
+                sbor::schema::SingleTypeSchema::from(include_bytes!(#file_path))
+            },
+        },
         SchemaLocation::FromExpression { expression } => {
             quote! { #expression }
+        }
+    }
+}
+
+enum FileFormat {
+    Hex,
+    Bytes,
+}
+
+impl FileFormat {
+    fn derive(file_path_suffix: &LitStr) -> Self {
+        let is_hex = file_path_suffix
+            .value()
+            .split(".")
+            .last()
+            .is_some_and(|extension| extension.to_ascii_lowercase().as_str() == "txt");
+        if is_hex {
+            Self::Hex
+        } else {
+            Self::Bytes
         }
     }
 }
@@ -651,12 +695,12 @@ fn handle_backwards_compatible(
             BackwardsCompatibleSchemaParameters::FromExpression { .. } => GenerationTarget::Inline,
             BackwardsCompatibleSchemaParameters::NamedSchemas { mut named_schemas } => {
                 let Some(latest_named_schema) = named_schemas.pop() else {
-                    return Err(Error::new(ident.span(), "At least one named schema placeholder needs adding in order for generation to work, e.g. `#[sbor_assert(backwards_compatible(latest = \"FILE:my_schema.txt\"), generate)]"));
+                    return Err(Error::new(ident.span(), "At least one named schema placeholder needs adding in order for generation to work, e.g. `#[sbor_assert(backwards_compatible(latest = \"FILE:my_schema.bin\"), generate)]"));
                 };
                 latest_named_schema.schema.generation_target(is_regenerate)
             }
         };
-        return handle_generate(ident, custom_schema, test_ident, generation_target);
+        return handle_generate(ident, custom_schema, test_ident, generation_target, false);
     }
 
     let (comparison_between_current_and_latest, comparison_between_versions) =
@@ -721,10 +765,10 @@ fn handle_backwards_compatible(
         }
     };
 
-    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
-    //       to generate the schema from.
+    let trait_impls = generate_trait_impls(&custom_schema, ident, false);
+
     let output = quote! {
-        impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        #trait_impls
 
         #[cfg(test)]
         #[test]
@@ -735,4 +779,19 @@ fn handle_backwards_compatible(
     };
 
     Ok(output)
+}
+
+fn generate_trait_impls(custom_schema: &Path, ident: &Ident, is_fixed: bool) -> TokenStream {
+    // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
+    //       to generate the schema from.
+    if is_fixed {
+        quote! {
+            impl sbor::schema::CheckedFixedSchema<#custom_schema> for #ident {}
+            impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        }
+    } else {
+        quote! {
+            impl sbor::schema::CheckedBackwardsCompatibleSchema<#custom_schema> for #ident {}
+        }
+    }
 }

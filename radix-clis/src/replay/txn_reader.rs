@@ -3,6 +3,7 @@ use flate2::read::GzDecoder;
 use flume;
 use flume::Sender;
 use radix_common::prelude::*;
+use radix_transactions::model::RawLedgerTransaction;
 use rocksdb::{Direction, IteratorMode, Options, DB};
 use std::fs::File;
 use std::io::Read;
@@ -21,7 +22,7 @@ impl TxnReader {
         &mut self,
         from_version: u64,
         to_version: Option<u64>,
-        tx: Sender<Vec<u8>>,
+        tx: Sender<RawLedgerTransaction>,
     ) -> Result<(), Error> {
         match self {
             TxnReader::TransactionFile(archive) => {
@@ -49,7 +50,7 @@ impl TxnReader {
                         }
                     }
 
-                    tx.send(tx_payload).unwrap();
+                    tx.send(RawLedgerTransaction::from_vec(tx_payload)).unwrap();
                 }
             }
             TxnReader::StateManagerDatabaseDir(db_dir) => {
@@ -80,7 +81,8 @@ impl TxnReader {
                     );
                     while let Some(next_txn) = txn_iter.next() {
                         let next_txn = next_txn.unwrap();
-                        tx.send(next_txn.1.to_vec()).unwrap();
+                        tx.send(RawLedgerTransaction::from_vec(next_txn.1.to_vec()))
+                            .unwrap();
                     }
                     thread::sleep(Duration::from_secs(1));
                 }

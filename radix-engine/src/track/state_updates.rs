@@ -1,8 +1,6 @@
 use crate::internal_prelude::*;
 use radix_rust::rust::{iter::*, mem};
-use radix_substate_store_interface::{db_key_mapper::DatabaseKeyMapper, interface::DbSortKey};
-
-use super::TrackedSubstates;
+use radix_substate_store_interface::interface::*;
 
 #[derive(Clone, Debug)]
 pub struct RuntimeSubstate {
@@ -256,48 +254,6 @@ impl TrackedNode {
             tracked_partition.revert_writes();
         }
     }
-}
-
-pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
-    tracked: TrackedSubstates,
-) -> (IndexSet<NodeId>, StateUpdates) {
-    let mut new_nodes = index_set_new();
-    let mut system_updates = index_map_new();
-    for (node_id, tracked_node) in tracked.tracked_nodes {
-        if tracked_node.is_new {
-            new_nodes.insert(node_id);
-        }
-
-        for (partition_num, tracked_partition) in tracked_node.tracked_partitions {
-            let mut partition_updates = index_map_new();
-            for tracked in tracked_partition.substates.into_values() {
-                let update = match tracked.substate_value {
-                    TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => None,
-                    TrackedSubstateValue::ReadNonExistAndWrite(substate)
-                    | TrackedSubstateValue::New(substate) => {
-                        Some(DatabaseUpdate::Set(substate.value.into()))
-                    }
-                    TrackedSubstateValue::ReadExistAndWrite(_, write)
-                    | TrackedSubstateValue::WriteOnly(write) => match write {
-                        Write::Delete => Some(DatabaseUpdate::Delete),
-                        Write::Update(substate) => Some(DatabaseUpdate::Set(substate.value.into())),
-                    },
-                };
-                if let Some(update) = update {
-                    partition_updates.insert(tracked.substate_key, update);
-                }
-            }
-            system_updates.insert((node_id.clone(), partition_num), partition_updates);
-        }
-    }
-
-    (
-        new_nodes,
-        StateUpdates::from(LegacyStateUpdates {
-            partition_deletions: tracked.deleted_partitions,
-            system_updates,
-        }),
-    )
 }
 
 pub struct IterationCountedIter<'a, E> {

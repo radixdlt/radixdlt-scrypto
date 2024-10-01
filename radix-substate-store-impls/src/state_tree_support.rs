@@ -44,21 +44,22 @@ impl<D> StateTreeUpdatingDatabase<D> {
 }
 
 impl<D: SubstateDatabase> SubstateDatabase for StateTreeUpdatingDatabase<D> {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        self.underlying.get_substate(partition_key, sort_key)
+        self.underlying
+            .get_raw_substate_by_db_key(partition_key, sort_key)
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         self.underlying
-            .list_entries_from(partition_key, from_sort_key)
+            .list_raw_values_from_db_key(partition_key, from_sort_key)
     }
 }
 
@@ -91,7 +92,7 @@ where
         for (db_partition_key, by_db_sort_key) in hashes_from_tree {
             if by_db_sort_key.into_iter().collect::<HashMap<_, _>>()
                 != self
-                    .list_entries(&db_partition_key)
+                    .list_raw_values_from_db_key(&db_partition_key, None)
                     .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
                     .collect::<HashMap<_, _>>()
             {

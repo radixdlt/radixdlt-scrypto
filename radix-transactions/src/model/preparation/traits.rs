@@ -6,12 +6,13 @@ pub trait TransactionPayload:
     ManifestEncode
     + ManifestDecode
     + ManifestCategorize
-    + ManifestSborEnumVariantFor<VersionedTransactionPayload>
-where
-    Self::OwnedVariant: ManifestDecode,
-    for<'a> Self::BorrowedVariant<'a>: ManifestEncode,
+    + for<'a> ManifestSborEnumVariantFor<
+        VersionedTransactionPayload,
+        OwnedVariant: ManifestDecode,
+        BorrowedVariant<'a>: ManifestEncode,
+    >
 {
-    type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
+    type Prepared: PreparedTransaction<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;
 
     fn discriminator() -> u8 {
@@ -19,43 +20,33 @@ where
     }
 
     fn to_raw(&self) -> Result<Self::Raw, EncodeError> {
-        Ok(self.to_payload_bytes()?.into())
-    }
-
-    /// Prefer [`to_raw`] which encapsulates the bytes in a nice wrapper.
-    fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&self.as_encodable_variant())
+        Ok(manifest_encode(&self.as_encodable_variant())?.into())
     }
 
     fn from_raw(raw: &Self::Raw) -> Result<Self, DecodeError> {
-        Self::from_payload_bytes(raw.as_ref())
-    }
-
-    fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(Self::from_decoded_variant(manifest_decode(payload_bytes)?))
+        Ok(Self::from_decoded_variant(manifest_decode(raw.as_ref())?))
     }
 
     fn from_payload_variant(payload_variant: Self::OwnedVariant) -> Self {
         Self::from_decoded_variant(payload_variant)
     }
 
-    fn prepare(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_from_payload(
-            &self.to_payload_bytes()?,
-        )?)
+    fn prepare(&self, settings: &PreparationSettings) -> Result<Self::Prepared, PrepareError> {
+        Ok(Self::Prepared::prepare(&self.to_raw()?, settings)?)
     }
 }
 
 pub trait TransactionPartialPrepare: ManifestEncode {
     type Prepared: TransactionPreparableFromValue;
 
-    fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
+    fn prepare_partial(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<Self::Prepared, PrepareError> {
         let payload = manifest_encode(self).unwrap();
-        let mut manifest_decoder = ManifestDecoder::new(&payload, MANIFEST_SBOR_V1_MAX_DEPTH);
-        manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
-        let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
+        let mut transaction_decoder = TransactionDecoder::new_partial(&payload, settings)?;
         let prepared = Self::Prepared::prepare_from_value(&mut transaction_decoder)?;
-        transaction_decoder.destructure().check_end()?;
+        transaction_decoder.check_complete()?;
         Ok(prepared)
     }
 }
@@ -70,7 +61,13 @@ pub trait TransactionPartialPrepare: ManifestEncode {
 ///   Ideally this means the hash should _not_ include the header byte.
 /// * Ideally the summary should not include costing for reading the value kind byte.
 pub trait TransactionPreparableFromValueBody: HasSummary + Sized {
-    /// Prepares value from a manifest decoder by reading the inner body (without the value kind)
+    /// Most types when read as a value should have a slightly longer length.
+    /// BUT some types (e.g. transaction payloads) must have the same length
+    /// regardless, as this length is used for billing the transaction.
+    const ADDITIONAL_SUMMARY_LENGTH_AS_VALUE: usize = 1usize;
+
+    /// Prepares the transaction from a transaction decoder by reading the inner body
+    /// of the tuple/enum (without the value kind)
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
     fn value_kind() -> ManifestValueKind;
@@ -84,7 +81,7 @@ impl<T: TransactionPreparableFromValueBody> TransactionPreparableFromValue for T
         prepared.summary_mut().effective_length = prepared
             .get_summary()
             .effective_length
-            .checked_add(1)
+            .checked_add(Self::ADDITIONAL_SUMMARY_LENGTH_AS_VALUE)
             .ok_or(PrepareError::LengthOverflow)?;
         Ok(prepared)
     }
@@ -111,28 +108,29 @@ pub trait TransactionPreparableFromValue: HasSummary + Sized {
 /// They should have a hash over a payload which starts with the bytes:
 /// * `TRANSACTION_HASHABLE_PAYLOAD_PREFIX`
 /// * `TransactionDiscriminator::X as u8`
-pub trait TransactionPayloadPreparable: Sized {
+pub trait PreparedTransaction: Sized {
     type Raw: RawTransactionPayload;
 
-    /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+    /// Prepares value from a transaction decoder by reading the Enum wrapper
+    /// (including its value kind)
+    fn prepare_from_transaction_enum(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<Self, PrepareError>;
 
-    fn prepare_from_raw(raw: &Self::Raw) -> Result<Self, PrepareError> {
-        Self::prepare_from_payload(raw.as_ref())
-    }
-
-    /// Prepares from a full payload
-    fn prepare_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
-        let mut manifest_decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
-        manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
-        let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
-        let prepared = Self::prepare_for_payload(&mut transaction_decoder)?;
-        transaction_decoder.destructure().check_end()?;
+    fn prepare(raw: &Self::Raw, settings: &PreparationSettings) -> Result<Self, PrepareError> {
+        let payload = raw.as_slice();
+        let mut transaction_decoder = TransactionDecoder::new_transaction(
+            payload,
+            <Self::Raw as RawTransactionPayload>::KIND,
+            settings,
+        )?;
+        let prepared = Self::prepare_from_transaction_enum(&mut transaction_decoder)?;
+        transaction_decoder.check_complete()?;
         Ok(prepared)
     }
 }
 
-macro_rules! transaction_payload_v2 {
+macro_rules! define_transaction_payload {
     (
         $transaction:ident,
         $raw:ty,
@@ -162,14 +160,15 @@ macro_rules! transaction_payload_v2 {
             }
         }
 
-        impl TransactionPayloadPreparable for $prepared {
+        impl PreparedTransaction for $prepared {
             type Raw = $raw;
 
-            fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+            fn prepare_from_transaction_enum(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
                 // When embedded as full payload, it's SBOR encoded as an enum
-                let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_from_transaction_payload_enum(
+                let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_transaction_payload(
                     decoder,
                     $discriminator,
+                    ExpectedHeaderKind::EnumWithValueKind,
                 )?;
                 Ok(Self {
                     $($field_name,)*
@@ -179,12 +178,18 @@ macro_rules! transaction_payload_v2 {
         }
 
         impl TransactionPreparableFromValueBody for $prepared {
+            // Ensure that all manners of preparing the transaction give an
+            // equal effective length, so they can all be turned into an executable
+            // and have the same billed length.
+            const ADDITIONAL_SUMMARY_LENGTH_AS_VALUE: usize = 0;
+
             fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
                 // When embedded as an child body, it's SBOR encoded as a struct body (without value kind)
                 let (($($field_name,)*), summary) =
-                    ConcatenatedDigest::prepare_from_transaction_child_struct_body(
+                    ConcatenatedDigest::prepare_transaction_payload(
                         decoder,
                         $discriminator,
+                        ExpectedHeaderKind::TupleNoValueKind,
                     )?;
                 Ok(Self {
                     $($field_name,)*
@@ -199,21 +204,32 @@ macro_rules! transaction_payload_v2 {
     };
 }
 
-pub(crate) use transaction_payload_v2;
+pub(crate) use define_transaction_payload;
 
 pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
+    const KIND: TransactionPayloadKind;
+
     fn as_slice(&self) -> &[u8] {
         self.as_ref()
     }
 }
 
+pub trait ValidatedTransactionPayload: IntoExecutable {}
+
+#[derive(Debug, Copy, Clone)]
+pub enum TransactionPayloadKind {
+    CompleteUserTransaction,
+    LedgerTransaction,
+    Other,
+}
+
 #[macro_export]
 macro_rules! define_raw_transaction_payload {
-    ($(#[$docs:meta])* $name: ident) => {
+    ($(#[$docs:meta])* $name:ident, $kind:expr) => {
         #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Sbor)]
         #[sbor(transparent)]
         $(#[$docs])*
-        pub struct $name(pub Vec<u8>);
+        pub struct $name(Vec<u8>);
 
         impl AsRef<[u8]> for $name {
             fn as_ref(&self) -> &[u8] {
@@ -233,6 +249,38 @@ macro_rules! define_raw_transaction_payload {
             }
         }
 
-        impl RawTransactionPayload for $name {}
+        impl RawTransactionPayload for $name {
+            const KIND: TransactionPayloadKind = $kind;
+        }
+
+        impl $name {
+            pub fn as_slice(&self) -> &[u8] {
+                self.0.as_slice()
+            }
+
+            pub fn len(&self) -> usize {
+                self.as_slice().len()
+            }
+
+            pub fn to_vec(self) -> Vec<u8> {
+                self.0
+            }
+
+            pub fn from_vec(vec: Vec<u8>) -> Self {
+                Self(vec)
+            }
+
+            pub fn from_slice(slice: impl AsRef<[u8]>) -> Self {
+                Self(slice.as_ref().into())
+            }
+
+            pub fn to_hex(&self) -> String {
+                hex::encode(self.as_slice())
+            }
+
+            pub fn from_hex(hex: impl AsRef<[u8]>) -> Result<Self, hex::FromHexError> {
+                Ok(Self(hex::decode(hex)?))
+            }
+        }
     };
 }
