@@ -10,20 +10,33 @@ use radix_engine_interface::blueprints::package::*;
 pub trait StaticInvocationResourcesOutput {
     fn output(
         &self,
-        node_id: &NodeId,
-        inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo>;
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let _ = details;
+        Ok(TrackedResources::new_empty())
+    }
+}
+
+pub struct InvocationDetails<'a> {
+    pub receiver: InvocationReceiver,
+    pub sent_resources: &'a TrackedResources,
+    pub source: ChangeSource,
+}
+
+#[derive(Debug)]
+pub enum InvocationReceiver {
+    GlobalMethod(GlobalAddress),
+    GlobalMethodOnReservedAddress,
+    DirectAccess(InternalAddress),
+    BlueprintFunction,
 }
 
 // region:Typed Invocation
 impl StaticInvocationResourcesOutput for TypedNativeInvocation {
     fn output(
         &self,
-        node_id: &NodeId,
-        inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match self {
             TypedNativeInvocation::AccessControllerPackage(access_controller_invocations) => {
                 match access_controller_invocations {
@@ -33,74 +46,74 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                         AccessControllerBlueprintInvocations::Function(access_controller_function) => {
                             match access_controller_function {
                                 AccessControllerFunction::Create(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
-                        AccessControllerBlueprintInvocations::Method(_, access_controller_method) => {
+                        AccessControllerBlueprintInvocations::Method(access_controller_method) => {
                             match access_controller_method {
                                 AccessControllerMethod::CreateProof(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::InitiateRecoveryAsPrimary(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::InitiateRecoveryAsRecovery(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::QuickConfirmPrimaryRoleRecoveryProposal(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::QuickConfirmRecoveryRoleRecoveryProposal(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::TimedConfirmRecovery(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::StopTimedRecovery(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::MintRecoveryBadges(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::LockRecoveryFee(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::WithdrawRecoveryFee(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::ContributeRecoveryFee(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::InitiateBadgeWithdrawAttemptAsPrimary(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::InitiateBadgeWithdrawAttemptAsRecovery(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::QuickConfirmPrimaryRoleBadgeWithdrawAttempt(
                                     input,
-                                ) => input.output(node_id, inputs, instruction_index),
+                                ) => input.output(details),
                                 AccessControllerMethod::QuickConfirmRecoveryRoleBadgeWithdrawAttempt(
                                     input,
-                                ) => input.output(node_id, inputs, instruction_index),
+                                ) => input.output(details),
                                 AccessControllerMethod::CancelPrimaryRoleRecoveryProposal(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::CancelRecoveryRoleRecoveryProposal(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::CancelPrimaryRoleBadgeWithdrawAttempt(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::CancelRecoveryRoleBadgeWithdrawAttempt(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::LockPrimaryRole(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccessControllerMethod::UnlockPrimaryRole(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
@@ -112,84 +125,67 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                     match account_blueprint_invocations {
                         AccountBlueprintInvocations::Function(account_function) => match account_function {
                             AccountFunction::Create(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountFunction::CreateAdvanced(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                         },
-                        AccountBlueprintInvocations::Method(_, account_method) => match account_method {
+                        AccountBlueprintInvocations::Method(account_method) => match account_method {
                             AccountMethod::Securify(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
-                            AccountMethod::LockFee(input) => input.output(node_id, inputs, instruction_index),
+                            AccountMethod::LockFee(input) => input.output(details),
                             AccountMethod::LockContingentFee(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
-                            AccountMethod::Deposit(input) => input.output(node_id, inputs, instruction_index),
+                            AccountMethod::Deposit(input) => input.output(details),
                             AccountMethod::Withdraw(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::WithdrawNonFungibles(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::LockFeeAndWithdraw(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::LockFeeAndWithdrawNonFungibles(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::CreateProofOfAmount(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::CreateProofOfNonFungibles(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::SetDefaultDepositRule(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::SetResourcePreference(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::RemoveResourcePreference(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::TryDepositOrAbort(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
-                            AccountMethod::Burn(input) => input.output(node_id, inputs, instruction_index),
+                            AccountMethod::Burn(input) => input.output(details),
                             AccountMethod::BurnNonFungibles(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::AddAuthorizedDepositor(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::RemoveAuthorizedDepositor(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                             AccountMethod::TryDepositOrRefund(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
-                            // TODO: A bit of a hack to support expressions. We need a better way to
-                            // do this in the future, but certainly not one for this PR.
-                            AccountMethod::DepositBatch(..) => AccountDepositBatchManifestInput {
-                                buckets: Default::default(),
-                            }
-                            .output(node_id, inputs, instruction_index),
-                            AccountMethod::TryDepositBatchOrRefund(..) => {
-                                AccountTryDepositBatchOrRefundManifestInput {
-                                    buckets: Default::default(),
-                                    authorized_depositor_badge: None,
-                                }
-                                .output(node_id, inputs, instruction_index)
-                            }
-                            AccountMethod::TryDepositBatchOrAbort(..) => {
-                                AccountTryDepositBatchOrAbortManifestInput {
-                                    buckets: Default::default(),
-                                    authorized_depositor_badge: None,
-                                }
-                                .output(node_id, inputs, instruction_index)
-                            }
+                            AccountMethod::DepositBatch(input) => input.output(details),
+                            AccountMethod::TryDepositBatchOrRefund(input) => input.output(details),
+                            AccountMethod::TryDepositBatchOrAbort(input) => input.output(details),
                         },
                     }
                 }
@@ -198,64 +194,64 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                 match consensus_manager_invocations {
                     ConsensusManagerInvocations::ValidatorBlueprint(validator_blueprint_invocations) => {
                         match validator_blueprint_invocations {
-                            ValidatorBlueprintInvocations::Function(..) => {
-                                unreachable!()
+                            ValidatorBlueprintInvocations::Function(validator_function) => {
+                                match *validator_function {}
                             }
-                            ValidatorBlueprintInvocations::Method(_, validator_method) => {
+                            ValidatorBlueprintInvocations::Method(validator_method) => {
                                 match validator_method {
                                     ValidatorMethod::Register(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::Unregister(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::StakeAsOwner(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::Stake(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::Unstake(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::ClaimXrd(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::UpdateKey(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::UpdateFee(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::UpdateAcceptDelegatedStake(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::AcceptsDelegatedStake(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::TotalStakeXrdAmount(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::TotalStakeUnitSupply(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::GetRedemptionValue(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::SignalProtocolUpdateReadiness(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::GetProtocolUpdateReadiness(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::LockOwnerStakeUnits(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::StartUnlockOwnerStakeUnits(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                     ValidatorMethod::FinishUnlockOwnerStakeUnits(input) => {
-                                        input.output(node_id, inputs, instruction_index)
+                                        input.output(details)
                                     }
                                 }
                             }
@@ -267,26 +263,26 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                         ConsensusManagerBlueprintInvocations::Function(consensus_manager_function) => {
                             match consensus_manager_function {
                                 ConsensusManagerFunction::Create(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
-                        ConsensusManagerBlueprintInvocations::Method(_, consensus_manager_method) => {
+                        ConsensusManagerBlueprintInvocations::Method(consensus_manager_method) => {
                             match consensus_manager_method {
                                 ConsensusManagerMethod::GetCurrentEpoch(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 ConsensusManagerMethod::Start(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 ConsensusManagerMethod::GetCurrentTime(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 ConsensusManagerMethod::NextRound(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 ConsensusManagerMethod::CreateValidator(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
@@ -299,16 +295,16 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                         IdentityBlueprintInvocations::Function(identity_function) => {
                             match identity_function {
                                 IdentityFunction::Create(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 IdentityFunction::CreateAdvanced(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
-                        IdentityBlueprintInvocations::Method(_, identity_method) => match identity_method {
+                        IdentityBlueprintInvocations::Method(identity_method) => match identity_method {
                             IdentityMethod::Securify(input) => {
-                                input.output(node_id, inputs, instruction_index)
+                                input.output(details)
                             }
                         },
                     }
@@ -320,38 +316,38 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                         AccountLockerBlueprintInvocations::Function(account_locker_function) => {
                             match account_locker_function {
                                 AccountLockerFunction::Instantiate(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerFunction::InstantiateSimple(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
-                        AccountLockerBlueprintInvocations::Method(_, account_locker_method) => {
+                        AccountLockerBlueprintInvocations::Method(account_locker_method) => {
                             match account_locker_method {
                                 AccountLockerMethod::Store(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::Airdrop(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::Recover(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::RecoverNonFungibles(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::Claim(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::ClaimNonFungibles(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::GetAmount(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                                 AccountLockerMethod::GetNonFungibleLocalIds(input) => {
-                                    input.output(node_id, inputs, instruction_index)
+                                    input.output(details)
                                 }
                             }
                         }
@@ -364,453 +360,204 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
 // endregion:Typed Invocation
 
 // region:Account
-impl StaticInvocationResourcesOutput for AccountCreateAdvancedManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountCreateAdvancedManifestInput {}
 
 impl StaticInvocationResourcesOutput for AccountCreateInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            ACCOUNT_OWNER_BADGE,
+            TrackedResource::exact_amount(1, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountSecurifyInput {
     fn output(
         &self,
-        node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(ACCOUNT_OWNER_BADGE),
-            NonFungibleBounds::new_exact(indexset![
-                NonFungibleLocalId::bytes(node_id.as_bytes()).unwrap()
-            ]),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(global_address) => {
+                let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
+                TrackedResources::new_empty().add_resource(
+                    ACCOUNT_OWNER_BADGE,
+                    TrackedResource::exact_non_fungibles([local_id], [details.source]),
+                )
+            }
+            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
+                .add_resource(
+                    ACCOUNT_OWNER_BADGE,
+                    TrackedResource::exact_amount(1, [details.source])?,
+                ),
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                unreachable!()
+            }
+        }
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockFeeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockFeeInput {}
 
-impl StaticInvocationResourcesOutput for AccountLockContingentFeeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockContingentFeeInput {}
 
-impl StaticInvocationResourcesOutput for AccountDepositManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountDepositManifestInput {}
 
-impl StaticInvocationResourcesOutput for AccountDepositBatchManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountDepositBatchManifestInput {}
 
 impl StaticInvocationResourcesOutput for AccountWithdrawInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        match CompositeResourceAddress::from(self.resource_address) {
-            CompositeResourceAddress::Fungible(fungible_resource_address) => {
-                vec![InvocationIo::KnownFungible(
-                    fungible_resource_address,
-                    FungibleBounds::new_exact(self.amount),
-                )]
-            }
-            CompositeResourceAddress::NonFungible(non_fungible_resource_address) => {
-                vec![InvocationIo::KnownNonFungible(
-                    non_fungible_resource_address,
-                    NonFungibleBounds::new_with_amount(self.amount),
-                )]
-            }
-        }
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(self.resource_address),
-            NonFungibleBounds::new_exact(self.ids.clone()),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        match CompositeResourceAddress::from(self.resource_address) {
-            CompositeResourceAddress::Fungible(fungible_resource_address) => {
-                vec![InvocationIo::KnownFungible(
-                    fungible_resource_address,
-                    FungibleBounds::new_exact(self.amount),
-                )]
-            }
-            CompositeResourceAddress::NonFungible(non_fungible_resource_address) => {
-                vec![InvocationIo::KnownNonFungible(
-                    non_fungible_resource_address,
-                    NonFungibleBounds::new_with_amount(self.amount),
-                )]
-            }
-        }
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(self.resource_address),
-            NonFungibleBounds::new_exact(self.ids.clone()),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
+        )
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountCreateProofOfAmountInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountCreateProofOfAmountInput {}
 
-impl StaticInvocationResourcesOutput for AccountCreateProofOfNonFungiblesInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountCreateProofOfNonFungiblesInput {}
 
-impl StaticInvocationResourcesOutput for AccountSetDefaultDepositRuleInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountSetDefaultDepositRuleInput {}
 
-impl StaticInvocationResourcesOutput for AccountSetResourcePreferenceInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountSetResourcePreferenceInput {}
 
-impl StaticInvocationResourcesOutput for AccountRemoveResourcePreferenceInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountRemoveResourcePreferenceInput {}
 
 impl StaticInvocationResourcesOutput for AccountTryDepositOrRefundManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        inputs
-            .iter()
-            .cloned()
-            .map(|mut item| {
-                match item {
-                    InvocationIo::KnownFungible(_, ref mut fungible_bounds) => {
-                        fungible_bounds.lower = LowerFungibleBound::Amount(Decimal::ZERO);
-                    }
-                    InvocationIo::KnownNonFungible(_, ref mut non_fungible_bounds) => {
-                        non_fungible_bounds.amount_bounds.lower =
-                            LowerFungibleBound::Amount(Decimal::ZERO);
-                        non_fungible_bounds.id_bounds = match non_fungible_bounds.id_bounds.clone()
-                        {
-                            NonFungibleIdBounds::FullyKnown(index_set)
-                            | NonFungibleIdBounds::PartiallyKnown(index_set) => {
-                                NonFungibleIdBounds::PartiallyKnown(index_set)
-                            }
-                            NonFungibleIdBounds::Unknown => NonFungibleIdBounds::Unknown,
-                        }
-                    }
-                    InvocationIo::Unknown(..) => {}
-                };
-                item
-            })
-            .collect()
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        handle_possible_refund(details)
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountTryDepositBatchOrRefundManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        inputs
-            .iter()
-            .cloned()
-            .map(|mut item| {
-                match item {
-                    InvocationIo::KnownFungible(_, ref mut fungible_bounds) => {
-                        fungible_bounds.lower = LowerFungibleBound::Amount(Decimal::ZERO);
-                    }
-                    InvocationIo::KnownNonFungible(_, ref mut non_fungible_bounds) => {
-                        non_fungible_bounds.amount_bounds.lower =
-                            LowerFungibleBound::Amount(Decimal::ZERO);
-                        non_fungible_bounds.id_bounds = match non_fungible_bounds.id_bounds.clone()
-                        {
-                            NonFungibleIdBounds::FullyKnown(index_set)
-                            | NonFungibleIdBounds::PartiallyKnown(index_set) => {
-                                NonFungibleIdBounds::PartiallyKnown(index_set)
-                            }
-                            NonFungibleIdBounds::Unknown => NonFungibleIdBounds::Unknown,
-                        }
-                    }
-                    InvocationIo::Unknown(..) => {}
-                };
-                item
-            })
-            .collect()
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        handle_possible_refund(details)
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountTryDepositOrAbortManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
+fn handle_possible_refund(
+    details: InvocationDetails,
+) -> Result<TrackedResources, StaticResourceMovementsError> {
+    let mut sent_resources = details.sent_resources.clone();
+    let mut refunded_resources = TrackedResources::new_empty();
+
+    // Handle the specified resources. First dump the resource keys to work around the borrow checker...
+    let known_resources = sent_resources
+        .specified_resources()
+        .keys()
+        .cloned()
+        .collect::<Vec<_>>();
+    for known_resource in known_resources {
+        let attempted_deposit = sent_resources.take_resource(
+            known_resource,
+            ResourceTakeAmount::All,
+            details.source,
+        )?;
+        let (bounds, _history) = attempted_deposit.deconstruct();
+        // Either nothing or everything is returned, but we can't currently model a fork in
+        // the timeline, so instead we handle it as a return of some amount between 0 and the sent amount.
+        let refunded_amount = bounds.replace_lower_bounds_with_zero();
+        refunded_resources.mut_add_resource(
+            known_resource,
+            TrackedResource::general(refunded_amount, [details.source]),
+        )?;
     }
+    // Handle the possible refund of the remaining unspecified resources
+    if sent_resources.unspecified_resources().may_be_present() {
+        refunded_resources.mut_add_unspecified_resources([details.source]);
+    }
+
+    Ok(refunded_resources)
 }
 
-impl StaticInvocationResourcesOutput for AccountTryDepositBatchOrAbortManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountTryDepositOrAbortManifestInput {}
 
-impl StaticInvocationResourcesOutput for AccountBurnInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountTryDepositBatchOrAbortManifestInput {}
 
-impl StaticInvocationResourcesOutput for AccountBurnNonFungiblesInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountBurnInput {}
 
-impl StaticInvocationResourcesOutput for AccountAddAuthorizedDepositorInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountBurnNonFungiblesInput {}
 
-impl StaticInvocationResourcesOutput for AccountRemoveAuthorizedDepositorInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountAddAuthorizedDepositorInput {}
+
+impl StaticInvocationResourcesOutput for AccountRemoveAuthorizedDepositorInput {}
 // endregion:Account
 
 // region:Access Controller
-impl StaticInvocationResourcesOutput for AccessControllerCreateManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerCreateManifestInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerCreateProofInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerCreateProofInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsPrimaryInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsPrimaryInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsRecoveryInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsRecoveryInput {}
 
 impl StaticInvocationResourcesOutput
     for AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
 impl StaticInvocationResourcesOutput
     for AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
 impl StaticInvocationResourcesOutput
     for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
 impl StaticInvocationResourcesOutput
     for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
 impl StaticInvocationResourcesOutput
@@ -818,13 +565,10 @@ impl StaticInvocationResourcesOutput
 {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The withdrawn badge is of an unknown resource
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
@@ -833,709 +577,313 @@ impl StaticInvocationResourcesOutput
 {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The withdrawn badge is of an unknown resource
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
-impl StaticInvocationResourcesOutput for AccessControllerTimedConfirmRecoveryInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerTimedConfirmRecoveryInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerCancelPrimaryRoleRecoveryProposalInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerCancelPrimaryRoleRecoveryProposalInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerCancelRecoveryRoleRecoveryProposalInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerCancelRecoveryRoleRecoveryProposalInput {}
 
 impl StaticInvocationResourcesOutput
     for AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
 impl StaticInvocationResourcesOutput
     for AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput
 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
 }
 
-impl StaticInvocationResourcesOutput for AccessControllerLockPrimaryRoleInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerLockPrimaryRoleInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerUnlockPrimaryRoleInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerUnlockPrimaryRoleInput {}
 
-impl StaticInvocationResourcesOutput for AccessControllerStopTimedRecoveryInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerStopTimedRecoveryInput {}
 
 impl StaticInvocationResourcesOutput for AccessControllerMintRecoveryBadgesInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The minted badge is of a new / unknown resource
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
-impl StaticInvocationResourcesOutput for AccessControllerLockRecoveryFeeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerLockRecoveryFeeInput {}
 
 impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownFungible(
-            FungibleResourceAddress(XRD),
-            FungibleBounds::new_exact(self.amount),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            XRD,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
     }
 }
 
-impl StaticInvocationResourcesOutput for AccessControllerContributeRecoveryFeeManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccessControllerContributeRecoveryFeeManifestInput {}
 // endregion:Access Controller
 
 // region:Consensus Manager
-impl StaticInvocationResourcesOutput for ConsensusManagerCreateManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerCreateManifestInput {}
 
-impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentEpochInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentEpochInput {}
 
-impl StaticInvocationResourcesOutput for ConsensusManagerStartInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerStartInput {}
 
-impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentTimeInputV2 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentTimeInputV2 {}
 
-impl StaticInvocationResourcesOutput for ConsensusManagerCompareCurrentTimeInputV2 {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerCompareCurrentTimeInputV2 {}
 
-impl StaticInvocationResourcesOutput for ConsensusManagerNextRoundInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ConsensusManagerNextRoundInput {}
 
 impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            VALIDATOR_OWNER_BADGE,
+            TrackedResource::exact_amount(1, [details.source])?,
+        )
     }
 }
 
-impl StaticInvocationResourcesOutput for ValidatorRegisterInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorRegisterInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorUnregisterInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorUnregisterInput {}
 
 impl StaticInvocationResourcesOutput for ValidatorStakeAsOwnerManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The validator stake unit resource is unknown at static validation time
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
 impl StaticInvocationResourcesOutput for ValidatorStakeManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The validator stake unit resource is unknown at static validation time
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
 impl StaticInvocationResourcesOutput for ValidatorUnstakeManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // The validator unstake receipt is unknown at static validation time
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
 impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty()
+            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
     }
 }
 
-impl StaticInvocationResourcesOutput for ValidatorUpdateKeyInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorUpdateKeyInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorUpdateFeeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorUpdateFeeInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorUpdateAcceptDelegatedStakeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorUpdateAcceptDelegatedStakeInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorAcceptsDelegatedStakeInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorAcceptsDelegatedStakeInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorTotalStakeXrdAmountInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorTotalStakeXrdAmountInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorTotalStakeUnitSupplyInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorTotalStakeUnitSupplyInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorGetRedemptionValueInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorGetRedemptionValueInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorSignalProtocolUpdateReadinessInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorSignalProtocolUpdateReadinessInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorGetProtocolUpdateReadinessInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorGetProtocolUpdateReadinessInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorApplyEmissionInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorApplyEmissionInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorApplyRewardInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorApplyRewardInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorLockOwnerStakeUnitsManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorLockOwnerStakeUnitsManifestInput {}
 
-impl StaticInvocationResourcesOutput for ValidatorStartUnlockOwnerStakeUnitsInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for ValidatorStartUnlockOwnerStakeUnitsInput {}
 
 impl StaticInvocationResourcesOutput for ValidatorFinishUnlockOwnerStakeUnitsInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // This can return validator stake units which are an unknown resource at static validation time
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 // endregion:Consensus Manager
 
 // region:Identity
-impl StaticInvocationResourcesOutput for IdentityCreateAdvancedInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for IdentityCreateAdvancedInput {}
 
 impl StaticInvocationResourcesOutput for IdentityCreateInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            IDENTITY_OWNER_BADGE,
+            TrackedResource::exact_amount(1, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
     fn output(
         &self,
-        node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(IDENTITY_OWNER_BADGE),
-            NonFungibleBounds::new_exact(indexset![
-                NonFungibleLocalId::bytes(node_id.as_bytes()).unwrap()
-            ]),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        Ok(match details.receiver {
+            InvocationReceiver::GlobalMethod(global_address) => {
+                let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
+                TrackedResources::new_empty().add_resource(
+                    IDENTITY_OWNER_BADGE,
+                    TrackedResource::exact_non_fungibles([local_id], [details.source]),
+                )?
+            }
+            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
+                .add_resource(
+                    IDENTITY_OWNER_BADGE,
+                    TrackedResource::exact_amount(1, [details.source])?,
+                )?,
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                unreachable!()
+            }
+        })
     }
 }
 // endregion:Identity
 
 // region:Account Locker
-impl StaticInvocationResourcesOutput for AccountLockerInstantiateManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockerInstantiateManifestInput {}
 
 impl StaticInvocationResourcesOutput for AccountLockerInstantiateSimpleManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // This generates and returns a new badge resource, which is unknowable at static time
+        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockerStoreManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockerStoreManifestInput {}
 
 impl StaticInvocationResourcesOutput for AccountLockerAirdropManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // This behaves roughly like a possible refund...
+        // We could be even more exact... We can subtract the claimants from the bucket to calculate what gets returned.
+        // But this is good enough for now.
+        handle_possible_refund(details)
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockerRecoverManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        match CompositeResourceAddress::from(self.resource_address) {
-            CompositeResourceAddress::Fungible(fungible_resource_address) => {
-                vec![InvocationIo::KnownFungible(
-                    fungible_resource_address,
-                    FungibleBounds::new_exact(self.amount),
-                )]
-            }
-            CompositeResourceAddress::NonFungible(non_fungible_resource_address) => {
-                vec![InvocationIo::KnownNonFungible(
-                    non_fungible_resource_address,
-                    NonFungibleBounds::new_with_amount(self.amount),
-                )]
-            }
-        }
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(self.resource_address),
-            NonFungibleBounds::new_exact(self.ids.clone()),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockerClaimManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        match CompositeResourceAddress::from(self.resource_address) {
-            CompositeResourceAddress::Fungible(fungible_resource_address) => {
-                vec![InvocationIo::KnownFungible(
-                    fungible_resource_address,
-                    FungibleBounds::new_exact(self.amount),
-                )]
-            }
-            CompositeResourceAddress::NonFungible(non_fungible_resource_address) => {
-                vec![InvocationIo::KnownNonFungible(
-                    non_fungible_resource_address,
-                    NonFungibleBounds::new_with_amount(self.amount),
-                )]
-            }
-        }
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
     }
 }
 
 impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownNonFungible(
-            NonFungibleResourceAddress(self.resource_address),
-            NonFungibleBounds::new_exact(self.ids.clone()),
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
+        )
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockerGetAmountManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockerGetAmountManifestInput {}
 
-impl StaticInvocationResourcesOutput for AccountLockerGetNonFungibleLocalIdsManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for AccountLockerGetNonFungibleLocalIdsManifestInput {}
 // endregion:Account Locker
 
 // region:Package
 impl StaticInvocationResourcesOutput for PackagePublishWasmManifestInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::Unknown(
-            WorktopUncertaintySource::Invocation { instruction_index },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            PACKAGE_OWNER_BADGE,
+            TrackedResource::exact_amount(1, [details.source])?,
+        )
     }
 }
 
-impl StaticInvocationResourcesOutput for PackagePublishWasmAdvancedManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for PackagePublishWasmAdvancedManifestInput {}
 
-impl StaticInvocationResourcesOutput for PackagePublishNativeManifestInput {
-    fn output(
-        &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![]
-    }
-}
+impl StaticInvocationResourcesOutput for PackagePublishNativeManifestInput {}
 
 impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesInput {
     fn output(
         &self,
-        _node_id: &NodeId,
-        _inputs: &[InvocationIo],
-        _instruction_index: usize,
-    ) -> Vec<InvocationIo> {
-        vec![InvocationIo::KnownFungible(
-            FungibleResourceAddress(XRD),
-            FungibleBounds {
-                lower: LowerFungibleBound::Amount(0.into()),
-                upper: UpperFungibleBound::Unbounded,
-            },
-        )]
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty()
+            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
     }
 }
 // endregion:Package

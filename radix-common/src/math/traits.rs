@@ -6,6 +6,14 @@ pub trait CheckedAdd<Rhs = Self> {
         Self: Sized;
 }
 
+pub trait SaturatingAdd<Rhs = Self> {
+    type Output;
+
+    fn saturating_add(self, other: Rhs) -> Self::Output
+    where
+        Self: Sized;
+}
+
 pub trait CheckedSub<Rhs = Self> {
     type Output;
 

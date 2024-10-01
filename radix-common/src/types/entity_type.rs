@@ -176,6 +176,15 @@ impl EntityType {
         matches!(self, EntityType::GlobalPackage)
     }
 
+    pub const fn is_global_account(&self) -> bool {
+        matches!(
+            self,
+            EntityType::GlobalAccount
+                | EntityType::GlobalPreallocatedSecp256k1Account
+                | EntityType::GlobalPreallocatedEd25519Account
+        )
+    }
+
     pub const fn is_global_consensus_manager(&self) -> bool {
         matches!(self, EntityType::GlobalConsensusManager)
     }

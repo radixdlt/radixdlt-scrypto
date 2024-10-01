@@ -4,18 +4,17 @@ use radix_engine_interface::blueprints::consensus_manager;
 use radix_engine_interface::blueprints::identity;
 use radix_engine_interface::blueprints::locker;
 
+use super::*;
 use radix_common::prelude::*;
-use radix_engine_interface::prelude::*;
 
 macro_rules! define_typed_invocations {
     (
         $(
             $package_name: ident => {
+                package: $package_address: expr,
                 $(
                     $blueprint_name: ident => {
-                        type: $type: ty,
                         entity_type_pat: $entity_type_pat: pat,
-                        module_id: $module_id: expr,
                         functions: {
                             $(
                                 $func_ident: ident => ($func_input: ty, $func_name: expr $(,)?)
@@ -34,6 +33,7 @@ macro_rules! define_typed_invocations {
         paste::paste! {
             // There's a single typed invocation type that captures all of
             // the packages that we support.
+            #[derive(Debug)]
             pub enum TypedNativeInvocation {
                 $(
                     [< $package_name Package >]([< $package_name Invocations >])
@@ -41,67 +41,83 @@ macro_rules! define_typed_invocations {
             }
 
             impl TypedNativeInvocation {
-                pub fn from_method_invocation(
-                    address: &NodeId,
-                    module_id: ::radix_engine_interface::prelude::ModuleId,
+                pub fn from_main_module_method_invocation(
+                    address: &GlobalAddress,
                     method_name: &str,
                     args: &::radix_common::prelude::ManifestValue
-                ) -> Option<Self> {
-                    match (address.entity_type(), module_id) {
+                ) -> Result<Option<Self>, StaticResourceMovementsError> {
+                    Ok(match address.as_node_id().entity_type() {
                         $(
                             $(
-                                (Some($entity_type_pat), $module_id) => {
-                                    [< $blueprint_name Method >]
-                                        ::from_invocation(
-                                            method_name,
-                                            args
+                                Some($entity_type_pat) => {
+                                    let invocation = [< $blueprint_name Method >]::from_invocation(method_name, args)?;
+                                    Some(Self::[< $package_name Package >](
+                                        [< $package_name Invocations >]::[< $blueprint_name Blueprint >](
+                                            [< $blueprint_name BlueprintInvocations >]::Method(invocation)
                                         )
-                                        .and_then(|invocation| $type::try_from(address.as_bytes()).ok().map(|address| (address, invocation)))
-                                        .map(|(address, invocation)|
-                                            [< $blueprint_name BlueprintInvocations >]::Method(address, invocation)
-                                        )
-                                        .map([< $package_name Invocations >]::[< $blueprint_name Blueprint >])
-                                        .map(Self::[< $package_name Package >])
-
+                                    ))
                                 }
                             )*
                         )*
                         _ => None
-                    }
+                    })
+                }
+
+                pub fn from_blueprint_method_invocation(
+                    package_address: &PackageAddress,
+                    blueprint_name: &str,
+                    method_name: &str,
+                    args: &::radix_common::prelude::ManifestValue
+                ) -> Result<Option<Self>, StaticResourceMovementsError> {
+                    Ok(match *package_address {
+                        $($package_address => match blueprint_name {
+                            $(stringify!($blueprint_name) => {
+                                let invocation = [< $blueprint_name Method >]::from_invocation(method_name, args)?;
+                                Some(Self::[< $package_name Package >](
+                                    [< $package_name Invocations >]::[< $blueprint_name Blueprint >](
+                                        [< $blueprint_name BlueprintInvocations >]::Method(invocation)
+                                    )
+                                ))
+                            },)*
+                            _ => return Err(StaticResourceMovementsError::UnknownNativeBlueprint {
+                                package: $package_address,
+                                blueprint: blueprint_name.to_string(),
+                            }),
+                        },)*
+                        _ => None,
+                    })
                 }
 
                 pub fn from_function_invocation(
-                    address: &NodeId,
+                    package_address: &PackageAddress,
                     blueprint_name: &str,
                     function_name: &str,
                     args: &::radix_common::prelude::ManifestValue
-                ) -> Option<Self> {
-                    match (address.entity_type(), blueprint_name) {
-                        $(
-                            $(
-                                (Some($entity_type_pat), stringify!($blueprint_name)) => {
-                                    [< $blueprint_name Function >]
-                                        ::from_invocation(
-                                            function_name,
-                                            args
-                                        )
-                                        .map(
-                                            [< $blueprint_name BlueprintInvocations >]::Function
-                                        )
-                                        .map([< $package_name Invocations >]::[< $blueprint_name Blueprint >])
-                                        .map(Self::[< $package_name Package >])
-
-                                }
-                            )*
-                        )*
-                        _ => None
-                    }
+                ) -> Result<Option<Self>, StaticResourceMovementsError> {
+                    Ok(match *package_address {
+                        $($package_address => match blueprint_name {
+                            $(stringify!($blueprint_name) => {
+                                let invocation = [< $blueprint_name Function >]::from_invocation(function_name, args)?;
+                                Some(Self::[< $package_name Package >](
+                                    [< $package_name Invocations >]::[< $blueprint_name Blueprint >](
+                                        [< $blueprint_name BlueprintInvocations >]::Function(invocation)
+                                    )
+                                ))
+                            },)*
+                            _ => return Err(StaticResourceMovementsError::UnknownNativeBlueprint {
+                                package: $package_address,
+                                blueprint: blueprint_name.to_string(),
+                            }),
+                        },)*
+                        _ => None,
+                    })
                 }
             }
 
             $(
                 // For each package we define an invocation type that has all of the blueprints that
                 // this package has.
+                #[derive(Debug)]
                 pub enum [< $package_name Invocations >] {
                     $(
                         [< $blueprint_name Blueprint >]([< $blueprint_name BlueprintInvocations >])
@@ -110,11 +126,13 @@ macro_rules! define_typed_invocations {
 
                 $(
                     // For each blueprint we define a type that's made up of the method and function
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name BlueprintInvocations >] {
                         Function([< $blueprint_name Function >]),
-                        Method($type, [< $blueprint_name Method >]),
+                        Method([< $blueprint_name Method >]),
                     }
 
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name Method >] {
                         $(
                             $method_ident($method_input)
@@ -128,6 +146,8 @@ macro_rules! define_typed_invocations {
                                 $(
                                     Self::$method_ident(..) => $method_name,
                                 )*
+                                // AVOIDS [E0004] when the enum is empty "note: references are always considered inhabited"
+                                // https://github.com/rust-lang/unsafe-code-guidelines/issues/413
                                 _ => unreachable!()
                             }
                         }
@@ -135,19 +155,27 @@ macro_rules! define_typed_invocations {
                         pub fn from_invocation(
                             method_name: &str,
                             args: &::radix_common::prelude::ManifestValue
-                        ) -> Option<Self> {
-                            match method_name {
+                        ) -> Result<Self, StaticResourceMovementsError> {
+                            Ok(match method_name {
                                 $(
-                                    $method_name => ::radix_common::prelude::manifest_encode(args)
-                                        .ok()
-                                        .and_then(|value| ::radix_common::prelude::manifest_decode(&value).ok())
-                                        .map(Self::$method_ident),
+                                    $method_name => {
+                                        let encoded = ::radix_common::prelude::manifest_encode(args)
+                                            .map_err(StaticResourceMovementsError::NativeArgumentsEncodeError)?;
+                                        let decoded = ::radix_common::prelude::manifest_decode(&encoded)
+                                            .map_err(StaticResourceMovementsError::NativeArgumentsDecodeError)?;
+                                        Self::$method_ident(decoded)
+                                    }
                                 )*
-                                _ => None
-                            }
+                                _ => return Err(StaticResourceMovementsError::UnknownNativeMethod {
+                                    package: $package_address,
+                                    blueprint: stringify!($blueprint_name).to_string(),
+                                    method: method_name.to_string(),
+                                })
+                            })
                         }
                     }
 
+                    #[derive(Debug)]
                     pub enum [< $blueprint_name Function >] {
                         $(
                             $func_ident($func_input)
@@ -161,24 +189,33 @@ macro_rules! define_typed_invocations {
                                 $(
                                     Self::$func_ident(..) => $func_name,
                                 )*
+                                // AVOIDS [E0004] when the enum is empty "note: references are always considered inhabited"
+                                // https://github.com/rust-lang/unsafe-code-guidelines/issues/413
                                 _ => unreachable!()
                             }
                         }
 
-                        #[allow(unused_variables)]
+                        #[allow(unused_variables, unreachable_code)]
                         pub fn from_invocation(
                             function_name: &str,
                             args: &::radix_common::prelude::ManifestValue
-                        ) -> Option<Self> {
-                            match function_name {
+                        ) -> Result<Self, StaticResourceMovementsError> {
+                            Ok(match function_name {
                                 $(
-                                    $func_name => ::radix_common::prelude::manifest_encode(args)
-                                        .ok()
-                                        .and_then(|value| ::radix_common::prelude::manifest_decode(&value).ok())
-                                        .map(Self::$func_ident),
+                                    $func_name => {
+                                        let encoded = ::radix_common::prelude::manifest_encode(args)
+                                            .map_err(StaticResourceMovementsError::NativeArgumentsEncodeError)?;
+                                        let decoded = ::radix_common::prelude::manifest_decode(&encoded)
+                                            .map_err(StaticResourceMovementsError::NativeArgumentsDecodeError)?;
+                                        Self::$func_ident(decoded)
+                                    }
                                 )*
-                                _ => None
-                            }
+                                _ => return Err(StaticResourceMovementsError::UnknownNativeFunction {
+                                    package: $package_address,
+                                    blueprint: stringify!($blueprint_name).to_string(),
+                                    function: function_name.to_string(),
+                                })
+                            })
                         }
                     }
                 )*
@@ -189,10 +226,9 @@ macro_rules! define_typed_invocations {
 
 define_typed_invocations! {
     AccessController => {
+        package: ACCESS_CONTROLLER_PACKAGE,
         AccessController => {
-            type: ComponentAddress,
             entity_type_pat: EntityType::GlobalAccessController,
-            module_id: ModuleId::Main,
             functions: {
                 Create => (
                     access_controller::AccessControllerCreateManifestInput,
@@ -288,13 +324,12 @@ define_typed_invocations! {
         }
     },
     Account => {
+        package: ACCOUNT_PACKAGE,
         Account => {
-            type: ComponentAddress,
             entity_type_pat:
                 EntityType::GlobalAccount
                 | EntityType::GlobalPreallocatedEd25519Account
                 | EntityType::GlobalPreallocatedSecp256k1Account,
-            module_id: ModuleId::Main,
             functions: {
                 Create => (
                     account::AccountCreateInput,
@@ -323,7 +358,7 @@ define_typed_invocations! {
                     account::ACCOUNT_DEPOSIT_IDENT
                 ),
                 DepositBatch => (
-                    ManifestValue,
+                    account::AccountDepositBatchManifestInput,
                     account::ACCOUNT_DEPOSIT_BATCH_IDENT
                 ),
                 Withdraw => (
@@ -367,7 +402,7 @@ define_typed_invocations! {
                     account::ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
                 ),
                 TryDepositBatchOrRefund => (
-                    ManifestValue,
+                    account::AccountTryDepositBatchOrRefundManifestInput,
                     account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
                 ),
                 TryDepositOrAbort => (
@@ -375,7 +410,7 @@ define_typed_invocations! {
                     account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
                 ),
                 TryDepositBatchOrAbort => (
-                    ManifestValue,
+                    account::AccountTryDepositBatchOrAbortManifestInput,
                     account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
                 ),
                 Burn => (
@@ -398,10 +433,9 @@ define_typed_invocations! {
         },
     },
     ConsensusManager => {
+        package: CONSENSUS_MANAGER_PACKAGE,
         Validator => {
-            type: ComponentAddress,
             entity_type_pat: EntityType::GlobalValidator,
-            module_id: ModuleId::Main,
             functions: {},
             methods: {
                 Register => (
@@ -479,9 +513,7 @@ define_typed_invocations! {
             }
         },
         ConsensusManager => {
-            type: ComponentAddress,
             entity_type_pat: EntityType::GlobalConsensusManager,
-            module_id: ModuleId::Main,
             functions: {
                 Create => (
                     consensus_manager::ConsensusManagerCreateManifestInput,
@@ -513,13 +545,12 @@ define_typed_invocations! {
         }
     },
     Identity => {
+        package: IDENTITY_PACKAGE,
         Identity => {
-            type: ComponentAddress,
             entity_type_pat:
                 EntityType::GlobalIdentity
                 | EntityType::GlobalPreallocatedEd25519Identity
                 | EntityType::GlobalPreallocatedSecp256k1Identity,
-            module_id: ModuleId::Main,
             functions: {
                 Create => (
                     identity::IdentityCreateInput,
@@ -539,10 +570,9 @@ define_typed_invocations! {
         },
     },
     Locker => {
+        package: LOCKER_PACKAGE,
         AccountLocker => {
-            type: ComponentAddress,
             entity_type_pat: EntityType::GlobalAccountLocker,
-            module_id: ModuleId::Main,
             functions: {
                 Instantiate => (
                     locker::AccountLockerInstantiateManifestInput,
