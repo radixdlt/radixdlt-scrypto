@@ -45,6 +45,7 @@ impl From<TransactionProcessorError> for RuntimeError {
 pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
+    ChildIntentDone(IndexedScryptoValue),
     RootIntentDone,
 }
 
@@ -138,9 +139,14 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
                         // Child subintents must end with a yield to parent
                         if self.remaining_instructions.is_empty() {
                             self.worktop.drop(api)?;
+                            ResumeResult::ChildIntentDone(IndexedScryptoValue::from_scrypto_value(
+                                value,
+                            ))
+                        } else {
+                            ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(
+                                value,
+                            ))
                         }
-
-                        ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(value))
                     }
                 };
                 return Ok(result);

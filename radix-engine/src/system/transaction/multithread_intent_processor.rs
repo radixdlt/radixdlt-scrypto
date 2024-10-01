@@ -87,6 +87,56 @@ impl MultiThreadIntentProcessor {
         })
     }
 
+    pub fn execute<Y: SystemBasedKernelApi>(&mut self, api: &mut Y) -> Result<(), RuntimeError> {
+        let mut cur_thread = 0;
+        let mut parent_stack = vec![];
+        let mut passed_value = None;
+
+        loop {
+            api.kernel_switch_stack(cur_thread)?;
+            let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
+
+            let mut system_service = SystemService::new(api);
+            let switch_to = match txn_thread.resume(passed_value.take(), &mut system_service)? {
+                ResumeResult::YieldToChild(child, value) => {
+                    let child = *children_mapping.get(child).unwrap();
+                    parent_stack.push(cur_thread);
+                    Some((child, value, false))
+                }
+                ResumeResult::YieldToParent(value) => {
+                    let parent = parent_stack.pop().unwrap();
+                    Some((parent, value, false))
+                }
+                ResumeResult::ChildIntentDone(value) => {
+                    let parent = parent_stack.pop().unwrap();
+                    Some((parent, value, true))
+                }
+                ResumeResult::RootIntentDone => None,
+            };
+
+            if let Some((next_thread, value, intent_done)) = switch_to {
+                // Checked passed values
+                Self::check_yielded_value(&value, api)?;
+                api.kernel_send_to_stack(next_thread, value.clone())?;
+                passed_value = Some(value);
+
+                // Cleanup stack if intent is done. This must be done after the above kernel_send_to_stack.
+                if intent_done {
+                    Self::cleanup_stack(api)?;
+                }
+
+                cur_thread = next_thread;
+            } else {
+                Self::cleanup_stack(api)?;
+                break;
+            }
+        }
+
+        assert!(parent_stack.is_empty());
+
+        Ok(())
+    }
+
     fn check_yielded_value<Y: SystemBasedKernelApi>(
         value: &IndexedScryptoValue,
         api: &mut Y,
@@ -112,73 +162,26 @@ impl MultiThreadIntentProcessor {
         Ok(())
     }
 
-    pub fn execute<Y: SystemBasedKernelApi>(&mut self, api: &mut Y) -> Result<(), RuntimeError> {
-        let mut cur_thread = 0;
-        let mut parent_stack = vec![];
-        let mut passed_value = None;
+    fn cleanup_stack<Y: SystemBasedKernelApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        let owned_nodes = api.kernel_get_owned_nodes()?;
+        System::auto_drop(owned_nodes, api)?;
 
-        loop {
-            api.kernel_switch_stack(cur_thread)?;
-            let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
-
-            let mut system_service = SystemService::new(api);
-            match txn_thread.resume(passed_value.take(), &mut system_service)? {
-                ResumeResult::YieldToChild(child, value) => {
-                    let child = *children_mapping.get(child).unwrap();
-                    parent_stack.push(cur_thread);
-                    cur_thread = child;
-                    passed_value = Some(value);
-                }
-                ResumeResult::YieldToParent(value) => {
-                    cur_thread = parent_stack.pop().unwrap();
-                    passed_value = Some(value);
-                }
-                ResumeResult::RootIntentDone => {
-                    if let Some(parent) = parent_stack.pop() {
-                        cur_thread = parent;
-                    } else {
-                        break;
-                    }
-                }
+        let actor = api.kernel_get_system_state().current_call_frame;
+        match actor {
+            Actor::Function(FunctionActor { auth_zone, .. }) => {
+                let auth_zone = auth_zone.clone();
+                let mut system_service = SystemService::new(api);
+                AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
             }
-
-            // Checked passed values
-            if let Some(passed_value) = &passed_value {
-                Self::check_yielded_value(passed_value, api)?;
-                api.kernel_send_to_stack(cur_thread, passed_value.clone())?;
+            _ => {
+                panic!("unexpected");
             }
         }
-
-        assert!(parent_stack.is_empty());
-
-        Ok(())
-    }
-
-    pub fn cleanup<Y: SystemBasedKernelApi>(self, api: &mut Y) -> Result<(), RuntimeError> {
-        for (thread_id, _intent) in self.threads.iter().enumerate() {
-            api.kernel_switch_stack(thread_id)?;
-
-            let owned_nodes = api.kernel_get_owned_nodes()?;
-            System::auto_drop(owned_nodes, api)?;
-
-            let actor = api.kernel_get_system_state().current_call_frame;
-            match actor {
-                Actor::Function(FunctionActor { auth_zone, .. }) => {
-                    let auth_zone = auth_zone.clone();
-                    let mut system_service = SystemService::new(api);
-                    AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
-                }
-                _ => {
-                    panic!("unexpected");
-                }
-            }
-
-            let owned_nodes = api.kernel_get_owned_nodes()?;
-            if !owned_nodes.is_empty() {
-                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
-                    owned_nodes,
-                )));
-            }
+        let owned_nodes = api.kernel_get_owned_nodes()?;
+        if !owned_nodes.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                owned_nodes,
+            )));
         }
 
         Ok(())

@@ -218,7 +218,6 @@ impl SystemVersion {
                     .outputs
                     .drain(..)
                     .collect();
-                txn_threads.cleanup(api)?;
                 output
             }
         };
