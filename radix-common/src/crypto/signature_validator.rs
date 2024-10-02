@@ -22,8 +22,8 @@ pub fn recover_secp256k1(
 }
 
 #[cfg(feature = "secp256k1_sign_and_validate")]
-pub fn verify_secp256k1_msg(
-    message: &[u8],
+pub fn verify_secp256k1(
+    message: impl AsRef<[u8]>,
     public_key: &Secp256k1PublicKey,
     signature: &Secp256k1Signature,
 ) -> bool {
@@ -32,7 +32,7 @@ pub fn verify_secp256k1_msg(
     if ::secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()).is_ok() {
         if let Ok(sig) = ::secp256k1::ecdsa::Signature::from_compact(signature_data) {
             if let Ok(pk) = ::secp256k1::PublicKey::from_slice(&public_key.0) {
-                let msg = ::secp256k1::Message::from_digest_slice(message)
+                let msg = ::secp256k1::Message::from_digest_slice(message.as_ref())
                     .expect("Hash is always a valid message");
                 return SECP256K1_CTX.verify_ecdsa(&msg, &sig, &pk).is_ok();
             }
@@ -42,35 +42,18 @@ pub fn verify_secp256k1_msg(
     false
 }
 
-#[cfg(feature = "secp256k1_sign_and_validate")]
-pub fn verify_secp256k1(
-    signed_hash: &Hash,
-    public_key: &Secp256k1PublicKey,
-    signature: &Secp256k1Signature,
-) -> bool {
-    verify_secp256k1_msg(&signed_hash.0, public_key, signature)
-}
-
-pub fn verify_ed25519_msg(
-    message: &[u8],
+pub fn verify_ed25519(
+    message: impl AsRef<[u8]>,
     public_key: &Ed25519PublicKey,
     signature: &Ed25519Signature,
 ) -> bool {
     if let Ok(sig) = ed25519_dalek::Signature::from_bytes(&signature.0) {
         if let Ok(pk) = ed25519_dalek::PublicKey::from_bytes(&public_key.0) {
-            return pk.verify_strict(message, &sig).is_ok();
+            return pk.verify_strict(message.as_ref(), &sig).is_ok();
         }
     }
 
     false
-}
-
-pub fn verify_ed25519(
-    signed_hash: &Hash,
-    public_key: &Ed25519PublicKey,
-    signature: &Ed25519Signature,
-) -> bool {
-    verify_ed25519_msg(&signed_hash.0, public_key, signature)
 }
 
 /// Performs BLS12-381 G2 signature verification.
