@@ -46,6 +46,18 @@ impl TryFrom<&[u8]> for Ed25519PublicKey {
     }
 }
 
+impl AsRef<Self> for Ed25519PublicKey {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Ed25519PublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 //======
 // hash
 //======
