@@ -9,23 +9,19 @@ use crate::system::actor::{Actor, FunctionActor};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{System, SystemBasedKernelApi};
-use crate::system::system_modules::auth::AuthModule;
+use crate::system::system_modules::auth::{AuthModule, Authorization, AuthorizationCheckResult};
 use crate::system::type_info::TypeInfoSubstate;
 use radix_common::constants::{RESOURCE_PACKAGE, TRANSACTION_PROCESSOR_PACKAGE};
-use radix_common::prelude::{
-    scrypto_encode, BlueprintId, EntityType, GlobalAddressReservation, Reference,
-};
+use radix_common::prelude::{BlueprintId, EntityType, GlobalAddressReservation, Reference};
 use radix_common::types::{GlobalCaller, NodeId};
-use radix_engine_interface::api::SystemObjectApi;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_engine_interface::prelude::{
-    AccessRule, AuthZoneAssertAccessRuleInput, AuthZoneField, BlueprintInfo, ObjectInfo,
-    ObjectType, OuterObjectInfo, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT, AUTH_ZONE_BLUEPRINT,
-    FUNGIBLE_PROOF_BLUEPRINT, MAIN_BASE_PARTITION, NON_FUNGIBLE_PROOF_BLUEPRINT,
-    TYPE_INFO_FIELD_PARTITION,
+    AccessRule, AuthZoneField, BlueprintInfo, ObjectInfo, ObjectType, OuterObjectInfo,
+    AUTH_ZONE_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, MAIN_BASE_PARTITION,
+    NON_FUNGIBLE_PROOF_BLUEPRINT, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
@@ -162,12 +158,20 @@ impl MultiThreadIntentProcessor {
                     // Run assert_access_rule against this authzone
                     {
                         let auth_zone = Self::create_temp_auth_zone(api)?;
-                        let mut system_service = api.system_service();
-                        system_service.call_method(
+                        let mut system_service = SystemService::new(api);
+                        let auth_result = Authorization::check_authorization_against_access_rule(
+                            &mut system_service,
                             &auth_zone,
-                            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+                            &rule,
                         )?;
+                        match auth_result {
+                            AuthorizationCheckResult::Authorized => {}
+                            AuthorizationCheckResult::Failed(..) => {
+                                return Err(RuntimeError::SystemError(SystemError::IntentError(
+                                    IntentError::VerifyParentFailed,
+                                )))
+                            }
+                        }
                         api.kernel_drop_node(&auth_zone)?;
                     }
 

@@ -1,8 +1,6 @@
 use radix_common::constants::XRD;
 use radix_common::crypto::HasPublicKeyHash;
-use radix_common::manifest_args;
-use radix_common::prelude::ManifestArgs;
-use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine::errors::{IntentError, RuntimeError, SystemError};
 use radix_engine_interface::macros::dec;
 use radix_engine_interface::prelude::{require, require_amount, AccessRule};
 use radix_engine_interface::rule;
@@ -42,7 +40,7 @@ fn should_not_be_able_to_use_subintent_when_verify_parent_access_rule_not_met() 
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            RuntimeError::SystemError(SystemError::IntentError(IntentError::VerifyParentFailed))
         )
     });
 }

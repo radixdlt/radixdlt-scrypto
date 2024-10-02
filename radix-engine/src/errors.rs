@@ -307,6 +307,7 @@ pub enum SystemError {
 pub enum IntentError {
     CannotVerifyParentOnRoot,
     CannotYieldProof,
+    VerifyParentFailed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
