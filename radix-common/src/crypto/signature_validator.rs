@@ -168,6 +168,7 @@ pub fn aggregate_verify_bls12381_v1(
 /// Performs BLS12-381 G2 aggregated signature verification
 /// one message signed with multiple keys.
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// This method does validate provided input keys when aggregating.
 pub fn fast_aggregate_verify_bls12381_v1(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],
@@ -179,3 +180,22 @@ pub fn fast_aggregate_verify_bls12381_v1(
 
     false
 }
+
+/// Performs BLS12-381 G2 aggregated signature verification
+/// one message signed with multiple keys.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// This method does not validate provided input keys when aggregating,
+/// it is left here for backward compatibility.
+/// It is recommended to use `fast_aggregate_verify_bls12381_v1()` method instead.
+pub fn fast_aggregate_verify_bls12381_v1_without_validation(
+    message: &[u8],
+    public_keys: &[Bls12381G1PublicKey],
+    signature: &Bls12381G2Signature,
+) -> bool {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate_without_validation(public_keys) {
+        return verify_bls12381_v1(message, &agg_pk, signature);
+    }
+
+    false
+}
+

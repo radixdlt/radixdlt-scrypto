@@ -21,15 +21,15 @@ impl Bls12381G1PrivateKey {
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
-        if slice.len() != Bls12381G1PrivateKey::LENGTH {
+        if slice.len() != Self::LENGTH {
             return Err(());
         }
         Ok(Self(SecretKey::from_bytes(slice).map_err(|_| ())?))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
-        let mut bytes = [0u8; Bls12381G1PrivateKey::LENGTH];
-        (&mut bytes[Bls12381G1PrivateKey::LENGTH - 8..Bls12381G1PrivateKey::LENGTH])
+        let mut bytes = [0u8; Self::LENGTH];
+        (&mut bytes[Self::LENGTH - 8..Self::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKey::from_bytes(&bytes).map_err(|_| ())?))
