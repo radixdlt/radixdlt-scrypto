@@ -6,7 +6,7 @@ use radix_engine::define_composite_checker;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
 use radix_engine::system::system_db_reader::{
-    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
+    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter, SystemReaderError,
 };
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
@@ -424,15 +424,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .map(|v| v.fully_update_and_into_latest_version())
     }
 
-    pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
+    pub fn inspect_component_royalty(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<Decimal, SystemReaderError> {
         let reader = SystemDatabaseReader::new(self.substate_db());
         let accumulator = reader
             .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
                 component_address.as_node_id(),
                 ModuleId::Royalty,
                 ComponentRoyaltyField::Accumulator.field_index(),
-            )
-            .unwrap()
+            )?
             .fully_update_and_into_latest_version();
 
         let balance = reader
@@ -440,11 +442,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 accumulator.royalty_vault.0.as_node_id(),
                 ModuleId::Main,
                 FungibleVaultField::Balance.field_index(),
-            )
-            .unwrap()
+            )?
             .fully_update_and_into_latest_version();
 
-        balance.amount()
+        Ok(balance.amount())
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {

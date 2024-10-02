@@ -127,6 +127,7 @@ impl IdentityNativePackage {
     pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
@@ -135,7 +136,7 @@ impl IdentityNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_advanced(input.owner_role, api)?;
+                let rtn = IdentityBlueprint::create_advanced(input.owner_role, version, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -144,7 +145,7 @@ impl IdentityNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create(api)?;
+                let rtn = IdentityBlueprint::create(version, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -162,7 +163,7 @@ impl IdentityNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::on_virtualize(input, api)?;
+                let rtn = IdentityBlueprint::on_virtualize(input, version, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -185,11 +186,18 @@ impl SecurifiedRoleAssignment for SecurifiedIdentity {
 
 impl PresecurifiedRoleAssignment for SecurifiedIdentity {}
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
+pub enum IdentityV1MinorVersion {
+    Zero,
+    One,
+}
+
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError> {
         let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
@@ -199,6 +207,7 @@ impl IdentityBlueprint {
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
+            version,
             api,
         )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
@@ -207,6 +216,7 @@ impl IdentityBlueprint {
     }
 
     pub fn create<Y: SystemApi<RuntimeError>>(
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<(GlobalAddress, Bucket), RuntimeError> {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
@@ -227,6 +237,7 @@ impl IdentityBlueprint {
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },
+            version,
             api,
         )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
@@ -236,16 +247,17 @@ impl IdentityBlueprint {
 
     pub fn on_virtualize<Y: SystemApi<RuntimeError>>(
         input: OnVirtualizeInput,
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<OnVirtualizeOutput, RuntimeError> {
         match input.variant_id {
             IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, input.address_reservation, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, version, api)
             }
             IDENTITY_CREATE_PREALLOCATED_ED25519_ID => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, input.address_reservation, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, version, api)
             }
             x => Err(RuntimeError::ApplicationError(
                 ApplicationError::PanicMessage(format!("Unexpected variant id: {:?}", x)),
@@ -256,6 +268,7 @@ impl IdentityBlueprint {
     fn create_virtual<Y: SystemApi<RuntimeError>>(
         public_key_hash: PublicKeyHash,
         address_reservation: GlobalAddressReservation,
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let owner_badge = {
@@ -286,6 +299,7 @@ impl IdentityBlueprint {
                 "owner_keys" => vec![public_key_hash], updatable;
                 "owner_badge" => owner_badge, locked;
             },
+            version,
             api,
         )?;
 
@@ -315,20 +329,31 @@ impl IdentityBlueprint {
     fn create_object<Y: SystemApi<RuntimeError>>(
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
+        version: IdentityV1MinorVersion,
         api: &mut Y,
     ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError> {
-        let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
-
-        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, indexmap!())?;
-
-        let modules = indexmap!(
-            AttachedModuleId::RoleAssignment => role_assignment.0,
-            AttachedModuleId::Metadata => metadata,
-            AttachedModuleId::Royalty => royalty,
-        );
-
-        Ok((object_id, modules))
+        match version {
+            IdentityV1MinorVersion::Zero => {
+                let metadata = Metadata::create_with_data(metadata_init, api)?;
+                let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
+                let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, indexmap!())?;
+                let modules = indexmap!(
+                    AttachedModuleId::RoleAssignment => role_assignment.0,
+                    AttachedModuleId::Metadata => metadata,
+                    AttachedModuleId::Royalty => royalty,
+                );
+                Ok((object_id, modules))
+            }
+            IdentityV1MinorVersion::One => {
+                let metadata = Metadata::create_with_data(metadata_init, api)?;
+                let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, indexmap!())?;
+                let modules = indexmap!(
+                    AttachedModuleId::RoleAssignment => role_assignment.0,
+                    AttachedModuleId::Metadata => metadata,
+                );
+                Ok((object_id, modules))
+            }
+        }
     }
 }
 

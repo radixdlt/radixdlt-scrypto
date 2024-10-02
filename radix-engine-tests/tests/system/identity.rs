@@ -1,5 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::system::system_db_reader::SystemReaderError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine_interface::blueprints::identity::{
@@ -7,6 +8,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
 };
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_tests::common::PackageLoader;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -283,5 +285,101 @@ fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
         true
     } else {
         false
+    }
+}
+
+#[test]
+fn identity_created_before_cuttlefish_has_royalty_module() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| builder.from_bootstrap_to(ProtocolVersion::Bottlenose))
+        .build();
+    let (pk, _, account) = ledger.new_account(false);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("identity"));
+
+    for (package, blueprint, id, args) in [
+        (
+            IDENTITY_PACKAGE,
+            IDENTITY_BLUEPRINT,
+            IDENTITY_CREATE_IDENT,
+            manifest_args!(),
+        ),
+        (
+            IDENTITY_PACKAGE,
+            IDENTITY_BLUEPRINT,
+            IDENTITY_CREATE_ADVANCED_IDENT,
+            manifest_args!(OwnerRole::None),
+        ),
+        (
+            package_address,
+            "IdentityTest",
+            "accept_address",
+            manifest_args!(ComponentAddress::new_or_panic(
+                [EntityType::GlobalPreallocatedEd25519Identity as u8; NodeId::LENGTH]
+            )),
+        ),
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(package, blueprint, id, args)
+            .deposit_entire_worktop(account)
+            .build();
+        let identity = ledger
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .expect_commit_success()
+            .new_component_addresses()[0];
+
+        // Act
+        let royalty = ledger.inspect_component_royalty(identity);
+
+        // Assert
+        assert_eq!(royalty, Ok(dec!(0)));
+    }
+}
+
+#[test]
+fn identity_created_after_cuttlefish_has_no_royalty_module() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("identity"));
+
+    for (package, blueprint, id, args) in [
+        (
+            IDENTITY_PACKAGE,
+            IDENTITY_BLUEPRINT,
+            IDENTITY_CREATE_IDENT,
+            manifest_args!(),
+        ),
+        (
+            IDENTITY_PACKAGE,
+            IDENTITY_BLUEPRINT,
+            IDENTITY_CREATE_ADVANCED_IDENT,
+            manifest_args!(OwnerRole::None),
+        ),
+        (
+            package_address,
+            "IdentityTest",
+            "accept_address",
+            manifest_args!(ComponentAddress::new_or_panic(
+                [EntityType::GlobalPreallocatedEd25519Identity as u8; NodeId::LENGTH]
+            )),
+        ),
+    ] {
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(package, blueprint, id, args)
+            .deposit_entire_worktop(account)
+            .build();
+        let identity = ledger
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .expect_commit_success()
+            .new_component_addresses()[0];
+
+        // Act
+        let royalty = ledger.inspect_component_royalty(identity);
+
+        // Assert
+        assert_eq!(royalty, Err(SystemReaderError::ModuleDoesNotExist));
     }
 }
