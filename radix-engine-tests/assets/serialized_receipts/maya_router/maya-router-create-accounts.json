@@ -5,7 +5,14 @@
       "account_sim1c92a4pchzcm38kcsnq2x6m8evz390ntt2v7ztrptqrlc0gvf97p5tw",
       "account_sim1cxt6fpmrh02xayu96pxwp9ctr0vy0qsxxjwdmsudgulesfqwfpm3sj"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "account_sim1c92a4pchzcm38kcsnq2x6m8evz390ntt2v7ztrptqrlc0gvf97p5tw": {
+        "owner_badge": "Delete"
+      },
+      "account_sim1cxt6fpmrh02xayu96pxwp9ctr0vy0qsxxjwdmsudgulesfqwfpm3sj": {
+        "owner_badge": "Delete"
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

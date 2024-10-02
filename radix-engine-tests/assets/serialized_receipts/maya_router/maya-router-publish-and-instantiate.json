@@ -6,7 +6,34 @@
       "locker_sim1dzmghq5a8dxp2wqs5p654z2rtw6vm479pkvv5rrr05zkzupamwnx9h",
       "package_sim1phagp35fue7vrhshupuny6anzettjpm3ujtfhmmv639xn9h0a53akh"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "package_sim1phagp35fue7vrhshupuny6anzettjpm3ujtfhmmv639xn9h0a53akh": {
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "MayaRouter Package"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "MayaRouter package stores assets swappable with assets from other networks"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "bridge",
+              "cross-chain"
+            ]
+          }
+        }
+      },
+      "locker_sim1dzmghq5a8dxp2wqs5p654z2rtw6vm479pkvv5rrr05zkzupamwnx9h": {
+        "admin_badge": "Delete"
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },
