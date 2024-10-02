@@ -4,7 +4,22 @@
     "new_entities": [
       "resource_sim1t5fs7l5ed48grsg4rjzthhex4ahl8uhq7up23yxxg2k4d83dalphll"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "resource_sim1t5fs7l5ed48grsg4rjzthhex4ahl8uhq7up23yxxg2k4d83dalphll": {
+        "locked_later": {
+          "Set": {
+            "kind": "String",
+            "value": "Hi"
+          }
+        },
+        "locked_on_create": {
+          "Set": {
+            "kind": "String",
+            "value": "Hello"
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

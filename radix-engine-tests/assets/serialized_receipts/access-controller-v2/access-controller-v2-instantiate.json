@@ -5,7 +5,36 @@
       "accesscontroller_sim1cv4rlxgdkv08szudtfzrghyvrethuswfkrea44vpxnanhln0mutzvr",
       "resource_sim1ntv9kye9uh2e9dts8wch2ff6j2p9eh53ltwap3gs63p3e6x0njn2cn"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "accesscontroller_sim1cv4rlxgdkv08szudtfzrghyvrethuswfkrea44vpxnanhln0mutzvr": {
+        "recovery_badge": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "resource_sim1ntv9kye9uh2e9dts8wch2ff6j2p9eh53ltwap3gs63p3e6x0njn2cn"
+          }
+        }
+      },
+      "resource_sim1ntv9kye9uh2e9dts8wch2ff6j2p9eh53ltwap3gs63p3e6x0njn2cn": {
+        "access_controller": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "accesscontroller_sim1cv4rlxgdkv08szudtfzrghyvrethuswfkrea44vpxnanhln0mutzvr"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Recovery Badge"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://assets.radixdlt.com/icons/icon-recovery_badge.png"
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

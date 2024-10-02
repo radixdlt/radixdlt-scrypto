@@ -5,7 +5,24 @@
       "locker_sim1dz32dk5828xgfjstxm4vuxxekv3myh3ek0h3ta8mqyd0dayzm8nnae",
       "resource_sim1thzv5rnmlla89ff2w8pn3mn9rvdlmvht3qest28s5hqpwy0y0exq4r"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "locker_sim1dz32dk5828xgfjstxm4vuxxekv3myh3ek0h3ta8mqyd0dayzm8nnae": {
+        "admin_badge": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "resource_sim1thzv5rnmlla89ff2w8pn3mn9rvdlmvht3qest28s5hqpwy0y0exq4r"
+          }
+        }
+      },
+      "resource_sim1thzv5rnmlla89ff2w8pn3mn9rvdlmvht3qest28s5hqpwy0y0exq4r": {
+        "account_locker": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "locker_sim1dz32dk5828xgfjstxm4vuxxekv3myh3ek0h3ta8mqyd0dayzm8nnae"
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },
