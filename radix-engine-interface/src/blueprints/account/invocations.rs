@@ -400,3 +400,44 @@ pub struct AccountRemoveAuthorizedDepositorInput {
 }
 
 pub type AccountRemoveAuthorizedDepositorOutput = ();
+
+//=================
+// Account Balance
+//=================
+
+pub const ACCOUNT_BALANCE_IDENT: &str = "balance";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountBalanceInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountBalanceOutput = Decimal;
+
+//==========================
+// Account Non-Fungible Ids
+//==========================
+
+pub const ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "non_fungible_local_ids";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountNonFungibleLocalIdsInput {
+    pub resource_address: ResourceAddress,
+    pub limit: u32,
+}
+
+pub type AccountNonFungibleLocalIdsOutput = IndexSet<NonFungibleLocalId>;
+
+//==========================
+// Account Has Non-Fungible
+//==========================
+
+pub const ACCOUNT_HAS_NON_FUNGIBLE_IDENT: &str = "has_non_fungible";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountHasNonFungibleInput {
+    pub resource_address: ResourceAddress,
+    pub local_id: NonFungibleLocalId,
+}
+
+pub type AccountHasNonFungibleOutput = bool;

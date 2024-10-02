@@ -1,9 +1,11 @@
 use super::*;
+use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
+use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_transactions::validation::*;
 
@@ -15,6 +17,8 @@ pub struct CuttlefishSettings {
     pub kernel_version_update: UpdateSetting<NoSettings>,
     /// Add transaction validation changes
     pub transaction_validation_update: UpdateSetting<NoSettings>,
+    /// Adds getter methods for the account blueprint.
+    pub account_getter_methods: UpdateSetting<NoSettings>,
     /// Update the metadata for cuttlefish
     pub update_metadata: UpdateSetting<NoSettings>,
     /// updates the min number of rounds per epoch.
@@ -36,6 +40,7 @@ impl UpdateSettings for CuttlefishSettings {
             system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
             kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
             transaction_validation_update: UpdateSetting::enabled_as_default_for_network(network),
+            account_getter_methods: UpdateSetting::enabled_as_default_for_network(network),
             update_metadata: UpdateSetting::enabled_as_default_for_network(network),
             update_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
                 network,
@@ -50,6 +55,7 @@ impl UpdateSettings for CuttlefishSettings {
             system_logic_update: UpdateSetting::Disabled,
             kernel_version_update: UpdateSetting::Disabled,
             transaction_validation_update: UpdateSetting::Disabled,
+            account_getter_methods: UpdateSetting::Disabled,
             update_metadata: UpdateSetting::Disabled,
             update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
             update_identity_to_not_create_royalty_module: UpdateSetting::Disabled,
@@ -122,6 +128,7 @@ fn generate_principal_batch(
         system_logic_update,
         kernel_version_update,
         transaction_validation_update,
+        account_getter_methods,
         update_metadata,
         update_number_of_min_rounds_per_epoch,
         update_identity_to_not_create_royalty_module,
@@ -144,6 +151,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-transaction-validation-updates",
             generate_cuttlefish_transaction_validation_updates(),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &account_getter_methods {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-account-getter-methods",
+            generate_cuttlefish_account_getters_extension_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &update_metadata {
@@ -219,6 +232,145 @@ fn generate_cuttlefish_transaction_validation_updates() -> StateUpdates {
     )
 }
 
+fn generate_cuttlefish_account_getters_extension_state_updates<S: SubstateDatabase + ?Sized>(
+    db: &S,
+) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let node_id = ACCOUNT_PACKAGE.into_node_id();
+    let blueprint_version_key = BlueprintVersionKey {
+        blueprint: ACCOUNT_BLUEPRINT.to_string(),
+        version: Default::default(),
+    };
+
+    // Creating the original code substates for extension.
+    let (code_hash, (code_substate, vm_type_substate)) = {
+        let original_code = (NativeCodeId::AccountCode3 as u64).to_be_bytes().to_vec();
+
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        let code_substate = PackageCodeOriginalCodeV1 {
+            code: original_code,
+        }
+        .into_versioned()
+        .into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_locked_substate();
+
+        (code_hash, (code_substate, vm_type_substate))
+    };
+
+    // Creating the new schema substate with the methods added by the extension
+    let (added_functions, schema) = AccountBlueprintCuttlefishExtension::added_functions_schema();
+    let (schema_hash, schema_substate) =
+        (schema.generate_schema_hash(), schema.into_locked_substate());
+
+    // Update the auth config of the account blueprint to have these added methods and have them be
+    // public.
+    let auth_config = {
+        let mut auth_config = AccountBlueprint::get_definition().auth_config;
+        let MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
+            ref mut methods, ..
+        }) = auth_config.method_auth
+        else {
+            panic!("Account doesn't have a static role definition")
+        };
+        methods.extend(
+            added_functions
+                .keys()
+                .map(ToOwned::to_owned)
+                .map(|ident| MethodKey { ident })
+                .map(|key| (key, MethodAccessibility::Public)),
+        );
+        auth_config.into_locked_substate()
+    };
+
+    // Updating the blueprint definition of the existing blueprint with the added functions.
+    let blueprint_definition_substate = {
+        let mut blueprint_definition = reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionDefinition>(
+                &node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &blueprint_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap()
+            .fully_update_and_into_latest_version();
+
+        for (function_name, added_function) in added_functions.into_iter() {
+            let TypeRef::Static(input_local_id) = added_function.input else {
+                unreachable!()
+            };
+            let TypeRef::Static(output_local_id) = added_function.output else {
+                unreachable!()
+            };
+
+            blueprint_definition.function_exports.insert(
+                function_name.clone(),
+                PackageExport {
+                    code_hash,
+                    export_name: function_name.clone(),
+                },
+            );
+            blueprint_definition.interface.functions.insert(
+                function_name,
+                FunctionSchema {
+                    receiver: added_function.receiver,
+                    input: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, input_local_id)),
+                    output: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, output_local_id)),
+                },
+            );
+        }
+
+        blueprint_definition.into_locked_substate()
+    };
+
+    // Getting the partition number of the various collections that we're updating
+    let blueprint_version_definition_partition_number =
+        PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition();
+    let code_vm_type_partition_number =
+        PackagePartitionOffset::CodeVmTypeKeyValue.as_main_partition();
+    let code_original_code_partition_number =
+        PackagePartitionOffset::CodeOriginalCodeKeyValue.as_main_partition();
+    let schema_partition_number = SCHEMAS_PARTITION.at_offset(PartitionOffset(0)).unwrap();
+    let blueprint_version_auth_config_partition_number =
+        PackagePartitionOffset::BlueprintVersionAuthConfigKeyValue.as_main_partition();
+
+    // Generating the state updates
+    StateUpdates::empty().set_node_updates(
+        node_id,
+        NodeStateUpdates::empty()
+            .set_substate(
+                blueprint_version_definition_partition_number,
+                SubstateKey::map(&blueprint_version_key),
+                blueprint_definition_substate,
+            )
+            .set_substate(
+                code_vm_type_partition_number,
+                SubstateKey::map(&code_hash),
+                vm_type_substate,
+            )
+            .set_substate(
+                code_original_code_partition_number,
+                SubstateKey::map(&code_hash),
+                code_substate,
+            )
+            .set_substate(
+                schema_partition_number,
+                SubstateKey::map(&schema_hash),
+                schema_substate,
+            )
+            .set_substate(
+                blueprint_version_auth_config_partition_number,
+                SubstateKey::map(&blueprint_version_key),
+                auth_config,
+            ),
+    )
+}
+
 fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     struct MetadataUpdates {
         pub name: Option<MetadataValue>,
@@ -280,119 +432,122 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     // We would like to add an `info_url` entry for the various entities that we have. The this is
     // the mapping that we're using.
     let info_url_metadata = [
-        (XRD.into_node_id(), "https://go.radixdlt.com/xrd-info"),
+        (XRD.into_node_id(), "https://www.radixdlt.com/info-url/xrd"),
         (
             SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/secp256k1-signature-resouce-info",
+            "https://www.radixdlt.com/info-url/secp256k1-signature-resource",
         ),
         (
             ED25519_SIGNATURE_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/ed25519-signature-resource-info",
+            "https://www.radixdlt.com/info-url/ed25519-signature-resource",
         ),
         (
             PACKAGE_OF_DIRECT_CALLER_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/package-of-direct-caller-resource-info",
+            "https://www.radixdlt.com/info-url/package-of-direct-caller-resource",
         ),
         (
             GLOBAL_CALLER_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/global-caller-resource-info",
+            "https://www.radixdlt.com/info-url/global-caller-resource",
         ),
         (
             SYSTEM_EXECUTION_RESOURCE.into_node_id(),
-            "https://go.radixdlt.com/system-execution-resource-info",
+            "https://www.radixdlt.com/info-url/system-execution-resource",
         ),
         (
             PACKAGE_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/package-owner-badge-info",
+            "https://www.radixdlt.com/info-url/package-owner-badge",
         ),
         (
             VALIDATOR_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/validator-owner-badge-info",
+            "https://www.radixdlt.com/info-url/validator-owner-badge",
         ),
         (
             ACCOUNT_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/account-owner-badge-info",
+            "https://www.radixdlt.com/info-url/account-owner-badge",
         ),
         (
             IDENTITY_OWNER_BADGE.into_node_id(),
-            "https://go.radixdlt.com/identity-owner-badge-info",
+            "https://www.radixdlt.com/info-url/identity-owner-badge",
         ),
         (
             PACKAGE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/package-package-info",
+            "https://www.radixdlt.com/info-url/package-package",
         ),
         (
             RESOURCE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/resource-package-info",
+            "https://www.radixdlt.com/info-url/resource-package",
         ),
         (
             ACCOUNT_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/account-package-info",
+            "https://www.radixdlt.com/info-url/account-package",
         ),
         (
             IDENTITY_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/identity-package-info",
+            "https://www.radixdlt.com/info-url/identity-package",
         ),
         (
             CONSENSUS_MANAGER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/consensus-manager-package-info",
+            "https://www.radixdlt.com/info-url/consensus-manager-package",
         ),
         (
             ACCESS_CONTROLLER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/access-controller-package-info",
+            "https://www.radixdlt.com/info-url/access-controller-package",
         ),
         (
             POOL_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/pool-package-info",
+            "https://www.radixdlt.com/info-url/pool-package",
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/transaction-processor-package-info",
+            "https://www.radixdlt.com/info-url/transaction-processor-package",
         ),
         (
             METADATA_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/metadata-module-package-info",
+            "https://www.radixdlt.com/info-url/metadata-module-package",
         ),
         (
             ROYALTY_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/royalty-module-package-info",
+            "https://www.radixdlt.com/info-url/royalty-module-package",
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/role-assignment-module-package-info",
+            "https://www.radixdlt.com/info-url/role-assignment-module-package",
         ),
         (
             TEST_UTILS_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/test-utils-package-info",
+            "https://www.radixdlt.com/info-url/test-utils-package",
         ),
         (
             GENESIS_HELPER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/genesis-helper-package-info",
+            "https://www.radixdlt.com/info-url/genesis-helper-package",
         ),
         (
             FAUCET_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/faucet-package-info",
+            "https://www.radixdlt.com/info-url/faucet-package",
         ),
         (
             TRANSACTION_TRACKER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/transaction-tracker-package-info",
+            "https://www.radixdlt.com/info-url/transaction-tracker-package",
         ),
         (
             LOCKER_PACKAGE.into_node_id(),
-            "https://go.radixdlt.com/locker-package-info",
+            "https://www.radixdlt.com/info-url/locker-package",
         ),
         (
             CONSENSUS_MANAGER.into_node_id(),
-            "https://go.radixdlt.com/consensus-manager-info",
+            "https://www.radixdlt.com/info-url/consensus-manager",
         ),
         (
             GENESIS_HELPER.into_node_id(),
-            "https://go.radixdlt.com/genesis-helper-info",
+            "https://www.radixdlt.com/info-url/genesis-helper",
         ),
-        (FAUCET.into_node_id(), "https://go.radixdlt.com/faucet-info"),
+        (
+            FAUCET.into_node_id(),
+            "https://www.radixdlt.com/info-url/faucet",
+        ),
         (
             TRANSACTION_TRACKER.into_node_id(),
-            "https://go.radixdlt.com/transaction-tracker-info",
+            "https://www.radixdlt.com/info-url/transaction-tracker",
         ),
     ];
 

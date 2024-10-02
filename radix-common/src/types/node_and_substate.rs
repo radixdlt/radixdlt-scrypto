@@ -4,6 +4,7 @@ use crate::types::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use prelude::scrypto_encode;
 use radix_rust::ContextualDisplay;
 use sbor::rust::prelude::*;
 
@@ -254,6 +255,10 @@ pub enum SubstateKeyRef<'a> {
 }
 
 impl SubstateKey {
+    pub fn map(key: &impl crate::data::scrypto::ScryptoEncode) -> Self {
+        Self::Map(scrypto_encode(&key).expect("Map Key must be Scrypto Encodable"))
+    }
+
     pub fn for_field(&self) -> Option<&FieldKey> {
         match self {
             SubstateKey::Field(key) => Some(key),

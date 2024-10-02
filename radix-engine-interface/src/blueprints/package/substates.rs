@@ -29,7 +29,7 @@ pub enum NativeCodeId {
     /// * Introduced: Bottlenose
     /// * Coverage  : `IDENTITY_CREATE_ADVANCED_IDENT`, `IDENTITY_CREATE_IDENT` and `IDENTITY_ON_VIRTUALIZE_EXPORT_NAME`
     /// * Changes   : Do not create royalty module
-    IdentityCode2 = 24u64,
+    IdentityCode2 = 25u64,
 
     /// * Introduced: Babylon
     /// * Coverage  : All consensus manager blueprints
@@ -50,6 +50,11 @@ pub enum NativeCodeId {
     /// * Coverage  : `ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT` and `ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT`
     /// * Changes   : Update `try_deposit` logic
     AccountCode2 = 20u64,
+
+    /// * Introduced: Cuttlefish
+    /// * Coverage  : Account getters
+    /// * Changes   : Adds getters to the account blueprint
+    AccountCode3 = 24u64,
 
     /// * Introduced: Babylon
     /// * Coverage  : All access controller blueprints

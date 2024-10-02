@@ -1,5 +1,6 @@
 use crate::blueprints::access_controller::v1::*;
 use crate::blueprints::access_controller::v2::*;
+use crate::blueprints::account::AccountBlueprintCuttlefishExtension;
 use crate::blueprints::account::{AccountBlueprintBottlenoseExtension, AccountNativePackage};
 use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
@@ -166,6 +167,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     }
                     NativeCodeId::AccountCode2 => {
                         AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
+                    }
+                    NativeCodeId::AccountCode3 => {
+                        AccountBlueprintCuttlefishExtension::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::AccessControllerCode1 => {
                         AccessControllerV1NativePackage::invoke_export(export_name, input, api)

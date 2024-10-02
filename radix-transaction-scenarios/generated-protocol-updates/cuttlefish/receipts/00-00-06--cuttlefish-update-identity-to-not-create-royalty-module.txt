@@ -98,11 +98,11 @@ STATE UPDATES: 1 entity
            },
            function_exports: {
              "create_advanced" => PackageExport {
-               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
                export_name: "create_advanced",
              },
              "create" => PackageExport {
-               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
                export_name: "create",
              },
              "securify" => PackageExport {
@@ -112,21 +112,21 @@ STATE UPDATES: 1 entity
            },
            hook_exports: {
              BlueprintHook::OnVirtualize => PackageExport {
-               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
                export_name: "on_virtualize",
              },
            },
          },
        )
   ├─ Partition(69): 1 change
-    └─ Set: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a"))
+    └─ Set: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd"))
        Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
          PackageCodeVmTypeV1::Native,
        )
   └─ Partition(70): 1 change
-    └─ Set: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a"))
+    └─ Set: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd"))
        Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
-         PackageCodeOriginalCodeV1(hex("0000000000000018")),
+         PackageCodeOriginalCodeV1(hex("0000000000000019")),
        )
 
 OUTPUTS: 0
