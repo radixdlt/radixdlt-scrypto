@@ -95,7 +95,7 @@ fn crypto_scrypto_bls12381_v1_aggregate_verify(
                 package_address,
                 "CryptoScrypto",
                 "bls12381_v1_aggregate_verify",
-                manifest_args!(pub_keys_msgs, signature),
+                manifest_args!(pub_keys_msgs, &signature),
             )
             .build(),
         vec![],
@@ -116,7 +116,7 @@ fn crypto_scrypto_bls12381_v1_fast_aggregate_verify(
                 package_address,
                 "CryptoScrypto",
                 "bls12381_v1_fast_aggregate_verify",
-                manifest_args!(msg, pub_keys, signature),
+                manifest_args!(msg, &pub_keys, &signature),
             )
             .build(),
         vec![],
@@ -135,7 +135,7 @@ fn crypto_scrypto_bls12381_g2_signature_aggregate(
                 package_address,
                 "CryptoScrypto",
                 "bls12381_g2_signature_aggregate",
-                manifest_args!(signatures),
+                manifest_args!(&signatures),
             )
             .build(),
         vec![],
@@ -161,12 +161,32 @@ fn crypto_scrypto_keccak256_hash(
     )
 }
 
+fn crypto_scrypto_blake_2b_256_hash(
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    data: Vec<u8>,
+) -> TransactionReceipt {
+    runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "blake2b_256_hash",
+                manifest_args!(data),
+            )
+            .build(),
+        vec![],
+    )
+}
+
+
 #[test]
 fn test_crypto_scrypto_verify_bls12381_v1() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let msg1 = hash("Test").to_vec();
     let pk = "93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2";
@@ -207,7 +227,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let (_sks, _pks, _msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
@@ -240,7 +260,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
@@ -312,7 +332,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let sks: Vec<Bls12381G1PrivateKey> = (1..11)
         .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
@@ -381,7 +401,7 @@ fn test_crypto_scrypto_keccak256_hash() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let data1 = b"Hello Radix".to_vec();
     let data2 = b"xidaR olleH".to_vec();
@@ -429,7 +449,7 @@ fn test_crypto_scrypto_flow() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let msg = b"Important message".to_vec();
 
@@ -469,7 +489,7 @@ fn test_crypto_scrypto_flow() {
 fn test_crypto_scrypto_keccak256_costing() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     for size in [
         100usize,
@@ -493,7 +513,7 @@ fn test_crypto_scrypto_keccak256_costing() {
 fn test_crypto_scrypto_verify_bls12381_v1_costing() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
@@ -527,7 +547,7 @@ fn test_crypto_scrypto_verify_bls12381_v1_costing() {
 fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     for cnt in [1, 2, 5, 10, 20, 50, 100] {
         let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
@@ -548,7 +568,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
         for cnt in [1u32, 2, 5, 10, 20] {
@@ -571,7 +591,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
 fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     for (cnt, msg_size) in [
         (1, 100 * 1024),
@@ -632,7 +652,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
 fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
 
     for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
         for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
@@ -659,3 +679,251 @@ fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
         }
     }
 }
+
+#[test]
+fn test_crypto_scrypto_blake2b_256_hash() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let data1 = b"Hello Radix".to_vec();
+    let data2 = b"xidaR olleH".to_vec();
+    let data3: Vec<u8> = vec![]; // empty data
+
+    // Act
+    let data1_hash: Hash = get_output!(crypto_scrypto_blake_2b_256_hash(
+        &mut ledger,
+        package_address,
+        data1.clone()
+    ));
+    // Assert
+    assert_eq!(
+        data1_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
+    assert_eq!(
+        data1_hash,
+        blake2b_256_hash(data1)
+    );
+
+    // Act
+    let data2_hash: Hash = get_output!(crypto_scrypto_blake_2b_256_hash(
+        &mut ledger,
+        package_address,
+        data2
+    ));
+    // Assert
+    assert_ne!(
+        data2_hash,
+        Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
+    );
+
+    // Act
+    let data3_hash: Hash = get_output!(crypto_scrypto_blake_2b_256_hash(
+        &mut ledger,
+        package_address,
+        data3
+    ));
+    // Assert
+    assert_eq!(
+        data3_hash,
+        Hash::from_str("0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8").unwrap()
+    );
+}
+
+fn crypto_scrypto_ed25519_verify(
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    msg: Vec<u8>,
+    pub_key: Ed25519PublicKey,
+    signature: Ed25519Signature,
+) -> TransactionReceipt {
+    runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "ed25519_verify",
+                manifest_args!(msg, pub_key, signature),
+            )
+            .build(),
+        vec![],
+    )
+}
+
+fn crypto_scrypto_secp256k1_ecdsa_verify(
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    msg: Vec<u8>,
+    pub_key: Secp256k1PublicKey,
+    signature: Secp256k1Signature,
+) -> TransactionReceipt {
+    runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "secp256k1_ecdsa_verify",
+                manifest_args!(msg, pub_key, signature),
+            )
+            .build(),
+        vec![],
+    )
+}
+
+
+#[test]
+fn test_crypto_scrypto_verify_ed25519() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let msg1 = hash("Test").to_vec();
+    let pk = "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29";
+    let msg1_signature = "cf0ca64435609b85ab170da339d415bbac87d678dfd505969be20adc6b5971f4ee4b4620c602bcbc34fd347596546675099d696265f4a42a16df343da1af980e";
+
+    let pk = Ed25519PublicKey::from_str(pk).unwrap();
+    let msg1_signature = Ed25519Signature::from_str(msg1_signature).unwrap();
+    // Act
+    let msg1_verify: bool = get_output!(crypto_scrypto_ed25519_verify(
+        &mut ledger,
+        package_address,
+        msg1,
+        pk,
+        msg1_signature,
+    ));
+
+    // Assert
+    assert!(msg1_verify);
+
+    // Arrange
+    let msg2 = hash("ExpectFailureTest").to_vec();
+
+    // Act
+    let msg2_verify: bool = get_output!(crypto_scrypto_ed25519_verify(
+        &mut ledger,
+        package_address,
+        msg2,
+        pk,
+        msg1_signature,
+    ));
+
+    // Assert
+    assert!(!msg2_verify);
+}
+
+#[test]
+fn test_crypto_scrypto_verify_secp256k1_ecdsa() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let msg1 = hash("Test").to_vec();
+    let pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+    let msg1_signature = "00eb8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
+
+    let pk = Secp256k1PublicKey::from_str(pk).unwrap();
+    let msg1_signature = Secp256k1Signature::from_str(msg1_signature).unwrap();
+    // Act
+    let msg1_verify: bool = get_output!(crypto_scrypto_secp256k1_ecdsa_verify(
+        &mut ledger,
+        package_address,
+        msg1,
+        pk,
+        msg1_signature,
+    ));
+
+    // Assert
+    assert!(msg1_verify);
+
+    // Arrange
+    let msg2 = hash("ExpectFailureTest").to_vec();
+
+    // Act
+    let msg2_verify: bool = get_output!(crypto_scrypto_secp256k1_ecdsa_verify(
+        &mut ledger,
+        package_address,
+        msg2,
+        pk,
+        msg1_signature,
+    ));
+
+    // Assert
+    assert!(!msg2_verify);
+}
+
+#[test]
+fn test_crypto_scrypto_blake2b_256_costing() {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    for size in [
+        100usize,
+        200,
+        500,
+        1024,
+        10 * 1024,
+        20 * 1024,
+        50 * 1024,
+        100 * 1024,
+        200 * 1024,
+        500 * 1024,
+        900 * 1024,
+    ] {
+        let data = vec![0u8; size];
+        let _hash = crypto_scrypto_blake_2b_256_hash(&mut ledger, package_address, data);
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_verify_ed25519_costing() {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let secret_key = Ed25519PrivateKey::from_u64(1).unwrap();
+    let public_key = secret_key.public_key();
+
+    for size in 0..10 {
+        let data: Vec<u8> = vec![size as u8; size*10];
+        let data_hash = hash(data);
+        let signature = secret_key.sign(&data_hash);
+        let _ = crypto_scrypto_ed25519_verify(
+            &mut ledger,
+            package_address,
+            data_hash.to_vec(),
+            public_key,
+            signature,
+        );
+    }
+}
+
+#[test]
+fn test_crypto_scrypto_verify_secp256k1_ecdsa_costing() {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let secret_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+    let public_key = secret_key.public_key();
+
+    for size in 0..10 {
+        let data: Vec<u8> = vec![size as u8; size*10];
+        let data_hash = hash(data);
+        let signature = secret_key.sign(&data_hash);
+        let _ = crypto_scrypto_secp256k1_ecdsa_verify(
+            &mut ledger,
+            package_address,
+            data_hash.to_vec(),
+            public_key,
+            signature,
+        );
+    }
+}
+
