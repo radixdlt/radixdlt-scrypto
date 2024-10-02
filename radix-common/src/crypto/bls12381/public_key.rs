@@ -52,7 +52,7 @@ impl Bls12381G1PublicKey {
     /// This method does not validate provided input keys, it is left here
     /// for backward compatibility.
     /// It is recommended to use `aggregate()` method instead.
-    pub fn aggregate_without_validation(
+    pub fn aggregate_old(
         public_keys: &[Self],
     ) -> Result<Self, ParseBlsPublicKeyError> {
         if !public_keys.is_empty() {
@@ -82,7 +82,7 @@ impl TryFrom<&[u8]> for Bls12381G1PublicKey {
     }
 }
 
-impl AsRef<Self> for Bls12381G1PublicKey{
+impl AsRef<Self> for Bls12381G1PublicKey {
     fn as_ref(&self) -> &Self {
         self
     }

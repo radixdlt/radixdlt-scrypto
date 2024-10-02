@@ -187,12 +187,12 @@ pub fn fast_aggregate_verify_bls12381_v1(
 /// This method does not validate provided input keys when aggregating,
 /// it is left here for backward compatibility.
 /// It is recommended to use `fast_aggregate_verify_bls12381_v1()` method instead.
-pub fn fast_aggregate_verify_bls12381_v1_without_validation(
+pub fn fast_aggregate_verify_bls12381_v1_old(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],
     signature: &Bls12381G2Signature,
 ) -> bool {
-    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate_without_validation(public_keys) {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate_old(public_keys) {
         return verify_bls12381_v1(message, &agg_pk, signature);
     }
 
