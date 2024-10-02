@@ -2,6 +2,7 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::vm::wasm::*;
+use crate::vm::ScryptoVmVersion;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
@@ -20,10 +21,16 @@ pub struct ScryptoRuntime<'y, Y: SystemApi<RuntimeError>> {
     export_name: String,
     wasm_execution_units_buffer: u32,
     max_number_of_buffers: usize,
+    scrypto_vm_version: ScryptoVmVersion,
 }
 
 impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
-    pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
+    pub fn new(
+        api: &'y mut Y,
+        package_address: PackageAddress,
+        export_name: String,
+        scrypto_vm_version: ScryptoVmVersion,
+    ) -> Self {
         ScryptoRuntime {
             api,
             buffers: index_map_new(),
@@ -32,6 +39,7 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
             export_name,
             wasm_execution_units_buffer: 0,
             max_number_of_buffers: MAX_NUMBER_OF_BUFFERS,
+            scrypto_vm_version,
         }
     }
 
@@ -613,13 +621,22 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
         }
 
+        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
+            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
+        }
+
         self.api
             .consume_cost_units(ClientCostingEntry::Bls12381V1FastAggregateVerify {
                 size: message.len(),
                 keys_cnt: public_keys.len(),
             })?;
 
-        Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
+        if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
+            Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
+        } else {
+            // TODO use another method
+            Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
+        }
     }
 
     #[trace_resources(log=signatures.len())]
@@ -634,12 +651,22 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
         }
 
+        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
+            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
+        }
+
         self.api
             .consume_cost_units(ClientCostingEntry::Bls12381G2SignatureAggregate {
                 signatures_cnt: signatures.len(),
             })?;
-        let agg_sig = Bls12381G2Signature::aggregate(&signatures)
-            .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))?;
+
+        let agg_sig = if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
+            Bls12381G2Signature::aggregate(&signatures)
+        } else {
+            // TODO use another method
+            Bls12381G2Signature::aggregate(&signatures)
+        }
+        .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))?;
 
         self.allocate_buffer(
             scrypto_encode(&agg_sig).expect("Failed to encode Bls12381G2Signature"),
@@ -685,7 +712,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         // TODO: costing
 
-        Ok(verify_ed25519_msg(&message, &public_key, &signature) as u32)
+        Ok(verify_ed25519(message, &public_key, &signature) as u32)
     }
 
     #[trace_resources(log=message.len())]
@@ -702,6 +729,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         // TODO: costing
 
-        Ok(verify_secp256k1_msg(&message, &public_key, &signature) as u32)
+        Ok(verify_secp256k1(message, &public_key, &signature) as u32)
     }
 }
