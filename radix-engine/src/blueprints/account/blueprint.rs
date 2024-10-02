@@ -1513,3 +1513,156 @@ impl AccountBlueprintBottlenoseExtension {
         }
     }
 }
+
+pub struct AccountBlueprintCuttlefishExtension;
+
+impl AccountBlueprintCuttlefishExtension {
+    pub fn added_functions_schema() -> (
+        IndexMap<String, FunctionSchemaInit>,
+        VersionedSchema<ScryptoCustomSchema>,
+    ) {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let mut functions = index_map_new();
+        functions.insert(
+            ACCOUNT_BALANCE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBalanceInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountBalanceOutput>(),
+                ),
+                export: ACCOUNT_BALANCE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountNonFungibleLocalIdsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountNonFungibleLocalIdsOutput>(),
+                ),
+                export: ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_HAS_NON_FUNGIBLE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountHasNonFungibleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountHasNonFungibleOutput>(),
+                ),
+                export: ACCOUNT_HAS_NON_FUNGIBLE_IDENT.to_string(),
+            },
+        );
+        let schema = generate_full_schema(aggregator);
+        (functions, schema)
+    }
+
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        match export_name {
+            ACCOUNT_BALANCE_IDENT => {
+                let AccountBalanceInput { resource_address } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = Self::balance(resource_address, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                let AccountNonFungibleLocalIdsInput {
+                    resource_address,
+                    limit,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = Self::non_fungible_local_ids(resource_address, limit, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_HAS_NON_FUNGIBLE_IDENT => {
+                let AccountHasNonFungibleInput {
+                    resource_address,
+                    local_id,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = Self::has_non_fungible(resource_address, local_id, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
+            )),
+        }
+    }
+
+    pub fn balance<Y: SystemApi<RuntimeError>>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
+        match AccountBlueprint::get_vault(
+            resource_address,
+            |vault, api| vault.amount(api),
+            false,
+            api,
+        ) {
+            Ok(balance) => Ok(balance),
+            Err(RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::VaultDoesNotExist { .. },
+            ))) => Ok(Decimal::ZERO),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn non_fungible_local_ids<Y: SystemApi<RuntimeError>>(
+        resource_address: ResourceAddress,
+        limit: u32,
+        api: &mut Y,
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
+        match AccountBlueprint::get_vault(
+            resource_address,
+            |vault, api| vault.non_fungible_local_ids(limit, api),
+            false,
+            api,
+        ) {
+            Ok(ids) => Ok(ids),
+            Err(RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::VaultDoesNotExist { .. },
+            ))) => Ok(Default::default()),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn has_non_fungible<Y: SystemApi<RuntimeError>>(
+        resource_address: ResourceAddress,
+        local_id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError> {
+        match AccountBlueprint::get_vault(
+            resource_address,
+            |vault, api| vault.contains_non_fungible(local_id, api),
+            false,
+            api,
+        ) {
+            Ok(result) => Ok(result),
+            Err(RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::VaultDoesNotExist { .. },
+            ))) => Ok(false),
+            Err(error) => Err(error),
+        }
+    }
+}

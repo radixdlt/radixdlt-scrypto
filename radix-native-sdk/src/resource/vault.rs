@@ -93,6 +93,12 @@ pub trait NativeNonFungibleVault {
         non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(), E>;
+
+    fn contains_non_fungible<Y: SystemApi<E>, E: SystemApiError>(
+        &mut self,
+        local_id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, E>;
 }
 
 impl NativeVault for Vault {
@@ -310,6 +316,20 @@ impl NativeNonFungibleVault for Vault {
             self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn contains_non_fungible<Y: SystemApi<E>, E: SystemApiError>(
+        &mut self,
+        local_id: NonFungibleLocalId,
+        api: &mut Y,
+    ) -> Result<bool, E> {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT,
+            scrypto_encode(&NonFungibleVaultContainsNonFungibleInput { id: local_id }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

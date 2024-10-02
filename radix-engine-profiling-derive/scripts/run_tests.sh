@@ -8,7 +8,7 @@ qemu_plugin=/home/ubuntu/qemu/libscrypto-qemu-plugin.so
 
 if [ -z "$*" ]; then echo "Provide path to folder with binaries to execute."; exit; fi
 
-list=`find $1 -type f ! -name "*.*"`
+list=`find "$1" -type f ! -name "*.*"`
 idx=1
 
 # count executable files

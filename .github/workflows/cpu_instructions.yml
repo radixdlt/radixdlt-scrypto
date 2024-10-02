@@ -154,7 +154,7 @@ jobs:
         run: |
              mkdir /tmp/scrypto-resources-usage
              cd radix-engine-tests
-             bash ../radix-engine-profiling-derive/scripts/run_tests.sh ${{ format('../target/release/deps_{0}', matrix.bin-cache) }}
+             bash ../radix-engine-profiling-derive/scripts/run_tests.sh $(realpath ${{ format('../target/release/deps_{0}', matrix.bin-cache) }})
       - name: Cache QEMU run results
         uses: RDXWorks-actions/cache/save@main
         with:
