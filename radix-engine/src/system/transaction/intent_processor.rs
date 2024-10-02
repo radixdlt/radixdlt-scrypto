@@ -1,5 +1,5 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_processor::{TxnInstruction, MultiThreadResult};
+use crate::blueprints::transaction_processor::{MultiThreadResult, TxnInstruction};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -132,9 +132,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
             self.instruction_index += 1;
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
-                    MultiThreadResult::VerifyParent(rule) => {
-                        ResumeResult::VerifyParent(rule)
-                    }
+                    MultiThreadResult::VerifyParent(rule) => ResumeResult::VerifyParent(rule),
                     MultiThreadResult::SwitchToChild(child, value) => ResumeResult::YieldToChild(
                         child,
                         IndexedScryptoValue::from_scrypto_value(value),

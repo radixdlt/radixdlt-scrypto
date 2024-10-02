@@ -1,25 +1,36 @@
+use crate::blueprints::resource::AuthZone;
 use crate::blueprints::transaction_processor::{
     IntentProcessor, ResumeResult, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
 };
 use crate::errors::{KernelError, RuntimeError, SystemError};
-use crate::internal_prelude::YieldError;
+use crate::internal_prelude::{FieldSubstate, IntentError};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::actor::{Actor, FunctionActor};
+use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{System, SystemBasedKernelApi};
 use crate::system::system_modules::auth::AuthModule;
+use crate::system::type_info::TypeInfoSubstate;
 use radix_common::constants::{RESOURCE_PACKAGE, TRANSACTION_PROCESSOR_PACKAGE};
-use radix_common::prelude::{scrypto_encode, BlueprintId, GlobalAddressReservation};
+use radix_common::prelude::{
+    scrypto_encode, BlueprintId, EntityType, GlobalAddressReservation, Reference,
+};
+use radix_common::types::{GlobalCaller, NodeId};
+use radix_engine_interface::api::SystemObjectApi;
+use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_interface::prelude::{AccessRule, ObjectInfo, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT};
+use radix_engine_interface::prelude::{
+    AccessRule, AuthZoneAssertAccessRuleInput, AuthZoneField, BlueprintInfo, ObjectInfo,
+    ObjectType, OuterObjectInfo, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT, AUTH_ZONE_BLUEPRINT,
+    FUNGIBLE_PROOF_BLUEPRINT, MAIN_BASE_PARTITION, NON_FUNGIBLE_PROOF_BLUEPRINT,
+    TYPE_INFO_FIELD_PARTITION,
+};
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
-use radix_engine_interface::api::SystemObjectApi;
 use sbor::prelude::ToString;
-use crate::kernel::kernel_api::KernelInternalApi;
 
 /// Multi-thread intent processor for executing multiple subintents
 pub struct MultiThreadIntentProcessor {
@@ -95,7 +106,7 @@ impl MultiThreadIntentProcessor {
         enum PostExecution {
             SwitchThread(usize, IndexedScryptoValue, bool),
             VerifyParent(AccessRule),
-            RootIntentDone
+            RootIntentDone,
         }
 
         loop {
@@ -113,9 +124,7 @@ impl MultiThreadIntentProcessor {
                     let parent = parent_stack.pop().unwrap();
                     PostExecution::SwitchThread(parent, value, false)
                 }
-                ResumeResult::VerifyParent(rule) => {
-                    PostExecution::VerifyParent(rule)
-                }
+                ResumeResult::VerifyParent(rule) => PostExecution::VerifyParent(rule),
                 ResumeResult::ChildIntentDone(value) => {
                     let parent = parent_stack.pop().unwrap();
                     PostExecution::SwitchThread(parent, value, true)
@@ -139,17 +148,24 @@ impl MultiThreadIntentProcessor {
                 }
                 PostExecution::VerifyParent(rule) => {
                     let save_cur_thread = cur_thread;
-                    let parent = parent_stack.iter().next().unwrap().clone();
+                    let parent =
+                        parent_stack
+                            .iter()
+                            .next()
+                            .cloned()
+                            .ok_or(RuntimeError::SystemError(SystemError::IntentError(
+                                IntentError::CannotVerifyParentOnRoot,
+                            )))?;
                     api.kernel_switch_stack(parent)?;
 
-                    let auth_zone = api.system_service().kernel_get_system_state().current_call_frame.self_auth_zone().unwrap();
+                    let auth_zone = Self::create_temp_auth_zone(api)?;
                     let mut system_service = api.system_service();
                     system_service.call_method(
                         &auth_zone,
                         AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                        scrypto_encode(&rule).unwrap(),
+                        scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
                     )?;
-
+                    api.kernel_drop_node(&auth_zone)?;
 
                     api.kernel_switch_stack(save_cur_thread)?;
                 }
@@ -163,6 +179,47 @@ impl MultiThreadIntentProcessor {
         assert!(parent_stack.is_empty());
 
         Ok(())
+    }
+
+    fn create_temp_auth_zone<Y: SystemBasedKernelApi>(api: &mut Y) -> Result<NodeId, RuntimeError> {
+        let actor = api.kernel_get_system_state().current_call_frame;
+        let auth_zone = actor.self_auth_zone().unwrap();
+        let blueprint_id = actor.blueprint_id().unwrap();
+        let auth_zone = AuthZone::new(
+            vec![],
+            Default::default(),
+            Default::default(),
+            None,
+            Some((
+                GlobalCaller::PackageBlueprint(blueprint_id),
+                Reference(auth_zone),
+            )),
+            None,
+        );
+
+        let new_auth_zone = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
+        api.kernel_create_node(
+            new_auth_zone,
+            btreemap!(
+                MAIN_BASE_PARTITION => btreemap!(
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone))
+                ),
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        blueprint_version: BlueprintVersion::default(),
+                        outer_obj_info: OuterObjectInfo::default(),
+                        features: indexset!(),
+                        generic_substitutions: vec![],
+                    },
+                    object_type: ObjectType::Owned,
+                }))
+            ),
+        )?;
+        api.kernel_pin_node(new_auth_zone)?;
+
+        Ok(new_auth_zone)
     }
 
     fn check_yielded_value<Y: SystemBasedKernelApi>(
@@ -179,8 +236,8 @@ impl MultiThreadIntentProcessor {
                 blueprint_id.blueprint_name.as_str(),
             ) {
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT | NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                    return Err(RuntimeError::SystemError(SystemError::YieldError(
-                        YieldError::CannotYieldProof,
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::CannotYieldProof,
                     )));
                 }
                 _ => {}

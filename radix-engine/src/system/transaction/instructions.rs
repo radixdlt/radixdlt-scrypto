@@ -3,7 +3,9 @@ use crate::blueprints::transaction_processor::{
 };
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{manifest_decode, manifest_encode, scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
+use radix_common::prelude::{
+    manifest_decode, manifest_encode, scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue,
+};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::{AccessRule, IndexedScryptoValue, Proof};
@@ -121,7 +123,11 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::DropNamedProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::DropAllProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
-            InstructionV2::VerifyParent(_) => todo!(),
+            InstructionV2::VerifyParent(i) => {
+                return i
+                    .execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
+            }
             InstructionV2::YieldToChild(i) => {
                 return i
                     .execute(worktop, objects, api)
@@ -165,7 +171,10 @@ impl MultiThreadInstruction for YieldToChild {
             transform(self.args, &mut processor_with_api)?
         };
 
-        Ok(MultiThreadResult::SwitchToChild(self.child_index.0 as usize, scrypto_value))
+        Ok(MultiThreadResult::SwitchToChild(
+            self.child_index.0 as usize,
+            scrypto_value,
+        ))
     }
 }
 
@@ -198,8 +207,10 @@ impl MultiThreadInstruction for VerifyParent {
         _objects: &mut IntentProcessorObjects,
         _api: &mut Y,
     ) -> Result<MultiThreadResult, RuntimeError> {
-        let access_rule: AccessRule = manifest_decode(&manifest_encode(&self.access_rule).unwrap()).unwrap();
-        Ok(MultiThreadResult::VerifyParent(access_rule))
+        // TODO: Remove unwrap
+        let access_rule: (AccessRule,) =
+            manifest_decode(&manifest_encode(&self.access_rule).unwrap()).unwrap();
+        Ok(MultiThreadResult::VerifyParent(access_rule.0))
     }
 }
 
