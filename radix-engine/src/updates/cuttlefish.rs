@@ -24,7 +24,7 @@ pub struct CuttlefishSettings {
     /// updates the min number of rounds per epoch.
     pub update_number_of_min_rounds_per_epoch:
         UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
-    /// Update identity blueprint to not create royalty module.
+    /// Update identity blueprint to not create a royalty module.
     pub update_identity_to_not_create_royalty_module: UpdateSetting<NoSettings>,
 }
 
@@ -634,15 +634,6 @@ fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>
     )
 }
 
-/// A quick macro for encoding and unwrapping.
-macro_rules! scrypto_encode {
-    (
-        $expr: expr
-    ) => {
-        ::radix_common::prelude::scrypto_encode($expr).unwrap()
-    };
-}
-
 fn generate_cuttlefish_update_identity_to_not_create_royalty_module<
     S: SubstateDatabase + ?Sized,
 >(
@@ -721,33 +712,23 @@ fn generate_cuttlefish_update_identity_to_not_create_royalty_module<
         });
 
     // Generate state updates
-    StateUpdates {
-        by_node: indexmap!(
-            node_id => NodeStateUpdates::Delta {
-                by_partition: indexmap! {
-                    blueprint_version_definition_partition_number => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
-                                scrypto_encode!(&blueprint_definition_substate)
-                            )
-                        }
-                    },
-                    code_vm_type_partition_number => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode!(&code_hash)) => DatabaseUpdate::Set(
-                                scrypto_encode!(&vm_type_substate)
-                            )
-                        }
-                    },
-                    code_original_code_partition_number => PartitionStateUpdates::Delta {
-                        by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode!(&code_hash)) => DatabaseUpdate::Set(
-                                scrypto_encode!(&code_substate)
-                            )
-                        }
-                    },
-                }
-            }
-        ),
-    }
+    StateUpdates::empty().set_node_updates(
+        node_id,
+        NodeStateUpdates::empty()
+            .set_substate(
+                blueprint_version_definition_partition_number,
+                SubstateKey::map(&blueprint_version_key),
+                blueprint_definition_substate,
+            )
+            .set_substate(
+                code_vm_type_partition_number,
+                SubstateKey::map(&code_hash),
+                vm_type_substate,
+            )
+            .set_substate(
+                code_original_code_partition_number,
+                SubstateKey::map(&code_hash),
+                code_substate,
+            ),
+    )
 }
