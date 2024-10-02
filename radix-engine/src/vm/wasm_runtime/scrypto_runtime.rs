@@ -559,9 +559,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let public_key: Bls12381G1PublicKey =
-            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidPublicKey)?;
         let signature: Bls12381G2Signature =
-            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
 
         self.api
             .consume_cost_units(ClientCostingEntry::Bls12381V1Verify {
@@ -578,10 +578,10 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let signature: Bls12381G2Signature =
-            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
         let pub_keys_and_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
             scrypto_decode(&pub_keys_and_msgs)
-                .map_err(WasmRuntimeError::InvalidBlsPublicKeyOrMessage)?;
+                .map_err(WasmRuntimeError::InvalidPublicKeyOrMessage)?;
 
         if pub_keys_and_msgs.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
@@ -605,9 +605,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         let public_keys: Vec<Bls12381G1PublicKey> =
-            scrypto_decode(&public_keys).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+            scrypto_decode(&public_keys).map_err(WasmRuntimeError::InvalidPublicKey)?;
         let signature: Bls12381G2Signature =
-            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
 
         if public_keys.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
@@ -628,7 +628,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         signatures: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let signatures: Vec<Bls12381G2Signature> =
-            scrypto_decode(&signatures).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+            scrypto_decode(&signatures).map_err(WasmRuntimeError::InvalidSignature)?;
 
         if signatures.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
@@ -657,5 +657,51 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         let hash = keccak256_hash(data);
 
         self.allocate_buffer(hash.to_vec())
+    }
+
+    #[trace_resources(log=data.len())]
+    fn crypto_utils_blake2b_256_hash(
+        &mut self,
+        data: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        // TODO: costing
+
+        let hash = blake2b_256_hash(data);
+
+        self.allocate_buffer(hash.to_vec())
+    }
+
+    #[trace_resources(log=message.len())]
+    fn crypto_utils_ed25519_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let public_key: Ed25519PublicKey =
+            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidPublicKey)?;
+        let signature: Ed25519Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
+
+        // TODO: costing
+
+        Ok(verify_ed25519_msg(&message, &public_key, &signature) as u32)
+    }
+
+    #[trace_resources(log=message.len())]
+    fn crypto_utils_secp256k1_ecdsa_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let public_key: Secp256k1PublicKey =
+            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidPublicKey)?;
+        let signature: Secp256k1Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
+
+        // TODO: costing
+
+        Ok(verify_secp256k1_msg(&message, &public_key, &signature) as u32)
     }
 }
