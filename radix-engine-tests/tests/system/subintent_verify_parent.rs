@@ -21,7 +21,7 @@ fn should_not_be_able_to_use_subintent_when_verify_parent_access_rule_not_met() 
 
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            .verify_parent(manifest_args!(AccessRule::DenyAll))
+            .verify_parent(AccessRule::DenyAll)
             .yield_to_parent(())
             .build(),
         [],
@@ -58,7 +58,7 @@ fn should_be_able_to_use_subintent_when_verify_parent_access_rule_is_met() {
 
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            .verify_parent(manifest_args!(rule!(require(public_key.signature_proof()))))
+            .verify_parent(rule!(require(public_key.signature_proof())))
             .yield_to_parent(())
             .build(),
         [],
@@ -91,7 +91,7 @@ fn should_be_able_to_use_subintent_when_verify_parent_access_rule_is_met_on_seco
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
             .yield_to_parent(())
-            .verify_parent(manifest_args!(rule!(require_amount(dec!(10), XRD))))
+            .verify_parent(rule!(require_amount(dec!(10), XRD)))
             .yield_to_parent(())
             .build(),
         [],

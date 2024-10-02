@@ -2316,9 +2316,9 @@ where
         })
     }
 
-    pub fn verify_parent(self, access_rule: impl ResolvableArguments) -> Self {
+    pub fn verify_parent(self, access_rule: AccessRule) -> Self {
         self.add_v2_instruction(VerifyParent {
-            access_rule: access_rule.resolve(),
+            access_rule: manifest_decode(&manifest_encode(&access_rule).unwrap()).unwrap(),
         })
     }
 }

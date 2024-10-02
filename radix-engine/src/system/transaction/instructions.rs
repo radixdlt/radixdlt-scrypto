@@ -208,9 +208,9 @@ impl MultiThreadInstruction for VerifyParent {
         _api: &mut Y,
     ) -> Result<MultiThreadResult, RuntimeError> {
         // TODO: Remove unwrap
-        let access_rule: (AccessRule,) =
+        let access_rule: AccessRule =
             manifest_decode(&manifest_encode(&self.access_rule).unwrap()).unwrap();
-        Ok(MultiThreadResult::VerifyParent(access_rule.0))
+        Ok(MultiThreadResult::VerifyParent(access_rule))
     }
 }
 

@@ -158,14 +158,18 @@ impl MultiThreadIntentProcessor {
                             )))?;
                     api.kernel_switch_stack(parent)?;
 
-                    let auth_zone = Self::create_temp_auth_zone(api)?;
-                    let mut system_service = api.system_service();
-                    system_service.call_method(
-                        &auth_zone,
-                        AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
-                    )?;
-                    api.kernel_drop_node(&auth_zone)?;
+                    // Create a temporary authzone with the current authzone as the global caller
+                    // Run assert_access_rule against this authzone
+                    {
+                        let auth_zone = Self::create_temp_auth_zone(api)?;
+                        let mut system_service = api.system_service();
+                        system_service.call_method(
+                            &auth_zone,
+                            AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                            scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+                        )?;
+                        api.kernel_drop_node(&auth_zone)?;
+                    }
 
                     api.kernel_switch_stack(save_cur_thread)?;
                 }
