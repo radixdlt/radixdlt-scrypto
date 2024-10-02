@@ -303,8 +303,6 @@ fn test_create_proof_from_bucket_of_amount() {
         .as_ref()
         .unwrap();
 
-    println!("{:#?}", execution_trace);
-
     assert_eq!(
         execution_trace
             .execution_traces

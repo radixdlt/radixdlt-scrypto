@@ -2161,7 +2161,6 @@ impl<'a, Y: SystemBasedKernelApi> SystemBlueprintApi<RuntimeError> for SystemSer
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
 impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemService<'a, Y> {
-    // No costing should be applied
     fn consume_cost_units(
         &mut self,
         costing_entry: ClientCostingEntry,
