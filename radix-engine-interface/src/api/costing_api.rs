@@ -4,7 +4,7 @@ use radix_common::math::Decimal;
 
 pub trait SystemCostingApi<E> {
     /// Check if costing is enabled.
-    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, E>;
+    fn start_lock_fee(&mut self, amount: Decimal, contingent: bool) -> Result<bool, E>;
 
     /// Add cost units to the reserve. This should never fail.
     fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);

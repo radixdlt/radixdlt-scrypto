@@ -2219,13 +2219,15 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
     }
 
     #[trace_resources]
-    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
-        let stack_id = self.api.kernel_get_stack_id();
-        if stack_id != 0 {
-            // TODO: Are we allowing contingent lock fees in child subintents?
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotLockFeeInChildSubintent(stack_id),
-            ));
+    fn start_lock_fee(&mut self, amount: Decimal, contingent: bool) -> Result<bool, RuntimeError> {
+        // Child subintents are only allowed to use contingent fees
+        if !contingent {
+            let stack_id = self.api.kernel_get_stack_id();
+            if stack_id != 0 {
+                return Err(RuntimeError::SystemError(
+                    SystemError::CannotLockFeeInChildSubintent(stack_id),
+                ));
+            }
         }
 
         let costing_enabled = self
