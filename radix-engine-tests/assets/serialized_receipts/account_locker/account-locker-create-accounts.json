@@ -8,7 +8,23 @@
       "account_sim1cx3e9ezcwyvntqhxqxkxhv3lgj2gh4ens0wxp4f0pdsxr8yg24du86",
       "account_sim1cxa4qrlsdx4595cyfjmpj5kp6r927re4nw2x67sxxtaxfr7n80h6ep"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "account_sim1c87cyhcdrezltflny2jvgccm9guhpyq66umlpg29at6qpy0257llt0": {
+        "owner_badge": "Delete"
+      },
+      "account_sim1c9avh8xzsuvlmtxa9qf0pj5cyuc0u6tgga28f3cqe2z2fgrl3tuugq": {
+        "owner_badge": "Delete"
+      },
+      "account_sim1cyles4a57e6pe2kzu2sua048zedrx83vgr3gj3t88aa7hqssxkf767": {
+        "owner_badge": "Delete"
+      },
+      "account_sim1cx3e9ezcwyvntqhxqxkxhv3lgj2gh4ens0wxp4f0pdsxr8yg24du86": {
+        "owner_badge": "Delete"
+      },
+      "account_sim1cxa4qrlsdx4595cyfjmpj5kp6r927re4nw2x67sxxtaxfr7n80h6ep": {
+        "owner_badge": "Delete"
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

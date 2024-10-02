@@ -334,7 +334,7 @@ fn metadata_updates_show_in_receipt() {
             .metadata_updates
             .get(account.as_node_id())
             .and_then(|value| value.get("transient_key")),
-        None
+        Some(&MetadataUpdate::Delete)
     );
     assert_eq!(
         state_updates_summary
@@ -692,6 +692,59 @@ fn locked_fees_are_mapped_correctly_in_receipt() {
     // Assert
     assert_eq!(locked_fees.contingent, dec!(10));
     assert_eq!(locked_fees.non_contingent, dec!(5000));
+}
+
+#[test]
+fn receipt_contains_metadata_of_newly_create_resources() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let receipt = ledger.preview_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_fungible_resource(
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                metadata! {
+                    init {
+                        "name" => "Something", locked;
+                    }
+                },
+                Default::default(),
+            )
+            .build(),
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: false,
+            disable_auth: true,
+            ..Default::default()
+        },
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let ToolkitTransactionReceipt::CommitSuccess {
+        state_updates_summary:
+            StateUpdatesSummary {
+                ref mut metadata_updates,
+                ..
+            },
+        ..
+    } = check_and_convert_receipt_to_runtime_receipt(receipt.clone())
+    else {
+        panic!("Not commit success!");
+    };
+    let (_, metadata_updates) = metadata_updates
+        .pop()
+        .expect("There must be at minimum a single entry there.");
+
+    let value = metadata_updates.get("name").unwrap();
+    assert_eq!(
+        value,
+        &MetadataUpdate::Set(MetadataValue::String("Something".to_owned()))
+    )
 }
 
 /// Converts a receipt to a runtime receipt and does the following checks:
