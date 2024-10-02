@@ -9,17 +9,17 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::{System, SystemBasedKernelApi};
 use crate::system::system_modules::auth::AuthModule;
 use radix_common::constants::{RESOURCE_PACKAGE, TRANSACTION_PROCESSOR_PACKAGE};
-use radix_common::prelude::{BlueprintId, GlobalAddressReservation};
+use radix_common::prelude::{scrypto_encode, BlueprintId, GlobalAddressReservation};
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_interface::prelude::{
-    ObjectInfo, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT,
-};
+use radix_engine_interface::prelude::{AccessRule, ObjectInfo, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT};
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
+use radix_engine_interface::api::SystemObjectApi;
 use sbor::prelude::ToString;
+use crate::kernel::kernel_api::KernelInternalApi;
 
 /// Multi-thread intent processor for executing multiple subintents
 pub struct MultiThreadIntentProcessor {
@@ -92,43 +92,71 @@ impl MultiThreadIntentProcessor {
         let mut parent_stack = vec![];
         let mut passed_value = None;
 
+        enum PostExecution {
+            SwitchThread(usize, IndexedScryptoValue, bool),
+            VerifyParent(AccessRule),
+            RootIntentDone
+        }
+
         loop {
             api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
             let mut system_service = SystemService::new(api);
-            let switch_to = match txn_thread.resume(passed_value.take(), &mut system_service)? {
+            let post_exec = match txn_thread.resume(passed_value.take(), &mut system_service)? {
                 ResumeResult::YieldToChild(child, value) => {
                     let child = *children_mapping.get(child).unwrap();
                     parent_stack.push(cur_thread);
-                    Some((child, value, false))
+                    PostExecution::SwitchThread(child, value, false)
                 }
                 ResumeResult::YieldToParent(value) => {
                     let parent = parent_stack.pop().unwrap();
-                    Some((parent, value, false))
+                    PostExecution::SwitchThread(parent, value, false)
+                }
+                ResumeResult::VerifyParent(rule) => {
+                    PostExecution::VerifyParent(rule)
                 }
                 ResumeResult::ChildIntentDone(value) => {
                     let parent = parent_stack.pop().unwrap();
-                    Some((parent, value, true))
+                    PostExecution::SwitchThread(parent, value, true)
                 }
-                ResumeResult::RootIntentDone => None,
+                ResumeResult::RootIntentDone => PostExecution::RootIntentDone,
             };
 
-            if let Some((next_thread, value, intent_done)) = switch_to {
-                // Checked passed values
-                Self::check_yielded_value(&value, api)?;
-                api.kernel_send_to_stack(next_thread, value.clone())?;
-                passed_value = Some(value);
+            match post_exec {
+                PostExecution::SwitchThread(next_thread, value, intent_done) => {
+                    // Checked passed values
+                    Self::check_yielded_value(&value, api)?;
+                    api.kernel_send_to_stack(next_thread, value.clone())?;
+                    passed_value = Some(value);
 
-                // Cleanup stack if intent is done. This must be done after the above kernel_send_to_stack.
-                if intent_done {
-                    Self::cleanup_stack(api)?;
+                    // Cleanup stack if intent is done. This must be done after the above kernel_send_to_stack.
+                    if intent_done {
+                        Self::cleanup_stack(api)?;
+                    }
+
+                    cur_thread = next_thread;
                 }
+                PostExecution::VerifyParent(rule) => {
+                    let save_cur_thread = cur_thread;
+                    let parent = parent_stack.iter().next().unwrap().clone();
+                    api.kernel_switch_stack(parent)?;
 
-                cur_thread = next_thread;
-            } else {
-                Self::cleanup_stack(api)?;
-                break;
+                    let auth_zone = api.system_service().kernel_get_system_state().current_call_frame.self_auth_zone().unwrap();
+                    let mut system_service = api.system_service();
+                    system_service.call_method(
+                        &auth_zone,
+                        AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                        scrypto_encode(&rule).unwrap(),
+                    )?;
+
+
+                    api.kernel_switch_stack(save_cur_thread)?;
+                }
+                PostExecution::RootIntentDone => {
+                    Self::cleanup_stack(api)?;
+                    break;
+                }
             }
         }
 

@@ -1,5 +1,5 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_processor::{TxnInstruction, Yield};
+use crate::blueprints::transaction_processor::{TxnInstruction, MultiThreadResult};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -45,6 +45,7 @@ impl From<TransactionProcessorError> for RuntimeError {
 pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
+    VerifyParent(AccessRule),
     ChildIntentDone(IndexedScryptoValue),
     RootIntentDone,
 }
@@ -131,11 +132,14 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
             self.instruction_index += 1;
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
-                    Yield::ToChild(child, value) => ResumeResult::YieldToChild(
+                    MultiThreadResult::VerifyParent(rule) => {
+                        ResumeResult::VerifyParent(rule)
+                    }
+                    MultiThreadResult::SwitchToChild(child, value) => ResumeResult::YieldToChild(
                         child,
                         IndexedScryptoValue::from_scrypto_value(value),
                     ),
-                    Yield::ToParent(value) => {
+                    MultiThreadResult::SwitchToParent(value) => {
                         // Child subintents must end with a yield to parent
                         if self.remaining_instructions.is_empty() {
                             self.worktop.drop(api)?;
