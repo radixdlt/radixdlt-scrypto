@@ -1,6 +1,7 @@
 use crate::engine::wasm_api::{copy_buffer, crypto_utils};
-use radix_common::prelude::{
-    scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G2Signature, Hash,
+use radix_common::{
+    crypto::{Ed25519PublicKey, Ed25519Signature, Secp256k1PublicKey, Secp256k1Signature},
+    prelude::{scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G2Signature, Hash},
 };
 use sbor::prelude::Vec;
 
@@ -93,5 +94,54 @@ impl CryptoUtils {
         });
 
         Hash(hash.try_into().unwrap())
+    }
+
+    /// Calculates Blake2b-256 digest over given vector of bytes
+    pub fn blake2b_256_hash(data: Vec<u8>) -> Hash {
+        let hash = copy_buffer(unsafe {
+            crypto_utils::crypto_utils_blake2b_256_hash(data.as_ptr(), data.len())
+        });
+
+        Hash(hash.try_into().unwrap())
+    }
+
+    /// Performs Ed25519 signature verification.
+    pub fn ed25519_verify(
+        message: Vec<u8>,
+        public_key: Ed25519PublicKey,
+        signature: Ed25519Signature,
+    ) -> bool {
+        let public_key: Vec<u8> = scrypto_encode(&public_key).unwrap();
+        let signature: Vec<u8> = scrypto_encode(&signature).unwrap();
+        unsafe {
+            crypto_utils::crypto_utils_ed25519_verify(
+                message.as_ptr(),
+                message.len(),
+                public_key.as_ptr(),
+                public_key.len(),
+                signature.as_ptr(),
+                signature.len(),
+            ) != 0
+        }
+    }
+
+    /// Performs ECDSA Secp256k1 verification.
+    pub fn secp256k1_ecdsa_verify(
+        message: Vec<u8>,
+        public_key: Secp256k1PublicKey,
+        signature: Secp256k1Signature,
+    ) -> bool {
+        let public_key: Vec<u8> = scrypto_encode(&public_key).unwrap();
+        let signature: Vec<u8> = scrypto_encode(&signature).unwrap();
+        unsafe {
+            crypto_utils::crypto_utils_secp256k1_ecdsa_verify(
+                message.as_ptr(),
+                message.len(),
+                public_key.as_ptr(),
+                public_key.len(),
+                signature.as_ptr(),
+                signature.len(),
+            ) != 0
+        }
     }
 }
