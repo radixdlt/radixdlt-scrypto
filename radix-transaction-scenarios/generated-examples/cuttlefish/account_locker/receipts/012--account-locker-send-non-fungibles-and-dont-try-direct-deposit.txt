@@ -1,7 +1,7 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 0.49594375327 XRD
-├─ Network execution: 0.30768465 XRD, 6153693 execution cost units
+TRANSACTION COST: 0.49607800327 XRD
+├─ Network execution: 0.3078189 XRD, 6156378 execution cost units
 ├─ Network finalization: 0.046257 XRD, 925140 finalization cost units
 ├─ Tip: 0 XRD
 ├─ Network Storage: 0.14200210327 XRD
@@ -42,15 +42,15 @@ EVENTS: 8
    }
 ├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
    Event: PayFeeEvent {
-     amount: Decimal("0.49594375327"),
+     amount: Decimal("0.49607800327"),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
    Event: DepositEvent {
-     amount: Decimal("0.247971876635"),
+     amount: Decimal("0.248039001635"),
    }
 └─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: BurnFungibleResourceEvent {
-     amount: Decimal("0.247971876635"),
+     amount: Decimal("0.248039001635"),
    }
 
 STATE UPDATES: 9 entities
@@ -60,7 +60,7 @@ STATE UPDATES: 9 entities
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("1.6901183904875"),
+             0u8 => Decimal("1.6904875779875"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -102,7 +102,7 @@ STATE UPDATES: 9 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("99999999999999993.23952643805")),
+         LiquidFungibleResource(Decimal("99999999999999993.23804968805")),
        )
 ├─ internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f across 1 partitions
   └─ Partition(64): 1 change
@@ -152,7 +152,7 @@ STATE UPDATES: 9 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("3.380236780975")),
+         LiquidFungibleResource(Decimal("3.380975155975")),
        )
 
 OUTPUTS: 5
@@ -165,12 +165,12 @@ OUTPUTS: 5
 BALANCE CHANGES: 3
 ├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: -0.49594375327
+   Change: -0.49607800327
 ├─ Vault: internal_vault_sim1nrstdzgdlu2ka8r8jfzl0a7xj84nznpjr3h63ev255xtz82xuhz405
    ResAddr: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu
    Change: +{#3#}, -{}
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: 0.247971876635
+   Change: 0.248039001635
 
 NEW ENTITIES: 0

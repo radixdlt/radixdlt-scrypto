@@ -1,0 +1,1242 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6 across 5 partitions
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "Account", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::Some(
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       0u8,
+                     ),
+                   ),
+                   [
+                     FieldSchema {
+                       field: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::SchemaLocalIndex(
+                             0u64,
+                           ),
+                         ),
+                       ),
+                       condition: Condition::Always,
+                       transience: FieldTransience::NotTransient,
+                     },
+                   ],
+                 ),
+               ),
+               collections: [
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       1u8,
+                     ),
+                   ),
+                   BlueprintCollectionSchema::KeyValueStore(
+                     BlueprintKeyValueSchema {
+                       key: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::WellKnown(
+                             WellKnownTypeId(133u8),
+                           ),
+                         ),
+                       ),
+                       value: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::SchemaLocalIndex(
+                             3u64,
+                           ),
+                         ),
+                       ),
+                       allow_ownership: true,
+                     },
+                   ),
+                 ),
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       2u8,
+                     ),
+                   ),
+                   BlueprintCollectionSchema::KeyValueStore(
+                     BlueprintKeyValueSchema {
+                       key: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::WellKnown(
+                             WellKnownTypeId(133u8),
+                           ),
+                         ),
+                       ),
+                       value: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::SchemaLocalIndex(
+                             4u64,
+                           ),
+                         ),
+                       ),
+                       allow_ownership: false,
+                     },
+                   ),
+                 ),
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       3u8,
+                     ),
+                   ),
+                   BlueprintCollectionSchema::KeyValueStore(
+                     BlueprintKeyValueSchema {
+                       key: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::WellKnown(
+                             WellKnownTypeId(228u8),
+                           ),
+                         ),
+                       ),
+                       value: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                           LocalTypeId::SchemaLocalIndex(
+                             6u64,
+                           ),
+                         ),
+                       ),
+                       allow_ownership: false,
+                     },
+                   ),
+                 ),
+               ],
+               num_logical_partitions: 4u8,
+             },
+             functions: {
+               "create_advanced" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       7u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       9u64,
+                     ),
+                   ),
+                 ),
+               },
+               "create" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       10u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       11u64,
+                     ),
+                   ),
+                 ),
+               },
+               "securify" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       12u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_fee" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       13u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_contingent_fee" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       14u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "deposit" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       15u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "deposit_batch" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       16u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "withdraw" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       18u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "withdraw_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       19u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "burn" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       21u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "burn_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       22u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_fee_and_withdraw" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       23u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_fee_and_withdraw_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       24u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "create_proof_of_amount" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       25u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(164u8),
+                     ),
+                   ),
+                 ),
+               },
+               "create_proof_of_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       26u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(164u8),
+                     ),
+                   ),
+                 ),
+               },
+               "set_default_deposit_rule" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       27u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "set_resource_preference" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       28u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "remove_resource_preference" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       29u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "try_deposit_or_refund" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       30u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       32u64,
+                     ),
+                   ),
+                 ),
+               },
+               "try_deposit_batch_or_refund" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       33u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       34u64,
+                     ),
+                   ),
+                 ),
+               },
+               "try_deposit_or_abort" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       35u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "try_deposit_batch_or_abort" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       36u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "add_authorized_depositor" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       37u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "remove_authorized_depositor" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::SchemaLocalIndex(
+                       38u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "balance" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::SchemaLocalIndex(
+                       0u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(192u8),
+                     ),
+                   ),
+                 ),
+               },
+               "non_fungible_local_ids" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::SchemaLocalIndex(
+                       1u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::SchemaLocalIndex(
+                       2u64,
+                     ),
+                   ),
+                 ),
+               },
+               "has_non_fungible" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::SchemaLocalIndex(
+                       3u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(1u8),
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {
+               "WithdrawEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     39u64,
+                   ),
+                 ),
+               ),
+               "DepositEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     40u64,
+                   ),
+                 ),
+               ),
+               "RejectedDepositEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     41u64,
+                   ),
+                 ),
+               ),
+               "SetResourcePreferenceEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     42u64,
+                   ),
+                 ),
+               ),
+               "RemoveResourcePreferenceEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     43u64,
+                   ),
+                 ),
+               ),
+               "SetDefaultDepositRuleEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     44u64,
+                   ),
+                 ),
+               ),
+               "AddAuthorizedDepositorEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     45u64,
+                   ),
+                 ),
+               ),
+               "RemoveAuthorizedDepositorEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("a54510264dbd13e03ea7d6e3112d5f3a88c9bddae66b9569d5de381ba9447a8a")),
+                   LocalTypeId::SchemaLocalIndex(
+                     46u64,
+                   ),
+                 ),
+               ),
+             },
+             types: {},
+           },
+           function_exports: {
+             "create_advanced" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "create_advanced",
+             },
+             "create" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "create",
+             },
+             "securify" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "securify",
+             },
+             "lock_fee" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "lock_fee",
+             },
+             "lock_contingent_fee" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "lock_contingent_fee",
+             },
+             "deposit" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "deposit",
+             },
+             "deposit_batch" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "deposit_batch",
+             },
+             "withdraw" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "withdraw",
+             },
+             "withdraw_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "withdraw_non_fungibles",
+             },
+             "burn" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "burn",
+             },
+             "burn_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "burn_non_fungibles",
+             },
+             "lock_fee_and_withdraw" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "lock_fee_and_withdraw",
+             },
+             "lock_fee_and_withdraw_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "lock_fee_and_withdraw_non_fungibles",
+             },
+             "create_proof_of_amount" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "create_proof_of_amount",
+             },
+             "create_proof_of_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "create_proof_of_non_fungibles",
+             },
+             "set_default_deposit_rule" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "set_default_deposit_rule",
+             },
+             "set_resource_preference" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "set_resource_preference",
+             },
+             "remove_resource_preference" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "remove_resource_preference",
+             },
+             "try_deposit_or_refund" => PackageExport {
+               code_hash: CodeHash(hex("41db0f6cac6af5f3552f36acf0255a65a6c1b9c4eac16c862095a4e64ca9e134")),
+               export_name: "try_deposit_or_refund",
+             },
+             "try_deposit_batch_or_refund" => PackageExport {
+               code_hash: CodeHash(hex("41db0f6cac6af5f3552f36acf0255a65a6c1b9c4eac16c862095a4e64ca9e134")),
+               export_name: "try_deposit_batch_or_refund",
+             },
+             "try_deposit_or_abort" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "try_deposit_or_abort",
+             },
+             "try_deposit_batch_or_abort" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "try_deposit_batch_or_abort",
+             },
+             "add_authorized_depositor" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "add_authorized_depositor",
+             },
+             "remove_authorized_depositor" => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "remove_authorized_depositor",
+             },
+             "balance" => PackageExport {
+               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               export_name: "balance",
+             },
+             "non_fungible_local_ids" => PackageExport {
+               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               export_name: "non_fungible_local_ids",
+             },
+             "has_non_fungible" => PackageExport {
+               code_hash: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a")),
+               export_name: "has_non_fungible",
+             },
+           },
+           hook_exports: {
+             BlueprintHook::OnVirtualize => PackageExport {
+               code_hash: CodeHash(hex("3a42e66e46dd7633b57d1f921780a1ac715e6b93c19ee52ab714178eb3a9f673")),
+               export_name: "on_virtualize",
+             },
+           },
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::Native,
+       )
+  ├─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("a37f7cda25dd1c14e9fe3206b5ce917f0a44ba2c7b9acbb47949a963bf54915a"))
+       Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
+         PackageCodeOriginalCodeV1(hex("0000000000000018")),
+       )
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(42e1e4ea528841ff3661d9a9d59792a4f7c186ee8c0df0393eaf9e2e1cdd72d0)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(194u8),
+                     ),
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(194u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountBalanceInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "resource_address",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountNonFungibleLocalIdsInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "resource_address",
+                           "limit",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountHasNonFungibleInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "resource_address",
+                           "local_id",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  └─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "Account", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::StaticRoleDefinition(
+             StaticRoleDefinition {
+               roles: RoleSpecification::Normal(
+                 {
+                   RoleKey("securify") => RoleList([
+                     RoleKey("_self_"),
+                   ]),
+                 },
+               ),
+               methods: {
+                 MethodKey("securify") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("securify"),
+                   ]),
+                 ),
+                 MethodKey("set_default_deposit_rule") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("set_resource_preference") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("remove_resource_preference") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("withdraw") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("withdraw_non_fungibles") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("lock_fee") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("lock_contingent_fee") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("lock_fee_and_withdraw") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("lock_fee_and_withdraw_non_fungibles") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("create_proof_of_amount") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("create_proof_of_non_fungibles") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("deposit") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("deposit_batch") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("burn") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("burn_non_fungibles") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("add_authorized_depositor") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("remove_authorized_depositor") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("_owner_"),
+                   ]),
+                 ),
+                 MethodKey("try_deposit_or_refund") => MethodAccessibility::Public,
+                 MethodKey("try_deposit_batch_or_refund") => MethodAccessibility::Public,
+                 MethodKey("try_deposit_or_abort") => MethodAccessibility::Public,
+                 MethodKey("try_deposit_batch_or_abort") => MethodAccessibility::Public,
+                 MethodKey("balance") => MethodAccessibility::Public,
+                 MethodKey("non_fungible_local_ids") => MethodAccessibility::Public,
+                 MethodKey("has_non_fungible") => MethodAccessibility::Public,
+               },
+             },
+           ),
+         },
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0
