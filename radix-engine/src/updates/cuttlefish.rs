@@ -1,6 +1,3 @@
-use radix_engine_interface::blueprints::account::*;
-use radix_transactions::validation::*;
-
 use super::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
@@ -8,6 +5,9 @@ use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::identity::*;
+use radix_transactions::validation::*;
 
 #[derive(Clone)]
 pub struct CuttlefishSettings {
@@ -24,6 +24,8 @@ pub struct CuttlefishSettings {
     /// updates the min number of rounds per epoch.
     pub update_number_of_min_rounds_per_epoch:
         UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
+    /// Update identity blueprint to not create a royalty module.
+    pub update_identity_to_not_create_royalty_module: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -43,6 +45,8 @@ impl UpdateSettings for CuttlefishSettings {
             update_number_of_min_rounds_per_epoch: UpdateSetting::enabled_as_default_for_network(
                 network,
             ),
+            update_identity_to_not_create_royalty_module:
+                UpdateSetting::enabled_as_default_for_network(network),
         }
     }
 
@@ -54,6 +58,7 @@ impl UpdateSettings for CuttlefishSettings {
             account_getter_methods: UpdateSetting::Disabled,
             update_metadata: UpdateSetting::Disabled,
             update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
+            update_identity_to_not_create_royalty_module: UpdateSetting::Disabled,
         }
     }
 
@@ -126,6 +131,7 @@ fn generate_principal_batch(
         account_getter_methods,
         update_metadata,
         update_number_of_min_rounds_per_epoch,
+        update_identity_to_not_create_royalty_module,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
@@ -163,6 +169,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-update-number-of-min-rounds-per-epoch",
             generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &update_identity_to_not_create_royalty_module {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-update-identity-to-not-create-royalty-module",
+            generate_cuttlefish_update_identity_to_not_create_royalty_module(store),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -619,5 +631,104 @@ fn generate_cuttlefish_update_min_rounds_per_epoch<S: SubstateDatabase + ?Sized>
         MAIN_BASE_PARTITION,
         ConsensusManagerField::Configuration,
         consensus_manager_config.into_locked_substate(),
+    )
+}
+
+fn generate_cuttlefish_update_identity_to_not_create_royalty_module<
+    S: SubstateDatabase + ?Sized,
+>(
+    db: &S,
+) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let node_id = IDENTITY_PACKAGE.into_node_id();
+    let blueprint_version_key = BlueprintVersionKey {
+        blueprint: IDENTITY_BLUEPRINT.to_string(),
+        version: Default::default(),
+    };
+
+    // Create substates for the new code.
+    let (code_hash, (code_substate, vm_type_substate)) = {
+        let original_code = (NativeCodeId::IdentityCode2 as u64).to_be_bytes().to_vec();
+
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        let code_substate = PackageCodeOriginalCodeV1 {
+            code: original_code,
+        }
+        .into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_locked_substate();
+
+        (code_hash, (code_substate, vm_type_substate))
+    };
+
+    // Update the definition of the existing blueprint so that new code is used
+    let blueprint_definition_substate = {
+        let mut blueprint_definition = reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionDefinition>(
+                &node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &blueprint_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap()
+            .fully_update_and_into_latest_version();
+
+        for function_name in [IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT] {
+            blueprint_definition
+                .function_exports
+                .get_mut(function_name)
+                .expect("This function must exist")
+                .code_hash = code_hash;
+        }
+
+        blueprint_definition
+            .hook_exports
+            .get_mut(&BlueprintHook::OnVirtualize)
+            .expect("Identity::OnVirtualize hook must exist")
+            .code_hash = code_hash;
+
+        blueprint_definition.into_locked_substate()
+    };
+
+    let [blueprint_version_definition_partition_number, code_vm_type_partition_number, code_original_code_partition_number] =
+        [
+            PackageCollection::BlueprintVersionDefinitionKeyValue,
+            PackageCollection::CodeVmTypeKeyValue,
+            PackageCollection::CodeOriginalCodeKeyValue,
+        ]
+        .map(|package_collection| {
+            reader
+                .get_partition_of_collection(
+                    &node_id,
+                    ObjectModuleId::Main,
+                    package_collection.collection_index(),
+                )
+                .unwrap()
+        });
+
+    // Generate state updates
+    StateUpdates::empty().set_node_updates(
+        node_id,
+        NodeStateUpdates::empty()
+            .set_substate(
+                blueprint_version_definition_partition_number,
+                SubstateKey::map(&blueprint_version_key),
+                blueprint_definition_substate,
+            )
+            .set_substate(
+                code_vm_type_partition_number,
+                SubstateKey::map(&code_hash),
+                vm_type_substate,
+            )
+            .set_substate(
+                code_original_code_partition_number,
+                SubstateKey::map(&code_hash),
+                code_substate,
+            ),
     )
 }

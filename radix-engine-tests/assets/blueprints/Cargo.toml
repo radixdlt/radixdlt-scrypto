@@ -20,6 +20,7 @@ members = [
     "fake_bucket",
     "fee",
     "fee_reserve_states",
+    "identity",
     "kv_store",
     "large_package",
     "leaks",

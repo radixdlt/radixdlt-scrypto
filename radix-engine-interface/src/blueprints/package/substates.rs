@@ -26,6 +26,11 @@ pub enum NativeCodeId {
     /// * Changes   : N/A
     IdentityCode1 = 2u64,
 
+    /// * Introduced: Bottlenose
+    /// * Coverage  : `IDENTITY_CREATE_ADVANCED_IDENT`, `IDENTITY_CREATE_IDENT` and `IDENTITY_ON_VIRTUALIZE_EXPORT_NAME`
+    /// * Changes   : Do not create royalty module
+    IdentityCode2 = 25u64,
+
     /// * Introduced: Babylon
     /// * Coverage  : All consensus manager blueprints
     /// * Changes   : N/A

@@ -6,6 +6,7 @@ use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::identity::IdentityV1MinorVersion;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
@@ -149,9 +150,18 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             api,
                         )
                     }
-                    NativeCodeId::IdentityCode1 => {
-                        IdentityNativePackage::invoke_export(export_name, input, api)
-                    }
+                    NativeCodeId::IdentityCode1 => IdentityNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        IdentityV1MinorVersion::Zero,
+                        api,
+                    ),
+                    NativeCodeId::IdentityCode2 => IdentityNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        IdentityV1MinorVersion::One,
+                        api,
+                    ),
                     NativeCodeId::AccountCode1 => {
                         AccountNativePackage::invoke_export(export_name, input, api)
                     }

@@ -1,0 +1,136 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6 across 3 partitions
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "Identity", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::None,
+               collections: [],
+               num_logical_partitions: 0u8,
+             },
+             functions: {
+               "create_advanced" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::SchemaLocalIndex(
+                       0u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::SchemaLocalIndex(
+                       1u64,
+                     ),
+                   ),
+                 ),
+               },
+               "create" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::SchemaLocalIndex(
+                       2u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::SchemaLocalIndex(
+                       3u64,
+                     ),
+                   ),
+                 ),
+               },
+               "securify" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::SchemaLocalIndex(
+                       4u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("3c2f1b5d8a1dfdb5baca6f4a482f57aca0e474ed5f1b3abdc993b7e64d43ace4")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {},
+             types: {},
+           },
+           function_exports: {
+             "create_advanced" => PackageExport {
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
+               export_name: "create_advanced",
+             },
+             "create" => PackageExport {
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
+               export_name: "create",
+             },
+             "securify" => PackageExport {
+               code_hash: CodeHash(hex("fee90546920fec9b2f4a3d22a8d3a47695967d222f79b0a6ecce36838348f7fc")),
+               export_name: "securify",
+             },
+           },
+           hook_exports: {
+             BlueprintHook::OnVirtualize => PackageExport {
+               code_hash: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd")),
+               export_name: "on_virtualize",
+             },
+           },
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::Native,
+       )
+  └─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("17309abdb8cf3e6511178d8d7f7b8c4acaf2b31d3663fef3bef09051ae43ddcd"))
+       Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
+         PackageCodeOriginalCodeV1(hex("0000000000000019")),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0
