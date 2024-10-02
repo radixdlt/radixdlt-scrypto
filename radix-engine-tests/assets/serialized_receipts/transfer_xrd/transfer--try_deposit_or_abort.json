@@ -4,7 +4,27 @@
     "new_entities": [
       "account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0": {
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[d1c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Secp256k1",
+                "value": "c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7"
+              }
+            ]
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },
