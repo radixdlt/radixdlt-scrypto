@@ -188,7 +188,7 @@ impl TryFrom<InstructionV2> for InstructionV1 {
 #[sbor_assert(
     backwards_compatible(
         v1 = "FILE:../v1/instruction_v1_schema.txt",
-        v2 = "FILE:instruction_v2_schema.txt",
+        v2 = "FILE:instruction_v2_schema.bin",
     ),
     settings(
         comparison_between_versions = "EXPR: |s| s.allow_all_name_changes()",
