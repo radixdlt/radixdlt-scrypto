@@ -1,10 +1,18 @@
 use super::Ed25519Signature;
 use crate::internal_prelude::*;
 use ed25519_dalek::{Signer, SigningKey};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// No need to derive Zeroize.
-// SigningKey implements Zeroize on Drop
+#[derive(ZeroizeOnDrop)]
 pub struct Ed25519PrivateKey(SigningKey);
+
+impl Zeroize for Ed25519PrivateKey {
+    fn zeroize(&mut self) {
+        let mut secret_key = self.0.to_bytes();
+        secret_key.zeroize();
+        self.0 = SigningKey::from_bytes(&secret_key);
+    }
+}
 
 impl Ed25519PrivateKey {
     pub const LENGTH: usize = 32;
@@ -60,5 +68,15 @@ mod tests {
         assert_eq!(sk.public_key(), pk);
         assert_eq!(sk.sign(&test_message_hash), sig);
         assert!(verify_ed25519(&test_message_hash, &pk, &sig));
+    }
+
+    #[test]
+    fn verify_zeroize() {
+        let bytes = "4fd3fb62d6b7a4749f75d56d06b0aea1ec2c2a6986d2bfa975d7891585590fea";
+        let mut key = Ed25519PrivateKey::from_bytes(&hex::decode(bytes).unwrap()).unwrap();
+
+        key.zeroize();
+
+        assert_eq!(key.to_bytes(), [0; 32].to_vec());
     }
 }
