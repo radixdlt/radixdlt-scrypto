@@ -70,9 +70,7 @@ impl Bls12381G2Signature {
     /// This method does not validate provided input signatures, it is left
     /// here for backward compatibility.
     /// It is recommended to use `aggregate()` method instead.
-    pub fn aggregate_old(
-        signatures: &[Self],
-    ) -> Result<Self, ParseBlsSignatureError> {
+    pub fn aggregate_old(signatures: &[Self]) -> Result<Self, ParseBlsSignatureError> {
         if !signatures.is_empty() {
             let sig_first = signatures[0].to_native_signature()?;
 
