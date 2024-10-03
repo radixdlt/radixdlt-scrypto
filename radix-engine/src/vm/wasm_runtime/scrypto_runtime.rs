@@ -632,11 +632,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             })?;
 
         if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
-            Ok(fast_aggregate_verify_bls12381_v1_old(
-                &message,
-                &public_keys,
-                &signature,
-            ) as u32)
+            Ok(fast_aggregate_verify_bls12381_v1_old(&message, &public_keys, &signature) as u32)
         } else {
             Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
         }
@@ -711,10 +707,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidPublicKey)?;
         let signature: Ed25519Signature =
             scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
-
         // TODO: costing
 
-        Ok(verify_ed25519(message, &public_key, &signature) as u32)
+        Ok(verify_ed25519(&message, &public_key, &signature) as u32)
     }
 
     #[trace_resources(log=message.len())]
@@ -728,9 +723,10 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidPublicKey)?;
         let signature: Secp256k1Signature =
             scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidSignature)?;
+        let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
 
         // TODO: costing
 
-        Ok(verify_secp256k1(message, &public_key, &signature) as u32)
+        Ok(verify_secp256k1(&hash, &public_key, &signature) as u32)
     }
 }

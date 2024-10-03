@@ -180,7 +180,6 @@ fn crypto_scrypto_blake_2b_256_hash(
     )
 }
 
-
 #[test]
 fn test_crypto_scrypto_verify_bls12381_v1() {
     // Arrange
@@ -702,10 +701,7 @@ fn test_crypto_scrypto_blake2b_256_hash() {
         data1_hash,
         Hash::from_str("48f1bd08444b5e713db9e14caac2faae71836786ac94d645b00679728202a935").unwrap()
     );
-    assert_eq!(
-        data1_hash,
-        blake2b_256_hash(data1)
-    );
+    assert_eq!(data1_hash, blake2b_256_hash(data1));
 
     // Act
     let data2_hash: Hash = get_output!(crypto_scrypto_blake_2b_256_hash(
@@ -756,7 +752,7 @@ fn crypto_scrypto_ed25519_verify(
 fn crypto_scrypto_secp256k1_ecdsa_verify(
     runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
-    msg: Vec<u8>,
+    hash: Hash,
     pub_key: Secp256k1PublicKey,
     signature: Secp256k1Signature,
 ) -> TransactionReceipt {
@@ -767,13 +763,12 @@ fn crypto_scrypto_secp256k1_ecdsa_verify(
                 package_address,
                 "CryptoScrypto",
                 "secp256k1_ecdsa_verify",
-                manifest_args!(msg, pub_key, signature),
+                manifest_args!(hash, pub_key, signature),
             )
             .build(),
         vec![],
     )
 }
-
 
 #[test]
 fn test_crypto_scrypto_verify_ed25519() {
@@ -823,34 +818,34 @@ fn test_crypto_scrypto_verify_secp256k1_ecdsa() {
 
     let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
 
-    let msg1 = hash("Test").to_vec();
+    let hash1 = hash("Test");
     let pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
-    let msg1_signature = "00eb8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
+    let hash1_signature = "00eb8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
 
     let pk = Secp256k1PublicKey::from_str(pk).unwrap();
-    let msg1_signature = Secp256k1Signature::from_str(msg1_signature).unwrap();
+    let hash1_signature = Secp256k1Signature::from_str(hash1_signature).unwrap();
     // Act
     let msg1_verify: bool = get_output!(crypto_scrypto_secp256k1_ecdsa_verify(
         &mut ledger,
         package_address,
-        msg1,
+        hash1,
         pk,
-        msg1_signature,
+        hash1_signature,
     ));
 
     // Assert
     assert!(msg1_verify);
 
     // Arrange
-    let msg2 = hash("ExpectFailureTest").to_vec();
+    let hash2 = hash("ExpectFailureTest");
 
     // Act
     let msg2_verify: bool = get_output!(crypto_scrypto_secp256k1_ecdsa_verify(
         &mut ledger,
         package_address,
-        msg2,
+        hash2,
         pk,
-        msg1_signature,
+        hash1_signature,
     ));
 
     // Assert
@@ -891,7 +886,7 @@ fn test_crypto_scrypto_verify_ed25519_costing() {
     let public_key = secret_key.public_key();
 
     for size in 0..10 {
-        let data: Vec<u8> = vec![size as u8; size*10];
+        let data: Vec<u8> = vec![size as u8; size * 10];
         let data_hash = hash(data);
         let signature = secret_key.sign(&data_hash);
         let _ = crypto_scrypto_ed25519_verify(
@@ -914,16 +909,15 @@ fn test_crypto_scrypto_verify_secp256k1_ecdsa_costing() {
     let public_key = secret_key.public_key();
 
     for size in 0..10 {
-        let data: Vec<u8> = vec![size as u8; size*10];
+        let data: Vec<u8> = vec![size as u8; size * 10];
         let data_hash = hash(data);
         let signature = secret_key.sign(&data_hash);
         let _ = crypto_scrypto_secp256k1_ecdsa_verify(
             &mut ledger,
             package_address,
-            data_hash.to_vec(),
+            data_hash,
             public_key,
             signature,
         );
     }
 }
-

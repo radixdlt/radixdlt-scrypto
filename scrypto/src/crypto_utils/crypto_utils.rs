@@ -127,7 +127,7 @@ impl CryptoUtils {
 
     /// Performs ECDSA Secp256k1 verification.
     pub fn secp256k1_ecdsa_verify(
-        message: impl AsRef<[u8]>,
+        hash: impl AsRef<Hash>,
         public_key: impl AsRef<Secp256k1PublicKey>,
         signature: impl AsRef<Secp256k1Signature>,
     ) -> bool {
@@ -135,8 +135,8 @@ impl CryptoUtils {
         let signature: Vec<u8> = scrypto_encode(signature.as_ref()).unwrap();
         unsafe {
             crypto_utils::crypto_utils_secp256k1_ecdsa_verify(
-                message.as_ref().as_ptr(),
-                message.as_ref().len(),
+                hash.as_ref().0.as_ptr(),
+                hash.as_ref().0.len(),
                 public_key.as_ptr(),
                 public_key.len(),
                 signature.as_ptr(),

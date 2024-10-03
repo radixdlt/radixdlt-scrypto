@@ -165,6 +165,8 @@ pub enum WasmRuntimeError {
     InvalidPublicKeyOrMessage(DecodeError),
 
     InputDataEmpty,
+
+    InvalidHash(ParseHashError),
 }
 
 impl SelfError for WasmRuntimeError {

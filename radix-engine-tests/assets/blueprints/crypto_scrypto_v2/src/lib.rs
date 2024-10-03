@@ -55,11 +55,11 @@ mod component_module {
         }
 
         pub fn secp256k1_ecdsa_verify(
-            message: Vec<u8>,
+            hash: Hash,
             pub_key: Secp256k1PublicKey,
             signature: Secp256k1Signature,
         ) -> bool {
-            CryptoUtils::secp256k1_ecdsa_verify(&message, &pub_key, &signature)
+            CryptoUtils::secp256k1_ecdsa_verify(&hash, &pub_key, &signature)
         }
     }
 }
