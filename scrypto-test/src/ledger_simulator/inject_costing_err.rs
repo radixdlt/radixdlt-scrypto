@@ -520,7 +520,7 @@ impl<
     fn kernel_send_to_stack(
         &mut self,
         id: usize,
-        value: IndexedScryptoValue,
+        value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_send_to_stack(id, value)
     }

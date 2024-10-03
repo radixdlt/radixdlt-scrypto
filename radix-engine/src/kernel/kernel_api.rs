@@ -185,7 +185,7 @@ pub trait KernelStackApi {
     fn kernel_send_to_stack(
         &mut self,
         id: usize,
-        value: IndexedScryptoValue,
+        value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     /// Sets the call frame data for the current call frame

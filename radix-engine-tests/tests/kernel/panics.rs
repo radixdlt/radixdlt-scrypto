@@ -55,7 +55,7 @@ impl<E: KernelTransactionExecutor> KernelStackApi for MockKernel<E> {
     fn kernel_send_to_stack(
         &mut self,
         _id: usize,
-        _value: IndexedScryptoValue,
+        _value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         panic1!()
     }
