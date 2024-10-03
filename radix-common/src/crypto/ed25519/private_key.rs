@@ -91,7 +91,7 @@ mod tests {
 
         unsafe {
             for i in 0..size - slice.len() + 1 {
-                let memory_slice: &[u8] = std::slice::from_raw_parts(ptr.add(i), slice.len());
+                let memory_slice: &[u8] = core::slice::from_raw_parts(ptr.add(i), slice.len());
                 if memory_slice == slice {
                     return Some(i);
                 }
@@ -116,7 +116,7 @@ mod tests {
         let zero_bytes = [0u8; 32];
 
         let memory_slice_after_zeroize = unsafe {
-            std::slice::from_raw_parts(secret_key_inner_ptr.add(key_offset), zero_bytes.len())
+            core::slice::from_raw_parts(secret_key_inner_ptr.add(key_offset), zero_bytes.len())
         };
 
         assert_eq!(memory_slice_after_zeroize, zero_bytes,);
@@ -137,7 +137,7 @@ mod tests {
 
         let zero_bytes = [0u8; 32];
         let memory_slice_after_zeroize = unsafe {
-            std::slice::from_raw_parts(secret_key_inner_ptr.add(key_offset), zero_bytes.len())
+            core::slice::from_raw_parts(secret_key_inner_ptr.add(key_offset), zero_bytes.len())
         };
 
         assert_eq!(memory_slice_after_zeroize, zero_bytes,);
