@@ -386,7 +386,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        if !api.start_lock_fee(amount)? {
+        if !api.start_lock_fee(amount, contingent)? {
             return Ok(());
         }
 

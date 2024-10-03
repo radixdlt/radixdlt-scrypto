@@ -224,7 +224,6 @@ fn test_instruction_traces() {
         .execution_traces
         .clone();
 
-    // Expecting a single root trace
     assert_eq!(8, traces.len());
 
     // Check traces for the 7 manifest instructions

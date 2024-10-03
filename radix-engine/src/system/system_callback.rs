@@ -32,7 +32,7 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::system::transaction::multithread_txn_processor::MultiThreadedTxnProcessor;
+use crate::system::transaction::multithread_intent_processor::MultiThreadIntentProcessor;
 use crate::track::*;
 use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
@@ -208,7 +208,7 @@ impl SystemVersion {
             }
             SystemVersion::V2 => {
                 let mut txn_threads =
-                    MultiThreadedTxnProcessor::init(executable, global_address_reservations, api)?;
+                    MultiThreadIntentProcessor::init(executable, global_address_reservations, api)?;
                 txn_threads.execute(api)?;
                 let output = txn_threads
                     .threads
@@ -218,7 +218,6 @@ impl SystemVersion {
                     .outputs
                     .drain(..)
                     .collect();
-                txn_threads.cleanup(api)?;
                 output
             }
         };

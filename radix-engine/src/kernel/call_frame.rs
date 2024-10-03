@@ -651,10 +651,6 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         for node_id in message.copy_stable_transient_references {
-            if from.depth >= to.depth {
-                panic!("Transient references only supported for downstream calls.");
-            }
-
             if let Some(ref_origin) = from.get_node_visibility(&node_id).reference_origin(node_id) {
                 to.transient_references
                     .entry(node_id.clone())

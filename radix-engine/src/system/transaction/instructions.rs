@@ -1,5 +1,5 @@
 use crate::blueprints::transaction_processor::{
-    TransactionProcessorError, TxnProcessorObjects, TxnProcessorObjectsWithApi,
+    IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
 };
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -17,15 +17,15 @@ use radix_transactions::manifest::*;
 use radix_transactions::model::{InstructionV1, InstructionV2};
 
 pub enum Yield {
-    ToChild(usize),
-    ToParent,
+    ToChild(usize, ScryptoValue),
+    ToParent(ScryptoValue),
 }
 
 pub trait TxnInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError>;
 }
@@ -34,7 +34,7 @@ impl TxnInstruction for InstructionV1 {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
         let output = match self {
@@ -81,7 +81,7 @@ impl TxnInstruction for InstructionV2 {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
         let output = match self {
@@ -122,13 +122,14 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
             InstructionV2::VerifyParent(_) => todo!(),
             InstructionV2::YieldToChild(i) => {
-                return Ok((
-                    InstructionOutput::None,
-                    Some(Yield::ToChild(i.child_index.0 as usize)),
-                ));
+                return i
+                    .execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
             }
-            InstructionV2::YieldToParent(_) => {
-                return Ok((InstructionOutput::None, Some(Yield::ToParent)));
+            InstructionV2::YieldToParent(i) => {
+                return i
+                    .execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
             }
         }?;
 
@@ -136,11 +137,64 @@ impl TxnInstruction for InstructionV2 {
     }
 }
 
+pub trait YieldingInstruction {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<Yield, RuntimeError>;
+}
+
+impl YieldingInstruction for YieldToChild {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<Yield, RuntimeError> {
+        // TODO: should we disallow blobs in yield instructions?
+        let scrypto_value = {
+            let mut processor_with_api = IntentProcessorObjectsWithApi {
+                worktop,
+                objects,
+                api,
+                current_total_size_of_blobs: 0,
+            };
+            transform(self.args, &mut processor_with_api)?
+        };
+
+        Ok(Yield::ToChild(self.child_index.0 as usize, scrypto_value))
+    }
+}
+
+impl YieldingInstruction for YieldToParent {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<Yield, RuntimeError> {
+        // TODO: should we disallow blobs in yield instructions?
+        let scrypto_value = {
+            let mut processor_with_api = IntentProcessorObjectsWithApi {
+                worktop,
+                objects,
+                api,
+                current_total_size_of_blobs: 0,
+            };
+            transform(self.args, &mut processor_with_api)?
+        };
+
+        Ok(Yield::ToParent(scrypto_value))
+    }
+}
+
 pub trait TxnNormalInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError>;
 }
@@ -149,7 +203,7 @@ impl TxnNormalInstruction for TakeAllFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = worktop.take_all(self.resource_address, api)?;
@@ -162,7 +216,7 @@ impl TxnNormalInstruction for TakeFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = worktop.take(self.resource_address, self.amount, api)?;
@@ -175,7 +229,7 @@ impl TxnNormalInstruction for TakeNonFungiblesFromWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = worktop.take_non_fungibles(
@@ -192,7 +246,7 @@ impl TxnNormalInstruction for ReturnToWorktop {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.take_bucket(&self.bucket_id)?;
@@ -205,7 +259,7 @@ impl TxnNormalInstruction for AssertWorktopContainsAny {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         worktop.assert_contains(self.resource_address, api)?;
@@ -217,7 +271,7 @@ impl TxnNormalInstruction for AssertWorktopContains {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         worktop.assert_contains_amount(self.resource_address, self.amount, api)?;
@@ -229,7 +283,7 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         worktop.assert_contains_non_fungibles(
@@ -245,7 +299,7 @@ impl TxnNormalInstruction for PopFromAuthZone {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = LocalAuthZone::pop(api)?.ok_or(RuntimeError::ApplicationError(
@@ -260,7 +314,7 @@ impl TxnNormalInstruction for PushToAuthZone {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = objects.take_proof(&self.proof_id)?;
@@ -273,7 +327,7 @@ impl TxnNormalInstruction for CreateProofFromAuthZoneOfAmount {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = LocalAuthZone::create_proof_of_amount(self.amount, self.resource_address, api)?;
@@ -286,7 +340,7 @@ impl TxnNormalInstruction for CreateProofFromAuthZoneOfNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = LocalAuthZone::create_proof_of_non_fungibles(
@@ -303,7 +357,7 @@ impl TxnNormalInstruction for CreateProofFromAuthZoneOfAll {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = LocalAuthZone::create_proof_of_all(self.resource_address, api)?;
@@ -316,7 +370,7 @@ impl TxnNormalInstruction for CreateProofFromBucketOfAmount {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.get_bucket(&self.bucket_id)?;
@@ -330,7 +384,7 @@ impl TxnNormalInstruction for CreateProofFromBucketOfNonFungibles {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.get_bucket(&self.bucket_id)?;
@@ -344,7 +398,7 @@ impl TxnNormalInstruction for CreateProofFromBucketOfAll {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.get_bucket(&self.bucket_id)?;
@@ -358,7 +412,7 @@ impl TxnNormalInstruction for DropAuthZoneProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         LocalAuthZone::drop_proofs(api)?;
@@ -370,7 +424,7 @@ impl TxnNormalInstruction for DropAuthZoneRegularProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         LocalAuthZone::drop_regular_proofs(api)?;
@@ -382,7 +436,7 @@ impl TxnNormalInstruction for DropAuthZoneSignatureProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        _objects: &mut TxnProcessorObjects,
+        _objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         LocalAuthZone::drop_signature_proofs(api)?;
@@ -394,7 +448,7 @@ impl TxnNormalInstruction for BurnResource {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.take_bucket(&self.bucket_id)?;
@@ -410,7 +464,7 @@ impl TxnNormalInstruction for CloneProof {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = objects.get_proof(&self.proof_id)?;
@@ -424,7 +478,7 @@ impl TxnNormalInstruction for DropProof {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let proof = objects.take_proof(&self.proof_id)?;
@@ -435,13 +489,13 @@ impl TxnNormalInstruction for DropProof {
 
 fn handle_invocation<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
     api: &mut Y,
-    objects: &mut TxnProcessorObjects,
+    objects: &mut IntentProcessorObjects,
     worktop: &mut Worktop,
     args: ManifestValue,
     invocation_handler: impl FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
 ) -> Result<InstructionOutput, RuntimeError> {
     let scrypto_value = {
-        let mut processor_with_api = TxnProcessorObjectsWithApi {
+        let mut processor_with_api = IntentProcessorObjectsWithApi {
             worktop,
             objects,
             api,
@@ -462,7 +516,7 @@ impl TxnNormalInstruction for CallFunction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let package_address = objects.resolve_package_address(self.package_address)?;
@@ -481,7 +535,7 @@ impl TxnNormalInstruction for CallMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let address = objects.resolve_global_address(self.address)?;
@@ -499,7 +553,7 @@ impl TxnNormalInstruction for CallRoyaltyMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let address = objects.resolve_global_address(self.address)?;
@@ -518,7 +572,7 @@ impl TxnNormalInstruction for CallMetadataMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let address = objects.resolve_global_address(self.address)?;
@@ -537,7 +591,7 @@ impl TxnNormalInstruction for CallRoleAssignmentMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let address = objects.resolve_global_address(self.address)?;
@@ -556,7 +610,7 @@ impl TxnNormalInstruction for CallDirectVaultMethod {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         handle_invocation(api, objects, worktop, self.args, |api, args| {
@@ -573,7 +627,7 @@ impl TxnNormalInstruction for DropNamedProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         for (_, real_id) in objects.proof_mapping.drain(..) {
@@ -588,7 +642,7 @@ impl TxnNormalInstruction for DropAllProofs {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         for (_, real_id) in objects.proof_mapping.drain(..) {
@@ -604,7 +658,7 @@ impl TxnNormalInstruction for AllocateGlobalAddress {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         _worktop: &mut Worktop,
-        objects: &mut TxnProcessorObjects,
+        objects: &mut IntentProcessorObjects,
         api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId::new(
