@@ -3,6 +3,7 @@ use crate::blueprints::transaction_processor::{
 };
 use crate::errors::{KernelError, RuntimeError, SystemError};
 use crate::internal_prelude::YieldError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::actor::{Actor, FunctionActor};
 use crate::system::system::SystemService;
@@ -16,7 +17,6 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::prelude::{
     ObjectInfo, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
-use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 use sbor::prelude::ToString;
@@ -96,6 +96,7 @@ impl MultiThreadIntentProcessor {
             api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
+            // TODO: Remove unwraps
             let mut system_service = SystemService::new(api);
             let switch_to = match txn_thread.resume(passed_value.take(), &mut system_service)? {
                 ResumeResult::YieldToChild(child, value) => {
@@ -117,7 +118,7 @@ impl MultiThreadIntentProcessor {
             if let Some((next_thread, value, intent_done)) = switch_to {
                 // Checked passed values
                 Self::check_yielded_value(&value, api)?;
-                api.kernel_send_to_stack(next_thread, value.clone())?;
+                api.kernel_send_to_stack(next_thread, &value)?;
                 passed_value = Some(value);
 
                 // Cleanup stack if intent is done. This must be done after the above kernel_send_to_stack.
