@@ -46,8 +46,8 @@ pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
     VerifyParent(AccessRule),
-    ChildIntentDone(IndexedScryptoValue),
-    RootIntentDone,
+    DoneAndYieldToParent(IndexedScryptoValue),
+    Done,
 }
 
 pub struct IntentProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
@@ -138,12 +138,11 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
                         IndexedScryptoValue::from_scrypto_value(value),
                     ),
                     MultiThreadResult::SwitchToParent(value) => {
-                        // Child subintents must end with a yield to parent
                         if self.remaining_instructions.is_empty() {
                             self.worktop.drop(api)?;
-                            ResumeResult::ChildIntentDone(IndexedScryptoValue::from_scrypto_value(
-                                value,
-                            ))
+                            ResumeResult::DoneAndYieldToParent(
+                                IndexedScryptoValue::from_scrypto_value(value),
+                            )
                         } else {
                             ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(
                                 value,
@@ -156,7 +155,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
         }
 
         self.worktop.drop(api)?;
-        Ok(ResumeResult::RootIntentDone)
+        Ok(ResumeResult::Done)
     }
 }
 

@@ -108,24 +108,31 @@ impl MultiThreadIntentProcessor {
             api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
-            // TODO: Remove unwraps
             let mut system_service = SystemService::new(api);
             let post_exec = match txn_thread.resume(passed_value.take(), &mut system_service)? {
                 ResumeResult::YieldToChild(child, value) => {
-                    let child = *children_mapping.get(child).unwrap();
+                    let child = *children_mapping
+                        .get(child)
+                        .ok_or(RuntimeError::SystemError(SystemError::IntentError(
+                            IntentError::InvalidIntentIndex(child),
+                        )))?;
                     parent_stack.push(cur_thread);
                     PostExecution::SwitchThread(child, value, false)
                 }
                 ResumeResult::YieldToParent(value) => {
-                    let parent = parent_stack.pop().unwrap();
+                    let parent = parent_stack.pop().ok_or(RuntimeError::SystemError(
+                        SystemError::IntentError(IntentError::NoParentToYieldTo),
+                    ))?;
                     PostExecution::SwitchThread(parent, value, false)
                 }
                 ResumeResult::VerifyParent(rule) => PostExecution::VerifyParent(rule),
-                ResumeResult::ChildIntentDone(value) => {
-                    let parent = parent_stack.pop().unwrap();
+                ResumeResult::DoneAndYieldToParent(value) => {
+                    let parent = parent_stack.pop().ok_or(RuntimeError::SystemError(
+                        SystemError::IntentError(IntentError::NoParentToYieldTo),
+                    ))?;
                     PostExecution::SwitchThread(parent, value, true)
                 }
-                ResumeResult::RootIntentDone => PostExecution::RootIntentDone,
+                ResumeResult::Done => PostExecution::RootIntentDone,
             };
 
             match post_exec {

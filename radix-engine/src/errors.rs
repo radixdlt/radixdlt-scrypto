@@ -308,6 +308,8 @@ pub enum IntentError {
     CannotVerifyParentOnRoot,
     CannotYieldProof,
     VerifyParentFailed,
+    InvalidIntentIndex(usize),
+    NoParentToYieldTo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
