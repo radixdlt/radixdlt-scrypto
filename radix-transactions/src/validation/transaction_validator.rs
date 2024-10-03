@@ -322,6 +322,7 @@ impl TransactionValidator {
                     id_validator.new_named_address();
                 }
                 ManifestInstructionEffect::WorktopAssertion { .. } => {}
+                ManifestInstructionEffect::Verification { .. } => {}
             }
         }
         Ok(())
@@ -1166,10 +1167,7 @@ struct ManifestYieldSummary {
 impl ManifestInterpretationVisitor for ManifestYieldSummary {
     type Output = ManifestValidationError;
 
-    fn on_end_instruction<'a>(
-        &mut self,
-        details: OnEndInstruction<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_end_instruction(&mut self, details: OnEndInstruction) -> ControlFlow<Self::Output> {
         // Safe from overflow due to checking max instruction count
         match details.effect {
             ManifestInstructionEffect::Invocation {

@@ -418,6 +418,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
             // implementing this edge case.
             ManifestInstructionEffect::Invocation { .. } => {}
             ManifestInstructionEffect::WorktopAssertion { .. } => {}
+            ManifestInstructionEffect::Verification { .. } => {}
         };
 
         (
@@ -2107,9 +2108,13 @@ where
         batch: impl ResolvableBucketBatch,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
-        self.call_method(address, ACCOUNT_DEPOSIT_BATCH_IDENT, manifest_args!(batch))
+        self.call_method(
+            address,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            AccountDepositBatchManifestInput { buckets },
+        )
     }
 
     pub fn deposit_entire_worktop(self, account_address: impl ResolvableComponentAddress) -> Self {
@@ -2144,12 +2149,15 @@ where
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(batch, authorized_depositor_badge),
+            AccountTryDepositBatchOrAbortManifestInput {
+                buckets,
+                authorized_depositor_badge,
+            },
         )
     }
 
@@ -2193,12 +2201,15 @@ where
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(batch, authorized_depositor_badge),
+            AccountTryDepositBatchOrAbortManifestInput {
+                buckets,
+                authorized_depositor_badge,
+            },
         )
     }
 

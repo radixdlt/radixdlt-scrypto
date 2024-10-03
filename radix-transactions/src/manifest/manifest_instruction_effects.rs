@@ -36,9 +36,12 @@ pub enum ManifestInstructionEffect<'a> {
     WorktopAssertion {
         assertion: WorktopAssertion<'a>,
     },
+    Verification {
+        verification: VerificationKind,
+    },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum InvocationKind<'a> {
     Method {
         address: &'a DynamicGlobalAddress,
@@ -58,7 +61,11 @@ pub enum InvocationKind<'a> {
     YieldToChild {
         child_index: ManifestNamedIntent,
     },
-    VerifyParent,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum VerificationKind {
+    Parent,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -74,6 +81,20 @@ pub enum BucketSourceAmount<'a> {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
+}
+
+impl<'a> BucketSourceAmount<'a> {
+    pub fn resource_address(&self) -> &'a ResourceAddress {
+        match self {
+            Self::AllOnWorktop { resource_address }
+            | Self::AmountFromWorktop {
+                resource_address, ..
+            }
+            | Self::NonFungiblesFromWorktop {
+                resource_address, ..
+            } => resource_address,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -21,6 +21,14 @@ pub trait IsPublicKeyHash: Copy {
     fn into_enum(self) -> PublicKeyHash;
 }
 
+impl<H: IsPublicKeyHash> HasPublicKeyHash for H {
+    type TypedPublicKeyHash = Self;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        *self
+    }
+}
+
 pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_LENGTH] {
     hash(key_bytes).lower_bytes()
 }

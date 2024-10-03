@@ -85,7 +85,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             self.handle_instruction(visitor, index, instruction)?;
         }
         self.verify_final_instruction::<V>()?;
-        self.handle_wrap_up::<V>()
+        self.handle_wrap_up(visitor)?;
+        ControlFlow::Continue(())
     }
 
     #[must_use]
@@ -215,10 +216,28 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     blueprint_name,
                     None,
                 )?;
-                self.handle_new_named_address(visitor, Some(reservation))?;
+                self.handle_new_named_address(
+                    visitor,
+                    Some(reservation),
+                    package_address,
+                    blueprint_name,
+                )?;
             }
             Effect::WorktopAssertion { assertion } => {
                 visitor.on_worktop_assertion(OnWorktopAssertion { assertion })?;
+            }
+            Effect::Verification { verification } => {
+                match verification {
+                    VerificationKind::Parent => {
+                        if !self.manifest.is_subintent() {
+                            return ControlFlow::Break(
+                                ManifestValidationError::InstructionNotSupportedInTransactionIntent
+                                    .into(),
+                            );
+                        }
+                    }
+                }
+                visitor.on_verification(OnVerification { kind: verification })?;
             }
         }
 
@@ -244,7 +263,10 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     }
 
     #[must_use]
-    fn handle_wrap_up<V: ManifestInterpretationVisitor>(&mut self) -> ControlFlow<V::Output> {
+    fn handle_wrap_up<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<V::Output> {
         if self.validation_ruleset.validate_no_dangling_nodes {
             for (index, state) in self.bucket_state.iter().enumerate() {
                 if state.consumed_at.is_none() {
@@ -269,6 +291,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 }
             }
         }
+        visitor.on_finish(OnFinish)?;
 
         ControlFlow::Continue(())
     }
@@ -312,14 +335,6 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 false
             }
             InvocationKind::DirectMethod { .. } => false,
-            InvocationKind::VerifyParent => {
-                if !self.manifest.is_subintent() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InstructionNotSupportedInTransactionIntent.into(),
-                    );
-                }
-                false
-            }
             InvocationKind::YieldToParent => {
                 if !self.manifest.is_subintent() {
                     return ControlFlow::Break(
@@ -673,6 +688,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         associated_reservation: Option<ManifestAddressReservation>,
+        package_address: &PackageAddress,
+        blueprint_name: &str,
     ) -> ControlFlow<V::Output> {
         let new_named_address = ManifestNamedAddress(self.named_address_state.len() as u32);
         let state = NamedAddressState {
@@ -686,6 +703,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         visitor.on_new_named_address(OnNewNamedAddress {
             named_address: new_named_address,
             state: &state,
+            package_address,
+            blueprint_name,
         })?;
         self.named_address_state.push(state);
         ControlFlow::Continue(())
@@ -731,51 +750,51 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum ManifestLocation {
+pub enum ManifestLocation {
     Preamble,
     Instruction { index: usize },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BucketState<'a> {
-    name: Option<&'a str>,
-    source_amount: BucketSourceAmount<'a>,
-    created_at: ManifestLocation,
-    proof_locks: u32,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub source_amount: BucketSourceAmount<'a>,
+    pub created_at: ManifestLocation,
+    pub proof_locks: u32,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProofState<'a> {
-    name: Option<&'a str>,
-    source_amount: ProofSourceAmount<'a>,
-    created_at: ManifestLocation,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub source_amount: ProofSourceAmount<'a>,
+    pub created_at: ManifestLocation,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AddressReservationState<'a> {
-    name: Option<&'a str>,
-    package_address: &'a PackageAddress,
-    blueprint_name: &'a str,
-    preallocated_address: Option<&'a GlobalAddress>,
-    created_at: ManifestLocation,
-    consumed_at: Option<ManifestLocation>,
+    pub name: Option<&'a str>,
+    pub package_address: &'a PackageAddress,
+    pub blueprint_name: &'a str,
+    pub preallocated_address: Option<&'a GlobalAddress>,
+    pub created_at: ManifestLocation,
+    pub consumed_at: Option<ManifestLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NamedAddressState<'a> {
-    name: Option<&'a str>,
-    associated_reservation: Option<ManifestAddressReservation>,
-    created_at: ManifestLocation,
+    pub name: Option<&'a str>,
+    pub associated_reservation: Option<ManifestAddressReservation>,
+    pub created_at: ManifestLocation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IntentState<'a> {
-    name: Option<&'a str>,
-    intent_hash: IntentHash,
-    intent_type: IntentType,
-    created_at: ManifestLocation,
+    pub name: Option<&'a str>,
+    pub intent_hash: IntentHash,
+    pub intent_type: IntentType,
+    pub created_at: ManifestLocation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -875,78 +894,63 @@ pub trait ManifestInterpretationVisitor {
     type Output: From<ManifestValidationError>;
 
     #[must_use]
-    fn on_start_instruction<'a>(
+    fn on_start_instruction(&mut self, details: OnStartInstruction) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_end_instruction(&mut self, details: OnEndInstruction) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_bucket(&mut self, details: OnNewBucket) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_consume_bucket(&mut self, details: OnConsumeBucket) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_proof(&mut self, details: OnNewProof) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_consume_proof(&mut self, details: OnConsumeProof) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_address_reservation(
         &mut self,
-        details: OnStartInstruction<'a>,
+        details: OnNewAddressReservation,
     ) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_end_instruction<'a>(
+    fn on_consume_address_reservation(
         &mut self,
-        details: OnEndInstruction<'a>,
+        details: OnConsumeAddressReservation,
     ) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_new_bucket<'a>(&mut self, details: OnNewBucket<'_, 'a>) -> ControlFlow<Self::Output> {
+    fn on_new_named_address(&mut self, details: OnNewNamedAddress) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_consume_bucket<'a>(
-        &mut self,
-        details: OnConsumeBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_new_intent(&mut self, details: OnNewIntent) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_new_proof<'a>(&mut self, details: OnNewProof<'_, 'a>) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_consume_proof<'a>(
-        &mut self,
-        details: OnConsumeProof<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_address_reservation<'a>(
-        &mut self,
-        details: OnNewAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_consume_address_reservation<'a>(
-        &mut self,
-        details: OnConsumeAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_named_address<'a>(
-        &mut self,
-        details: OnNewNamedAddress<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_intent<'a>(&mut self, details: OnNewIntent<'_, 'a>) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_drop_authzone_proofs<'a>(
+    fn on_drop_authzone_proofs(
         &mut self,
         details: OnDropAuthZoneProofs,
     ) -> ControlFlow<Self::Output> {
@@ -954,28 +958,32 @@ pub trait ManifestInterpretationVisitor {
     }
 
     #[must_use]
-    fn on_pass_expression<'a>(
-        &mut self,
-        details: OnPassExpression<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_pass_expression(&mut self, details: OnPassExpression) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_register_blob<'a>(&mut self, details: OnRegisterBlob<'a>) -> ControlFlow<Self::Output> {
+    fn on_register_blob(&mut self, details: OnRegisterBlob) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_pass_blob<'a>(&mut self, details: OnPassBlob<'a>) -> ControlFlow<Self::Output> {
+    fn on_pass_blob(&mut self, details: OnPassBlob) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_worktop_assertion<'a>(
-        &mut self,
-        details: OnWorktopAssertion<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_worktop_assertion(&mut self, details: OnWorktopAssertion) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_verification(&mut self, details: OnVerification) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_finish(&mut self, details: OnFinish) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 }
@@ -1030,6 +1038,8 @@ pub struct OnConsumeAddressReservation<'s, 'a> {
 pub struct OnNewNamedAddress<'s, 'a> {
     pub named_address: ManifestNamedAddress,
     pub state: &'s NamedAddressState<'a>,
+    pub package_address: &'a PackageAddress,
+    pub blueprint_name: &'a str,
 }
 
 pub struct OnNewIntent<'s, 'a> {
@@ -1060,3 +1070,9 @@ pub struct OnPassBlob<'a> {
 pub struct OnWorktopAssertion<'a> {
     pub assertion: WorktopAssertion<'a>,
 }
+
+pub struct OnVerification {
+    pub kind: VerificationKind,
+}
+
+pub struct OnFinish;

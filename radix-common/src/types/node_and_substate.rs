@@ -73,6 +73,10 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_component())
     }
 
+    pub const fn is_global_account(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_account())
+    }
+
     pub const fn is_global_package(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global_package())
     }

@@ -1224,6 +1224,7 @@ dependencies = [
  "bech32",
  "hex",
  "lazy_static",
+ "paste",
  "radix-common",
  "radix-engine-interface",
  "radix-rust",
