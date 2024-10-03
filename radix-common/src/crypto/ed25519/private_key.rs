@@ -1,10 +1,20 @@
 use super::Ed25519Signature;
 use crate::internal_prelude::*;
+use core::pin::Pin;
 use ed25519_dalek::{Signer, SigningKey};
 use zeroize::Zeroize;
 
-pub struct Ed25519PrivateKey(Box<Option<SigningKey>>);
+// Pin<Box<>> assures the memory location of secret key is fixed preventing
+// accidental leaks due to movement.
+// SigningKey is wrapped in Option because it does not implement Zeroize,
+// but it implements ZeroizeOnDrop on drop, so we can trigger zeroize on drop
+// by assigning `None` value.
+pub struct Ed25519PrivateKey(Pin<Box<Option<SigningKey>>>);
 
+// SigningKey consists of
+// - SecretKey (sensitive) - implements Zeroize and it is zeroed when SigningKey is dropped
+// - VerifyingKey (not sensitive) - does not implement Zeroize
+// Because of the `VerifyingKey` we cannot simply derive Zeroize for Ed25519PrivateKey.
 impl Zeroize for Ed25519PrivateKey {
     fn zeroize(&mut self) {
         *self.0 = None;
@@ -14,22 +24,23 @@ impl Zeroize for Ed25519PrivateKey {
 impl Ed25519PrivateKey {
     pub const LENGTH: usize = 32;
 
-    fn get_inner_value(&self) -> &SigningKey {
-        self.0.as_ref().as_ref().expect("Key expected")
+    fn signing_key(&self) -> &SigningKey {
+        let option = &*self.0;
+        option.as_ref().expect("Key expected")
     }
 
     pub fn public_key(&self) -> Ed25519PublicKey {
-        Ed25519PublicKey(self.get_inner_value().verifying_key().to_bytes())
+        Ed25519PublicKey(self.signing_key().verifying_key().to_bytes())
     }
 
     pub fn sign(&self, msg_hash: &impl IsHash) -> Ed25519Signature {
         // SHA512 is used here
 
-        Ed25519Signature(self.get_inner_value().sign(msg_hash.as_ref()).to_bytes())
+        Ed25519Signature(self.signing_key().sign(msg_hash.as_ref()).to_bytes())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.get_inner_value().to_bytes().to_vec()
+        self.signing_key().to_bytes().to_vec()
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
@@ -39,7 +50,7 @@ impl Ed25519PrivateKey {
 
         let signing_key = SigningKey::try_from(slice).map_err(|_| ())?;
 
-        Ok(Self(Box::new(Some(signing_key))))
+        Ok(Self(Box::pin(Some(signing_key))))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
@@ -47,7 +58,7 @@ impl Ed25519PrivateKey {
         (&mut bytes[Ed25519PrivateKey::LENGTH - 8..Ed25519PrivateKey::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
-        Ok(Self(Box::new(Some(SigningKey::from_bytes(&bytes)))))
+        Ok(Self(Box::pin(Some(SigningKey::from_bytes(&bytes)))))
     }
 }
 
