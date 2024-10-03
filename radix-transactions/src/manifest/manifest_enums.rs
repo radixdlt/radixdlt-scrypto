@@ -228,6 +228,42 @@ lazy_static! {
             }
         );
 
+        known_enum!(
+            m,
+            enum ResourceConstraint {
+                NonZeroAmount = 0;
+                ExactAmount = 1;
+                AtLeastAmount = 2;
+                ExactNonFungibles = 3;
+                AtLeastNonFungibles = 4;
+                General = 5;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum LowerBound {
+                NonZero = 0;
+                Inclusive = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum UpperBound {
+                Inclusive = 0;
+                Unbounded = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum AllowedIds {
+                Allowlist = 0;
+                Any = 1;
+            }
+        );
+
         m
     };
 }

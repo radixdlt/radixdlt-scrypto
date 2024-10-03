@@ -218,8 +218,8 @@ impl ManifestInstruction for AssertWorktopContainsAny {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AnyAmountGreaterThanZero {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::WorktopResourceNonZeroAmount {
                 resource_address: &self.resource_address,
             },
         }
@@ -248,8 +248,8 @@ impl ManifestInstruction for AssertWorktopContains {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AtLeastAmount {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::WorktopResourceAtLeastAmount {
                 resource_address: &self.resource_address,
                 amount: self.amount,
             },
@@ -279,8 +279,8 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AtLeastNonFungibles {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::WorktopResourceAtLeastNonFungibles {
                 resource_address: &self.resource_address,
                 ids: &self.ids,
             },
@@ -288,25 +288,329 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 }
 
-/// Asserts that the worktop contains no amount of any resource.
+/// Asserts that the worktop contains only these specified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertWorktopIsEmpty {}
+pub struct AssertWorktopResourcesOnly {
+    pub constraints: ManifestResourceConstraints,
+}
 
-impl ManifestInstruction for AssertWorktopIsEmpty {
-    const IDENT: &'static str = "ASSERT_WORKTOP_IS_EMPTY";
-    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR;
+impl ManifestInstruction for AssertWorktopResourcesOnly {
+    const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_ONLY";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR;
 
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
+        let instruction = if self.constraints.specified_resources().len() == 0 {
+            DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY")
+        } else {
+            DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints)
+        };
+
         Ok(instruction)
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::IsEmpty,
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::WorktopResourcesOnly {
+                constraints: &self.constraints,
+            },
+        }
+    }
+}
+
+/// Asserts that the worktop includes these specified resources, and may
+/// also include other unspecified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertWorktopResourcesInclude {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertWorktopResourcesInclude {
+    const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_INCLUDE";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::WorktopResourcesInclude {
+                constraints: &self.constraints,
+            },
+        }
+    }
+}
+
+/// Asserts that the next invocation (`CALL` / `YIELD`) in the manifest
+/// returns only these specified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+///
+/// Only one `ASSERT_NEXT_CALL_RETURNS_...` instruction may be specified
+/// per `CALL` / `YIELD`, and it must immediately precede it.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertNextCallReturnsOnly {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertNextCallReturnsOnly {
+    const IDENT: &'static str = "ASSERT_NEXT_CALL_RETURNS_ONLY";
+    const ID: u8 = INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_ONLY_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::NextCallReturnsOnly {
+                constraints: &self.constraints,
+            },
+        }
+    }
+}
+
+/// Asserts that the next invocation (`CALL` / `YIELD`) in the manifest
+/// returns these specified resources, and may also include other
+/// unspecified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+///
+/// Only one `ASSERT_NEXT_CALL_RETURNS_...` instruction may be specified
+/// per `CALL` / `YIELD`, and it must immediately precede it.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertNextCallReturnsInclude {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertNextCallReturnsInclude {
+    const IDENT: &'static str = "ASSERT_NEXT_CALL_RETURNS_INCLUDE";
+    const ID: u8 = INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_INCLUDE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::NextCallReturnsInclude {
+                constraints: &self.constraints,
+            },
+        }
+    }
+}
+
+/// Asserts that the contents of the named bucket satisfy the given constraints.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertBucketContents {
+    pub bucket_id: ManifestBucket,
+    pub constraint: ManifestResourceConstraint,
+}
+
+impl ManifestInstruction for AssertBucketContents {
+    const IDENT: &'static str = "ASSERT_BUCKET_CONTENTS";
+    const ID: u8 = INSTRUCTION_ASSERT_BUCKET_CONTENTS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.bucket_id)
+            .add_argument(&self.constraint);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::BucketContents {
+                bucket: self.bucket_id,
+                constraint: &self.constraint,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ManifestSbor, ScryptoDescribe)]
+#[sbor(transparent)]
+pub struct ManifestResourceConstraints {
+    specified_resources: IndexMap<ResourceAddress, ManifestResourceConstraint>,
+}
+
+impl ManifestResourceConstraints {
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
+        &self.specified_resources
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&ResourceAddress, &ManifestResourceConstraint)> {
+        self.specified_resources.iter()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        for (resource_address, constraint) in self.iter() {
+            if !constraint.is_valid_for(resource_address) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl IntoIterator for ManifestResourceConstraints {
+    type Item = (ResourceAddress, ManifestResourceConstraint);
+    type IntoIter =
+        <IndexMap<ResourceAddress, ManifestResourceConstraint> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.specified_resources.into_iter()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub enum ManifestResourceConstraint {
+    NonZeroAmount,
+    ExactAmount(Decimal),
+    AtLeastAmount(Decimal),
+    ExactNonFungibles(IndexSet<NonFungibleLocalId>),
+    AtLeastNonFungibles(IndexSet<NonFungibleLocalId>),
+    General(GeneralResourceConstraint),
+}
+
+impl ManifestResourceConstraint {
+    pub fn is_valid_for(&self, resource_address: &ResourceAddress) -> bool {
+        if resource_address.is_fungible() {
+            self.is_valid_for_fungible_use()
+        } else {
+            self.is_valid_for_non_fungible_use()
+        }
+    }
+
+    pub fn is_valid_for_fungible_use(&self) -> bool {
+        match self {
+            ManifestResourceConstraint::NonZeroAmount => true,
+            ManifestResourceConstraint::ExactAmount(amount) => !amount.is_negative(),
+            ManifestResourceConstraint::AtLeastAmount(amount) => !amount.is_negative(),
+            ManifestResourceConstraint::ExactNonFungibles(_) => false,
+            ManifestResourceConstraint::AtLeastNonFungibles(_) => false,
+            ManifestResourceConstraint::General(general) => general.is_valid_for_fungible_use(),
+        }
+    }
+
+    pub fn is_valid_for_non_fungible_use(&self) -> bool {
+        match self {
+            ManifestResourceConstraint::NonZeroAmount => true,
+            ManifestResourceConstraint::ExactAmount(amount) => !amount.is_negative(),
+            ManifestResourceConstraint::AtLeastAmount(amount) => !amount.is_negative(),
+            ManifestResourceConstraint::ExactNonFungibles(_) => true,
+            ManifestResourceConstraint::AtLeastNonFungibles(_) => true,
+            ManifestResourceConstraint::General(general) => general.is_valid_for_non_fungible_use(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct GeneralResourceConstraint {
+    pub required_ids: IndexSet<NonFungibleLocalId>,
+    pub lower_bound: LowerBound,
+    pub upper_bound: UpperBound,
+    pub allowed_ids: AllowedIds,
+}
+
+impl GeneralResourceConstraint {
+    pub fn is_valid_for_fungible_use(&self) -> bool {
+        return self.required_ids.is_empty()
+            && self.allowed_ids.is_valid_for_fungible_use()
+            && self.are_bounds_valid();
+    }
+
+    pub fn is_valid_for_non_fungible_use(&self) -> bool {
+        return self.are_bounds_valid();
+    }
+
+    fn are_bounds_valid(&self) -> bool {
+        let required_ids_amount = Decimal::from(self.required_ids.len());
+        if required_ids_amount > self.lower_bound.equivalent_decimal() {
+            return false;
+        }
+        if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
+            return false;
+        }
+        match &self.allowed_ids {
+            AllowedIds::Allowlist(allowlist) => {
+                let allowlist_ids_amount = Decimal::from(allowlist.len());
+                if self.upper_bound.equivalent_decimal() > allowlist_ids_amount {
+                    return false;
+                }
+                if !self.required_ids.is_subset(allowlist) {
+                    return false;
+                }
+            }
+            AllowedIds::Any => {}
+        }
+        true
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub enum LowerBound {
+    NonZero,
+    Inclusive(Decimal),
+}
+
+impl LowerBound {
+    pub fn equivalent_decimal(&self) -> Decimal {
+        match self {
+            LowerBound::NonZero => Decimal(I192::ONE),
+            LowerBound::Inclusive(decimal) => *decimal,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub enum UpperBound {
+    Inclusive(Decimal),
+    Unbounded,
+}
+
+impl UpperBound {
+    pub fn equivalent_decimal(&self) -> Decimal {
+        match self {
+            UpperBound::Inclusive(decimal) => *decimal,
+            UpperBound::Unbounded => Decimal::MAX,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub enum AllowedIds {
+    Allowlist(IndexSet<NonFungibleLocalId>),
+    Any,
+}
+
+impl AllowedIds {
+    pub fn is_valid_for_fungible_use(&self) -> bool {
+        match self {
+            AllowedIds::Allowlist(allowlist) => allowlist.is_empty(),
+            AllowedIds::Any => true,
         }
     }
 }
@@ -1273,7 +1577,7 @@ impl ManifestInstruction for YieldToChild {
 /// counterparty.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct VerifyParent {
-    pub access_rule: ManifestValue,
+    pub access_rule: AccessRule,
 }
 
 impl ManifestInstruction for VerifyParent {
@@ -1284,15 +1588,14 @@ impl ManifestInstruction for VerifyParent {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new(Self::IDENT).add_value_argument(self.access_rule.clone());
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.access_rule);
         Ok(instruction)
     }
 
     fn effect(&self) -> Effect {
-        Effect::Invocation {
-            kind: InvocationKind::VerifyParent,
-            args: &self.access_rule,
+        Effect::Verification {
+            verification: VerificationKind::Parent,
+            access_rule: &self.access_rule,
         }
     }
 }
@@ -1320,7 +1623,12 @@ const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 0x24;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
-const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
+
+const INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR: u8 = 0x08;
+const INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR: u8 = 0x09;
+const INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_ONLY_DISCRIMINATOR: u8 = 0x0A;
+const INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_INCLUDE_DISCRIMINATOR: u8 = 0x0B;
+const INSTRUCTION_ASSERT_BUCKET_CONTENTS_DISCRIMINATOR: u8 = 0x0C;
 
 //==============
 // Proof Lifecycle

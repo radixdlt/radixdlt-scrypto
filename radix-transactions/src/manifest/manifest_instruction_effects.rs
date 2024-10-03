@@ -33,12 +33,16 @@ pub enum ManifestInstructionEffect<'a> {
         package_address: &'a PackageAddress,
         blueprint_name: &'a str,
     },
-    WorktopAssertion {
-        assertion: WorktopAssertion<'a>,
+    ResourceAssertion {
+        assertion: ResourceAssertion<'a>,
+    },
+    Verification {
+        verification: VerificationKind,
+        access_rule: &'a AccessRule,
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum InvocationKind<'a> {
     Method {
         address: &'a DynamicGlobalAddress,
@@ -58,7 +62,11 @@ pub enum InvocationKind<'a> {
     YieldToChild {
         child_index: ManifestNamedIntent,
     },
-    VerifyParent,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum VerificationKind {
+    Parent,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -74,6 +82,20 @@ pub enum BucketSourceAmount<'a> {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
+}
+
+impl<'a> BucketSourceAmount<'a> {
+    pub fn resource_address(&self) -> &'a ResourceAddress {
+        match self {
+            Self::AllOnWorktop { resource_address }
+            | Self::AmountFromWorktop {
+                resource_address, ..
+            }
+            | Self::NonFungiblesFromWorktop {
+                resource_address, ..
+            } => resource_address,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -149,17 +171,32 @@ pub enum BlobDestination<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub enum WorktopAssertion<'a> {
-    AnyAmountGreaterThanZero {
+pub enum ResourceAssertion<'a> {
+    WorktopResourceNonZeroAmount {
         resource_address: &'a ResourceAddress,
     },
-    AtLeastAmount {
+    WorktopResourceAtLeastAmount {
         resource_address: &'a ResourceAddress,
         amount: Decimal,
     },
-    AtLeastNonFungibles {
+    WorktopResourceAtLeastNonFungibles {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
-    IsEmpty,
+    WorktopResourcesOnly {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    WorktopResourcesInclude {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    NextCallReturnsOnly {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    NextCallReturnsInclude {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    BucketContents {
+        bucket: ManifestBucket,
+        constraint: &'a ManifestResourceConstraint,
+    },
 }
