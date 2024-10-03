@@ -26,7 +26,9 @@ impl Ed25519PrivateKey {
 
     fn signing_key(&self) -> &SigningKey {
         let option = &*self.0;
-        option.as_ref().expect("Key expected")
+        option
+            .as_ref()
+            .expect("Cannot access signing key after zeroizing")
     }
 
     pub fn public_key(&self) -> Ed25519PublicKey {
