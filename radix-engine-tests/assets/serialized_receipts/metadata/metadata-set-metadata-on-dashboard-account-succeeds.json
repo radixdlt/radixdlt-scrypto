@@ -6,22 +6,39 @@
     ],
     "metadata_updates": {
       "account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu": {
-        "account_type": {
-          "Set": {
-            "kind": "String",
-            "value": "dapp definition"
-          }
-        },
         "name": {
           "Set": {
             "kind": "String",
             "value": "Radix Dashboard"
           }
         },
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[d188825c0189a3d71be28e28d10f7e9011740510f7b4caf52f2247e37e40]"
+          }
+        },
         "description": {
           "Set": {
             "kind": "String",
             "value": "A collection of tools to assist with standard actions, and a place to look up anything on the ledger."
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Secp256k1",
+                "value": "88825c0189a3d71be28e28d10f7e9011740510f7b4caf52f2247e37e40"
+              }
+            ]
+          }
+        },
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
           }
         }
       }

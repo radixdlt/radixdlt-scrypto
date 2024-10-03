@@ -12,71 +12,71 @@ impl ManifestInstructionSet for InstructionV1 {
         context: &mut decompiler::DecompilationContext,
     ) -> Result<decompiler::DecompiledInstruction, DecompileError> {
         match self {
-            Self::TakeAllFromWorktop(x) => x.decompile(context),
-            Self::TakeFromWorktop(x) => x.decompile(context),
-            Self::TakeNonFungiblesFromWorktop(x) => x.decompile(context),
-            Self::ReturnToWorktop(x) => x.decompile(context),
-            Self::AssertWorktopContainsAny(x) => x.decompile(context),
-            Self::AssertWorktopContains(x) => x.decompile(context),
-            Self::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
-            Self::PopFromAuthZone(x) => x.decompile(context),
-            Self::PushToAuthZone(x) => x.decompile(context),
-            Self::CreateProofFromAuthZoneOfAmount(x) => x.decompile(context),
-            Self::CreateProofFromAuthZoneOfNonFungibles(x) => x.decompile(context),
-            Self::CreateProofFromAuthZoneOfAll(x) => x.decompile(context),
-            Self::DropAuthZoneProofs(x) => x.decompile(context),
-            Self::DropAuthZoneRegularProofs(x) => x.decompile(context),
-            Self::DropAuthZoneSignatureProofs(x) => x.decompile(context),
-            Self::CreateProofFromBucketOfAmount(x) => x.decompile(context),
-            Self::CreateProofFromBucketOfNonFungibles(x) => x.decompile(context),
-            Self::CreateProofFromBucketOfAll(x) => x.decompile(context),
-            Self::BurnResource(x) => x.decompile(context),
-            Self::CloneProof(x) => x.decompile(context),
-            Self::DropProof(x) => x.decompile(context),
-            Self::CallFunction(x) => x.decompile(context),
-            Self::CallMethod(x) => x.decompile(context),
-            Self::CallRoyaltyMethod(x) => x.decompile(context),
-            Self::CallMetadataMethod(x) => x.decompile(context),
-            Self::CallRoleAssignmentMethod(x) => x.decompile(context),
-            Self::CallDirectVaultMethod(x) => x.decompile(context),
-            Self::DropNamedProofs(x) => x.decompile(context),
-            Self::DropAllProofs(x) => x.decompile(context),
-            Self::AllocateGlobalAddress(x) => x.decompile(context),
+            InstructionV1::TakeFromWorktop(x) => x.decompile(context),
+            InstructionV1::TakeNonFungiblesFromWorktop(x) => x.decompile(context),
+            InstructionV1::TakeAllFromWorktop(x) => x.decompile(context),
+            InstructionV1::ReturnToWorktop(x) => x.decompile(context),
+            InstructionV1::BurnResource(x) => x.decompile(context),
+            InstructionV1::AssertWorktopContainsAny(x) => x.decompile(context),
+            InstructionV1::AssertWorktopContains(x) => x.decompile(context),
+            InstructionV1::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
+            InstructionV1::CreateProofFromBucketOfAmount(x) => x.decompile(context),
+            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => x.decompile(context),
+            InstructionV1::CreateProofFromBucketOfAll(x) => x.decompile(context),
+            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => x.decompile(context),
+            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => x.decompile(context),
+            InstructionV1::CreateProofFromAuthZoneOfAll(x) => x.decompile(context),
+            InstructionV1::CloneProof(x) => x.decompile(context),
+            InstructionV1::DropProof(x) => x.decompile(context),
+            InstructionV1::PushToAuthZone(x) => x.decompile(context),
+            InstructionV1::PopFromAuthZone(x) => x.decompile(context),
+            InstructionV1::DropAuthZoneProofs(x) => x.decompile(context),
+            InstructionV1::DropAuthZoneRegularProofs(x) => x.decompile(context),
+            InstructionV1::DropAuthZoneSignatureProofs(x) => x.decompile(context),
+            InstructionV1::DropNamedProofs(x) => x.decompile(context),
+            InstructionV1::DropAllProofs(x) => x.decompile(context),
+            InstructionV1::CallFunction(x) => x.decompile(context),
+            InstructionV1::CallMethod(x) => x.decompile(context),
+            InstructionV1::CallRoyaltyMethod(x) => x.decompile(context),
+            InstructionV1::CallMetadataMethod(x) => x.decompile(context),
+            InstructionV1::CallRoleAssignmentMethod(x) => x.decompile(context),
+            InstructionV1::CallDirectVaultMethod(x) => x.decompile(context),
+            InstructionV1::AllocateGlobalAddress(x) => x.decompile(context),
         }
     }
 
     fn effect(&self) -> ManifestInstructionEffect {
         match self {
-            Self::TakeAllFromWorktop(x) => x.effect(),
-            Self::TakeFromWorktop(x) => x.effect(),
-            Self::TakeNonFungiblesFromWorktop(x) => x.effect(),
-            Self::ReturnToWorktop(x) => x.effect(),
-            Self::AssertWorktopContainsAny(x) => x.effect(),
-            Self::AssertWorktopContains(x) => x.effect(),
-            Self::AssertWorktopContainsNonFungibles(x) => x.effect(),
-            Self::PopFromAuthZone(x) => x.effect(),
-            Self::PushToAuthZone(x) => x.effect(),
-            Self::CreateProofFromAuthZoneOfAmount(x) => x.effect(),
-            Self::CreateProofFromAuthZoneOfNonFungibles(x) => x.effect(),
-            Self::CreateProofFromAuthZoneOfAll(x) => x.effect(),
-            Self::DropAuthZoneProofs(x) => x.effect(),
-            Self::DropAuthZoneRegularProofs(x) => x.effect(),
-            Self::DropAuthZoneSignatureProofs(x) => x.effect(),
-            Self::CreateProofFromBucketOfAmount(x) => x.effect(),
-            Self::CreateProofFromBucketOfNonFungibles(x) => x.effect(),
-            Self::CreateProofFromBucketOfAll(x) => x.effect(),
-            Self::BurnResource(x) => x.effect(),
-            Self::CloneProof(x) => x.effect(),
-            Self::DropProof(x) => x.effect(),
-            Self::CallFunction(x) => x.effect(),
-            Self::CallMethod(x) => x.effect(),
-            Self::CallRoyaltyMethod(x) => x.effect(),
-            Self::CallMetadataMethod(x) => x.effect(),
-            Self::CallRoleAssignmentMethod(x) => x.effect(),
-            Self::CallDirectVaultMethod(x) => x.effect(),
-            Self::DropNamedProofs(x) => x.effect(),
-            Self::DropAllProofs(x) => x.effect(),
-            Self::AllocateGlobalAddress(x) => x.effect(),
+            InstructionV1::TakeFromWorktop(x) => x.effect(),
+            InstructionV1::TakeNonFungiblesFromWorktop(x) => x.effect(),
+            InstructionV1::TakeAllFromWorktop(x) => x.effect(),
+            InstructionV1::ReturnToWorktop(x) => x.effect(),
+            InstructionV1::BurnResource(x) => x.effect(),
+            InstructionV1::AssertWorktopContainsAny(x) => x.effect(),
+            InstructionV1::AssertWorktopContains(x) => x.effect(),
+            InstructionV1::AssertWorktopContainsNonFungibles(x) => x.effect(),
+            InstructionV1::CreateProofFromBucketOfAmount(x) => x.effect(),
+            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => x.effect(),
+            InstructionV1::CreateProofFromBucketOfAll(x) => x.effect(),
+            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => x.effect(),
+            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => x.effect(),
+            InstructionV1::CreateProofFromAuthZoneOfAll(x) => x.effect(),
+            InstructionV1::CloneProof(x) => x.effect(),
+            InstructionV1::DropProof(x) => x.effect(),
+            InstructionV1::PushToAuthZone(x) => x.effect(),
+            InstructionV1::PopFromAuthZone(x) => x.effect(),
+            InstructionV1::DropAuthZoneProofs(x) => x.effect(),
+            InstructionV1::DropAuthZoneRegularProofs(x) => x.effect(),
+            InstructionV1::DropAuthZoneSignatureProofs(x) => x.effect(),
+            InstructionV1::DropNamedProofs(x) => x.effect(),
+            InstructionV1::DropAllProofs(x) => x.effect(),
+            InstructionV1::CallFunction(x) => x.effect(),
+            InstructionV1::CallMethod(x) => x.effect(),
+            InstructionV1::CallRoyaltyMethod(x) => x.effect(),
+            InstructionV1::CallMetadataMethod(x) => x.effect(),
+            InstructionV1::CallRoleAssignmentMethod(x) => x.effect(),
+            InstructionV1::CallDirectVaultMethod(x) => x.effect(),
+            InstructionV1::AllocateGlobalAddress(x) => x.effect(),
         }
     }
 }
@@ -85,125 +85,108 @@ impl ManifestInstructionSet for InstructionV1 {
 #[sbor(impl_variant_traits)]
 #[sbor_assert(fixed("FILE:instruction_v1_schema.txt"))]
 pub enum InstructionV1 {
-    //==============
-    // Worktop
-    //==============
-    /// Takes resource from worktop.
-    #[sbor(discriminator(INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR))]
-    TakeAllFromWorktop(#[sbor(flatten)] TakeAllFromWorktop),
-
-    /// Takes resource from worktop by the given amount.
-    #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR))]
+    //===============
+    // Bucket Lifecycle
+    //===============
+    #[sbor(discriminator(TakeFromWorktop::ID))]
     TakeFromWorktop(#[sbor(flatten)] TakeFromWorktop),
 
-    /// Takes resource from worktop by the given non-fungible IDs.
-    #[sbor(discriminator(INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR))]
+    #[sbor(discriminator(TakeNonFungiblesFromWorktop::ID))]
     TakeNonFungiblesFromWorktop(#[sbor(flatten)] TakeNonFungiblesFromWorktop),
 
-    /// Returns a bucket of resource to worktop.
-    #[sbor(discriminator(INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR))]
+    #[sbor(discriminator(TakeAllFromWorktop::ID))]
+    TakeAllFromWorktop(#[sbor(flatten)] TakeAllFromWorktop),
+
+    #[sbor(discriminator(ReturnToWorktop::ID))]
     ReturnToWorktop(#[sbor(flatten)] ReturnToWorktop),
 
-    /// Asserts worktop contains any specified resource.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR))]
-    AssertWorktopContainsAny(#[sbor(flatten)] AssertWorktopContainsAny),
-
-    /// Asserts worktop contains resource by at least the given amount.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR))]
-    AssertWorktopContains(#[sbor(flatten)] AssertWorktopContains),
-
-    /// Asserts worktop contains resource by at least the given non-fungible IDs.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
-    AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
-
-    //==============
-    // Auth zone
-    //==============
-    /// Takes the last proof from the auth zone.
-    #[sbor(discriminator(INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR))]
-    PopFromAuthZone(#[sbor(flatten)] PopFromAuthZone),
-
-    /// Adds a proof to the auth zone.
-    #[sbor(discriminator(INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR))]
-    PushToAuthZone(#[sbor(flatten)] PushToAuthZone),
-
-    /// Creates a proof from the auth zone, by the given amount
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
-    CreateProofFromAuthZoneOfAmount(#[sbor(flatten)] CreateProofFromAuthZoneOfAmount),
-
-    /// Creates a proof from the auth zone, by the given non-fungible IDs.
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR))]
-    CreateProofFromAuthZoneOfNonFungibles(#[sbor(flatten)] CreateProofFromAuthZoneOfNonFungibles),
-
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR))]
-    CreateProofFromAuthZoneOfAll(#[sbor(flatten)] CreateProofFromAuthZoneOfAll),
-
-    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR))]
-    DropAuthZoneProofs(#[sbor(flatten)] DropAuthZoneProofs),
-
-    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR))]
-    DropAuthZoneRegularProofs(#[sbor(flatten)] DropAuthZoneRegularProofs),
-
-    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR))]
-    DropAuthZoneSignatureProofs(#[sbor(flatten)] DropAuthZoneSignatureProofs),
-
-    //==============
-    // Named bucket
-    //==============
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
-    CreateProofFromBucketOfAmount(#[sbor(flatten)] CreateProofFromBucketOfAmount),
-
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR))]
-    CreateProofFromBucketOfNonFungibles(#[sbor(flatten)] CreateProofFromBucketOfNonFungibles),
-
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR))]
-    CreateProofFromBucketOfAll(#[sbor(flatten)] CreateProofFromBucketOfAll),
-
-    #[sbor(discriminator(INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR))]
+    #[sbor(discriminator(BurnResource::ID))]
     BurnResource(#[sbor(flatten)] BurnResource),
 
     //==============
-    // Named proof
+    // Resource Assertions
     //==============
-    /// Clones a proof.
-    #[sbor(discriminator(INSTRUCTION_CLONE_PROOF_DISCRIMINATOR))]
+    #[sbor(discriminator(AssertWorktopContainsAny::ID))]
+    AssertWorktopContainsAny(#[sbor(flatten)] AssertWorktopContainsAny),
+
+    #[sbor(discriminator(AssertWorktopContains::ID))]
+    AssertWorktopContains(#[sbor(flatten)] AssertWorktopContains),
+
+    #[sbor(discriminator(AssertWorktopContainsNonFungibles::ID))]
+    AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
+
+    //==============
+    // Proof Lifecycle
+    //==============
+    #[sbor(discriminator(CreateProofFromBucketOfAmount::ID))]
+    CreateProofFromBucketOfAmount(#[sbor(flatten)] CreateProofFromBucketOfAmount),
+
+    #[sbor(discriminator(CreateProofFromBucketOfNonFungibles::ID))]
+    CreateProofFromBucketOfNonFungibles(#[sbor(flatten)] CreateProofFromBucketOfNonFungibles),
+
+    #[sbor(discriminator(CreateProofFromBucketOfAll::ID))]
+    CreateProofFromBucketOfAll(#[sbor(flatten)] CreateProofFromBucketOfAll),
+
+    #[sbor(discriminator(CreateProofFromAuthZoneOfAmount::ID))]
+    CreateProofFromAuthZoneOfAmount(#[sbor(flatten)] CreateProofFromAuthZoneOfAmount),
+
+    #[sbor(discriminator(CreateProofFromAuthZoneOfNonFungibles::ID))]
+    CreateProofFromAuthZoneOfNonFungibles(#[sbor(flatten)] CreateProofFromAuthZoneOfNonFungibles),
+
+    #[sbor(discriminator(CreateProofFromAuthZoneOfAll::ID))]
+    CreateProofFromAuthZoneOfAll(#[sbor(flatten)] CreateProofFromAuthZoneOfAll),
+
+    #[sbor(discriminator(CloneProof::ID))]
     CloneProof(#[sbor(flatten)] CloneProof),
 
-    /// Drops a proof.
-    #[sbor(discriminator(INSTRUCTION_DROP_PROOF_DISCRIMINATOR))]
+    #[sbor(discriminator(DropProof::ID))]
     DropProof(#[sbor(flatten)] DropProof),
+
+    #[sbor(discriminator(PushToAuthZone::ID))]
+    PushToAuthZone(#[sbor(flatten)] PushToAuthZone),
+
+    #[sbor(discriminator(PopFromAuthZone::ID))]
+    PopFromAuthZone(#[sbor(flatten)] PopFromAuthZone),
+
+    #[sbor(discriminator(DropAuthZoneProofs::ID))]
+    DropAuthZoneProofs(#[sbor(flatten)] DropAuthZoneProofs),
+
+    #[sbor(discriminator(DropAuthZoneRegularProofs::ID))]
+    DropAuthZoneRegularProofs(#[sbor(flatten)] DropAuthZoneRegularProofs),
+
+    #[sbor(discriminator(DropAuthZoneSignatureProofs::ID))]
+    DropAuthZoneSignatureProofs(#[sbor(flatten)] DropAuthZoneSignatureProofs),
+
+    #[sbor(discriminator(DropNamedProofs::ID))]
+    DropNamedProofs(#[sbor(flatten)] DropNamedProofs),
+
+    #[sbor(discriminator(DropAllProofs::ID))]
+    DropAllProofs(#[sbor(flatten)] DropAllProofs),
 
     //==============
     // Invocation
     //==============
-    #[sbor(discriminator(INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR))]
+    #[sbor(discriminator(CallFunction::ID))]
     CallFunction(#[sbor(flatten)] CallFunction),
 
-    #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
+    #[sbor(discriminator(CallMethod::ID))]
     CallMethod(#[sbor(flatten)] CallMethod),
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
+    #[sbor(discriminator(CallRoyaltyMethod::ID))]
     CallRoyaltyMethod(#[sbor(flatten)] CallRoyaltyMethod),
 
-    #[sbor(discriminator(INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR))]
+    #[sbor(discriminator(CallMetadataMethod::ID))]
     CallMetadataMethod(#[sbor(flatten)] CallMetadataMethod),
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR))]
+    #[sbor(discriminator(CallRoleAssignmentMethod::ID))]
     CallRoleAssignmentMethod(#[sbor(flatten)] CallRoleAssignmentMethod),
 
-    #[sbor(discriminator(INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR))]
+    #[sbor(discriminator(CallDirectVaultMethod::ID))]
     CallDirectVaultMethod(#[sbor(flatten)] CallDirectVaultMethod),
 
     //==============
-    // Complex
+    // Address Allocation
     //==============
-    #[sbor(discriminator(INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR))]
-    DropNamedProofs(#[sbor(flatten)] DropNamedProofs),
-
-    /// Drops all proofs, both named proofs and auth zone proofs.
-    #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
-    DropAllProofs(#[sbor(flatten)] DropAllProofs),
-
-    #[sbor(discriminator(INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR))]
+    #[sbor(discriminator(AllocateGlobalAddress::ID))]
     AllocateGlobalAddress(#[sbor(flatten)] AllocateGlobalAddress),
 }

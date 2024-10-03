@@ -259,8 +259,8 @@ fn handle_impl_variant_trait(
         impl #impl_generics sbor::SborEnumVariantFor<#enum_name #type_generics_turbofish, #sbor_cvk> for #variant_type_name #where_clause {
             const DISCRIMINATOR: u8 = #discriminator;
             #middle
-            type OwnedVariant = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFields>;
-            type BorrowedVariant<'a> = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFieldsRef<'a>>;
+            type OwnedVariant = sbor::SborFixedEnumVariant<{ #discriminator }, Self::VariantFields>;
+            type BorrowedVariant<'a> = sbor::SborFixedEnumVariant<{ #discriminator }, Self::VariantFieldsRef<'a>>;
 
             fn into_enum(self) -> #enum_name {
                 let value = self;

@@ -6,7 +6,65 @@
       "account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa",
       "account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz": {
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[d1e510f4089a25ea905dfc8159d54a1ae1be07b9c45d3002955512d3d313]"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Secp256k1",
+                "value": "e510f4089a25ea905dfc8159d54a1ae1be07b9c45d3002955512d3d313"
+              }
+            ]
+          }
+        }
+      },
+      "account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa": {
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[51000625de94e080757a91856c8bf2c7eede2c7f424a638c0aed61739a2c]"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Ed25519",
+                "value": "000625de94e080757a91856c8bf2c7eede2c7f424a638c0aed61739a2c"
+              }
+            ]
+          }
+        }
+      },
+      "account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x": {
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[511815275aea0d80073afab58eb2f66733f29abfd6322c1ed1c981aee997]"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Ed25519",
+                "value": "1815275aea0d80073afab58eb2f66733f29abfd6322c1ed1c981aee997"
+              }
+            ]
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

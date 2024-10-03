@@ -5,7 +5,88 @@
       "resource_sim1tkdzc6s2jd0pqh46np98xn66v7myp7rj4fx5y2qkxazeg8k4l4lwtf",
       "resource_sim1t4cv8w9l5xg2ah0vh2cl06k9py4qdsfgv9ryx4zyntur8utmv0dep0"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "resource_sim1tkdzc6s2jd0pqh46np98xn66v7myp7rj4fx5y2qkxazeg8k4l4lwtf": {
+        "info_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://example.com"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Fizz"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "Fizz token"
+          }
+        },
+        "symbol": {
+          "Set": {
+            "kind": "String",
+            "value": "FIZZ"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://example.com/icon.png"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "test"
+            ]
+          }
+        }
+      },
+      "resource_sim1t4cv8w9l5xg2ah0vh2cl06k9py4qdsfgv9ryx4zyntur8utmv0dep0": {
+        "info_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://example.com"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Buzz"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "Buzz"
+          }
+        },
+        "symbol": {
+          "Set": {
+            "kind": "String",
+            "value": "BUZZ"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://example.com/icon.png"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "test"
+            ]
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

@@ -6,16 +6,33 @@
     ],
     "metadata_updates": {
       "account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3": {
-        "account_type": {
-          "Set": {
-            "kind": "String",
-            "value": "dapp definition"
-          }
-        },
         "name": {
           "Set": {
             "kind": "String",
             "value": "Radix Sandbox dApp"
+          }
+        },
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[d1c8db2aaf21b4527fc26895b159b2c44740ea754388104081ca9ba696aa]"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Secp256k1",
+                "value": "c8db2aaf21b4527fc26895b159b2c44740ea754388104081ca9ba696aa"
+              }
+            ]
+          }
+        },
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
           }
         }
       }

@@ -6,7 +6,133 @@
       "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
       "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726": {
+        "info_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Bitcoin"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "A peer to peer decentralized proof of work network."
+          }
+        },
+        "symbol": {
+          "Set": {
+            "kind": "String",
+            "value": "BTC"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "p2p",
+              "blockchain"
+            ]
+          }
+        }
+      },
+      "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y": {
+        "info_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Ethereum"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "The native token of the Ethereum blockchain"
+          }
+        },
+        "symbol": {
+          "Set": {
+            "kind": "String",
+            "value": "ETH"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "p2p",
+              "blockchain",
+              "gas"
+            ]
+          }
+        }
+      },
+      "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77": {
+        "info_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Ethereum"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "The native token of the Ethereum Classic blockchain"
+          }
+        },
+        "symbol": {
+          "Set": {
+            "kind": "String",
+            "value": "ETC"
+          }
+        },
+        "icon_url": {
+          "Set": {
+            "kind": "String",
+            "value": "https://www.example.com/"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "p2p",
+              "blockchain",
+              "gas"
+            ]
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

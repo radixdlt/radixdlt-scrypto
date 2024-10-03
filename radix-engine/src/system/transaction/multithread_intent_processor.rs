@@ -3,7 +3,7 @@ use crate::blueprints::transaction_processor::{
     IntentProcessor, ResumeResult, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
 };
 use crate::errors::{KernelError, RuntimeError, SystemError};
-use crate::internal_prelude::{FieldSubstate, IntentError};
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::actor::{Actor, FunctionActor};
 use crate::system::node_init::type_info_partition;
@@ -23,7 +23,6 @@ use radix_engine_interface::prelude::{
     AUTH_ZONE_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, MAIN_BASE_PARTITION,
     NON_FUNGIBLE_PROOF_BLUEPRINT, TYPE_INFO_FIELD_PARTITION,
 };
-use radix_engine_interface::types::IndexedScryptoValue;
 use radix_rust::prelude::*;
 use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 use sbor::prelude::ToString;
@@ -109,6 +108,7 @@ impl MultiThreadIntentProcessor {
             api.kernel_switch_stack(cur_thread)?;
             let (txn_thread, children_mapping) = self.threads.get_mut(cur_thread).unwrap();
 
+            // TODO: Remove unwraps
             let mut system_service = SystemService::new(api);
             let post_exec = match txn_thread.resume(passed_value.take(), &mut system_service)? {
                 ResumeResult::YieldToChild(child, value) => {
@@ -132,7 +132,7 @@ impl MultiThreadIntentProcessor {
                 PostExecution::SwitchThread(next_thread, value, intent_done) => {
                     // Checked passed values
                     Self::check_yielded_value(&value, api)?;
-                    api.kernel_send_to_stack(next_thread, value.clone())?;
+                    api.kernel_send_to_stack(next_thread, &value)?;
                     passed_value = Some(value);
 
                     // Cleanup stack if intent is done. This must be done after the above kernel_send_to_stack.

@@ -4,7 +4,265 @@
     "new_entities": [
       "resource_sim1t42puynuxcu7mf77ek8987cf0cukt2psz9ze3ykrq8zphwakpf6333"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "resource_sim1t42puynuxcu7mf77ek8987cf0cukt2psz9ze3ykrq8zphwakpf6333": {
+        "origin": {
+          "Set": {
+            "kind": "Origin",
+            "value": "https://www.radixdlt.com"
+          }
+        },
+        "public_key": {
+          "Set": {
+            "kind": "PublicKey",
+            "value": {
+              "kind": "Ed25519",
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        },
+        "url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://www.radixdlt.com"
+          }
+        },
+        "non_fungible_local_id": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "<Hello_world>"
+          }
+        },
+        "non_fungible_global_id_array": {
+          "Set": {
+            "kind": "NonFungibleGlobalIdArray",
+            "value": [
+              "resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"
+            ]
+          }
+        },
+        "bool": {
+          "Set": {
+            "kind": "Bool",
+            "value": true
+          }
+        },
+        "decimal_array": {
+          "Set": {
+            "kind": "DecimalArray",
+            "value": [
+              "1",
+              "2.1"
+            ]
+          }
+        },
+        "address_array": {
+          "Set": {
+            "kind": "GlobalAddressArray",
+            "value": [
+              "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"
+            ]
+          }
+        },
+        "non_fungible_local_id_array": {
+          "Set": {
+            "kind": "NonFungibleLocalIdArray",
+            "value": [
+              "<Hello_world>",
+              "#42#",
+              "[01]",
+              "{0101010101010101-0101010101010101-0101010101010101-0101010101010101}"
+            ]
+          }
+        },
+        "public_key_hash_array": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
+            "value": [
+              {
+                "kind": "Ed25519",
+                "value": "6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3"
+              },
+              {
+                "kind": "Secp256k1",
+                "value": "165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428"
+              }
+            ]
+          }
+        },
+        "u64": {
+          "Set": {
+            "kind": "U64",
+            "value": "3"
+          }
+        },
+        "string_array": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "Hello",
+              "world!"
+            ]
+          }
+        },
+        "i64_array": {
+          "Set": {
+            "kind": "I64Array",
+            "value": [
+              "5",
+              "6"
+            ]
+          }
+        },
+        "bool_array": {
+          "Set": {
+            "kind": "BoolArray",
+            "value": [
+              true,
+              false
+            ]
+          }
+        },
+        "decimal": {
+          "Set": {
+            "kind": "Decimal",
+            "value": "1"
+          }
+        },
+        "url_array": {
+          "Set": {
+            "kind": "UrlArray",
+            "value": [
+              "https://www.radixdlt.com"
+            ]
+          }
+        },
+        "u8": {
+          "Set": {
+            "kind": "U8",
+            "value": "1"
+          }
+        },
+        "public_key_array": {
+          "Set": {
+            "kind": "PublicKeyArray",
+            "value": [
+              {
+                "kind": "Ed25519",
+                "value": "0000000000000000000000000000000000000000000000000000000000000000"
+              },
+              {
+                "kind": "Secp256k1",
+                "value": "000000000000000000000000000000000000000000000000000000000000000000"
+              }
+            ]
+          }
+        },
+        "i32_array": {
+          "Set": {
+            "kind": "I32Array",
+            "value": [
+              "4",
+              "5"
+            ]
+          }
+        },
+        "origin_array": {
+          "Set": {
+            "kind": "OriginArray",
+            "value": [
+              "https://www.radixdlt.com"
+            ]
+          }
+        },
+        "u32_array": {
+          "Set": {
+            "kind": "U32Array",
+            "value": [
+              "2",
+              "3"
+            ]
+          }
+        },
+        "u64_array": {
+          "Set": {
+            "kind": "U64Array",
+            "value": [
+              "3",
+              "4"
+            ]
+          }
+        },
+        "address": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"
+          }
+        },
+        "i32": {
+          "Set": {
+            "kind": "I32",
+            "value": "4"
+          }
+        },
+        "non_fungible_global_id": {
+          "Set": {
+            "kind": "NonFungibleGlobalId",
+            "value": "resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"
+          }
+        },
+        "string": {
+          "Set": {
+            "kind": "String",
+            "value": "Hello"
+          }
+        },
+        "u32": {
+          "Set": {
+            "kind": "U32",
+            "value": "2"
+          }
+        },
+        "i64": {
+          "Set": {
+            "kind": "I64",
+            "value": "5"
+          }
+        },
+        "instant": {
+          "Set": {
+            "kind": "Instant",
+            "value": "1687446137"
+          }
+        },
+        "instant_array": {
+          "Set": {
+            "kind": "InstantArray",
+            "value": [
+              "1687446137"
+            ]
+          }
+        },
+        "u8_array": {
+          "Set": {
+            "kind": "U8Array",
+            "value": [
+              "1",
+              "2"
+            ]
+          }
+        },
+        "public_key_hash": {
+          "Set": {
+            "kind": "PublicKeyHash",
+            "value": {
+              "kind": "Ed25519",
+              "value": "6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3"
+            }
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

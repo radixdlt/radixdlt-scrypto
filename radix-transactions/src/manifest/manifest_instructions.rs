@@ -28,6 +28,7 @@ pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction>
 
 pub trait ManifestInstruction: Into<AnyInstruction> {
     const IDENT: &'static str;
+    const ID: u8;
 
     fn decompile(
         &self,
@@ -42,37 +43,8 @@ pub trait ManifestInstruction: Into<AnyInstruction> {
 }
 
 //======================================================================
-// Worktop
+// region:Bucket Lifecycle
 //======================================================================
-
-/// Takes a bucket containing the all of a given resource from the worktop,
-/// and binds the given bucket name to that bucket.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct TakeAllFromWorktop {
-    pub resource_address: ResourceAddress,
-}
-
-impl ManifestInstruction for TakeAllFromWorktop {
-    const IDENT: &'static str = "TAKE_ALL_FROM_WORKTOP";
-
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(context.new_bucket());
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::CreateBucket {
-            source_amount: BucketSourceAmount::AllOnWorktop {
-                resource_address: &self.resource_address,
-            },
-        }
-    }
-}
 
 /// Takes a bucket containing the given amount of resource from the worktop,
 /// and binds the given bucket name to that bucket.
@@ -84,6 +56,7 @@ pub struct TakeFromWorktop {
 
 impl ManifestInstruction for TakeFromWorktop {
     const IDENT: &'static str = "TAKE_FROM_WORKTOP";
+    const ID: u8 = INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -116,6 +89,7 @@ pub struct TakeNonFungiblesFromWorktop {
 
 impl ManifestInstruction for TakeNonFungiblesFromWorktop {
     const IDENT: &'static str = "TAKE_NON_FUNGIBLES_FROM_WORKTOP";
+    const ID: u8 = INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -138,6 +112,36 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
     }
 }
 
+/// Takes a bucket containing all of a given resource from the worktop,
+/// and binds the given bucket name to that bucket.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct TakeAllFromWorktop {
+    pub resource_address: ResourceAddress,
+}
+
+impl ManifestInstruction for TakeAllFromWorktop {
+    const IDENT: &'static str = "TAKE_ALL_FROM_WORKTOP";
+    const ID: u8 = INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.resource_address)
+            .add_argument(context.new_bucket());
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::CreateBucket {
+            source_amount: BucketSourceAmount::AllOnWorktop {
+                resource_address: &self.resource_address,
+            },
+        }
+    }
+}
+
 /// Returns a bucket to the worktop.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct ReturnToWorktop {
@@ -146,6 +150,7 @@ pub struct ReturnToWorktop {
 
 impl ManifestInstruction for ReturnToWorktop {
     const IDENT: &'static str = "RETURN_TO_WORKTOP";
+    const ID: u8 = INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -163,6 +168,36 @@ impl ManifestInstruction for ReturnToWorktop {
     }
 }
 
+/// Burns the bucket.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct BurnResource {
+    pub bucket_id: ManifestBucket,
+}
+
+impl ManifestInstruction for BurnResource {
+    const IDENT: &'static str = "BURN_RESOURCE";
+    const ID: u8 = INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ConsumeBucket {
+            consumed_bucket: self.bucket_id,
+            destination: BucketDestination::Burned,
+        }
+    }
+}
+
+//======================================================================
+// region:Resource Assertions
+//======================================================================
+
 /// Asserts that the worktop contains any positive amount of the specified resource.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct AssertWorktopContainsAny {
@@ -171,6 +206,7 @@ pub struct AssertWorktopContainsAny {
 
 impl ManifestInstruction for AssertWorktopContainsAny {
     const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS_ANY";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -199,6 +235,7 @@ pub struct AssertWorktopContains {
 
 impl ManifestInstruction for AssertWorktopContains {
     const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -229,6 +266,7 @@ pub struct AssertWorktopContainsNonFungibles {
 
 impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     const IDENT: &'static str = "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -250,12 +288,13 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 }
 
-/// Asserts that the worktop contains any positive amount of the specified resource.
+/// Asserts that the worktop contains no amount of any resource.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct AssertWorktopIsEmpty {}
 
 impl ManifestInstruction for AssertWorktopIsEmpty {
     const IDENT: &'static str = "ASSERT_WORKTOP_IS_EMPTY";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -273,222 +312,12 @@ impl ManifestInstruction for AssertWorktopIsEmpty {
 }
 
 //======================================================================
-// Auth zone
+// region:Proof Lifecycle
 //======================================================================
 
-/// Takes the last proof from the auth zone.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct PopFromAuthZone;
-
-impl ManifestInstruction for PopFromAuthZone {
-    const IDENT: &'static str = "POP_FROM_AUTH_ZONE";
-
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(context.new_proof());
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::CreateProof {
-            source_amount: ProofSourceAmount::AuthZonePopLastAddedProof,
-        }
-    }
-}
-
-/// Adds a proof to the auth zone.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct PushToAuthZone {
-    pub proof_id: ManifestProof,
-}
-
-impl ManifestInstruction for PushToAuthZone {
-    const IDENT: &'static str = "PUSH_TO_AUTHZONE";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::ConsumeProof {
-            consumed_proof: self.proof_id,
-            destination: ProofDestination::AuthZone,
-        }
-    }
-}
-
-/// Creates a proof of the given amount from the proofs available in the auth zone.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct CreateProofFromAuthZoneOfAmount {
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
-    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT";
-
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(&self.amount)
-            .add_argument(context.new_proof());
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::CreateProof {
-            source_amount: ProofSourceAmount::AuthZoneAmount {
-                resource_address: &self.resource_address,
-                amount: self.amount,
-            },
-        }
-    }
-}
-
-/// Creates a proof of the given non-fungible ids from the proofs available in the auth zone.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct CreateProofFromAuthZoneOfNonFungibles {
-    pub resource_address: ResourceAddress,
-    pub ids: Vec<NonFungibleLocalId>,
-}
-
-impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
-    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES";
-
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(&self.ids)
-            .add_argument(context.new_proof());
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::CreateProof {
-            source_amount: ProofSourceAmount::AuthZoneNonFungibles {
-                resource_address: &self.resource_address,
-                ids: &self.ids,
-            },
-        }
-    }
-}
-
-/// Creates a proof of all available amount of the given resource from the proofs available in the auth zone.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct CreateProofFromAuthZoneOfAll {
-    pub resource_address: ResourceAddress,
-}
-
-impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
-    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL";
-
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(context.new_proof());
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::CreateProof {
-            source_amount: ProofSourceAmount::AuthZoneAllOf {
-                resource_address: &self.resource_address,
-            },
-        }
-    }
-}
-
-/// Drops all the proofs in the auth zone, potentially freeing up the assets locked in any containers backing the proofs.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct DropAuthZoneProofs;
-
-impl ManifestInstruction for DropAuthZoneProofs {
-    const IDENT: &'static str = "DROP_AUTH_ZONE_PROOFS";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::DropManyProofs {
-            drop_all_named_proofs: false,
-            drop_all_authzone_signature_proofs: true,
-            drop_all_authzone_non_signature_proofs: true,
-        }
-    }
-}
-
-/// Drops all the non-signature proofs in the auth zone, potentially freeing up the assets locked in any containers backing the proofs.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct DropAuthZoneRegularProofs;
-
-impl ManifestInstruction for DropAuthZoneRegularProofs {
-    const IDENT: &'static str = "DROP_AUTH_ZONE_REGULAR_PROOFS";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::DropManyProofs {
-            drop_all_named_proofs: false,
-            drop_all_authzone_signature_proofs: false,
-            drop_all_authzone_non_signature_proofs: true,
-        }
-    }
-}
-
-/// Drops all the signature proofs in the auth zone, preventing any further calls from making use of signature-based authentication.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct DropAuthZoneSignatureProofs;
-
-impl ManifestInstruction for DropAuthZoneSignatureProofs {
-    const IDENT: &'static str = "DROP_AUTH_ZONE_SIGNATURE_PROOFS";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::DropManyProofs {
-            drop_all_named_proofs: false,
-            drop_all_authzone_signature_proofs: true,
-            drop_all_authzone_non_signature_proofs: false,
-        }
-    }
-}
-
-//======================================================================
-// Named bucket
-//======================================================================
-
+/// Creates a proof of the specific amount of the given resource,
+/// backed by the contents of this bucket. The proof must be dropped
+/// before the bucket can be fully emptied.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CreateProofFromBucketOfAmount {
     pub bucket_id: ManifestBucket,
@@ -497,6 +326,7 @@ pub struct CreateProofFromBucketOfAmount {
 
 impl ManifestInstruction for CreateProofFromBucketOfAmount {
     const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -519,6 +349,9 @@ impl ManifestInstruction for CreateProofFromBucketOfAmount {
     }
 }
 
+/// Creates a proof of the specific non-fungibles of the given resource,
+/// backed by the contents of this bucket. The proof must be dropped
+/// before the bucket can be fully emptied.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CreateProofFromBucketOfNonFungibles {
     pub bucket_id: ManifestBucket,
@@ -527,6 +360,7 @@ pub struct CreateProofFromBucketOfNonFungibles {
 
 impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
     const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -549,6 +383,9 @@ impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
     }
 }
 
+/// Creates a proof of the given resource, backed by the contents
+/// of this bucket. The proof must be dropped before the bucket can
+/// be fully emptied.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CreateProofFromBucketOfAll {
     pub bucket_id: ManifestBucket,
@@ -556,6 +393,7 @@ pub struct CreateProofFromBucketOfAll {
 
 impl ManifestInstruction for CreateProofFromBucketOfAll {
     const IDENT: &'static str = "CREATE_PROOF_FROM_BUCKET_OF_ALL";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -576,34 +414,103 @@ impl ManifestInstruction for CreateProofFromBucketOfAll {
     }
 }
 
+/// Creates a proof of the given amount, by combining the backing from
+/// one or more proofs available in the auth zone.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct BurnResource {
-    pub bucket_id: ManifestBucket,
+pub struct CreateProofFromAuthZoneOfAmount {
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
 }
 
-impl ManifestInstruction for BurnResource {
-    const IDENT: &'static str = "BURN_RESOURCE";
+impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR;
 
     fn decompile(
         &self,
-        _context: &mut DecompilationContext,
+        context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.resource_address)
+            .add_argument(&self.amount)
+            .add_argument(context.new_proof());
         Ok(instruction)
     }
 
     fn effect(&self) -> Effect {
-        Effect::ConsumeBucket {
-            consumed_bucket: self.bucket_id,
-            destination: BucketDestination::Burned,
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneAmount {
+                resource_address: &self.resource_address,
+                amount: self.amount,
+            },
         }
     }
 }
 
-//======================================================================
-// Named proof
-//======================================================================
+/// Creates a proof of the given non-fungible ids, by combining the backing from
+/// one or more proofs available in the auth zone.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct CreateProofFromAuthZoneOfNonFungibles {
+    pub resource_address: ResourceAddress,
+    pub ids: Vec<NonFungibleLocalId>,
+}
 
+impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.resource_address)
+            .add_argument(&self.ids)
+            .add_argument(context.new_proof());
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneNonFungibles {
+                resource_address: &self.resource_address,
+                ids: &self.ids,
+            },
+        }
+    }
+}
+
+/// Creates a proof of the given resource, by combining the backing from
+/// all of the proofs for that resource in the auth zone.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct CreateProofFromAuthZoneOfAll {
+    pub resource_address: ResourceAddress,
+}
+
+impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
+    const IDENT: &'static str = "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL";
+    const ID: u8 = INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.resource_address)
+            .add_argument(context.new_proof());
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneAllOf {
+                resource_address: &self.resource_address,
+            },
+        }
+    }
+}
+
+/// Clones a named proof (first argument), creating a new named proof (second argument).
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CloneProof {
     pub proof_id: ManifestProof,
@@ -611,6 +518,7 @@ pub struct CloneProof {
 
 impl ManifestInstruction for CloneProof {
     const IDENT: &'static str = "CLONE_PROOF";
+    const ID: u8 = INSTRUCTION_CLONE_PROOF_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -629,7 +537,7 @@ impl ManifestInstruction for CloneProof {
     }
 }
 
-/// Drops a proof.
+/// Drops a named proof.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct DropProof {
     pub proof_id: ManifestProof,
@@ -637,6 +545,7 @@ pub struct DropProof {
 
 impl ManifestInstruction for DropProof {
     const IDENT: &'static str = "DROP_PROOF";
+    const ID: u8 = INSTRUCTION_DROP_PROOF_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -654,8 +563,190 @@ impl ManifestInstruction for DropProof {
     }
 }
 
+/// Puts a named proof into the auth zone.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct PushToAuthZone {
+    pub proof_id: ManifestProof,
+}
+
+impl ManifestInstruction for PushToAuthZone {
+    const IDENT: &'static str = "PUSH_TO_AUTHZONE";
+    const ID: u8 = INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ConsumeProof {
+            consumed_proof: self.proof_id,
+            destination: ProofDestination::AuthZone,
+        }
+    }
+}
+
+/// Takes the last proof from the auth zone, and makes it a named proof.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct PopFromAuthZone;
+
+impl ManifestInstruction for PopFromAuthZone {
+    const IDENT: &'static str = "POP_FROM_AUTH_ZONE";
+    const ID: u8 = INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(context.new_proof());
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZonePopLastAddedProof,
+        }
+    }
+}
+
+/// Drops all the proofs in the auth zone, potentially freeing up the assets locked in any containers backing the proofs.
+///
+/// Named proofs owned by the transaction processor are NOT dropped.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct DropAuthZoneProofs;
+
+impl ManifestInstruction for DropAuthZoneProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_PROOFS";
+    const ID: u8 = INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: true,
+        }
+    }
+}
+
+/// Drops all the non-signature proofs in the auth zone, potentially freeing up the assets locked in any containers backing the proofs.
+///
+/// Signature proofs on the auth zone are NOT dropped. Named proofs owned by the transaction processor are also NOT dropped.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct DropAuthZoneRegularProofs;
+
+impl ManifestInstruction for DropAuthZoneRegularProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_REGULAR_PROOFS";
+    const ID: u8 = INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: false,
+            drop_all_authzone_non_signature_proofs: true,
+        }
+    }
+}
+
+/// Drops all the signature proofs in the auth zone, preventing any further calls from making use of signature-based authentication.
+///
+/// Regular proofs on the auth zone are NOT dropped, and named proofs owned by the transaction processor are also NOT dropped.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct DropAuthZoneSignatureProofs;
+
+impl ManifestInstruction for DropAuthZoneSignatureProofs {
+    const IDENT: &'static str = "DROP_AUTH_ZONE_SIGNATURE_PROOFS";
+    const ID: u8 = INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: false,
+        }
+    }
+}
+
+/// Drops all named proofs owned by the transaction processor.
+///
+/// The proofs on the auth zone are NOT dropped.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct DropNamedProofs;
+
+impl ManifestInstruction for DropNamedProofs {
+    const IDENT: &'static str = "DROP_NAMED_PROOFS";
+    const ID: u8 = INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: true,
+            drop_all_authzone_signature_proofs: false,
+            drop_all_authzone_non_signature_proofs: false,
+        }
+    }
+}
+
+/// Drops all proofs, both named proofs and auth zone proofs.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct DropAllProofs;
+
+impl ManifestInstruction for DropAllProofs {
+    const IDENT: &'static str = "DROP_ALL_PROOFS";
+    const ID: u8 = INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: true,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: true,
+        }
+    }
+}
+
 //======================================================================
-// Invocation
+// region:Invocations
 //======================================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
@@ -743,6 +834,7 @@ impl CallFunction {
 
 impl ManifestInstruction for CallFunction {
     const IDENT: &'static str = "CALL_FUNCTION";
+    const ID: u8 = INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -813,6 +905,7 @@ impl CallMethod {
 
 impl ManifestInstruction for CallMethod {
     const IDENT: &'static str = "CALL_METHOD";
+    const ID: u8 = INSTRUCTION_CALL_METHOD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -866,6 +959,7 @@ impl CallRoyaltyMethod {
 
 impl ManifestInstruction for CallRoyaltyMethod {
     const IDENT: &'static str = "CALL_ROYALTY_METHOD";
+    const ID: u8 = INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -916,6 +1010,7 @@ impl CallMetadataMethod {
 
 impl ManifestInstruction for CallMetadataMethod {
     const IDENT: &'static str = "CALL_METADATA_METHOD";
+    const ID: u8 = INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -966,6 +1061,7 @@ impl CallRoleAssignmentMethod {
 
 impl ManifestInstruction for CallRoleAssignmentMethod {
     const IDENT: &'static str = "CALL_ROLE_ASSIGNMENT_METHOD";
+    const ID: u8 = INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1020,6 +1116,7 @@ impl CallDirectVaultMethod {
 
 impl ManifestInstruction for CallDirectVaultMethod {
     const IDENT: &'static str = "CALL_DIRECT_VAULT_METHOD";
+    const ID: u8 = INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1041,56 +1138,17 @@ impl ManifestInstruction for CallDirectVaultMethod {
 }
 
 //======================================================================
-// Complex
+// region:Address Allocation
 //======================================================================
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct DropNamedProofs;
-
-impl ManifestInstruction for DropNamedProofs {
-    const IDENT: &'static str = "DROP_NAMED_PROOFS";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::DropManyProofs {
-            drop_all_named_proofs: true,
-            drop_all_authzone_signature_proofs: false,
-            drop_all_authzone_non_signature_proofs: false,
-        }
-    }
-}
-
-/// Drops all proofs, both named proofs and auth zone proofs.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct DropAllProofs;
-
-impl ManifestInstruction for DropAllProofs {
-    const IDENT: &'static str = "DROP_ALL_PROOFS";
-
-    fn decompile(
-        &self,
-        _context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
-        Ok(instruction)
-    }
-
-    fn effect(&self) -> Effect {
-        Effect::DropManyProofs {
-            drop_all_named_proofs: true,
-            drop_all_authzone_signature_proofs: true,
-            drop_all_authzone_non_signature_proofs: true,
-        }
-    }
-}
-
+/// Preallocates a global address for an object of the given blueprint.
+/// The package address and blueprint name must be provided, followed
+/// by a new `AddressReservation("name")` and a new `NamedAddress("name")`.
+///
+/// The address reservation can be passed into a constructor to be used
+/// to create the object at that address. The named address can be
+/// used in the place of another address in an invocation or other
+/// manifest instruction.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct AllocateGlobalAddress {
     pub package_address: PackageAddress,
@@ -1099,6 +1157,7 @@ pub struct AllocateGlobalAddress {
 
 impl ManifestInstruction for AllocateGlobalAddress {
     const IDENT: &'static str = "ALLOCATE_GLOBAL_ADDRESS";
+    const ID: u8 = INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1121,9 +1180,23 @@ impl ManifestInstruction for AllocateGlobalAddress {
 }
 
 //======================================================================
-// Interactions with other intents
+// region:Interactions with other intents
 //======================================================================
 
+/// This instruction is only allowed in subintent manifests. It passes
+/// control to a parent intent, and takes an optional list of arguments,
+/// to enable passing buckets to the parent intent. Other objects are not
+/// allowed to be passed.
+///
+/// Every subintent must end with a `YIELD_TO_PARENT` to end the subintent
+/// and return constrol to the parent intent.
+///
+/// `YIELD_TO_PARENT` instructions which are not at the end of the subintent
+/// instead temporarily pause execution, and hand over control to the parent.
+/// Control is resumed when the parent intent calls `YIELD_TO_CHILD` on this subintent.
+///
+/// The validation and runtime guarantee that all subintents are run to
+/// completion by their parents.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct YieldToParent {
     pub args: ManifestValue,
@@ -1131,6 +1204,7 @@ pub struct YieldToParent {
 
 impl ManifestInstruction for YieldToParent {
     const IDENT: &'static str = "YIELD_TO_PARENT";
+    const ID: u8 = INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1147,6 +1221,17 @@ impl ManifestInstruction for YieldToParent {
     }
 }
 
+/// This instruction passes control to the given child subintent.
+/// It takes an optional list of arguments, to enable passing buckets to
+/// the child subintent. Other objects are not allowed to be passed.
+///
+/// `YIELD_TO_CHILD` instructions temporarily pause execution, and
+/// hand over control to the child. Control is resumed when the child
+/// subintent calls `YIELD_TO_PARENT`.
+///
+/// The validation and runtime guarantee that subintents end with a
+/// `YIELD_TO_PARENT`, and that the number of `YIELD_TO_PARENT` calls in
+/// a child matches the number of `YIELD_TO_CHILD` calls in the parent.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct YieldToChild {
     /// Ideally this would be a ManifestNamedIntent - but there wasn't time
@@ -1158,6 +1243,7 @@ pub struct YieldToChild {
 
 impl ManifestInstruction for YieldToChild {
     const IDENT: &'static str = "YIELD_TO_CHILD";
+    const ID: u8 = INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1179,6 +1265,12 @@ impl ManifestInstruction for YieldToChild {
     }
 }
 
+/// This instruction is used to run an access rule assertion against
+/// the parent manifest's auth zone.
+///
+/// This can be used by a subintent to perform a counterparty check,
+/// to ensure their subintent can only be directly used by a particular
+/// counterparty.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct VerifyParent {
     pub access_rule: ManifestValue,
@@ -1186,6 +1278,7 @@ pub struct VerifyParent {
 
 impl ManifestInstruction for VerifyParent {
     const IDENT: &'static str = "VERIFY_PARENT";
+    const ID: u8 = INSTRUCTION_VERIFY_PARENT_DISCRIMINATOR;
 
     fn decompile(
         &self,
@@ -1205,76 +1298,72 @@ impl ManifestInstruction for VerifyParent {
 }
 
 //===============================================================
-// INSTRUCTION DISCRIMINATORS:
-//
-// These are separately saved in the ledger app. To avoid too much
-// churn there:
-//
-// - Try to keep these constant when adding/removing instructions:
-//   > For a new instruction, allocate a new number from the end
-//   > If removing an instruction, leave a gap
-// - Feel free to move the enum around to make logical groupings
-//   though
+// region:Discriminators
+//===============================================================
+// These discriminators have to be constant, but have been regrouped
+// below into a more logical grouping, to put similar instructions
+// together.
 //===============================================================
 
 //==============
-// Worktop
+// Bucket Lifecycle
 //==============
-pub const INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x00;
-pub const INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x01;
-pub const INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x02;
-pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
-pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
-pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
-pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
-pub const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
+const INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x00;
+const INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x01;
+const INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x02;
+const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
+const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 0x24;
 
 //==============
-// Auth zone
+// Resource Assertions
 //==============
-pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
-pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
-pub const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
-pub const INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR: u8 = 0x13;
-pub const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
+const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
+const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
+const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
 
 //==============
-// Named bucket
+// Proof Lifecycle
 //==============
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;
-pub const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 0x24;
+const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
+const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
+const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;
 
-//==============
-// Named proof
-//==============
-pub const INSTRUCTION_CLONE_PROOF_DISCRIMINATOR: u8 = 0x30;
-pub const INSTRUCTION_DROP_PROOF_DISCRIMINATOR: u8 = 0x31;
+const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
+const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
+const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
+
+const INSTRUCTION_CLONE_PROOF_DISCRIMINATOR: u8 = 0x30;
+const INSTRUCTION_DROP_PROOF_DISCRIMINATOR: u8 = 0x31;
+
+const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
+const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
+
+const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
+const INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR: u8 = 0x13;
+const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+
+const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
+const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 
 //==============
 // Invocation
 //==============
-pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
-pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
-pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
-pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
-pub const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
-pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
+const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
+const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
+const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
+const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
+const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
+const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 
 //==============
-// Complex
+// Address Allocation
 //==============
-pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
-pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
-pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
+const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
 
 //==============
 // Interactions with other intents
 //==============
-pub const INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR: u8 = 0x60;
-pub const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x61;
-pub const INSTRUCTION_VERIFY_PARENT_DISCRIMINATOR: u8 = 0x62;
+const INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR: u8 = 0x60;
+const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x61;
+const INSTRUCTION_VERIFY_PARENT_DISCRIMINATOR: u8 = 0x62;

@@ -1252,9 +1252,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     fn kernel_send_to_stack(
         &mut self,
         id: usize,
-        value: IndexedScryptoValue,
+        value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let message = CallFrameMessage::from_output(&value);
+        let message = CallFrameMessage::from_output(value);
 
         let (cur, other) = self.stacks.cur_mut_and_other_mut(id);
 

@@ -4,7 +4,16 @@
     "new_entities": [
       "package_sim1ph0yhmzqns6d2xzks6m65zgxx8pwksh2deaj8cp8pj86kvfm7hnxtr"
     ],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "package_sim1ph0yhmzqns6d2xzks6m65zgxx8pwksh2deaj8cp8pj86kvfm7hnxtr": {
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap Package (for the non-fungible resource with remote type scenario)"
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },
