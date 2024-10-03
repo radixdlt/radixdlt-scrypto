@@ -455,52 +455,54 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
         assertion: ResourceAssertion<'a>,
     ) -> ControlFlow<V::Output> {
-        match assertion {
-            ResourceAssertion::WorktopResourceNonZeroAmount { .. } => {
-                // Nothing to validate
-            }
-            ResourceAssertion::WorktopResourceAtLeastAmount { amount, .. } => {
-                if amount.is_negative() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InvalidResourceConstraint.into(),
-                    );
+        if self.validation_ruleset.validate_resource_assertions {
+            match assertion {
+                ResourceAssertion::WorktopResourceNonZeroAmount { .. } => {
+                    // Nothing to validate
                 }
-            }
-            ResourceAssertion::WorktopResourceAtLeastNonFungibles {
-                resource_address, ..
-            } => {
-                if resource_address.is_fungible() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InvalidResourceConstraint.into(),
-                    );
+                ResourceAssertion::WorktopResourceAtLeastAmount { amount, .. } => {
+                    if amount.is_negative() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
                 }
-            }
-            ResourceAssertion::WorktopResourcesOnly { constraints }
-            | ResourceAssertion::WorktopResourcesInclude { constraints } => {
-                if !constraints.is_valid() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InvalidResourceConstraint.into(),
-                    );
+                ResourceAssertion::WorktopResourceAtLeastNonFungibles {
+                    resource_address, ..
+                } => {
+                    if resource_address.is_fungible() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
                 }
-            }
-            ResourceAssertion::NextCallReturnsOnly { constraints }
-            | ResourceAssertion::NextCallReturnsInclude { constraints } => {
-                if !constraints.is_valid() {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InvalidResourceConstraint.into(),
-                    );
+                ResourceAssertion::WorktopResourcesOnly { constraints }
+                | ResourceAssertion::WorktopResourcesInclude { constraints } => {
+                    if !constraints.is_valid() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
                 }
-                self.next_instruction_requirement =
-                    NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion;
-            }
-            ResourceAssertion::BucketContents { bucket, constraint } => {
-                // Check the bucket currently exists
-                let state = self.get_existing_bucket::<V>(bucket)?;
-                let resource_address = state.source_amount.resource_address();
-                if !constraint.is_valid_for(resource_address) {
-                    return ControlFlow::Break(
-                        ManifestValidationError::InvalidResourceConstraint.into(),
-                    );
+                ResourceAssertion::NextCallReturnsOnly { constraints }
+                | ResourceAssertion::NextCallReturnsInclude { constraints } => {
+                    if !constraints.is_valid() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                    self.next_instruction_requirement =
+                        NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion;
+                }
+                ResourceAssertion::BucketContents { bucket, constraint } => {
+                    // Check the bucket currently exists
+                    let state = self.get_existing_bucket::<V>(bucket)?;
+                    let resource_address = state.source_amount.resource_address();
+                    if !constraint.is_valid_for(resource_address) {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
                 }
             }
         }
@@ -920,6 +922,7 @@ pub struct ValidationRuleset {
     pub validate_bucket_proof_lock: bool,
     pub validate_no_dangling_nodes: bool,
     pub validate_dynamic_address_in_command_part: bool,
+    pub validate_resource_assertions: bool,
 }
 
 impl Default for ValidationRuleset {
@@ -949,6 +952,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: true,
             validate_dynamic_address_in_command_part: true,
+            validate_resource_assertions: true,
         }
     }
 
@@ -959,6 +963,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: false,
             validate_dynamic_address_in_command_part: false,
+            validate_resource_assertions: false,
         }
     }
 
@@ -969,6 +974,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: true,
             validate_dynamic_address_in_command_part: true,
+            validate_resource_assertions: true,
         }
     }
 }
