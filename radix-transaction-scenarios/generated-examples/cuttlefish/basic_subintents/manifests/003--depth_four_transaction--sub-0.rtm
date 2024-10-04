@@ -1,0 +1,8 @@
+USE_CHILD
+    NamedIntent("depth_three_child")
+    Intent("subtxid_sim1enw66ntztpgdmwq4q27h8xeqs2hjudpt6464pjnmsle8qc5av07s2fx93f")
+;
+YIELD_TO_CHILD
+    NamedIntent("depth_three_child")
+;
+YIELD_TO_PARENT;
