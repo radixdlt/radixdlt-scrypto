@@ -75,8 +75,12 @@ impl ManifestResourceConstraint {
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
         match self {
             ManifestResourceConstraint::NonZeroAmount => true,
-            ManifestResourceConstraint::ExactAmount(amount) => !amount.is_negative(),
-            ManifestResourceConstraint::AtLeastAmount(amount) => !amount.is_negative(),
+            ManifestResourceConstraint::ExactAmount(amount) => {
+                !amount.is_negative() && amount.checked_floor() == Some(*amount)
+            }
+            ManifestResourceConstraint::AtLeastAmount(amount) => {
+                !amount.is_negative() && amount.checked_floor() == Some(*amount)
+            }
             ManifestResourceConstraint::ExactNonFungibles(_) => true,
             ManifestResourceConstraint::AtLeastNonFungibles(_) => true,
             ManifestResourceConstraint::General(general) => general.is_valid_for_non_fungible_use(),
@@ -84,6 +88,41 @@ impl ManifestResourceConstraint {
     }
 }
 
+/// [`GeneralResourceConstraint`] captures constraints on the balance of a single fungible
+/// or non-fungible resource.
+///
+/// It captures four concepts:
+///
+/// * A set of [`required_ids`][Self::required_ids] which are [`NonFungibleLocalId`]s which are
+///   required to be in the balance.
+/// * A [`lower_bound`][Self::lower_bound] on the decimal balance amount.
+/// * An [`upper_bound`][Self::upper_bound] on the decimal balance amount.
+/// * Constraints on the [`allowed_ids`][Self::allowed_ids]. These are either [`AllowedIds::Any`]
+///   or can be constrained to [`AllowedIds::Allowlist`] of [`NonFungibleLocalId`]s.
+///   If this case, the ids in the resource balance must be a subset of the allowlist.
+///
+/// ## Trait implementations
+/// * The [`PartialEq`] / [`Eq`] implementations both are correctly order-independent on the id sets,
+///   from the order-independent implementation of [`IndexSet`].
+///
+/// ## Validity
+///
+/// To be valid, the following checks must be upheld:
+///
+/// * If `allowed_ids` is [`AllowedIds::Any`]:
+///   * `known_ids.len() <= lower_inclusive <= upper_inclusive`
+///
+/// * If `allowed_ids` is [`AllowedIds::Allowlist(allowlist)`][AllowedIds::Allowlist]:
+///   * `known_ids.len() <= lower_inclusive <= upper_inclusive <= allowlist.len()`
+///   * `known_ids.is_subset(allowlist)`
+///
+/// Also, depending on the resource type, further validations are added:
+///
+/// * If the constraints are for a fungible resource, then [`required_ids`][Self::required_ids] must be
+/// empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] or
+/// [`AllowedIds::Allowlist`] with an empty list (both are acceptable).
+///
+/// * If the constraints are for a non-fungible resource, then any decimal balances must be integers.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct GeneralResourceConstraint {
     pub required_ids: IndexSet<NonFungibleLocalId>,
@@ -95,12 +134,16 @@ pub struct GeneralResourceConstraint {
 impl GeneralResourceConstraint {
     pub fn is_valid_for_fungible_use(&self) -> bool {
         return self.required_ids.is_empty()
+            && self.lower_bound.is_valid_for_fungible_use()
+            && self.upper_bound.is_valid_for_fungible_use()
             && self.allowed_ids.is_valid_for_fungible_use()
             && self.are_bounds_valid();
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.are_bounds_valid();
+        return self.lower_bound.is_valid_for_non_fungible_use()
+            && self.upper_bound.is_valid_for_non_fungible_use()
+            && self.are_bounds_valid();
     }
 
     fn are_bounds_valid(&self) -> bool {
@@ -129,6 +172,13 @@ impl GeneralResourceConstraint {
 }
 
 /// Represents a lower bound on a non-negative decimal.
+///
+/// [`LowerBound::NonZero`] represents a lower bound of an infinitesimal amount above 0,
+/// and is included for clarity of intention. Considering `Decimal` has a limited precision
+/// of `10^(-18)`, it is roughly equivalent to an inclusive bound of `10^(-18)`,
+/// or `Decimal::from_attos(1)`.
+///
+/// You can extract this equivalent decimal using the [`Self::equivalent_decimal`] method.
 ///
 /// ## Invariants
 /// * The `amount` in `LowerBound::Inclusive(amount)` is required to be non-negative before using
@@ -181,6 +231,22 @@ impl LowerBound {
 
     pub const fn non_zero() -> Self {
         Self::NonZero
+    }
+
+    pub fn is_valid_for_fungible_use(&self) -> bool {
+        match self {
+            LowerBound::NonZero => true,
+            LowerBound::Inclusive(amount) => !amount.is_negative(),
+        }
+    }
+
+    pub fn is_valid_for_non_fungible_use(&self) -> bool {
+        match self {
+            LowerBound::NonZero => true,
+            LowerBound::Inclusive(amount) => {
+                !amount.is_negative() && amount.checked_floor() == Some(*amount)
+            }
+        }
     }
 
     pub fn cmp_upper(&self, other: &UpperBound) -> core::cmp::Ordering {
@@ -284,6 +350,12 @@ impl LowerBound {
 
 /// Represents an upper bound on a non-negative decimal.
 ///
+/// [`UpperBound::Unbounded`] represents an upper bound above any possible decimal,
+/// and is included for clarity of intention. Considering `Decimal` has a max size,
+/// it is effectively equivalent to an inclusive bound of `Decimal::MAX`.
+///
+/// You can extract this equivalent decimal using the [`Self::equivalent_decimal`] method.
+///
 /// ## Invariants
 /// * The `amount` in `LowerBound::Inclusive(amount)` is required to be non-negative before using
 ///   this model. This can be validated via [`ManifestResourceConstraint::is_valid_for`].
@@ -334,6 +406,22 @@ impl UpperBound {
         Self::Inclusive(decimal)
     }
 
+    pub fn is_valid_for_fungible_use(&self) -> bool {
+        match self {
+            UpperBound::Inclusive(amount) => !amount.is_negative(),
+            UpperBound::Unbounded => true,
+        }
+    }
+
+    pub fn is_valid_for_non_fungible_use(&self) -> bool {
+        match self {
+            UpperBound::Inclusive(amount) => {
+                !amount.is_negative() && amount.checked_floor() == Some(*amount)
+            }
+            UpperBound::Unbounded => true,
+        }
+    }
+
     pub fn add_from(&mut self, other: Self) -> Result<(), BoundAdjustmentError> {
         let new_bound = match (*self, other) {
             (
@@ -382,6 +470,14 @@ impl UpperBound {
     }
 }
 
+/// Represents which ids are possible in a non-fungible balance.
+///
+/// [`AllowedIds::Any`] represents that any id is possible.
+/// [`AllowedIds::Allowlist`] represents that any ids in the balance have to
+/// be in the allowlist.
+///
+/// For fungible balances, you are permitted to use either [`AllowedIds::Any`]
+/// or [`AllowedIds::Allowlist`] with an empty allowlist.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub enum AllowedIds {
     Allowlist(IndexSet<NonFungibleLocalId>),

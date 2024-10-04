@@ -829,12 +829,16 @@ impl ResourceBounds {
 
     pub fn is_valid_for_fungible_use(&self) -> bool {
         return self.certain_ids.is_empty()
+            && self.lower_bound.is_valid_for_fungible_use()
+            && self.upper_bound.is_valid_for_fungible_use()
             && self.allowed_ids.is_valid_for_fungible_use()
             && self.are_bounds_valid();
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.are_bounds_valid();
+        return self.lower_bound.is_valid_for_non_fungible_use()
+            && self.upper_bound.is_valid_for_non_fungible_use()
+            && self.are_bounds_valid();
     }
 
     fn are_bounds_valid(&self) -> bool {
