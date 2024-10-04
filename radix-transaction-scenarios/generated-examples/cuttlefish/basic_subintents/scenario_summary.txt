@@ -1,0 +1,11 @@
+Name: basic_subintents
+
+== SUMMARY HASHES ==
+These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: dee71d33c837810f (allowed to change if not deployed to any network)
+Events       : 7a8049975bc75657 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- parent_account: account_sim1c9efznpk7w0xwdav45jj944cj677hcqj9el3atswwfw4dt84z3pun5
+- child_account: account_sim1c9ux5et6d49d8967emxaht5gnthrp9uu8v83vqr0vk8mwxlyhhvsyz
+
