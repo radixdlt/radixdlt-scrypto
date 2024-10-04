@@ -63,6 +63,7 @@ pub enum TransactionValidationError {
     InvalidMessage(InvalidMessageError),
     SubintentError(SubintentValidationError),
     Other(String),
+    TooManySignerSignatures { total: usize, limit: usize },
 }
 
 impl From<PrepareError> for TransactionValidationError {

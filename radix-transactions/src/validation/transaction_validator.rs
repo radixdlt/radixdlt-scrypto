@@ -35,7 +35,7 @@ impl TransactionValidationConfig {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub struct TransactionValidationConfigV1 {
     /// Signer signatures only, not including notary signature
-    pub max_signatures_per_intent: usize,
+    pub max_signer_signatures_per_intent: usize,
     pub max_references_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
@@ -53,7 +53,7 @@ pub struct TransactionValidationConfigV1 {
     /// A setting of N here allows a total depth of N + 1 if you
     /// include the root transaction intent.
     pub max_subintent_depth: usize,
-    pub max_total_signatures: usize,
+    pub max_total_signer_signatures: usize,
     pub max_total_references: usize,
 }
 
@@ -64,7 +64,7 @@ impl TransactionValidationConfig {
 
     pub const fn babylon() -> Self {
         Self {
-            max_signatures_per_intent: 16,
+            max_signer_signatures_per_intent: 16,
             max_references_per_intent: usize::MAX,
             min_tip_percentage: 0,
             max_tip_percentage: u16::MAX,
@@ -81,7 +81,7 @@ impl TransactionValidationConfig {
             max_subintent_depth: 0,
             min_tip_basis_points: 0,
             max_tip_basis_points: 0,
-            max_total_signatures: usize::MAX,
+            max_total_signer_signatures: usize::MAX,
             max_total_references: usize::MAX,
         }
     }
@@ -101,7 +101,7 @@ impl TransactionValidationConfig {
             // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
             preparation_settings: PreparationSettings::cuttlefish(),
-            max_total_signatures: 64,
+            max_total_signer_signatures: 64,
             max_total_references: 512,
             ..Self::babylon()
         }
@@ -398,7 +398,7 @@ impl TransactionValidator {
         notary_public_key: &PublicKey,
         notary_signature: &SignatureV1,
     ) -> Result<(Vec<PublicKey>, usize), SignatureValidationError> {
-        if transaction_intent_signatures.len() > self.config.max_signatures_per_intent {
+        if transaction_intent_signatures.len() > self.config.max_signer_signatures_per_intent {
             return Err(SignatureValidationError::TooManySignaturesForIntent);
         }
 
@@ -514,8 +514,11 @@ impl TransactionValidator {
         let transaction_intent = &prepared.signed_intent.transaction_intent;
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
+        let root_subintent_signatures = &prepared.signed_intent.transaction_intent_signatures;
 
         self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
+
+        self.check_signature_limits(root_subintent_signatures, non_root_subintent_signatures)?;
 
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
@@ -566,6 +569,8 @@ impl TransactionValidator {
         let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
         let non_root_subintent_signatures = &prepared.non_root_subintent_signatures;
 
+        self.check_signature_limits(root_subintent_signatures, non_root_subintent_signatures)?;
+
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
             root_intent_info,
@@ -586,6 +591,27 @@ impl TransactionValidator {
             root_subintent_yield_to_parent_count: root_yield_to_parent_count,
             non_root_subintents_info,
         })
+    }
+
+    pub fn check_signature_limits(
+        &self,
+        root_subintent_signatures: &PreparedIntentSignaturesV2,
+        non_root_subintent_signatures: &PreparedNonRootSubintentSignaturesV2,
+    ) -> Result<(), TransactionValidationError> {
+        let signer_sigs = root_subintent_signatures.inner.signatures.len()
+            + non_root_subintent_signatures
+                .by_subintent
+                .iter()
+                .map(|x| x.inner.signatures.len())
+                .sum::<usize>();
+        if signer_sigs > self.config.max_total_signer_signatures {
+            Err(TransactionValidationError::TooManySignerSignatures {
+                total: signer_sigs,
+                limit: self.config.max_total_signer_signatures,
+            })
+        } else {
+            Ok(())
+        }
     }
 
     pub fn validate_transaction_subtree_v2(
@@ -910,7 +936,8 @@ impl TransactionValidator {
         prepared: &PreparedSubintentV2,
         signatures: &PreparedIntentSignaturesV2,
     ) -> Result<SignatureValidations, SignatureValidationError> {
-        if signatures.inner.signatures.len() > self.config.max_signatures_per_intent {
+        // We could potentially front load this validation to reject early.
+        if signatures.inner.signatures.len() > self.config.max_signer_signatures_per_intent {
             return Err(SignatureValidationError::TooManySignaturesForIntent);
         }
 
