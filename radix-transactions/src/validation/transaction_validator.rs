@@ -35,6 +35,7 @@ impl TransactionValidationConfig {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub struct TransactionValidationConfigV1 {
     pub max_signatures_per_intent: usize,
+    pub max_references_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
@@ -51,6 +52,8 @@ pub struct TransactionValidationConfigV1 {
     /// A setting of N here allows a total depth of N + 1 if you
     /// include the root transaction intent.
     pub max_subintent_depth: usize,
+    pub max_total_signatures: usize,
+    pub max_total_references: usize,
 }
 
 impl TransactionValidationConfig {
@@ -61,6 +64,7 @@ impl TransactionValidationConfig {
     pub const fn babylon() -> Self {
         Self {
             max_signatures_per_intent: 16,
+            max_references_per_intent: usize::MAX,
             min_tip_percentage: 0,
             max_tip_percentage: u16::MAX,
             max_instructions: usize::MAX,
@@ -76,13 +80,16 @@ impl TransactionValidationConfig {
             max_subintent_depth: 0,
             min_tip_basis_points: 0,
             max_tip_basis_points: 0,
+            max_total_signatures: usize::MAX,
+            max_total_references: usize::MAX,
         }
     }
 
     pub const fn cuttlefish() -> Self {
         Self {
+            max_references_per_intent: 512,
             v2_transactions_allowed: true,
-            max_subintent_count: 128,
+            max_subintent_count: 32,
             max_subintent_depth: 3,
             min_tip_basis_points: 0,
             max_instructions: 1000,
@@ -93,6 +100,8 @@ impl TransactionValidationConfig {
             // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
             preparation_settings: PreparationSettings::cuttlefish(),
+            max_total_signatures: 64,
+            max_total_references: 512,
             ..Self::babylon()
         }
     }
