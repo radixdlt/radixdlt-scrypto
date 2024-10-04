@@ -656,29 +656,20 @@ impl TransactionValidator {
         root_subintent_signatures: &[IntentSignatureV1],
         non_root_subintent_signatures: Option<&PreparedNonRootSubintentSignaturesV2>,
     ) -> Result<(), TransactionValidationError> {
-        // Check per intent
         if root_subintent_signatures.len() > self.config.max_signer_signatures_per_intent {
             return Err(TransactionValidationError::TooManySignaturesForIntent);
         }
+        let mut total = root_subintent_signatures.len();
         if let Some(sigs) = non_root_subintent_signatures {
             for intent_sigs in &sigs.by_subintent {
                 if intent_sigs.inner.signatures.len() > self.config.max_signer_signatures_per_intent
                 {
                     return Err(TransactionValidationError::TooManySignaturesForIntent);
                 }
+                total += intent_sigs.inner.signatures.len();
             }
         }
 
-        // Check total
-        let total = root_subintent_signatures.len()
-            + non_root_subintent_signatures
-                .map(|x| {
-                    x.by_subintent
-                        .iter()
-                        .map(|x| x.inner.signatures.len())
-                        .sum::<usize>()
-                })
-                .unwrap_or_default();
         if total > self.config.max_total_signer_signatures {
             return Err(TransactionValidationError::TooManySignatures {
                 total,
