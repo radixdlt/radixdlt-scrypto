@@ -103,6 +103,21 @@ impl ValidatedNotarizedTransactionV2 {
                     .to_nullification(subintent.intent_core.header.inner.end_epoch_exclusive),
             )
         }
+        let num_of_signature_validations = self
+            .prepared
+            .signed_intent
+            .transaction_intent_signatures
+            .inner
+            .signatures
+            .len()
+            + self
+                .prepared
+                .signed_intent
+                .non_root_subintent_signatures
+                .by_subintent
+                .iter()
+                .map(|x| x.inner.signatures.len())
+                .sum::<usize>();
 
         let executable_transaction_intent = create_executable_intent(
             transaction_intent.root_intent_core,
@@ -121,7 +136,7 @@ impl ValidatedNotarizedTransactionV2 {
                 unique_hash: transaction_intent_hash.0,
                 intent_hash_nullifications,
                 payload_size: summary.effective_length,
-                num_of_signature_validations: move_sig_validations_to_be_lazy_and_bill_correctly(),
+                num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::BasisPoints(transaction_header.tip_basis_points),
                     free_credit_in_xrd: Decimal::ZERO,
@@ -161,9 +176,4 @@ fn create_executable_intent(
         blobs: core.blobs.blobs_by_hash.clone(),
         children_subintent_indices: validated_info.children_subintent_indices.clone(),
     }
-}
-
-#[deprecated]
-fn move_sig_validations_to_be_lazy_and_bill_correctly() -> usize {
-    0
 }
