@@ -34,6 +34,7 @@ impl TransactionValidationConfig {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub struct TransactionValidationConfigV1 {
+    /// Signer signatures only, not including notary signature
     pub max_signatures_per_intent: usize,
     pub max_references_per_intent: usize,
     pub min_tip_percentage: u16,
@@ -509,6 +510,7 @@ impl TransactionValidator {
                 2,
             ));
         }
+
         let transaction_intent = &prepared.signed_intent.transaction_intent;
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
@@ -897,7 +899,7 @@ impl TransactionValidator {
                 &prepared.notary_signature.inner.0,
             )?;
 
-        Ok(SignatureValidations::Validated {
+        Ok(SignatureValidations {
             num_validations,
             signer_keys,
         })
@@ -908,7 +910,10 @@ impl TransactionValidator {
         prepared: &PreparedSubintentV2,
         signatures: &PreparedIntentSignaturesV2,
     ) -> Result<SignatureValidations, SignatureValidationError> {
-        // TODO: Move to lazily evaluated
+        if signatures.inner.signatures.len() > self.config.max_signatures_per_intent {
+            return Err(SignatureValidationError::TooManySignaturesForIntent);
+        }
+
         let intent_signatures = &signatures.inner.signatures;
         let intent_hash = prepared.subintent_hash();
         let mut signers = index_set_with_capacity(intent_signatures.len());
@@ -924,7 +929,7 @@ impl TransactionValidator {
                 return Err(SignatureValidationError::DuplicateSigner);
             }
         }
-        Ok(SignatureValidations::Validated {
+        Ok(SignatureValidations {
             num_validations: intent_signatures.len(),
             signer_keys: signers.into_iter().collect(),
         })

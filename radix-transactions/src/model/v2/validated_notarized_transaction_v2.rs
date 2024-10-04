@@ -38,15 +38,10 @@ pub struct ValidatedIntentInformationV2 {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum SignatureValidations {
-    Validated {
-        /// This could be one more than signer_keys due to notary not being a signer
-        num_validations: usize,
-        signer_keys: Vec<PublicKey>,
-    },
-    Unvalidated {
-        signatures: IntentSignaturesV2,
-    },
+pub struct SignatureValidations {
+    /// This could be one more than signer_keys due to notary not being a signer
+    pub num_validations: usize,
+    pub signer_keys: Vec<PublicKey>,
 }
 
 impl HasTransactionIntentHash for ValidatedNotarizedTransactionV2 {
@@ -104,21 +99,14 @@ impl ValidatedNotarizedTransactionV2 {
             )
         }
         let num_of_signature_validations = self
-            .prepared
-            .signed_intent
-            .transaction_intent_signatures
-            .inner
-            .signatures
-            .len()
+            .transaction_intent_info
+            .signature_validations
+            .num_validations
             + self
-                .prepared
-                .signed_intent
-                .non_root_subintent_signatures
-                .by_subintent
+                .non_root_subintents_info
                 .iter()
-                .map(|x| x.inner.signatures.len())
+                .map(|x| x.signature_validations.num_validations)
                 .sum::<usize>();
-
         let executable_transaction_intent = create_executable_intent(
             transaction_intent.root_intent_core,
             self.transaction_intent_info,
@@ -157,16 +145,7 @@ fn create_executable_intent(
     core: PreparedIntentCoreV2,
     validated_info: ValidatedIntentInformationV2,
 ) -> ExecutableIntent {
-    // FIX ME when we implement delegated signature checking
-    let signer_keys = match validated_info.signature_validations {
-        SignatureValidations::Validated {
-            signer_keys,
-            num_validations: _,
-        } => signer_keys,
-        SignatureValidations::Unvalidated { signatures: _ } => {
-            unimplemented!()
-        }
-    };
+    let signer_keys = validated_info.signature_validations.signer_keys;
     let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
     ExecutableIntent {
