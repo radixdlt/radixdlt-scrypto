@@ -1527,12 +1527,63 @@ CALL_METHOD
 
     #[test]
     fn test_subintent_v2_with_children() {
-        let canonical_manifest = r##"
+        let canonical_manifest = apply_address_replacements(
+            r##"
 USE_CHILD
     NamedIntent("my_child")
     Intent("subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu")
 ;
 ASSERT_WORKTOP_IS_EMPTY;
+TAKE_ALL_FROM_WORKTOP
+    Address("${resource_address}")
+    Bucket("bucket")
+;
+ASSERT_WORKTOP_RESOURCES_ONLY
+    Map<Address, Enum>(
+        Address("${resource_address}") => Enum<0u8>()
+    )
+;
+ASSERT_WORKTOP_RESOURCES_INCLUDE
+    Map<Address, Enum>(
+        Address("${fungible_resource_address}") => Enum<1u8>(
+            Decimal("1")
+        ),
+        Address("${non_fungible_resource_address}") => Enum<2u8>(
+            Decimal("2")
+        )
+    )
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>(
+        Address("${non_fungible_resource_address}") => Enum<3u8>(
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("#234#")
+            )
+        )
+    )
+;
+ASSERT_NEXT_CALL_RETURNS_INCLUDE
+    Map<Address, Enum>(
+        Address("${non_fungible_resource_address}") => Enum<4u8>(
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("<My_Id>")
+            )
+        )
+    )
+;
+ASSERT_BUCKET_CONTENTS
+    Bucket("bucket")
+    Enum<5u8>(
+        Tuple(
+            Array<NonFungibleLocalId>(),
+            Enum<0u8>(),
+            Enum<0u8>(
+                Decimal("123")
+            ),
+            Enum<1u8>()
+        )
+    )
+;
 VERIFY_PARENT
     Enum<0u8>()
 ;
@@ -1544,10 +1595,11 @@ YIELD_TO_CHILD
     NamedIntent("my_child")
 ;
 YIELD_TO_PARENT;
-"##;
+"##,
+        );
         compile_and_decompile_with_inversion_test_subintent_v2(
             "v2_subintent_commands",
-            &include_str!("../../examples/subintents/child.rtm"),
+            &apply_address_replacements(include_str!("../../examples/subintents/child.rtm")),
             &NetworkDefinition::simulator(),
             vec![],
             &canonical_manifest,
@@ -1626,7 +1678,9 @@ YIELD_TO_PARENT;
             blob_provider.clone(),
             error_style,
         )
-        .expect("Manifest string could not be compiled");
+        .unwrap_or_else(|err| {
+            panic!("Manifest string could not be compiled. Error message:\n\n{err}\n")
+        });
         let original_binary =
             manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
 

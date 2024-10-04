@@ -148,6 +148,17 @@ impl BasicManifestValidator {
         address_id
     }
 
+    pub fn check_bucket(
+        &mut self,
+        bucket_id: &ManifestBucket,
+    ) -> Result<(), ManifestIdValidationError> {
+        if self.bucket_ids.contains_key(bucket_id) {
+            Ok(())
+        } else {
+            Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()))
+        }
+    }
+
     pub fn check_named_address(
         &mut self,
         address_id: &ManifestNamedAddress,

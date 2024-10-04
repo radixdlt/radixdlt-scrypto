@@ -917,6 +917,22 @@ macro_rules! try_from_integer {
 }
 try_from_integer!(I192, I256, I320, I448, I512, U192, U256, U320, U448, U512);
 
+//========
+// Resolution
+//========
+
+/// For use in arguments for tests/builders, where you want to accept anything
+/// which can be turned into a decimal.
+pub trait ResolvableDecimal {
+    fn resolve(self) -> Decimal;
+}
+
+impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
+    fn resolve(self) -> Decimal {
+        self.try_into().expect("Decimal was not valid")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

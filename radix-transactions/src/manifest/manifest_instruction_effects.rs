@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 /// A nicer, grouped representation of a Transaction Instruction
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ManifestInstructionEffect<'a> {
     CreateBucket {
         source_amount: BucketSourceAmount<'a>,
@@ -33,15 +33,16 @@ pub enum ManifestInstructionEffect<'a> {
         package_address: &'a PackageAddress,
         blueprint_name: &'a str,
     },
-    WorktopAssertion {
-        assertion: WorktopAssertion<'a>,
+    ResourceAssertion {
+        assertion: ResourceAssertion<'a>,
     },
     Verification {
         verification: VerificationKind,
+        access_rule: &'a AccessRule,
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum InvocationKind<'a> {
     Method {
         address: &'a DynamicGlobalAddress,
@@ -63,7 +64,7 @@ pub enum InvocationKind<'a> {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum VerificationKind {
     Parent,
 }
@@ -140,47 +141,77 @@ impl<'a> ProofSourceAmount<'a> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BucketDestination<'a> {
     Worktop,
     Burned,
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ProofDestination<'a> {
     AuthZone,
     Drop,
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum AddressReservationDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ExpressionDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BlobDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+pub enum ResourceAssertion<'a> {
+    Worktop(WorktopAssertion<'a>),
+    NextCall(NextCallAssertion<'a>),
+    Bucket(BucketAssertion<'a>),
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum WorktopAssertion<'a> {
-    AnyAmountGreaterThanZero {
+    ResourceNonZeroAmount {
         resource_address: &'a ResourceAddress,
     },
-    AtLeastAmount {
+    ResourceAtLeastAmount {
         resource_address: &'a ResourceAddress,
         amount: Decimal,
     },
-    AtLeastNonFungibles {
+    ResourceAtLeastNonFungibles {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
-    IsEmpty,
+    ResourcesOnly {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    ResourcesInclude {
+        constraints: &'a ManifestResourceConstraints,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum NextCallAssertion<'a> {
+    ReturnsOnly {
+        constraints: &'a ManifestResourceConstraints,
+    },
+    ReturnsInclude {
+        constraints: &'a ManifestResourceConstraints,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum BucketAssertion<'a> {
+    Contents {
+        bucket: ManifestBucket,
+        constraint: &'a ManifestResourceConstraint,
+    },
 }
