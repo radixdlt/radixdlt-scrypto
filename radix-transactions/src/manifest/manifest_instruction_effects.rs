@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 /// A nicer, grouped representation of a Transaction Instruction
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ManifestInstructionEffect<'a> {
     CreateBucket {
         source_amount: BucketSourceAmount<'a>,
@@ -42,7 +42,7 @@ pub enum ManifestInstructionEffect<'a> {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum InvocationKind<'a> {
     Method {
         address: &'a DynamicGlobalAddress,
@@ -64,7 +64,7 @@ pub enum InvocationKind<'a> {
     },
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum VerificationKind {
     Parent,
 }
@@ -141,43 +141,43 @@ impl<'a> ProofSourceAmount<'a> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BucketDestination<'a> {
     Worktop,
     Burned,
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ProofDestination<'a> {
     AuthZone,
     Drop,
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum AddressReservationDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ExpressionDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BlobDestination<'a> {
     Invocation(InvocationKind<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ResourceAssertion<'a> {
     Worktop(WorktopAssertion<'a>),
     NextCall(NextCallAssertion<'a>),
     Bucket(BucketAssertion<'a>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum WorktopAssertion<'a> {
     ResourceNonZeroAmount {
         resource_address: &'a ResourceAddress,
@@ -198,7 +198,7 @@ pub enum WorktopAssertion<'a> {
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum NextCallAssertion<'a> {
     ReturnsOnly {
         constraints: &'a ManifestResourceConstraints,
@@ -208,7 +208,7 @@ pub enum NextCallAssertion<'a> {
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BucketAssertion<'a> {
     Contents {
         bucket: ManifestBucket,

@@ -160,14 +160,17 @@ impl TrackedResources {
                     resource_bound.add_from(other.unspecified_resources.resource_status())?;
                 }
             }
-            self.unspecified_resources
-                .mut_add(other.unspecified_resources);
         }
 
         for (other_resource, other_resource_bound) in other.specified_resources {
             self.resource_status_mut(other_resource)
                 .add_from(other_resource_bound)?;
         }
+
+        // Order is important here - we have to handle unspecified once we've handled any specified resources,
+        // else the `resource_status_mut` will incorrectly pick up the other's unspecified resources.
+        self.unspecified_resources
+            .mut_add(other.unspecified_resources);
 
         Ok(())
     }
@@ -231,18 +234,29 @@ impl TrackedResources {
         constraints: &ManifestResourceConstraints,
         source: ChangeSource,
     ) -> Result<(), StaticResourceMovementsError> {
-        // First - let's handle the fact this is an ONLY. This is in two parts:
-        // - We ensure all resources not included in the constraints are zero.
-        // - We clear the unspecified resource balances.
+        // First, we handle the ONLY by asserting all specified resources not included in the constraints are zero.
         for (resource_address, tracked_resource) in self.specified_resources.iter_mut() {
             if !constraints.contains_specified_resource(resource_address) {
                 tracked_resource.handle_assertion(ResourceBounds::zero(), source)?;
             }
         }
+
+        // Now we handle the explict assertions
+        for (resource_address, constraint) in constraints.iter() {
+            self.resource_status_mut(*resource_address)
+                .handle_assertion(
+                    ResourceBounds::new_for_manifest_constraint(constraint)?,
+                    source,
+                )?;
+        }
+
+        // Any unspecified resources not explicitly handled above are now set to zero.
         self.unspecified_resources.clear();
 
-        // Second - let's handle the rest of it as an includes
-        self.handle_resources_include_assertion(constraints, source)
+        // Finally, let's normalize, to get rid of any unneeded constraints which are identically zero
+        self.mut_normalize();
+
+        Ok(())
     }
 
     pub fn handle_resources_include_assertion(
@@ -587,6 +601,9 @@ impl TrackedResource {
 /// [`ResourceBounds`] captures constraints on the balance of a single fungible or non-fungible
 /// resource.
 ///
+/// It is very similar to [`GeneralResourceConstraint`] in the manifest, but is duplicated
+/// here so that we can add methods/concepts specific to bounds tracking and constraining.
+///
 /// It captures four concepts:
 ///
 /// * A set of [`certain_ids`][Self::certain_ids] which are [`NonFungibleLocalId`]s which are
@@ -707,54 +724,61 @@ impl ResourceBounds {
         }
     }
 
-    pub fn general_no_id_allowlist(
-        known_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: LowerBound,
-        upper_bound: UpperBound,
+    pub fn general_fungible(
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
     ) -> Result<Self, StaticResourceMovementsError> {
-        let required_ids = known_ids.into_iter().collect::<IndexSet<_>>();
-        let number_of_required_ids = Decimal::from(required_ids.len());
-        if number_of_required_ids > lower_bound.equivalent_decimal()
-            || lower_bound.equivalent_decimal() > upper_bound.equivalent_decimal()
-        {
+        let bounds = Self {
+            certain_ids: Default::default(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::Any,
+        };
+
+        if !bounds.is_valid_for_fungible_use() {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
-        Ok(Self {
-            certain_ids: required_ids,
-            lower_bound,
-            upper_bound,
-            allowed_ids: AllowedIds::Any,
-        }
-        .tighten_id_lists_if_exact_ids())
+
+        Ok(bounds.tighten_id_lists_if_exact_ids())
     }
 
-    pub fn general_with_id_allowlist(
-        required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: LowerBound,
-        upper_bound: UpperBound,
+    pub fn general_non_fungible_no_allowlist(
+        certain_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
+    ) -> Result<Self, StaticResourceMovementsError> {
+        let bounds = Self {
+            certain_ids: certain_ids.into_iter().collect::<IndexSet<_>>(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::Any,
+        };
+
+        if !bounds.is_valid_for_non_fungible_use() {
+            return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
+        }
+
+        Ok(bounds.tighten_id_lists_if_exact_ids())
+    }
+
+    pub fn general_non_fungible_with_allowlist(
+        certain_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
         id_allowlist: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Result<Self, StaticResourceMovementsError> {
-        let required_ids = required_ids.into_iter().collect::<IndexSet<_>>();
-        let number_of_required_ids = Decimal::from(required_ids.len());
-        let id_allowlist = id_allowlist.into_iter().collect::<IndexSet<_>>();
-        let number_of_allowed_ids = Decimal::from(id_allowlist.len());
+        let bounds = Self {
+            certain_ids: certain_ids.into_iter().collect(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::Allowlist(id_allowlist.into_iter().collect()),
+        };
 
-        if number_of_required_ids > lower_bound.equivalent_decimal()
-            || lower_bound.equivalent_decimal() > upper_bound.equivalent_decimal()
-            || upper_bound.equivalent_decimal() > number_of_allowed_ids
-        {
+        if !bounds.is_valid_for_non_fungible_use() {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
-        if !required_ids.is_subset(&id_allowlist) {
-            return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
-        }
-        Ok(Self {
-            certain_ids: required_ids,
-            lower_bound,
-            upper_bound,
-            allowed_ids: AllowedIds::Allowlist(id_allowlist),
-        }
-        .tighten_id_lists_if_exact_ids())
+
+        Ok(bounds.tighten_id_lists_if_exact_ids())
     }
 
     pub fn new_for_manifest_constraint(
@@ -775,17 +799,21 @@ impl ResourceBounds {
                 lower_bound,
                 upper_bound,
                 allowed_ids,
-            }) => match allowed_ids {
-                AllowedIds::Allowlist(id_allowlist) => Self::general_with_id_allowlist(
-                    required_ids.clone(),
-                    *lower_bound,
-                    *upper_bound,
-                    id_allowlist.clone(),
-                ),
-                AllowedIds::Any => {
-                    Self::general_no_id_allowlist(required_ids.clone(), *lower_bound, *upper_bound)
+            }) => {
+                let bounds = Self {
+                    certain_ids: required_ids.clone(),
+                    lower_bound: *lower_bound,
+                    upper_bound: *upper_bound,
+                    allowed_ids: allowed_ids.clone(),
+                };
+
+                // We don't know if it's fungible or non-fungible, so we at least verify the bounds.
+                if !bounds.are_bounds_valid() {
+                    return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
                 }
-            },
+
+                Ok(bounds.tighten_id_lists_if_exact_ids())
+            }
         }
     }
 
@@ -840,7 +868,7 @@ impl ResourceBounds {
             && self.are_bounds_valid();
     }
 
-    fn are_bounds_valid(&self) -> bool {
+    pub fn are_bounds_valid(&self) -> bool {
         let required_ids_amount = Decimal::from(self.certain_ids.len());
         // These inequalities also validate that the lower and upper bounds are non-negative.
         if required_ids_amount > self.lower_bound.equivalent_decimal() {
@@ -1318,6 +1346,7 @@ impl StaticResourceMovementsOutput {
 
             let (specified_resources, unspecified_resources) =
                 invocation.input.clone().normalize().deconstruct();
+
             let mut account_deposit = AccountDeposit::empty(unspecified_resources);
             for (resource_address, tracked_resource) in specified_resources {
                 let (bounds, _history) = tracked_resource.deconstruct();
@@ -1471,9 +1500,8 @@ pub struct AccountDeposit {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SimpleResourceBounds {
     ExactAmount(Decimal),
-    AmountRange(LowerBound, UpperBound),
     ExactNonFungibles(IndexSet<NonFungibleLocalId>),
-    GeneralNonFungibleBounds(ResourceBounds),
+    General(ResourceBounds),
 }
 
 impl From<SimpleResourceBounds> for ResourceBounds {
@@ -1482,26 +1510,24 @@ impl From<SimpleResourceBounds> for ResourceBounds {
             SimpleResourceBounds::ExactAmount(amount) => {
                 ResourceBounds::exact_amount(amount).unwrap()
             }
-            SimpleResourceBounds::AmountRange(lower_bound, upper_bound) => {
-                ResourceBounds::general_no_id_allowlist([], lower_bound, upper_bound).unwrap()
-            }
             SimpleResourceBounds::ExactNonFungibles(ids) => {
                 ResourceBounds::exact_non_fungibles(ids)
             }
-            SimpleResourceBounds::GeneralNonFungibleBounds(resource_bounds) => resource_bounds,
+            SimpleResourceBounds::General(resource_bounds) => resource_bounds,
         }
     }
 }
 
 impl From<ResourceBounds> for SimpleResourceBounds {
     fn from(value: ResourceBounds) -> Self {
-        if value.is_valid_for_fungible_use() {
-            let (lower_bound, upper_bound) = value.numeric_bounds();
-            if lower_bound.cmp_upper(&upper_bound).is_eq() {
-                SimpleResourceBounds::ExactAmount(lower_bound.equivalent_decimal())
-            } else {
-                SimpleResourceBounds::AmountRange(lower_bound, upper_bound)
-            }
+        let (lower_bound, upper_bound) = value.numeric_bounds();
+        let allowed_ids_empty_or_any = value.allowed_ids().is_valid_for_fungible_use();
+
+        if lower_bound.cmp_upper(&upper_bound).is_eq() && allowed_ids_empty_or_any {
+            // If fungible, this conversion is correct (either Any or empty is allowed for allowed ids)
+            // If non-fungible, and allowed ids is any, this conversion is correct
+            // If non-fungible, and allowed ids is empty, this implies the bounds are zero, so this is okay.
+            SimpleResourceBounds::ExactAmount(lower_bound.equivalent_decimal())
         } else {
             match value.allowed_ids() {
                 // Note - IndexSet equality does a set equality, ignoring order
@@ -1509,9 +1535,7 @@ impl From<ResourceBounds> for SimpleResourceBounds {
                     let (certain_ids, _, _, _) = value.deconstruct();
                     SimpleResourceBounds::ExactNonFungibles(certain_ids)
                 }
-                AllowedIds::Any | AllowedIds::Allowlist(_) => {
-                    SimpleResourceBounds::GeneralNonFungibleBounds(value)
-                }
+                AllowedIds::Any | AllowedIds::Allowlist(_) => SimpleResourceBounds::General(value),
             }
         }
     }

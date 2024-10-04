@@ -10,6 +10,120 @@ pub struct ManifestResourceConstraints {
 }
 
 impl ManifestResourceConstraints {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with(
+        mut self,
+        resource_address: ResourceAddress,
+        constraint: ManifestResourceConstraint,
+    ) -> Self {
+        if !constraint.is_valid_for(&resource_address) {
+            panic!("Constraint isn't valid for the resource address");
+        }
+        let replaced = self
+            .specified_resources
+            .insert(resource_address, constraint);
+        if replaced.is_some() {
+            panic!("A constraint has already been specified against the resource");
+        }
+        self
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_exact_amount(
+        self,
+        resource_address: ResourceAddress,
+        amount: impl ResolvableDecimal,
+    ) -> Self {
+        self.with(
+            resource_address,
+            ManifestResourceConstraint::ExactAmount(amount.resolve()),
+        )
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_at_least_amount(
+        self,
+        resource_address: ResourceAddress,
+        amount: impl ResolvableDecimal,
+    ) -> Self {
+        self.with(
+            resource_address,
+            ManifestResourceConstraint::AtLeastAmount(amount.resolve()),
+        )
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_amount_range(
+        self,
+        resource_address: ResourceAddress,
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
+    ) -> Self {
+        self.with_general_constraint(
+            resource_address,
+            GeneralResourceConstraint {
+                required_ids: Default::default(),
+                lower_bound: lower_bound.resolve(),
+                upper_bound: upper_bound.resolve(),
+                allowed_ids: AllowedIds::Any,
+            },
+        )
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_exact_non_fungibles(
+        self,
+        resource_address: ResourceAddress,
+        non_fungible_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+    ) -> Self {
+        self.with(
+            resource_address,
+            ManifestResourceConstraint::ExactNonFungibles(non_fungible_ids.into_iter().collect()),
+        )
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_at_least_non_fungibles(
+        self,
+        resource_address: ResourceAddress,
+        non_fungible_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+    ) -> Self {
+        self.with(
+            resource_address,
+            ManifestResourceConstraint::AtLeastNonFungibles(non_fungible_ids.into_iter().collect()),
+        )
+    }
+
+    /// ## Panics
+    /// * Panics if the constraint isn't valid for the resource address
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_general_constraint(
+        self,
+        resource_address: ResourceAddress,
+        bounds: GeneralResourceConstraint,
+    ) -> Self {
+        self.with(
+            resource_address,
+            ManifestResourceConstraint::General(bounds),
+        )
+    }
+
     pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
         &self.specified_resources
     }
@@ -119,8 +233,8 @@ impl ManifestResourceConstraint {
 /// Also, depending on the resource type, further validations are added:
 ///
 /// * If the constraints are for a fungible resource, then [`required_ids`][Self::required_ids] must be
-/// empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] or
-/// [`AllowedIds::Allowlist`] with an empty list (both are acceptable).
+/// empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] (or, if the upper bound is
+/// zero, [`AllowedIds::Allowlist`] with an empty list is also acceptable).
 ///
 /// * If the constraints are for a non-fungible resource, then any decimal balances must be integers.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
@@ -132,6 +246,63 @@ pub struct GeneralResourceConstraint {
 }
 
 impl GeneralResourceConstraint {
+    pub fn fungible(
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
+    ) -> Self {
+        let constraint = Self {
+            required_ids: Default::default(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::Any,
+        };
+
+        if !constraint.is_valid_for_fungible_use() {
+            panic!("Bounds are invalid for fungible use");
+        }
+
+        constraint
+    }
+
+    pub fn non_fungible_no_allow_list(
+        required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
+    ) -> Self {
+        let constraint = Self {
+            required_ids: required_ids.into_iter().collect(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::Any,
+        };
+
+        if !constraint.is_valid_for_non_fungible_use() {
+            panic!("Bounds are invalid for non-fungible use");
+        }
+
+        constraint
+    }
+
+    pub fn non_fungible_with_allow_list(
+        required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        lower_bound: impl ResolvableLowerBound,
+        upper_bound: impl ResolvableUpperBound,
+        allowed_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+    ) -> Self {
+        let constraint = Self {
+            required_ids: required_ids.into_iter().collect(),
+            lower_bound: lower_bound.resolve(),
+            upper_bound: upper_bound.resolve(),
+            allowed_ids: AllowedIds::allowlist(allowed_ids),
+        };
+
+        if !constraint.is_valid_for_non_fungible_use() {
+            panic!("Bounds are invalid for non-fungible use");
+        }
+
+        constraint
+    }
+
     pub fn is_valid_for_fungible_use(&self) -> bool {
         return self.required_ids.is_empty()
             && self.lower_bound.is_valid_for_fungible_use()
@@ -233,6 +404,19 @@ impl LowerBound {
         Self::NonZero
     }
 
+    /// ## Panics
+    /// * Panics if the decimal is not resolvable or is non-negative
+    pub fn at_least(decimal: Decimal) -> Self {
+        if decimal.is_negative() {
+            panic!("An at_least bound is negative");
+        }
+        Self::Inclusive(decimal)
+    }
+
+    pub fn of(lower_bound: impl ResolvableLowerBound) -> Self {
+        lower_bound.resolve()
+    }
+
     pub fn is_valid_for_fungible_use(&self) -> bool {
         match self {
             LowerBound::NonZero => true,
@@ -264,15 +448,6 @@ impl LowerBound {
                 }
             }
         }
-    }
-
-    /// ## Panics
-    /// * Panics if the decimal is not resolvable or is non-negative
-    pub fn at_least(decimal: Decimal) -> Self {
-        if decimal.is_negative() {
-            panic!("An at_least bound is negative");
-        }
-        Self::Inclusive(decimal)
     }
 
     pub fn is_zero(&self) -> bool {
@@ -406,6 +581,10 @@ impl UpperBound {
         Self::Inclusive(decimal)
     }
 
+    pub fn of(upper_bound: impl ResolvableUpperBound) -> Self {
+        upper_bound.resolve()
+    }
+
     pub fn is_valid_for_fungible_use(&self) -> bool {
         match self {
             UpperBound::Inclusive(amount) => !amount.is_negative(),
@@ -489,6 +668,14 @@ impl AllowedIds {
         Self::Allowlist(Default::default())
     }
 
+    pub fn allowlist(allowlist: impl IntoIterator<Item = NonFungibleLocalId>) -> Self {
+        Self::Allowlist(allowlist.into_iter().collect())
+    }
+
+    pub fn any() -> Self {
+        Self::Any
+    }
+
     pub fn allowlist_equivalent_length(&self) -> usize {
         match self {
             Self::Allowlist(allowlist) => allowlist.len(),
@@ -507,4 +694,36 @@ impl AllowedIds {
 pub enum BoundAdjustmentError {
     DecimalOverflow,
     TakeCannotBeSatisfied,
+}
+
+pub trait ResolvableLowerBound {
+    fn resolve(self) -> LowerBound;
+}
+
+impl ResolvableLowerBound for LowerBound {
+    fn resolve(self) -> LowerBound {
+        self
+    }
+}
+
+impl<T: ResolvableDecimal> ResolvableLowerBound for T {
+    fn resolve(self) -> LowerBound {
+        LowerBound::Inclusive(self.resolve())
+    }
+}
+
+pub trait ResolvableUpperBound {
+    fn resolve(self) -> UpperBound;
+}
+
+impl ResolvableUpperBound for UpperBound {
+    fn resolve(self) -> UpperBound {
+        self
+    }
+}
+
+impl<T: ResolvableDecimal> ResolvableUpperBound for T {
+    fn resolve(self) -> UpperBound {
+        UpperBound::Inclusive(self.resolve())
+    }
 }

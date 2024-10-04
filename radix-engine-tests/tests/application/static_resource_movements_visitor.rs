@@ -1,7 +1,7 @@
-use radix_common::prelude::*;
 use radix_transactions::manifest::static_resource_movements::*;
 use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn simple_account_transfer_with_an_explicit_take_all_is_correctly_classified() {
@@ -312,6 +312,203 @@ fn assertion_of_ids_gives_context_to_visitor() {
             non_fungible_address,
             ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1),]),
         ),]),
+    );
+}
+
+#[test]
+fn assertion_of_next_call_returns_only_constrains_resources() {
+    // Arrange
+    let account = account_address(1);
+    let non_fungible_address = non_fungible_resource_address(1);
+    let manifest = ManifestBuilder::new_v2()
+        .assert_next_call_returns_only(
+            ManifestResourceConstraints::new()
+                .with_amount_range(XRD, 5, 10)
+                .with_at_least_non_fungibles(
+                    non_fungible_address,
+                    [NonFungibleLocalId::integer(3)],
+                ),
+        )
+        .call_method(component_address(1), "random", ())
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account),
+        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
+            .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
+            .set(
+                non_fungible_address,
+                ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
+            ),]),
+    );
+}
+
+#[test]
+fn assertion_of_next_call_returns_include_constrains_resources() {
+    // Arrange
+    let account = account_address(1);
+    let non_fungible_address = non_fungible_resource_address(1);
+    let manifest = ManifestBuilder::new_v2()
+        .assert_next_call_returns_include(
+            ManifestResourceConstraints::new()
+                .with_amount_range(XRD, 5, 10)
+                .with_at_least_non_fungibles(
+                    non_fungible_address,
+                    [NonFungibleLocalId::integer(3)],
+                ),
+        )
+        .call_method(component_address(1), "random", ())
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account),
+        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
+            ChangeSource::invocation_at(1)
+        ]))
+        .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
+        .set(
+            non_fungible_address,
+            ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
+        )]),
+    );
+}
+
+#[test]
+fn assertion_of_worktop_resources_only_constrains_resources() {
+    // Arrange
+    let account = account_address(1);
+    let non_fungible_address = non_fungible_resource_address(1);
+    let manifest = ManifestBuilder::new_v2()
+        .call_method(component_address(1), "random", ())
+        .assert_worktop_resources_only(
+            ManifestResourceConstraints::new()
+                .with_exact_amount(XRD, "9.452")
+                .with_exact_non_fungibles(non_fungible_address, [NonFungibleLocalId::integer(3)]),
+        )
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account),
+        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
+            .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
+            .set(
+                non_fungible_address,
+                ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
+            ),]),
+    );
+}
+
+#[test]
+fn assertion_of_worktop_resources_include_constrains_resources() {
+    // Arrange
+    let account = account_address(1);
+    let non_fungible_address = non_fungible_resource_address(1);
+    let manifest = ManifestBuilder::new_v2()
+        .call_method(component_address(1), "random", ())
+        .assert_worktop_resources_include(
+            ManifestResourceConstraints::new()
+                .with_exact_amount(XRD, "9.452")
+                .with_exact_non_fungibles(non_fungible_address, [NonFungibleLocalId::integer(3)]),
+        )
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account),
+        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
+            ChangeSource::invocation_at(0)
+        ]))
+        .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
+        .set(
+            non_fungible_address,
+            ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
+        ),]),
+    );
+}
+
+#[test]
+fn assertion_of_bucket_constrains_resources() {
+    // Arrange
+    let account = account_address(1);
+    let non_fungible_address = non_fungible_resource_address(1);
+    let builder = ManifestBuilder::new_v2();
+    let lookup = builder.name_lookup();
+    let manifest = builder
+        .call_method(component_address(1), "random", ())
+        .take_all_from_worktop(non_fungible_address, "my_bucket")
+        .assert_bucket_contents(
+            "my_bucket",
+            ManifestResourceConstraint::General(GeneralResourceConstraint {
+                required_ids: indexset!(NonFungibleLocalId::string("hello").unwrap(),),
+                lower_bound: LowerBound::Inclusive(dec!(1)),
+                upper_bound: UpperBound::Inclusive(dec!(2)),
+                allowed_ids: AllowedIds::Allowlist(indexset!(
+                    NonFungibleLocalId::string("hello").unwrap(),
+                    NonFungibleLocalId::string("world").unwrap(),
+                    NonFungibleLocalId::string("it_is").unwrap(),
+                    NonFungibleLocalId::string("me").unwrap(),
+                )),
+            }),
+        )
+        .deposit_batch(account, [lookup.bucket("my_bucket")])
+        .build();
+
+    // Act
+    let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(withdraws.len(), 0);
+    assert_eq!(deposits.len(), 1);
+    assert_eq!(withdraws.get(&account), None);
+    assert_eq!(
+        deposits.get(&account),
+        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
+            .set(
+                non_fungible_address,
+                ResourceBounds::general_non_fungible_with_allowlist(
+                    [NonFungibleLocalId::string("hello").unwrap()],
+                    1,
+                    2,
+                    [
+                        NonFungibleLocalId::string("hello").unwrap(),
+                        NonFungibleLocalId::string("world").unwrap(),
+                        NonFungibleLocalId::string("it_is").unwrap(),
+                        NonFungibleLocalId::string("me").unwrap(),
+                    ]
+                )
+                .unwrap()
+            ),]),
     );
 }
 
