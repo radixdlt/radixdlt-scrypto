@@ -1792,4 +1792,186 @@ mod tests {
             ))
         ));
     }
+
+    #[test]
+    fn too_many_signatures_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_signatures: usize,
+        ) -> SignedPartialTransactionV2 {
+            let mut builder = PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|builder| builder.yield_to_parent(()));
+
+            for i in 0..num_signatures {
+                let signer =
+                    Secp256k1PrivateKey::from_u64(((subintent_index + 1) * 1000 + i) as u64)
+                        .unwrap();
+                builder = builder.sign(&signer);
+            }
+
+            builder.build()
+        }
+
+        fn create_transaction(signature_counts: Vec<usize>) -> NotarizedTransactionV2 {
+            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, signature_count) in signature_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *signature_count),
+                )
+            }
+
+            builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in signature_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                })
+                .sign(&signer)
+                .notarize(&notary)
+                .build_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert!(matches!(
+            create_transaction(vec![10]).prepare_and_validate(&validator),
+            Ok(_)
+        ));
+        assert_eq!(
+            create_transaction(vec![10, 20]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManySignaturesForIntent {
+                index: 1,
+                total: 20,
+                limit: 16
+            })
+        );
+        assert_eq!(
+            create_transaction(vec![10, 10, 10, 10, 10, 10, 10]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManySignatures {
+                total: 71, // 70 from subintent, 1 from transaction intent
+                limit: 64
+            })
+        );
+    }
+
+    #[test]
+    fn too_many_references_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_references: usize,
+        ) -> SignedPartialTransactionV2 {
+            PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|mut builder| {
+                    for i in 0..num_references {
+                        let mut address =
+                            [EntityType::GlobalPreallocatedSecp256k1Account as u8; NodeId::LENGTH];
+                        address[1..9].copy_from_slice(
+                            &(((subintent_index + 1) * 1000 + i) as u64).to_le_bytes(),
+                        );
+                        builder = builder.call_method(
+                            ComponentAddress::new_or_panic(address),
+                            "method_name",
+                            (),
+                        );
+                    }
+
+                    builder.yield_to_parent(())
+                })
+                .sign(&Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
+                .build()
+        }
+
+        fn create_transaction(reference_counts: Vec<usize>) -> NotarizedTransactionV2 {
+            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, reference_count) in reference_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *reference_count),
+                )
+            }
+
+            builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in reference_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                })
+                .sign(&signer)
+                .notarize(&notary)
+                .build_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert!(matches!(
+            create_transaction(vec![100]).prepare_and_validate(&validator),
+            Ok(_)
+        ));
+        assert_eq!(
+            create_transaction(vec![100, 600]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManyReferencesForIntent {
+                index: 2,
+                total: 600,
+                limit: 512
+            })
+        );
+        assert_eq!(
+            create_transaction(vec![500, 500]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManyReferences {
+                total: 1001, // 1000 from subintent, 1 from transaction intent
+                limit: 512
+            })
+        );
+    }
 }
