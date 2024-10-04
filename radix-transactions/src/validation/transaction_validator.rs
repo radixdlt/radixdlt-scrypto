@@ -200,13 +200,18 @@ impl TransactionValidator {
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
         self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(
-            &transaction.signed_intent.intent.instructions.inner.0,
-        )?);
+        self.check_signature_limits(
+            &transaction.signed_intent.intent_signatures.inner.signatures,
+            None,
+        )?;
 
         let (signer_keys, num_of_signature_validations) = self
             .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
+
+        let encoded_instructions = Rc::new(manifest_encode(
+            &transaction.signed_intent.intent.instructions.inner.0,
+        )?);
 
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
@@ -398,10 +403,6 @@ impl TransactionValidator {
         notary_public_key: &PublicKey,
         notary_signature: &SignatureV1,
     ) -> Result<(Vec<PublicKey>, usize), SignatureValidationError> {
-        if transaction_intent_signatures.len() > self.config.max_signer_signatures_per_intent {
-            return Err(SignatureValidationError::TooManySignaturesForIntent);
-        }
-
         let mut signers = index_set_with_capacity(transaction_intent_signatures.len() + 1);
         for intent_signature in transaction_intent_signatures.iter() {
             let public_key = recover(&transaction_intent_hash.0, &intent_signature.0)
@@ -518,7 +519,10 @@ impl TransactionValidator {
 
         self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
 
-        self.check_signature_limits(root_subintent_signatures, non_root_subintent_signatures)?;
+        self.check_signature_limits(
+            &root_subintent_signatures.inner.signatures,
+            Some(non_root_subintent_signatures),
+        )?;
 
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
@@ -569,7 +573,10 @@ impl TransactionValidator {
         let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
         let non_root_subintent_signatures = &prepared.non_root_subintent_signatures;
 
-        self.check_signature_limits(root_subintent_signatures, non_root_subintent_signatures)?;
+        self.check_signature_limits(
+            &root_subintent_signatures.inner.signatures,
+            Some(non_root_subintent_signatures),
+        )?;
 
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
@@ -595,23 +602,40 @@ impl TransactionValidator {
 
     pub fn check_signature_limits(
         &self,
-        root_subintent_signatures: &PreparedIntentSignaturesV2,
-        non_root_subintent_signatures: &PreparedNonRootSubintentSignaturesV2,
+        root_subintent_signatures: &[IntentSignatureV1],
+        non_root_subintent_signatures: Option<&PreparedNonRootSubintentSignaturesV2>,
     ) -> Result<(), TransactionValidationError> {
-        let signer_sigs = root_subintent_signatures.inner.signatures.len()
-            + non_root_subintent_signatures
-                .by_subintent
-                .iter()
-                .map(|x| x.inner.signatures.len())
-                .sum::<usize>();
-        if signer_sigs > self.config.max_total_signer_signatures {
-            Err(TransactionValidationError::TooManySignerSignatures {
-                total: signer_sigs,
-                limit: self.config.max_total_signer_signatures,
-            })
-        } else {
-            Ok(())
+        // Check per intent
+        if root_subintent_signatures.len() > self.config.max_signer_signatures_per_intent {
+            return Err(TransactionValidationError::TooManySignaturesForIntent);
         }
+        if let Some(sigs) = non_root_subintent_signatures {
+            for intent_sigs in &sigs.by_subintent {
+                if intent_sigs.inner.signatures.len() > self.config.max_signer_signatures_per_intent
+                {
+                    return Err(TransactionValidationError::TooManySignaturesForIntent);
+                }
+            }
+        }
+
+        // Check total
+        let total = root_subintent_signatures.len()
+            + non_root_subintent_signatures
+                .map(|x| {
+                    x.by_subintent
+                        .iter()
+                        .map(|x| x.inner.signatures.len())
+                        .sum::<usize>()
+                })
+                .unwrap_or_default();
+        if total > self.config.max_total_signer_signatures {
+            return Err(TransactionValidationError::TooManySignerSignatures {
+                total,
+                limit: self.config.max_total_signer_signatures,
+            });
+        }
+
+        Ok(())
     }
 
     pub fn validate_transaction_subtree_v2(
@@ -936,11 +960,6 @@ impl TransactionValidator {
         prepared: &PreparedSubintentV2,
         signatures: &PreparedIntentSignaturesV2,
     ) -> Result<SignatureValidations, SignatureValidationError> {
-        // We could potentially front load this validation to reject early.
-        if signatures.inner.signatures.len() > self.config.max_signer_signatures_per_intent {
-            return Err(SignatureValidationError::TooManySignaturesForIntent);
-        }
-
         let intent_signatures = &signatures.inner.signatures;
         let intent_hash = prepared.subintent_hash();
         let mut signers = index_set_with_capacity(intent_signatures.len());
@@ -1320,9 +1339,7 @@ mod tests {
     #[test]
     fn test_invalid_signatures() {
         assert_invalid_tx!(
-            TransactionValidationError::SignatureValidationError(
-                SignatureValidationError::TooManySignaturesForIntent
-            ),
+            TransactionValidationError::TooManySignaturesForIntent,
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(

@@ -15,7 +15,6 @@ pub enum HeaderValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
-    TooManySignaturesForIntent,
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
@@ -64,6 +63,7 @@ pub enum TransactionValidationError {
     SubintentError(SubintentValidationError),
     Other(String),
     TooManySignerSignatures { total: usize, limit: usize },
+    TooManySignaturesForIntent,
 }
 
 impl From<PrepareError> for TransactionValidationError {
