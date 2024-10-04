@@ -885,14 +885,25 @@ fn test_crypto_scrypto_verify_ed25519_costing() {
     let secret_key = Ed25519PrivateKey::from_u64(1).unwrap();
     let public_key = secret_key.public_key();
 
-    for size in 0..10 {
-        let data: Vec<u8> = vec![size as u8; size * 10];
-        let data_hash = hash(data);
-        let signature = secret_key.sign(&data_hash);
+    for size in [
+        100usize,
+        200,
+        500,
+        1024,
+        10 * 1024,
+        20 * 1024,
+        50 * 1024,
+        100 * 1024,
+        200 * 1024,
+        500 * 1024,
+        900 * 1024,
+    ] {
+        let data = vec![0u8; size];
+        let signature = secret_key.sign(&data);
         let _ = crypto_scrypto_ed25519_verify(
             &mut ledger,
             package_address,
-            data_hash.to_vec(),
+            data,
             public_key,
             signature,
         );
