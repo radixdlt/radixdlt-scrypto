@@ -634,9 +634,13 @@ impl TransactionValidator {
         subintent_references: Vec<&IndexSet<Reference>>,
     ) -> Result<(), TransactionValidationError> {
         let mut total = 0;
-        for refs in subintent_references {
+        for (index, refs) in subintent_references.iter().enumerate() {
             if refs.len() > self.config.max_references_per_intent {
-                return Err(TransactionValidationError::TooManyReferencesForIntent);
+                return Err(TransactionValidationError::TooManyReferencesForIntent {
+                    index,
+                    total: refs.len(),
+                    limit: self.config.max_references_per_intent,
+                });
             }
             total += refs.len();
         }
@@ -657,14 +661,22 @@ impl TransactionValidator {
         non_root_subintent_signatures: Option<&PreparedNonRootSubintentSignaturesV2>,
     ) -> Result<(), TransactionValidationError> {
         if root_subintent_signatures.len() > self.config.max_signer_signatures_per_intent {
-            return Err(TransactionValidationError::TooManySignaturesForIntent);
+            return Err(TransactionValidationError::TooManySignaturesForIntent {
+                index: 0,
+                total: root_subintent_signatures.len(),
+                limit: self.config.max_signer_signatures_per_intent,
+            });
         }
         let mut total = root_subintent_signatures.len();
         if let Some(sigs) = non_root_subintent_signatures {
-            for intent_sigs in &sigs.by_subintent {
+            for (index, intent_sigs) in sigs.by_subintent.iter().enumerate() {
                 if intent_sigs.inner.signatures.len() > self.config.max_signer_signatures_per_intent
                 {
-                    return Err(TransactionValidationError::TooManySignaturesForIntent);
+                    return Err(TransactionValidationError::TooManySignaturesForIntent {
+                        index,
+                        total: intent_sigs.inner.signatures.len(),
+                        limit: self.config.max_signer_signatures_per_intent,
+                    });
                 }
                 total += intent_sigs.inner.signatures.len();
             }
@@ -1381,7 +1393,11 @@ mod tests {
     #[test]
     fn test_invalid_signatures() {
         assert_invalid_tx!(
-            TransactionValidationError::TooManySignaturesForIntent,
+            TransactionValidationError::TooManySignaturesForIntent {
+                index: 0,
+                total: 19,
+                limit: 16
+            },
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(

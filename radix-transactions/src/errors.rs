@@ -62,10 +62,24 @@ pub enum TransactionValidationError {
     InvalidMessage(InvalidMessageError),
     SubintentError(SubintentValidationError),
     Other(String),
-    TooManySignatures { total: usize, limit: usize },
-    TooManySignaturesForIntent,
-    TooManyReferences { total: usize, limit: usize },
-    TooManyReferencesForIntent,
+    TooManySignatures {
+        total: usize,
+        limit: usize,
+    },
+    TooManySignaturesForIntent {
+        index: usize,
+        total: usize,
+        limit: usize,
+    },
+    TooManyReferences {
+        total: usize,
+        limit: usize,
+    },
+    TooManyReferencesForIntent {
+        index: usize,
+        total: usize,
+        limit: usize,
+    },
 }
 
 impl From<PrepareError> for TransactionValidationError {
