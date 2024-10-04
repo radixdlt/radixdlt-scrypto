@@ -27,25 +27,23 @@ impl Bls12381G1PublicKey {
     }
 
     /// Aggregate multiple public keys into a single one.
-    /// This method validates provided input keys.
-    pub fn aggregate(public_keys: &[Self]) -> Result<Self, ParseBlsPublicKeyError> {
-        if !public_keys.is_empty() {
-            let pk_first = public_keys[0].to_native_public_key()?;
-
-            pk_first.validate()?;
-
-            let mut agg_pk = AggregatePublicKey::from_public_key(&pk_first);
-
-            for pk in public_keys.iter().skip(1) {
-                agg_pk.add_public_key(&pk.to_native_public_key()?, true)?;
-            }
-
-            let pk = agg_pk.to_public_key();
-
-            Ok(Self(pk.to_bytes()))
-        } else {
-            Err(ParseBlsPublicKeyError::NoPublicKeysGiven)
+    /// This method validates provided input keys if `should_validate` flag is set.
+    pub fn aggregate(
+        public_keys: &[Self],
+        should_validate: bool,
+    ) -> Result<Self, ParseBlsPublicKeyError> {
+        if public_keys.is_empty() {
+            return Err(ParseBlsPublicKeyError::NoPublicKeysGiven);
         }
+        let serialized_pks = public_keys
+            .into_iter()
+            .map(|pk| pk.as_ref())
+            .collect::<Vec<_>>();
+
+        let pk = AggregatePublicKey::aggregate_serialized(&serialized_pks, should_validate)?
+            .to_public_key();
+
+        Ok(Self(pk.to_bytes()))
     }
 
     /// Aggregate multiple public keys into a single one.
@@ -176,7 +174,7 @@ mod tests {
 
         let public_keys = vec![public_key_not_in_group, public_key_valid];
 
-        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys);
+        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys, true);
 
         assert_eq!(
             agg_pk,
@@ -187,7 +185,7 @@ mod tests {
 
         let public_keys = vec![public_key_valid, public_key_not_in_group];
 
-        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys);
+        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys, true);
 
         assert_eq!(
             agg_pk,
@@ -211,7 +209,7 @@ mod tests {
 
         let public_keys = vec![public_key_is_infinity, public_key_valid];
 
-        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys);
+        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys, true);
 
         assert_eq!(
             agg_pk,
@@ -222,7 +220,7 @@ mod tests {
 
         let public_keys = vec![public_key_is_infinity, public_key_valid];
 
-        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys);
+        let agg_pk = Bls12381G1PublicKey::aggregate(&public_keys, true);
 
         assert_eq!(
             agg_pk,

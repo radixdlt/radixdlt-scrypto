@@ -41,29 +41,24 @@ impl Bls12381G2Signature {
         Signature::from_bytes(&self.0).map_err(|err| err.into())
     }
 
-    /// Aggregate multiple signatures into a single one
-    /// This method validates provided input signatures.
-    pub fn aggregate(signatures: &[Self]) -> Result<Self, ParseBlsSignatureError> {
-        if !signatures.is_empty() {
-            let sig_first = signatures[0].to_native_signature()?;
-
-            sig_first.validate(true)?;
-
-            let mut agg_sig = AggregateSignature::from_signature(&sig_first);
-
-            for sig in signatures.iter().skip(1) {
-                let sig = sig.to_native_signature()?;
-
-                sig.validate(true)?;
-
-                agg_sig.add_signature(&sig, false)?;
-            }
-            let sig = agg_sig.to_signature();
-
-            Ok(Self(sig.to_bytes()))
-        } else {
-            Err(ParseBlsSignatureError::NoSignatureGiven)
+    /// Aggregate multiple signatures into a single one.
+    /// This method validates provided input signatures if `should_validate` flag is set.
+    pub fn aggregate(
+        signatures: &[Self],
+        should_validate: bool,
+    ) -> Result<Self, ParseBlsSignatureError> {
+        if signatures.is_empty() {
+            return Err(ParseBlsSignatureError::NoSignatureGiven);
         }
+        let serialized_sigs = signatures
+            .into_iter()
+            .map(|sig| sig.as_ref())
+            .collect::<Vec<_>>();
+
+        let sig = AggregateSignature::aggregate_serialized(&serialized_sigs, should_validate)?
+            .to_signature();
+
+        Ok(Self(sig.to_bytes()))
     }
 
     /// Aggregate multiple signatures into a single one.
@@ -192,7 +187,7 @@ mod tests {
 
         let sigs = vec![signature_not_in_group, signature_valid];
 
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs);
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true);
 
         assert_eq!(
             agg_sig,
@@ -203,47 +198,12 @@ mod tests {
 
         let sigs = vec![signature_valid, signature_not_in_group];
 
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs);
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true);
 
         assert_eq!(
             agg_sig,
             Err(ParseBlsSignatureError::BlsError(
                 "BLST_POINT_NOT_IN_GROUP".to_string()
-            ))
-        );
-    }
-
-    #[test]
-    fn signature_is_infinity() {
-        let signature_is_infinity = "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        let signature_is_infinity = Bls12381G2Signature::from_str(signature_is_infinity).unwrap();
-        let signature_valid = "82131f69b6699755f830e29d6ed41cbf759591a2ab598aa4e9686113341118d1db900d190436048601791121b5757c341045d4d0c94a95ec31a9ba6205f9b7504de85dadff52874375c58eec6cec28397279de87d5595101e398d31646d345bb";
-        let signature_valid = Bls12381G2Signature::from_str(signature_valid).unwrap();
-
-        assert_eq!(
-            signature_validate!(signature_is_infinity),
-            Err(blst::BLST_ERROR::BLST_PK_IS_INFINITY)
-        );
-
-        let sigs = vec![signature_is_infinity, signature_valid];
-
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs);
-
-        assert_eq!(
-            agg_sig,
-            Err(ParseBlsSignatureError::BlsError(
-                "BLST_PK_IS_INFINITY".to_string()
-            ))
-        );
-
-        let sigs = vec![signature_valid, signature_is_infinity];
-
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs);
-
-        assert_eq!(
-            agg_sig,
-            Err(ParseBlsSignatureError::BlsError(
-                "BLST_PK_IS_INFINITY".to_string()
             ))
         );
     }

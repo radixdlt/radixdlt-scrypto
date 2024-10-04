@@ -231,7 +231,7 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
     let (_sks, _pks, _msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
     // Aggregate the signature
-    let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
+    let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
     // Act
     let agg_sig_from_scrypto =
@@ -264,7 +264,7 @@ fn test_crypto_scrypto_bls12381_aggregate_verify() {
     let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10);
 
     // Aggregate the signature
-    let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
+    let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
     // Act
     let agg_sig_from_scrypto = get_output!(crypto_scrypto_bls12381_g2_signature_aggregate(
@@ -345,7 +345,7 @@ fn test_crypto_scrypto_bls12381_fast_aggregate_verify() {
     let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
 
     // Aggregate the signature
-    let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs).unwrap();
+    let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
     // Act
     let agg_sig_from_scrypto: Bls12381G2Signature = get_output!(
@@ -573,7 +573,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
         for cnt in [1u32, 2, 5, 10, 20] {
             let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
 
-            let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs).unwrap();
+            let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
             let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
                 &mut ledger,
@@ -601,7 +601,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
         (1024, 100),
     ] {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
             &mut ledger,
@@ -619,7 +619,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     pks1.append(&mut pks2);
     msgs1.append(&mut msgs2);
     sigs1.append(&mut sigs2);
-    let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
 
     let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
         &mut ledger,
@@ -636,7 +636,7 @@ fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
     pks1.append(&mut pks2);
     msgs1.append(&mut msgs2);
     sigs1.append(&mut sigs2);
-    let agg_sig = Bls12381G2Signature::aggregate(&sigs1).unwrap();
+    let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
 
     let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
         &mut ledger,
@@ -666,7 +666,7 @@ fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
 
             let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
 
-            let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs).unwrap();
+            let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
             let _ = crypto_scrypto_bls12381_v1_fast_aggregate_verify(
                 &mut ledger,

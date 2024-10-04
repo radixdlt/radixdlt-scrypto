@@ -665,7 +665,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         let agg_sig = if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
             Bls12381G2Signature::aggregate_anemone(&signatures)
         } else {
-            Bls12381G2Signature::aggregate(&signatures)
+            Bls12381G2Signature::aggregate(&signatures, true)
         }
         .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))?;
 

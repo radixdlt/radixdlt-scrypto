@@ -167,13 +167,13 @@ pub fn aggregate_verify_bls12381_v1(
 /// Performs BLS12-381 G2 aggregated signature verification
 /// one message signed with multiple keys.
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
-/// This method does validate provided input keys when aggregating.
+/// This method validates provided input keys when aggregating.
 pub fn fast_aggregate_verify_bls12381_v1(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],
     signature: &Bls12381G2Signature,
 ) -> bool {
-    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys) {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys, true) {
         return verify_bls12381_v1(message, &agg_pk, signature);
     }
 
