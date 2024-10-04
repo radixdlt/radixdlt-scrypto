@@ -200,6 +200,10 @@ impl TransactionValidator {
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
         self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
+        self.check_reference_limits(vec![
+            &transaction.signed_intent.intent.instructions.references,
+        ])?;
+
         self.check_signature_limits(
             &transaction.signed_intent.intent_signatures.inner.signatures,
             None,
@@ -513,11 +517,24 @@ impl TransactionValidator {
         }
 
         let transaction_intent = &prepared.signed_intent.transaction_intent;
+        let root_subintent = &prepared.signed_intent.transaction_intent;
+        let root_subintent_signatures = &prepared.signed_intent.transaction_intent_signatures;
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
-        let root_subintent_signatures = &prepared.signed_intent.transaction_intent_signatures;
 
         self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
+
+        self.check_reference_limits(
+            [&root_subintent.root_intent_core.instructions.references]
+                .into_iter()
+                .chain(
+                    non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|x| &x.intent_core.instructions.references),
+                )
+                .collect(),
+        )?;
 
         self.check_signature_limits(
             &root_subintent_signatures.inner.signatures,
@@ -573,6 +590,18 @@ impl TransactionValidator {
         let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
         let non_root_subintent_signatures = &prepared.non_root_subintent_signatures;
 
+        self.check_reference_limits(
+            [&root_subintent.intent_core.instructions.references]
+                .into_iter()
+                .chain(
+                    non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|x| &x.intent_core.instructions.references),
+                )
+                .collect(),
+        )?;
+
         self.check_signature_limits(
             &root_subintent_signatures.inner.signatures,
             Some(non_root_subintent_signatures),
@@ -598,6 +627,28 @@ impl TransactionValidator {
             root_subintent_yield_to_parent_count: root_yield_to_parent_count,
             non_root_subintents_info,
         })
+    }
+
+    pub fn check_reference_limits(
+        &self,
+        subintent_references: Vec<&IndexSet<Reference>>,
+    ) -> Result<(), TransactionValidationError> {
+        let mut total = 0;
+        for refs in subintent_references {
+            if refs.len() > self.config.max_references_per_intent {
+                return Err(TransactionValidationError::TooManyReferencesForIntent);
+            }
+            total += refs.len();
+        }
+
+        if total > self.config.max_total_references {
+            return Err(TransactionValidationError::TooManyReferences {
+                total,
+                limit: self.config.max_total_references,
+            });
+        }
+
+        Ok(())
     }
 
     pub fn check_signature_limits(
@@ -629,7 +680,7 @@ impl TransactionValidator {
                 })
                 .unwrap_or_default();
         if total > self.config.max_total_signer_signatures {
-            return Err(TransactionValidationError::TooManySignerSignatures {
+            return Err(TransactionValidationError::TooManySignatures {
                 total,
                 limit: self.config.max_total_signer_signatures,
             });
