@@ -292,11 +292,11 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
 ///
 /// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertResourcesOnly {
+pub struct AssertWorktopResourcesOnly {
     pub constraints: ManifestResourceConstraints,
 }
 
-impl ManifestInstruction for AssertResourcesOnly {
+impl ManifestInstruction for AssertWorktopResourcesOnly {
     const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_ONLY";
     const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR;
 
@@ -327,11 +327,11 @@ impl ManifestInstruction for AssertResourcesOnly {
 ///
 /// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertResourcesInclude {
+pub struct AssertWorktopResourcesInclude {
     pub constraints: ManifestResourceConstraints,
 }
 
-impl ManifestInstruction for AssertResourcesInclude {
+impl ManifestInstruction for AssertWorktopResourcesInclude {
     const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_INCLUDE";
     const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR;
 

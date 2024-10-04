@@ -87,8 +87,8 @@ pub enum InstructionIdent {
     AssertWorktopContains,
     AssertWorktopContainsNonFungibles,
     AssertWorktopIsEmpty, // An alias
-    AssertResourcesOnly,
-    AssertResourcesInclude,
+    AssertWorktopResourcesOnly,
+    AssertWorktopResourcesInclude,
     AssertNextCallReturnsOnly,
     AssertNextCallReturnsInclude,
     AssertBucketContents,
@@ -199,8 +199,8 @@ impl InstructionIdent {
             }
             AssertWorktopContainsAny::IDENT => InstructionIdent::AssertWorktopContainsAny,
             "ASSERT_WORKTOP_IS_EMPTY" => InstructionIdent::AssertWorktopIsEmpty,
-            AssertResourcesOnly::IDENT => InstructionIdent::AssertResourcesOnly,
-            AssertResourcesInclude::IDENT => InstructionIdent::AssertResourcesInclude,
+            AssertWorktopResourcesOnly::IDENT => InstructionIdent::AssertWorktopResourcesOnly,
+            AssertWorktopResourcesInclude::IDENT => InstructionIdent::AssertWorktopResourcesInclude,
             AssertNextCallReturnsOnly::IDENT => InstructionIdent::AssertNextCallReturnsOnly,
             AssertNextCallReturnsInclude::IDENT => InstructionIdent::AssertNextCallReturnsInclude,
             AssertBucketContents::IDENT => InstructionIdent::AssertBucketContents,
@@ -584,12 +584,16 @@ impl Parser {
                 }
             }
             InstructionIdent::AssertWorktopIsEmpty => Instruction::AssertWorktopIsEmpty,
-            InstructionIdent::AssertResourcesOnly => Instruction::AssertResourcesOnly {
-                constraints: self.parse_value()?,
-            },
-            InstructionIdent::AssertResourcesInclude => Instruction::AssertResourcesInclude {
-                constraints: self.parse_value()?,
-            },
+            InstructionIdent::AssertWorktopResourcesOnly => {
+                Instruction::AssertWorktopResourcesOnly {
+                    constraints: self.parse_value()?,
+                }
+            }
+            InstructionIdent::AssertWorktopResourcesInclude => {
+                Instruction::AssertWorktopResourcesInclude {
+                    constraints: self.parse_value()?,
+                }
+            }
             InstructionIdent::AssertNextCallReturnsOnly => Instruction::AssertNextCallReturnsOnly {
                 constraints: self.parse_value()?,
             },

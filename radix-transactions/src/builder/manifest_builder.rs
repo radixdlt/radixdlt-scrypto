@@ -2284,20 +2284,20 @@ where
     }
 
     pub fn assert_worktop_is_empty(self) -> Self {
-        self.add_v2_instruction(AssertResourcesOnly {
+        self.add_v2_instruction(AssertWorktopResourcesOnly {
             constraints: Default::default(),
         })
     }
 
     pub fn assert_worktop_resources_only(self, constraints: ManifestResourceConstraints) -> Self {
-        self.add_v2_instruction(AssertResourcesOnly { constraints })
+        self.add_v2_instruction(AssertWorktopResourcesOnly { constraints })
     }
 
     pub fn assert_worktop_resources_include(
         self,
         constraints: ManifestResourceConstraints,
     ) -> Self {
-        self.add_v2_instruction(AssertResourcesInclude { constraints })
+        self.add_v2_instruction(AssertWorktopResourcesInclude { constraints })
     }
 
     pub fn assert_next_call_returns_only(self, constraints: ManifestResourceConstraints) -> Self {
