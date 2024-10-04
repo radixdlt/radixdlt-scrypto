@@ -27,7 +27,7 @@ impl Bls12381G1PublicKey {
     }
 
     /// Aggregate multiple public keys into a single one.
-    /// This method does validate provided input keys.
+    /// This method validates provided input keys.
     pub fn aggregate(public_keys: &[Self]) -> Result<Self, ParseBlsPublicKeyError> {
         if !public_keys.is_empty() {
             let pk_first = public_keys[0].to_native_public_key()?;
@@ -52,7 +52,7 @@ impl Bls12381G1PublicKey {
     /// This method does not validate provided input keys, it is left here
     /// for backward compatibility.
     /// It is recommended to use `aggregate()` method instead.
-    pub fn aggregate_old(public_keys: &[Self]) -> Result<Self, ParseBlsPublicKeyError> {
+    pub fn aggregate_anemone(public_keys: &[Self]) -> Result<Self, ParseBlsPublicKeyError> {
         if !public_keys.is_empty() {
             let pk_first = public_keys[0].to_native_public_key()?;
 

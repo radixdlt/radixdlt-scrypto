@@ -632,7 +632,10 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             })?;
 
         if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
-            Ok(fast_aggregate_verify_bls12381_v1_old(&message, &public_keys, &signature) as u32)
+            Ok(
+                fast_aggregate_verify_bls12381_v1_anemone(&message, &public_keys, &signature)
+                    as u32,
+            )
         } else {
             Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
         }
@@ -660,7 +663,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             })?;
 
         let agg_sig = if self.scrypto_vm_version == ScryptoVmVersion::crypto_utils_v1() {
-            Bls12381G2Signature::aggregate_old(&signatures)
+            Bls12381G2Signature::aggregate_anemone(&signatures)
         } else {
             Bls12381G2Signature::aggregate(&signatures)
         }
