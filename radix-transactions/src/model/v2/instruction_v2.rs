@@ -21,8 +21,8 @@ impl ManifestInstructionSet for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(x) => x.decompile(context),
             InstructionV2::AssertWorktopContains(x) => x.decompile(context),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
-            InstructionV2::AssertWorktopResourcesOnly(x) => x.decompile(context),
-            InstructionV2::AssertWorktopResourcesInclude(x) => x.decompile(context),
+            InstructionV2::AssertResourcesOnly(x) => x.decompile(context),
+            InstructionV2::AssertResourcesInclude(x) => x.decompile(context),
             InstructionV2::AssertNextCallReturnsOnly(x) => x.decompile(context),
             InstructionV2::AssertNextCallReturnsInclude(x) => x.decompile(context),
             InstructionV2::AssertBucketContents(x) => x.decompile(context),
@@ -64,8 +64,8 @@ impl ManifestInstructionSet for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(x) => x.effect(),
             InstructionV2::AssertWorktopContains(x) => x.effect(),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.effect(),
-            InstructionV2::AssertWorktopResourcesOnly(x) => x.effect(),
-            InstructionV2::AssertWorktopResourcesInclude(x) => x.effect(),
+            InstructionV2::AssertResourcesOnly(x) => x.effect(),
+            InstructionV2::AssertResourcesInclude(x) => x.effect(),
             InstructionV2::AssertNextCallReturnsOnly(x) => x.effect(),
             InstructionV2::AssertNextCallReturnsInclude(x) => x.effect(),
             InstructionV2::AssertBucketContents(x) => x.effect(),
@@ -148,8 +148,8 @@ impl TryFrom<InstructionV2> for InstructionV1 {
             InstructionV2::AssertWorktopContainsAny(x) => x.into(),
             InstructionV2::AssertWorktopContains(x) => x.into(),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.into(),
-            InstructionV2::AssertWorktopResourcesOnly(_) => return Err(()),
-            InstructionV2::AssertWorktopResourcesInclude(_) => return Err(()),
+            InstructionV2::AssertResourcesOnly(_) => return Err(()),
+            InstructionV2::AssertResourcesInclude(_) => return Err(()),
             InstructionV2::AssertNextCallReturnsOnly(_) => return Err(()),
             InstructionV2::AssertNextCallReturnsInclude(_) => return Err(()),
             InstructionV2::AssertBucketContents(_) => return Err(()),
@@ -226,11 +226,11 @@ pub enum InstructionV2 {
     #[sbor(discriminator(AssertWorktopContainsNonFungibles::ID))]
     AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
 
-    #[sbor(discriminator(AssertWorktopResourcesOnly::ID))]
-    AssertWorktopResourcesOnly(#[sbor(flatten)] AssertWorktopResourcesOnly),
+    #[sbor(discriminator(AssertResourcesOnly::ID))]
+    AssertResourcesOnly(#[sbor(flatten)] AssertResourcesOnly),
 
-    #[sbor(discriminator(AssertWorktopResourcesInclude::ID))]
-    AssertWorktopResourcesInclude(#[sbor(flatten)] AssertWorktopResourcesInclude),
+    #[sbor(discriminator(AssertResourcesInclude::ID))]
+    AssertResourcesInclude(#[sbor(flatten)] AssertResourcesInclude),
 
     #[sbor(discriminator(AssertNextCallReturnsOnly::ID))]
     AssertNextCallReturnsOnly(#[sbor(flatten)] AssertNextCallReturnsOnly),

@@ -219,9 +219,9 @@ impl ManifestInstruction for AssertWorktopContainsAny {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::WorktopResourceNonZeroAmount {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount {
                 resource_address: &self.resource_address,
-            },
+            }),
         }
     }
 }
@@ -249,10 +249,10 @@ impl ManifestInstruction for AssertWorktopContains {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::WorktopResourceAtLeastAmount {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
                 resource_address: &self.resource_address,
                 amount: self.amount,
-            },
+            }),
         }
     }
 }
@@ -280,10 +280,10 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::WorktopResourceAtLeastNonFungibles {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
                 resource_address: &self.resource_address,
                 ids: &self.ids,
-            },
+            }),
         }
     }
 }
@@ -292,11 +292,11 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
 ///
 /// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertWorktopResourcesOnly {
+pub struct AssertResourcesOnly {
     pub constraints: ManifestResourceConstraints,
 }
 
-impl ManifestInstruction for AssertWorktopResourcesOnly {
+impl ManifestInstruction for AssertResourcesOnly {
     const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_ONLY";
     const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR;
 
@@ -315,9 +315,9 @@ impl ManifestInstruction for AssertWorktopResourcesOnly {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::WorktopResourcesOnly {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly {
                 constraints: &self.constraints,
-            },
+            }),
         }
     }
 }
@@ -327,11 +327,11 @@ impl ManifestInstruction for AssertWorktopResourcesOnly {
 ///
 /// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertWorktopResourcesInclude {
+pub struct AssertResourcesInclude {
     pub constraints: ManifestResourceConstraints,
 }
 
-impl ManifestInstruction for AssertWorktopResourcesInclude {
+impl ManifestInstruction for AssertResourcesInclude {
     const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_INCLUDE";
     const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR;
 
@@ -345,9 +345,9 @@ impl ManifestInstruction for AssertWorktopResourcesInclude {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::WorktopResourcesInclude {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude {
                 constraints: &self.constraints,
-            },
+            }),
         }
     }
 }
@@ -378,9 +378,9 @@ impl ManifestInstruction for AssertNextCallReturnsOnly {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::NextCallReturnsOnly {
+            assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsOnly {
                 constraints: &self.constraints,
-            },
+            }),
         }
     }
 }
@@ -412,9 +412,9 @@ impl ManifestInstruction for AssertNextCallReturnsInclude {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::NextCallReturnsInclude {
+            assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsInclude {
                 constraints: &self.constraints,
-            },
+            }),
         }
     }
 }
@@ -442,175 +442,10 @@ impl ManifestInstruction for AssertBucketContents {
 
     fn effect(&self) -> Effect {
         Effect::ResourceAssertion {
-            assertion: ResourceAssertion::BucketContents {
+            assertion: ResourceAssertion::Bucket(BucketAssertion::Contents {
                 bucket: self.bucket_id,
                 constraint: &self.constraint,
-            },
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default, ManifestSbor, ScryptoDescribe)]
-#[sbor(transparent)]
-pub struct ManifestResourceConstraints {
-    specified_resources: IndexMap<ResourceAddress, ManifestResourceConstraint>,
-}
-
-impl ManifestResourceConstraints {
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
-        &self.specified_resources
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (&ResourceAddress, &ManifestResourceConstraint)> {
-        self.specified_resources.iter()
-    }
-
-    pub fn is_valid(&self) -> bool {
-        for (resource_address, constraint) in self.iter() {
-            if !constraint.is_valid_for(resource_address) {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-impl IntoIterator for ManifestResourceConstraints {
-    type Item = (ResourceAddress, ManifestResourceConstraint);
-    type IntoIter =
-        <IndexMap<ResourceAddress, ManifestResourceConstraint> as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.specified_resources.into_iter()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub enum ManifestResourceConstraint {
-    NonZeroAmount,
-    ExactAmount(Decimal),
-    AtLeastAmount(Decimal),
-    ExactNonFungibles(IndexSet<NonFungibleLocalId>),
-    AtLeastNonFungibles(IndexSet<NonFungibleLocalId>),
-    General(GeneralResourceConstraint),
-}
-
-impl ManifestResourceConstraint {
-    pub fn is_valid_for(&self, resource_address: &ResourceAddress) -> bool {
-        if resource_address.is_fungible() {
-            self.is_valid_for_fungible_use()
-        } else {
-            self.is_valid_for_non_fungible_use()
-        }
-    }
-
-    pub fn is_valid_for_fungible_use(&self) -> bool {
-        match self {
-            ManifestResourceConstraint::NonZeroAmount => true,
-            ManifestResourceConstraint::ExactAmount(amount) => !amount.is_negative(),
-            ManifestResourceConstraint::AtLeastAmount(amount) => !amount.is_negative(),
-            ManifestResourceConstraint::ExactNonFungibles(_) => false,
-            ManifestResourceConstraint::AtLeastNonFungibles(_) => false,
-            ManifestResourceConstraint::General(general) => general.is_valid_for_fungible_use(),
-        }
-    }
-
-    pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        match self {
-            ManifestResourceConstraint::NonZeroAmount => true,
-            ManifestResourceConstraint::ExactAmount(amount) => !amount.is_negative(),
-            ManifestResourceConstraint::AtLeastAmount(amount) => !amount.is_negative(),
-            ManifestResourceConstraint::ExactNonFungibles(_) => true,
-            ManifestResourceConstraint::AtLeastNonFungibles(_) => true,
-            ManifestResourceConstraint::General(general) => general.is_valid_for_non_fungible_use(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct GeneralResourceConstraint {
-    pub required_ids: IndexSet<NonFungibleLocalId>,
-    pub lower_bound: LowerBound,
-    pub upper_bound: UpperBound,
-    pub allowed_ids: AllowedIds,
-}
-
-impl GeneralResourceConstraint {
-    pub fn is_valid_for_fungible_use(&self) -> bool {
-        return self.required_ids.is_empty()
-            && self.allowed_ids.is_valid_for_fungible_use()
-            && self.are_bounds_valid();
-    }
-
-    pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.are_bounds_valid();
-    }
-
-    fn are_bounds_valid(&self) -> bool {
-        let required_ids_amount = Decimal::from(self.required_ids.len());
-        if required_ids_amount > self.lower_bound.equivalent_decimal() {
-            return false;
-        }
-        if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
-            return false;
-        }
-        match &self.allowed_ids {
-            AllowedIds::Allowlist(allowlist) => {
-                let allowlist_ids_amount = Decimal::from(allowlist.len());
-                if self.upper_bound.equivalent_decimal() > allowlist_ids_amount {
-                    return false;
-                }
-                if !self.required_ids.is_subset(allowlist) {
-                    return false;
-                }
-            }
-            AllowedIds::Any => {}
-        }
-        true
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub enum LowerBound {
-    NonZero,
-    Inclusive(Decimal),
-}
-
-impl LowerBound {
-    pub fn equivalent_decimal(&self) -> Decimal {
-        match self {
-            LowerBound::NonZero => Decimal(I192::ONE),
-            LowerBound::Inclusive(decimal) => *decimal,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub enum UpperBound {
-    Inclusive(Decimal),
-    Unbounded,
-}
-
-impl UpperBound {
-    pub fn equivalent_decimal(&self) -> Decimal {
-        match self {
-            UpperBound::Inclusive(decimal) => *decimal,
-            UpperBound::Unbounded => Decimal::MAX,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub enum AllowedIds {
-    Allowlist(IndexSet<NonFungibleLocalId>),
-    Any,
-}
-
-impl AllowedIds {
-    pub fn is_valid_for_fungible_use(&self) -> bool {
-        match self {
-            AllowedIds::Allowlist(allowlist) => allowlist.is_empty(),
-            AllowedIds::Any => true,
+            }),
         }
     }
 }

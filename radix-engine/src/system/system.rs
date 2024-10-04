@@ -2161,7 +2161,6 @@ impl<'a, Y: SystemBasedKernelApi> SystemBlueprintApi<RuntimeError> for SystemSer
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
 impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemService<'a, Y> {
-    // No costing should be applied
     fn consume_cost_units(
         &mut self,
         costing_entry: ClientCostingEntry,
@@ -2219,13 +2218,15 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
     }
 
     #[trace_resources]
-    fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, RuntimeError> {
-        let stack_id = self.api.kernel_get_stack_id();
-        if stack_id != 0 {
-            // TODO: Are we allowing contingent lock fees in child subintents?
-            return Err(RuntimeError::SystemError(
-                SystemError::CannotLockFeeInChildSubintent(stack_id),
-            ));
+    fn start_lock_fee(&mut self, amount: Decimal, contingent: bool) -> Result<bool, RuntimeError> {
+        // Child subintents are only allowed to use contingent fees
+        if !contingent {
+            let stack_id = self.api.kernel_get_stack_id();
+            if stack_id != 0 {
+                return Err(RuntimeError::SystemError(
+                    SystemError::CannotLockFeeInChildSubintent(stack_id),
+                ));
+            }
         }
 
         let costing_enabled = self

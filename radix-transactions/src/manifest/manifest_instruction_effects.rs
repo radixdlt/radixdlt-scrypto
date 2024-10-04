@@ -172,30 +172,45 @@ pub enum BlobDestination<'a> {
 
 #[derive(Clone, Copy)]
 pub enum ResourceAssertion<'a> {
-    WorktopResourceNonZeroAmount {
+    Worktop(WorktopAssertion<'a>),
+    NextCall(NextCallAssertion<'a>),
+    Bucket(BucketAssertion<'a>),
+}
+
+#[derive(Clone, Copy)]
+pub enum WorktopAssertion<'a> {
+    ResourceNonZeroAmount {
         resource_address: &'a ResourceAddress,
     },
-    WorktopResourceAtLeastAmount {
+    ResourceAtLeastAmount {
         resource_address: &'a ResourceAddress,
         amount: Decimal,
     },
-    WorktopResourceAtLeastNonFungibles {
+    ResourceAtLeastNonFungibles {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
-    WorktopResourcesOnly {
+    ResourcesOnly {
         constraints: &'a ManifestResourceConstraints,
     },
-    WorktopResourcesInclude {
+    ResourcesInclude {
         constraints: &'a ManifestResourceConstraints,
     },
-    NextCallReturnsOnly {
+}
+
+#[derive(Clone, Copy)]
+pub enum NextCallAssertion<'a> {
+    ReturnsOnly {
         constraints: &'a ManifestResourceConstraints,
     },
-    NextCallReturnsInclude {
+    ReturnsInclude {
         constraints: &'a ManifestResourceConstraints,
     },
-    BucketContents {
+}
+
+#[derive(Clone, Copy)]
+pub enum BucketAssertion<'a> {
+    Contents {
         bucket: ManifestBucket,
         constraint: &'a ManifestResourceConstraint,
     },

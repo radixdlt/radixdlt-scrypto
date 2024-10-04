@@ -18,6 +18,7 @@ serde = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 strum = { workspace = true }
 bech32 = { workspace = true }
+paste = { workspace = true }
 annotate-snippets = { version = "0.10.2"}
 
 [dev-dependencies]

@@ -202,8 +202,10 @@ impl<M: KernelCallbackObject> KernelStack<M> {
     }
 }
 
+/// The kernel manages multiple call frame stacks. There will always be a single
+/// "current" stack (and call frame) in context.
 pub struct KernelStacks<M: KernelCallbackObject> {
-    stack_pointer: usize,
+    current_stack: usize,
     stacks: Vec<KernelStack<M>>,
 }
 
@@ -214,25 +216,35 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
             .map(|call_frame| KernelStack::new(call_frame))
             .collect();
         Self {
-            stack_pointer: 0usize,
+            current_stack: 0usize,
             stacks,
         }
     }
 
+    /// Pushes a new call frame on the current stack
     pub fn push(&mut self, frame: CallFrame<M::CallFrameData, M::LockData>) {
-        let stack = self.stacks.get_mut(self.stack_pointer).unwrap();
+        let stack = self.stacks.get_mut(self.current_stack).unwrap();
         let parent = mem::replace(&mut stack.current_frame, frame);
         stack.prev_frames.push(parent);
     }
 
+    /// Pushes a call frame from the current stack
     pub fn pop(&mut self) {
-        let stack = self.stacks.get_mut(self.stack_pointer).unwrap();
+        let stack = self.stacks.get_mut(self.current_stack).unwrap();
         let parent = stack.prev_frames.pop().unwrap();
         let _ = core::mem::replace(&mut stack.current_frame, parent);
     }
 
-    pub fn switch(&mut self, id: usize) {
-        self.stack_pointer = id;
+    /// Switches the current stack
+    pub fn switch(&mut self, id: usize) -> Result<(), RuntimeError> {
+        if id >= self.stacks.len() {
+            return Err(RuntimeError::KernelError(KernelError::StackError(
+                StackError::InvalidStackId,
+            )));
+        }
+        self.current_stack = id;
+
+        Ok(())
     }
 
     pub fn cur_mut_and_other_mut(
@@ -246,13 +258,13 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
             .stacks
             .iter_mut()
             .enumerate()
-            .filter(|(id, _)| (*id).eq(&self.stack_pointer) || (*id).eq(&other_stack))
+            .filter(|(id, _)| (*id).eq(&self.current_stack) || (*id).eq(&other_stack))
             .map(|stack| Some(stack))
             .collect();
 
         let (id0, stack0) = mut_stacks[0].take().unwrap();
         let (_id1, stack1) = mut_stacks[1].take().unwrap();
-        if id0.eq(&self.stack_pointer) {
+        if id0.eq(&self.current_stack) {
             (&mut stack0.current_frame, &mut stack1.current_frame)
         } else {
             (&mut stack1.current_frame, &mut stack0.current_frame)
@@ -265,7 +277,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         &CallFrame<M::CallFrameData, M::LockData>,
         Option<&CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get(self.stack_pointer).unwrap();
+        let stack = self.stacks.get(self.current_stack).unwrap();
         (&stack.current_frame, stack.prev_frames.last())
     }
 
@@ -275,7 +287,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         &mut CallFrame<M::CallFrameData, M::LockData>,
         Option<&CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get_mut(self.stack_pointer).unwrap();
+        let stack = self.stacks.get_mut(self.current_stack).unwrap();
         (&mut stack.current_frame, stack.prev_frames.last())
     }
 
@@ -285,24 +297,25 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         &mut CallFrame<M::CallFrameData, M::LockData>,
         Option<&mut CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get_mut(self.stack_pointer).unwrap();
+        let stack = self.stacks.get_mut(self.current_stack).unwrap();
         (&mut stack.current_frame, stack.prev_frames.last_mut())
     }
 
     pub fn cur(&self) -> &CallFrame<M::CallFrameData, M::LockData> {
-        &self.stacks.get(self.stack_pointer).unwrap().current_frame
+        &self.stacks.get(self.current_stack).unwrap().current_frame
     }
 
     pub fn cur_mut(&mut self) -> &mut CallFrame<M::CallFrameData, M::LockData> {
         &mut self
             .stacks
-            .get_mut(self.stack_pointer)
+            .get_mut(self.current_stack)
             .unwrap()
             .current_frame
     }
 
+    #[cfg(feature = "radix_engine_tests")]
     pub fn prev_frames_mut(&mut self) -> &mut Vec<CallFrame<M::CallFrameData, M::LockData>> {
-        let stack = self.stacks.get_mut(self.stack_pointer).unwrap();
+        let stack = self.stacks.get_mut(self.current_stack).unwrap();
         &mut stack.prev_frames
     }
 }
@@ -1228,11 +1241,27 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     type CallFrameData = M::CallFrameData;
 
     fn kernel_get_stack_id(&self) -> usize {
-        self.stacks.stack_pointer
+        self.stacks.current_stack
     }
 
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
-        self.stacks.switch(id);
+        self.stacks.switch(id)?;
+        Ok(())
+    }
+
+    fn kernel_send_to_stack(
+        &mut self,
+        id: usize,
+        value: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        let message = CallFrameMessage::from_output(value);
+
+        let (cur, other) = self.stacks.cur_mut_and_other_mut(id);
+
+        CallFrame::pass_message(&self.substate_io, cur, other, message)
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
+
         Ok(())
     }
 

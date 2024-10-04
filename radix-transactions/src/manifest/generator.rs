@@ -594,32 +594,28 @@ where
             }
             .into()
         }
-        ast::Instruction::AssertWorktopIsEmpty {} => AssertWorktopResourcesOnly {
+        ast::Instruction::AssertWorktopIsEmpty {} => AssertResourcesOnly {
             constraints: Default::default(),
         }
         .into(),
-        ast::Instruction::AssertWorktopResourcesOnly { constraints } => {
-            AssertWorktopResourcesOnly {
-                constraints: generate_typed_value(
-                    constraints,
-                    resolver,
-                    address_bech32_decoder,
-                    blobs,
-                )?,
-            }
-            .into()
+        ast::Instruction::AssertResourcesOnly { constraints } => AssertResourcesOnly {
+            constraints: generate_typed_value(
+                constraints,
+                resolver,
+                address_bech32_decoder,
+                blobs,
+            )?,
         }
-        ast::Instruction::AssertWorktopResourcesInclude { constraints } => {
-            AssertWorktopResourcesInclude {
-                constraints: generate_typed_value(
-                    constraints,
-                    resolver,
-                    address_bech32_decoder,
-                    blobs,
-                )?,
-            }
-            .into()
+        .into(),
+        ast::Instruction::AssertResourcesInclude { constraints } => AssertResourcesInclude {
+            constraints: generate_typed_value(
+                constraints,
+                resolver,
+                address_bech32_decoder,
+                blobs,
+            )?,
         }
+        .into(),
         ast::Instruction::AssertNextCallReturnsOnly { constraints } => AssertNextCallReturnsOnly {
             constraints: generate_typed_value(
                 constraints,

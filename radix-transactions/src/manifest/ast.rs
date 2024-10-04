@@ -60,10 +60,10 @@ pub enum Instruction {
         resource_address: ValueWithSpan,
     },
     AssertWorktopIsEmpty, // Alias
-    AssertWorktopResourcesOnly {
+    AssertResourcesOnly {
         constraints: ValueWithSpan,
     },
-    AssertWorktopResourcesInclude {
+    AssertResourcesInclude {
         constraints: ValueWithSpan,
     },
     AssertNextCallReturnsOnly {

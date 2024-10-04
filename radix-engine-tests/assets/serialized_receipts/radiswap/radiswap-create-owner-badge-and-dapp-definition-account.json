@@ -6,32 +6,43 @@
       "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn"
     ],
     "metadata_updates": {
-      "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd": {
-        "account_type": {
+      "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn": {
+        "info_url": {
           "Set": {
-            "kind": "String",
-            "value": "dapp definition"
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
           }
         },
         "name": {
           "Set": {
             "kind": "String",
-            "value": "Radiswap dApp Definition"
+            "value": "Radiswap - dApp Owner Badge"
           }
         },
         "description": {
           "Set": {
             "kind": "String",
-            "value": "[EXAMPLE] The Radiswap dApp definition account"
+            "value": "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities"
           }
         },
         "tags": {
           "Set": {
             "kind": "StringArray",
             "value": [
+              "badge",
               "dex",
               "pool",
               "radiswap"
+            ]
+          }
+        }
+      },
+      "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd": {
+        "claimed_websites": {
+          "Set": {
+            "kind": "OriginArray",
+            "value": [
+              "https://radiswap.radixdlt.com"
             ]
           }
         },
@@ -41,11 +52,48 @@
             "value": "https://radiswap.radixdlt.com/"
           }
         },
-        "claimed_websites": {
+        "name": {
           "Set": {
-            "kind": "OriginArray",
+            "kind": "String",
+            "value": "Radiswap dApp Definition"
+          }
+        },
+        "owner_badge": {
+          "Set": {
+            "kind": "NonFungibleLocalId",
+            "value": "[51799eeb70a3a5058459a50bddd1ad728b1c0d5336403bf6bdcd691d37ee]"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The Radiswap dApp definition account"
+          }
+        },
+        "owner_keys": {
+          "Set": {
+            "kind": "PublicKeyHashArray",
             "value": [
-              "https://radiswap.radixdlt.com"
+              {
+                "kind": "Ed25519",
+                "value": "799eeb70a3a5058459a50bddd1ad728b1c0d5336403bf6bdcd691d37ee"
+              }
+            ]
+          }
+        },
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "dex",
+              "pool",
+              "radiswap"
             ]
           }
         }

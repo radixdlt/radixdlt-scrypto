@@ -173,6 +173,8 @@ pub enum KernelError {
     SubstateHandleDoesNotExist(SubstateHandle),
 
     OrphanedNodes(Vec<NodeId>),
+
+    StackError(StackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -227,6 +229,11 @@ pub enum CallFrameError {
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum StackError {
+    InvalidStackId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -293,6 +300,12 @@ pub enum SystemError {
     SystemPanic(String),
 
     CannotLockFeeInChildSubintent(usize),
+    YieldError(YieldError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum YieldError {
+    CannotYieldProof,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

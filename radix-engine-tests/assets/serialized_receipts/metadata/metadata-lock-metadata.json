@@ -2,7 +2,16 @@
   "kind": "CommitSuccess",
   "state_updates_summary": {
     "new_entities": [],
-    "metadata_updates": {},
+    "metadata_updates": {
+      "resource_sim1t5fs7l5ed48grsg4rjzthhex4ahl8uhq7up23yxxg2k4d83dalphll": {
+        "locked_later": {
+          "Set": {
+            "kind": "Bool",
+            "value": true
+          }
+        }
+      }
+    },
     "non_fungible_data_updates": {},
     "newly_minted_non_fungibles": []
   },

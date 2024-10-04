@@ -297,7 +297,7 @@ implement_system_api! {
         panic: (&mut self, message: String) -> Result<(), RuntimeError>,
     },
     SystemCostingApi: {
-        start_lock_fee: (&mut self, amount: Decimal) -> Result<bool, RuntimeError>,
+        start_lock_fee: (&mut self, amount: Decimal, contingent: bool) -> Result<bool, RuntimeError>,
         lock_fee: (
             &mut self,
             locked_fee: LiquidFungibleResource,

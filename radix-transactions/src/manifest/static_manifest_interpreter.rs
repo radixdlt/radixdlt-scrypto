@@ -87,7 +87,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             self.handle_instruction(visitor, index, instruction)?;
         }
         self.verify_final_instruction::<V>()?;
-        self.handle_wrap_up::<V>()
+        self.handle_wrap_up(visitor)?;
+        ControlFlow::Continue(())
     }
 
     #[must_use]
@@ -226,7 +227,12 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     blueprint_name,
                     None,
                 )?;
-                self.handle_new_named_address(visitor, Some(reservation))?;
+                self.handle_new_named_address(
+                    visitor,
+                    Some(reservation),
+                    package_address,
+                    blueprint_name,
+                )?;
             }
             Effect::ResourceAssertion { assertion } => {
                 self.handle_resource_assertion(visitor, assertion)?;
@@ -261,7 +267,10 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     }
 
     #[must_use]
-    fn handle_wrap_up<V: ManifestInterpretationVisitor>(&mut self) -> ControlFlow<V::Output> {
+    fn handle_wrap_up<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<V::Output> {
         match self.next_instruction_requirement.validate_at_end() {
             Ok(()) => {}
             Err(error) => return ControlFlow::Break(error.into()),
@@ -290,6 +299,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 }
             }
         }
+        visitor.on_finish(OnFinish)?;
 
         ControlFlow::Continue(())
     }
@@ -457,35 +467,39 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     ) -> ControlFlow<V::Output> {
         if self.validation_ruleset.validate_resource_assertions {
             match assertion {
-                ResourceAssertion::WorktopResourceNonZeroAmount { .. } => {
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount { .. }) => {
                     // Nothing to validate
                 }
-                ResourceAssertion::WorktopResourceAtLeastAmount { amount, .. } => {
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
+                    amount,
+                    ..
+                }) => {
                     if amount.is_negative() {
                         return ControlFlow::Break(
                             ManifestValidationError::InvalidResourceConstraint.into(),
                         );
                     }
                 }
-                ResourceAssertion::WorktopResourceAtLeastNonFungibles {
-                    resource_address, ..
-                } => {
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
+                    resource_address,
+                    ..
+                }) => {
                     if resource_address.is_fungible() {
                         return ControlFlow::Break(
                             ManifestValidationError::InvalidResourceConstraint.into(),
                         );
                     }
                 }
-                ResourceAssertion::WorktopResourcesOnly { constraints }
-                | ResourceAssertion::WorktopResourcesInclude { constraints } => {
+                ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly { constraints })
+                | ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude { constraints }) => {
                     if !constraints.is_valid() {
                         return ControlFlow::Break(
                             ManifestValidationError::InvalidResourceConstraint.into(),
                         );
                     }
                 }
-                ResourceAssertion::NextCallReturnsOnly { constraints }
-                | ResourceAssertion::NextCallReturnsInclude { constraints } => {
+                ResourceAssertion::NextCall(NextCallAssertion::ReturnsOnly { constraints })
+                | ResourceAssertion::NextCall(NextCallAssertion::ReturnsInclude { constraints }) => {
                     if !constraints.is_valid() {
                         return ControlFlow::Break(
                             ManifestValidationError::InvalidResourceConstraint.into(),
@@ -494,7 +508,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     self.next_instruction_requirement =
                         NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion;
                 }
-                ResourceAssertion::BucketContents { bucket, constraint } => {
+                ResourceAssertion::Bucket(BucketAssertion::Contents { bucket, constraint }) => {
                     // Check the bucket currently exists
                     let state = self.get_existing_bucket::<V>(bucket)?;
                     let resource_address = state.source_amount.resource_address();
@@ -506,7 +520,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 }
             }
         }
-        visitor.on_worktop_assertion(OnWorktopAssertion { assertion })
+        visitor.on_resource_assertion(OnResourceAssertion { assertion })
     }
 
     #[must_use]
@@ -769,6 +783,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         associated_reservation: Option<ManifestAddressReservation>,
+        package_address: &PackageAddress,
+        blueprint_name: &str,
     ) -> ControlFlow<V::Output> {
         let new_named_address = ManifestNamedAddress(self.named_address_state.len() as u32);
         let state = NamedAddressState {
@@ -782,6 +798,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         visitor.on_new_named_address(OnNewNamedAddress {
             named_address: new_named_address,
             state: &state,
+            package_address,
+            blueprint_name,
         })?;
         self.named_address_state.push(state);
         ControlFlow::Continue(())
@@ -1011,78 +1029,63 @@ pub trait ManifestInterpretationVisitor {
     type Output: From<ManifestValidationError>;
 
     #[must_use]
-    fn on_start_instruction<'a>(
+    fn on_start_instruction(&mut self, details: OnStartInstruction) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_end_instruction(&mut self, details: OnEndInstruction) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_bucket(&mut self, details: OnNewBucket) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_consume_bucket(&mut self, details: OnConsumeBucket) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_proof(&mut self, details: OnNewProof) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_consume_proof(&mut self, details: OnConsumeProof) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_new_address_reservation(
         &mut self,
-        details: OnStartInstruction<'a>,
+        details: OnNewAddressReservation,
     ) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_end_instruction<'a>(
+    fn on_consume_address_reservation(
         &mut self,
-        details: OnEndInstruction<'a>,
+        details: OnConsumeAddressReservation,
     ) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_new_bucket<'a>(&mut self, details: OnNewBucket<'_, 'a>) -> ControlFlow<Self::Output> {
+    fn on_new_named_address(&mut self, details: OnNewNamedAddress) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_consume_bucket<'a>(
-        &mut self,
-        details: OnConsumeBucket<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_new_intent(&mut self, details: OnNewIntent) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_new_proof<'a>(&mut self, details: OnNewProof<'_, 'a>) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_consume_proof<'a>(
-        &mut self,
-        details: OnConsumeProof<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_address_reservation<'a>(
-        &mut self,
-        details: OnNewAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_consume_address_reservation<'a>(
-        &mut self,
-        details: OnConsumeAddressReservation<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_named_address<'a>(
-        &mut self,
-        details: OnNewNamedAddress<'_, 'a>,
-    ) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_new_intent<'a>(&mut self, details: OnNewIntent<'_, 'a>) -> ControlFlow<Self::Output> {
-        ControlFlow::Continue(())
-    }
-
-    #[must_use]
-    fn on_drop_authzone_proofs<'a>(
+    fn on_drop_authzone_proofs(
         &mut self,
         details: OnDropAuthZoneProofs,
     ) -> ControlFlow<Self::Output> {
@@ -1090,33 +1093,32 @@ pub trait ManifestInterpretationVisitor {
     }
 
     #[must_use]
-    fn on_pass_expression<'a>(
-        &mut self,
-        details: OnPassExpression<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_pass_expression(&mut self, details: OnPassExpression) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_register_blob<'a>(&mut self, details: OnRegisterBlob<'a>) -> ControlFlow<Self::Output> {
+    fn on_register_blob(&mut self, details: OnRegisterBlob) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_pass_blob<'a>(&mut self, details: OnPassBlob<'a>) -> ControlFlow<Self::Output> {
+    fn on_pass_blob(&mut self, details: OnPassBlob) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
-    fn on_worktop_assertion<'a>(
-        &mut self,
-        details: OnWorktopAssertion<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_resource_assertion(&mut self, details: OnResourceAssertion) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
     #[must_use]
     fn on_verification(&mut self, details: OnVerification) -> ControlFlow<Self::Output> {
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn on_finish(&mut self, details: OnFinish) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 }
@@ -1171,6 +1173,8 @@ pub struct OnConsumeAddressReservation<'s, 'a> {
 pub struct OnNewNamedAddress<'s, 'a> {
     pub named_address: ManifestNamedAddress,
     pub state: &'s NamedAddressState<'a>,
+    pub package_address: &'a PackageAddress,
+    pub blueprint_name: &'a str,
 }
 
 pub struct OnNewIntent<'s, 'a> {
@@ -1198,7 +1202,7 @@ pub struct OnPassBlob<'a> {
     pub destination: BlobDestination<'a>,
 }
 
-pub struct OnWorktopAssertion<'a> {
+pub struct OnResourceAssertion<'a> {
     pub assertion: ResourceAssertion<'a>,
 }
 
@@ -1206,3 +1210,5 @@ pub struct OnVerification<'a> {
     pub kind: VerificationKind,
     pub access_rule: &'a AccessRule,
 }
+
+pub struct OnFinish;

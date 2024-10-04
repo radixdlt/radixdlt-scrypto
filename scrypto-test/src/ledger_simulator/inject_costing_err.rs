@@ -517,6 +517,14 @@ impl<
         self.api.kernel_switch_stack(id)
     }
 
+    fn kernel_send_to_stack(
+        &mut self,
+        id: usize,
+        value: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_send_to_stack(id, value)
+    }
+
     fn kernel_set_call_frame_data(&mut self, data: E::CallFrameData) -> Result<(), RuntimeError> {
         self.api.kernel_set_call_frame_data(data)
     }

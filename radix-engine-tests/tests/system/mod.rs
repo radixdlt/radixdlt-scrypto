@@ -54,6 +54,7 @@ mod subintent_auth;
 mod subintent_leaks;
 mod subintent_lock_fee;
 mod subintent_txn_shape;
+mod subintent_yield;
 mod system;
 mod system_access_rule;
 mod system_actor_collection;
