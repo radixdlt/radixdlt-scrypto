@@ -160,11 +160,17 @@ pub enum WasmRuntimeError {
 
     TooManyBuffers,
 
-    InvalidPublicKey(DecodeError),
-    InvalidSignature(DecodeError),
-    InvalidPublicKeyOrMessage(DecodeError),
+    InvalidBlsPublicKey(DecodeError),
+    InvalidBlsSignature(DecodeError),
+    InvalidBlsPublicKeyOrMessage(DecodeError),
 
     InputDataEmpty,
+
+    InvalidEd25519PublicKey(ParseEd25519PublicKeyError),
+    InvalidEd25519Signature(ParseEd25519SignatureError),
+
+    InvalidSecp256k1PublicKey(ParseSecp256k1PublicKeyError),
+    InvalidSecp256k1Signature(ParseSecp256k1SignatureError),
 
     InvalidHash(ParseHashError),
 }

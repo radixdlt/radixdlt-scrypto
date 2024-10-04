@@ -111,16 +111,14 @@ impl CryptoUtils {
         public_key: impl AsRef<Ed25519PublicKey>,
         signature: impl AsRef<Ed25519Signature>,
     ) -> bool {
-        let public_key: Vec<u8> = scrypto_encode(public_key.as_ref()).unwrap();
-        let signature: Vec<u8> = scrypto_encode(signature.as_ref()).unwrap();
         unsafe {
             crypto_utils::crypto_utils_ed25519_verify(
                 message.as_ref().as_ptr(),
                 message.as_ref().len(),
-                public_key.as_ptr(),
-                public_key.len(),
-                signature.as_ptr(),
-                signature.len(),
+                public_key.as_ref().0.as_ptr(),
+                public_key.as_ref().0.len(),
+                signature.as_ref().0.as_ptr(),
+                signature.as_ref().0.len(),
             ) != 0
         }
     }
@@ -131,16 +129,14 @@ impl CryptoUtils {
         public_key: impl AsRef<Secp256k1PublicKey>,
         signature: impl AsRef<Secp256k1Signature>,
     ) -> bool {
-        let public_key: Vec<u8> = scrypto_encode(public_key.as_ref()).unwrap();
-        let signature: Vec<u8> = scrypto_encode(signature.as_ref()).unwrap();
         unsafe {
             crypto_utils::crypto_utils_secp256k1_ecdsa_verify(
                 hash.as_ref().0.as_ptr(),
                 hash.as_ref().0.len(),
-                public_key.as_ptr(),
-                public_key.len(),
-                signature.as_ptr(),
-                signature.len(),
+                public_key.as_ref().0.as_ptr(),
+                public_key.as_ref().0.len(),
+                signature.as_ref().0.as_ptr(),
+                signature.as_ref().0.len(),
             ) != 0
         }
     }

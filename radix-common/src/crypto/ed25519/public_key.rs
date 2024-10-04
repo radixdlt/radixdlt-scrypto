@@ -107,7 +107,7 @@ impl IsPublicKeyHash for Ed25519PublicKeyHash {
 //======
 
 /// Represents an error when parsing ED25519 public key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseEd25519PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),
