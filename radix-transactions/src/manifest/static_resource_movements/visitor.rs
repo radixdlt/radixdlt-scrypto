@@ -137,8 +137,9 @@ impl StaticResourceMovementsVisitor {
                 address: DynamicGlobalAddress::Static(global_address),
                 module_id: ModuleId::Main,
                 method,
-            } => TypedNativeInvocation::from_main_module_method_invocation(
+            } => TypedNativeInvocation::from_method_invocation(
                 global_address,
+                ModuleId::Main,
                 method,
                 args,
             )?
@@ -153,6 +154,7 @@ impl StaticResourceMovementsVisitor {
                 TypedNativeInvocation::from_blueprint_method_invocation(
                     &blueprint_id.package_address,
                     blueprint_id.blueprint_name.as_str(),
+                    ModuleId::Main,
                     method,
                     args,
                 )?

@@ -377,7 +377,7 @@ impl NativeNonFungibleBucket for Bucket {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
+            scrypto_encode(&NonFungibleBucketTakeNonFungiblesInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

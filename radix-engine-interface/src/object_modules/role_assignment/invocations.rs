@@ -21,6 +21,8 @@ pub struct RoleAssignmentCreateInput {
     pub roles: IndexMap<ModuleId, RoleAssignmentInit>,
 }
 
+pub type RoleAssignmentCreateManifestInput = RoleAssignmentCreateInput;
+
 pub type RoleAssignmentCreateOutput = Own;
 
 pub const ROLE_ASSIGNMENT_SET_IDENT: &str = "set";
@@ -38,6 +40,8 @@ pub struct RoleAssignmentSetInput {
     pub rule: AccessRule,
 }
 
+pub type RoleAssignmentSetManifestInput = RoleAssignmentSetInput;
+
 pub type RoleAssignmentSetOutput = ();
 
 pub const ROLE_ASSIGNMENT_SET_OWNER_IDENT: &str = "set_owner";
@@ -53,6 +57,8 @@ pub struct RoleAssignmentSetOwnerInput {
     pub rule: AccessRule,
 }
 
+pub type RoleAssignmentSetOwnerManifestInput = RoleAssignmentSetOwnerInput;
+
 pub type RoleAssignmentSetOwnerOutput = ();
 
 pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
@@ -65,6 +71,8 @@ pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct RoleAssignmentLockOwnerInput {}
+
+pub type RoleAssignmentLockOwnerManifestInput = RoleAssignmentLockOwnerInput;
 
 pub type RoleAssignmentLockOwnerOutput = ();
 
@@ -82,6 +90,8 @@ pub struct RoleAssignmentGetInput {
     pub role_key: RoleKey,
 }
 
+pub type RoleAssignmentGetManifestInput = RoleAssignmentGetInput;
+
 pub type RoleAssignmentGetOutput = Option<AccessRule>;
 
 // Part of the Bottlenose protocol update with the role assignment blueprint extension.
@@ -95,6 +105,8 @@ pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT: &str = "get_owner_role";
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct RoleAssignmentGetOwnerRoleInput;
+
+pub type RoleAssignmentGetOwnerRoleManifestInput = RoleAssignmentGetOwnerRoleInput;
 
 pub type RoleAssignmentGetOwnerRoleOutput = OwnerRoleEntry;
 

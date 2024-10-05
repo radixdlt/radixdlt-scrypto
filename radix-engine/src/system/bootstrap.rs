@@ -23,6 +23,7 @@ use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_tracker::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;

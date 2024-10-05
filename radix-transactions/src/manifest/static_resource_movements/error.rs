@@ -28,6 +28,7 @@ pub enum StaticResourceMovementsError {
         function: String,
     },
     ManifestValidationError(ManifestValidationError),
+    NotAResourceAddress(GlobalAddress),
 }
 
 impl From<ManifestValidationError> for StaticResourceMovementsError {

@@ -15,12 +15,19 @@ pub struct ProofDropInput {
     pub proof: Proof,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ProofDropManifestInput {
+    pub proof: InternalAddress,
+}
+
 pub type ProofDropOutput = ();
 
 pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetAmountInput {}
+
+pub type ProofGetAmountManifestInput = ProofGetAmountInput;
 
 pub type ProofGetAmountOutput = Decimal;
 
@@ -29,12 +36,16 @@ pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofGetResourceAddressInput {}
 
+pub type ProofGetResourceAddressManifestInput = ProofGetResourceAddressInput;
+
 pub type ProofGetResourceAddressOutput = ResourceAddress;
 
 pub const PROOF_CLONE_IDENT: &str = "clone";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ProofCloneInput {}
+
+pub type ProofCloneManifestInput = ProofCloneInput;
 
 pub type ProofCloneOutput = Proof;
 

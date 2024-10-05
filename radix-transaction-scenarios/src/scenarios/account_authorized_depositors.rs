@@ -97,7 +97,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                     let badge = ManifestValue::Enum { discriminator: 1, fields: vec![ManifestValue::Custom { value: ManifestCustomValue::Address(named_address) }] };
                                     builder.call_method(
                                         destination_account.address,
-                                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                                         (badge,),
                                     )
                                 })
