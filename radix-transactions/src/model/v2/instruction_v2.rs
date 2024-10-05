@@ -21,7 +21,11 @@ impl ManifestInstructionSet for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(x) => x.decompile(context),
             InstructionV2::AssertWorktopContains(x) => x.decompile(context),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
-            InstructionV2::AssertWorktopIsEmpty(x) => x.decompile(context),
+            InstructionV2::AssertWorktopResourcesOnly(x) => x.decompile(context),
+            InstructionV2::AssertWorktopResourcesInclude(x) => x.decompile(context),
+            InstructionV2::AssertNextCallReturnsOnly(x) => x.decompile(context),
+            InstructionV2::AssertNextCallReturnsInclude(x) => x.decompile(context),
+            InstructionV2::AssertBucketContents(x) => x.decompile(context),
             InstructionV2::CreateProofFromBucketOfAmount(x) => x.decompile(context),
             InstructionV2::CreateProofFromBucketOfNonFungibles(x) => x.decompile(context),
             InstructionV2::CreateProofFromBucketOfAll(x) => x.decompile(context),
@@ -60,7 +64,11 @@ impl ManifestInstructionSet for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(x) => x.effect(),
             InstructionV2::AssertWorktopContains(x) => x.effect(),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.effect(),
-            InstructionV2::AssertWorktopIsEmpty(x) => x.effect(),
+            InstructionV2::AssertWorktopResourcesOnly(x) => x.effect(),
+            InstructionV2::AssertWorktopResourcesInclude(x) => x.effect(),
+            InstructionV2::AssertNextCallReturnsOnly(x) => x.effect(),
+            InstructionV2::AssertNextCallReturnsInclude(x) => x.effect(),
+            InstructionV2::AssertBucketContents(x) => x.effect(),
             InstructionV2::CreateProofFromBucketOfAmount(x) => x.effect(),
             InstructionV2::CreateProofFromBucketOfNonFungibles(x) => x.effect(),
             InstructionV2::CreateProofFromBucketOfAll(x) => x.effect(),
@@ -140,7 +148,11 @@ impl TryFrom<InstructionV2> for InstructionV1 {
             InstructionV2::AssertWorktopContainsAny(x) => x.into(),
             InstructionV2::AssertWorktopContains(x) => x.into(),
             InstructionV2::AssertWorktopContainsNonFungibles(x) => x.into(),
-            InstructionV2::AssertWorktopIsEmpty(_) => return Err(()),
+            InstructionV2::AssertWorktopResourcesOnly(_) => return Err(()),
+            InstructionV2::AssertWorktopResourcesInclude(_) => return Err(()),
+            InstructionV2::AssertNextCallReturnsOnly(_) => return Err(()),
+            InstructionV2::AssertNextCallReturnsInclude(_) => return Err(()),
+            InstructionV2::AssertBucketContents(_) => return Err(()),
             InstructionV2::CreateProofFromBucketOfAmount(x) => x.into(),
             InstructionV2::CreateProofFromBucketOfNonFungibles(x) => x.into(),
             InstructionV2::CreateProofFromBucketOfAll(x) => x.into(),
@@ -176,7 +188,7 @@ impl TryFrom<InstructionV2> for InstructionV1 {
 #[sbor_assert(
     backwards_compatible(
         v1 = "FILE:../v1/instruction_v1_schema.txt",
-        v2 = "FILE:instruction_v2_schema.txt",
+        v2 = "FILE:instruction_v2_schema.bin",
     ),
     settings(
         comparison_between_versions = "EXPR: |s| s.allow_all_name_changes()",
@@ -214,8 +226,20 @@ pub enum InstructionV2 {
     #[sbor(discriminator(AssertWorktopContainsNonFungibles::ID))]
     AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
 
-    #[sbor(discriminator(AssertWorktopIsEmpty::ID))]
-    AssertWorktopIsEmpty(#[sbor(flatten)] AssertWorktopIsEmpty),
+    #[sbor(discriminator(AssertWorktopResourcesOnly::ID))]
+    AssertWorktopResourcesOnly(#[sbor(flatten)] AssertWorktopResourcesOnly),
+
+    #[sbor(discriminator(AssertWorktopResourcesInclude::ID))]
+    AssertWorktopResourcesInclude(#[sbor(flatten)] AssertWorktopResourcesInclude),
+
+    #[sbor(discriminator(AssertNextCallReturnsOnly::ID))]
+    AssertNextCallReturnsOnly(#[sbor(flatten)] AssertNextCallReturnsOnly),
+
+    #[sbor(discriminator(AssertNextCallReturnsInclude::ID))]
+    AssertNextCallReturnsInclude(#[sbor(flatten)] AssertNextCallReturnsInclude),
+
+    #[sbor(discriminator(AssertBucketContents::ID))]
+    AssertBucketContents(#[sbor(flatten)] AssertBucketContents),
 
     //==============
     // Proof Lifecycle
@@ -293,7 +317,7 @@ pub enum InstructionV2 {
     AllocateGlobalAddress(#[sbor(flatten)] AllocateGlobalAddress),
 
     //==============
-    // Interactions with other intents
+    // Interaction with other intents
     //==============
     #[sbor(discriminator(YieldToParent::ID))]
     YieldToParent(#[sbor(flatten)] YieldToParent),

@@ -218,10 +218,10 @@ impl ManifestInstruction for AssertWorktopContainsAny {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AnyAmountGreaterThanZero {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount {
                 resource_address: &self.resource_address,
-            },
+            }),
         }
     }
 }
@@ -248,11 +248,11 @@ impl ManifestInstruction for AssertWorktopContains {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AtLeastAmount {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
                 resource_address: &self.resource_address,
                 amount: self.amount,
-            },
+            }),
         }
     }
 }
@@ -279,34 +279,173 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::AtLeastNonFungibles {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
                 resource_address: &self.resource_address,
                 ids: &self.ids,
-            },
+            }),
         }
     }
 }
 
-/// Asserts that the worktop contains no amount of any resource.
+/// Asserts that the worktop contains only these specified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AssertWorktopIsEmpty {}
+pub struct AssertWorktopResourcesOnly {
+    pub constraints: ManifestResourceConstraints,
+}
 
-impl ManifestInstruction for AssertWorktopIsEmpty {
-    const IDENT: &'static str = "ASSERT_WORKTOP_IS_EMPTY";
-    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR;
+impl ManifestInstruction for AssertWorktopResourcesOnly {
+    const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_ONLY";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR;
 
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT);
+        let instruction = if self.constraints.specified_resources().len() == 0 {
+            DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY")
+        } else {
+            DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints)
+        };
+
         Ok(instruction)
     }
 
     fn effect(&self) -> Effect {
-        Effect::WorktopAssertion {
-            assertion: WorktopAssertion::IsEmpty,
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly {
+                constraints: &self.constraints,
+            }),
+        }
+    }
+}
+
+/// Asserts that the worktop includes these specified resources, and may
+/// also include other unspecified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertWorktopResourcesInclude {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertWorktopResourcesInclude {
+    const IDENT: &'static str = "ASSERT_WORKTOP_RESOURCES_INCLUDE";
+    const ID: u8 = INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude {
+                constraints: &self.constraints,
+            }),
+        }
+    }
+}
+
+/// Asserts that the next invocation (`CALL` / `YIELD`) in the manifest
+/// returns only these specified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+///
+/// Only one `ASSERT_NEXT_CALL_RETURNS_...` instruction may be specified
+/// per `CALL` / `YIELD`, and it must immediately precede it.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertNextCallReturnsOnly {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertNextCallReturnsOnly {
+    const IDENT: &'static str = "ASSERT_NEXT_CALL_RETURNS_ONLY";
+    const ID: u8 = INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_ONLY_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsOnly {
+                constraints: &self.constraints,
+            }),
+        }
+    }
+}
+
+/// Asserts that the next invocation (`CALL` / `YIELD`) in the manifest
+/// returns these specified resources, and may also include other
+/// unspecified resources.
+///
+/// Each of the specified resources must satisfy the given constraints.
+///
+/// Only one `ASSERT_NEXT_CALL_RETURNS_...` instruction may be specified
+/// per `CALL` / `YIELD`, and it must immediately precede it.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertNextCallReturnsInclude {
+    pub constraints: ManifestResourceConstraints,
+}
+
+impl ManifestInstruction for AssertNextCallReturnsInclude {
+    const IDENT: &'static str = "ASSERT_NEXT_CALL_RETURNS_INCLUDE";
+    const ID: u8 = INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_INCLUDE_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsInclude {
+                constraints: &self.constraints,
+            }),
+        }
+    }
+}
+
+/// Asserts that the contents of the named bucket satisfy the given constraints.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertBucketContents {
+    pub bucket_id: ManifestBucket,
+    pub constraint: ManifestResourceConstraint,
+}
+
+impl ManifestInstruction for AssertBucketContents {
+    const IDENT: &'static str = "ASSERT_BUCKET_CONTENTS";
+    const ID: u8 = INSTRUCTION_ASSERT_BUCKET_CONTENTS_DISCRIMINATOR;
+
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new(Self::IDENT)
+            .add_argument(&self.bucket_id)
+            .add_argument(&self.constraint);
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            assertion: ResourceAssertion::Bucket(BucketAssertion::Contents {
+                bucket: self.bucket_id,
+                constraint: &self.constraint,
+            }),
         }
     }
 }
@@ -1273,7 +1412,7 @@ impl ManifestInstruction for YieldToChild {
 /// counterparty.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct VerifyParent {
-    pub access_rule: ManifestValue,
+    pub access_rule: AccessRule,
 }
 
 impl ManifestInstruction for VerifyParent {
@@ -1284,15 +1423,14 @@ impl ManifestInstruction for VerifyParent {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction =
-            DecompiledInstruction::new(Self::IDENT).add_value_argument(self.access_rule.clone());
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.access_rule);
         Ok(instruction)
     }
 
     fn effect(&self) -> Effect {
-        Effect::Invocation {
-            kind: InvocationKind::VerifyParent,
-            args: &self.access_rule,
+        Effect::Verification {
+            verification: VerificationKind::Parent,
+            access_rule: &self.access_rule,
         }
     }
 }
@@ -1320,7 +1458,12 @@ const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 0x24;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
 const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
-const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
+
+const INSTRUCTION_ASSERT_WORKTOP_RESOURCES_ONLY_DISCRIMINATOR: u8 = 0x08;
+const INSTRUCTION_ASSERT_WORKTOP_RESOURCES_INCLUDE_DISCRIMINATOR: u8 = 0x09;
+const INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_ONLY_DISCRIMINATOR: u8 = 0x0A;
+const INSTRUCTION_ASSERT_NEXT_CALL_RETURNS_INCLUDE_DISCRIMINATOR: u8 = 0x0B;
+const INSTRUCTION_ASSERT_BUCKET_CONTENTS_DISCRIMINATOR: u8 = 0x0C;
 
 //==============
 // Proof Lifecycle

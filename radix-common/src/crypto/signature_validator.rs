@@ -47,10 +47,9 @@ pub fn verify_ed25519(
     public_key: &Ed25519PublicKey,
     signature: &Ed25519Signature,
 ) -> bool {
-    if let Ok(sig) = ed25519_dalek::Signature::from_bytes(&signature.0) {
-        if let Ok(pk) = ed25519_dalek::PublicKey::from_bytes(&public_key.0) {
-            return pk.verify_strict(&signed_hash.0, &sig).is_ok();
-        }
+    let sig = ed25519_dalek::Signature::from_bytes(&signature.0);
+    if let Ok(pk) = ed25519_dalek::VerifyingKey::from_bytes(&public_key.0) {
+        return pk.verify_strict(&signed_hash.0, &sig).is_ok();
     }
 
     false

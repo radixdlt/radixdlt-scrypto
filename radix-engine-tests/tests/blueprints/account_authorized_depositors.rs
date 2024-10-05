@@ -350,15 +350,10 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
+            builder.try_deposit_batch_or_refund(
                 account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryDepositBatchOrRefundManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
-                        VALIDATOR_OWNER_BADGE,
-                    )),
-                },
+                [bucket],
+                Some(ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE)),
             )
         })
         .deposit_entire_worktop(account2)
@@ -409,14 +404,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
-                account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryDepositBatchOrRefundManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(badge),
-                },
-            )
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
@@ -465,14 +453,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
-                account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-                AccountTryDepositBatchOrRefundManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(badge),
-                },
-            )
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
@@ -682,15 +663,10 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
+            builder.try_deposit_batch_or_abort(
                 account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryDepositBatchOrAbortManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
-                        VALIDATOR_OWNER_BADGE,
-                    )),
-                },
+                [bucket],
+                Some(ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE)),
             )
         })
         .build();
@@ -739,14 +715,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
-                account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryDepositBatchOrAbortManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(badge),
-                },
-            )
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
@@ -795,14 +764,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.call_method(
-                account1,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                AccountTryDepositBatchOrAbortManifestInput {
-                    buckets: vec![bucket],
-                    authorized_depositor_badge: Some(badge),
-                },
-            )
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =

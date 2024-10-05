@@ -417,7 +417,8 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
             // And at present `add_instruction_advanced` is not actually used - so I'm not wasting time now
             // implementing this edge case.
             ManifestInstructionEffect::Invocation { .. } => {}
-            ManifestInstructionEffect::WorktopAssertion { .. } => {}
+            ManifestInstructionEffect::ResourceAssertion { .. } => {}
+            ManifestInstructionEffect::Verification { .. } => {}
         };
 
         (
@@ -2107,9 +2108,13 @@ where
         batch: impl ResolvableBucketBatch,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
-        self.call_method(address, ACCOUNT_DEPOSIT_BATCH_IDENT, manifest_args!(batch))
+        self.call_method(
+            address,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            AccountDepositBatchManifestInput { buckets },
+        )
     }
 
     pub fn deposit_entire_worktop(self, account_address: impl ResolvableComponentAddress) -> Self {
@@ -2144,12 +2149,15 @@ where
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(batch, authorized_depositor_badge),
+            AccountTryDepositBatchOrAbortManifestInput {
+                buckets,
+                authorized_depositor_badge,
+            },
         )
     }
 
@@ -2193,12 +2201,15 @@ where
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let batch = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.consume_and_resolve(&self.registrar);
 
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(batch, authorized_depositor_badge),
+            AccountTryDepositBatchOrAbortManifestInput {
+                buckets,
+                authorized_depositor_badge,
+            },
         )
     }
 
@@ -2273,7 +2284,43 @@ where
     }
 
     pub fn assert_worktop_is_empty(self) -> Self {
-        self.add_v2_instruction(AssertWorktopIsEmpty {})
+        self.add_v2_instruction(AssertWorktopResourcesOnly {
+            constraints: Default::default(),
+        })
+    }
+
+    pub fn assert_worktop_resources_only(self, constraints: ManifestResourceConstraints) -> Self {
+        self.add_v2_instruction(AssertWorktopResourcesOnly { constraints })
+    }
+
+    pub fn assert_worktop_resources_include(
+        self,
+        constraints: ManifestResourceConstraints,
+    ) -> Self {
+        self.add_v2_instruction(AssertWorktopResourcesInclude { constraints })
+    }
+
+    pub fn assert_next_call_returns_only(self, constraints: ManifestResourceConstraints) -> Self {
+        self.add_v2_instruction(AssertNextCallReturnsOnly { constraints })
+    }
+
+    pub fn assert_next_call_returns_include(
+        self,
+        constraints: ManifestResourceConstraints,
+    ) -> Self {
+        self.add_v2_instruction(AssertNextCallReturnsInclude { constraints })
+    }
+
+    pub fn assert_bucket_contents(
+        self,
+        bucket: impl ExistingManifestBucket,
+        constraint: ManifestResourceConstraint,
+    ) -> Self {
+        let bucket_id = bucket.resolve(&self.registrar);
+        self.add_v2_instruction(AssertBucketContents {
+            bucket_id,
+            constraint,
+        })
     }
 }
 
@@ -2317,9 +2364,7 @@ where
     }
 
     pub fn verify_parent(self, access_rule: AccessRule) -> Self {
-        self.add_v2_instruction(VerifyParent {
-            access_rule: manifest_decode(&manifest_encode(&access_rule).unwrap()).unwrap(),
-        })
+        self.add_v2_instruction(VerifyParent { access_rule })
     }
 }
 

@@ -656,46 +656,46 @@ impl ExistingManifestBucket for ManifestBucket {
 //=====================
 
 pub trait ResolvableBucketBatch {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue;
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> BucketBatch;
 }
 
 impl<B: ExistingManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> BucketBatch {
+        let buckets = self
             .into_iter()
             .map(|b| b.mark_consumed(registrar))
             .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+        BucketBatch::ManifestBuckets(buckets)
     }
 }
 
 impl<B: ExistingManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> BucketBatch {
+        let buckets = self
             .into_iter()
             .map(|b| b.mark_consumed(registrar))
             .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+        BucketBatch::ManifestBuckets(buckets)
     }
 }
 
 impl<B: ExistingManifestBucket> ResolvableBucketBatch for Vec<B> {
-    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> ManifestValue {
-        let buckets: Vec<_> = self
+    fn consume_and_resolve(self, registrar: &ManifestNameRegistrar) -> BucketBatch {
+        let buckets = self
             .into_iter()
             .map(|b| b.mark_consumed(registrar))
             .collect();
-        manifest_decode(&manifest_encode(&buckets).unwrap()).unwrap()
+        BucketBatch::ManifestBuckets(buckets)
     }
 }
 
 impl ResolvableBucketBatch for ManifestExpression {
-    fn consume_and_resolve(self, _: &ManifestNameRegistrar) -> ManifestValue {
+    fn consume_and_resolve(self, _: &ManifestNameRegistrar) -> BucketBatch {
         match &self {
             ManifestExpression::EntireWorktop => {
                 // No named buckets are consumed - instead EntireWorktop refers only to the
                 // unnamed buckets on the worktop part of the transaction processor
-                manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
+                BucketBatch::EntireWorktop
             }
             ManifestExpression::EntireAuthZone => {
                 panic!("Not an allowed expression for a batch of buckets")
@@ -1128,15 +1128,9 @@ impl<'a> ResolvableGlobalAddress for String {
 // DECIMAL
 //=====================
 
-pub trait ResolvableDecimal {
-    fn resolve(self) -> Decimal;
-}
-
-impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
-    fn resolve(self) -> Decimal {
-        self.try_into().expect("Decimal was not valid")
-    }
-}
+// This has been moved to live alongside Decimal.
+// But I still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::ResolvableDecimal;
 
 //=====================
 // ARGUMENTS

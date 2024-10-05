@@ -74,6 +74,10 @@ impl Decimal {
     pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
     pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
 
+    pub const fn from_attos(attos: I192) -> Self {
+        Self(attos)
+    }
+
     /// Returns `Decimal` of 0.
     pub const fn zero() -> Self {
         Self::ZERO
@@ -361,6 +365,15 @@ impl CheckedAdd<Decimal> for Decimal {
         let b = other.0;
         let c = a.checked_add(b);
         c.map(Self)
+    }
+}
+
+impl SaturatingAdd<Decimal> for Decimal {
+    type Output = Self;
+
+    #[inline]
+    fn saturating_add(self, other: Self) -> Self::Output {
+        Self(self.0.saturating_add(other.0))
     }
 }
 
@@ -903,6 +916,22 @@ macro_rules! try_from_integer {
     };
 }
 try_from_integer!(I192, I256, I320, I448, I512, U192, U256, U320, U448, U512);
+
+//========
+// Resolution
+//========
+
+/// For use in arguments for tests/builders, where you want to accept anything
+/// which can be turned into a decimal.
+pub trait ResolvableDecimal {
+    fn resolve(self) -> Decimal;
+}
+
+impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
+    fn resolve(self) -> Decimal {
+        self.try_into().expect("Decimal was not valid")
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,52 @@
 USE_CHILD NamedIntent("my_child") Intent("subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu");
 ASSERT_WORKTOP_IS_EMPTY;
+TAKE_ALL_FROM_WORKTOP Address("${resource_address}") Bucket("bucket");
+ASSERT_WORKTOP_RESOURCES_ONLY
+    Map<Address, Enum>(
+        Address("${resource_address}") => Enum<ResourceConstraint::NonZeroAmount>(),
+    )
+;
+ASSERT_WORKTOP_RESOURCES_INCLUDE
+    Map<Address, Enum>(
+        Address("${fungible_resource_address}") => Enum<ResourceConstraint::ExactAmount>(
+            Decimal("1")
+        ),
+        Address("${non_fungible_resource_address}") => Enum<ResourceConstraint::AtLeastAmount>(
+            Decimal("2")
+        ),
+    )
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>(
+        Address("${non_fungible_resource_address}") => Enum<ResourceConstraint::ExactNonFungibles>(
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("#234#")
+            )
+        ),
+    )
+;
+ASSERT_NEXT_CALL_RETURNS_INCLUDE
+    Map<Address, Enum>(
+        Address("${non_fungible_resource_address}") => Enum<ResourceConstraint::AtLeastNonFungibles>(
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("<My_Id>")
+            )
+        ),
+    )
+;
+ASSERT_BUCKET_CONTENTS
+    Bucket("bucket")
+    Enum<ResourceConstraint::General>(
+        Tuple(
+            Array<NonFungibleLocalId>(),
+            Enum<LowerBound::NonZero>(),
+            Enum<UpperBound::Inclusive>(
+                Decimal("123")
+            ),
+            Enum<AllowedIds::Any>()
+        )
+    )
+;
 VERIFY_PARENT Enum<AccessRule::AllowAll>();
 YIELD_TO_PARENT Tuple() Tuple();
 YIELD_TO_CHILD NamedIntent("my_child");

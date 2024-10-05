@@ -321,7 +321,10 @@ impl TransactionValidator {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
-                ManifestInstructionEffect::WorktopAssertion { .. } => {}
+                ManifestInstructionEffect::ResourceAssertion { .. } => {}
+                ManifestInstructionEffect::Verification { .. } => {
+                    unreachable!("No InstructionV1 returns this effect");
+                }
             }
         }
         Ok(())
@@ -1166,10 +1169,7 @@ struct ManifestYieldSummary {
 impl ManifestInterpretationVisitor for ManifestYieldSummary {
     type Output = ManifestValidationError;
 
-    fn on_end_instruction<'a>(
-        &mut self,
-        details: OnEndInstruction<'a>,
-    ) -> ControlFlow<Self::Output> {
+    fn on_end_instruction(&mut self, details: OnEndInstruction) -> ControlFlow<Self::Output> {
         // Safe from overflow due to checking max instruction count
         match details.effect {
             ManifestInstructionEffect::Invocation {

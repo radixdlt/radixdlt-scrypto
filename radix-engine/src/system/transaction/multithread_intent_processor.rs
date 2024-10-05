@@ -161,10 +161,11 @@ impl MultiThreadIntentProcessor {
                             )))?;
                     api.kernel_switch_stack(parent)?;
 
-                    // Create a temporary authzone with the current authzone as the global caller
+                    // Create a temporary authzone with the current authzone as the global caller since
+                    // check_authorization_against_access_rule tests against the global caller authzones.
                     // Run assert_access_rule against this authzone
                     {
-                        let auth_zone = Self::create_temp_auth_zone(api)?;
+                        let auth_zone = Self::create_temp_child_auth_zone_for_verify_parent(api)?;
                         let mut system_service = SystemService::new(api);
                         let auth_result = Authorization::check_authorization_against_access_rule(
                             &mut system_service,
@@ -196,7 +197,7 @@ impl MultiThreadIntentProcessor {
         Ok(())
     }
 
-    fn create_temp_auth_zone<Y: SystemBasedKernelApi>(api: &mut Y) -> Result<NodeId, RuntimeError> {
+    fn create_temp_child_auth_zone_for_verify_parent<Y: SystemBasedKernelApi>(api: &mut Y) -> Result<NodeId, RuntimeError> {
         let actor = api.kernel_get_system_state().current_call_frame;
         let auth_zone = actor.self_auth_zone().unwrap();
         let blueprint_id = actor.blueprint_id().unwrap();
