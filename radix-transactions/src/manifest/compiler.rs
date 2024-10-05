@@ -42,7 +42,7 @@ pub fn compile_any_manifest_with_pretty_error(
     network: &NetworkDefinition,
     blobs: impl IsBlobProvider,
     error_style: CompileErrorDiagnosticsStyle,
-) -> Result<AnyTransactionManifest, String> {
+) -> Result<AnyManifest, String> {
     compile_any_manifest(manifest_string, manifest_kind, network, blobs)
         .map_err(|err| compile_error_diagnostics(manifest_string, err, error_style))
 }
@@ -62,7 +62,7 @@ pub fn compile_any_manifest(
     manifest_kind: ManifestKind,
     network: &NetworkDefinition,
     blobs: impl IsBlobProvider,
-) -> Result<AnyTransactionManifest, CompileError> {
+) -> Result<AnyManifest, CompileError> {
     let manifest = match manifest_kind {
         ManifestKind::V1 => {
             compile_manifest::<TransactionManifestV1>(manifest_string, network, blobs)?.into()

@@ -1,50 +1,54 @@
 use crate::internal_prelude::*;
 
-/// This is the new compile/decompile target for saved transaction manifests.
+/// This is the new compile/decompile target for saved transaction manifests,
+/// and generally a type to support an unknown kind of manifest at runtime.
 ///
-/// ## Using AnyTransactionManifest
-/// Typically you'll have a method `my_method` which takes a &impl ReadableManifest.
+/// ## Using AnyManifest
+/// Sometimes a method can take &impl ReadableManifest, which is preferred if possible.
+///
+/// Sometimes however a particular type is required for a method, needing an impl [`TypedReadableManifest`].
+/// In which case, we can add a `XXX_any(...)` method which takes an [`AnyManifest`]
+/// and then uses a `match` statement to delegate to the correct typed method.
+///
 /// Ideally, we could have an apply method which lets you use this method trivially with
-/// an [`AnyTransactionManifest`] - but this would require a function constraint of
+/// an [`AnyManifest`] - but this would require a function constraint of
 /// `F: for<R: ReadableManifest> FnOnce<R, Output>` - which uses higher order type-based trait bounds
 /// which don't exist yet (https://github.com/rust-lang/rust/issues/108185).
-///
-/// So instead, the convention is to also create an `my_method_any` with a switch statement in.
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub enum AnyTransactionManifest {
+pub enum AnyManifest {
     V1(TransactionManifestV1),
     SystemV1(SystemTransactionManifestV1),
     V2(TransactionManifestV2),
     SubintentV2(SubintentManifestV2),
 }
 
-impl From<TransactionManifestV1> for AnyTransactionManifest {
+impl From<TransactionManifestV1> for AnyManifest {
     fn from(value: TransactionManifestV1) -> Self {
         Self::V1(value)
     }
 }
 
-impl From<SystemTransactionManifestV1> for AnyTransactionManifest {
+impl From<SystemTransactionManifestV1> for AnyManifest {
     fn from(value: SystemTransactionManifestV1) -> Self {
         Self::SystemV1(value)
     }
 }
 
-impl From<TransactionManifestV2> for AnyTransactionManifest {
+impl From<TransactionManifestV2> for AnyManifest {
     fn from(value: TransactionManifestV2) -> Self {
         Self::V2(value)
     }
 }
 
-impl From<SubintentManifestV2> for AnyTransactionManifest {
+impl From<SubintentManifestV2> for AnyManifest {
     fn from(value: SubintentManifestV2) -> Self {
         Self::SubintentV2(value)
     }
 }
 
-impl AnyTransactionManifest {
+impl AnyManifest {
     pub fn attempt_decode_from_arbitrary_payload(bytes: &[u8]) -> Result<Self, String> {
-        // First, try to decode as AnyTransactionManifest
+        // First, try to decode as AnyManifest
         if let Ok(any_manifest) = manifest_decode::<Self>(bytes) {
             return Ok(any_manifest);
         }
@@ -105,90 +109,90 @@ impl AnyTransactionManifest {
     }
 }
 
-impl ReadableManifestBase for AnyTransactionManifest {
+impl ReadableManifestBase for AnyManifest {
     fn is_subintent(&self) -> bool {
         match self {
-            AnyTransactionManifest::V1(m) => m.is_subintent(),
-            AnyTransactionManifest::SystemV1(m) => m.is_subintent(),
-            AnyTransactionManifest::V2(m) => m.is_subintent(),
-            AnyTransactionManifest::SubintentV2(m) => m.is_subintent(),
+            AnyManifest::V1(m) => m.is_subintent(),
+            AnyManifest::SystemV1(m) => m.is_subintent(),
+            AnyManifest::V2(m) => m.is_subintent(),
+            AnyManifest::SubintentV2(m) => m.is_subintent(),
         }
     }
 
     fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
         let iterator: Box<dyn Iterator<Item = (&'a Hash, &'a Vec<u8>)> + 'a> = match self {
-            AnyTransactionManifest::V1(m) => Box::new(m.get_blobs()),
-            AnyTransactionManifest::SystemV1(m) => Box::new(m.get_blobs()),
-            AnyTransactionManifest::V2(m) => Box::new(m.get_blobs()),
-            AnyTransactionManifest::SubintentV2(m) => Box::new(m.get_blobs()),
+            AnyManifest::V1(m) => Box::new(m.get_blobs()),
+            AnyManifest::SystemV1(m) => Box::new(m.get_blobs()),
+            AnyManifest::V2(m) => Box::new(m.get_blobs()),
+            AnyManifest::SubintentV2(m) => Box::new(m.get_blobs()),
         };
         iterator
     }
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         match self {
-            AnyTransactionManifest::V1(m) => m.get_known_object_names_ref(),
-            AnyTransactionManifest::SystemV1(m) => m.get_known_object_names_ref(),
-            AnyTransactionManifest::V2(m) => m.get_known_object_names_ref(),
-            AnyTransactionManifest::SubintentV2(m) => m.get_known_object_names_ref(),
+            AnyManifest::V1(m) => m.get_known_object_names_ref(),
+            AnyManifest::SystemV1(m) => m.get_known_object_names_ref(),
+            AnyManifest::V2(m) => m.get_known_object_names_ref(),
+            AnyManifest::SubintentV2(m) => m.get_known_object_names_ref(),
         }
     }
 
     fn get_preallocated_addresses(&self) -> &[PreAllocatedAddress] {
         match self {
-            AnyTransactionManifest::V1(m) => m.get_preallocated_addresses(),
-            AnyTransactionManifest::SystemV1(m) => m.get_preallocated_addresses(),
-            AnyTransactionManifest::V2(m) => m.get_preallocated_addresses(),
-            AnyTransactionManifest::SubintentV2(m) => m.get_preallocated_addresses(),
+            AnyManifest::V1(m) => m.get_preallocated_addresses(),
+            AnyManifest::SystemV1(m) => m.get_preallocated_addresses(),
+            AnyManifest::V2(m) => m.get_preallocated_addresses(),
+            AnyManifest::SubintentV2(m) => m.get_preallocated_addresses(),
         }
     }
 
     fn get_child_subintents(&self) -> &[ChildSubintent] {
         match self {
-            AnyTransactionManifest::V1(m) => m.get_child_subintents(),
-            AnyTransactionManifest::SystemV1(m) => m.get_child_subintents(),
-            AnyTransactionManifest::V2(m) => m.get_child_subintents(),
-            AnyTransactionManifest::SubintentV2(m) => m.get_child_subintents(),
+            AnyManifest::V1(m) => m.get_child_subintents(),
+            AnyManifest::SystemV1(m) => m.get_child_subintents(),
+            AnyManifest::V2(m) => m.get_child_subintents(),
+            AnyManifest::SubintentV2(m) => m.get_child_subintents(),
         }
     }
 }
 
-impl ReadableManifest for AnyTransactionManifest {
+impl ReadableManifest for AnyManifest {
     fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect> {
         let iterator: Box<dyn Iterator<Item = ManifestInstructionEffect>> = match self {
-            AnyTransactionManifest::V1(m) => Box::new(m.iter_instruction_effects()),
-            AnyTransactionManifest::SystemV1(m) => Box::new(m.iter_instruction_effects()),
-            AnyTransactionManifest::V2(m) => Box::new(m.iter_instruction_effects()),
-            AnyTransactionManifest::SubintentV2(m) => Box::new(m.iter_instruction_effects()),
+            AnyManifest::V1(m) => Box::new(m.iter_instruction_effects()),
+            AnyManifest::SystemV1(m) => Box::new(m.iter_instruction_effects()),
+            AnyManifest::V2(m) => Box::new(m.iter_instruction_effects()),
+            AnyManifest::SubintentV2(m) => Box::new(m.iter_instruction_effects()),
         };
         iterator
     }
 
     fn iter_cloned_instructions(&self) -> impl Iterator<Item = AnyInstruction> {
         let iterator: Box<dyn Iterator<Item = AnyInstruction>> = match self {
-            AnyTransactionManifest::V1(m) => Box::new(m.iter_cloned_instructions()),
-            AnyTransactionManifest::SystemV1(m) => Box::new(m.iter_cloned_instructions()),
-            AnyTransactionManifest::V2(m) => Box::new(m.iter_cloned_instructions()),
-            AnyTransactionManifest::SubintentV2(m) => Box::new(m.iter_cloned_instructions()),
+            AnyManifest::V1(m) => Box::new(m.iter_cloned_instructions()),
+            AnyManifest::SystemV1(m) => Box::new(m.iter_cloned_instructions()),
+            AnyManifest::V2(m) => Box::new(m.iter_cloned_instructions()),
+            AnyManifest::SubintentV2(m) => Box::new(m.iter_cloned_instructions()),
         };
         iterator
     }
 
     fn instruction_count(&self) -> usize {
         match self {
-            AnyTransactionManifest::V1(m) => m.instruction_count(),
-            AnyTransactionManifest::SystemV1(m) => m.instruction_count(),
-            AnyTransactionManifest::V2(m) => m.instruction_count(),
-            AnyTransactionManifest::SubintentV2(m) => m.instruction_count(),
+            AnyManifest::V1(m) => m.instruction_count(),
+            AnyManifest::SystemV1(m) => m.instruction_count(),
+            AnyManifest::V2(m) => m.instruction_count(),
+            AnyManifest::SubintentV2(m) => m.instruction_count(),
         }
     }
 
     fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect {
         match self {
-            AnyTransactionManifest::V1(m) => m.instruction_effect(index),
-            AnyTransactionManifest::SystemV1(m) => m.instruction_effect(index),
-            AnyTransactionManifest::V2(m) => m.instruction_effect(index),
-            AnyTransactionManifest::SubintentV2(m) => m.instruction_effect(index),
+            AnyManifest::V1(m) => m.instruction_effect(index),
+            AnyManifest::SystemV1(m) => m.instruction_effect(index),
+            AnyManifest::V2(m) => m.instruction_effect(index),
+            AnyManifest::SubintentV2(m) => m.instruction_effect(index),
         }
     }
 }

@@ -59,7 +59,7 @@ pub fn run() -> Result<(), String> {
         None => NetworkDefinition::simulator(),
     };
 
-    let manifest = AnyTransactionManifest::attempt_decode_from_arbitrary_payload(&content)?;
+    let manifest = AnyManifest::attempt_decode_from_arbitrary_payload(&content)?;
 
     manifest
         .validate(ValidationRuleset::all())

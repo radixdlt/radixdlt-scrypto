@@ -184,7 +184,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 }
 
 pub fn handle_manifest<O: std::io::Write>(
-    manifest: AnyTransactionManifest,
+    manifest: AnyManifest,
     signing_keys: &Option<String>,
     network: &Option<String>,
     write_manifest: &Option<PathBuf>,

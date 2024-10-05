@@ -105,14 +105,14 @@ impl<'a> DecompilationContext<'a> {
 }
 
 pub fn decompile_any(
-    manifest: &AnyTransactionManifest,
+    manifest: &AnyManifest,
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     match manifest {
-        AnyTransactionManifest::V1(m) => decompile(m, network),
-        AnyTransactionManifest::SystemV1(m) => decompile(m, network),
-        AnyTransactionManifest::V2(m) => decompile(m, network),
-        AnyTransactionManifest::SubintentV2(m) => decompile(m, network),
+        AnyManifest::V1(m) => decompile(m, network),
+        AnyManifest::SystemV1(m) => decompile(m, network),
+        AnyManifest::V2(m) => decompile(m, network),
+        AnyManifest::SubintentV2(m) => decompile(m, network),
     }
 }
 

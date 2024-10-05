@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 pub trait BuildableManifest:
-    TypedReadableManifest + Into<AnyTransactionManifest> + ManifestEncode + Default + Eq + Debug
+    TypedReadableManifest + Into<AnyManifest> + ManifestEncode + Default + Eq + Debug
 {
     fn add_instruction(&mut self, instruction: Self::Instruction);
     fn add_blob(&mut self, hash: Hash, content: Vec<u8>);
