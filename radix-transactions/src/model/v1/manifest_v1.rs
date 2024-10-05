@@ -12,19 +12,12 @@ use crate::internal_prelude::*;
 pub struct TransactionManifestV1 {
     pub instructions: Vec<InstructionV1>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    #[sbor(skip)] // For backwards compatibility, this isn't persisted
     pub object_names: ManifestObjectNames,
 }
 
-impl ReadableManifest for TransactionManifestV1 {
-    type Instruction = InstructionV1;
-
+impl ReadableManifestBase for TransactionManifestV1 {
     fn is_subintent(&self) -> bool {
         false
-    }
-
-    fn get_instructions(&self) -> &[Self::Instruction] {
-        &self.instructions
     }
 
     fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
@@ -33,6 +26,14 @@ impl ReadableManifest for TransactionManifestV1 {
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
+    }
+}
+
+impl TypedReadableManifest for TransactionManifestV1 {
+    type Instruction = InstructionV1;
+
+    fn get_typed_instructions(&self) -> &[Self::Instruction] {
+        &self.instructions
     }
 }
 
@@ -76,5 +77,24 @@ impl TransactionManifestV1 {
 
     pub fn for_intent(self) -> (InstructionsV1, BlobsV1) {
         (self.instructions.into(), self.blobs.into())
+    }
+}
+
+/// A decompile target for old manifests which have been persisted.
+#[derive(Debug, Clone, Default, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct LegacyTransactionManifestV1 {
+    pub instructions: Vec<InstructionV1>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+    #[sbor(skip)] // For backwards compatibility, this isn't persisted
+    pub object_names: ManifestObjectNames,
+}
+
+impl From<LegacyTransactionManifestV1> for TransactionManifestV1 {
+    fn from(value: LegacyTransactionManifestV1) -> Self {
+        Self {
+            instructions: value.instructions,
+            blobs: value.blobs,
+            object_names: value.object_names,
+        }
     }
 }

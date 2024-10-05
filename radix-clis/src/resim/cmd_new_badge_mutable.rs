@@ -87,7 +87,7 @@ impl NewBadgeMutable {
             .new_badge_mutable(metadata, self.minter_badge.clone().into())
             .build();
         handle_manifest(
-            manifest,
+            manifest.into(),
             &self.signing_keys,
             &self.network,
             &self.manifest,

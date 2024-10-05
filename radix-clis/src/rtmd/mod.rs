@@ -1,9 +1,7 @@
 use clap::Parser;
-use radix_common::data::manifest::manifest_decode;
 use radix_common::prelude::*;
 use radix_engine::utils::*;
 use radix_transactions::manifest::*;
-use radix_transactions::prelude::*;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -35,6 +33,7 @@ pub enum Error {
     DecodeError(sbor::DecodeError),
     DecompileError(DecompileError),
     ParseNetworkError(ParseNetworkError),
+    ManifestValidationError(ManifestValidationError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
@@ -60,63 +59,13 @@ pub fn run() -> Result<(), String> {
         None => NetworkDefinition::simulator(),
     };
 
-    let manifest = match manifest_decode::<TransactionManifestV1>(&content)
-        .map_err(Error::DecodeError)
-    {
-        Ok(manifest) => AnyTransactionManifest::V1(manifest),
-        Err(e) => {
-            // try to decode versioned transaction
-            match manifest_decode::<VersionedTransactionPayload>(&content) {
-                Ok(manifest) => match manifest {
-                    VersionedTransactionPayload::TransactionIntentV1(intent) => {
-                        TransactionManifestV1::from_intent(&intent).into()
-                    }
-                    VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent) => {
-                        TransactionManifestV1::from_intent(&signed_intent.intent).into()
-                    }
-                    VersionedTransactionPayload::NotarizedTransactionV1(notarized) => {
-                        TransactionManifestV1::from_intent(&notarized.signed_intent.intent).into()
-                    }
-                    VersionedTransactionPayload::SystemTransactionV1(system_transaction) => {
-                        SystemTransactionManifestV1::from_transaction(&system_transaction).into()
-                    }
-                    VersionedTransactionPayload::TransactionIntentV2(intent) => {
-                        TransactionManifestV2::from_intent_core(&intent.root_intent_core).into()
-                    }
-                    VersionedTransactionPayload::SignedTransactionIntentV2(signed_intent) => {
-                        TransactionManifestV2::from_intent_core(
-                            &signed_intent.transaction_intent.root_intent_core,
-                        )
-                        .into()
-                    }
-                    VersionedTransactionPayload::NotarizedTransactionV2(notarized) => {
-                        TransactionManifestV2::from_intent_core(
-                            &notarized
-                                .signed_transaction_intent
-                                .transaction_intent
-                                .root_intent_core,
-                        )
-                        .into()
-                    }
-                    VersionedTransactionPayload::SubintentV2(subintent) => {
-                        TransactionManifestV2::from_intent_core(&subintent.intent_core).into()
-                    }
-                    other_type => {
-                        return Err(format!(
-                            "Transaction type with discriminator {} not currently supported",
-                            other_type.get_discriminator()
-                        ))
-                    }
-                },
-                Err(_) => {
-                    // return original error
-                    return Err(e.into());
-                }
-            }
-        }
-    };
+    let manifest = AnyTransactionManifest::attempt_decode_from_arbitrary_payload(&content)?;
 
-    validate_call_arguments_to_native_components_any(&manifest)
+    manifest
+        .validate(ValidationRuleset::all())
+        .map_err(Error::ManifestValidationError)?;
+
+    validate_call_arguments_to_native_components(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;
 
     let decompiled = decompile_any(&manifest, &network).map_err(Error::DecompileError)?;

@@ -364,6 +364,9 @@ jobs:
       - name: Run manifest shell tests
         run: bash ./tests/manifest.sh
         working-directory: radix-clis
+      - name: Run rtmc and rtmd shell tests
+        run: bash ./tests/rtmc_rtmd.sh
+        working-directory: radix-clis
 
   radix-clis-scrypto:
     name: Run CLI tests (scrypto)

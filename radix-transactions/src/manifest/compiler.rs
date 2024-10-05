@@ -36,14 +36,49 @@ pub fn compile_manifest_v1(
     compile_manifest(manifest_string, network, blobs)
 }
 
+pub fn compile_any_manifest_with_pretty_error(
+    manifest_string: &str,
+    manifest_kind: ManifestKind,
+    network: &NetworkDefinition,
+    blobs: impl IsBlobProvider,
+    error_style: CompileErrorDiagnosticsStyle,
+) -> Result<AnyTransactionManifest, String> {
+    compile_any_manifest(manifest_string, manifest_kind, network, blobs)
+        .map_err(|err| compile_error_diagnostics(manifest_string, err, error_style))
+}
+
 pub fn compile_manifest_with_pretty_error<M: BuildableManifest>(
-    s: &str,
+    manifest_string: &str,
     network: &NetworkDefinition,
     blobs: impl IsBlobProvider,
     error_style: CompileErrorDiagnosticsStyle,
 ) -> Result<M, String> {
-    compile_manifest(s, network, blobs)
-        .map_err(|err| compile_error_diagnostics(s, err, error_style))
+    compile_manifest(manifest_string, network, blobs)
+        .map_err(|err| compile_error_diagnostics(manifest_string, err, error_style))
+}
+
+pub fn compile_any_manifest(
+    manifest_string: &str,
+    manifest_kind: ManifestKind,
+    network: &NetworkDefinition,
+    blobs: impl IsBlobProvider,
+) -> Result<AnyTransactionManifest, CompileError> {
+    let manifest = match manifest_kind {
+        ManifestKind::V1 => {
+            compile_manifest::<TransactionManifestV1>(manifest_string, network, blobs)?.into()
+        }
+        ManifestKind::SystemV1 => {
+            compile_manifest::<SystemTransactionManifestV1>(manifest_string, network, blobs)?.into()
+        }
+        ManifestKind::V2 => {
+            compile_manifest::<TransactionManifestV2>(manifest_string, network, blobs)?.into()
+        }
+        ManifestKind::SubintentV2 => {
+            compile_manifest::<SubintentManifestV2>(manifest_string, network, blobs)?.into()
+        }
+    };
+
+    Ok(manifest)
 }
 
 pub fn compile_manifest<M: BuildableManifest>(

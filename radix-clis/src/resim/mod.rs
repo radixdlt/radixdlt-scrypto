@@ -25,8 +25,8 @@ mod dumper;
 mod error;
 
 pub use addressing::*;
-pub use cmd_call_function::*;
-pub use cmd_call_method::*;
+pub use cmd_call_function::CallFunction;
+pub use cmd_call_method::CallMethod;
 pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_new_account::*;
@@ -67,7 +67,7 @@ use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_transactions::manifest::decompile;
+use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 use radix_transactions::validation::TransactionValidator;
 use std::env;
@@ -184,7 +184,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 }
 
 pub fn handle_manifest<O: std::io::Write>(
-    manifest: TransactionManifestV1,
+    manifest: AnyTransactionManifest,
     signing_keys: &Option<String>,
     network: &Option<String>,
     write_manifest: &Option<PathBuf>,
@@ -196,13 +196,18 @@ pub fn handle_manifest<O: std::io::Write>(
         Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
     };
+
+    manifest
+        .validate(ValidationRuleset::all())
+        .map_err(|err| format!("{err:?}"))?;
+
     match write_manifest {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let manifest_str = decompile(&manifest, &network).map_err(Error::DecompileError)?;
+                let manifest_str =
+                    decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
-                for blob in manifest.blobs.values() {
-                    let blob_hash = hash(&blob);
+                for (blob_hash, blob) in manifest.get_blobs() {
                     let mut blob_path = path
                         .parent()
                         .expect("Manifest file parent not found")
@@ -225,7 +230,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
             let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
-            let transaction = TestTransaction::new_v1_from_nonce(manifest, nonce, initial_proofs);
+            let transaction =
+                TestTransaction::new_from_any_manifest(manifest, nonce, initial_proofs)?;
 
             let receipt = execute_and_commit_transaction(
                 &mut db,

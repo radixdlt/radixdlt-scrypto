@@ -331,7 +331,7 @@ impl Publish {
                 .build();
 
             let receipt = handle_manifest(
-                manifest,
+                manifest.into(),
                 &None,
                 &self.network,
                 &self.manifest,
