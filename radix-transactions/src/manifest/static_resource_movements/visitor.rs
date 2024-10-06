@@ -135,18 +135,18 @@ impl StaticResourceMovementsVisitor {
         Ok(match invocation_kind {
             InvocationKind::Method {
                 address: DynamicGlobalAddress::Static(global_address),
-                module_id: ModuleId::Main,
+                module_id,
                 method,
             } => TypedNativeInvocation::from_method_invocation(
                 global_address,
-                ModuleId::Main,
+                module_id,
                 method,
                 args,
             )?
             .map(|value| (value, InvocationReceiver::GlobalMethod(*global_address))),
             InvocationKind::Method {
                 address: DynamicGlobalAddress::Named(named_address),
-                module_id: ModuleId::Main,
+                module_id,
                 method,
             } => {
                 let blueprint_id = self.tracked_named_addresses.get(named_address)
@@ -154,7 +154,7 @@ impl StaticResourceMovementsVisitor {
                 TypedNativeInvocation::from_blueprint_method_invocation(
                     &blueprint_id.package_address,
                     blueprint_id.blueprint_name.as_str(),
-                    ModuleId::Main,
+                    module_id,
                     method,
                     args,
                 )?
@@ -175,7 +175,6 @@ impl StaticResourceMovementsVisitor {
             InvocationKind::DirectMethod { .. }
             | InvocationKind::YieldToParent
             | InvocationKind::YieldToChild { .. }
-            | InvocationKind::Method { .. }
             | InvocationKind::Function { .. } => None,
         })
     }
