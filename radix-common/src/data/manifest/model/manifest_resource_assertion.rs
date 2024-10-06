@@ -304,17 +304,86 @@ impl GeneralResourceConstraint {
     }
 
     pub fn is_valid_for_fungible_use(&self) -> bool {
-        return self.required_ids.is_empty()
+        self.required_ids.is_empty()
             && self.lower_bound.is_valid_for_fungible_use()
             && self.upper_bound.is_valid_for_fungible_use()
             && self.allowed_ids.is_valid_for_fungible_use()
-            && self.are_bounds_valid();
+            && self.are_bounds_valid()
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.lower_bound.is_valid_for_non_fungible_use()
+        self.lower_bound.is_valid_for_non_fungible_use()
             && self.upper_bound.is_valid_for_non_fungible_use()
-            && self.are_bounds_valid();
+            && self.are_bounds_valid()
+    }
+
+    pub fn has_non_fungible_id_constraints(&self) -> bool {
+        self.required_ids.is_empty() || self.allowed_ids.has_constraints()
+    }
+
+    pub fn check_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> bool {
+        for id in &self.required_ids {
+            if !ids.contains(id) {
+                return false;
+            }
+        }
+        match &self.allowed_ids {
+            AllowedIds::Allowlist(allowed) => {
+                for id in ids {
+                    if !allowed.contains(id) {
+                        return false;
+                    }
+                }
+            }
+            AllowedIds::Any => {}
+        }
+
+        true
+    }
+
+    pub fn has_amount_constraints(&self) -> bool {
+        match self.lower_bound {
+            LowerBound::NonZero => return true,
+            LowerBound::Inclusive(inclusive) => {
+                if inclusive.is_positive() {
+                    return true;
+                }
+            }
+        }
+
+        match self.upper_bound {
+            UpperBound::Inclusive(_) => {
+                return true;
+            }
+            UpperBound::Unbounded => {}
+        }
+
+        false
+    }
+
+    pub fn check_amount(&self, amount: Decimal) -> bool {
+        match self.lower_bound {
+            LowerBound::NonZero => {
+                if amount.is_zero() {
+                    return false;
+                }
+            }
+            LowerBound::Inclusive(inclusive) => {
+                if amount < inclusive {
+                    return false;
+                }
+            }
+        }
+        match self.upper_bound {
+            UpperBound::Inclusive(inclusive) => {
+                if amount > inclusive {
+                    return false;
+                }
+            }
+            UpperBound::Unbounded => {}
+        }
+
+        true
     }
 
     fn are_bounds_valid(&self) -> bool {
@@ -687,6 +756,13 @@ impl AllowedIds {
         match self {
             AllowedIds::Allowlist(allowlist) => allowlist.is_empty(),
             AllowedIds::Any => true,
+        }
+    }
+
+    pub fn has_constraints(&self) -> bool {
+        match self {
+            AllowedIds::Allowlist(allowlist) => !allowlist.is_empty(),
+            AllowedIds::Any => false,
         }
     }
 }

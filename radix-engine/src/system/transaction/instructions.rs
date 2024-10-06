@@ -1,9 +1,11 @@
 use crate::blueprints::transaction_processor::{
     IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
 };
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, IntentError, RuntimeError, SystemError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
+use radix_common::prelude::{
+    scrypto_encode, BlueprintId, ManifestResourceConstraint, ManifestValue, Own, ScryptoValue,
+};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::{AccessRule, IndexedScryptoValue, Proof};
@@ -97,7 +99,7 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
             InstructionV2::AssertNextCallReturnsOnly(_) => todo!(),
             InstructionV2::AssertNextCallReturnsInclude(_) => todo!(),
-            InstructionV2::AssertBucketContents(_) => todo!(),
+            InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
@@ -314,6 +316,80 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertBucketContents {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        let bucket = objects.get_bucket(&self.bucket_id)?;
+
+        match self.constraint {
+            ManifestResourceConstraint::NonZeroAmount => {
+                if bucket.is_empty(api)? {
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::AssertBucketContentsFailed,
+                    )));
+                }
+            }
+            ManifestResourceConstraint::ExactAmount(exact_amount) => {
+                let actual_amount = bucket.amount(api)?;
+                if exact_amount != actual_amount {
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::AssertBucketContentsFailed,
+                    )));
+                }
+            }
+            ManifestResourceConstraint::AtLeastAmount(atleast_amount) => {
+                let actual_amount = bucket.amount(api)?;
+                if actual_amount < atleast_amount {
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::AssertBucketContentsFailed,
+                    )));
+                }
+            }
+            ManifestResourceConstraint::ExactNonFungibles(exact_non_fungibles) => {
+                let actual_ids = bucket.non_fungible_local_ids(api)?;
+                if !exact_non_fungibles.eq(&actual_ids) {
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::AssertBucketContentsFailed,
+                    )));
+                }
+            }
+            ManifestResourceConstraint::AtLeastNonFungibles(at_least_non_fungibles) => {
+                let actual_ids = bucket.non_fungible_local_ids(api)?;
+                if !at_least_non_fungibles.is_subset(&actual_ids) {
+                    return Err(RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::AssertBucketContentsFailed,
+                    )));
+                }
+            }
+            ManifestResourceConstraint::General(constraint) => {
+                if constraint.has_non_fungible_id_constraints() {
+                    let actual_ids = bucket.non_fungible_local_ids(api)?;
+                    if !constraint.check_non_fungibles(&actual_ids) {
+                        return Err(RuntimeError::SystemError(SystemError::IntentError(
+                            IntentError::AssertBucketContentsFailed,
+                        )));
+                    }
+                }
+
+                if constraint.has_amount_constraints() {
+                    let actual_amount = bucket.amount(api)?;
+                    if !constraint.check_amount(actual_amount) {
+                        return Err(RuntimeError::SystemError(SystemError::IntentError(
+                            IntentError::AssertBucketContentsFailed,
+                        )));
+                    }
+                }
+            }
+        }
+
         Ok(InstructionOutput::None)
     }
 }

@@ -310,6 +310,7 @@ pub enum IntentError {
     VerifyParentFailed,
     InvalidIntentIndex(usize),
     NoParentToYieldTo,
+    AssertBucketContentsFailed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
