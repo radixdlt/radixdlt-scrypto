@@ -197,7 +197,9 @@ impl MultiThreadIntentProcessor {
         Ok(())
     }
 
-    fn create_temp_child_auth_zone_for_verify_parent<Y: SystemBasedKernelApi>(api: &mut Y) -> Result<NodeId, RuntimeError> {
+    fn create_temp_child_auth_zone_for_verify_parent<Y: SystemBasedKernelApi>(
+        api: &mut Y,
+    ) -> Result<NodeId, RuntimeError> {
         let actor = api.kernel_get_system_state().current_call_frame;
         let auth_zone = actor.self_auth_zone().unwrap();
         let blueprint_id = actor.blueprint_id().unwrap();

@@ -3,9 +3,7 @@ use crate::blueprints::transaction_processor::{
 };
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{
-    scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue,
-};
+use radix_common::prelude::{scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::{AccessRule, IndexedScryptoValue, Proof};
