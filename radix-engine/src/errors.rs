@@ -310,7 +310,29 @@ pub enum IntentError {
     VerifyParentFailed,
     InvalidIntentIndex(usize),
     NoParentToYieldTo,
-    AssertBucketContentsFailed,
+    AssertBucketContentsFailed(ResourceConstraintError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ResourceConstraintError {
+    NonZeroAmount,
+    ExactAmount {
+        expected_exact_amount: Decimal,
+        actual_amount: Decimal,
+    },
+    AtLeastAmount {
+        expected_at_least_amount: Decimal,
+        actual_amount: Decimal,
+    },
+    ExactNonFungibles {
+        expected_exact_ids: IndexSet<NonFungibleLocalId>,
+        actual_ids: IndexSet<NonFungibleLocalId>,
+    },
+    AtLeastNonFungibles {
+        expected_at_least_ids: IndexSet<NonFungibleLocalId>,
+        actual_ids: IndexSet<NonFungibleLocalId>,
+    },
+    General,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
