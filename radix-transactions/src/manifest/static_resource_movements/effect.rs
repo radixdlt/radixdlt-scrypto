@@ -48,10 +48,30 @@ macro_rules! no_output_static_invocation_resources_output_impl {
             impl StaticInvocationResourcesOutput for $output_ident {
                 fn output(
                     &self,
+                    _details: InvocationDetails
+                ) -> Result<TrackedResources, StaticResourceMovementsError> {
+                    Ok(TrackedResources::new_empty())
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! unknown_output_static_invocation_resources_output_impl {
+    (
+        $(
+            $output_ident: ident
+        ),* $(,)?
+    ) => {
+        $(
+            impl StaticInvocationResourcesOutput for $output_ident {
+                fn output(
+                    &self,
                     details: InvocationDetails
                 ) -> Result<TrackedResources, StaticResourceMovementsError> {
-                    let _ = details;
-                    Ok(TrackedResources::new_empty())
+                    Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                        details.source
+                    ]))
                 }
             }
         )*
@@ -197,6 +217,73 @@ no_output_static_invocation_resources_output_impl![
     ComponentRoyaltyCreateManifestInput,
     ComponentRoyaltySetManifestInput,
     ComponentRoyaltyLockManifestInput,
+];
+
+unknown_output_static_invocation_resources_output_impl![
+    /* AccessController */
+    // The withdrawn badge is of an unknown resource
+    AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptManifestInput,
+    // The withdrawn badge is of an unknown resource
+    AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptManifestInput,
+    // The minted badge is of a new / unknown resource
+    AccessControllerMintRecoveryBadgesManifestInput,
+    // The validator stake unit resource is unknown at static validation time
+    /* Validator */
+    ValidatorStakeAsOwnerManifestInput,
+    // The validator stake unit resource is unknown at static validation time
+    ValidatorStakeManifestInput,
+    // The validator unstake receipt is unknown at static validation time
+    ValidatorUnstakeManifestInput,
+    // This can return validator stake units which are an unknown resource at static validation time
+    ValidatorFinishUnlockOwnerStakeUnitsManifestInput,
+    // This generates and returns a new badge resource, which is unknowable at static time
+    /* AccountLocker */
+    AccountLockerInstantiateSimpleManifestInput,
+    /* OneResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    OneResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    OneResourcePoolRedeemManifestInput,
+    // This returns an unknown resource but a known amount which we can't do much with.
+    OneResourcePoolProtectedWithdrawManifestInput,
+    /* TwoResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    TwoResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    TwoResourcePoolRedeemManifestInput,
+    /* MultiResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    MultiResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    MultiResourcePoolRedeemManifestInput,
+    /* FungibleResourceManager */
+    // This returns this resource so we know the amount but we don't know the resource address
+    // so we can't do much with that.
+    FungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    /* NonFungibleResourceManager */
+    // This returns this resource so we know the ids but we don't know the resource address
+    // so we can't do much with that.
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    // This returns this resource so we know the ids but we don't know the resource address
+    // so we can't do much with that.
+    NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput,
+    /* Vault */
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultTakeManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultTakeAdvancedManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultRecallManifestInput,
+    /* NonFungibleVault */
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    NonFungibleVaultTakeNonFungiblesManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    NonFungibleVaultRecallNonFungiblesManifestInput,
 ];
 
 // region:Typed Invocation
@@ -532,40 +619,6 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
 // endregion:Typed Invocation
 
 // region:AccessController
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptManifestInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The withdrawn badge is of an unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptManifestInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The withdrawn badge is of an unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for AccessControllerMintRecoveryBadgesManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The minted badge is of a new / unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeManifestInput {
     fn output(
         &self,
@@ -734,36 +787,6 @@ impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifest
 // endregion:ConsensusManager
 
 // region:Validator
-impl StaticInvocationResourcesOutput for ValidatorStakeAsOwnerManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator stake unit resource is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for ValidatorStakeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator stake unit resource is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for ValidatorUnstakeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator unstake receipt is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     fn output(
         &self,
@@ -774,15 +797,6 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for ValidatorFinishUnlockOwnerStakeUnitsManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This can return validator stake units which are an unknown resource at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
 // endregion:Validator
 
 // region:Identity
@@ -825,16 +839,6 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeManifestIn
 // endregion:Identity
 
 // region:AccountLocker
-impl StaticInvocationResourcesOutput for AccountLockerInstantiateSimpleManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This generates and returns a new badge resource, which is unknowable at static time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for AccountLockerAirdropManifestInput {
     fn output(
         &self,
@@ -920,59 +924,7 @@ impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesManifestInput {
 }
 // endregion:Package
 
-// region:OneResourcePool
-impl StaticInvocationResourcesOutput for OneResourcePoolContributeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns pool units of an unknown resource address and an unknown amount.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for OneResourcePoolRedeemManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns unknown resources of an unknown amount from the redemption.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for OneResourcePoolProtectedWithdrawManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns an unknown resource but a known amount which we can't do much with.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-// endregion:OneResourcePool
-
 // region:TwoResourcePool
-impl StaticInvocationResourcesOutput for TwoResourcePoolContributeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns pool units of an unknown resource address and an unknown amount.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for TwoResourcePoolRedeemManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns unknown resources of an unknown amount from the redemption.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for TwoResourcePoolProtectedWithdrawManifestInput {
     fn output(
         &self,
@@ -987,26 +939,6 @@ impl StaticInvocationResourcesOutput for TwoResourcePoolProtectedWithdrawManifes
 // endregion:TwoResourcePool
 
 // region:MultiResourcePool
-impl StaticInvocationResourcesOutput for MultiResourcePoolContributeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns pool units of an unknown resource address and an unknown amount.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for MultiResourcePoolRedeemManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns unknown resources of an unknown amount from the redemption.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManifestInput {
     fn output(
         &self,
@@ -1021,19 +953,6 @@ impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManif
 // endregion:MultiResourcePool
 
 // region:FungibleResourceManager
-impl StaticInvocationResourcesOutput
-    for FungibleResourceManagerCreateWithInitialSupplyManifestInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns this resource so we know the amount but we don't know the resource address
-        // so we can't do much with that.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInput {
     fn output(
         &self,
@@ -1100,32 +1019,6 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerCreateEmptyBucke
 // endregion:FungibleResourceManager
 
 // region:NonFungibleResourceManager
-impl StaticInvocationResourcesOutput
-    for NonFungibleResourceManagerCreateWithInitialSupplyManifestInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns this resource so we know the ids but we don't know the resource address
-        // so we can't do much with that.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput
-    for NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This returns this resource so we know the ids but we don't know the resource address
-        // so we can't do much with that.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
 impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestInput {
     fn output(
         &self,
@@ -1225,65 +1118,6 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
     }
 }
 // endregion:NonFungibleResourceManager
-
-// region:FungibleVault
-impl StaticInvocationResourcesOutput for VaultTakeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // We don't know what resource is in the vault. We know the amount/ids returned but not the
-        // resource address.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for VaultTakeAdvancedManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // We don't know what resource is in the vault. We know the amount/ids returned but not the
-        // resource address.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for VaultRecallManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // We don't know what resource is in the vault. We know the amount/ids returned but not the
-        // resource address.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-// endregion:FungibleVault
-
-// region:NonFungibleVault
-impl StaticInvocationResourcesOutput for NonFungibleVaultTakeNonFungiblesManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // We don't know what resource is in the vault. We know the amount/ids returned but not the
-        // resource address.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for NonFungibleVaultRecallNonFungiblesManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // We don't know what resource is in the vault. We know the amount/ids returned but not the
-        // resource address.
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-// endregion:NonFungibleVault
 
 // region:ComponentRoyalty
 impl StaticInvocationResourcesOutput for ComponentClaimRoyaltiesManifestInput {
