@@ -332,7 +332,7 @@ pub enum ResourceConstraintError {
         expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
-    General,
+    General(GeneralResourceConstraintError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

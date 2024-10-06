@@ -5,12 +5,10 @@ use crate::errors::{
     ApplicationError, IntentError, ResourceConstraintError, RuntimeError, SystemError,
 };
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{
-    scrypto_encode, BlueprintId, ManifestResourceConstraint, ManifestValue, Own, ScryptoValue,
-};
+use radix_common::prelude::{scrypto_encode, BlueprintId, GeneralResourceConstraint, ManifestResourceConstraint, ManifestValue, Own, ScryptoValue};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::prelude::{AccessRule, IndexedScryptoValue, Proof};
+use radix_engine_interface::prelude::{AccessRule, Bucket, IndexedScryptoValue, Proof};
 use radix_native_sdk::resource::{
     NativeBucket, NativeFungibleBucket, NativeNonFungibleBucket, NativeProof, Worktop,
 };
@@ -394,32 +392,42 @@ impl TxnNormalInstruction for AssertBucketContents {
                 }
             }
             ManifestResourceConstraint::General(constraint) => {
-                if constraint.has_non_fungible_id_constraints() {
-                    let actual_ids = bucket.non_fungible_local_ids(api)?;
-                    if !constraint.check_non_fungibles(&actual_ids) {
-                        return Err(RuntimeError::SystemError(SystemError::IntentError(
-                            IntentError::AssertBucketContentsFailed(
-                                ResourceConstraintError::General,
-                            ),
-                        )));
-                    }
-                }
-
-                if constraint.has_amount_constraints() {
-                    let actual_amount = bucket.amount(api)?;
-                    if !constraint.check_amount(actual_amount) {
-                        return Err(RuntimeError::SystemError(SystemError::IntentError(
-                            IntentError::AssertBucketContentsFailed(
-                                ResourceConstraintError::General,
-                            ),
-                        )));
-                    }
-                }
+                check_general_resource_constraint(&bucket, constraint, api)?;
             }
         }
 
         Ok(InstructionOutput::None)
     }
+}
+
+fn check_general_resource_constraint<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+    bucket: &Bucket,
+    constraint: GeneralResourceConstraint,
+    api: &mut Y,
+) -> Result<(), RuntimeError> {
+    if constraint.has_amount_constraints() {
+        let actual_amount = bucket.amount(api)?;
+        constraint.check_amount(actual_amount).map_err(|e| {
+            RuntimeError::SystemError(SystemError::IntentError(
+                IntentError::AssertBucketContentsFailed(
+                    ResourceConstraintError::General(e),
+                ),
+            ))
+        })?;
+    }
+
+    if constraint.has_non_fungible_id_constraints() {
+        let actual_ids = bucket.non_fungible_local_ids(api)?;
+        constraint.check_non_fungibles(&actual_ids).map_err(|e| {
+            RuntimeError::SystemError(SystemError::IntentError(
+                IntentError::AssertBucketContentsFailed(
+                    ResourceConstraintError::General(e),
+                ),
+            ))
+        })?;
+    }
+
+    Ok(())
 }
 
 impl TxnNormalInstruction for PopFromAuthZone {

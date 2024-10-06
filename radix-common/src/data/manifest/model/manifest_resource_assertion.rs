@@ -317,30 +317,6 @@ impl GeneralResourceConstraint {
             && self.are_bounds_valid()
     }
 
-    pub fn has_non_fungible_id_constraints(&self) -> bool {
-        self.required_ids.is_empty() || self.allowed_ids.has_constraints()
-    }
-
-    pub fn check_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> bool {
-        for id in &self.required_ids {
-            if !ids.contains(id) {
-                return false;
-            }
-        }
-        match &self.allowed_ids {
-            AllowedIds::Allowlist(allowed) => {
-                for id in ids {
-                    if !allowed.contains(id) {
-                        return false;
-                    }
-                }
-            }
-            AllowedIds::Any => {}
-        }
-
-        true
-    }
-
     pub fn has_amount_constraints(&self) -> bool {
         match self.lower_bound {
             LowerBound::NonZero => return true,
@@ -361,30 +337,61 @@ impl GeneralResourceConstraint {
         false
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> bool {
+    pub fn check_amount(&self, amount: Decimal) -> Result<(), GeneralResourceConstraintError> {
         match self.lower_bound {
             LowerBound::NonZero => {
                 if amount.is_zero() {
-                    return false;
+                    return Err(GeneralResourceConstraintError::AmountNonZero);
                 }
             }
             LowerBound::Inclusive(inclusive) => {
                 if amount < inclusive {
-                    return false;
+                    return Err(GeneralResourceConstraintError::AmountLowerBound {
+                        lower_bound_inclusive: inclusive,
+                        actual: amount
+                    })
                 }
             }
         }
         match self.upper_bound {
             UpperBound::Inclusive(inclusive) => {
                 if amount > inclusive {
-                    return false;
+                    return Err(GeneralResourceConstraintError::AmountUpperBound {
+                        upper_bound_inclusive: inclusive,
+                        actual: amount,
+                    })
                 }
             }
             UpperBound::Unbounded => {}
         }
 
-        true
+        Ok(())
     }
+
+    pub fn has_non_fungible_id_constraints(&self) -> bool {
+        !self.required_ids.is_empty() || self.allowed_ids.has_constraints()
+    }
+
+    pub fn check_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> Result<(), GeneralResourceConstraintError> {
+        for id in &self.required_ids {
+            if !ids.contains(id) {
+                return Err(GeneralResourceConstraintError::NonFungibleRequired { missing_id: id.clone() })
+            }
+        }
+        match &self.allowed_ids {
+            AllowedIds::Allowlist(allowed) => {
+                for id in ids {
+                    if !allowed.contains(id) {
+                        return Err(GeneralResourceConstraintError::NonFungibleAllowed { invalid_id: id.clone() })
+                    }
+                }
+            }
+            AllowedIds::Any => {}
+        }
+
+        Ok(())
+    }
+
 
     fn are_bounds_valid(&self) -> bool {
         let required_ids_amount = Decimal::from(self.required_ids.len());
@@ -409,6 +416,25 @@ impl GeneralResourceConstraint {
         }
         true
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum GeneralResourceConstraintError {
+    AmountNonZero,
+    AmountLowerBound {
+        lower_bound_inclusive: Decimal,
+        actual: Decimal,
+    },
+    AmountUpperBound {
+        upper_bound_inclusive: Decimal,
+        actual: Decimal,
+    },
+    NonFungibleRequired {
+        missing_id: NonFungibleLocalId,
+    },
+    NonFungibleAllowed {
+        invalid_id: NonFungibleLocalId,
+    },
 }
 
 /// Represents a lower bound on a non-negative decimal.
