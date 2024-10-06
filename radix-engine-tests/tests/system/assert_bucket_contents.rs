@@ -80,11 +80,11 @@ fn asserting_incorrect_at_least_non_fungibles_should_fail() {
         actual_ids.clone(),
         ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids.clone()),
         Some(ResourceConstraintError::AtLeastNonFungibles {
-            actual_ids: actual_ids
+            actual_ids: Box::new(actual_ids
                 .into_iter()
                 .map(NonFungibleLocalId::from)
-                .collect(),
-            expected_at_least_ids,
+                .collect()),
+            expected_at_least_ids: Box::new(expected_at_least_ids),
         }),
     )
 }
@@ -114,11 +114,11 @@ fn asserting_incorrect_exact_non_fungibles_should_fail() {
         actual_ids.clone(),
         ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids.clone()),
         Some(ResourceConstraintError::ExactNonFungibles {
-            actual_ids: actual_ids
+            actual_ids: Box::new(actual_ids
                 .into_iter()
                 .map(NonFungibleLocalId::from)
-                .collect(),
-            expected_exact_ids,
+                .collect()),
+            expected_exact_ids: Box::new(expected_exact_ids),
         }),
     )
 }

@@ -373,8 +373,8 @@ impl TxnNormalInstruction for AssertBucketContents {
                     return Err(RuntimeError::SystemError(SystemError::IntentError(
                         IntentError::AssertBucketContentsFailed(
                             ResourceConstraintError::ExactNonFungibles {
-                                expected_exact_ids,
-                                actual_ids,
+                                expected_exact_ids: Box::new(expected_exact_ids),
+                                actual_ids: Box::new(actual_ids),
                             },
                         ),
                     )));
@@ -386,8 +386,8 @@ impl TxnNormalInstruction for AssertBucketContents {
                     return Err(RuntimeError::SystemError(SystemError::IntentError(
                         IntentError::AssertBucketContentsFailed(
                             ResourceConstraintError::AtLeastNonFungibles {
-                                actual_ids,
-                                expected_at_least_ids,
+                                actual_ids: Box::new(actual_ids),
+                                expected_at_least_ids: Box::new(expected_at_least_ids),
                             },
                         ),
                     )));

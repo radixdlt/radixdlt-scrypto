@@ -325,12 +325,12 @@ pub enum ResourceConstraintError {
         actual_amount: Decimal,
     },
     ExactNonFungibles {
-        expected_exact_ids: IndexSet<NonFungibleLocalId>,
-        actual_ids: IndexSet<NonFungibleLocalId>,
+        expected_exact_ids: Box<IndexSet<NonFungibleLocalId>>,
+        actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
     AtLeastNonFungibles {
-        expected_at_least_ids: IndexSet<NonFungibleLocalId>,
-        actual_ids: IndexSet<NonFungibleLocalId>,
+        expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
+        actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
     General,
 }
