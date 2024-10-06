@@ -1619,6 +1619,10 @@ impl AccountDeposit {
         self
     }
 
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
+        &self.specified_resources
+    }
+
     pub fn unspecified_resources(&self) -> UnspecifiedResources {
         self.unspecified_resources.clone()
     }
