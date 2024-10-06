@@ -348,8 +348,8 @@ impl GeneralResourceConstraint {
                 if amount < inclusive {
                     return Err(GeneralResourceConstraintError::AmountLowerBound {
                         lower_bound_inclusive: inclusive,
-                        actual: amount
-                    })
+                        actual: amount,
+                    });
                 }
             }
         }
@@ -359,7 +359,7 @@ impl GeneralResourceConstraint {
                     return Err(GeneralResourceConstraintError::AmountUpperBound {
                         upper_bound_inclusive: inclusive,
                         actual: amount,
-                    })
+                    });
                 }
             }
             UpperBound::Unbounded => {}
@@ -372,17 +372,24 @@ impl GeneralResourceConstraint {
         !self.required_ids.is_empty() || self.allowed_ids.has_constraints()
     }
 
-    pub fn check_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> Result<(), GeneralResourceConstraintError> {
+    pub fn check_non_fungibles(
+        &self,
+        ids: &IndexSet<NonFungibleLocalId>,
+    ) -> Result<(), GeneralResourceConstraintError> {
         for id in &self.required_ids {
             if !ids.contains(id) {
-                return Err(GeneralResourceConstraintError::NonFungibleRequired { missing_id: id.clone() })
+                return Err(GeneralResourceConstraintError::NonFungibleRequired {
+                    missing_id: id.clone(),
+                });
             }
         }
         match &self.allowed_ids {
             AllowedIds::Allowlist(allowed) => {
                 for id in ids {
                     if !allowed.contains(id) {
-                        return Err(GeneralResourceConstraintError::NonFungibleAllowed { invalid_id: id.clone() })
+                        return Err(GeneralResourceConstraintError::NonFungibleAllowed {
+                            invalid_id: id.clone(),
+                        });
                     }
                 }
             }
@@ -391,7 +398,6 @@ impl GeneralResourceConstraint {
 
         Ok(())
     }
-
 
     fn are_bounds_valid(&self) -> bool {
         let required_ids_amount = Decimal::from(self.required_ids.len());

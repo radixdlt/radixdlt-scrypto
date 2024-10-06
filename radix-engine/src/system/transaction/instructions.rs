@@ -5,7 +5,10 @@ use crate::errors::{
     ApplicationError, IntentError, ResourceConstraintError, RuntimeError, SystemError,
 };
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{scrypto_encode, BlueprintId, GeneralResourceConstraint, ManifestResourceConstraint, ManifestValue, Own, ScryptoValue};
+use radix_common::prelude::{
+    scrypto_encode, BlueprintId, GeneralResourceConstraint, ManifestResourceConstraint,
+    ManifestValue, Own, ScryptoValue,
+};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::{AccessRule, Bucket, IndexedScryptoValue, Proof};
@@ -400,29 +403,31 @@ impl TxnNormalInstruction for AssertBucketContents {
     }
 }
 
-fn check_general_resource_constraint<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+/// Checks general resource constraints on a bucket
+fn check_general_resource_constraint<
+    Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+    L: Default,
+>(
     bucket: &Bucket,
     constraint: GeneralResourceConstraint,
     api: &mut Y,
 ) -> Result<(), RuntimeError> {
+    // Only read amount if the constraint has amount constraints, otherwise can skip read
     if constraint.has_amount_constraints() {
         let actual_amount = bucket.amount(api)?;
         constraint.check_amount(actual_amount).map_err(|e| {
             RuntimeError::SystemError(SystemError::IntentError(
-                IntentError::AssertBucketContentsFailed(
-                    ResourceConstraintError::General(e),
-                ),
+                IntentError::AssertBucketContentsFailed(ResourceConstraintError::General(e)),
             ))
         })?;
     }
 
+    // Only read non-fungible ids if the constraint has non-fungible id constraints, otherwise can skip read
     if constraint.has_non_fungible_id_constraints() {
         let actual_ids = bucket.non_fungible_local_ids(api)?;
         constraint.check_non_fungibles(&actual_ids).map_err(|e| {
             RuntimeError::SystemError(SystemError::IntentError(
-                IntentError::AssertBucketContentsFailed(
-                    ResourceConstraintError::General(e),
-                ),
+                IntentError::AssertBucketContentsFailed(ResourceConstraintError::General(e)),
             ))
         })?;
     }
