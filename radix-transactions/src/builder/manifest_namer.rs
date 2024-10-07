@@ -1128,15 +1128,9 @@ impl<'a> ResolvableGlobalAddress for String {
 // DECIMAL
 //=====================
 
-pub trait ResolvableDecimal {
-    fn resolve(self) -> Decimal;
-}
-
-impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
-    fn resolve(self) -> Decimal {
-        self.try_into().expect("Decimal was not valid")
-    }
-}
+// This has been moved to live alongside Decimal.
+// But I still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::ResolvableDecimal;
 
 //=====================
 // ARGUMENTS

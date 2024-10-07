@@ -337,8 +337,10 @@ impl TransactionValidator {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
-                ManifestInstructionEffect::WorktopAssertion { .. } => {}
-                ManifestInstructionEffect::Verification { .. } => {}
+                ManifestInstructionEffect::ResourceAssertion { .. } => {}
+                ManifestInstructionEffect::Verification { .. } => {
+                    unreachable!("No InstructionV1 returns this effect");
+                }
             }
         }
         Ok(())

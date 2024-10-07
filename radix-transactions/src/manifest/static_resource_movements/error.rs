@@ -4,7 +4,7 @@ use radix_common::prelude::*;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StaticResourceMovementsError {
     DecimalAmountIsNegative,
-    NonFungibleIdsSpecifiedAgainstFungibleResource,
+    BoundsInvalidForResourceKind,
     ConstraintBoundsInvalid,
     AssertionCannotBeSatisfied,
     TakeCannotBeSatisfied,
@@ -33,5 +33,16 @@ pub enum StaticResourceMovementsError {
 impl From<ManifestValidationError> for StaticResourceMovementsError {
     fn from(value: ManifestValidationError) -> Self {
         Self::ManifestValidationError(value)
+    }
+}
+
+impl From<BoundAdjustmentError> for StaticResourceMovementsError {
+    fn from(value: BoundAdjustmentError) -> Self {
+        match value {
+            BoundAdjustmentError::DecimalOverflow => StaticResourceMovementsError::DecimalOverflow,
+            BoundAdjustmentError::TakeCannotBeSatisfied => {
+                StaticResourceMovementsError::TakeCannotBeSatisfied
+            }
+        }
     }
 }
