@@ -17,7 +17,8 @@ STATE UPDATES: 1 entity
     └─ Set: TransactionValidationConfiguration
        Value: TransactionValidationConfigurationSubstate::V1(
          TransactionValidationConfigV1 {
-           max_signatures_per_intent: 16u64,
+           max_signer_signatures_per_intent: 16u64,
+           max_references_per_intent: 512u64,
            min_tip_percentage: 0u16,
            max_tip_percentage: 65535u16,
            max_epoch_range: 8640u64,
@@ -44,6 +45,8 @@ STATE UPDATES: 1 entity
            min_tip_basis_points: 0u32,
            max_tip_basis_points: 1000000u32,
            max_subintent_depth: 3u64,
+           max_total_signer_signatures: 64u64,
+           max_total_references: 512u64,
          },
        )
 

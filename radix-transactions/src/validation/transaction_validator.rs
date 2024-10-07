@@ -514,13 +514,12 @@ impl TransactionValidator {
         }
 
         let transaction_intent = &prepared.signed_intent.transaction_intent;
-        let root_subintent = &prepared.signed_intent.transaction_intent;
-        let root_subintent_signatures = &prepared.signed_intent.transaction_intent_signatures;
+        let transaction_intent_signatures = &prepared.signed_intent.transaction_intent_signatures;
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
 
         self.check_reference_limits(
-            [&root_subintent.root_intent_core.instructions.references]
+            [&transaction_intent.root_intent_core.instructions.references]
                 .into_iter()
                 .chain(
                     non_root_subintents
@@ -532,7 +531,7 @@ impl TransactionValidator {
         )?;
 
         self.check_signature_limits(
-            &root_subintent_signatures.inner.signatures,
+            &transaction_intent_signatures.inner.signatures,
             Some(non_root_subintent_signatures),
         )?;
 
@@ -628,10 +627,10 @@ impl TransactionValidator {
 
     pub fn check_reference_limits(
         &self,
-        subintent_references: Vec<&IndexSet<Reference>>,
+        intent_references: Vec<&IndexSet<Reference>>,
     ) -> Result<(), TransactionValidationError> {
         let mut total = 0;
-        for (index, refs) in subintent_references.iter().enumerate() {
+        for (index, refs) in intent_references.iter().enumerate() {
             if refs.len() > self.config.max_references_per_intent {
                 return Err(TransactionValidationError::TooManyReferencesForIntent {
                     index,
