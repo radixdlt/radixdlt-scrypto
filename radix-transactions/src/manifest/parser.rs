@@ -72,40 +72,59 @@ pub enum InstructionIdent {
     UseChild,
 
     // ==============
-    // Standard instructions
+    // Standard instructions (in canonical order)
     // ==============
+
+    // Bucket Lifecycle
     TakeFromWorktop,
     TakeNonFungiblesFromWorktop,
     TakeAllFromWorktop,
     ReturnToWorktop,
+    BurnResource,
+
+    // Resource Assertions
+    AssertWorktopContainsAny,
     AssertWorktopContains,
     AssertWorktopContainsNonFungibles,
-    AssertWorktopContainsAny,
-    AssertWorktopIsEmpty,
+    AssertWorktopIsEmpty, // An alias
+    AssertWorktopResourcesOnly,
+    AssertWorktopResourcesInclude,
+    AssertNextCallReturnsOnly,
+    AssertNextCallReturnsInclude,
+    AssertBucketContents,
 
-    PopFromAuthZone,
-    PushToAuthZone,
-    CreateProofFromAuthZoneOfAmount,
-    CreateProofFromAuthZoneOfNonFungibles,
-    CreateProofFromAuthZoneOfAll,
-    DropAuthZoneProofs,
-    DropAuthZoneRegularProofs,
-    DropAuthZoneSignatureProofs,
+    // Proof Lifecycle
     CreateProofFromBucketOfAmount,
     CreateProofFromBucketOfNonFungibles,
     CreateProofFromBucketOfAll,
-    BurnResource,
+    CreateProofFromAuthZoneOfAmount,
+    CreateProofFromAuthZoneOfNonFungibles,
+    CreateProofFromAuthZoneOfAll,
     CloneProof,
     DropProof,
+    PushToAuthZone,
+    PopFromAuthZone,
+    DropAuthZoneProofs,
+    DropAuthZoneRegularProofs,
+    DropAuthZoneSignatureProofs,
+    DropNamedProofs,
+    DropAllProofs,
+
+    // Invocations
     CallFunction,
     CallMethod,
     CallRoyaltyMethod,
     CallMetadataMethod,
     CallRoleAssignmentMethod,
     CallDirectVaultMethod,
-    DropNamedProofs,
-    DropAllProofs,
+
+    // Address Allocation
     AllocateGlobalAddress,
+
+    // Interactions with other intents
+    YieldToParent,
+    YieldToChild,
+    VerifyParent,
 
     // ==============
     // Call direct vault method aliases
@@ -151,13 +170,6 @@ pub enum InstructionIdent {
     MintNonFungible,
     MintRuidNonFungible,
     CreateValidator,
-
-    // ==============
-    // Subintents
-    // ==============
-    YieldToParent,
-    YieldToChild,
-    VerifyParent,
 }
 
 impl InstructionIdent {
@@ -170,21 +182,35 @@ impl InstructionIdent {
             "USE_PREALLOCATED_ADDRESS" => InstructionIdent::UsePreallocatedAddress,
 
             // ==============
-            // Standard instructions
+            // Standard instructions (in canonical order)
             // ==============
+
+            // Bucket Lifecycle
             TakeFromWorktop::IDENT => InstructionIdent::TakeFromWorktop,
             TakeNonFungiblesFromWorktop::IDENT => InstructionIdent::TakeNonFungiblesFromWorktop,
             TakeAllFromWorktop::IDENT => InstructionIdent::TakeAllFromWorktop,
             ReturnToWorktop::IDENT => InstructionIdent::ReturnToWorktop,
+            BurnResource::IDENT => InstructionIdent::BurnResource,
+
+            // Resource Assertions
             AssertWorktopContains::IDENT => InstructionIdent::AssertWorktopContains,
             AssertWorktopContainsNonFungibles::IDENT => {
                 InstructionIdent::AssertWorktopContainsNonFungibles
             }
             AssertWorktopContainsAny::IDENT => InstructionIdent::AssertWorktopContainsAny,
-            AssertWorktopIsEmpty::IDENT => InstructionIdent::AssertWorktopIsEmpty,
+            "ASSERT_WORKTOP_IS_EMPTY" => InstructionIdent::AssertWorktopIsEmpty,
+            AssertWorktopResourcesOnly::IDENT => InstructionIdent::AssertWorktopResourcesOnly,
+            AssertWorktopResourcesInclude::IDENT => InstructionIdent::AssertWorktopResourcesInclude,
+            AssertNextCallReturnsOnly::IDENT => InstructionIdent::AssertNextCallReturnsOnly,
+            AssertNextCallReturnsInclude::IDENT => InstructionIdent::AssertNextCallReturnsInclude,
+            AssertBucketContents::IDENT => InstructionIdent::AssertBucketContents,
 
-            PopFromAuthZone::IDENT => InstructionIdent::PopFromAuthZone,
-            PushToAuthZone::IDENT => InstructionIdent::PushToAuthZone,
+            // Proof Lifecycle
+            CreateProofFromBucketOfAmount::IDENT => InstructionIdent::CreateProofFromBucketOfAmount,
+            CreateProofFromBucketOfNonFungibles::IDENT => {
+                InstructionIdent::CreateProofFromBucketOfNonFungibles
+            }
+            CreateProofFromBucketOfAll::IDENT => InstructionIdent::CreateProofFromBucketOfAll,
             CreateProofFromAuthZoneOfAmount::IDENT => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
@@ -192,20 +218,17 @@ impl InstructionIdent {
                 InstructionIdent::CreateProofFromAuthZoneOfNonFungibles
             }
             CreateProofFromAuthZoneOfAll::IDENT => InstructionIdent::CreateProofFromAuthZoneOfAll,
+            CloneProof::IDENT => InstructionIdent::CloneProof,
+            DropProof::IDENT => InstructionIdent::DropProof,
+            PushToAuthZone::IDENT => InstructionIdent::PushToAuthZone,
+            PopFromAuthZone::IDENT => InstructionIdent::PopFromAuthZone,
             DropAuthZoneProofs::IDENT => InstructionIdent::DropAuthZoneProofs,
             DropAuthZoneSignatureProofs::IDENT => InstructionIdent::DropAuthZoneSignatureProofs,
             DropAuthZoneRegularProofs::IDENT => InstructionIdent::DropAuthZoneRegularProofs,
+            DropNamedProofs::IDENT => InstructionIdent::DropNamedProofs,
+            DropAllProofs::IDENT => InstructionIdent::DropAllProofs,
 
-            CreateProofFromBucketOfAmount::IDENT => InstructionIdent::CreateProofFromBucketOfAmount,
-            CreateProofFromBucketOfNonFungibles::IDENT => {
-                InstructionIdent::CreateProofFromBucketOfNonFungibles
-            }
-            CreateProofFromBucketOfAll::IDENT => InstructionIdent::CreateProofFromBucketOfAll,
-            BurnResource::IDENT => InstructionIdent::BurnResource,
-
-            CloneProof::IDENT => InstructionIdent::CloneProof,
-            DropProof::IDENT => InstructionIdent::DropProof,
-
+            // Invocation
             CallFunction::IDENT => InstructionIdent::CallFunction,
             CallMethod::IDENT => InstructionIdent::CallMethod,
             CallRoyaltyMethod::IDENT => InstructionIdent::CallRoyaltyMethod,
@@ -213,10 +236,10 @@ impl InstructionIdent {
             CallRoleAssignmentMethod::IDENT => InstructionIdent::CallRoleAssignmentMethod,
             CallDirectVaultMethod::IDENT => InstructionIdent::CallDirectVaultMethod,
 
-            DropNamedProofs::IDENT => InstructionIdent::DropNamedProofs,
-            DropAllProofs::IDENT => InstructionIdent::DropAllProofs,
+            // Address Allocation
             AllocateGlobalAddress::IDENT => InstructionIdent::AllocateGlobalAddress,
 
+            // Interaction with other intents
             YieldToParent::IDENT => InstructionIdent::YieldToParent,
             YieldToChild::IDENT => InstructionIdent::YieldToChild,
             VerifyParent::IDENT => InstructionIdent::VerifyParent,
@@ -504,6 +527,9 @@ impl Parser {
         let instruction_start = token.span.start;
 
         let instruction = match instruction_ident {
+            //===============
+            // Pseudo-instructions
+            //===============
             InstructionIdent::UsePreallocatedAddress => Instruction::UsePreallocatedAddress {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
@@ -514,6 +540,12 @@ impl Parser {
                 named_intent: self.parse_value()?,
                 subintent_hash: self.parse_value()?,
             },
+
+            //===============
+            // Standard instructions (in canonical order)
+            //===============
+
+            // Bucket Lifecycle
             InstructionIdent::TakeFromWorktop => Instruction::TakeFromWorktop {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,
@@ -533,6 +565,14 @@ impl Parser {
             InstructionIdent::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
+            InstructionIdent::BurnResource => Instruction::BurnResource {
+                bucket: self.parse_value()?,
+            },
+
+            // Resource Assertions
+            InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
+                resource_address: self.parse_value()?,
+            },
             InstructionIdent::AssertWorktopContains => Instruction::AssertWorktopContains {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,
@@ -543,20 +583,50 @@ impl Parser {
                     ids: self.parse_value()?,
                 }
             }
-            InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
-                resource_address: self.parse_value()?,
+            InstructionIdent::AssertWorktopIsEmpty => Instruction::AssertWorktopIsEmpty,
+            InstructionIdent::AssertWorktopResourcesOnly => {
+                Instruction::AssertWorktopResourcesOnly {
+                    constraints: self.parse_value()?,
+                }
+            }
+            InstructionIdent::AssertWorktopResourcesInclude => {
+                Instruction::AssertWorktopResourcesInclude {
+                    constraints: self.parse_value()?,
+                }
+            }
+            InstructionIdent::AssertNextCallReturnsOnly => Instruction::AssertNextCallReturnsOnly {
+                constraints: self.parse_value()?,
             },
-            InstructionIdent::AssertWorktopIsEmpty => Instruction::AssertWorktopIsEmpty {},
-            InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
-                new_proof: self.parse_value()?,
+            InstructionIdent::AssertNextCallReturnsInclude => {
+                Instruction::AssertNextCallReturnsInclude {
+                    constraints: self.parse_value()?,
+                }
+            }
+            InstructionIdent::AssertBucketContents => Instruction::AssertBucketContents {
+                bucket: self.parse_value()?,
+                constraint: self.parse_value()?,
             },
-            InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
-                proof: self.parse_value()?,
-            },
-            InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
-            InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
-            InstructionIdent::DropAuthZoneSignatureProofs => {
-                Instruction::DropAuthZoneSignatureProofs
+
+            // Proof Lifecycle
+            InstructionIdent::CreateProofFromBucketOfAmount => {
+                Instruction::CreateProofFromBucketOfAmount {
+                    bucket: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            InstructionIdent::CreateProofFromBucketOfNonFungibles => {
+                Instruction::CreateProofFromBucketOfNonFungibles {
+                    bucket: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            InstructionIdent::CreateProofFromBucketOfAll => {
+                Instruction::CreateProofFromBucketOfAll {
+                    bucket: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
             }
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
@@ -578,31 +648,6 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
-
-            InstructionIdent::CreateProofFromBucketOfAmount => {
-                Instruction::CreateProofFromBucketOfAmount {
-                    bucket: self.parse_value()?,
-                    amount: self.parse_value()?,
-                    new_proof: self.parse_value()?,
-                }
-            }
-            InstructionIdent::CreateProofFromBucketOfNonFungibles => {
-                Instruction::CreateProofFromBucketOfNonFungibles {
-                    bucket: self.parse_value()?,
-                    ids: self.parse_value()?,
-                    new_proof: self.parse_value()?,
-                }
-            }
-            InstructionIdent::CreateProofFromBucketOfAll => {
-                Instruction::CreateProofFromBucketOfAll {
-                    bucket: self.parse_value()?,
-                    new_proof: self.parse_value()?,
-                }
-            }
-            InstructionIdent::BurnResource => Instruction::BurnResource {
-                bucket: self.parse_value()?,
-            },
-
             InstructionIdent::CloneProof => Instruction::CloneProof {
                 proof: self.parse_value()?,
                 new_proof: self.parse_value()?,
@@ -610,6 +655,21 @@ impl Parser {
             InstructionIdent::DropProof => Instruction::DropProof {
                 proof: self.parse_value()?,
             },
+            InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
+                proof: self.parse_value()?,
+            },
+            InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
+                new_proof: self.parse_value()?,
+            },
+            InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
+            InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
+            InstructionIdent::DropAuthZoneSignatureProofs => {
+                Instruction::DropAuthZoneSignatureProofs
+            }
+            InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
+            InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
+
+            // Invocations
             InstructionIdent::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
@@ -641,8 +701,8 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_instruction_arguments()?,
             },
-            InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
-            InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
+
+            // Address Allocation
             InstructionIdent::AllocateGlobalAddress => Instruction::AllocateGlobalAddress {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
@@ -650,7 +710,21 @@ impl Parser {
                 named_address: self.parse_value()?,
             },
 
-            /* Call direct vault method aliases */
+            // Interaction with other intents
+            InstructionIdent::YieldToParent => Instruction::YieldToParent {
+                args: self.parse_instruction_arguments()?,
+            },
+            InstructionIdent::YieldToChild => Instruction::YieldToChild {
+                child: self.parse_value()?,
+                args: self.parse_instruction_arguments()?,
+            },
+            InstructionIdent::VerifyParent => Instruction::VerifyParent {
+                access_rule: self.parse_value()?,
+            },
+
+            //===============
+            // Direct vault aliases
+            //===============
             InstructionIdent::RecallFromVault => Instruction::RecallFromVault {
                 vault_id: self.parse_value()?,
                 args: self.parse_instruction_arguments()?,
@@ -670,7 +744,9 @@ impl Parser {
                 }
             }
 
-            /* Call function aliases */
+            //===============
+            // Call function aliases
+            //===============
             InstructionIdent::PublishPackage => Instruction::PublishPackage {
                 args: self.parse_instruction_arguments()?,
             },
@@ -709,7 +785,9 @@ impl Parser {
                 args: self.parse_instruction_arguments()?,
             },
 
-            /* Call non-main method aliases */
+            //===============
+            // Call non-main method aliases
+            //===============
             InstructionIdent::SetMetadata => Instruction::SetMetadata {
                 address: self.parse_value()?,
                 args: self.parse_instruction_arguments()?,
@@ -747,7 +825,9 @@ impl Parser {
                 args: self.parse_instruction_arguments()?,
             },
 
-            /* Call main method aliases */
+            //===============
+            // Call main method aliases
+            //===============
             InstructionIdent::MintFungible => Instruction::MintFungible {
                 address: self.parse_value()?,
                 args: self.parse_instruction_arguments()?,
@@ -766,16 +846,6 @@ impl Parser {
             },
             InstructionIdent::CreateValidator => Instruction::CreateValidator {
                 args: self.parse_instruction_arguments()?,
-            },
-            InstructionIdent::YieldToParent => Instruction::YieldToParent {
-                args: self.parse_instruction_arguments()?,
-            },
-            InstructionIdent::YieldToChild => Instruction::YieldToChild {
-                child: self.parse_value()?,
-                args: self.parse_instruction_arguments()?,
-            },
-            InstructionIdent::VerifyParent => Instruction::VerifyParent {
-                access_rule: self.parse_value()?,
             },
         };
 

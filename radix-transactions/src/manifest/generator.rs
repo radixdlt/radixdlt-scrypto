@@ -84,6 +84,10 @@ pub enum GeneratorErrorKind {
     IntentCannotBeUsedAsValueKind,
     NamedIntentCannotBeUsedInValue,
     NamedIntentCannotBeUsedAsValueKind,
+    ArgumentCouldNotBeReadAsExpectedType {
+        type_name: String,
+        error_message: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -486,12 +490,20 @@ where
     B: IsBlobProvider,
 {
     Ok(match &instruction.instruction {
+        // ==============
+        // Pseudo-instructions
+        // ==============
         ast::Instruction::UsePreallocatedAddress { .. } | ast::Instruction::UseChild { .. } => {
             return Err(GeneratorError {
                 span: instruction.span,
                 error_kind: GeneratorErrorKind::HeaderInstructionMustComeFirst,
             })
         }
+        // ==============
+        // Standard instructions (in canonical order)
+        // ==============
+
+        // Bucket Lifecycle
         ast::Instruction::TakeFromWorktop {
             resource_address,
             amount,
@@ -548,6 +560,15 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             ReturnToWorktop { bucket_id }.into()
         }
+        ast::Instruction::BurnResource { bucket } => {
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
+            id_validator
+                .drop_bucket(&bucket_id)
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
+            BurnResource { bucket_id }.into()
+        }
+
+        // Resource Assertions
         ast::Instruction::AssertWorktopContains {
             resource_address,
             amount,
@@ -573,26 +594,107 @@ where
             }
             .into()
         }
-        ast::Instruction::AssertWorktopIsEmpty {} => AssertWorktopIsEmpty {}.into(),
-        ast::Instruction::PopFromAuthZone { new_proof } => {
+        ast::Instruction::AssertWorktopIsEmpty {} => AssertWorktopResourcesOnly {
+            constraints: Default::default(),
+        }
+        .into(),
+        ast::Instruction::AssertWorktopResourcesOnly { constraints } => {
+            AssertWorktopResourcesOnly {
+                constraints: generate_typed_value(
+                    constraints,
+                    resolver,
+                    address_bech32_decoder,
+                    blobs,
+                )?,
+            }
+            .into()
+        }
+        ast::Instruction::AssertWorktopResourcesInclude { constraints } => {
+            AssertWorktopResourcesInclude {
+                constraints: generate_typed_value(
+                    constraints,
+                    resolver,
+                    address_bech32_decoder,
+                    blobs,
+                )?,
+            }
+            .into()
+        }
+        ast::Instruction::AssertNextCallReturnsOnly { constraints } => AssertNextCallReturnsOnly {
+            constraints: generate_typed_value(
+                constraints,
+                resolver,
+                address_bech32_decoder,
+                blobs,
+            )?,
+        }
+        .into(),
+        ast::Instruction::AssertNextCallReturnsInclude { constraints } => {
+            AssertNextCallReturnsInclude {
+                constraints: generate_typed_value(
+                    constraints,
+                    resolver,
+                    address_bech32_decoder,
+                    blobs,
+                )?,
+            }
+            .into()
+        }
+        ast::Instruction::AssertBucketContents { bucket, constraint } => {
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
+            id_validator
+                .check_bucket(&bucket_id)
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
+            AssertBucketContents {
+                bucket_id,
+                constraint: generate_typed_value(
+                    constraint,
+                    resolver,
+                    address_bech32_decoder,
+                    blobs,
+                )?,
+            }
+            .into()
+        }
+
+        // Proof Lifecycle
+        ast::Instruction::CreateProofFromBucketOfAmount {
+            bucket,
+            amount,
+            new_proof,
+        } => {
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
+            let amount = generate_decimal(amount)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            PopFromAuthZone.into()
+            CreateProofFromBucketOfAmount { bucket_id, amount }.into()
         }
-        ast::Instruction::PushToAuthZone { proof } => {
-            let (proof_id, span) = generate_proof(proof, resolver)?;
-            id_validator
-                .drop_proof(&proof_id)
+        ast::Instruction::CreateProofFromBucketOfNonFungibles {
+            bucket,
+            ids,
+            new_proof,
+        } => {
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
+            let ids = generate_non_fungible_local_ids(ids)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            PushToAuthZone { proof_id }.into()
-        }
-        ast::Instruction::DropAuthZoneProofs => DropAuthZoneProofs.into(),
-        ast::Instruction::DropAuthZoneRegularProofs => DropAuthZoneRegularProofs.into(),
-        ast::Instruction::DropAuthZoneSignatureProofs => DropAuthZoneSignatureProofs.into(),
+            declare_proof(new_proof, resolver, proof_id)?;
 
+            CreateProofFromBucketOfNonFungibles { bucket_id, ids }.into()
+        }
+        ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
+            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            CreateProofFromBucketOfAll { bucket_id }.into()
+        }
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -644,53 +746,6 @@ where
 
             CreateProofFromAuthZoneOfAll { resource_address }.into()
         }
-
-        ast::Instruction::BurnResource { bucket } => {
-            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
-            id_validator
-                .drop_bucket(&bucket_id)
-                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            BurnResource { bucket_id }.into()
-        }
-
-        ast::Instruction::CreateProofFromBucketOfAmount {
-            bucket,
-            amount,
-            new_proof,
-        } => {
-            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
-            let amount = generate_decimal(amount)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            CreateProofFromBucketOfAmount { bucket_id, amount }.into()
-        }
-        ast::Instruction::CreateProofFromBucketOfNonFungibles {
-            bucket,
-            ids,
-            new_proof,
-        } => {
-            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
-            let ids = generate_non_fungible_local_ids(ids)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            CreateProofFromBucketOfNonFungibles { bucket_id, ids }.into()
-        }
-        ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
-            let (bucket_id, span) = generate_bucket(bucket, resolver)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            CreateProofFromBucketOfAll { bucket_id }.into()
-        }
-
         ast::Instruction::CloneProof { proof, new_proof } => {
             let (proof_id, span) = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
@@ -707,7 +762,39 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             DropProof { proof_id }.into()
         }
+        ast::Instruction::PushToAuthZone { proof } => {
+            let (proof_id, span) = generate_proof(proof, resolver)?;
+            id_validator
+                .drop_proof(&proof_id)
+                .map_err(|err| generate_id_validation_error(resolver, err, span))?;
+            PushToAuthZone { proof_id }.into()
+        }
+        ast::Instruction::PopFromAuthZone { new_proof } => {
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
+            declare_proof(new_proof, resolver, proof_id)?;
 
+            PopFromAuthZone.into()
+        }
+        ast::Instruction::DropAuthZoneProofs => DropAuthZoneProofs.into(),
+        ast::Instruction::DropAuthZoneRegularProofs => DropAuthZoneRegularProofs.into(),
+        ast::Instruction::DropAuthZoneSignatureProofs => DropAuthZoneSignatureProofs.into(),
+        ast::Instruction::DropNamedProofs => {
+            id_validator
+                .drop_all_named_proofs()
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
+            DropNamedProofs.into()
+        }
+
+        ast::Instruction::DropAllProofs => {
+            id_validator
+                .drop_all_named_proofs()
+                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
+            DropAllProofs.into()
+        }
+
+        // Invocation
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -830,20 +917,7 @@ where
             .into()
         }
 
-        ast::Instruction::DropNamedProofs => {
-            id_validator
-                .drop_all_named_proofs()
-                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
-            DropNamedProofs.into()
-        }
-
-        ast::Instruction::DropAllProofs => {
-            id_validator
-                .drop_all_named_proofs()
-                .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
-            DropAllProofs.into()
-        }
-
+        // Address Allocation
         ast::Instruction::AllocateGlobalAddress {
             package_address,
             blueprint_name,
@@ -863,7 +937,29 @@ where
             .into()
         }
 
-        /* direct vault method aliases */
+        // Interaction with other intents
+        ast::Instruction::YieldToParent { args } => YieldToParent {
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::YieldToChild { child, args } => YieldToChild {
+            child_index: generate_named_intent(child, resolver)?.into(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::VerifyParent { access_rule } => VerifyParent {
+            access_rule: generate_typed_value(
+                access_rule,
+                resolver,
+                address_bech32_decoder,
+                blobs,
+            )?,
+        }
+        .into(),
+
+        // ==============
+        // Call direct vault method aliases
+        // ==============
         ast::Instruction::RecallFromVault { vault_id, args } => CallDirectVaultMethod {
             address: generate_internal_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_RECALL_IDENT.to_string(),
@@ -889,7 +985,9 @@ where
         }
         .into(),
 
-        /* call function aliases */
+        // ==============
+        // Call function aliases
+        // ==============
         ast::Instruction::PublishPackage { args } => CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -969,7 +1067,9 @@ where
         }
         .into(),
 
-        /* call non-main method aliases */
+        // ==============
+        // Call non-main-method aliases
+        // ==============
         ast::Instruction::SetMetadata { address, args } => CallMetadataMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_SET_IDENT.to_string(),
@@ -1025,7 +1125,9 @@ where
         }
         .into(),
 
-        /* call main method aliases */
+        // ==============
+        // Call main-method aliases
+        // ==============
         ast::Instruction::MintFungible { address, args } => CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
@@ -1054,25 +1156,6 @@ where
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        }
-        .into(),
-        ast::Instruction::YieldToParent { args } => YieldToParent {
-            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        }
-        .into(),
-        ast::Instruction::YieldToChild { child, args } => YieldToChild {
-            child_index: generate_named_intent(child, resolver)?.into(),
-            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        }
-        .into(),
-        ast::Instruction::VerifyParent { access_rule } => VerifyParent {
-            access_rule: generate_value(
-                access_rule,
-                None,
-                resolver,
-                address_bech32_decoder,
-                blobs,
-            )?,
         }
         .into(),
     })
@@ -1688,6 +1771,40 @@ fn generate_subintent_hash(
     }
 }
 
+pub fn generate_typed_value<T: ManifestDecode + ScryptoDescribe, B>(
+    value_with_span: &ast::ValueWithSpan,
+    resolver: &mut NameResolver,
+    address_bech32_decoder: &AddressBech32Decoder,
+    blobs: &B,
+) -> Result<T, GeneratorError>
+where
+    B: IsBlobProvider,
+{
+    let value = generate_value(
+        value_with_span,
+        None,
+        resolver,
+        address_bech32_decoder,
+        blobs,
+    )?;
+    let encoded = manifest_encode(&value).map_err(|encode_error| GeneratorError {
+        span: value_with_span.span,
+        error_kind: GeneratorErrorKind::ArgumentCouldNotBeReadAsExpectedType {
+            type_name: core::any::type_name::<T>().to_string(),
+            error_message: format!("{encode_error:?}"),
+        },
+    })?;
+    let decoded =
+        manifest_decode_with_nice_error(&encoded).map_err(|error_message| GeneratorError {
+            span: value_with_span.span,
+            error_kind: GeneratorErrorKind::ArgumentCouldNotBeReadAsExpectedType {
+                type_name: core::any::type_name::<T>().to_string(),
+                error_message,
+            },
+        })?;
+    Ok(decoded)
+}
+
 pub fn generate_value<B>(
     value_with_span: &ast::ValueWithSpan,
     expected_value_kind: Option<&ast::ValueKindWithSpan>,
@@ -2166,12 +2283,22 @@ pub fn generator_error_diagnostics(
             (title, "cannot be used inside a value".to_string())
         }
         GeneratorErrorKind::IntentCannotBeUsedAsValueKind => {
-            let title = format!("an Intent cannot be used as a value kind ");
+            let title = format!("an Intent cannot be used as a value kind");
             (title, "cannot be used as a value kind".to_string())
         }
         GeneratorErrorKind::NamedIntentCannotBeUsedAsValueKind => {
-            let title = format!("a NamedIntent cannot be used as a value kind ");
+            let title = format!("a NamedIntent cannot be used as a value kind");
             (title, "cannot be used as a value kind".to_string())
+        }
+        GeneratorErrorKind::ArgumentCouldNotBeReadAsExpectedType {
+            type_name,
+            error_message,
+        } => {
+            let title = format!(
+                "an argument's structure does not fit with the {type_name} type. {error_message}"
+            );
+            let description = format!("cannot be decoded as a {type_name}");
+            (title, description)
         }
     };
 

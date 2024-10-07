@@ -18,6 +18,8 @@ pub struct StaticResourceMovementsVisitor {
     invocation_static_information: IndexMap<usize, InvocationStaticInformation>,
     /// Details about the currently running instruction. Has a value between OnStartInstruction and OnEndInstruction.
     current_instruction: Option<CurrentInstruction>,
+    /// Details the assertion to apply to the contents returned from the next invocation.
+    next_invocation_assertion: Option<(OwnedNextCallAssertion, ChangeSource)>,
 }
 
 pub struct CurrentInstruction {
@@ -51,15 +53,18 @@ impl ChangeSource {
 impl StaticResourceMovementsVisitor {
     pub fn new(initial_worktop_state_is_unknown: bool) -> Self {
         let mut worktop = TrackedResources::new_empty();
+
         if initial_worktop_state_is_unknown {
             worktop.mut_add_unspecified_resources([ChangeSource::InitialYieldFromParent])
         }
+
         Self {
             worktop,
             tracked_buckets: Default::default(),
             tracked_named_addresses: Default::default(),
             invocation_static_information: Default::default(),
             current_instruction: None,
+            next_invocation_assertion: None,
         }
     }
 
@@ -82,7 +87,7 @@ impl StaticResourceMovementsVisitor {
             instruction_index: current_instruction.index,
         };
 
-        let invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
+        let mut invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
             Some((matched_invocation, receiver)) => {
                 matched_invocation.output(InvocationDetails {
                     receiver,
@@ -94,6 +99,21 @@ impl StaticResourceMovementsVisitor {
                 change_source,
             ]),
         };
+
+        if let Some((assertion, change_source)) = self.next_invocation_assertion.take() {
+            // FUTURE TWEAK: Could output an inequality constraints when handling the assertions,
+            // for use in any analyzers.
+            match assertion.as_ref() {
+                NextCallAssertion::ReturnsOnly { constraints } => {
+                    invocation_output
+                        .handle_resources_only_assertion(constraints, change_source)?;
+                }
+                NextCallAssertion::ReturnsInclude { constraints } => {
+                    invocation_output
+                        .handle_resources_include_assertion(constraints, change_source)?;
+                }
+            }
+        }
 
         // Add the returned resources to the worktop
         self.worktop.add(invocation_output.clone())?;
@@ -298,13 +318,61 @@ impl StaticResourceMovementsVisitor {
         Ok(())
     }
 
-    fn handle_worktop_assertion(
+    fn handle_resource_assertion(
         &mut self,
-        OnWorktopAssertion { assertion }: OnWorktopAssertion,
+        OnResourceAssertion { assertion }: OnResourceAssertion,
     ) -> Result<(), StaticResourceMovementsError> {
+        // FUTURE TWEAK: Could add inequality constraints when handling assertions,
+        // for use in any analyzers.
         let change_source = ChangeSource::assertion_at(self.current_instruction_index());
-        self.worktop
-            .handle_worktop_assertion(assertion, change_source)
+        match assertion {
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount {
+                resource_address,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::non_zero(),
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
+                resource_address,
+                amount,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::at_least_amount(amount)?,
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
+                resource_address,
+                ids,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::at_least_non_fungibles(ids.iter().cloned()),
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly { constraints }) => self
+                .worktop
+                .handle_resources_only_assertion(constraints, change_source),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude { constraints }) => self
+                .worktop
+                .handle_resources_include_assertion(constraints, change_source),
+            ResourceAssertion::NextCall(next_call_assertion) => {
+                if self.next_invocation_assertion.is_some() {
+                    panic!("Interpreter should have verified that a next call assertion must be used before another is created");
+                }
+                self.next_invocation_assertion = Some((next_call_assertion.into(), change_source));
+                Ok(())
+            }
+            ResourceAssertion::Bucket(BucketAssertion::Contents { bucket, constraint }) => {
+                let (_, tracked_resource) = self
+                    .tracked_buckets
+                    .get_mut(&bucket)
+                    .expect("Interpreter should have already validated that the bucket exists");
+                tracked_resource.handle_assertion(
+                    ResourceBounds::new_for_manifest_constraint(constraint)?,
+                    change_source,
+                )
+            }
+        }
     }
 
     fn handle_new_named_address(
@@ -373,8 +441,8 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
         }
     }
 
-    fn on_worktop_assertion(&mut self, event: OnWorktopAssertion) -> ControlFlow<Self::Output> {
-        match self.handle_worktop_assertion(event) {
+    fn on_resource_assertion(&mut self, event: OnResourceAssertion) -> ControlFlow<Self::Output> {
+        match self.handle_resource_assertion(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }

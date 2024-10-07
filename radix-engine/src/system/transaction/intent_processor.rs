@@ -1,5 +1,5 @@
 use crate::blueprints::resource::WorktopSubstate;
-use crate::blueprints::transaction_processor::{TxnInstruction, Yield};
+use crate::blueprints::transaction_processor::{MultiThreadResult, TxnInstruction};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -45,8 +45,9 @@ impl From<TransactionProcessorError> for RuntimeError {
 pub enum ResumeResult {
     YieldToChild(usize, IndexedScryptoValue),
     YieldToParent(IndexedScryptoValue),
-    ChildIntentDone(IndexedScryptoValue),
-    RootIntentDone,
+    VerifyParent(AccessRule),
+    DoneAndYieldToParent(IndexedScryptoValue),
+    Done,
 }
 
 pub struct IntentProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
@@ -131,17 +132,17 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
             self.instruction_index += 1;
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
-                    Yield::ToChild(child, value) => ResumeResult::YieldToChild(
+                    MultiThreadResult::VerifyParent(rule) => ResumeResult::VerifyParent(rule),
+                    MultiThreadResult::SwitchToChild(child, value) => ResumeResult::YieldToChild(
                         child,
                         IndexedScryptoValue::from_scrypto_value(value),
                     ),
-                    Yield::ToParent(value) => {
-                        // Child subintents must end with a yield to parent
+                    MultiThreadResult::SwitchToParent(value) => {
                         if self.remaining_instructions.is_empty() {
                             self.worktop.drop(api)?;
-                            ResumeResult::ChildIntentDone(IndexedScryptoValue::from_scrypto_value(
-                                value,
-                            ))
+                            ResumeResult::DoneAndYieldToParent(
+                                IndexedScryptoValue::from_scrypto_value(value),
+                            )
                         } else {
                             ResumeResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(
                                 value,
@@ -154,7 +155,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
         }
 
         self.worktop.drop(api)?;
-        Ok(ResumeResult::RootIntentDone)
+        Ok(ResumeResult::Done)
     }
 }
 

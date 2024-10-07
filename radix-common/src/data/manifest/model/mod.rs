@@ -7,6 +7,7 @@ mod manifest_expression;
 mod manifest_non_fungible_local_id;
 mod manifest_precise_decimal;
 mod manifest_proof;
+mod manifest_resource_assertion;
 
 pub use manifest_address::*;
 pub use manifest_address_reservation::*;
@@ -17,3 +18,4 @@ pub use manifest_expression::*;
 pub use manifest_non_fungible_local_id::*;
 pub use manifest_precise_decimal::*;
 pub use manifest_proof::*;
+pub use manifest_resource_assertion::*;

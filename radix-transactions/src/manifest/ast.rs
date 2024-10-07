@@ -24,145 +24,141 @@ pub enum Instruction {
     //========================================
     // NORMAL INSTRUCTIONS
     //========================================
+
+    // Bucket Lifecycle
     TakeFromWorktop {
         resource_address: ValueWithSpan,
         amount: ValueWithSpan,
         new_bucket: ValueWithSpan,
     },
-
     TakeNonFungiblesFromWorktop {
         ids: ValueWithSpan,
         resource_address: ValueWithSpan,
         new_bucket: ValueWithSpan,
     },
-
     TakeAllFromWorktop {
         resource_address: ValueWithSpan,
         new_bucket: ValueWithSpan,
     },
-
     ReturnToWorktop {
         bucket: ValueWithSpan,
     },
+    BurnResource {
+        bucket: ValueWithSpan,
+    },
 
+    // Resource Assertions
     AssertWorktopContains {
         resource_address: ValueWithSpan,
         amount: ValueWithSpan,
     },
-
     AssertWorktopContainsNonFungibles {
         resource_address: ValueWithSpan,
         ids: ValueWithSpan,
     },
-
     AssertWorktopContainsAny {
         resource_address: ValueWithSpan,
     },
-
-    AssertWorktopIsEmpty {},
-
-    PopFromAuthZone {
-        new_proof: ValueWithSpan,
+    AssertWorktopIsEmpty, // Alias
+    AssertWorktopResourcesOnly {
+        constraints: ValueWithSpan,
+    },
+    AssertWorktopResourcesInclude {
+        constraints: ValueWithSpan,
+    },
+    AssertNextCallReturnsOnly {
+        constraints: ValueWithSpan,
+    },
+    AssertNextCallReturnsInclude {
+        constraints: ValueWithSpan,
+    },
+    AssertBucketContents {
+        bucket: ValueWithSpan,
+        constraint: ValueWithSpan,
     },
 
-    PushToAuthZone {
-        proof: ValueWithSpan,
-    },
-
-    CreateProofFromAuthZoneOfAmount {
-        resource_address: ValueWithSpan,
-        amount: ValueWithSpan,
-        new_proof: ValueWithSpan,
-    },
-
-    CreateProofFromAuthZoneOfNonFungibles {
-        resource_address: ValueWithSpan,
-        ids: ValueWithSpan,
-        new_proof: ValueWithSpan,
-    },
-
-    CreateProofFromAuthZoneOfAll {
-        resource_address: ValueWithSpan,
-        new_proof: ValueWithSpan,
-    },
-
-    DropAuthZoneSignatureProofs,
-
-    DropAuthZoneRegularProofs,
-
-    DropAuthZoneProofs,
-
+    // Proof Lifecycle
     CreateProofFromBucketOfAmount {
         bucket: ValueWithSpan,
         amount: ValueWithSpan,
         new_proof: ValueWithSpan,
     },
-
     CreateProofFromBucketOfNonFungibles {
         bucket: ValueWithSpan,
         ids: ValueWithSpan,
         new_proof: ValueWithSpan,
     },
-
     CreateProofFromBucketOfAll {
         bucket: ValueWithSpan,
         new_proof: ValueWithSpan,
     },
-
-    BurnResource {
-        bucket: ValueWithSpan,
+    CreateProofFromAuthZoneOfAmount {
+        resource_address: ValueWithSpan,
+        amount: ValueWithSpan,
+        new_proof: ValueWithSpan,
     },
-
+    CreateProofFromAuthZoneOfNonFungibles {
+        resource_address: ValueWithSpan,
+        ids: ValueWithSpan,
+        new_proof: ValueWithSpan,
+    },
+    CreateProofFromAuthZoneOfAll {
+        resource_address: ValueWithSpan,
+        new_proof: ValueWithSpan,
+    },
     CloneProof {
         proof: ValueWithSpan,
         new_proof: ValueWithSpan,
     },
-
     DropProof {
         proof: ValueWithSpan,
     },
+    PushToAuthZone {
+        proof: ValueWithSpan,
+    },
+    PopFromAuthZone {
+        new_proof: ValueWithSpan,
+    },
+    DropAuthZoneSignatureProofs,
+    DropAuthZoneRegularProofs,
+    DropAuthZoneProofs,
+    DropNamedProofs,
+    DropAllProofs,
 
+    // Invocations
     CallFunction {
         package_address: ValueWithSpan,
         blueprint_name: ValueWithSpan,
         function_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
-
     CallMethod {
         address: ValueWithSpan,
         method_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
-
     CallRoyaltyMethod {
         address: ValueWithSpan,
         method_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
-
     CallMetadataMethod {
         address: ValueWithSpan,
         method_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
-
     CallRoleAssignmentMethod {
         address: ValueWithSpan,
         method_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
-
     CallDirectVaultMethod {
         address: ValueWithSpan,
         method_name: ValueWithSpan,
         args: Vec<ValueWithSpan>,
     },
 
-    DropNamedProofs,
-
-    DropAllProofs,
-
+    // Address Allocation
     AllocateGlobalAddress {
         package_address: ValueWithSpan,
         blueprint_name: ValueWithSpan,
@@ -170,7 +166,21 @@ pub enum Instruction {
         named_address: ValueWithSpan,
     },
 
-    /* Call direct vault method aliases */
+    // Interaction with other intents
+    YieldToParent {
+        args: Vec<ValueWithSpan>,
+    },
+    YieldToChild {
+        child: ValueWithSpan,
+        args: Vec<ValueWithSpan>,
+    },
+    VerifyParent {
+        access_rule: ValueWithSpan,
+    },
+
+    //===============
+    // Direct vault aliases
+    //===============
     RecallFromVault {
         vault_id: ValueWithSpan,
         args: Vec<ValueWithSpan>,
@@ -188,7 +198,9 @@ pub enum Instruction {
         args: Vec<ValueWithSpan>,
     },
 
-    /* Call function aliases */
+    //===============
+    // Call function aliases
+    //===============
     PublishPackage {
         args: Vec<ValueWithSpan>,
     },
@@ -223,7 +235,9 @@ pub enum Instruction {
         args: Vec<ValueWithSpan>,
     },
 
-    /* call non-main method aliases */
+    //===============
+    // Non-main method aliases
+    //===============
     SetMetadata {
         address: ValueWithSpan,
         args: Vec<ValueWithSpan>,
@@ -261,7 +275,9 @@ pub enum Instruction {
         args: Vec<ValueWithSpan>,
     },
 
-    /* call main method aliases */
+    //===============
+    // Main method aliases
+    //===============
     ClaimPackageRoyalties {
         address: ValueWithSpan,
         args: Vec<ValueWithSpan>,
@@ -280,16 +296,6 @@ pub enum Instruction {
     },
     CreateValidator {
         args: Vec<ValueWithSpan>,
-    },
-    YieldToParent {
-        args: Vec<ValueWithSpan>,
-    },
-    YieldToChild {
-        child: ValueWithSpan,
-        args: Vec<ValueWithSpan>,
-    },
-    VerifyParent {
-        access_rule: ValueWithSpan,
     },
 }
 
