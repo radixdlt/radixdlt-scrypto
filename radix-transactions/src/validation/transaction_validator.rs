@@ -195,8 +195,6 @@ impl TransactionValidator {
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-        self.validate_intent_v1(&transaction.signed_intent.intent)?;
-
         self.check_reference_limits(vec![
             &transaction.signed_intent.intent.instructions.references,
         ])?;
@@ -205,6 +203,8 @@ impl TransactionValidator {
             &transaction.signed_intent.intent_signatures.inner.signatures,
             None,
         )?;
+
+        self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
         let (signer_keys, num_of_signature_validations) = self
             .validate_signatures_v1(&transaction)
@@ -519,8 +519,6 @@ impl TransactionValidator {
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
 
-        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
-
         self.check_reference_limits(
             [&root_subintent.root_intent_core.instructions.references]
                 .into_iter()
@@ -537,6 +535,8 @@ impl TransactionValidator {
             &root_subintent_signatures.inner.signatures,
             Some(non_root_subintent_signatures),
         )?;
+
+        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
 
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
