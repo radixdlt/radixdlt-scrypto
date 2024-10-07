@@ -40,8 +40,6 @@ pub struct ConsensusManagerCreateManifestInput {
     pub initial_current_leader: Option<ValidatorIndex>,
 }
 
-pub type ConsensusManagerCreateManifestManifestInput = ConsensusManagerCreateManifestInput;
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ConsensusManagerConfig {
     pub max_validators: u32,
