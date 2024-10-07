@@ -522,6 +522,47 @@ impl FeeTable {
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
+    #[inline]
+    pub fn blake2b256_hash_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_blake2b_256_costing`
+        // - For sizes less than 100, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 14.79642 * size + 1111.02264
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     14.79642  -> 15
+        //     1111.02264 -> 1600 (increased to get more accurate difference between calculated
+        //          and measured instruction)
+        let size = if size < 100 { 100 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 15), 1600);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn ed25519_verify_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_ed25519_costing`
+        //   instructions_cnt = 33.08798 * size + 444420.94242
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     33.08798 -> 34
+        //     444420.94242 -> 446000 (increased to get more accurate difference between calculated
+        //          and measured instruction)
+        let instructions_cnt = add(mul(cast(size), 34), 446000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn secp256k1_ecdsa_verify_cost(&self) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_secp256k1_ecdsa_costing`
+        //   instructions_cnt = 464236 (input is always 32 bytes long)
+        //   Lets round:
+        //     444420.94242 -> 446000
+        let instructions_cnt = 446000;
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side
