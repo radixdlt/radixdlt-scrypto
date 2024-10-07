@@ -1522,14 +1522,8 @@ pub enum SimpleFungibleResourceBounds {
 }
 
 impl From<ResourceBounds> for SimpleFungibleResourceBounds {
-    fn from(
-        ResourceBounds {
-            lower_bound,
-            upper_bound,
-            ..
-        }: ResourceBounds,
-    ) -> Self {
-        match (lower_bound, upper_bound) {
+    fn from(bounds: ResourceBounds) -> Self {
+        match bounds.numeric_bounds() {
             (LowerBound::Inclusive(lower_bound_inclusive), UpperBound::Unbounded)
                 if lower_bound_inclusive == Decimal::ZERO =>
             {
