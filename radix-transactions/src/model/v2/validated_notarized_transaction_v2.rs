@@ -38,15 +38,10 @@ pub struct ValidatedIntentInformationV2 {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum SignatureValidations {
-    Validated {
-        /// This could be one more than signer_keys due to notary not being a signer
-        num_validations: usize,
-        signer_keys: Vec<PublicKey>,
-    },
-    Unvalidated {
-        signatures: IntentSignaturesV2,
-    },
+pub struct SignatureValidations {
+    /// This could be one more than signer_keys due to notary not being a signer
+    pub num_validations: usize,
+    pub signer_keys: Vec<PublicKey>,
 }
 
 impl HasTransactionIntentHash for ValidatedNotarizedTransactionV2 {
@@ -103,7 +98,15 @@ impl ValidatedNotarizedTransactionV2 {
                     .to_nullification(subintent.intent_core.header.inner.end_epoch_exclusive),
             )
         }
-
+        let num_of_signature_validations = self
+            .transaction_intent_info
+            .signature_validations
+            .num_validations
+            + self
+                .non_root_subintents_info
+                .iter()
+                .map(|x| x.signature_validations.num_validations)
+                .sum::<usize>();
         let executable_transaction_intent = create_executable_intent(
             transaction_intent.root_intent_core,
             self.transaction_intent_info,
@@ -121,7 +124,7 @@ impl ValidatedNotarizedTransactionV2 {
                 unique_hash: transaction_intent_hash.0,
                 intent_hash_nullifications,
                 payload_size: summary.effective_length,
-                num_of_signature_validations: move_sig_validations_to_be_lazy_and_bill_correctly(),
+                num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::BasisPoints(transaction_header.tip_basis_points),
                     free_credit_in_xrd: Decimal::ZERO,
@@ -142,16 +145,7 @@ fn create_executable_intent(
     core: PreparedIntentCoreV2,
     validated_info: ValidatedIntentInformationV2,
 ) -> ExecutableIntent {
-    // FIX ME when we implement delegated signature checking
-    let signer_keys = match validated_info.signature_validations {
-        SignatureValidations::Validated {
-            signer_keys,
-            num_validations: _,
-        } => signer_keys,
-        SignatureValidations::Unvalidated { signatures: _ } => {
-            unimplemented!()
-        }
-    };
+    let signer_keys = validated_info.signature_validations.signer_keys;
     let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
     ExecutableIntent {
@@ -161,9 +155,4 @@ fn create_executable_intent(
         blobs: core.blobs.blobs_by_hash.clone(),
         children_subintent_indices: validated_info.children_subintent_indices.clone(),
     }
-}
-
-#[deprecated]
-fn move_sig_validations_to_be_lazy_and_bill_correctly() -> usize {
-    0
 }
