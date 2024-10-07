@@ -485,201 +485,6 @@ fn test_crypto_scrypto_flow() {
 }
 
 #[test]
-fn test_crypto_scrypto_keccak256_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    for size in [
-        100usize,
-        200,
-        500,
-        1024,
-        10 * 1024,
-        20 * 1024,
-        50 * 1024,
-        100 * 1024,
-        200 * 1024,
-        500 * 1024,
-        900 * 1024,
-    ] {
-        let data = vec![0u8; size];
-        let _hash = crypto_scrypto_keccak256_hash(&mut ledger, package_address, data);
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_verify_bls12381_v1_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
-    let public_key = secret_key.public_key();
-
-    for size in [
-        100usize,
-        200,
-        500,
-        1024,
-        10 * 1024,
-        20 * 1024,
-        50 * 1024,
-        100 * 1024,
-        200 * 1024,
-        500 * 1024,
-        900 * 1024,
-    ] {
-        let data = vec![0u8; size];
-        let signature = secret_key.sign_v1(data.as_slice());
-        let _ = crypto_scrypto_bls12381_v1_verify(
-            &mut ledger,
-            package_address,
-            data,
-            public_key,
-            signature,
-        );
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    for cnt in [1, 2, 5, 10, 20, 50, 100] {
-        let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
-            .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
-            .collect();
-
-        // Single message
-        let msg = b"One message to sign for all".to_vec();
-
-        let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
-
-        // Act
-        let _ = crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs);
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
-        for cnt in [1u32, 2, 5, 10, 20] {
-            let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
-
-            let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
-
-            let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-                &mut ledger,
-                package_address,
-                msgs,
-                pks,
-                agg_sig_multiple_msgs,
-            );
-        }
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    for (cnt, msg_size) in [
-        (1, 100 * 1024),
-        (2, 50 * 1024),
-        (5, 20 * 1024),
-        (10, 10 * 1024),
-        (100, 1024),
-        (1024, 100),
-    ] {
-        let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
-
-        let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-            &mut ledger,
-            package_address,
-            msgs,
-            pks,
-            agg_sig,
-        );
-    }
-
-    // 1x 99kB and 1000x1B
-    let (mut sks1, mut pks1, mut msgs1, mut sigs1) = get_aggregate_verify_test_data(1, 99 * 1024);
-    let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(1000, 1);
-    sks1.append(&mut sks2);
-    pks1.append(&mut pks2);
-    msgs1.append(&mut msgs2);
-    sigs1.append(&mut sigs2);
-    let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
-
-    let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut ledger,
-        package_address,
-        msgs1,
-        pks1,
-        agg_sig,
-    );
-
-    // 1x 90kB and 10 x 1kB
-    let (mut sks1, mut pks1, mut msgs1, mut sigs1) = get_aggregate_verify_test_data(1, 90 * 1024);
-    let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(10, 1024);
-    sks1.append(&mut sks2);
-    pks1.append(&mut pks2);
-    msgs1.append(&mut msgs2);
-    sigs1.append(&mut sigs2);
-    let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
-
-    let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
-        &mut ledger,
-        package_address,
-        msgs1,
-        pks1,
-        agg_sig,
-    );
-}
-
-#[test]
-fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
-
-    for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
-        for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
-            let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
-                .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
-                .collect();
-
-            // Single message
-            let msg: Vec<u8> = vec![cnt; msg_size];
-
-            let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
-
-            let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
-
-            let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
-
-            let _ = crypto_scrypto_bls12381_v1_fast_aggregate_verify(
-                &mut ledger,
-                package_address,
-                msg,
-                pks,
-                agg_sig_single_msg,
-            );
-        }
-    }
-}
-
-#[test]
 fn test_crypto_scrypto_blake2b_256_hash() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -852,87 +657,6 @@ fn test_crypto_scrypto_verify_secp256k1_ecdsa() {
     assert!(!msg2_verify);
 }
 
-#[test]
-fn test_crypto_scrypto_blake2b_256_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
-
-    for size in [
-        100usize,
-        200,
-        500,
-        1024,
-        10 * 1024,
-        20 * 1024,
-        50 * 1024,
-        100 * 1024,
-        200 * 1024,
-        500 * 1024,
-        900 * 1024,
-    ] {
-        let data = vec![0u8; size];
-        let _hash = crypto_scrypto_blake_2b_256_hash(&mut ledger, package_address, data);
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_verify_ed25519_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
-
-    let secret_key = Ed25519PrivateKey::from_u64(1).unwrap();
-    let public_key = secret_key.public_key();
-
-    for size in [
-        100usize,
-        200,
-        500,
-        1024,
-        10 * 1024,
-        20 * 1024,
-        50 * 1024,
-        100 * 1024,
-        200 * 1024,
-        500 * 1024,
-        900 * 1024,
-    ] {
-        let data = vec![0u8; size];
-        let signature = secret_key.sign(&data);
-        let _ = crypto_scrypto_ed25519_verify(
-            &mut ledger,
-            package_address,
-            data,
-            public_key,
-            signature,
-        );
-    }
-}
-
-#[test]
-fn test_crypto_scrypto_verify_secp256k1_ecdsa_costing() {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
-
-    let secret_key = Secp256k1PrivateKey::from_u64(1).unwrap();
-    let public_key = secret_key.public_key();
-
-    for size in 0..10 {
-        let data: Vec<u8> = vec![size as u8; size * 10];
-        let data_hash = hash(data);
-        let signature = secret_key.sign(&data_hash);
-        let _ = crypto_scrypto_secp256k1_ecdsa_verify(
-            &mut ledger,
-            package_address,
-            data_hash,
-            public_key,
-            signature,
-        );
-    }
-}
-
 fn bls12381_invalid_signature_aggregate<F>(protocol: ProtocolVersion, assert_receipt: F)
 where
     F: Fn(TransactionReceiptV1),
@@ -998,4 +722,299 @@ fn bls12381_invalid_signature_aggregate_cuttlefish() {
             )
         });
     });
+}
+
+// Tests in this submodule are used to estimate costs units for Crypto Utils methods
+#[cfg(feature = "resource_tracker")]
+mod costing_tests {
+    use super::*;
+
+    #[test]
+    fn test_crypto_scrypto_keccak256_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        for size in [
+            100usize,
+            200,
+            500,
+            1024,
+            10 * 1024,
+            20 * 1024,
+            50 * 1024,
+            100 * 1024,
+            200 * 1024,
+            500 * 1024,
+            900 * 1024,
+        ] {
+            let data = vec![0u8; size];
+            let _hash = crypto_scrypto_keccak256_hash(&mut ledger, package_address, data);
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_verify_bls12381_v1_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        let secret_key = Bls12381G1PrivateKey::from_u64(1).unwrap();
+        let public_key = secret_key.public_key();
+
+        for size in [
+            100usize,
+            200,
+            500,
+            1024,
+            10 * 1024,
+            20 * 1024,
+            50 * 1024,
+            100 * 1024,
+            200 * 1024,
+            500 * 1024,
+            900 * 1024,
+        ] {
+            let data = vec![0u8; size];
+            let signature = secret_key.sign_v1(data.as_slice());
+            let _ = crypto_scrypto_bls12381_v1_verify(
+                &mut ledger,
+                package_address,
+                data,
+                public_key,
+                signature,
+            );
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_bls12381_g2_signature_aggregate_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        for cnt in [1, 2, 5, 10, 20, 50, 100] {
+            let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+                .map(|i| Bls12381G1PrivateKey::from_u64(i).unwrap())
+                .collect();
+
+            // Single message
+            let msg = b"One message to sign for all".to_vec();
+
+            let sigs: Vec<Bls12381G2Signature> = sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
+
+            // Act
+            let _ =
+                crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, sigs);
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
+            for cnt in [1u32, 2, 5, 10, 20] {
+                let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
+
+                let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
+
+                let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+                    &mut ledger,
+                    package_address,
+                    msgs,
+                    pks,
+                    agg_sig_multiple_msgs,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_bls12381_v1_aggregate_verify_costing_2() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        for (cnt, msg_size) in [
+            (1, 100 * 1024),
+            (2, 50 * 1024),
+            (5, 20 * 1024),
+            (10, 10 * 1024),
+            (100, 1024),
+            (1024, 100),
+        ] {
+            let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(cnt, msg_size);
+            let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
+
+            let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+                &mut ledger,
+                package_address,
+                msgs,
+                pks,
+                agg_sig,
+            );
+        }
+
+        // 1x 99kB and 1000x1B
+        let (mut sks1, mut pks1, mut msgs1, mut sigs1) =
+            get_aggregate_verify_test_data(1, 99 * 1024);
+        let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(1000, 1);
+        sks1.append(&mut sks2);
+        pks1.append(&mut pks2);
+        msgs1.append(&mut msgs2);
+        sigs1.append(&mut sigs2);
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
+
+        let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+            &mut ledger,
+            package_address,
+            msgs1,
+            pks1,
+            agg_sig,
+        );
+
+        // 1x 90kB and 10 x 1kB
+        let (mut sks1, mut pks1, mut msgs1, mut sigs1) =
+            get_aggregate_verify_test_data(1, 90 * 1024);
+        let (mut sks2, mut pks2, mut msgs2, mut sigs2) = get_aggregate_verify_test_data(10, 1024);
+        sks1.append(&mut sks2);
+        pks1.append(&mut pks2);
+        msgs1.append(&mut msgs2);
+        sigs1.append(&mut sigs2);
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs1, true).unwrap();
+
+        let _ = crypto_scrypto_bls12381_v1_aggregate_verify(
+            &mut ledger,
+            package_address,
+            msgs1,
+            pks1,
+            agg_sig,
+        );
+    }
+
+    #[test]
+    fn test_crypto_scrypto_bls12381_v1_fast_aggregate_verify_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+        for msg_size in [100usize, 200, 500, 1024, 10 * 1024, 20 * 1024] {
+            for cnt in [1u8, 2, 5, 10, 20, 50, 100] {
+                let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+                    .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+                    .collect();
+
+                // Single message
+                let msg: Vec<u8> = vec![cnt; msg_size];
+
+                let sigs: Vec<Bls12381G2Signature> =
+                    sks.iter().map(|sk| sk.sign_v1(&msg)).collect();
+
+                let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+                let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
+
+                let _ = crypto_scrypto_bls12381_v1_fast_aggregate_verify(
+                    &mut ledger,
+                    package_address,
+                    msg,
+                    pks,
+                    agg_sig_single_msg,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_blake2b_256_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+        for size in [
+            100usize,
+            200,
+            500,
+            1024,
+            10 * 1024,
+            20 * 1024,
+            50 * 1024,
+            100 * 1024,
+            200 * 1024,
+            500 * 1024,
+            900 * 1024,
+        ] {
+            let data = vec![0u8; size];
+            let _hash = crypto_scrypto_blake_2b_256_hash(&mut ledger, package_address, data);
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_verify_ed25519_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+        let secret_key = Ed25519PrivateKey::from_u64(1).unwrap();
+        let public_key = secret_key.public_key();
+
+        for size in [
+            100usize,
+            200,
+            500,
+            1024,
+            10 * 1024,
+            20 * 1024,
+            50 * 1024,
+            100 * 1024,
+            200 * 1024,
+            500 * 1024,
+            900 * 1024,
+        ] {
+            let data = vec![0u8; size];
+            let signature = secret_key.sign(&data);
+            let _ = crypto_scrypto_ed25519_verify(
+                &mut ledger,
+                package_address,
+                data,
+                public_key,
+                signature,
+            );
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_verify_secp256k1_ecdsa_costing() {
+        let mut ledger = LedgerSimulatorBuilder::new().build();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+        let secret_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let public_key = secret_key.public_key();
+
+        for size in 0..10 {
+            let data: Vec<u8> = vec![size as u8; size * 10];
+            let data_hash = hash(data);
+            let signature = secret_key.sign(&data_hash);
+            let _ = crypto_scrypto_secp256k1_ecdsa_verify(
+                &mut ledger,
+                package_address,
+                data_hash,
+                public_key,
+                signature,
+            );
+        }
+    }
 }
