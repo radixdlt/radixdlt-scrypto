@@ -22,12 +22,11 @@ pub const NON_FUNGIBLE_BUCKET_BLUEPRINT: &str = "NonFungibleBucket";
 pub const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT: &str = "take_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-#[sbor(type_name = "BucketTakeNonFungiblesInput")]
-pub struct NonFungibleBucketTakeNonFungiblesInput {
+pub struct BucketTakeNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-pub type NonFungibleBucketTakeNonFungiblesManifestInput = NonFungibleBucketTakeNonFungiblesInput;
+pub type BucketTakeNonFungiblesManifestInput = BucketTakeNonFungiblesInput;
 
 pub type BucketTakeNonFungiblesOutput = Bucket;
 

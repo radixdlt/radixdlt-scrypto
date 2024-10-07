@@ -463,7 +463,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&NonFungibleBucketTakeNonFungiblesInput {
+            scrypto_encode(&BucketTakeNonFungiblesInput {
                 ids: non_fungible_local_ids.clone(),
             })
             .unwrap(),

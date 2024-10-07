@@ -411,7 +411,7 @@ impl ResourceNativePackage {
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<NonFungibleBucketTakeNonFungiblesInput>(),
+                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     ),
                     output: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
@@ -1863,10 +1863,9 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
-                let input: NonFungibleBucketTakeNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
+                let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
                 let rtn = NonFungibleBucketBlueprint::take_non_fungibles(&input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
