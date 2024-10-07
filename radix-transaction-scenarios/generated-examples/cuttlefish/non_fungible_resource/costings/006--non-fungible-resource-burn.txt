@@ -8,6 +8,7 @@ Execution Cost Breakdown                                                   ,    
 - AfterInvoke                                                              ,                      678,      0.0%
 - AllocateNodeId                                                           ,                     2231,      0.0%
 - BeforeInvoke                                                             ,                     2622,      0.1%
+- CheckReference                                                           ,                    80033,      1.5%
 - CloseSubstate                                                            ,                    49794,      1.0%
 - CreateNode                                                               ,                    19982,      0.4%
 - DrainSubstates                                                           ,                   120818,      2.3%
@@ -28,7 +29,6 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,                   353866,      6.8%
 - QueryActor                                                               ,                     4000,      0.1%
 - ReadSubstate                                                             ,                   570050,     10.9%
-- RefCheck                                                                 ,                    80033,      1.5%
 - RemoveSubstate                                                           ,                    40717,      0.8%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.3%
 - RunNativeCode::Worktop_put                                               ,                    58066,      1.1%
