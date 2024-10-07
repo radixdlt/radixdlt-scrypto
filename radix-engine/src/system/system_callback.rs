@@ -1152,10 +1152,12 @@ impl<V: SystemCallbackObject> System<V> {
                 },
                 ref_value.len(),
             );
-            let event = RefCheckEvent::IOAccess(&io_access);
+            let event = CheckReferenceEvent::IOAccess(&io_access);
 
             costing
-                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .apply_deferred_execution_cost(ExecutionCostingEntry::CheckReference {
+                    event: &event,
+                })
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
@@ -1579,40 +1581,9 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                     }
                     IntentHashNullification::Subintent { .. } => {
                         if let Some(costing) = modules.costing_mut() {
-                            let read_not_found =
-                                IOAccess::ReadFromDbNotFound(CanonicalSubstateKey {
-                                    node_id: TRANSACTION_TRACKER.into_node_id(),
-                                    partition_number: PartitionNumber(0),
-                                    substate_key: SubstateKey::Map(
-                                        scrypto_encode(&Hash([0u8; 32])).unwrap(),
-                                    ),
-                                });
-                            let write = IOAccess::TrackSubstateUpdated {
-                                canonical_substate_key: CanonicalSubstateKey {
-                                    node_id: TRANSACTION_TRACKER.into_node_id(),
-                                    partition_number: PartitionNumber(0),
-                                    substate_key: SubstateKey::Map(
-                                        scrypto_encode(&Hash([0u8; 32])).unwrap(),
-                                    ),
-                                },
-                                old_size: Some(0), // some are insertions but treated as updates, given the ring buffer design.
-                                new_size: Some(
-                                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
-                                        KeyValueEntrySubstateV1 {
-                                            value: Some(TransactionStatus::V1(
-                                                TransactionStatusV1::CommittedSuccess,
-                                            )),
-                                            lock_status: LockStatus::Unlocked,
-                                        },
-                                    ))
-                                    .len(),
-                                ),
-                            };
                             return costing
                                 .apply_deferred_execution_cost(
-                                    ExecutionCostingEntry::Nullification {
-                                        io_access: &[read_not_found, write],
-                                    },
+                                    ExecutionCostingEntry::CheckIntentValidity,
                                 )
                                 .map_err(|e| {
                                     RejectionReason::BootloadingError(

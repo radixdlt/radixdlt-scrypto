@@ -35,7 +35,7 @@ pub enum DropNodeEvent<'a> {
 }
 
 #[derive(Debug)]
-pub enum RefCheckEvent<'a> {
+pub enum CheckReferenceEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 

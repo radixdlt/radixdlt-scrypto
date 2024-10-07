@@ -1,14 +1,13 @@
 use super::FeeTable;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
+    CheckReferenceEvent, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
-use crate::track::IOAccess;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum ExecutionCostingEntry<'a> {
@@ -19,12 +18,10 @@ pub enum ExecutionCostingEntry<'a> {
     ValidateTxPayload {
         size: usize,
     },
-    RefCheck {
-        event: &'a RefCheckEvent<'a>,
+    CheckReference {
+        event: &'a CheckReferenceEvent<'a>,
     },
-    Nullification {
-        io_access: &'a [IOAccess],
-    },
+    CheckIntentValidity,
 
     /* run code */
     RunNativeCode {
@@ -152,8 +149,8 @@ impl<'a> ExecutionCostingEntry<'a> {
                 num_signatures: num_of_signatures,
             } => ft.verify_tx_signatures_cost(*num_of_signatures),
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
-            ExecutionCostingEntry::RefCheck { event } => ft.ref_check(event),
-            ExecutionCostingEntry::Nullification { io_access } => ft.nullification(io_access),
+            ExecutionCostingEntry::CheckReference { event } => ft.check_reference(event),
+            ExecutionCostingEntry::CheckIntentValidity => ft.check_intent_validity(),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -292,12 +289,10 @@ pub mod owned {
         ValidateTxPayload {
             size: usize,
         },
-        RefCheck {
-            event: RefCheckEventOwned,
+        CheckReference {
+            event: CheckReferenceEventOwned,
         },
-        Nullification {
-            io_access: Vec<IOAccess>,
-        },
+        CheckIntentValidity,
 
         /* run code */
         RunNativeCode {
@@ -435,7 +430,7 @@ pub mod owned {
 
     /// An owned model equivalent of [`RefCheckEvent`].
     #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-    pub enum RefCheckEventOwned {
+    pub enum CheckReferenceEventOwned {
         IOAccess(IOAccess),
     }
 
@@ -533,12 +528,10 @@ pub mod owned {
                 ExecutionCostingEntry::ValidateTxPayload { size } => {
                     Self::ValidateTxPayload { size }
                 }
-                ExecutionCostingEntry::RefCheck { event } => Self::RefCheck {
+                ExecutionCostingEntry::CheckReference { event } => Self::CheckReference {
                     event: event.into(),
                 },
-                ExecutionCostingEntry::Nullification { io_access } => Self::Nullification {
-                    io_access: io_access.to_vec(),
-                },
+                ExecutionCostingEntry::CheckIntentValidity => Self::CheckIntentValidity,
                 ExecutionCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
@@ -691,10 +684,10 @@ pub mod owned {
         }
     }
 
-    impl<'a> From<&'a RefCheckEvent<'a>> for RefCheckEventOwned {
-        fn from(value: &'a RefCheckEvent<'a>) -> Self {
+    impl<'a> From<&'a CheckReferenceEvent<'a>> for CheckReferenceEventOwned {
+        fn from(value: &'a CheckReferenceEvent<'a>) -> Self {
             match value {
-                RefCheckEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+                CheckReferenceEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }
         }
     }
