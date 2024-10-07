@@ -53,8 +53,6 @@ pub struct AccountCreateAdvancedManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccountCreateAdvancedManifestManifestInput = AccountCreateAdvancedManifestInput;
-
 pub type AccountCreateAdvancedOutput = Global<AccountMarker>;
 
 //================
@@ -147,8 +145,6 @@ pub struct AccountDepositBatchInput {
 pub struct AccountDepositBatchManifestInput {
     pub buckets: BucketBatch,
 }
-
-pub type AccountDepositBatchManifestManifestInput = AccountDepositBatchManifestInput;
 
 pub type AccountDepositBatchOutput = ();
 
