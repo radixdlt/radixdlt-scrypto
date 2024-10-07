@@ -160,7 +160,6 @@ pub enum InvalidMessageError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubintentValidationError {
-    TooManySubintents { limit: usize, actual: usize },
     DuplicateSubintent(SubintentHash),
     SubintentHasMultipleParents(SubintentHash),
     ChildSubintentNotIncludedInTransaction(SubintentHash),

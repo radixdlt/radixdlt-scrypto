@@ -49,7 +49,6 @@ pub struct TransactionValidationConfigV1 {
     pub v2_transactions_allowed: bool,
     pub min_tip_basis_points: u32,
     pub max_tip_basis_points: u32,
-    pub max_subintent_count: usize,
     /// A setting of N here allows a total depth of N + 1 if you
     /// include the root transaction intent.
     pub max_subintent_depth: usize,
@@ -77,7 +76,6 @@ impl TransactionValidationConfig {
             preparation_settings: PreparationSettings::babylon(),
             // V2-only settings
             v2_transactions_allowed: true,
-            max_subintent_count: 0,
             max_subintent_depth: 0,
             min_tip_basis_points: 0,
             max_tip_basis_points: 0,
@@ -90,7 +88,6 @@ impl TransactionValidationConfig {
         Self {
             max_references_per_intent: 512,
             v2_transactions_allowed: true,
-            max_subintent_count: 32,
             max_subintent_depth: 3,
             min_tip_basis_points: 0,
             max_instructions: 1000,
@@ -1044,13 +1041,6 @@ impl TransactionValidator {
         root_intent_core: &PreparedIntentCoreV2,
         subintents: &[PreparedSubintentV2],
     ) -> Result<IntentRelationships, SubintentValidationError> {
-        if subintents.len() > self.config.max_subintent_count {
-            return Err(SubintentValidationError::TooManySubintents {
-                limit: self.config.max_subintent_count,
-                actual: subintents.len(),
-            });
-        }
-
         let mut root_intent_details = RootIntentRelationshipDetails::default();
         let mut all_subintent_details =
             IndexMap::<SubintentHash, SubIntentRelationshipDetails>::default();

@@ -33,8 +33,8 @@ STATE UPDATES: 1 entity
              v2_transactions_permitted: true,
              max_user_payload_length: 1048576u64,
              max_ledger_payload_length: 1048586u64,
-             max_child_subintents_per_intent: 128u64,
-             max_subintents_per_transaction: 128u64,
+             max_child_subintents_per_intent: 32u64,
+             max_subintents_per_transaction: 32u64,
              max_blobs: 64u64,
            },
            manifest_validation: ManifestValidationRuleset::Interpreter(
@@ -43,7 +43,6 @@ STATE UPDATES: 1 entity
            v2_transactions_allowed: true,
            min_tip_basis_points: 0u32,
            max_tip_basis_points: 1000000u32,
-           max_subintent_count: 128u64,
            max_subintent_depth: 3u64,
          },
        )
