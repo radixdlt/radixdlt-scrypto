@@ -237,11 +237,11 @@ impl ManifestResourceConstraint {
 ///   * Or [`allowed_ids`][Self::allowed_ids] is [`AllowedIds::Allowlist(allowlist)`][AllowedIds::Allowlist]
 ///     and [`required_ids`][Self::required_ids] is a subset of `allowlist`.
 ///
-/// * The Numeric and Id bounds must be jointly satisfiable, that is, they must overlap:
+/// * The numeric and id bounds must be jointly satisfiable, that is, they must overlap:
 ///   * `required_ids.len() <= upper_bound.equivalent_decimal()`
 ///   * If there is an allowlist, `lower_bound.equivalent_decimal() <= allowlist.len()`
 ///
-/// Also, depending on the resource type, further validations are added:
+/// Also, depending on the resource type, further checks must be satisfied:
 ///
 /// * If the constraints are for a fungible resource, then [`required_ids`][Self::required_ids] must be
 /// empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] (or, if the upper bound is
