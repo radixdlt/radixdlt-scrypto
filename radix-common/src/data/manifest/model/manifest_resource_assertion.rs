@@ -211,24 +211,35 @@ impl ManifestResourceConstraint {
 ///   required to be in the balance.
 /// * A [`lower_bound`][Self::lower_bound] on the decimal balance amount.
 /// * An [`upper_bound`][Self::upper_bound] on the decimal balance amount.
-/// * Constraints on the [`allowed_ids`][Self::allowed_ids]. These are either [`AllowedIds::Any`]
-///   or can be constrained to [`AllowedIds::Allowlist`] of [`NonFungibleLocalId`]s.
-///   If this case, the ids in the resource balance must be a subset of the allowlist.
+/// * Constraints on the [`allowed_ids`][Self::allowed_ids]. These are either:
+///   * [`AllowedIds::Any`]
+///   * [`AllowedIds::Allowlist(allowlist)`][AllowedIds::Allowlist] of [`NonFungibleLocalId`]s.
+///     If this case, the ids in the resource balance must be a subset of the allowlist.
+///
+/// Fungible resources are viewed as a specialization of non-fungible resources where we disregard
+/// ids and permit non-integer balances. So you must use [`AllowedIds::Any`] with fungible resources.
+/// An empty allowlist is also permitted if the balance is exactly zero.
 ///
 /// ## Trait implementations
+///
 /// * The [`PartialEq`] / [`Eq`] implementations both are correctly order-independent on the id sets,
 ///   from the order-independent implementation of [`IndexSet`].
 ///
 /// ## Validity
 ///
-/// To be valid, the following checks must be upheld:
+/// To be valid, the following checks must be satisfied:
 ///
-/// * If `allowed_ids` is [`AllowedIds::Any`]:
-///   * `known_ids.len() <= lower_inclusive <= upper_inclusive`
+/// * The numeric bounds must be satisfiable:
+///   * [`lower_bound`][Self::lower_bound] `<=` [`upper_bound`][Self::upper_bound]`
 ///
-/// * If `allowed_ids` is [`AllowedIds::Allowlist(allowlist)`][AllowedIds::Allowlist]:
-///   * `known_ids.len() <= lower_inclusive <= upper_inclusive <= allowlist.len()`
-///   * `known_ids.is_subset(allowlist)`
+/// * The id bounds must be satisfiable:
+///   * Either [`allowed_ids`][Self::allowed_ids] is [`AllowedIds::Any`]
+///   * Or [`allowed_ids`][Self::allowed_ids] is [`AllowedIds::Allowlist(allowlist)`][AllowedIds::Allowlist]
+///     and [`required_ids`][Self::required_ids] is a subset of `allowlist`.
+///
+/// * The Numeric and Id bounds must be jointly satisfiable, that is, they must overlap:
+///   * `required_ids.len() <= upper_bound.equivalent_decimal()`
+///   * If there is an allowlist, `lower_bound.equivalent_decimal() <= allowlist.len()`
 ///
 /// Also, depending on the resource type, further validations are added:
 ///
@@ -237,6 +248,17 @@ impl ManifestResourceConstraint {
 /// zero, [`AllowedIds::Allowlist`] with an empty list is also acceptable).
 ///
 /// * If the constraints are for a non-fungible resource, then any decimal balances must be integers.
+///
+/// ## Normalization
+///
+/// Normalization takes a valid [`GeneralResourceConstraint`] and internally tightens it into a canonical
+/// form. The resultant fields satisfies these tighter conditions:
+///
+/// * Strict ordering of constraints:
+///   * `required_ids.len() <= lower_bound <= upper_bound <= allowlist.len()`
+/// * Detection of exact definition:
+///   * If `required_ids.len() == upper_bound`, then `allowed_ids == AllowedIds::Allowlist(required_ids)`
+///   * If `lower_bound == allowlist.len()`, then `required_ids == allowlist`
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct GeneralResourceConstraint {
     pub required_ids: IndexSet<NonFungibleLocalId>,
@@ -308,37 +330,78 @@ impl GeneralResourceConstraint {
             && self.lower_bound.is_valid_for_fungible_use()
             && self.upper_bound.is_valid_for_fungible_use()
             && self.allowed_ids.is_valid_for_fungible_use()
-            && self.are_bounds_valid();
+            && self.is_valid_independent_of_resource_type();
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
         return self.lower_bound.is_valid_for_non_fungible_use()
             && self.upper_bound.is_valid_for_non_fungible_use()
-            && self.are_bounds_valid();
+            && self.is_valid_independent_of_resource_type();
     }
 
-    fn are_bounds_valid(&self) -> bool {
-        let required_ids_amount = Decimal::from(self.required_ids.len());
-        // These inequalities also validate that the lower and upper bounds are non-negative.
-        if required_ids_amount > self.lower_bound.equivalent_decimal() {
-            return false;
-        }
+    pub fn is_valid_independent_of_resource_type(&self) -> bool {
+        // Part 1 - Verify numeric bounds
         if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
             return false;
         }
+
+        let required_ids_amount = Decimal::from(self.required_ids.len());
+
+        // Part 3a - Verify there exists an overlap with the required ids
+        if required_ids_amount > self.upper_bound.equivalent_decimal() {
+            return false;
+        }
+
         match &self.allowed_ids {
             AllowedIds::Allowlist(allowlist) => {
                 let allowlist_ids_amount = Decimal::from(allowlist.len());
-                if self.upper_bound.equivalent_decimal() > allowlist_ids_amount {
+
+                // Part 3b - Verify the exists an overlap with the allowed ids
+                if self.lower_bound.equivalent_decimal() > allowlist_ids_amount {
                     return false;
                 }
+
+                // Part 2 - Verify id bounds
                 if !self.required_ids.is_subset(allowlist) {
                     return false;
                 }
             }
             AllowedIds::Any => {}
         }
+
         true
+    }
+
+    /// The process of normalization defined under [`GeneralResourceConstraint`].
+    ///
+    /// This method is assumed to apply to a *valid* [`GeneralResourceConstraint`] - else the result is non-sensical.
+    pub fn normalize(&mut self) {
+        let required_ids_len = Decimal::from(self.required_ids.len());
+
+        // First, constrain the numeric bounds by the id bounds
+        if self.lower_bound.equivalent_decimal() < required_ids_len {
+            self.lower_bound = LowerBound::Inclusive(required_ids_len);
+        }
+        if let AllowedIds::Allowlist(allowlist) = &self.allowed_ids {
+            let allowlist_len = Decimal::from(allowlist.len());
+            if allowlist_len < self.upper_bound.equivalent_decimal() {
+                self.upper_bound = UpperBound::Inclusive(allowlist_len);
+            }
+        }
+
+        // Next, constrain the id bounds if we detect there must be equality of ids.
+        // First, we check they're not already equal...
+        if self.allowed_ids.allowlist_equivalent_length() > self.required_ids.len() {
+            if required_ids_len == self.upper_bound.equivalent_decimal() {
+                // Note - this can change a zero non-fungible amount to have an
+                // empty allowlist. This is allowed under the validity rules.
+                self.allowed_ids = AllowedIds::Allowlist(self.required_ids.clone());
+            } else if let AllowedIds::Allowlist(allowlist) = &self.allowed_ids {
+                if Decimal::from(allowlist.len()) == self.lower_bound.equivalent_decimal() {
+                    self.required_ids = allowlist.clone();
+                }
+            }
+        }
     }
 }
 
