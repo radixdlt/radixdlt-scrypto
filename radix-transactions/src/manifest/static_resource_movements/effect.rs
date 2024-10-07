@@ -376,7 +376,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                     },
                 },
                 ConsensusManagerInvocations::ValidatorBlueprint(invocation) => match invocation {
-                    ValidatorBlueprintInvocations::Function(_) => unreachable!(),
+                    ValidatorBlueprintInvocations::Function(invocation) => match *invocation {},
                     ValidatorBlueprintInvocations::Method(invocation) => match invocation {
                         ValidatorMethod::Register(input) => input.output(details),
                         ValidatorMethod::Unregister(input) => input.output(details),
@@ -528,7 +528,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                     },
                 },
                 ResourceInvocations::FungibleVaultBlueprint(invocation) => match invocation {
-                    FungibleVaultBlueprintInvocations::Function(_) => unreachable!(),
+                    FungibleVaultBlueprintInvocations::Function(invocation) => match *invocation {},
                     FungibleVaultBlueprintInvocations::Method(invocation) => match invocation {
                         FungibleVaultMethod::Take(input) => input.output(details),
                         FungibleVaultMethod::TakeAdvanced(input) => input.output(details),
@@ -545,7 +545,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                     },
                 },
                 ResourceInvocations::NonFungibleVaultBlueprint(invocation) => match invocation {
-                    NonFungibleVaultBlueprintInvocations::Function(_) => unreachable!(),
+                    NonFungibleVaultBlueprintInvocations::Function(invocation) => match *invocation {},
                     NonFungibleVaultBlueprintInvocations::Method(invocation) => match invocation {
                         NonFungibleVaultMethod::Take(input) => input.output(details),
                         NonFungibleVaultMethod::TakeAdvanced(input) => input.output(details),
@@ -571,7 +571,7 @@ impl StaticInvocationResourcesOutput for TypedNativeInvocation {
                     TransactionTrackerBlueprintInvocations::Function(invocation) => match invocation {
                         TransactionTrackerFunction::Create(input) => input.output(details),
                     },
-                    TransactionTrackerBlueprintInvocations::Method(_) => unreachable!(),
+                    TransactionTrackerBlueprintInvocations::Method(invocation) => match *invocation {},
                 },
             },
             TypedNativeInvocation::MetadataPackage(invocation) => match invocation {
