@@ -932,3 +932,70 @@ fn test_crypto_scrypto_verify_secp256k1_ecdsa_costing() {
         );
     }
 }
+
+fn bls12381_invalid_signature_aggregate<F>(protocol: ProtocolVersion, assert_receipt: F)
+where
+    F: Fn(TransactionReceiptV1),
+{
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| builder.from_bootstrap_to(protocol))
+        .build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v1"));
+
+    let sig_not_in_group = "8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f0";
+    let sig_not_in_group = Bls12381G2Signature::from_str(sig_not_in_group).unwrap();
+    let sig_valid = "82131f69b6699755f830e29d6ed41cbf759591a2ab598aa4e9686113341118d1db900d190436048601791121b5757c341045d4d0c94a95ec31a9ba6205f9b7504de85dadff52874375c58eec6cec28397279de87d5595101e398d31646d345bb";
+    let sig_valid = Bls12381G2Signature::from_str(sig_valid).unwrap();
+
+    let sigs_with_invalid_first = vec![sig_not_in_group, sig_valid];
+
+    // Act
+    let receipt = crypto_scrypto_bls12381_g2_signature_aggregate(
+        &mut ledger,
+        package_address,
+        sigs_with_invalid_first,
+    );
+
+    // Assert
+    assert_receipt(receipt);
+
+    let sigs_with_valid_not_first = vec![sig_valid, sig_not_in_group];
+
+    // Act
+    let receipt = crypto_scrypto_bls12381_g2_signature_aggregate(
+        &mut ledger,
+        package_address,
+        sigs_with_valid_not_first,
+    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::BlsError(
+               msg
+            )) if msg == "BlsError(\"BLST_POINT_NOT_IN_GROUP\")"
+        )
+    });
+}
+
+#[test]
+fn bls12381_invalid_signature_aggregate_bottlenose() {
+    bls12381_invalid_signature_aggregate(ProtocolVersion::Bottlenose, |receipt| {
+        receipt.expect_commit_success();
+    });
+}
+
+#[test]
+fn bls12381_invalid_signature_aggregate_cuttlefish() {
+    bls12381_invalid_signature_aggregate(ProtocolVersion::Cuttlefish, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::BlsError(
+                   msg
+                )) if msg == "BlsError(\"BLST_POINT_NOT_IN_GROUP\")"
+            )
+        });
+    });
+}
