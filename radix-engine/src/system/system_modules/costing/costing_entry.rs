@@ -8,6 +8,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
+use crate::track::IOAccess;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum ExecutionCostingEntry<'a> {
@@ -20,6 +21,9 @@ pub enum ExecutionCostingEntry<'a> {
     },
     RefCheck {
         event: &'a RefCheckEvent<'a>,
+    },
+    Nullification {
+        io_access: &'a [IOAccess],
     },
 
     /* run code */
@@ -149,6 +153,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             } => ft.verify_tx_signatures_cost(*num_of_signatures),
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
             ExecutionCostingEntry::RefCheck { event } => ft.ref_check(event),
+            ExecutionCostingEntry::Nullification { io_access } => ft.nullification(io_access),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -289,6 +294,9 @@ pub mod owned {
         },
         RefCheck {
             event: RefCheckEventOwned,
+        },
+        Nullification {
+            io_access: Vec<IOAccess>,
         },
 
         /* run code */
@@ -527,6 +535,9 @@ pub mod owned {
                 }
                 ExecutionCostingEntry::RefCheck { event } => Self::RefCheck {
                     event: event.into(),
+                },
+                ExecutionCostingEntry::Nullification { io_access } => Self::Nullification {
+                    io_access: io_access.to_vec(),
                 },
                 ExecutionCostingEntry::RunNativeCode {
                     package_address,

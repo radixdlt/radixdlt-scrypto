@@ -132,6 +132,15 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn nullification(&self, io_access: &[IOAccess]) -> u32 {
+        let mut sum = 0u32;
+        for io in io_access {
+            sum = sum.saturating_add(self.io_access_cost(io));
+        }
+        sum
+    }
+
+    #[inline]
     pub fn run_native_code_cost(
         &self,
         package_address: &PackageAddress,

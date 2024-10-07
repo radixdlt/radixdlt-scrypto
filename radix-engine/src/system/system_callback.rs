@@ -1571,7 +1571,61 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         )
                     }
                 }
-            };
+            }
+            .and_then(|_| {
+                match hash_nullification {
+                    IntentHashNullification::TransactionIntent { .. } => {
+                        // Transaction intent nullification is historically not costed.
+                    }
+                    IntentHashNullification::Subintent { .. } => {
+                        if let Some(costing) = modules.costing_mut() {
+                            let read_not_found =
+                                IOAccess::ReadFromDbNotFound(CanonicalSubstateKey {
+                                    node_id: TRANSACTION_TRACKER.into_node_id(),
+                                    partition_number: PartitionNumber(0),
+                                    substate_key: SubstateKey::Map(
+                                        scrypto_encode(&Hash([0u8; 32])).unwrap(),
+                                    ),
+                                });
+                            let write = IOAccess::TrackSubstateUpdated {
+                                canonical_substate_key: CanonicalSubstateKey {
+                                    node_id: TRANSACTION_TRACKER.into_node_id(),
+                                    partition_number: PartitionNumber(0),
+                                    substate_key: SubstateKey::Map(
+                                        scrypto_encode(&Hash([0u8; 32])).unwrap(),
+                                    ),
+                                },
+                                old_size: Some(0), // some are insertions but treated as updates, given the ring buffer design.
+                                new_size: Some(
+                                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                                        KeyValueEntrySubstateV1 {
+                                            value: Some(TransactionStatus::V1(
+                                                TransactionStatusV1::CommittedSuccess,
+                                            )),
+                                            lock_status: LockStatus::Unlocked,
+                                        },
+                                    ))
+                                    .len(),
+                                ),
+                            };
+                            return costing
+                                .apply_deferred_execution_cost(
+                                    ExecutionCostingEntry::Nullification {
+                                        io_access: &[read_not_found, write],
+                                    },
+                                )
+                                .map_err(|e| {
+                                    RejectionReason::BootloadingError(
+                                        BootloadingError::FailedToApplyDeferredCosts(e),
+                                    )
+                                });
+                        }
+                    }
+                }
+
+                Ok(())
+            });
+
             match intent_hash_validation_result {
                 Ok(()) => {}
                 Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
