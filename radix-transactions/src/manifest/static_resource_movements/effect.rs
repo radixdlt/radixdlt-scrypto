@@ -985,35 +985,18 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
     }
 }
 
-impl StaticInvocationResourcesOutput for FungibleResourceManagerCreateEmptyBucketManifestInput {
+impl StaticInvocationResourcesOutput for ResourceManagerCreateEmptyBucketInput {
     fn output(
         &self,
-        details: InvocationDetails,
+        _: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // If the receiver is a global address then we can return something useful. Otherwise it
-        // is a known amount and an unknown resource address.
-        match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
-                // Attempt to convert the global address to a resource address. Error if that fails.
-                if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
-                    TrackedResources::new_empty().add_resource(
-                        resource_address,
-                        TrackedResource::exact_amount(Decimal::ZERO, [details.source])?,
-                    )
-                } else {
-                    Err(StaticResourceMovementsError::NotAResourceAddress(
-                        global_address,
-                    ))
-                }
-            }
-            InvocationReceiver::GlobalMethodOnReservedAddress
-            | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction => Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            ),
-        }
+        // An empty bucket is returned so we just return an empty set of `TrackedResources`. I have
+        // this as a manual implementation instead of one of the invocations in the macro invocation
+        // because NONE of the invocations there return a bucket while this invocation returns a
+        // bucket. To be consistent and have all invocations returning a bucket have a manual impl
+        // I'm keeping this manual and hand-written implementation with a comment on why it's here
+        // and why this invocation returns nothing.
+        Ok(TrackedResources::new_empty())
     }
 }
 // endregion:FungibleResourceManager
