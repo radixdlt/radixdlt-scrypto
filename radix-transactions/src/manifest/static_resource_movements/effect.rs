@@ -329,19 +329,21 @@ impl StaticInvocationResourcesOutput for AccountSecurifyManifestInput {
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_)) => {
-                TrackedResources::new_empty().add_resource(
-                    ACCOUNT_OWNER_BADGE,
-                    TrackedResource::exact_amount(1, [details.source])?,
-                )
-            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            ) => TrackedResources::new_empty().add_resource(
+                ACCOUNT_OWNER_BADGE,
+                TrackedResource::exact_amount(1, [details.source])?,
+            ),
             InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
@@ -497,19 +499,21 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeManifestIn
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         Ok(match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )?
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_)) => {
-                TrackedResources::new_empty().add_resource(
-                    IDENTITY_OWNER_BADGE,
-                    TrackedResource::exact_amount(1, [details.source])?,
-                )?
-            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            ) => TrackedResources::new_empty().add_resource(
+                IDENTITY_OWNER_BADGE,
+                TrackedResource::exact_amount(1, [details.source])?,
+            )?,
             InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
@@ -641,7 +645,9 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -654,7 +660,9 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
             | InvocationReceiver::DirectAccess(_)
             | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
@@ -690,7 +698,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestI
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known ids and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -706,7 +716,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestI
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
             | InvocationReceiver::DirectAccess(_)
             | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
@@ -725,7 +737,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManif
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -738,7 +752,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManif
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
             | InvocationReceiver::DirectAccess(_)
             | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
@@ -757,7 +773,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -770,7 +788,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
             | InvocationReceiver::DirectAccess(_)
             | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([

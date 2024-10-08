@@ -196,7 +196,7 @@ impl CostingModule {
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), CostingError> {
-        if let ExecutionCostingEntry::RefCheck { .. } = &costing_entry {
+        if let ExecutionCostingEntry::CheckReference { .. } = &costing_entry {
             if !self.config.apply_boot_ref_check_costing {
                 return Ok(());
             }
@@ -218,6 +218,7 @@ impl CostingModule {
                 .or_default()
                 .add_assign(cost_units);
         }
+
         if let Some(detailed_cost_breakdown) = &mut self.detailed_cost_breakdown {
             // Add an entry for the more detailed execution cost
             detailed_cost_breakdown
@@ -230,6 +231,30 @@ impl CostingModule {
                         cost_units,
                     },
                 });
+        }
+
+        Ok(())
+    }
+
+    pub fn apply_deferred_finalization_cost(
+        &mut self,
+        costing_entry: FinalizationCostingEntry,
+    ) -> Result<(), CostingError> {
+        self.on_apply_cost.on_call()?;
+
+        let cost_units = costing_entry.to_finalization_cost_units(&self.fee_table);
+
+        self.fee_reserve
+            .consume_deferred_finalization(cost_units)
+            .map_err(CostingError::FeeReserveError)?;
+
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
+            let key = costing_entry.to_trace_key();
+            cost_breakdown
+                .finalization_cost_breakdown
+                .entry(key)
+                .or_default()
+                .add_assign(cost_units);
         }
 
         Ok(())

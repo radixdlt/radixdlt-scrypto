@@ -136,7 +136,7 @@ impl StaticResourceMovementsVisitor {
         // Creating a typed native invocation to use in interpreting the invocation.
         match invocation_kind {
             InvocationKind::DirectMethod { address, method } => {
-                let resolved_dynamic_address = ResolvedDynamicAddress::Static(*address);
+                let resolved_dynamic_address = ResolvedDynamicAddress::StaticAddress(*address);
                 let Some(typed_invocation) = TypedManifestNativeInvocation::from_method_invocation(
                     &resolved_dynamic_address,
                     ModuleId::Main,
@@ -156,12 +156,14 @@ impl StaticResourceMovementsVisitor {
             } => {
                 let resolved_dynamic_address = match address {
                     DynamicGlobalAddress::Static(global_address) => {
-                        ResolvedDynamicAddress::Static(*global_address)
+                        ResolvedDynamicAddress::StaticAddress(*global_address)
                     }
                     DynamicGlobalAddress::Named(named_address) => {
                         let blueprint_id = self.tracked_named_addresses.get(named_address)
                             .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
-                        ResolvedDynamicAddress::Named(blueprint_id.clone())
+                        ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                            blueprint_id.clone(),
+                        )
                     }
                 };
                 let Some(typed_invocation) = TypedManifestNativeInvocation::from_method_invocation(

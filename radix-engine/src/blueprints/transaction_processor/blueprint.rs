@@ -48,7 +48,7 @@ impl TransactionProcessorBlueprint {
             api,
         )?;
         let resume_result = txn_processor_single_thread.resume(None, api)?;
-        if !matches!(resume_result, ResumeResult::RootIntentDone) {
+        if !matches!(resume_result, ResumeResult::Done) {
             panic!("Unexpected yield occurred in v1 transaction processing");
         }
         Ok(txn_processor_single_thread.outputs)

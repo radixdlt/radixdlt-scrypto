@@ -35,7 +35,7 @@ pub enum DropNodeEvent<'a> {
 }
 
 #[derive(Debug)]
-pub enum RefCheckEvent<'a> {
+pub enum CheckReferenceEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
@@ -166,7 +166,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
         executable: &Self::Executable,
         init: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
+    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>, usize), Self::Receipt>;
 
     /// Start execution
     fn execute<Y: KernelApi<CallbackObject = Self>>(
@@ -175,7 +175,11 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
-    fn finalize(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+    fn finalize(
+        &mut self,
+        store_commit_info: StoreCommitInfo,
+        num_of_intent_statuses: usize,
+    ) -> Result<(), RuntimeError>;
 
     /// Create final receipt
     fn create_receipt<S: SubstateDatabase>(

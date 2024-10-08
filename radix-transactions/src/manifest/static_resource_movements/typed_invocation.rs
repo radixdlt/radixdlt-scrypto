@@ -224,7 +224,9 @@ macro_rules! define_manifest_typed_invocation {
                                 ) => $action,
                             )*
                         )*
-                        _ => unreachable!("Can't be reached.")
+                        // AVOIDS [E0004] when the enum is empty "note: references are always considered inhabited"
+                        // https://github.com/rust-lang/unsafe-code-guidelines/issues/413
+                        _ => unreachable!("[E0004]")
                     }
                 }
             }
