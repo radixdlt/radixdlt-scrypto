@@ -27,6 +27,7 @@ impl CustomValue<NoCustomValueKind> for NoCustomValue {
 
 pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind>;
+#[allow(deprecated)]
 pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal>;
 pub type BasicValue = Value<NoCustomValueKind, NoCustomValue>;
 pub type BasicValueKind = ValueKind<NoCustomValueKind>;
