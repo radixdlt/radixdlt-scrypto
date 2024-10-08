@@ -39,7 +39,7 @@ pub struct ProposerTimestampRange {
 impl ProposerTimestampRange {
     /// Checks if a timestamp is within this range.
     ///
-    /// The implementation assumes of this range is valid.
+    /// This implementation assumes that the range is valid.
     pub fn contains(&self, timestamp: Instant) -> bool {
         if let Some(t) = self.start_timestamp_inclusive {
             if timestamp < t {
