@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
+    CheckReferenceEvent, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
@@ -125,10 +125,16 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn ref_check(&self, event: &RefCheckEvent) -> u32 {
+    pub fn check_reference(&self, event: &CheckReferenceEvent) -> u32 {
         match event {
-            RefCheckEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            CheckReferenceEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
+    }
+
+    #[inline]
+    pub fn check_intent_validity(&self) -> u32 {
+        // Equivalent to an `IOAccess::ReadFromDbNotFound`
+        160000
     }
 
     #[inline]
@@ -555,6 +561,12 @@ impl FeeTable {
             sum += add(cast(log.1.len()) / 4, 1_000)
         }
         sum
+    }
+
+    #[inline]
+    pub fn commit_intent_status(&self, num_of_intent_statuses: usize) -> u32 {
+        // Equivalent to a substate insertion
+        mul(cast(num_of_intent_statuses), 100_000)
     }
 }
 

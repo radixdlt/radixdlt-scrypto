@@ -8,6 +8,7 @@ Execution Cost Breakdown                                                   ,    
 - AfterInvoke                                                              ,                       64,      0.0%
 - AllocateNodeId                                                           ,                      582,      0.0%
 - BeforeInvoke                                                             ,                      482,      0.0%
+- CheckReference                                                           ,                    80022,      2.9%
 - CloseSubstate                                                            ,                    10578,      0.4%
 - CreateNode                                                               ,                     5242,      0.2%
 - DropNode                                                                 ,                     4939,      0.2%
@@ -24,7 +25,6 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,                   353866,     12.8%
 - QueryActor                                                               ,                     1500,      0.1%
 - ReadSubstate                                                             ,                   399533,     14.4%
-- RefCheck                                                                 ,                    80022,      2.9%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.5%
 - RunNativeCode::lock_fee                                                  ,                    45243,      1.6%
 - RunNativeCode::recall_FungibleVault                                      ,                    42221,      1.5%

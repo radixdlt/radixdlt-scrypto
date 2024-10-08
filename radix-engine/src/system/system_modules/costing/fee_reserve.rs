@@ -48,6 +48,8 @@ impl CanBeAbortion for FeeReserveError {
 pub trait PreExecutionFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
 
+    fn consume_deferred_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+
     fn consume_deferred_storage(
         &mut self,
         storage_type: StorageType,
@@ -122,6 +124,7 @@ pub struct SystemLoanFeeReserve {
 
     // Finalization costs
     finalization_cost_units_committed: u32,
+    finalization_cost_units_deferred: u32,
 
     /// Royalty costs
     royalty_cost_committed: Decimal,
@@ -209,6 +212,7 @@ impl SystemLoanFeeReserve {
             execution_cost_units_deferred: 0,
 
             finalization_cost_units_committed: 0,
+            finalization_cost_units_deferred: 0,
 
             royalty_cost_breakdown: index_map_new(),
             royalty_cost_committed: Decimal::ZERO,
@@ -358,6 +362,10 @@ impl SystemLoanFeeReserve {
         self.consume_execution_internal(self.execution_cost_units_deferred)?;
         self.execution_cost_units_deferred = 0;
 
+        // Apply deferred finalization cost
+        self.consume_finalization_internal(self.finalization_cost_units_deferred)?;
+        self.finalization_cost_units_deferred = 0;
+
         // Apply deferred storage cost
         let types: Vec<StorageType> = self.storage_cost_deferred.keys().cloned().collect();
         for t in types {
@@ -403,6 +411,12 @@ impl SystemLoanFeeReserve {
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         checked_add_assign(&mut self.execution_cost_units_deferred, cost_units)?;
+
+        Ok(())
+    }
+
+    fn consume_deferred_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
+        checked_add_assign(&mut self.finalization_cost_units_deferred, cost_units)?;
 
         Ok(())
     }

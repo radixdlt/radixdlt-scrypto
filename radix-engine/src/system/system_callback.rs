@@ -1152,10 +1152,12 @@ impl<V: SystemCallbackObject> System<V> {
                 },
                 ref_value.len(),
             );
-            let event = RefCheckEvent::IOAccess(&io_access);
+            let event = CheckReferenceEvent::IOAccess(&io_access);
 
             costing
-                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .apply_deferred_execution_cost(ExecutionCostingEntry::CheckReference {
+                    event: &event,
+                })
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
@@ -1501,7 +1503,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         executable: &ExecutableTransaction,
         init_input: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>, usize), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.self_init.enable_kernel_trace {
@@ -1539,6 +1541,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             }
         }
 
+        let mut num_of_intent_statuses = 0;
         for hash_nullification in executable.intent_hash_nullifications() {
             let intent_hash_validation_result = match hash_nullification {
                 IntentHashNullification::TransactionIntent {
@@ -1571,7 +1574,32 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         )
                     }
                 }
-            };
+            }
+            .and_then(|_| {
+                match hash_nullification {
+                    IntentHashNullification::TransactionIntent { .. } => {
+                        // Transaction intent nullification is historically not costed.
+                    }
+                    IntentHashNullification::Subintent { .. } => {
+                        num_of_intent_statuses += 1;
+
+                        if let Some(costing) = modules.costing_mut() {
+                            return costing
+                                .apply_deferred_execution_cost(
+                                    ExecutionCostingEntry::CheckIntentValidity,
+                                )
+                                .map_err(|e| {
+                                    RejectionReason::BootloadingError(
+                                        BootloadingError::FailedToApplyDeferredCosts(e),
+                                    )
+                                });
+                        }
+                    }
+                }
+
+                Ok(())
+            });
+
             match intent_hash_validation_result {
                 Ok(()) => {}
                 Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
@@ -1601,7 +1629,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             },
         );
 
-        Ok((system, call_frame_inits))
+        Ok((system, call_frame_inits, num_of_intent_statuses))
     }
 
     fn execute<Y: SystemBasedKernelApi>(
@@ -1633,7 +1661,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         Ok(output)
     }
 
-    fn finalize(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finalize(
+        &mut self,
+        info: StoreCommitInfo,
+        num_of_intent_statuses: usize,
+    ) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
         // Note that if a transactions fails during this phase, the costing is
@@ -1653,6 +1685,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                 logs: &self.modules.logs().clone(),
+            })
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+        self.modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitIntentStatus {
+                num_of_intent_statuses,
             })
             .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
 
