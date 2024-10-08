@@ -46,6 +46,18 @@ impl TryFrom<&[u8]> for Secp256k1PublicKey {
     }
 }
 
+impl AsRef<Self> for Secp256k1PublicKey {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Secp256k1PublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 //======
 // hash
 //======
@@ -95,7 +107,7 @@ impl IsPublicKeyHash for Secp256k1PublicKeyHash {
 //======
 
 /// Represents an error when parsing ED25519 public key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseSecp256k1PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),

@@ -5,6 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
+use crate::vm::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_transactions::validation::*;
@@ -26,6 +27,11 @@ pub struct CuttlefishSettings {
         UpdateSetting<UpdateNumberOfMinRoundsPerEpochSettings>,
     /// Update identity blueprint to not create a royalty module.
     pub update_identity_to_not_create_royalty_module: UpdateSetting<NoSettings>,
+    /// Introduces Crypto Utils v2 with support for
+    /// - Blake2b-256,
+    /// - Secp256k1 ECDSA verification
+    /// - Ed25519 verification
+    pub vm_boot_to_enable_crypto_utils_v2: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for CuttlefishSettings {
@@ -47,6 +53,9 @@ impl UpdateSettings for CuttlefishSettings {
             ),
             update_identity_to_not_create_royalty_module:
                 UpdateSetting::enabled_as_default_for_network(network),
+            vm_boot_to_enable_crypto_utils_v2: UpdateSetting::enabled_as_default_for_network(
+                network,
+            ),
         }
     }
 
@@ -59,6 +68,7 @@ impl UpdateSettings for CuttlefishSettings {
             update_metadata: UpdateSetting::Disabled,
             update_number_of_min_rounds_per_epoch: UpdateSetting::Disabled,
             update_identity_to_not_create_royalty_module: UpdateSetting::Disabled,
+            vm_boot_to_enable_crypto_utils_v2: UpdateSetting::Disabled,
         }
     }
 
@@ -132,6 +142,7 @@ fn generate_principal_batch(
         update_metadata,
         update_number_of_min_rounds_per_epoch,
         update_identity_to_not_create_royalty_module,
+        vm_boot_to_enable_crypto_utils_v2,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
@@ -175,6 +186,12 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "cuttlefish-update-identity-to-not-create-royalty-module",
             generate_cuttlefish_update_identity_to_not_create_royalty_module(store),
+        ));
+    }
+    if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_crypto_utils_v2 {
+        transactions.push(ProtocolUpdateTransactionDetails::flash(
+            "cuttlefish-vm-boot-to-enable-crypto-utils-v2",
+            generate_vm_boot_to_enable_crypto_utils_v2(),
         ));
     }
     ProtocolUpdateBatch { transactions }
@@ -730,5 +747,16 @@ fn generate_cuttlefish_update_identity_to_not_create_royalty_module<
                 SubstateKey::map(&code_hash),
                 code_substate,
             ),
+    )
+}
+
+fn generate_vm_boot_to_enable_crypto_utils_v2() -> StateUpdates {
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::VmBoot,
+        VmBoot::V1 {
+            scrypto_version: ScryptoVmVersion::crypto_utils_v2().into(),
+        },
     )
 }

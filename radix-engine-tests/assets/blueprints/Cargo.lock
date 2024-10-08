@@ -204,7 +204,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto_scrypto"
+name = "crypto_scrypto_v1"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
+name = "crypto_scrypto_v2"
 version = "1.0.0"
 dependencies = [
  "scrypto",

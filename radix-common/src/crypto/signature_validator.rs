@@ -43,13 +43,13 @@ pub fn verify_secp256k1(
 }
 
 pub fn verify_ed25519(
-    signed_hash: &Hash,
+    message: impl AsRef<[u8]>,
     public_key: &Ed25519PublicKey,
     signature: &Ed25519Signature,
 ) -> bool {
     let sig = ed25519_dalek::Signature::from_bytes(&signature.0);
     if let Ok(pk) = ed25519_dalek::VerifyingKey::from_bytes(&public_key.0) {
-        return pk.verify_strict(&signed_hash.0, &sig).is_ok();
+        return pk.verify_strict(message.as_ref(), &sig).is_ok();
     }
 
     false
@@ -167,12 +167,31 @@ pub fn aggregate_verify_bls12381_v1(
 /// Performs BLS12-381 G2 aggregated signature verification
 /// one message signed with multiple keys.
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// This method validates provided input keys when aggregating.
 pub fn fast_aggregate_verify_bls12381_v1(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],
     signature: &Bls12381G2Signature,
 ) -> bool {
-    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys) {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate(public_keys, true) {
+        return verify_bls12381_v1(message, &agg_pk, signature);
+    }
+
+    false
+}
+
+/// Performs BLS12-381 G2 aggregated signature verification
+/// one message signed with multiple keys.
+/// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
+/// This method does not validate provided input keys when aggregating,
+/// it is left here for backward compatibility.
+/// It is recommended to use `fast_aggregate_verify_bls12381_v1()` method instead.
+pub fn fast_aggregate_verify_bls12381_v1_anemone(
+    message: &[u8],
+    public_keys: &[Bls12381G1PublicKey],
+    signature: &Bls12381G2Signature,
+) -> bool {
+    if let Ok(agg_pk) = Bls12381G1PublicKey::aggregate_anemone(public_keys) {
         return verify_bls12381_v1(message, &agg_pk, signature);
     }
 

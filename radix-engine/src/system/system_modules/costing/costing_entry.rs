@@ -133,6 +133,13 @@ pub enum ExecutionCostingEntry<'a> {
     Keccak256Hash {
         size: usize,
     },
+    Blake2b256Hash {
+        size: usize,
+    },
+    Ed25519Verify {
+        size: usize,
+    },
+    Secp256k1EcdsaVerify,
 }
 
 #[derive(Debug, IntoStaticStr)]
@@ -211,6 +218,9 @@ impl<'a> ExecutionCostingEntry<'a> {
                 ft.bls12381_g2_signature_aggregate_cost(*signatures_cnt)
             }
             ExecutionCostingEntry::Keccak256Hash { size } => ft.keccak256_hash_cost(*size),
+            ExecutionCostingEntry::Blake2b256Hash { size } => ft.blake2b256_hash_cost(*size),
+            ExecutionCostingEntry::Ed25519Verify { size } => ft.ed25519_verify_cost(*size),
+            ExecutionCostingEntry::Secp256k1EcdsaVerify => ft.secp256k1_ecdsa_verify_cost(),
         }
     }
 }
@@ -409,6 +419,13 @@ pub mod owned {
         Keccak256Hash {
             size: usize,
         },
+        Blake2b256Hash {
+            size: usize,
+        },
+        Ed25519Verify {
+            size: usize,
+        },
+        Secp256k1EcdsaVerify,
     }
 
     /// An owned model equivalent of [`CreateNodeEvent`].
@@ -633,6 +650,9 @@ pub mod owned {
                     Self::Bls12381G2SignatureAggregate { signatures_cnt }
                 }
                 ExecutionCostingEntry::Keccak256Hash { size } => Self::Keccak256Hash { size },
+                ExecutionCostingEntry::Blake2b256Hash { size } => Self::Blake2b256Hash { size },
+                ExecutionCostingEntry::Ed25519Verify { size } => Self::Ed25519Verify { size },
+                ExecutionCostingEntry::Secp256k1EcdsaVerify => Self::Secp256k1EcdsaVerify,
             }
         }
     }

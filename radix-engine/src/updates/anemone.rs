@@ -354,7 +354,7 @@ fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates {
         BOOT_LOADER_PARTITION,
         BootLoaderField::VmBoot,
         VmBoot::V1 {
-            scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
+            scrypto_version: ScryptoVmVersion::crypto_utils_v1().into(),
         },
     )
 }
