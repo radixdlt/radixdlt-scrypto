@@ -562,6 +562,12 @@ impl FeeTable {
         }
         sum
     }
+
+    #[inline]
+    pub fn commit_intent_status(&self, num_of_intent_statuses: usize) -> u32 {
+        // Equivalent to a substate insertion
+        mul(cast(num_of_intent_statuses), 100_000)
+    }
 }
 
 #[inline]

@@ -140,6 +140,7 @@ pub enum FinalizationCostingEntry<'a> {
     CommitStateUpdates { store_commit: &'a StoreCommit },
     CommitEvents { events: &'a Vec<Event> },
     CommitLogs { logs: &'a Vec<(Level, String)> },
+    CommitIntentStatus { num_of_intent_statuses: usize },
 }
 
 impl<'a> ExecutionCostingEntry<'a> {
@@ -222,6 +223,10 @@ impl<'a> FinalizationCostingEntry<'a> {
             }
             FinalizationCostingEntry::CommitEvents { events } => ft.commit_events_cost(events),
             FinalizationCostingEntry::CommitLogs { logs } => ft.commit_logs_cost(logs),
+
+            FinalizationCostingEntry::CommitIntentStatus {
+                num_of_intent_statuses,
+            } => ft.commit_intent_status(*num_of_intent_statuses),
         }
     }
 }

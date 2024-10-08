@@ -1503,7 +1503,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         executable: &ExecutableTransaction,
         init_input: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>, usize), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.self_init.enable_kernel_trace {
@@ -1541,6 +1541,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             }
         }
 
+        let mut num_of_intent_statuses = 0;
         for hash_nullification in executable.intent_hash_nullifications() {
             let intent_hash_validation_result = match hash_nullification {
                 IntentHashNullification::TransactionIntent {
@@ -1580,6 +1581,8 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         // Transaction intent nullification is historically not costed.
                     }
                     IntentHashNullification::Subintent { .. } => {
+                        num_of_intent_statuses += 1;
+
                         if let Some(costing) = modules.costing_mut() {
                             return costing
                                 .apply_deferred_execution_cost(
@@ -1626,7 +1629,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             },
         );
 
-        Ok((system, call_frame_inits))
+        Ok((system, call_frame_inits, num_of_intent_statuses))
     }
 
     fn execute<Y: SystemBasedKernelApi>(
@@ -1658,7 +1661,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         Ok(output)
     }
 
-    fn finalize(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finalize(
+        &mut self,
+        info: StoreCommitInfo,
+        num_of_intent_statuses: usize,
+    ) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
         // Note that if a transactions fails during this phase, the costing is
@@ -1678,6 +1685,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                 logs: &self.modules.logs().clone(),
+            })
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+        self.modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitIntentStatus {
+                num_of_intent_statuses,
             })
             .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
 
