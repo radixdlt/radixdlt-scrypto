@@ -1,6 +1,7 @@
 use super::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 
 /// A type representing partial knowledge of the balances of some number of resources.
@@ -1620,5 +1621,46 @@ impl AccountDeposit {
                 self.unspecified_resources.resource_bounds(),
             ),
         }
+    }
+}
+
+/// This is a type equivalent to the dynamic types defined for use in the manifest such as the
+/// [`DynamicGlobalAddress`], [`DynamicPackageAddress`], and so on but with the [`Named`] variant
+/// resolved from a [`ManifestNamedAddress`] to a particular [`BlueprintId`] that is known.
+///
+/// * [`Named`]: ResolvedDynamicAddress::Named
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
+pub enum ResolvedDynamicAddress<T: AsRef<NodeId>> {
+    Static(T),
+    Named(BlueprintId),
+}
+
+impl<T: AsRef<NodeId>> ResolvedDynamicAddress<T> {
+    /// This method returns the [`BlueprintId`] of the main module of the object that it addresses.
+    ///
+    /// In the case that the address type is [`Named`] then resolving the [`BlueprintId`] is simple,
+    /// it  is what's stored in that variant which is the blueprint of the named address. In the
+    /// case that the address is [`Static`] this method attempts to determine the [`BlueprintId`]
+    /// from from the entity type of the address.
+    ///
+    /// * [`Named`]: ResolvedDynamicAddress::Named
+    /// * [`Static`]: ResolvedDynamicAddress::Static
+    pub fn main_module_blueprint_id(&self) -> Option<&BlueprintId> {
+        match self {
+            Self::Static(global_address) => global_address
+                .as_ref()
+                .entity_type()
+                .and_then(resolve_main_module_blueprint_id),
+            Self::Named(blueprint_id) => Some(blueprint_id),
+        }
+    }
+
+    /// This method attempts the resolve the dynamic address into the [`BlueprintId`] that is
+    /// invoked when the passed [`ModuleId`] is invoked on this address.
+    pub fn invoked_blueprint_id(&self, module_id: ModuleId) -> Option<&BlueprintId> {
+        self.main_module_blueprint_id()
+            .and_then(|main_module_blueprint_id| {
+                resolve_invoked_blueprint_id(main_module_blueprint_id, module_id)
+            })
     }
 }

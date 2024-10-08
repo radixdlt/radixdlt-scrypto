@@ -32,10 +32,9 @@ pub struct InvocationDetails<'a> {
 
 #[derive(Debug)]
 pub enum InvocationReceiver {
-    GlobalMethod(GlobalAddress),
-    GlobalMethodOnReservedAddress,
+    GlobalMethod(ResolvedDynamicAddress<GlobalAddress>),
     DirectAccess(InternalAddress),
-    BlueprintFunction,
+    BlueprintFunction(BlueprintId),
 }
 
 macro_rules! no_output_static_invocation_resources_output_impl {
@@ -287,333 +286,12 @@ unknown_output_static_invocation_resources_output_impl![
 ];
 
 // region:Typed Invocation
-impl StaticInvocationResourcesOutput for TypedNativeInvocation {
+impl StaticInvocationResourcesOutput for TypedManifestNativeInvocation {
     fn output(
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        match self {
-            TypedNativeInvocation::AccessControllerPackage(invocation) => match invocation {
-                AccessControllerInvocations::AccessControllerBlueprint(invocation) => match invocation {
-                    AccessControllerBlueprintInvocations::Function(invocation) => match invocation {
-                        AccessControllerFunction::Create(input) => input.output(details),
-                    },
-                    AccessControllerBlueprintInvocations::Method(invocation) => match invocation {
-                        AccessControllerMethod::CreateProof(input) => input.output(details),
-                        AccessControllerMethod::InitiateRecoveryAsPrimary(input) => input.output(details),
-                        AccessControllerMethod::InitiateRecoveryAsRecovery(input) => input.output(details),
-                        AccessControllerMethod::QuickConfirmPrimaryRoleRecoveryProposal(input) => input.output(details),
-                        AccessControllerMethod::QuickConfirmRecoveryRoleRecoveryProposal(input) => {
-                            input.output(details)
-                        }
-                        AccessControllerMethod::TimedConfirmRecovery(input) => input.output(details),
-                        AccessControllerMethod::CancelPrimaryRoleRecoveryProposal(input) => input.output(details),
-                        AccessControllerMethod::CancelRecoveryRoleRecoveryProposal(input) => input.output(details),
-                        AccessControllerMethod::LockPrimaryRole(input) => input.output(details),
-                        AccessControllerMethod::UnlockPrimaryRole(input) => input.output(details),
-                        AccessControllerMethod::StopTimedRecovery(input) => input.output(details),
-                        AccessControllerMethod::InitiateBadgeWithdrawAttemptAsPrimary(input) => input.output(details),
-                        AccessControllerMethod::InitiateBadgeWithdrawAttemptAsRecovery(input) => input.output(details),
-                        AccessControllerMethod::QuickConfirmPrimaryRoleBadgeWithdrawAttempt(input) => {
-                            input.output(details)
-                        }
-                        AccessControllerMethod::QuickConfirmRecoveryRoleBadgeWithdrawAttempt(input) => {
-                            input.output(details)
-                        }
-                        AccessControllerMethod::CancelPrimaryRoleBadgeWithdrawAttempt(input) => input.output(details),
-                        AccessControllerMethod::CancelRecoveryRoleBadgeWithdrawAttempt(input) => input.output(details),
-                        AccessControllerMethod::MintRecoveryBadges(input) => input.output(details),
-                        AccessControllerMethod::LockRecoveryFee(input) => input.output(details),
-                        AccessControllerMethod::WithdrawRecoveryFee(input) => input.output(details),
-                        AccessControllerMethod::ContributeRecoveryFee(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::AccountPackage(invocation) => match invocation {
-                AccountInvocations::AccountBlueprint(invocation) => match invocation {
-                    AccountBlueprintInvocations::Function(invocation) => match invocation {
-                        AccountFunction::CreateAdvanced(input) => input.output(details),
-                        AccountFunction::Create(input) => input.output(details),
-                    },
-                    AccountBlueprintInvocations::Method(invocation) => match invocation {
-                        AccountMethod::Securify(input) => input.output(details),
-                        AccountMethod::LockFee(input) => input.output(details),
-                        AccountMethod::LockContingentFee(input) => input.output(details),
-                        AccountMethod::Deposit(input) => input.output(details),
-                        AccountMethod::DepositBatch(input) => input.output(details),
-                        AccountMethod::Withdraw(input) => input.output(details),
-                        AccountMethod::WithdrawNonFungibles(input) => input.output(details),
-                        AccountMethod::Burn(input) => input.output(details),
-                        AccountMethod::BurnNonFungibles(input) => input.output(details),
-                        AccountMethod::LockFeeAndWithdraw(input) => input.output(details),
-                        AccountMethod::LockFeeAndWithdrawNonFungibles(input) => input.output(details),
-                        AccountMethod::CreateProofOfAmount(input) => input.output(details),
-                        AccountMethod::CreateProofOfNonFungibles(input) => input.output(details),
-                        AccountMethod::SetDefaultDepositRule(input) => input.output(details),
-                        AccountMethod::SetResourcePreference(input) => input.output(details),
-                        AccountMethod::RemoveResourcePreference(input) => input.output(details),
-                        AccountMethod::TryDepositOrRefund(input) => input.output(details),
-                        AccountMethod::TryDepositBatchOrRefund(input) => input.output(details),
-                        AccountMethod::TryDepositOrAbort(input) => input.output(details),
-                        AccountMethod::TryDepositBatchOrAbort(input) => input.output(details),
-                        AccountMethod::AddAuthorizedDepositor(input) => input.output(details),
-                        AccountMethod::RemoveAuthorizedDepositor(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::ConsensusManagerPackage(invocation) => match invocation {
-                ConsensusManagerInvocations::ConsensusManagerBlueprint(invocation) => match invocation {
-                    ConsensusManagerBlueprintInvocations::Function(invocation) => match invocation {
-                        ConsensusManagerFunction::Create(input) => input.output(details),
-                    },
-                    ConsensusManagerBlueprintInvocations::Method(invocation) => match invocation {
-                        ConsensusManagerMethod::GetCurrentEpoch(input) => input.output(details),
-                        ConsensusManagerMethod::Start(input) => input.output(details),
-                        ConsensusManagerMethod::GetCurrentTime(input) => input.output(details),
-                        ConsensusManagerMethod::CompareCurrentTime(input) => input.output(details),
-                        ConsensusManagerMethod::NextRound(input) => input.output(details),
-                        ConsensusManagerMethod::CreateValidator(input) => input.output(details),
-                    },
-                },
-                ConsensusManagerInvocations::ValidatorBlueprint(invocation) => match invocation {
-                    ValidatorBlueprintInvocations::Function(invocation) => match *invocation {},
-                    ValidatorBlueprintInvocations::Method(invocation) => match invocation {
-                        ValidatorMethod::Register(input) => input.output(details),
-                        ValidatorMethod::Unregister(input) => input.output(details),
-                        ValidatorMethod::StakeAsOwner(input) => input.output(details),
-                        ValidatorMethod::Stake(input) => input.output(details),
-                        ValidatorMethod::Unstake(input) => input.output(details),
-                        ValidatorMethod::ClaimXrd(input) => input.output(details),
-                        ValidatorMethod::UpdateKey(input) => input.output(details),
-                        ValidatorMethod::UpdateFee(input) => input.output(details),
-                        ValidatorMethod::UpdateAcceptDelegatedStake(input) => input.output(details),
-                        ValidatorMethod::AcceptsDelegatedStake(input) => input.output(details),
-                        ValidatorMethod::TotalStakeXrdAmount(input) => input.output(details),
-                        ValidatorMethod::TotalStakeUnitSupply(input) => input.output(details),
-                        ValidatorMethod::GetRedemptionValue(input) => input.output(details),
-                        ValidatorMethod::SignalProtocolUpdateReadiness(input) => input.output(details),
-                        ValidatorMethod::GetProtocolUpdateReadiness(input) => input.output(details),
-                        ValidatorMethod::LockOwnerStakeUnits(input) => input.output(details),
-                        ValidatorMethod::StartUnlockOwnerStakeUnits(input) => input.output(details),
-                        ValidatorMethod::FinishUnlockOwnerStakeUnits(input) => input.output(details),
-                        ValidatorMethod::ApplyEmission(input) => input.output(details),
-                        ValidatorMethod::ApplyReward(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::IdentityPackage(invocation) => match invocation {
-                IdentityInvocations::IdentityBlueprint(invocation) => match invocation {
-                    IdentityBlueprintInvocations::Function(invocation) => match invocation {
-                        IdentityFunction::CreateAdvanced(input) => input.output(details),
-                        IdentityFunction::Create(input) => input.output(details),
-                    },
-                    IdentityBlueprintInvocations::Method(invocation) => match invocation {
-                        IdentityMethod::Securify(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::LockerPackage(invocation) => match invocation {
-                LockerInvocations::AccountLockerBlueprint(invocation) => match invocation {
-                    AccountLockerBlueprintInvocations::Function(invocation) => match invocation {
-                        AccountLockerFunction::Instantiate(input) => input.output(details),
-                        AccountLockerFunction::InstantiateSimple(input) => input.output(details),
-                    },
-                    AccountLockerBlueprintInvocations::Method(invocation) => match invocation {
-                        AccountLockerMethod::Store(input) => input.output(details),
-                        AccountLockerMethod::Airdrop(input) => input.output(details),
-                        AccountLockerMethod::Recover(input) => input.output(details),
-                        AccountLockerMethod::RecoverNonFungibles(input) => input.output(details),
-                        AccountLockerMethod::Claim(input) => input.output(details),
-                        AccountLockerMethod::ClaimNonFungibles(input) => input.output(details),
-                        AccountLockerMethod::GetAmount(input) => input.output(details),
-                        AccountLockerMethod::GetNonFungibleLocalIds(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::PackagePackage(invocation) => match invocation {
-                PackageInvocations::PackageBlueprint(invocation) => match invocation {
-                    PackageBlueprintInvocations::Function(invocation) => match invocation {
-                        PackageFunction::PublishWasm(input) => input.output(details),
-                        PackageFunction::PublishWasmAdvanced(input) => input.output(details),
-                        PackageFunction::PublishNative(input) => input.output(details),
-                    },
-                    PackageBlueprintInvocations::Method(invocation) => match invocation {
-                        PackageMethod::PackageRoyaltyClaimRoyalties(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::PoolPackage(invocation) => match invocation {
-                PoolInvocations::OneResourcePoolBlueprint(invocation) => match invocation {
-                    OneResourcePoolBlueprintInvocations::Function(invocation) => match invocation {
-                        OneResourcePoolFunction::Instantiate(input) => input.output(details),
-                    },
-                    OneResourcePoolBlueprintInvocations::Method(invocation) => match invocation {
-                        OneResourcePoolMethod::Contribute(input) => input.output(details),
-                        OneResourcePoolMethod::Redeem(input) => input.output(details),
-                        OneResourcePoolMethod::ProtectedDeposit(input) => input.output(details),
-                        OneResourcePoolMethod::ProtectedWithdraw(input) => input.output(details),
-                        OneResourcePoolMethod::GetRedemptionValue(input) => input.output(details),
-                        OneResourcePoolMethod::GetVaultAmount(input) => input.output(details),
-                    },
-                },
-                PoolInvocations::TwoResourcePoolBlueprint(invocation) => match invocation {
-                    TwoResourcePoolBlueprintInvocations::Function(invocation) => match invocation {
-                        TwoResourcePoolFunction::Instantiate(input) => input.output(details),
-                    },
-                    TwoResourcePoolBlueprintInvocations::Method(invocation) => match invocation {
-                        TwoResourcePoolMethod::Contribute(input) => input.output(details),
-                        TwoResourcePoolMethod::Redeem(input) => input.output(details),
-                        TwoResourcePoolMethod::ProtectedDeposit(input) => input.output(details),
-                        TwoResourcePoolMethod::ProtectedWithdraw(input) => input.output(details),
-                        TwoResourcePoolMethod::GetRedemptionValue(input) => input.output(details),
-                        TwoResourcePoolMethod::GetVaultAmounts(input) => input.output(details),
-                    },
-                },
-                PoolInvocations::MultiResourcePoolBlueprint(invocation) => match invocation {
-                    MultiResourcePoolBlueprintInvocations::Function(invocation) => match invocation {
-                        MultiResourcePoolFunction::Instantiate(input) => input.output(details),
-                    },
-                    MultiResourcePoolBlueprintInvocations::Method(invocation) => match invocation {
-                        MultiResourcePoolMethod::Contribute(input) => input.output(details),
-                        MultiResourcePoolMethod::Redeem(input) => input.output(details),
-                        MultiResourcePoolMethod::ProtectedDeposit(input) => input.output(details),
-                        MultiResourcePoolMethod::ProtectedWithdraw(input) => input.output(details),
-                        MultiResourcePoolMethod::GetRedemptionValue(input) => input.output(details),
-                        MultiResourcePoolMethod::GetVaultAmounts(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::ResourcePackage(invocation) => match invocation {
-                ResourceInvocations::FungibleResourceManagerBlueprint(invocation) => match invocation {
-                    FungibleResourceManagerBlueprintInvocations::Function(invocation) => match invocation {
-                        FungibleResourceManagerFunction::Create(input) => input.output(details),
-                        FungibleResourceManagerFunction::CreateWithInitialSupply(input) => input.output(details),
-                    },
-                    FungibleResourceManagerBlueprintInvocations::Method(invocation) => match invocation {
-                        FungibleResourceManagerMethod::Mint(input) => input.output(details),
-                        FungibleResourceManagerMethod::Burn(input) => input.output(details),
-                        FungibleResourceManagerMethod::PackageBurn(input) => input.output(details),
-                        FungibleResourceManagerMethod::CreateEmptyVault(input) => input.output(details),
-                        FungibleResourceManagerMethod::CreateEmptyBucket(input) => input.output(details),
-                        FungibleResourceManagerMethod::GetResourceType(input) => input.output(details),
-                        FungibleResourceManagerMethod::GetTotalSupply(input) => input.output(details),
-                        FungibleResourceManagerMethod::AmountForWithdrawal(input) => input.output(details),
-                        FungibleResourceManagerMethod::DropEmptyBucket(input) => input.output(details),
-                    },
-                },
-                ResourceInvocations::NonFungibleResourceManagerBlueprint(invocation) => match invocation
-                {
-                    NonFungibleResourceManagerBlueprintInvocations::Function(invocation) => match invocation {
-                        NonFungibleResourceManagerFunction::Create(input) => input.output(details),
-                        NonFungibleResourceManagerFunction::CreateWithInitialSupply(input) => input.output(details),
-                        NonFungibleResourceManagerFunction::CreateRuidNonFungibleWithInitialSupply(input) => {
-                            input.output(details)
-                        }
-                    },
-                    NonFungibleResourceManagerBlueprintInvocations::Method(invocation) => match invocation {
-                        NonFungibleResourceManagerMethod::Mint(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::GetNonFungible(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::UpdateNonFungibleData(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::NonFungibleExists(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::MintRuid(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::MintSingleRuid(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::PackageBurn(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::Burn(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::CreateEmptyVault(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::CreateEmptyBucket(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::GetResourceType(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::GetTotalSupply(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::AmountForWithdrawal(input) => input.output(details),
-                        NonFungibleResourceManagerMethod::DropEmptyBucket(input) => input.output(details),
-                    },
-                },
-                ResourceInvocations::FungibleVaultBlueprint(invocation) => match invocation {
-                    FungibleVaultBlueprintInvocations::Function(invocation) => match *invocation {},
-                    FungibleVaultBlueprintInvocations::Method(invocation) => match invocation {
-                        FungibleVaultMethod::Take(input) => input.output(details),
-                        FungibleVaultMethod::TakeAdvanced(input) => input.output(details),
-                        FungibleVaultMethod::Put(input) => input.output(details),
-                        FungibleVaultMethod::GetAmount(input) => input.output(details),
-                        FungibleVaultMethod::LockFee(input) => input.output(details),
-                        FungibleVaultMethod::Recall(input) => input.output(details),
-                        FungibleVaultMethod::Freeze(input) => input.output(details),
-                        FungibleVaultMethod::Unfreeze(input) => input.output(details),
-                        FungibleVaultMethod::CreateProofOfAmount(input) => input.output(details),
-                        FungibleVaultMethod::LockAmount(input) => input.output(details),
-                        FungibleVaultMethod::UnlockAmount(input) => input.output(details),
-                        FungibleVaultMethod::Burn(input) => input.output(details),
-                    },
-                },
-                ResourceInvocations::NonFungibleVaultBlueprint(invocation) => match invocation {
-                    NonFungibleVaultBlueprintInvocations::Function(invocation) => match *invocation {},
-                    NonFungibleVaultBlueprintInvocations::Method(invocation) => match invocation {
-                        NonFungibleVaultMethod::Take(input) => input.output(details),
-                        NonFungibleVaultMethod::TakeAdvanced(input) => input.output(details),
-                        NonFungibleVaultMethod::TakeNonFungibles(input) => input.output(details),
-                        NonFungibleVaultMethod::Recall(input) => input.output(details),
-                        NonFungibleVaultMethod::Freeze(input) => input.output(details),
-                        NonFungibleVaultMethod::Unfreeze(input) => input.output(details),
-                        NonFungibleVaultMethod::RecallNonFungibles(input) => input.output(details),
-                        NonFungibleVaultMethod::Put(input) => input.output(details),
-                        NonFungibleVaultMethod::GetAmount(input) => input.output(details),
-                        NonFungibleVaultMethod::GetNonFungibleLocalIds(input) => input.output(details),
-                        NonFungibleVaultMethod::ContainsNonFungible(input) => input.output(details),
-                        NonFungibleVaultMethod::CreateProofOfNonFungibles(input) => input.output(details),
-                        NonFungibleVaultMethod::LockNonFungibles(input) => input.output(details),
-                        NonFungibleVaultMethod::UnlockNonFungibles(input) => input.output(details),
-                        NonFungibleVaultMethod::Burn(input) => input.output(details),
-                        NonFungibleVaultMethod::BurnNonFungibles(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::TransactionTrackerPackage(invocation) => match invocation {
-                TransactionTrackerInvocations::TransactionTrackerBlueprint(invocation) => match invocation {
-                    TransactionTrackerBlueprintInvocations::Function(invocation) => match invocation {
-                        TransactionTrackerFunction::Create(input) => input.output(details),
-                    },
-                    TransactionTrackerBlueprintInvocations::Method(invocation) => match *invocation {},
-                },
-            },
-            TypedNativeInvocation::MetadataPackage(invocation) => match invocation {
-                MetadataInvocations::MetadataBlueprint(invocation) => match invocation {
-                    MetadataBlueprintInvocations::Function(invocation) => match invocation {
-                        MetadataFunction::Create(input) => input.output(details),
-                        MetadataFunction::CreateWithData(input) => input.output(details),
-                    },
-                    MetadataBlueprintInvocations::Method(invocation) => match invocation {
-                        MetadataMethod::Set(input) => input.output(details),
-                        MetadataMethod::Lock(input) => input.output(details),
-                        MetadataMethod::Get(input) => input.output(details),
-                        MetadataMethod::Remove(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::RoleAssignmentPackage(invocation) => match invocation {
-                RoleAssignmentInvocations::RoleAssignmentBlueprint(invocation) => match invocation {
-                    RoleAssignmentBlueprintInvocations::Function(invocation) => match invocation {
-                        RoleAssignmentFunction::Create(input) => input.output(details),
-                    },
-                    RoleAssignmentBlueprintInvocations::Method(invocation) => match invocation {
-                        RoleAssignmentMethod::SetOwner(input) => input.output(details),
-                        RoleAssignmentMethod::LockOwner(input) => input.output(details),
-                        RoleAssignmentMethod::Set(input) => input.output(details),
-                        RoleAssignmentMethod::Get(input) => input.output(details),
-                    },
-                },
-            },
-            TypedNativeInvocation::ComponentRoyaltyPackage(invocation) => match invocation {
-                ComponentRoyaltyInvocations::ComponentRoyaltyBlueprint(invocation) => match invocation {
-                    ComponentRoyaltyBlueprintInvocations::Function(invocation) => match invocation {
-                        ComponentRoyaltyFunction::Create(input) => input.output(details),
-                    },
-                    ComponentRoyaltyBlueprintInvocations::Method(invocation) => match invocation {
-                        ComponentRoyaltyMethod::SetRoyalty(input) => input.output(details),
-                        ComponentRoyaltyMethod::LockRoyalty(input) => input.output(details),
-                        ComponentRoyaltyMethod::ClaimRoyalties(input) => input.output(details),
-                    },
-                },
-            },
-        }
+        uniform_match_on_manifest_typed_invocation!(self => (input) => input.output(details))
     }
 }
 // endregion:Typed Invocation
@@ -651,19 +329,20 @@ impl StaticInvocationResourcesOutput for AccountSecurifyManifestInput {
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
-                .add_resource(
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_)) => {
+                TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
                     TrackedResource::exact_amount(1, [details.source])?,
-                ),
-            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                )
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
         }
@@ -818,19 +497,20 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeManifestIn
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         Ok(match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )?
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
-                .add_resource(
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_)) => {
+                TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
                     TrackedResource::exact_amount(1, [details.source])?,
-                )?,
-            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+                )?
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
         })
@@ -961,7 +641,7 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -974,9 +654,9 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
             | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction => Ok(
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -1010,7 +690,7 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestI
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known ids and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -1026,9 +706,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestI
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
             | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction => Ok(
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -1045,7 +725,7 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManif
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -1058,9 +738,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManif
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
             | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction => Ok(
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -1077,7 +757,7 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
         // If the receiver is a global address then we can return something useful. Otherwise it
         // is a known amount and an unknown resource address.
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Static(global_address)) => {
                 // Attempt to convert the global address to a resource address. Error if that fails.
                 if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
                     TrackedResources::new_empty().add_resource(
@@ -1090,9 +770,9 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
                     ))
                 }
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::Named(_))
             | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction => Ok(
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),

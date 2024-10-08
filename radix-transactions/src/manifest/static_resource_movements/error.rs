@@ -1,3 +1,4 @@
+use super::*;
 use crate::manifest::ManifestValidationError;
 use radix_common::prelude::*;
 
@@ -29,6 +30,7 @@ pub enum StaticResourceMovementsError {
     },
     ManifestValidationError(ManifestValidationError),
     NotAResourceAddress(GlobalAddress),
+    TypedManifestNativeInvocationError(TypedManifestNativeInvocationError),
 }
 
 impl From<ManifestValidationError> for StaticResourceMovementsError {
@@ -45,5 +47,11 @@ impl From<BoundAdjustmentError> for StaticResourceMovementsError {
                 StaticResourceMovementsError::TakeCannotBeSatisfied
             }
         }
+    }
+}
+
+impl From<TypedManifestNativeInvocationError> for StaticResourceMovementsError {
+    fn from(value: TypedManifestNativeInvocationError) -> Self {
+        Self::TypedManifestNativeInvocationError(value)
     }
 }
