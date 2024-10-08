@@ -1569,18 +1569,9 @@ pub enum SimpleNonFungibleResourceBounds {
 }
 
 impl From<ResourceBounds> for SimpleNonFungibleResourceBounds {
-    fn from(
-        ResourceBounds {
-            certain_ids,
-            lower_bound,
-            upper_bound,
-            allowed_ids,
-        }: ResourceBounds,
-    ) -> Self {
-        if lower_bound.equivalent_decimal() == upper_bound.equivalent_decimal()
-            && allowed_ids.is_allow_list_and(|allow_list| allow_list.len() == certain_ids.len())
-            && Decimal::from(certain_ids.len()) == lower_bound.equivalent_decimal()
-        {
+    fn from(bounds: ResourceBounds) -> Self {
+        let (certain_ids, lower_bound, upper_bound, allowed_ids) = bounds.deconstruct();
+        if Decimal::from(certain_ids.len()) == upper_bound.equivalent_decimal() {
             Self::Exact {
                 amount: lower_bound.equivalent_decimal(),
                 certain_ids,
