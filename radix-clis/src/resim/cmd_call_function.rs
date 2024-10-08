@@ -72,7 +72,7 @@ impl CallFunction {
             .try_deposit_entire_worktop_or_refund(default_account, None)
             .build();
         handle_manifest(
-            manifest,
+            manifest.into(),
             &self.signing_keys,
             &self.network,
             &self.manifest,

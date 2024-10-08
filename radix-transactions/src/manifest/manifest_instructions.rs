@@ -17,7 +17,7 @@ use ManifestInstructionEffect as Effect;
 pub type AnyInstruction = InstructionV2;
 
 /// A marker trait for an Instruction set, e.g. InstructionV1
-pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction> {
+pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction> + Clone {
     fn decompile(
         &self,
         context: &mut DecompilationContext,

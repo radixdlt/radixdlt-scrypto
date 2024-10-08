@@ -43,7 +43,7 @@ impl NewAccount {
             .build();
 
         let receipt = handle_manifest(
-            manifest,
+            manifest.into(),
             &Some("".to_string()), // explicit empty signer public keys
             &self.network,
             &self.manifest,
@@ -81,7 +81,7 @@ impl NewAccount {
                 .try_deposit_entire_worktop_or_refund(account, None)
                 .build();
             let receipt = handle_manifest(
-                manifest,
+                manifest.into(),
                 &Some("".to_string()), // explicit empty signer public keys
                 &self.network,
                 &None,

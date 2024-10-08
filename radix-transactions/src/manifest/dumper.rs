@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use super::decompiler::decompile;
 
 pub fn dump_manifest_to_file_system<P>(
-    manifest: &impl ReadableManifest,
+    manifest: &impl TypedReadableManifest,
     directory_path: P,
     name: Option<&str>,
     network_definition: &NetworkDefinition,

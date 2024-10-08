@@ -87,7 +87,9 @@ pub use sbor::*;
 /* Types */
 pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
-pub use radix_transactions::manifest::ReadableManifest;
+pub use radix_transactions::manifest::{
+    ReadableManifest, ReadableManifestBase, TypedReadableManifest,
+};
 pub use radix_transactions::prelude::*;
 
 /* Scrypto exports which don't clash with this crate's */

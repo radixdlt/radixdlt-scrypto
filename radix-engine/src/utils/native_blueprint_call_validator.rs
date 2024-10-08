@@ -17,27 +17,16 @@ use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
 
-pub fn validate_call_arguments_to_native_components_any(
-    manifest: &AnyTransactionManifest,
-) -> Result<(), LocatedInstructionSchemaValidationError> {
-    match manifest {
-        AnyTransactionManifest::V1(m) => validate_call_arguments_to_native_components(m),
-        AnyTransactionManifest::SystemV1(m) => validate_call_arguments_to_native_components(m),
-        AnyTransactionManifest::V2(m) => validate_call_arguments_to_native_components(m),
-        AnyTransactionManifest::SubintentV2(m) => validate_call_arguments_to_native_components(m),
-    }
-}
-
 pub fn validate_call_arguments_to_native_components(
     manifest: &impl ReadableManifest,
 ) -> Result<(), LocatedInstructionSchemaValidationError> {
-    for (instruction_index, instruction) in manifest.get_instructions().iter().enumerate() {
-        validate_instruction_call_arguments_to_native_components(instruction.effect()).map_err(
-            |cause| LocatedInstructionSchemaValidationError {
+    for (instruction_index, effect) in manifest.iter_instruction_effects().enumerate() {
+        validate_instruction_call_arguments_to_native_components(effect).map_err(|cause| {
+            LocatedInstructionSchemaValidationError {
                 instruction_index,
                 cause,
-            },
-        )?
+            }
+        })?
     }
     Ok(())
 }

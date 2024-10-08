@@ -83,8 +83,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         self.handle_preallocated_addresses(visitor, self.manifest.get_preallocated_addresses())?;
         self.handle_child_subintents(visitor, self.manifest.get_child_subintents())?;
         self.handle_blobs(visitor, self.manifest.get_blobs())?;
-        for (index, instruction) in self.manifest.get_instructions().iter().enumerate() {
-            self.handle_instruction(visitor, index, instruction)?;
+        for (index, instruction_effect) in self.manifest.iter_instruction_effects().enumerate() {
+            self.handle_instruction(visitor, index, instruction_effect)?;
         }
         self.verify_final_instruction::<V>()?;
         self.handle_wrap_up(visitor)?;
@@ -151,9 +151,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
         index: usize,
-        instruction: &'a M::Instruction,
+        effect: ManifestInstructionEffect<'a>,
     ) -> ControlFlow<V::Output> {
-        let effect = instruction.effect();
         self.location = ManifestLocation::Instruction { index };
 
         match self
@@ -255,11 +254,19 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         if !self.manifest.is_subintent() {
             return ControlFlow::Continue(());
         }
-        match self.manifest.get_instructions().last().map(|i| i.effect()) {
-            Some(ManifestInstructionEffect::Invocation {
+        let instruction_count = self.manifest.instruction_count();
+        let last_instruction_index = if instruction_count > 0 {
+            instruction_count - 1
+        } else {
+            return ControlFlow::Break(
+                ManifestValidationError::SubintentDoesNotEndWithYieldToParent.into(),
+            );
+        };
+        match self.manifest.instruction_effect(last_instruction_index) {
+            ManifestInstructionEffect::Invocation {
                 kind: InvocationKind::YieldToParent,
                 ..
-            }) => ControlFlow::Continue(()),
+            } => ControlFlow::Continue(()),
             _ => ControlFlow::Break(
                 ManifestValidationError::SubintentDoesNotEndWithYieldToParent.into(),
             ),

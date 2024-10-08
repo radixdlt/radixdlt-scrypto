@@ -1,6 +1,6 @@
 use crate::resim::*;
 use clap::Parser;
-use radix_engine::utils::validate_call_arguments_to_native_components;
+use radix_engine::utils::*;
 use radix_transactions::manifest::*;
 use regex::{Captures, Regex};
 use std::env;
@@ -27,6 +27,10 @@ pub struct Run {
     /// Turn on tracing
     #[clap(short, long)]
     pub trace: bool,
+
+    /// The manifest type [V1 | SystemV1 | V2 | SubintentV2], defaults to V2
+    #[clap(short, long)]
+    kind: Option<String>,
 }
 
 impl Run {
@@ -51,18 +55,21 @@ impl Run {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }
-        let compiled_manifest = compile_manifest_with_pretty_error::<TransactionManifestV1>(
+
+        let manifest_kind = ManifestKind::parse_or_latest(self.kind.as_ref().map(|x| x.as_str()))?;
+        let manifest = compile_any_manifest_with_pretty_error(
             &pre_processed_manifest,
+            manifest_kind,
             &network,
             BlobProvider::new_with_blobs(blobs),
             CompileErrorDiagnosticsStyle::TextTerminalColors,
         )?;
 
-        validate_call_arguments_to_native_components(&compiled_manifest)
+        validate_call_arguments_to_native_components(&manifest)
             .map_err(Error::InstructionSchemaValidationError)?;
 
         handle_manifest(
-            compiled_manifest,
+            manifest,
             &self.signing_keys,
             &self.network,
             &None,
