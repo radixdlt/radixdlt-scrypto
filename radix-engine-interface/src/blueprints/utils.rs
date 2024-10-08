@@ -4,6 +4,7 @@ use crate::blueprints::identity::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::*;
 use crate::internal_prelude::*;
+use lazy_static::lazy_static;
 
 /// This function resolves the [`BlueprintId`] based on the entity type for native blueprints.
 ///
@@ -13,27 +14,27 @@ use crate::internal_prelude::*;
 /// appropriate [`BlueprintId`].
 pub fn resolve_main_module_blueprint_id(entity_type: EntityType) -> Option<&'static BlueprintId> {
     match entity_type {
-        EntityType::GlobalPackage => Some(package_blueprint_id()),
-        EntityType::GlobalConsensusManager => Some(consensus_manager_blueprint_id()),
-        EntityType::GlobalValidator => Some(validator_blueprint_id()),
-        EntityType::GlobalTransactionTracker => Some(transaction_tracker_blueprint_id()),
-        EntityType::GlobalAccessController => Some(access_controller_blueprint_id()),
-        EntityType::GlobalOneResourcePool => Some(one_resource_pool_blueprint_id()),
-        EntityType::GlobalTwoResourcePool => Some(two_resource_pool_blueprint_id()),
-        EntityType::GlobalMultiResourcePool => Some(multi_resource_pool_blueprint_id()),
-        EntityType::GlobalAccountLocker => Some(account_locker_blueprint_id()),
-        EntityType::GlobalFungibleResourceManager => Some(fungible_resource_manager_blueprint_id()),
+        EntityType::GlobalPackage => Some(&PACKAGE_BLUEPRINT_ID),
+        EntityType::GlobalConsensusManager => Some(&CONSENSUS_MANAGER_BLUEPRINT_ID),
+        EntityType::GlobalValidator => Some(&VALIDATOR_BLUEPRINT_ID),
+        EntityType::GlobalTransactionTracker => Some(&TRANSACTION_TRACKER_BLUEPRINT_ID),
+        EntityType::GlobalAccessController => Some(&ACCESS_CONTROLLER_BLUEPRINT_ID),
+        EntityType::GlobalOneResourcePool => Some(&ONE_RESOURCE_POOL_BLUEPRINT_ID),
+        EntityType::GlobalTwoResourcePool => Some(&TWO_RESOURCE_POOL_BLUEPRINT_ID),
+        EntityType::GlobalMultiResourcePool => Some(&MULTI_RESOURCE_POOL_BLUEPRINT_ID),
+        EntityType::GlobalAccountLocker => Some(&ACCOUNT_LOCKER_BLUEPRINT_ID),
+        EntityType::GlobalFungibleResourceManager => Some(&FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT_ID),
         EntityType::GlobalNonFungibleResourceManager => {
-            Some(non_fungible_resource_manager_blueprint_id())
+            Some(&NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT_ID)
         }
-        EntityType::InternalFungibleVault => Some(fungible_vault_blueprint_id()),
-        EntityType::InternalNonFungibleVault => Some(non_fungible_vault_blueprint_id()),
+        EntityType::InternalFungibleVault => Some(&FUNGIBLE_VAULT_BLUEPRINT_ID),
+        EntityType::InternalNonFungibleVault => Some(&NON_FUNGIBLE_VAULT_BLUEPRINT_ID),
         EntityType::GlobalAccount
         | EntityType::GlobalPreallocatedSecp256k1Account
-        | EntityType::GlobalPreallocatedEd25519Account => Some(account_blueprint_id()),
+        | EntityType::GlobalPreallocatedEd25519Account => Some(&ACCOUNT_BLUEPRINT_ID),
         EntityType::GlobalIdentity
         | EntityType::GlobalPreallocatedSecp256k1Identity
-        | EntityType::GlobalPreallocatedEd25519Identity => Some(identity_blueprint_id()),
+        | EntityType::GlobalPreallocatedEd25519Identity => Some(&IDENTITY_BLUEPRINT_ID),
         EntityType::InternalGenericComponent
         | EntityType::InternalKeyValueStore
         | EntityType::GlobalGenericComponent => None,
@@ -50,9 +51,9 @@ pub fn resolve_invoked_blueprint_id(
         ModuleId::Main => Some(main_module_blueprint_id),
         // TODO: We could improve this to take into account if the blueprint has these modules or
         // not. For the time being this doesn't seem to be needed.
-        ModuleId::Metadata => Some(metadata_blueprint_id()),
-        ModuleId::Royalty => Some(royalty_blueprint_id()),
-        ModuleId::RoleAssignment => Some(role_assignment_blueprint_id()),
+        ModuleId::Metadata => Some(&METADATA_BLUEPRINT_ID),
+        ModuleId::Royalty => Some(&ROYALTY_BLUEPRINT_ID),
+        ModuleId::RoleAssignment => Some(&ROLE_ASSIGNMENT_BLUEPRINT_ID),
     }
 }
 
@@ -63,16 +64,14 @@ macro_rules! define_static_blueprint_id {
         ),* $(,)?
     ) => {
         paste::paste! {
-            $(
-                pub fn [< $name _blueprint_id >]() -> &'static BlueprintId {
-                    static BLUEPRINT_ID: std::sync::OnceLock<crate::prelude::BlueprintId> =
-                        std::sync::OnceLock::new();
-                    BLUEPRINT_ID.get_or_init(|| BlueprintId {
+            lazy_static! {
+                $(
+                    static ref [< $name:upper _BLUEPRINT_ID >]: BlueprintId = BlueprintId {
                         package_address: $package_address,
                         blueprint_name: $blueprint_name.to_owned(),
-                    })
-                }
-            )*
+                    };
+                )*
+            }
         }
     };
 }
