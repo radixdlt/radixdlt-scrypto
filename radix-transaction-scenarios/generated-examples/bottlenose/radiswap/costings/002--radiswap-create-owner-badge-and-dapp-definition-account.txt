@@ -51,6 +51,7 @@ Execution Cost Breakdown                                                   ,    
 - WriteSubstate                                                            ,                    15344,      0.2%
 Finalization Cost Breakdown                                                ,                  4355543,    100.0%
 - CommitEvents                                                             ,                    55101,      1.3%
+- CommitIntentStatus                                                       ,                        0,      0.0%
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,      2.3%
 - CommitStateUpdates::GlobalNonFungibleResourceManager                     ,                  2500192,     57.4%
