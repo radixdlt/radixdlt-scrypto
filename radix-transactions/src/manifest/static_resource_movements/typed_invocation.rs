@@ -95,7 +95,6 @@ macro_rules! define_manifest_typed_invocation {
                         $(
                             ($package_address, $blueprint_name) => {
                                 [< $blueprint_ident BlueprintMethod >]::decode_invocation(
-                                    module_id,
                                     method_name,
                                     args
                                 )
@@ -131,8 +130,6 @@ macro_rules! define_manifest_typed_invocation {
                 impl [< $blueprint_ident BlueprintMethod >] {
                     #![allow(unreachable_patterns, unused_variables)]
                     pub fn decode_invocation(
-                        // Only provided for nice errors. Not needed in the decoding.
-                        module_id: ModuleId,
                         method_name: &str,
                         args: &ManifestValue
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
@@ -143,7 +140,6 @@ macro_rules! define_manifest_typed_invocation {
                                     .map_err(|error| {
                                         TypedManifestNativeInvocationError::FailedToDecodeMethodInvocation {
                                             blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            module_id,
                                             method_name: method_name.to_owned(),
                                             args: args.clone(),
                                             error
@@ -153,9 +149,9 @@ macro_rules! define_manifest_typed_invocation {
                             // If we get here then it means that an invalid method was called. We
                             // have all of the methods on all blueprints we have supported so this
                             // should be an error.
-                            _ => Err(TypedManifestNativeInvocationError::InvokedFnDoesntExist {
+                            _ => Err(TypedManifestNativeInvocationError::InvokedMethodNotFoundOnNativeBlueprint {
                                 blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                invoked_fn: method_name.to_owned()
+                                method: method_name.to_owned()
                             })
                         }
                     }
@@ -191,9 +187,9 @@ macro_rules! define_manifest_typed_invocation {
                             // If we get here then it means that an invalid function was called. We
                             // have all of the functions on all blueprints we have supported so this
                             // should be an error.
-                            _ => Err(TypedManifestNativeInvocationError::InvokedFnDoesntExist {
+                            _ => Err(TypedManifestNativeInvocationError::InvokedFunctionNotFoundOnNativeBlueprint {
                                 blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                invoked_fn: function_name.to_owned()
+                                function: function_name.to_owned()
                             })
                         }
                     }
@@ -1109,15 +1105,19 @@ pub enum TypedManifestNativeInvocationError {
     /// invocation's type.
     FailedToDecodeMethodInvocation {
         blueprint_id: BlueprintId,
-        module_id: ModuleId,
         method_name: String,
         args: ManifestValue,
         error: String,
     },
-    /// This error is returned when the method or function doesn't exist on some blueprint.
-    InvokedFnDoesntExist {
+    /// This error is returned when the function doesn't exist on some blueprint.
+    InvokedFunctionNotFoundOnNativeBlueprint {
         blueprint_id: BlueprintId,
-        invoked_fn: String,
+        function: String,
+    },
+    /// This error is returned when the method doesn't exist on some blueprint.
+    InvokedMethodNotFoundOnNativeBlueprint {
+        blueprint_id: BlueprintId,
+        method: String,
     },
 }
 
