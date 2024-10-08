@@ -1,7 +1,6 @@
 use super::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 
 /// A type representing partial knowledge of the balances of some number of resources.
