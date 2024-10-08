@@ -32,6 +32,11 @@ macro_rules! define_manifest_typed_invocation {
                     $(
                         $method_ident: ident => ($method_input: ty, $method_name: expr $(,)?)
                     ),* $(,)?
+                },
+                direct_methods: {
+                    $(
+                        $direct_method_ident: ident => ($direct_method_input: ty, $direct_method_name: expr $(,)?)
+                    ),* $(,)?
                 } $(,)?
             }
         ),* $(,)?
@@ -109,6 +114,40 @@ macro_rules! define_manifest_typed_invocation {
                         _ => Ok(None)
                     }
                 }
+
+                pub fn from_direct_method_invocation<N: AsRef<NodeId>>(
+                    address: &ResolvedDynamicAddress<N>,
+                    method_name: &str,
+                    args: &::radix_common::prelude::ManifestValue
+                ) -> Result<Option<Self>, TypedManifestNativeInvocationError> {
+                    // Getting the blueprint being invoked in this method.
+                    let Some(::radix_common::prelude::BlueprintId {
+                        package_address: invoked_package_address,
+                        blueprint_name: invoked_blueprint_name
+                    }) = address.main_module_blueprint_id() else {
+                        return Ok(None)
+                    };
+
+                    // Match over the the invoked package and blueprint name and decode as the
+                    // appropriate types.
+                    match (*invoked_package_address, invoked_blueprint_name.as_str()) {
+                        $(
+                            ($package_address, $blueprint_name) => {
+                                [< $blueprint_ident BlueprintDirectMethod >]::decode_invocation(
+                                    method_name,
+                                    args
+                                )
+                                .map([< $blueprint_ident BlueprintInvocation >]::DirectMethod)
+                                .map(TypedManifestNativeInvocation::[< $blueprint_ident BlueprintInvocation >])
+                                .map(Some)
+                            },
+                        )*
+                        // This means that this isn't a blueprint that we support. We don't have
+                        // support for all native blueprints at the moment. As an example, Worktop
+                        // and Authzone are not currently (if ever) supported.
+                        _ => Ok(None)
+                    }
+                }
             }
 
             /* The Method and Function types for each blueprint */
@@ -116,6 +155,7 @@ macro_rules! define_manifest_typed_invocation {
                 #[derive(Debug, ManifestSbor)]
                 pub enum [< $blueprint_ident BlueprintInvocation >] {
                     Method([< $blueprint_ident BlueprintMethod >]),
+                    DirectMethod([< $blueprint_ident BlueprintDirectMethod >]),
                     Function([< $blueprint_ident BlueprintFunction >]),
                 }
 
@@ -152,6 +192,43 @@ macro_rules! define_manifest_typed_invocation {
                             _ => Err(TypedManifestNativeInvocationError::InvokedMethodNotFoundOnNativeBlueprint {
                                 blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
                                 method: method_name.to_owned()
+                            })
+                        }
+                    }
+                }
+
+                #[derive(Debug, ManifestSbor)]
+                pub enum [< $blueprint_ident BlueprintDirectMethod >] {
+                    $(
+                        $direct_method_ident($direct_method_input)
+                    ),*
+                }
+
+                impl [< $blueprint_ident BlueprintDirectMethod >] {
+                    #![allow(unreachable_patterns, unused_variables)]
+                    pub fn decode_invocation(
+                        direct_method_name: &str,
+                        args: &ManifestValue
+                    ) -> Result<Self, TypedManifestNativeInvocationError> {
+                        match direct_method_name {
+                            $(
+                                $direct_method_name => decode_args(args)
+                                    .map(Self::$direct_method_ident)
+                                    .map_err(|error| {
+                                        TypedManifestNativeInvocationError::FailedToDecodeDirectMethodInvocation {
+                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                            method_name: direct_method_name.to_owned(),
+                                            args: args.clone(),
+                                            error
+                                        }
+                                    }),
+                            )*
+                            // If we get here then it means that an invalid method was called. We
+                            // have all of the methods on all blueprints we have supported so this
+                            // should be an error.
+                            _ => Err(TypedManifestNativeInvocationError::InvokedDirectMethodNotFoundOnNativeBlueprint {
+                                blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                method: direct_method_name.to_owned()
                             })
                         }
                     }
@@ -326,6 +403,7 @@ define_manifest_typed_invocation! {
                 ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT,
             ),
         },
+        direct_methods: {}
     },
     Account => {
         blueprint_id: (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
@@ -429,6 +507,7 @@ define_manifest_typed_invocation! {
                 ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
             ),
         },
+        direct_methods: {}
     },
     ConsensusManager => {
         blueprint_id: (CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
@@ -464,6 +543,7 @@ define_manifest_typed_invocation! {
                 CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
             ),
         },
+        direct_methods: {}
     },
     Validator => {
         blueprint_id: (CONSENSUS_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT),
@@ -550,6 +630,7 @@ define_manifest_typed_invocation! {
                 VALIDATOR_APPLY_REWARD_IDENT,
             ),
         },
+        direct_methods: {}
     },
     Identity => {
         blueprint_id: (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
@@ -569,6 +650,7 @@ define_manifest_typed_invocation! {
                 IDENTITY_SECURIFY_IDENT,
             ),
         },
+        direct_methods: {}
     },
     AccountLocker => {
         blueprint_id: (LOCKER_PACKAGE, ACCOUNT_LOCKER_BLUEPRINT),
@@ -616,6 +698,7 @@ define_manifest_typed_invocation! {
                 ACCOUNT_LOCKER_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
             ),
         },
+        direct_methods: {}
     },
     Package => {
         blueprint_id: (PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -639,6 +722,7 @@ define_manifest_typed_invocation! {
                 PACKAGE_CLAIM_ROYALTIES_IDENT,
             ),
         },
+        direct_methods: {}
     },
     OneResourcePool => {
         blueprint_id: (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT),
@@ -674,6 +758,7 @@ define_manifest_typed_invocation! {
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
             ),
         },
+        direct_methods: {}
     },
     TwoResourcePool => {
         blueprint_id: (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT),
@@ -709,6 +794,7 @@ define_manifest_typed_invocation! {
                 TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
             ),
         },
+        direct_methods: {}
     },
     MultiResourcePool => {
         blueprint_id: (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT),
@@ -744,6 +830,7 @@ define_manifest_typed_invocation! {
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
             ),
         },
+        direct_methods: {}
     },
     FungibleResourceManager => {
         blueprint_id: (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
@@ -795,6 +882,7 @@ define_manifest_typed_invocation! {
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
             ),
         },
+        direct_methods: {}
     },
     NonFungibleResourceManager => {
         blueprint_id: (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
@@ -870,6 +958,7 @@ define_manifest_typed_invocation! {
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
             ),
         },
+        direct_methods: {}
     },
     FungibleVault => {
         blueprint_id: (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT),
@@ -896,18 +985,6 @@ define_manifest_typed_invocation! {
                 FungibleVaultLockFeeManifestInput,
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT,
             ),
-            Recall => (
-                VaultRecallManifestInput,
-                VAULT_RECALL_IDENT,
-            ),
-            Freeze => (
-                VaultFreezeManifestInput,
-                VAULT_FREEZE_IDENT,
-            ),
-            Unfreeze => (
-                VaultUnfreezeManifestInput,
-                VAULT_UNFREEZE_IDENT,
-            ),
             CreateProofOfAmount => (
                 FungibleVaultCreateProofOfAmountManifestInput,
                 FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
@@ -925,6 +1002,20 @@ define_manifest_typed_invocation! {
                 VAULT_BURN_IDENT,
             ),
         },
+        direct_methods: {
+            Recall => (
+                VaultRecallManifestInput,
+                VAULT_RECALL_IDENT,
+            ),
+            Freeze => (
+                VaultFreezeManifestInput,
+                VAULT_FREEZE_IDENT,
+            ),
+            Unfreeze => (
+                VaultUnfreezeManifestInput,
+                VAULT_UNFREEZE_IDENT,
+            ),
+        }
     },
     NonFungibleVault => {
         blueprint_id: (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT),
@@ -942,22 +1033,6 @@ define_manifest_typed_invocation! {
             TakeNonFungibles => (
                 NonFungibleVaultTakeNonFungiblesManifestInput,
                 NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-            ),
-            Recall => (
-                VaultRecallManifestInput,
-                VAULT_RECALL_IDENT,
-            ),
-            Freeze => (
-                VaultFreezeManifestInput,
-                VAULT_FREEZE_IDENT,
-            ),
-            Unfreeze => (
-                VaultUnfreezeManifestInput,
-                VAULT_UNFREEZE_IDENT,
-            ),
-            RecallNonFungibles => (
-                NonFungibleVaultRecallNonFungiblesManifestInput,
-                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
             ),
             Put => (
                 VaultPutManifestInput,
@@ -996,6 +1071,24 @@ define_manifest_typed_invocation! {
                 NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT,
             ),
         },
+        direct_methods: {
+            Recall => (
+                VaultRecallManifestInput,
+                VAULT_RECALL_IDENT,
+            ),
+            Freeze => (
+                VaultFreezeManifestInput,
+                VAULT_FREEZE_IDENT,
+            ),
+            Unfreeze => (
+                VaultUnfreezeManifestInput,
+                VAULT_UNFREEZE_IDENT,
+            ),
+            RecallNonFungibles => (
+                NonFungibleVaultRecallNonFungiblesManifestInput,
+                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+            ),
+        }
     },
     TransactionTracker => {
         blueprint_id: (TRANSACTION_TRACKER_PACKAGE, TRANSACTION_TRACKER_BLUEPRINT),
@@ -1007,6 +1100,7 @@ define_manifest_typed_invocation! {
         },
         methods: {
         },
+        direct_methods: {}
     },
     Metadata => {
         blueprint_id: (METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT),
@@ -1038,6 +1132,7 @@ define_manifest_typed_invocation! {
                 METADATA_REMOVE_IDENT,
             ),
         },
+        direct_methods: {}
     },
     RoleAssignment => {
         blueprint_id: (ROLE_ASSIGNMENT_MODULE_PACKAGE, ROLE_ASSIGNMENT_BLUEPRINT),
@@ -1065,6 +1160,7 @@ define_manifest_typed_invocation! {
                 ROLE_ASSIGNMENT_GET_IDENT,
             ),
         },
+        direct_methods: {}
     },
     ComponentRoyalty => {
         blueprint_id: (ROYALTY_MODULE_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
@@ -1088,6 +1184,7 @@ define_manifest_typed_invocation! {
                 COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
             ),
         },
+        direct_methods: {}
     },
 }
 
@@ -1109,6 +1206,14 @@ pub enum TypedManifestNativeInvocationError {
         args: ManifestValue,
         error: String,
     },
+    /// This error is returned when the arguments of some invocation could not be decoded as that
+    /// invocation's type.
+    FailedToDecodeDirectMethodInvocation {
+        blueprint_id: BlueprintId,
+        method_name: String,
+        args: ManifestValue,
+        error: String,
+    },
     /// This error is returned when the function doesn't exist on some blueprint.
     InvokedFunctionNotFoundOnNativeBlueprint {
         blueprint_id: BlueprintId,
@@ -1116,6 +1221,11 @@ pub enum TypedManifestNativeInvocationError {
     },
     /// This error is returned when the method doesn't exist on some blueprint.
     InvokedMethodNotFoundOnNativeBlueprint {
+        blueprint_id: BlueprintId,
+        method: String,
+    },
+    /// This error is returned when the direct method doesn't exist on some blueprint.
+    InvokedDirectMethodNotFoundOnNativeBlueprint {
         blueprint_id: BlueprintId,
         method: String,
     },

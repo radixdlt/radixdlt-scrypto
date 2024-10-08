@@ -137,12 +137,12 @@ impl StaticResourceMovementsVisitor {
         match invocation_kind {
             InvocationKind::DirectMethod { address, method } => {
                 let resolved_dynamic_address = ResolvedDynamicAddress::StaticAddress(*address);
-                let Some(typed_invocation) = TypedManifestNativeInvocation::from_method_invocation(
-                    &resolved_dynamic_address,
-                    ModuleId::Main,
-                    method,
-                    args,
-                )?
+                let Some(typed_invocation) =
+                    TypedManifestNativeInvocation::from_direct_method_invocation(
+                        &resolved_dynamic_address,
+                        method,
+                        args,
+                    )?
                 else {
                     return Ok(None);
                 };
