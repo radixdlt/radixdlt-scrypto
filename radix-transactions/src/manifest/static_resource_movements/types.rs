@@ -601,18 +601,9 @@ impl TrackedResource {
 /// [`ResourceBounds`] captures constraints on the balance of a single fungible or non-fungible
 /// resource.
 ///
-/// It is very similar to [`GeneralResourceConstraint`] in the manifest, but is duplicated
-/// here so that we can add methods/concepts specific to bounds tracking and constraining.
-///
-/// It captures four concepts:
-///
-/// * A set of [`certain_ids`][Self::certain_ids] which are [`NonFungibleLocalId`]s which are
-///   required to be in the balance.
-/// * A [`lower_inclusive`][Self::lower_inclusive] bound.
-/// * An [`upper_inclusive`][Self::upper_inclusive] bound.
-/// * Constraints on the [`allowed_ids`][Self::allowed_ids]. These are either [`AllowedIds::Any`]
-///   or can be constrained to [`AllowedIds::Allowlist`] of [`NonFungibleLocalId`]s.
-///   If this case, the ids in the resource balance must be a subset of the allowlist.
+/// It is a specialization of a [`GeneralResourceConstraint`], and wraps that type, ensuring that:
+/// * It is always valid and normalized
+/// * We can add methods/concepts specific to bounds tracking and constraining
 ///
 /// ## Trait implementations
 /// * The [`PartialEq`] / [`Eq`] implementations both are correctly order-independent on the id sets,
@@ -620,7 +611,10 @@ impl TrackedResource {
 ///
 /// ## Invariants
 ///
-/// All methods/functions on this class must guarantee that the following invariants are upheld:
+/// All methods/functions on this class must guarantee that the wrapped [`GeneralResourceConstraint`]
+/// is valid and normalized (according to the descriptions of validity and normalization on its documentation).
+///
+/// That is, that the following invariants are upheld:
 ///
 /// * If `allowed_ids` is [`AllowedIds::Any`]:
 ///   * `known_ids.len() <= lower_inclusive <= upper_inclusive`
@@ -630,10 +624,7 @@ impl TrackedResource {
 ///   * `known_ids.is_subset(allowlist)`
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceBounds {
-    certain_ids: IndexSet<NonFungibleLocalId>,
-    lower_bound: LowerBound,
-    upper_bound: UpperBound,
-    allowed_ids: AllowedIds,
+    constraints: GeneralResourceConstraint,
 }
 
 impl Default for ResourceBounds {
@@ -643,31 +634,35 @@ impl Default for ResourceBounds {
 }
 
 impl ResourceBounds {
+    fn of_valid_normalized(constraints: GeneralResourceConstraint) -> Self {
+        Self { constraints }
+    }
+
     pub fn zero() -> Self {
-        Self {
-            certain_ids: Default::default(),
+        Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: LowerBound::zero(),
             upper_bound: UpperBound::zero(),
-            allowed_ids: AllowedIds::none(),
-        }
+            allowed_ids: AllowedIds::Allowlist(Default::default()),
+        })
     }
 
     pub fn zero_or_more() -> Self {
-        Self {
-            certain_ids: Default::default(),
+        Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: LowerBound::zero(),
             upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
-        }
+        })
     }
 
     pub fn non_zero() -> Self {
-        Self {
-            certain_ids: Default::default(),
+        Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: LowerBound::non_zero(),
             upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
-        }
+        })
     }
 
     pub fn exact_amount(
@@ -677,12 +672,12 @@ impl ResourceBounds {
         if amount.is_negative() {
             return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
         }
-        Ok(Self {
-            certain_ids: Default::default(),
+        Ok(Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: LowerBound::at_least(amount),
             upper_bound: UpperBound::at_most(amount),
             allowed_ids: AllowedIds::Any,
-        })
+        }))
     }
 
     pub fn at_least_amount(
@@ -692,23 +687,25 @@ impl ResourceBounds {
         if amount.is_negative() {
             return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
         }
-        Ok(Self {
-            certain_ids: Default::default(),
+
+        Ok(Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: LowerBound::at_least(amount),
             upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
-        })
+        }))
     }
 
     pub fn exact_non_fungibles(ids: impl IntoIterator<Item = NonFungibleLocalId>) -> Self {
         let ids = ids.into_iter().collect::<IndexSet<_>>();
         let amount_of_ids: Decimal = ids.len().into();
-        Self {
-            certain_ids: ids.clone(),
+
+        Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: ids.clone(),
             lower_bound: LowerBound::at_least(amount_of_ids),
             upper_bound: UpperBound::at_most(amount_of_ids),
             allowed_ids: AllowedIds::Allowlist(ids),
-        }
+        })
     }
 
     pub fn at_least_non_fungibles(
@@ -716,69 +713,76 @@ impl ResourceBounds {
     ) -> Self {
         let ids = required_ids.into_iter().collect::<IndexSet<_>>();
         let amount_of_ids: Decimal = ids.len().into();
-        Self {
-            certain_ids: ids,
+
+        Self::of_valid_normalized(GeneralResourceConstraint {
+            required_ids: ids,
             lower_bound: LowerBound::at_least(amount_of_ids),
             upper_bound: UpperBound::unbounded(),
             allowed_ids: AllowedIds::Any,
-        }
+        })
     }
 
     pub fn general_fungible(
         lower_bound: impl ResolvableLowerBound,
         upper_bound: impl ResolvableUpperBound,
     ) -> Result<Self, StaticResourceMovementsError> {
-        let bounds = Self {
-            certain_ids: Default::default(),
+        let mut constraints = GeneralResourceConstraint {
+            required_ids: Default::default(),
             lower_bound: lower_bound.resolve(),
             upper_bound: upper_bound.resolve(),
             allowed_ids: AllowedIds::Any,
         };
 
-        if !bounds.is_valid_for_fungible_use() {
+        if !constraints.is_valid_for_fungible_use() {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
 
-        Ok(bounds.tighten_id_lists_if_exact_ids())
+        constraints.normalize();
+
+        Ok(Self::of_valid_normalized(constraints))
     }
 
     pub fn general_non_fungible_no_allowlist(
-        certain_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
         lower_bound: impl ResolvableLowerBound,
         upper_bound: impl ResolvableUpperBound,
     ) -> Result<Self, StaticResourceMovementsError> {
-        let bounds = Self {
-            certain_ids: certain_ids.into_iter().collect::<IndexSet<_>>(),
+        let mut constraints = GeneralResourceConstraint {
+            required_ids: required_ids.into_iter().collect::<IndexSet<_>>(),
             lower_bound: lower_bound.resolve(),
             upper_bound: upper_bound.resolve(),
             allowed_ids: AllowedIds::Any,
         };
 
-        if !bounds.is_valid_for_non_fungible_use() {
+        if !constraints.is_valid_for_non_fungible_use() {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
 
-        Ok(bounds.tighten_id_lists_if_exact_ids())
+        constraints.normalize();
+
+        Ok(Self::of_valid_normalized(constraints))
     }
 
     pub fn general_non_fungible_with_allowlist(
-        certain_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
         lower_bound: impl ResolvableLowerBound,
         upper_bound: impl ResolvableUpperBound,
         id_allowlist: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Result<Self, StaticResourceMovementsError> {
-        let bounds = Self {
-            certain_ids: certain_ids.into_iter().collect(),
+        let mut constraints = GeneralResourceConstraint {
+            required_ids: required_ids.into_iter().collect(),
             lower_bound: lower_bound.resolve(),
             upper_bound: upper_bound.resolve(),
             allowed_ids: AllowedIds::Allowlist(id_allowlist.into_iter().collect()),
         };
 
-        if !bounds.is_valid_for_non_fungible_use() {
+        if !constraints.is_valid_for_non_fungible_use() {
             return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
         }
 
-        Ok(bounds.tighten_id_lists_if_exact_ids())
+        constraints.normalize();
+
+        Ok(Self::of_valid_normalized(constraints))
     }
 
     pub fn new_for_manifest_constraint(
@@ -794,25 +798,17 @@ impl ResourceBounds {
             ManifestResourceConstraint::AtLeastNonFungibles(ids) => {
                 Ok(Self::at_least_non_fungibles(ids.iter().cloned()))
             }
-            ManifestResourceConstraint::General(GeneralResourceConstraint {
-                required_ids,
-                lower_bound,
-                upper_bound,
-                allowed_ids,
-            }) => {
-                let bounds = Self {
-                    certain_ids: required_ids.clone(),
-                    lower_bound: *lower_bound,
-                    upper_bound: *upper_bound,
-                    allowed_ids: allowed_ids.clone(),
-                };
-
+            ManifestResourceConstraint::General(constraints) => {
                 // We don't know if it's fungible or non-fungible, so we at least verify the bounds.
-                if !bounds.are_bounds_valid() {
+                if !constraints.is_valid_independent_of_resource_type() {
                     return Err(StaticResourceMovementsError::ConstraintBoundsInvalid);
                 }
 
-                Ok(bounds.tighten_id_lists_if_exact_ids())
+                let mut constraints = constraints.clone();
+
+                constraints.normalize();
+
+                Ok(Self::of_valid_normalized(constraints))
             }
         }
     }
@@ -825,25 +821,26 @@ impl ResourceBounds {
         UpperBound,
         AllowedIds,
     ) {
+        let constraints = self.constraints;
         (
-            self.certain_ids,
-            self.lower_bound,
-            self.upper_bound,
-            self.allowed_ids,
+            constraints.required_ids,
+            constraints.lower_bound,
+            constraints.upper_bound,
+            constraints.allowed_ids,
         )
     }
 
     // &self methods
     pub fn numeric_bounds(&self) -> (LowerBound, UpperBound) {
-        (self.lower_bound, self.upper_bound)
+        (self.constraints.lower_bound, self.constraints.upper_bound)
     }
 
-    pub fn certain_ids(&self) -> &IndexSet<NonFungibleLocalId> {
-        &self.certain_ids
+    pub fn required_ids(&self) -> &IndexSet<NonFungibleLocalId> {
+        &self.constraints.required_ids
     }
 
     pub fn allowed_ids(&self) -> &AllowedIds {
-        &self.allowed_ids
+        &self.constraints.allowed_ids
     }
 
     pub fn is_valid_for(&self, resource_address: &ResourceAddress) -> bool {
@@ -855,72 +852,16 @@ impl ResourceBounds {
     }
 
     pub fn is_valid_for_fungible_use(&self) -> bool {
-        return self.certain_ids.is_empty()
-            && self.lower_bound.is_valid_for_fungible_use()
-            && self.upper_bound.is_valid_for_fungible_use()
-            && self.allowed_ids.is_valid_for_fungible_use()
-            && self.are_bounds_valid();
+        return self.constraints.is_valid_for_fungible_use();
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.lower_bound.is_valid_for_non_fungible_use()
-            && self.upper_bound.is_valid_for_non_fungible_use()
-            && self.are_bounds_valid();
-    }
-
-    pub fn are_bounds_valid(&self) -> bool {
-        let required_ids_amount = Decimal::from(self.certain_ids.len());
-        // These inequalities also validate that the lower and upper bounds are non-negative.
-        if required_ids_amount > self.lower_bound.equivalent_decimal() {
-            return false;
-        }
-        if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
-            return false;
-        }
-        match &self.allowed_ids {
-            AllowedIds::Allowlist(allowlist) => {
-                let allowlist_ids_amount = Decimal::from(allowlist.len());
-                if self.upper_bound.equivalent_decimal() > allowlist_ids_amount {
-                    return false;
-                }
-                if !self.certain_ids.is_subset(allowlist) {
-                    return false;
-                }
-            }
-            AllowedIds::Any => {}
-        }
-        true
+        return self.constraints.is_valid_for_non_fungible_use();
     }
 
     /// Returns true if the bound is known to be zero
     pub fn is_zero(&self) -> bool {
         self.eq(&Self::zero())
-    }
-
-    // mut self and &mut self methods
-    pub fn tighten_id_lists_if_exact_ids(mut self) -> Self {
-        self.mut_tighten_id_lists_if_exact_ids();
-        self
-    }
-
-    pub fn mut_tighten_id_lists_if_exact_ids(&mut self) {
-        // If we know that `self.certain_ids.len() == self.lower_bound == self.upper_bound`
-        // then this fully constrains the ids... At this point, we can tighten the allowlist to be definitive.
-        if Decimal::from(self.certain_ids.len()) == self.upper_bound.equivalent_decimal()
-            && self.certain_ids.len() < self.allowed_ids.allowlist_equivalent_length()
-        {
-            self.allowed_ids = AllowedIds::Allowlist(self.certain_ids.clone());
-        }
-        // Conversely, if we know that self.lower_bound == self.upper_bound == self.allowlist.len()
-        // then this _also_ fully constrains the ids... At this point, we can tighten the
-        // required list.
-        else if let AllowedIds::Allowlist(allowlist) = &self.allowed_ids {
-            if self.lower_bound.equivalent_decimal() == Decimal::from(allowlist.len())
-                && self.certain_ids.len() < allowlist.len()
-            {
-                self.certain_ids = allowlist.clone();
-            }
-        }
     }
 
     pub fn add(mut self, other: Self) -> Result<Self, StaticResourceMovementsError> {
@@ -929,15 +870,18 @@ impl ResourceBounds {
     }
 
     pub fn mut_add(&mut self, other: Self) -> Result<(), StaticResourceMovementsError> {
-        self.lower_bound.add_from(other.lower_bound)?;
-        self.upper_bound.add_from(other.upper_bound)?;
-        for id in other.certain_ids.into_iter() {
-            if !self.certain_ids.insert(id) {
+        let this = &mut self.constraints;
+        let other = other.constraints;
+
+        this.lower_bound.add_from(other.lower_bound)?;
+        this.upper_bound.add_from(other.upper_bound)?;
+        for id in other.required_ids.into_iter() {
+            if !this.required_ids.insert(id) {
                 return Err(StaticResourceMovementsError::DuplicateNonFungibleId);
             }
         }
 
-        match (&mut self.allowed_ids, other.allowed_ids) {
+        match (&mut this.allowed_ids, other.allowed_ids) {
             (AllowedIds::Any, _) => {} // If all ids are allowed, keep it that way
             (self_permitted_ids, AllowedIds::Any) => *self_permitted_ids = AllowedIds::Any,
             (AllowedIds::Allowlist(allow_list), AllowedIds::Allowlist(other_allow_list)) => {
@@ -946,7 +890,7 @@ impl ResourceBounds {
             }
         }
 
-        self.mut_tighten_id_lists_if_exact_ids();
+        this.normalize();
 
         Ok(())
     }
@@ -963,21 +907,23 @@ impl ResourceBounds {
         &mut self,
         amount: ResourceTakeAmount,
     ) -> Result<Self, StaticResourceMovementsError> {
+        let this = &mut self.constraints;
+
         match amount {
             ResourceTakeAmount::Amount(take_amount) => {
                 if take_amount.is_negative() {
                     return Err(StaticResourceMovementsError::DecimalAmountIsNegative);
                 }
-                self.lower_bound.take_amount(take_amount);
-                self.upper_bound.take_amount(take_amount)?;
+                this.lower_bound.take_amount(take_amount);
+                this.upper_bound.take_amount(take_amount)?;
 
                 // For known ids, we don't know which ids were taken, so we have to clear them.
                 // But the allowed ids stay as-is
                 if take_amount.is_positive() {
-                    self.certain_ids.clear();
+                    this.required_ids.clear();
                 }
 
-                self.mut_tighten_id_lists_if_exact_ids();
+                this.normalize();
 
                 // Taken amount
                 Self::exact_amount(take_amount)
@@ -985,16 +931,16 @@ impl ResourceBounds {
             ResourceTakeAmount::NonFungibles(taken_ids) => {
                 let take_amount = Decimal::from(taken_ids.len());
 
-                self.lower_bound.take_amount(take_amount);
-                self.upper_bound.take_amount(take_amount)?;
+                this.lower_bound.take_amount(take_amount);
+                this.upper_bound.take_amount(take_amount)?;
 
                 // Remove any taken ids from the list of known/required ids.
                 // It's okay if some of the taken ids weren't required to be present.
-                self.certain_ids = self.certain_ids.difference(&taken_ids).cloned().collect();
+                this.required_ids = this.required_ids.difference(&taken_ids).cloned().collect();
 
                 // Finally, we check all the taken ids are in the allow list (if it exists) and these ids
                 // are removed from the allow list.
-                if let AllowedIds::Allowlist(allow_list) = &mut self.allowed_ids {
+                if let AllowedIds::Allowlist(allow_list) = &mut this.allowed_ids {
                     if !taken_ids.is_subset(allow_list) {
                         return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
                     }
@@ -1004,11 +950,11 @@ impl ResourceBounds {
                 // We check remaining invariants: it's an error if, after taking all matching ids,
                 // we now are required to have too many.
                 // e.g. This catches "Add A, 1 of 1; Take B, C"
-                if Decimal::from(self.certain_ids.len()) > self.lower_bound.equivalent_decimal() {
+                if Decimal::from(this.required_ids.len()) > this.lower_bound.equivalent_decimal() {
                     return Err(StaticResourceMovementsError::TakeCannotBeSatisfied);
                 }
 
-                self.mut_tighten_id_lists_if_exact_ids();
+                this.normalize();
 
                 // Taken amount
                 Ok(Self::exact_non_fungibles(taken_ids))
@@ -1032,18 +978,21 @@ impl ResourceBounds {
         &mut self,
         assertion: ResourceBounds,
     ) -> Result<(), StaticResourceMovementsError> {
+        let this = &mut self.constraints;
+        let assertion = assertion.constraints;
+
         // Possibly increase lower bound and decrease upper bound
-        self.lower_bound.constrain_to(assertion.lower_bound);
-        self.upper_bound.constrain_to(assertion.upper_bound);
+        this.lower_bound.constrain_to(assertion.lower_bound);
+        this.upper_bound.constrain_to(assertion.upper_bound);
 
         // Handle the allow list
         if let AllowedIds::Allowlist(assertion_allowlist) = assertion.allowed_ids {
             // Check the known/required ids are a subset of the assertion allowlist
-            if !self.certain_ids.is_subset(&assertion_allowlist) {
+            if !this.required_ids.is_subset(&assertion_allowlist) {
                 return Err(StaticResourceMovementsError::AssertionCannotBeSatisfied);
             }
             // Intersect the allow lists
-            match &mut self.allowed_ids {
+            match &mut this.allowed_ids {
                 allowed_ids @ AllowedIds::Any => {
                     *allowed_ids = AllowedIds::Allowlist(assertion_allowlist);
                 }
@@ -1059,11 +1008,11 @@ impl ResourceBounds {
         // We've already checked that our certain ids are in the assertion allowlist
         // (and therefore, using the invariant, are in the intersection).
         // We now need to complete processing by expanding the known ids list according to the assertion.
-        for required_id in assertion.certain_ids.iter() {
-            self.certain_ids.insert(required_id.clone());
+        for required_id in assertion.required_ids.iter() {
+            this.required_ids.insert(required_id.clone());
         }
 
-        // Finally, we verify the invariants are still upheld.
+        // Finally, we verify the validity invariants are still upheld.
         // At this point, assuming self and the assertion satisfied the original invariants,
         // given the work we've done above, we know that:
         // * self.required_ids.len() <= self.lower_inclusive
@@ -1072,17 +1021,17 @@ impl ResourceBounds {
         // We still need to check two more which could now have been invalidated:
         // * self.lower_inclusive <= self.upper_inclusive
         // * self.upper_inclusive <= self.allowlist.len()
-        if self.lower_bound.equivalent_decimal() > self.upper_bound.equivalent_decimal() {
+        if this.lower_bound.equivalent_decimal() > this.upper_bound.equivalent_decimal() {
             return Err(StaticResourceMovementsError::AssertionCannotBeSatisfied);
         }
 
-        if let AllowedIds::Allowlist(allowlist) = &self.allowed_ids {
-            if self.upper_bound.equivalent_decimal() > Decimal::from(allowlist.len()) {
+        if let AllowedIds::Allowlist(allowlist) = &this.allowed_ids {
+            if this.upper_bound.equivalent_decimal() > Decimal::from(allowlist.len()) {
                 return Err(StaticResourceMovementsError::AssertionCannotBeSatisfied);
             }
         }
 
-        self.mut_tighten_id_lists_if_exact_ids();
+        this.normalize();
 
         Ok(())
     }
@@ -1095,8 +1044,8 @@ impl ResourceBounds {
 
     /// For situations where someone has taken an unknown amount from the balance.
     pub fn mut_replace_lower_bounds_with_zero(&mut self) {
-        self.certain_ids = Default::default();
-        self.lower_bound = LowerBound::zero();
+        self.constraints.required_ids = Default::default();
+        self.constraints.lower_bound = LowerBound::zero();
     }
 }
 
@@ -1302,14 +1251,20 @@ impl StaticResourceMovementsOutput {
                 }
                 let (resource_address, specified_resource) = resources.first().unwrap();
                 if is_non_fungible_withdraw {
+                    // Account withdraws are for an exact amount, so we can just use required_ids here
                     AccountWithdraw::Ids(
                         *resource_address,
-                        specified_resource.bounds().certain_ids().clone(),
+                        specified_resource.bounds().required_ids().clone(),
                     )
                 } else {
+                    // Account withdraws are for an exact amount, so the two numeric bounds are equivalent
                     AccountWithdraw::Amount(
                         *resource_address,
-                        specified_resource.bounds.lower_bound.equivalent_decimal(),
+                        specified_resource
+                            .bounds
+                            .numeric_bounds()
+                            .0
+                            .equivalent_decimal(),
                     )
                 }
             };
@@ -1531,7 +1486,7 @@ impl From<ResourceBounds> for SimpleResourceBounds {
         } else {
             match value.allowed_ids() {
                 // Note - IndexSet equality does a set equality, ignoring order
-                AllowedIds::Allowlist(allowlist) if value.certain_ids() == allowlist => {
+                AllowedIds::Allowlist(allowlist) if value.required_ids() == allowlist => {
                     let (certain_ids, _, _, _) = value.deconstruct();
                     SimpleResourceBounds::ExactNonFungibles(certain_ids)
                 }
