@@ -56,6 +56,14 @@ pub enum RejectionReason {
         valid_until: Option<Epoch>,
         current_epoch: Epoch,
     },
+    TransactionProposerTimestampNotYetValid {
+        range: ProposerTimestampRange,
+        current_time: Instant,
+    },
+    TransactionProposerTimestampNoLongerValid {
+        range: ProposerTimestampRange,
+        current_time: Instant,
+    },
     IntentHashPreviouslyCommitted,
     IntentHashPreviouslyCancelled,
 
@@ -64,10 +72,6 @@ pub enum RejectionReason {
     ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     SuccessButFeeLoanNotRepaid,
     SubintentsNotYetSupported,
-    InvalidTimestampRange {
-        range: ProposerTimestampRange,
-        current_time: Instant,
-    },
 }
 
 impl From<BootloadingError> for RejectionReason {

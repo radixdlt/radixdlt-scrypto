@@ -36,27 +36,6 @@ pub struct ProposerTimestampRange {
     pub end_timestamp_exclusive: Option<Instant>,
 }
 
-impl ProposerTimestampRange {
-    /// Checks if a timestamp is within this range.
-    ///
-    /// This implementation assumes that the range is valid.
-    pub fn contains(&self, timestamp: Instant) -> bool {
-        if let Some(t) = self.start_timestamp_inclusive {
-            if timestamp < t {
-                return false;
-            }
-        }
-
-        if let Some(t) = self.end_timestamp_exclusive {
-            if timestamp >= t {
-                return false;
-            }
-        }
-
-        true
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct PreAllocatedAddress {
     pub blueprint_id: BlueprintId,
