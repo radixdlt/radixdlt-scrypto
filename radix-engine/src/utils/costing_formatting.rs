@@ -81,7 +81,7 @@ pub fn format_cost_breakdown(
         decimal_to_float(
             numerator
                 .checked_div(denominator)
-                .unwrap()
+                .unwrap_or_default() // default for rejections
                 .checked_mul(100)
                 .unwrap(),
         )
