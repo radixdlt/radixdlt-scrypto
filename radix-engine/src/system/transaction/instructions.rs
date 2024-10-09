@@ -1,17 +1,12 @@
 use crate::blueprints::transaction_processor::{
     IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
 };
-use crate::errors::{
-    ApplicationError, IntentError, ResourceConstraintError, RuntimeError, SystemError,
-};
+use crate::errors::{ApplicationError, IntentError, RuntimeError, SystemError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{
-    scrypto_encode, BlueprintId, GeneralResourceConstraint, ManifestResourceConstraint,
-    ManifestValue, Own, ScryptoValue,
-};
+use radix_common::prelude::{scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::prelude::{AccessRule, Bucket, IndexedScryptoValue, Proof};
+use radix_engine_interface::prelude::{AccessRule, IndexedScryptoValue, Proof};
 use radix_native_sdk::resource::{
     NativeBucket, NativeFungibleBucket, NativeNonFungibleBucket, NativeProof, Worktop,
 };
@@ -332,107 +327,25 @@ impl TxnNormalInstruction for AssertBucketContents {
     ) -> Result<InstructionOutput, RuntimeError> {
         let bucket = objects.get_bucket(&self.bucket_id)?;
 
-        match self.constraint {
-            ManifestResourceConstraint::NonZeroAmount => {
-                if bucket.is_empty(api)? {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::AssertBucketContentsFailed(
-                            ResourceConstraintError::NonZeroAmount,
-                        ),
-                    )));
-                }
-            }
-            ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
-                let actual_amount = bucket.amount(api)?;
-                if expected_exact_amount != actual_amount {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::AssertBucketContentsFailed(
-                            ResourceConstraintError::ExactAmount {
-                                actual_amount,
-                                expected_exact_amount,
-                            },
-                        ),
-                    )));
-                }
-            }
-            ManifestResourceConstraint::AtLeastAmount(expected_atleast_amount) => {
-                let actual_amount = bucket.amount(api)?;
-                if actual_amount < expected_atleast_amount {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::AssertBucketContentsFailed(
-                            ResourceConstraintError::AtLeastAmount {
-                                expected_at_least_amount: expected_atleast_amount,
-                                actual_amount,
-                            },
-                        ),
-                    )));
-                }
-            }
-            ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids) => {
-                let actual_ids = bucket.non_fungible_local_ids(api)?;
-                if !expected_exact_ids.eq(&actual_ids) {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::AssertBucketContentsFailed(
-                            ResourceConstraintError::ExactNonFungibles {
-                                expected_exact_ids: Box::new(expected_exact_ids),
-                                actual_ids: Box::new(actual_ids),
-                            },
-                        ),
-                    )));
-                }
-            }
-            ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids) => {
-                let actual_ids = bucket.non_fungible_local_ids(api)?;
-                if !expected_at_least_ids.is_subset(&actual_ids) {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::AssertBucketContentsFailed(
-                            ResourceConstraintError::AtLeastNonFungibles {
-                                actual_ids: Box::new(actual_ids),
-                                expected_at_least_ids: Box::new(expected_at_least_ids),
-                            },
-                        ),
-                    )));
-                }
-            }
-            ManifestResourceConstraint::General(constraint) => {
-                check_general_resource_constraint(&bucket, constraint, api)?;
-            }
+        let resource_address = bucket.resource_address(api)?;
+        if resource_address.is_fungible() {
+            let amount = bucket.amount(api)?;
+            self.constraint.validate_fungible(amount).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
+        } else {
+            let ids = bucket.non_fungible_local_ids(api)?;
+            self.constraint.validate_non_fungible(ids).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
         }
 
         Ok(InstructionOutput::None)
     }
-}
-
-/// Checks general resource constraints on a bucket
-fn check_general_resource_constraint<
-    Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
-    L: Default,
->(
-    bucket: &Bucket,
-    constraint: GeneralResourceConstraint,
-    api: &mut Y,
-) -> Result<(), RuntimeError> {
-    // Only read amount if the constraint has amount constraints, otherwise can skip read
-    if constraint.has_amount_constraints() {
-        let actual_amount = bucket.amount(api)?;
-        constraint.validate_amount(actual_amount).map_err(|e| {
-            RuntimeError::SystemError(SystemError::IntentError(
-                IntentError::AssertBucketContentsFailed(ResourceConstraintError::General(e)),
-            ))
-        })?;
-    }
-
-    // Only read non-fungible ids if the constraint has non-fungible id constraints, otherwise can skip read
-    if constraint.has_non_fungible_id_constraints() {
-        let actual_ids = bucket.non_fungible_local_ids(api)?;
-        constraint.check_non_fungibles(&actual_ids).map_err(|e| {
-            RuntimeError::SystemError(SystemError::IntentError(
-                IntentError::AssertBucketContentsFailed(ResourceConstraintError::General(e)),
-            ))
-        })?;
-    }
-
-    Ok(())
 }
 
 impl TxnNormalInstruction for PopFromAuthZone {
