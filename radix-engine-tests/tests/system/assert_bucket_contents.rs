@@ -180,20 +180,6 @@ fn asserting_correct_non_fungible_general_constraints_should_succeed() {
         for upper_bound in upper_bounds {
             for required_ids in &required_ids_list {
                 for allowed_ids in &allowed_ids_list {
-                    // Skip these cases as the static checker prevents this from running
-                    {
-                        if let AllowedIds::Allowlist(allow_list) = allowed_ids {
-                            let allowlist_ids_amount = Decimal::from(allow_list.len());
-                            if upper_bound.equivalent_decimal() > allowlist_ids_amount {
-                                continue;
-                            }
-                        }
-
-                        if lower_bound.equivalent_decimal() < Decimal::from(required_ids.len()) {
-                            continue;
-                        }
-                    }
-
                     let constraint = GeneralResourceConstraint {
                         required_ids: required_ids.clone(),
                         allowed_ids: allowed_ids.clone(),
@@ -225,7 +211,7 @@ fn asserting_incorrect_fungible_lower_bound_general_constraint_should_fail() {
         amount,
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::General(
-            GeneralResourceConstraintError::AmountLowerBound {
+            GeneralResourceConstraintError::LowerBoundAmountNotSatisfied {
                 actual: amount,
                 lower_bound_inclusive: lower_bound,
             },
@@ -247,7 +233,7 @@ fn asserting_incorrect_fungible_upper_bound_general_constraint_should_fail() {
         amount,
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::General(
-            GeneralResourceConstraintError::AmountUpperBound {
+            GeneralResourceConstraintError::UpperBoundAmountNotSatisfied {
                 actual: amount,
                 upper_bound_inclusive: upper_bound,
             },
@@ -268,7 +254,7 @@ fn asserting_incorrect_non_fungible_required_ids_general_constraint_should_fail(
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::General(
-            GeneralResourceConstraintError::NonFungibleRequired {
+            GeneralResourceConstraintError::MissingRequiredNonFungible {
                 missing_id: NonFungibleLocalId::from(3),
             },
         )),
@@ -291,7 +277,7 @@ fn asserting_incorrect_non_fungible_allowed_ids_general_constraint_should_fail()
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::General(
-            GeneralResourceConstraintError::NonFungibleAllowed {
+            GeneralResourceConstraintError::InvalidNonFungible {
                 invalid_id: NonFungibleLocalId::from(1),
             },
         )),
@@ -307,14 +293,6 @@ fn asserting_correct_empty_bucket_general_constraints_should_succeed() {
 
     for upper_bound in upper_bounds {
         for allowed_ids in &allowed_ids_list {
-            // Skip this cases as the static checker prevents this from running
-            if let AllowedIds::Allowlist(allow_list) = allowed_ids {
-                let allowlist_ids_amount = Decimal::from(allow_list.len());
-                if upper_bound.equivalent_decimal() > allowlist_ids_amount {
-                    continue;
-                }
-            }
-
             let constraint = GeneralResourceConstraint {
                 required_ids: Default::default(),
                 allowed_ids: allowed_ids.clone(),
@@ -343,7 +321,7 @@ fn asserting_incorrect_empty_bucket_lower_bound_general_constraint_should_fail()
         amount,
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::General(
-            GeneralResourceConstraintError::AmountNonZero,
+            GeneralResourceConstraintError::ExpectNonZeroAmount,
         )),
     );
 }

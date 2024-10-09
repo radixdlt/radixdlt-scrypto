@@ -359,29 +359,33 @@ impl GeneralResourceConstraint {
         false
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> Result<(), GeneralResourceConstraintError> {
+    pub fn validate_amount(&self, amount: Decimal) -> Result<(), GeneralResourceConstraintError> {
         match self.lower_bound {
             LowerBound::NonZero => {
                 if amount.is_zero() {
-                    return Err(GeneralResourceConstraintError::AmountNonZero);
+                    return Err(GeneralResourceConstraintError::ExpectNonZeroAmount);
                 }
             }
             LowerBound::Inclusive(inclusive) => {
                 if amount < inclusive {
-                    return Err(GeneralResourceConstraintError::AmountLowerBound {
-                        lower_bound_inclusive: inclusive,
-                        actual: amount,
-                    });
+                    return Err(
+                        GeneralResourceConstraintError::LowerBoundAmountNotSatisfied {
+                            lower_bound_inclusive: inclusive,
+                            actual: amount,
+                        },
+                    );
                 }
             }
         }
         match self.upper_bound {
             UpperBound::Inclusive(inclusive) => {
                 if amount > inclusive {
-                    return Err(GeneralResourceConstraintError::AmountUpperBound {
-                        upper_bound_inclusive: inclusive,
-                        actual: amount,
-                    });
+                    return Err(
+                        GeneralResourceConstraintError::UpperBoundAmountNotSatisfied {
+                            upper_bound_inclusive: inclusive,
+                            actual: amount,
+                        },
+                    );
                 }
             }
             UpperBound::Unbounded => {}
@@ -400,7 +404,7 @@ impl GeneralResourceConstraint {
     ) -> Result<(), GeneralResourceConstraintError> {
         for id in &self.required_ids {
             if !ids.contains(id) {
-                return Err(GeneralResourceConstraintError::NonFungibleRequired {
+                return Err(GeneralResourceConstraintError::MissingRequiredNonFungible {
                     missing_id: id.clone(),
                 });
             }
@@ -409,7 +413,7 @@ impl GeneralResourceConstraint {
             AllowedIds::Allowlist(allowed) => {
                 for id in ids {
                     if !allowed.contains(id) {
-                        return Err(GeneralResourceConstraintError::NonFungibleAllowed {
+                        return Err(GeneralResourceConstraintError::InvalidNonFungible {
                             invalid_id: id.clone(),
                         });
                     }
@@ -489,19 +493,19 @@ impl GeneralResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GeneralResourceConstraintError {
-    AmountNonZero,
-    AmountLowerBound {
+    ExpectNonZeroAmount,
+    LowerBoundAmountNotSatisfied {
         lower_bound_inclusive: Decimal,
         actual: Decimal,
     },
-    AmountUpperBound {
+    UpperBoundAmountNotSatisfied {
         upper_bound_inclusive: Decimal,
         actual: Decimal,
     },
-    NonFungibleRequired {
+    MissingRequiredNonFungible {
         missing_id: NonFungibleLocalId,
     },
-    NonFungibleAllowed {
+    InvalidNonFungible {
         invalid_id: NonFungibleLocalId,
     },
 }

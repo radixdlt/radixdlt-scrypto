@@ -415,7 +415,7 @@ fn check_general_resource_constraint<
     // Only read amount if the constraint has amount constraints, otherwise can skip read
     if constraint.has_amount_constraints() {
         let actual_amount = bucket.amount(api)?;
-        constraint.check_amount(actual_amount).map_err(|e| {
+        constraint.validate_amount(actual_amount).map_err(|e| {
             RuntimeError::SystemError(SystemError::IntentError(
                 IntentError::AssertBucketContentsFailed(ResourceConstraintError::General(e)),
             ))
