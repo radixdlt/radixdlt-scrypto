@@ -269,7 +269,7 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::remove_resource_preference(resource_address, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT => {
                 let AccountAddAuthorizedDepositorInput { badge } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -277,7 +277,7 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::add_authorized_depositor(badge, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => {
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT => {
                 let AccountRemoveAuthorizedDepositorInput { badge } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))

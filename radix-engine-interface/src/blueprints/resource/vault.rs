@@ -16,31 +16,42 @@ pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct VaultPutManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type VaultPutOutput = ();
 
 pub const VAULT_TAKE_IDENT: &str = "take";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultTakeInput {
     pub amount: Decimal,
 }
+
+pub type VaultTakeManifestInput = VaultTakeInput;
 
 pub type VaultTakeOutput = Bucket;
 
 pub const VAULT_TAKE_ADVANCED_IDENT: &str = "take_advanced";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultTakeAdvancedInput {
     pub amount: Decimal,
     pub withdraw_strategy: WithdrawStrategy,
 }
 
+pub type VaultTakeAdvancedManifestInput = VaultTakeAdvancedInput;
+
 pub type VaultTakeAdvancedOutput = Bucket;
 
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultGetAmountInput {}
+
+pub type VaultGetAmountManifestInput = VaultGetAmountInput;
 
 pub type VaultGetAmountOutput = Decimal;
 
@@ -50,6 +61,8 @@ pub const VAULT_RECALL_IDENT: &str = "recall";
 pub struct VaultRecallInput {
     pub amount: Decimal,
 }
+
+pub type VaultRecallManifestInput = VaultRecallInput;
 
 pub type VaultRecallOutput = Bucket;
 
@@ -71,6 +84,8 @@ pub struct VaultFreezeInput {
     pub to_freeze: VaultFreezeFlags,
 }
 
+pub type VaultFreezeManifestInput = VaultFreezeInput;
+
 pub type VaultFreezeOutput = ();
 
 pub const VAULT_UNFREEZE_IDENT: &str = "unfreeze";
@@ -81,14 +96,18 @@ pub struct VaultUnfreezeInput {
     pub to_unfreeze: VaultFreezeFlags,
 }
 
+pub type VaultUnfreezeManifestInput = VaultUnfreezeInput;
+
 pub type VaultUnfreezeOutput = ();
 
 pub const VAULT_BURN_IDENT: &str = "burn";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct VaultBurnInput {
     pub amount: Decimal,
 }
+
+pub type VaultBurnManifestInput = VaultBurnInput;
 
 pub type VaultBurnOutput = ();
 

@@ -752,6 +752,16 @@ impl AllowedIds {
             AllowedIds::Any => true,
         }
     }
+
+    pub fn is_allow_list_and(
+        &self,
+        callback: impl FnOnce(&IndexSet<NonFungibleLocalId>) -> bool,
+    ) -> bool {
+        match self {
+            AllowedIds::Allowlist(index_set) => callback(index_set),
+            AllowedIds::Any => false,
+        }
+    }
 }
 
 pub enum BoundAdjustmentError {

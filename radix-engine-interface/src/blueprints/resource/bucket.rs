@@ -12,20 +12,24 @@ use sbor::*;
 
 pub const BUCKET_TAKE_IDENT: &str = "take";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BucketTakeInput {
     pub amount: Decimal,
 }
+
+pub type BucketTakeManifestInput = BucketTakeInput;
 
 pub type BucketTakeOutput = Bucket;
 
 pub const BUCKET_TAKE_ADVANCED_IDENT: &str = "take_advanced";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BucketTakeAdvancedInput {
     pub amount: Decimal,
     pub withdraw_strategy: WithdrawStrategy,
 }
+
+pub type BucketTakeAdvancedManifestInput = BucketTakeAdvancedInput;
 
 pub type BucketTakeAdvancedOutput = Bucket;
 
@@ -36,26 +40,37 @@ pub struct BucketPutInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct BucketPutManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type BucketPutOutput = ();
 
 pub const BUCKET_GET_AMOUNT_IDENT: &str = "get_amount";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BucketGetAmountInput {}
+
+pub type BucketGetAmountManifestInput = BucketGetAmountInput;
 
 pub type BucketGetAmountOutput = Decimal;
 
 pub const BUCKET_GET_RESOURCE_ADDRESS_IDENT: &str = "get_resource_address";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BucketGetResourceAddressInput {}
+
+pub type BucketGetResourceAddressManifestInput = BucketGetResourceAddressInput;
 
 pub type BucketGetResourceAddressOutput = ResourceAddress;
 
 pub const BUCKET_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BucketCreateProofOfAllInput {}
+
+pub type BucketCreateProofOfAllManifestInput = BucketCreateProofOfAllInput;
 
 pub type BucketCreateProofOfAllOutput = Proof;
 

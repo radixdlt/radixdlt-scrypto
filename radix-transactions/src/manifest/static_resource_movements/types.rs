@@ -1454,51 +1454,91 @@ pub struct AccountDeposit {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SimpleResourceBounds {
-    ExactAmount(Decimal),
-    ExactNonFungibles(IndexSet<NonFungibleLocalId>),
-    General(ResourceBounds),
-}
-
-impl From<SimpleResourceBounds> for ResourceBounds {
-    fn from(value: SimpleResourceBounds) -> Self {
-        match value {
-            SimpleResourceBounds::ExactAmount(amount) => {
-                ResourceBounds::exact_amount(amount).unwrap()
-            }
-            SimpleResourceBounds::ExactNonFungibles(ids) => {
-                ResourceBounds::exact_non_fungibles(ids)
-            }
-            SimpleResourceBounds::General(resource_bounds) => resource_bounds,
-        }
-    }
-}
-
-impl From<ResourceBounds> for SimpleResourceBounds {
-    fn from(value: ResourceBounds) -> Self {
-        let (lower_bound, upper_bound) = value.numeric_bounds();
-        let allowed_ids_empty_or_any = value.allowed_ids().is_valid_for_fungible_use();
-
-        if lower_bound.cmp_upper(&upper_bound).is_eq() && allowed_ids_empty_or_any {
-            // If fungible, this conversion is correct (either Any or empty is allowed for allowed ids)
-            // If non-fungible, and allowed ids is any, this conversion is correct
-            // If non-fungible, and allowed ids is empty, this implies the bounds are zero, so this is okay.
-            SimpleResourceBounds::ExactAmount(lower_bound.equivalent_decimal())
-        } else {
-            match value.allowed_ids() {
-                // Note - IndexSet equality does a set equality, ignoring order
-                AllowedIds::Allowlist(allowlist) if value.required_ids() == allowlist => {
-                    let (certain_ids, _, _, _) = value.deconstruct();
-                    SimpleResourceBounds::ExactNonFungibles(certain_ids)
-                }
-                AllowedIds::Any | AllowedIds::Allowlist(_) => SimpleResourceBounds::General(value),
-            }
-        }
-    }
+    Fungible(SimpleFungibleResourceBounds),
+    NonFungible(SimpleNonFungibleResourceBounds),
 }
 
 impl SimpleResourceBounds {
-    pub fn to_bounds(self) -> SimpleResourceBounds {
-        self.into()
+    pub fn from_bound(resource_address: ResourceAddress, resource_bounds: ResourceBounds) -> Self {
+        match resource_address.is_fungible() {
+            true => Self::Fungible(resource_bounds.into()),
+            false => Self::NonFungible(resource_bounds.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SimpleFungibleResourceBounds {
+    Exact(Decimal),
+    AtMost(Decimal),
+    AtLeast(Decimal),
+    Between(Decimal, Decimal),
+    UnknownAmount,
+}
+
+impl From<ResourceBounds> for SimpleFungibleResourceBounds {
+    fn from(bounds: ResourceBounds) -> Self {
+        match bounds.numeric_bounds() {
+            (LowerBound::Inclusive(lower_bound_inclusive), UpperBound::Unbounded)
+                if lower_bound_inclusive == Decimal::ZERO =>
+            {
+                Self::UnknownAmount
+            }
+            (LowerBound::NonZero, UpperBound::Unbounded) => Self::UnknownAmount,
+            (LowerBound::NonZero, UpperBound::Inclusive(upper_bound_inclusive)) => {
+                Self::AtMost(upper_bound_inclusive)
+            }
+            (
+                LowerBound::Inclusive(lower_bound_inclusive),
+                UpperBound::Inclusive(upper_bound_inclusive),
+            ) if lower_bound_inclusive.is_zero() => Self::AtMost(upper_bound_inclusive),
+            (LowerBound::Inclusive(lower_bound_inclusive), UpperBound::Unbounded) => {
+                Self::AtLeast(lower_bound_inclusive)
+            }
+            (
+                LowerBound::Inclusive(lower_bound_inclusive),
+                UpperBound::Inclusive(upper_bound_inclusive),
+            ) if lower_bound_inclusive == upper_bound_inclusive => {
+                Self::Exact(lower_bound_inclusive)
+            }
+            (
+                LowerBound::Inclusive(lower_bound_inclusive),
+                UpperBound::Inclusive(upper_bound_inclusive),
+            ) => Self::Between(lower_bound_inclusive, upper_bound_inclusive),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SimpleNonFungibleResourceBounds {
+    Exact {
+        amount: Decimal,
+        certain_ids: IndexSet<NonFungibleLocalId>,
+    },
+    NotExact {
+        certain_ids: IndexSet<NonFungibleLocalId>,
+        lower_bound: LowerBound,
+        upper_bound: UpperBound,
+        allowed_ids: AllowedIds,
+    },
+}
+
+impl From<ResourceBounds> for SimpleNonFungibleResourceBounds {
+    fn from(bounds: ResourceBounds) -> Self {
+        let (certain_ids, lower_bound, upper_bound, allowed_ids) = bounds.deconstruct();
+        if Decimal::from(certain_ids.len()) == upper_bound.equivalent_decimal() {
+            Self::Exact {
+                amount: lower_bound.equivalent_decimal(),
+                certain_ids,
+            }
+        } else {
+            Self::NotExact {
+                certain_ids,
+                lower_bound,
+                upper_bound,
+                allowed_ids,
+            }
+        }
     }
 }
 
@@ -1512,19 +1552,69 @@ impl AccountDeposit {
 
     /// Should only be used if it doesn't already exist
     pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
-        self.specified_resources
-            .insert(resource_address, bounds.into());
+        self.specified_resources.insert(
+            resource_address,
+            SimpleResourceBounds::from_bound(resource_address, bounds),
+        );
         self
+    }
+
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
+        &self.specified_resources
     }
 
     pub fn unspecified_resources(&self) -> UnspecifiedResources {
         self.unspecified_resources.clone()
     }
 
-    pub fn bounds_for(&self, resource_address: ResourceAddress) -> ResourceBounds {
+    pub fn bounds_for(&self, resource_address: ResourceAddress) -> SimpleResourceBounds {
         match self.specified_resources.get(&resource_address) {
-            Some(bounds) => bounds.clone().into(),
-            None => self.unspecified_resources.resource_bounds(),
+            Some(bounds) => bounds.clone(),
+            None => SimpleResourceBounds::from_bound(
+                resource_address,
+                self.unspecified_resources.resource_bounds(),
+            ),
         }
+    }
+}
+
+/// This is a type equivalent to the dynamic types defined for use in the manifest such as the
+/// [`DynamicGlobalAddress`], [`DynamicPackageAddress`], and so on but with the [`Named`] variant
+/// resolved from a [`ManifestNamedAddress`] to a particular [`BlueprintId`] that is known.
+///
+/// * [`Named`]: ResolvedDynamicAddress::Named
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
+pub enum ResolvedDynamicAddress<T: AsRef<NodeId>> {
+    StaticAddress(T),
+    BlueprintResolvedFromNamedAddress(BlueprintId),
+}
+
+impl<T: AsRef<NodeId>> ResolvedDynamicAddress<T> {
+    /// This method returns the [`BlueprintId`] of the main module of the object that it addresses.
+    ///
+    /// In the case that the address type is [`Named`] then resolving the [`BlueprintId`] is simple,
+    /// it  is what's stored in that variant which is the blueprint of the named address. In the
+    /// case that the address is [`Static`] this method attempts to determine the [`BlueprintId`]
+    /// from from the entity type of the address.
+    ///
+    /// * [`Named`]: ResolvedDynamicAddress::Named
+    /// * [`Static`]: ResolvedDynamicAddress::Static
+    pub fn main_module_blueprint_id(&self) -> Option<&BlueprintId> {
+        match self {
+            Self::StaticAddress(global_address) => global_address
+                .as_ref()
+                .entity_type()
+                .and_then(resolve_main_module_blueprint_id),
+            Self::BlueprintResolvedFromNamedAddress(blueprint_id) => Some(blueprint_id),
+        }
+    }
+
+    /// This method attempts the resolve the dynamic address into the [`BlueprintId`] that is
+    /// invoked when the passed [`ModuleId`] is invoked on this address.
+    pub fn invoked_blueprint_id(&self, module_id: ModuleId) -> Option<&BlueprintId> {
+        self.main_module_blueprint_id()
+            .and_then(|main_module_blueprint_id| {
+                resolve_invoked_blueprint_id(main_module_blueprint_id, module_id)
+            })
     }
 }

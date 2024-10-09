@@ -44,6 +44,7 @@ pub mod prelude {
     pub use crate::blueprints::consensus_manager::*;
     pub use crate::blueprints::locker::*;
     pub use crate::blueprints::resource::*;
+    pub use crate::blueprints::utils::*;
     pub use crate::object_modules::metadata::*;
     pub use crate::object_modules::role_assignment::*;
     pub use crate::object_modules::royalty::*;

@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 
 use radix_engine_interface::api::SystemApi;
-use radix_engine_interface::blueprints::test_utils::invocations::*;
+use radix_engine_interface::blueprints::test_utils::*;
 
 pub struct TestUtilsBlueprint;
 

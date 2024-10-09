@@ -2278,14 +2278,14 @@ fn account_configuration_emits_expected_events() {
         )
         .call_method(
             account,
-            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
             AccountAddAuthorizedDepositorInput {
                 badge: authorized_depositor_badge.clone(),
             },
         )
         .call_method(
             account,
-            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
             AccountRemoveAuthorizedDepositorInput {
                 badge: authorized_depositor_badge.clone(),
             },

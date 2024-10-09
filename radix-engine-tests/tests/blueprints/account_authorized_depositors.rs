@@ -77,7 +77,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
@@ -134,7 +134,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -189,7 +189,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -244,7 +244,7 @@ fn authorized_depositor_can_be_removed_later() {
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -282,7 +282,7 @@ fn authorized_depositor_can_be_removed_later() {
         .lock_fee_from_faucet()
         .call_method(
             account1,
-            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
             AccountRemoveAuthorizedDepositorInput {
                 badge: badge.clone(),
             },
@@ -336,7 +336,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
@@ -388,7 +388,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -436,7 +436,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -484,7 +484,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
@@ -539,7 +539,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -594,7 +594,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -649,7 +649,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput { badge: badge },
                 )
                 .build(),
@@ -699,7 +699,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -747,7 +747,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
                 )
                 .call_method(
                     account1,
-                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                     AccountAddAuthorizedDepositorInput {
                         badge: badge.clone(),
                     },
@@ -910,7 +910,7 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
             )
             .call_method(
                 account,
-                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                 AccountAddAuthorizedDepositorInput {
                     badge: ResourceOrNonFungible::Resource(XRD),
                 },
@@ -976,12 +976,12 @@ fn test_depositors_operation_method_auth(
         builder = match operation {
             DepositorsOperation::Add { badge } => builder.call_method(
                 account,
-                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                 AccountAddAuthorizedDepositorInput { badge },
             ),
             DepositorsOperation::Remove { badge } => builder.call_method(
                 account,
-                ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
+                ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
                 AccountRemoveAuthorizedDepositorInput { badge },
             ),
         };

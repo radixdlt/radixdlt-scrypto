@@ -448,7 +448,7 @@ impl AccountBlueprint {
         );
 
         functions.insert(
-            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
@@ -459,12 +459,12 @@ impl AccountBlueprint {
                     aggregator
                         .add_child_type_and_descendents::<AccountAddAuthorizedDepositorOutput>(),
                 ),
-                export: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+                export: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
@@ -475,7 +475,7 @@ impl AccountBlueprint {
                     aggregator
                         .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorOutput>(),
                 ),
-                export: ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+                export: ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT.to_string(),
             },
         );
 
@@ -543,8 +543,8 @@ impl AccountBlueprint {
                         ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
                         ACCOUNT_BURN_IDENT => [OWNER_ROLE];
                         ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
-                        ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
+                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT => [OWNER_ROLE];
+                        ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT => [OWNER_ROLE];
 
                         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
                         ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;

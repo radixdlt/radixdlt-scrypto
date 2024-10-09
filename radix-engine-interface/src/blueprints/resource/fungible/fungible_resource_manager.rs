@@ -113,4 +113,37 @@ pub struct FungibleResourceManagerMintInput {
     pub amount: Decimal,
 }
 
+pub type FungibleResourceManagerMintManifestInput = FungibleResourceManagerMintInput;
+
 pub type FungibleResourceManagerMintOutput = Bucket;
+
+pub type FungibleResourceManagerCreateEmptyBucketInput = ResourceManagerCreateEmptyBucketInput;
+pub type FungibleResourceManagerCreateEmptyBucketManifestInput =
+    FungibleResourceManagerCreateEmptyBucketInput;
+
+pub type FungibleResourceManagerBurnInput = ResourceManagerBurnInput;
+pub type FungibleResourceManagerBurnManifestInput = FungibleResourceManagerBurnInput;
+
+pub type FungibleResourceManagerPackageBurnInput = ResourceManagerPackageBurnInput;
+pub type FungibleResourceManagerPackageBurnManifestInput = FungibleResourceManagerPackageBurnInput;
+
+pub type FungibleResourceManagerCreateEmptyVaultInput = ResourceManagerCreateEmptyVaultInput;
+pub type FungibleResourceManagerCreateEmptyVaultManifestInput =
+    FungibleResourceManagerCreateEmptyVaultInput;
+
+pub type FungibleResourceManagerGetResourceTypeInput = ResourceManagerGetResourceTypeInput;
+pub type FungibleResourceManagerGetResourceTypeManifestInput =
+    FungibleResourceManagerGetResourceTypeInput;
+
+pub type FungibleResourceManagerGetTotalSupplyInput = ResourceManagerGetTotalSupplyInput;
+pub type FungibleResourceManagerGetTotalSupplyManifestInput =
+    FungibleResourceManagerGetTotalSupplyInput;
+
+pub type FungibleResourceManagerAmountForWithdrawalInput =
+    ResourceManagerGetAmountForWithdrawalInput;
+pub type FungibleResourceManagerAmountForWithdrawalManifestInput =
+    FungibleResourceManagerAmountForWithdrawalInput;
+
+pub type FungibleResourceManagerDropEmptyBucketInput = ResourceManagerDropEmptyBucketInput;
+pub type FungibleResourceManagerDropEmptyBucketManifestInput =
+    FungibleResourceManagerDropEmptyBucketInput;

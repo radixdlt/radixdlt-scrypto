@@ -29,6 +29,8 @@ pub struct ComponentRoyaltyCreateInput {
     pub royalty_config: ComponentRoyaltyConfig,
 }
 
+pub type ComponentRoyaltyCreateManifestInput = ComponentRoyaltyCreateInput;
+
 pub type ComponentRoyaltyCreateOutput = Own;
 
 pub const COMPONENT_ROYALTY_SET_ROYALTY_IDENT: &str = "set_royalty";
@@ -45,6 +47,8 @@ pub struct ComponentRoyaltySetInput {
     pub amount: RoyaltyAmount,
 }
 
+pub type ComponentRoyaltySetManifestInput = ComponentRoyaltySetInput;
+
 pub type ComponentRoyaltySetOutput = ();
 
 pub const COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT: &str = "lock_royalty";
@@ -60,6 +64,8 @@ pub struct ComponentRoyaltyLockInput {
     pub method: String,
 }
 
+pub type ComponentRoyaltyLockManifestInput = ComponentRoyaltyLockInput;
+
 pub type ComponentRoyaltyLockOutput = ();
 
 pub const COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT: &str = "claim_royalties";
@@ -72,5 +78,7 @@ pub const COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT: &str = "claim_royalties";
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
 )]
 pub struct ComponentClaimRoyaltiesInput {}
+
+pub type ComponentClaimRoyaltiesManifestInput = ComponentClaimRoyaltiesInput;
 
 pub type ComponentClaimRoyaltiesOutput = Bucket;

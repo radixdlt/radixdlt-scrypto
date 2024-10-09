@@ -223,19 +223,24 @@ pub type NonFungibleResourceManagerUpdateDataOutput = ();
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT: &str = "non_fungible_exists";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerExistsInput {
     pub id: NonFungibleLocalId,
 }
+
+pub type NonFungibleResourceManagerExistsManifestInput = NonFungibleResourceManagerExistsInput;
 
 pub type NonFungibleResourceManagerExistsOutput = bool;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT: &str = "get_non_fungible";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerGetNonFungibleInput {
     pub id: NonFungibleLocalId,
 }
+
+pub type NonFungibleResourceManagerGetNonFungibleManifestInput =
+    NonFungibleResourceManagerGetNonFungibleInput;
 
 pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
@@ -290,6 +295,11 @@ pub struct NonFungibleResourceManagerMintSingleRuidInput {
     pub entry: ScryptoValue,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerMintSingleRuidManifestInput {
+    pub entry: ManifestValue,
+}
+
 /// For typed value, to skip any codec
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintSingleRuidGenericInput<T> {
@@ -300,6 +310,38 @@ pub type NonFungibleResourceManagerMintSingleRuidOutput = (Bucket, NonFungibleLo
 
 pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL: u8 = 0;
 pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
+
+pub type NonFungibleResourceManagerCreateEmptyBucketInput = ResourceManagerCreateEmptyBucketInput;
+pub type NonFungibleResourceManagerCreateEmptyBucketManifestInput =
+    NonFungibleResourceManagerCreateEmptyBucketInput;
+
+pub type NonFungibleResourceManagerPackageBurnInput = ResourceManagerPackageBurnInput;
+pub type NonFungibleResourceManagerPackageBurnManifestInput =
+    NonFungibleResourceManagerPackageBurnInput;
+
+pub type NonFungibleResourceManagerBurnInput = ResourceManagerBurnInput;
+pub type NonFungibleResourceManagerBurnManifestInput = NonFungibleResourceManagerBurnInput;
+
+pub type NonFungibleResourceManagerCreateEmptyVaultInput = ResourceManagerCreateEmptyVaultInput;
+pub type NonFungibleResourceManagerCreateEmptyVaultManifestInput =
+    NonFungibleResourceManagerCreateEmptyVaultInput;
+
+pub type NonFungibleResourceManagerGetResourceTypeInput = ResourceManagerGetResourceTypeInput;
+pub type NonFungibleResourceManagerGetResourceTypeManifestInput =
+    NonFungibleResourceManagerGetResourceTypeInput;
+
+pub type NonFungibleResourceManagerGetTotalSupplyInput = ResourceManagerGetTotalSupplyInput;
+pub type NonFungibleResourceManagerGetTotalSupplyManifestInput =
+    NonFungibleResourceManagerGetTotalSupplyInput;
+
+pub type NonFungibleResourceManagerAmountForWithdrawalInput =
+    ResourceManagerGetAmountForWithdrawalInput;
+pub type NonFungibleResourceManagerAmountForWithdrawalManifestInput =
+    NonFungibleResourceManagerAmountForWithdrawalInput;
+
+pub type NonFungibleResourceManagerDropEmptyBucketInput = ResourceManagerDropEmptyBucketInput;
+pub type NonFungibleResourceManagerDropEmptyBucketManifestInput =
+    NonFungibleResourceManagerDropEmptyBucketInput;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum NonFungibleDataSchema {

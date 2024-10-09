@@ -129,53 +129,81 @@ impl StaticResourceMovementsVisitor {
         &self,
         invocation_kind: InvocationKind,
         args: &ManifestValue,
-    ) -> Result<Option<(TypedNativeInvocation, InvocationReceiver)>, StaticResourceMovementsError>
-    {
+    ) -> Result<
+        Option<(TypedManifestNativeInvocation, InvocationReceiver)>,
+        StaticResourceMovementsError,
+    > {
         // Creating a typed native invocation to use in interpreting the invocation.
-        Ok(match invocation_kind {
+        match invocation_kind {
+            InvocationKind::DirectMethod { address, method } => {
+                let resolved_dynamic_address = ResolvedDynamicAddress::StaticAddress(*address);
+                let Some(typed_invocation) =
+                    TypedManifestNativeInvocation::from_direct_method_invocation(
+                        &resolved_dynamic_address,
+                        method,
+                        args,
+                    )?
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver = InvocationReceiver::DirectAccess(*address);
+                Ok(Some((typed_invocation, invocation_receiver)))
+            }
             InvocationKind::Method {
-                address: DynamicGlobalAddress::Static(global_address),
-                module_id: ModuleId::Main,
-                method,
-            } => TypedNativeInvocation::from_main_module_method_invocation(
-                global_address,
-                method,
-                args,
-            )?
-            .map(|value| (value, InvocationReceiver::GlobalMethod(*global_address))),
-            InvocationKind::Method {
-                address: DynamicGlobalAddress::Named(named_address),
-                module_id: ModuleId::Main,
+                address,
+                module_id,
                 method,
             } => {
-                let blueprint_id = self.tracked_named_addresses.get(named_address)
-                    .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
-                TypedNativeInvocation::from_blueprint_method_invocation(
-                    &blueprint_id.package_address,
-                    blueprint_id.blueprint_name.as_str(),
+                let resolved_dynamic_address = match address {
+                    DynamicGlobalAddress::Static(global_address) => {
+                        ResolvedDynamicAddress::StaticAddress(*global_address)
+                    }
+                    DynamicGlobalAddress::Named(named_address) => {
+                        let blueprint_id = self.tracked_named_addresses.get(named_address)
+                            .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
+                        ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                            blueprint_id.clone(),
+                        )
+                    }
+                };
+                let Some(typed_invocation) = TypedManifestNativeInvocation::from_method_invocation(
+                    &resolved_dynamic_address,
+                    module_id,
                     method,
                     args,
                 )?
-                .map(|value| (value, InvocationReceiver::GlobalMethodOnReservedAddress))
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver =
+                    InvocationReceiver::GlobalMethod(resolved_dynamic_address);
+                Ok(Some((typed_invocation, invocation_receiver)))
             }
             InvocationKind::Function {
                 address: DynamicPackageAddress::Static(package_address),
                 blueprint,
                 function,
-            } => TypedNativeInvocation::from_function_invocation(
-                package_address,
-                blueprint,
-                function,
-                args,
-            )?
-            .map(|value| (value, InvocationReceiver::BlueprintFunction)),
-            // Can't convert into a typed native invocation.
-            InvocationKind::DirectMethod { .. }
-            | InvocationKind::YieldToParent
+            } => {
+                let blueprint_id = BlueprintId::new(package_address, blueprint);
+                let Some(typed_invocation) =
+                    TypedManifestNativeInvocation::from_function_invocation(
+                        &blueprint_id,
+                        function,
+                        args,
+                    )?
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver = InvocationReceiver::BlueprintFunction(blueprint_id);
+                Ok(Some((typed_invocation, invocation_receiver)))
+            }
+            InvocationKind::YieldToParent
             | InvocationKind::YieldToChild { .. }
-            | InvocationKind::Method { .. }
-            | InvocationKind::Function { .. } => None,
-        })
+            | InvocationKind::Function {
+                address: DynamicPackageAddress::Named(_),
+                ..
+            } => Ok(None),
+        }
     }
 
     fn current_instruction_index(&mut self) -> usize {

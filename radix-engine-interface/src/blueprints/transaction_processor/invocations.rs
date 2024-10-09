@@ -6,7 +6,30 @@ pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 
 pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
 
-// TransactionProcessorInput in the engine
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInput {
+    pub manifest_encoded_instructions: Vec<u8>,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
+    pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct TransactionProcessorRunManifestInput {
+    pub manifest_encoded_instructions: Vec<u8>,
+    pub global_address_reservations: Vec<ManifestAddressReservation>,
+    pub references: Vec<GlobalAddress>, // Required so that the kernel passes the references to the processor frame
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+}
+
+// This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
+#[derive(Debug, Eq, PartialEq, ScryptoEncode)]
+pub struct TransactionProcessorRunInputEfficientEncodable {
+    pub manifest_encoded_instructions: Rc<Vec<u8>>,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
+    pub references: Rc<IndexSet<Reference>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;
 
