@@ -12,12 +12,13 @@ use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_native_sdk::resource::Worktop;
+use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, Worktop};
 use radix_native_sdk::runtime::LocalAuthZone;
 use radix_transactions::data::TransformHandler;
 use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
+use std::ops::Add;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
@@ -130,6 +131,7 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
                 instruction.execute(&mut self.worktop, &mut self.objects, api)?;
             self.outputs.push(output);
             self.instruction_index += 1;
+
             if let Some(yield_instruction) = yield_instruction {
                 let result = match yield_instruction {
                     MultiThreadResult::VerifyParent(rule) => ResumeResult::VerifyParent(rule),
@@ -159,6 +161,11 @@ impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I>
     }
 }
 
+pub struct NextCallReturnConstraints {
+    pub constraints: ManifestResourceConstraints,
+    pub exact: bool,
+}
+
 pub struct IntentProcessorObjects {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     pub proof_mapping: IndexMap<ManifestProof, NodeId>,
@@ -167,6 +174,8 @@ pub struct IntentProcessorObjects {
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
     max_total_size_of_blobs: usize,
+
+    pub next_call_return_constraints: Option<NextCallReturnConstraints>,
 }
 
 impl IntentProcessorObjects {
@@ -183,6 +192,7 @@ impl IntentProcessorObjects {
             address_mapping: NonIterMap::new(),
             id_allocator: ManifestIdAllocator::new(),
             max_total_size_of_blobs,
+            next_call_return_constraints: None,
         };
 
         for address_reservation in global_address_reservations {
@@ -357,6 +367,11 @@ impl IntentProcessorObjects {
         worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
+        let mut resource_constraint_checker = self
+            .next_call_return_constraints
+            .take()
+            .map(ResourceConstraintChecker::new);
+
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
@@ -365,9 +380,33 @@ impl IntentProcessorObjects {
                     info.blueprint_info.blueprint_id.package_address,
                     info.blueprint_info.blueprint_id.blueprint_name.as_str(),
                 ) {
-                    (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
-                    | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
+                    (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT) => {
                         let bucket = Bucket(Own(node_id.clone()));
+                        if let Some(checker) = &mut resource_constraint_checker {
+                            let resource_address = info
+                                .blueprint_info
+                                .outer_obj_info
+                                .expect()
+                                .try_into()
+                                .unwrap();
+                            checker.add_fungible(resource_address, bucket.amount(api)?);
+                        }
+                        worktop.put(bucket, api)?;
+                    }
+                    (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
+                        let bucket = Bucket(Own(node_id.clone()));
+                        if let Some(checker) = &mut resource_constraint_checker {
+                            let resource_address = info
+                                .blueprint_info
+                                .outer_obj_info
+                                .expect()
+                                .try_into()
+                                .unwrap();
+                            checker.add_non_fungible(
+                                resource_address,
+                                bucket.non_fungible_local_ids(api)?,
+                            );
+                        }
                         worktop.put(bucket, api)?;
                     }
                     (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
@@ -387,7 +426,61 @@ impl IntentProcessorObjects {
             }
         }
 
+        if let Some(checker) = resource_constraint_checker {
+            checker.validate().map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertNextCallReturnsFailed(e),
+                ))
+            })?;
+        }
+
         Ok(())
+    }
+}
+
+struct ResourceConstraintChecker {
+    fungible_resources: BTreeMap<ResourceAddress, Decimal>,
+    non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+    constraints: NextCallReturnConstraints,
+}
+
+impl ResourceConstraintChecker {
+    fn new(constraints: NextCallReturnConstraints) -> Self {
+        Self {
+            fungible_resources: Default::default(),
+            non_fungible_resources: Default::default(),
+            constraints,
+        }
+    }
+
+    fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
+        if amount.is_positive() {
+            self.fungible_resources
+                .entry(resource_address)
+                .or_default()
+                .add_assign(amount);
+        }
+    }
+
+    fn add_non_fungible(
+        &mut self,
+        resource_address: ResourceAddress,
+        ids: IndexSet<NonFungibleLocalId>,
+    ) {
+        if !ids.is_empty() {
+            self.non_fungible_resources
+                .entry(resource_address)
+                .or_default()
+                .extend(ids);
+        }
+    }
+
+    fn validate(self) -> Result<(), ManifestResourceConstraintsError> {
+        self.constraints.constraints.validate(
+            self.fungible_resources,
+            self.non_fungible_resources,
+            self.constraints.exact,
+        )
     }
 }
 

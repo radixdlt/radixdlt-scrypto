@@ -1,5 +1,6 @@
 use crate::blueprints::transaction_processor::{
-    IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
+    IntentProcessorObjects, IntentProcessorObjectsWithApi, NextCallReturnConstraints,
+    TransactionProcessorError,
 };
 use crate::errors::{ApplicationError, IntentError, RuntimeError, SystemError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -95,8 +96,8 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopResourcesOnly(_) => todo!(),
             InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
-            InstructionV2::AssertNextCallReturnsOnly(_) => todo!(),
-            InstructionV2::AssertNextCallReturnsInclude(_) => todo!(),
+            InstructionV2::AssertNextCallReturnsOnly(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertNextCallReturnsInclude(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
@@ -314,6 +315,38 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertNextCallReturnsOnly {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        _api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        objects.next_call_return_constraints = Some(NextCallReturnConstraints {
+            constraints: self.constraints,
+            exact: true,
+        });
+
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertNextCallReturnsInclude {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        _api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        objects.next_call_return_constraints = Some(NextCallReturnConstraints {
+            constraints: self.constraints,
+            exact: false,
+        });
+
         Ok(InstructionOutput::None)
     }
 }

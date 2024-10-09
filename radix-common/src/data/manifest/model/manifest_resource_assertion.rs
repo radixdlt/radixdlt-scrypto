@@ -132,6 +132,10 @@ impl ManifestResourceConstraints {
         self.specified_resources.iter()
     }
 
+    pub fn len(&self) -> usize {
+        self.specified_resources().len()
+    }
+
     pub fn is_valid(&self) -> bool {
         for (resource_address, constraint) in self.iter() {
             if !constraint.is_valid_for(resource_address) {
@@ -144,6 +148,46 @@ impl ManifestResourceConstraints {
     pub fn contains_specified_resource(&self, resource_address: &ResourceAddress) -> bool {
         self.specified_resources.contains_key(resource_address)
     }
+
+    pub fn validate(
+        self,
+        mut fungible_resources: BTreeMap<ResourceAddress, Decimal>,
+        mut non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+        exact: bool,
+    ) -> Result<(), ManifestResourceConstraintsError> {
+        for (resource_address, constraint) in self.specified_resources {
+            if resource_address.is_fungible() {
+                let amount = fungible_resources
+                    .remove(&resource_address)
+                    .unwrap_or_default();
+                constraint
+                    .validate_fungible(amount)
+                    .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
+            } else {
+                let ids = non_fungible_resources
+                    .remove(&resource_address)
+                    .unwrap_or_default()
+                    .clone();
+                constraint
+                    .validate_non_fungible(ids)
+                    .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
+            }
+        }
+
+        if exact {
+            if !fungible_resources.is_empty() || !non_fungible_resources.is_empty() {
+                return Err(ManifestResourceConstraintsError::UnwantedResourcesExist);
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ManifestResourceConstraintsError {
+    ResourceConstraint(ResourceConstraintError),
+    UnwantedResourcesExist,
 }
 
 impl IntoIterator for ManifestResourceConstraints {
