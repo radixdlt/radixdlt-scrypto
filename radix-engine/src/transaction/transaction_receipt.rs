@@ -40,7 +40,7 @@ pub struct TransactionReceipt {
 // when they update.
 pub type TransactionReceiptV1 = TransactionReceipt;
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "flamegraph"))]
 impl TransactionReceipt {
     pub fn generate_execution_breakdown_flamegraph_svg_bytes(
         &self,
