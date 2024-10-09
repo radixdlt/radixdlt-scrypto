@@ -8,6 +8,7 @@ Execution Cost Breakdown                                                   ,    
 - AfterInvoke                                                              ,                       76,      0.0%
 - AllocateNodeId                                                           ,                      679,      0.0%
 - BeforeInvoke                                                             ,                      612,      0.0%
+- CheckReference                                                           ,                    80022,      2.5%
 - CloseSubstate                                                            ,                    13287,      0.4%
 - CreateNode                                                               ,                     6160,      0.2%
 - DropNode                                                                 ,                    10969,      0.3%
@@ -26,7 +27,6 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,                   353866,     11.2%
 - QueryActor                                                               ,                     1500,      0.0%
 - ReadSubstate                                                             ,                   422947,     13.4%
-- RefCheck                                                                 ,                    80022,      2.5%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.6%
 - RunNativeCode::freeze_NonFungibleVault                                   ,                    36496,      1.2%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.5%
@@ -37,6 +37,7 @@ Execution Cost Breakdown                                                   ,    
 - WriteSubstate                                                            ,                     4288,      0.1%
 Finalization Cost Breakdown                                                ,                   305038,    100.0%
 - CommitEvents                                                             ,                     5007,      1.6%
+- CommitIntentStatus                                                       ,                        0,      0.0%
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,     32.8%
 - CommitStateUpdates::InternalFungibleVault                                ,                   100009,     32.8%

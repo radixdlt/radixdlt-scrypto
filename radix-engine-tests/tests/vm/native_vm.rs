@@ -19,7 +19,7 @@ use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::test_utils::invocations::*;
+use radix_engine_interface::blueprints::test_utils::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_transactions::prelude::*;

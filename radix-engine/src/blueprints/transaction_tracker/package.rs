@@ -10,25 +10,12 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
+use radix_engine_interface::blueprints::transaction_tracker::*;
 use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::runtime::Runtime;
 
 pub use radix_common::prelude::TRANSACTION_TRACKER_BLUEPRINT;
-
-pub const TRANSACTION_TRACKER_CREATE_IDENT: &str = "create";
-
-pub const TRANSACTION_TRACKER_CREATE_EXPORT_NAME: &str = "create";
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct TransactionTrackerCreateInput {
-    pub address_reservation: GlobalAddressReservation,
-}
-
-#[derive(Debug, Clone, ManifestSbor)]
-pub struct TransactionTrackerCreateManifestInput {
-    pub address_reservation: ManifestAddressReservation,
-}
 
 pub type TransactionTrackerCreateOutput = ComponentAddress;
 

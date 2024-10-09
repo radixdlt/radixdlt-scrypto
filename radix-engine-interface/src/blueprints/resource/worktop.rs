@@ -17,6 +17,11 @@ pub struct WorktopDropInput {
     pub worktop: OwnedWorktop,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct WorktopDropManifestInput {
+    pub worktop: InternalAddress,
+}
+
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 #[sbor(transparent)]
 pub struct OwnedWorktop(pub Own);
@@ -47,70 +52,89 @@ pub struct WorktopPutInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct WorktopPutManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type WorktopPutOutput = ();
 
 pub const WORKTOP_TAKE_IDENT: &str = "Worktop_take";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopTakeInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
+pub type WorktopTakeManifestInput = WorktopTakeInput;
+
 pub type WorktopTakeOutput = Bucket;
 
 pub const WORKTOP_TAKE_NON_FUNGIBLES_IDENT: &str = "Worktop_take_non_fungibles";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopTakeNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
+pub type WorktopTakeNonFungiblesManifestInput = WorktopTakeNonFungiblesInput;
+
 pub type WorktopTakeNonFungiblesOutput = Bucket;
 
 pub const WORKTOP_TAKE_ALL_IDENT: &str = "Worktop_take_all";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopTakeAllInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type WorktopTakeAllManifestInput = WorktopTakeAllInput;
 
 pub type WorktopTakeAllOutput = Bucket;
 
 pub const WORKTOP_ASSERT_CONTAINS_IDENT: &str = "Worktop_assert_contains";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopAssertContainsInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type WorktopAssertContainsManifestInput = WorktopAssertContainsInput;
 
 pub type WorktopAssertContainsOutput = ();
 
 pub const WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT: &str = "Worktop_assert_contains_amount";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopAssertContainsAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
+
+pub type WorktopAssertContainsAmountManifestInput = WorktopAssertContainsAmountInput;
 
 pub type WorktopAssertContainsAmountOutput = ();
 
 pub const WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT: &str =
     "Worktop_assert_contains_non_fungibles";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopAssertContainsNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
+pub type WorktopAssertContainsNonFungiblesManifestInput = WorktopAssertContainsNonFungiblesInput;
+
 pub type WorktopAssertContainsNonFungiblesOutput = ();
 
 pub const WORKTOP_DRAIN_IDENT: &str = "Worktop_drain";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct WorktopDrainInput {}
+
+pub type WorktopDrainManifestInput = WorktopDrainInput;
 
 pub type WorktopDrainOutput = Vec<Bucket>;

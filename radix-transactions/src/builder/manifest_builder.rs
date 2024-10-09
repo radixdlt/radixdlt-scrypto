@@ -954,7 +954,7 @@ where
         let address = validator_address.resolve(&self.registrar);
         self.call_method(
             address,
-            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS,
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS_IDENT,
             (protocol_version_name.to_string(),),
         )
     }

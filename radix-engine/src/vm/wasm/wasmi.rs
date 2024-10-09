@@ -742,6 +742,76 @@ fn keccak256_hash(
         .map(|buffer| buffer.0)
 }
 
+fn blake2b_256_hash(
+    mut caller: Caller<'_, HostState>,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime
+        .crypto_utils_blake2b_256_hash(data)
+        .map(|buffer| buffer.0)
+}
+
+fn ed25519_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_ed25519_verify(message, public_key, signature)
+}
+
+fn secp256k1_ecdsa_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_secp256k1_ecdsa_verify(message, public_key, signature)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1392,6 +1462,58 @@ impl WasmiModule {
             },
         );
 
+        let host_blake2b_256_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Error> {
+                blake2b_256_hash(caller, data_ptr, data_len).map_err(|e| Error::host(e))
+            },
+        );
+
+        let host_ed25519_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Error> {
+                ed25519_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
+        let host_secp2561k1_ecdsa_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Error> {
+                secp256k1_ecdsa_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new(module.engine());
 
         linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
@@ -1569,11 +1691,25 @@ impl WasmiModule {
             CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME,
             host_bls12381_g2_signature_aggregate
         );
-
         linker_define!(
             linker,
             CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
             host_keccak256_hash
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME,
+            host_blake2b_256_hash
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME,
+            host_ed25519_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
+            host_secp2561k1_ecdsa_verify
         );
 
         #[cfg(feature = "radix_engine_tests")]

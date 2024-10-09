@@ -149,7 +149,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
             kernel_boot.always_visible_global_nodes(),
         );
 
-        let (mut system, call_frame_inits) = match system_init_result {
+        let (mut system, call_frame_inits, num_of_intent_statuses) = match system_init_result {
             Ok(success) => success,
             Err(receipt) => return receipt,
         };
@@ -177,7 +177,9 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
 
             // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-            kernel.callback.finalize(commit_info)?;
+            kernel
+                .callback
+                .finalize(commit_info, num_of_intent_statuses)?;
 
             Ok(output)
         }()
