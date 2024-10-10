@@ -1,11 +1,4 @@
-use radix_common::crypto::HasPublicKeyHash;
-use radix_common::manifest_args;
-use radix_common::prelude::ManifestArgs;
-use radix_common::prelude::XRD;
-use radix_engine_interface::macros::dec;
-use radix_transactions::builder::ManifestBuilder;
-use radix_transactions::model::TestTransaction;
-use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn can_send_resources_to_child_subintent() {

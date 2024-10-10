@@ -1263,6 +1263,42 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .build()
     }
 
+    pub fn default_notary(&self) -> Ed25519PrivateKey {
+        Ed25519PrivateKey::from_u64(1337).unwrap()
+    }
+
+    pub fn v2_transaction_builder(&mut self) -> TransactionV2Builder {
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: current_epoch,
+                end_epoch_exclusive: current_epoch.next().unwrap(),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: nonce as u64,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: self.default_notary().public_key().into(),
+                notary_is_signatory: false,
+                tip_basis_points: 0,
+            })
+    }
+
+    pub fn v2_partial_transaction_builder(&mut self) -> PartialTransactionV2Builder {
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        PartialTransactionV2Builder::new().intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: current_epoch,
+            end_epoch_exclusive: current_epoch.next().unwrap(),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: nonce as u64,
+        })
+    }
+
     /// If you have a non-raw notarized tranasaction, you will need to do:
     /// ```ignore
     /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
