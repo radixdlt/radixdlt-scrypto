@@ -888,7 +888,7 @@ impl WasmModule {
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
                                     current_version: version.into(),
-                                    expected_version: ScryptoVmVersion::crypto_utils_v1().into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_v2().into(),
                                 },
                             ));
                         }
@@ -914,7 +914,7 @@ impl WasmModule {
                                 InvalidImport::ProtocolVersionMismatch {
                                     name: entry.name.to_string(),
                                     current_version: version.into(),
-                                    expected_version: ScryptoVmVersion::crypto_utils_v1().into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_v2().into(),
                                 },
                             ));
                         }
