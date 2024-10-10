@@ -565,10 +565,22 @@ impl FeeTable {
         //   instructions_cnt = 464236 (input is always 32 bytes long)
         //   Lets round:
         //     464236 -> 500000
-        let instructions_dnt = 500000;
+        let instructions_cnt = 500000;
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
+
+    #[inline]
+    pub fn secp256k1_ecdsa_key_recover_cost(&self) -> u32 {
+        // Based on  `test_crypto_scrypto_key_recover_secp256k1_ecdsa`
+        //   instructions_cnt = 464236 (input is always 32 bytes long)
+        //   Lets round:
+        //     463506 -> 500000
+        let instructions_cnt = 500000;
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side

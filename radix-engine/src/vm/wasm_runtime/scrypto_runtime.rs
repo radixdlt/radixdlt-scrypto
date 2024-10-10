@@ -749,9 +749,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         let signature = Secp256k1Signature::try_from(signature.as_ref())
             .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
 
-        // TODO costing
-        // self.api
-        //     .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaVerify)?;
+        self.api
+            .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaKeyRecover)?;
+
         let key = recover_secp256k1(&hash, &signature)
             .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
 

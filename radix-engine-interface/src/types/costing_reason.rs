@@ -38,4 +38,5 @@ pub enum ClientCostingEntry<'a> {
         size: usize,
     },
     Secp256k1EcdsaVerify,
+    Secp256k1EcdsaKeyRecover,
 }
