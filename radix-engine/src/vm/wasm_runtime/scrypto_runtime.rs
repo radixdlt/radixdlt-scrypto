@@ -692,7 +692,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        // TODO: costing
+        self.api
+            .consume_cost_units(ClientCostingEntry::Blake2b256Hash { size: data.len() })?;
 
         let hash = blake2b_256_hash(data);
 
@@ -710,7 +711,11 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             .map_err(WasmRuntimeError::InvalidEd25519PublicKey)?;
         let signature = Ed25519Signature::try_from(signature.as_ref())
             .map_err(WasmRuntimeError::InvalidEd25519Signature)?;
-        // TODO: costing
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Ed25519Verify {
+                size: message.len(),
+            })?;
 
         Ok(verify_ed25519(&message, &public_key, &signature) as u32)
     }
@@ -728,7 +733,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
         let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
 
-        // TODO: costing
+        self.api
+            .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaVerify)?;
 
         Ok(verify_secp256k1(&hash, &public_key, &signature) as u32)
     }

@@ -31,4 +31,11 @@ pub enum ClientCostingEntry<'a> {
     Keccak256Hash {
         size: usize,
     },
+    Blake2b256Hash {
+        size: usize,
+    },
+    Ed25519Verify {
+        size: usize,
+    },
+    Secp256k1EcdsaVerify,
 }
