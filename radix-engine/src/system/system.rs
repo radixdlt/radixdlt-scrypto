@@ -2214,6 +2214,18 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
                 ClientCostingEntry::Keccak256Hash { size } => {
                     ExecutionCostingEntry::Keccak256Hash { size }
                 }
+                ClientCostingEntry::Blake2b256Hash { size } => {
+                    ExecutionCostingEntry::Blake2b256Hash { size }
+                }
+                ClientCostingEntry::Ed25519Verify { size } => {
+                    ExecutionCostingEntry::Ed25519Verify { size }
+                }
+                ClientCostingEntry::Secp256k1EcdsaVerify => {
+                    ExecutionCostingEntry::Secp256k1EcdsaVerify
+                }
+                ClientCostingEntry::Secp256k1EcdsaKeyRecover => {
+                    ExecutionCostingEntry::Secp256k1EcdsaKeyRecover
+                }
             })
     }
 

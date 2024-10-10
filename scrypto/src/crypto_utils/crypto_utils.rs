@@ -140,4 +140,20 @@ impl CryptoUtils {
             ) != 0
         }
     }
+
+    /// Performs ECDSA Secp256k1 key recovery.
+    pub fn secp256k1_ecdsa_key_recover(
+        hash: impl AsRef<Hash>,
+        signature: impl AsRef<Secp256k1Signature>,
+    ) -> Secp256k1PublicKey {
+        let key = copy_buffer(unsafe {
+            crypto_utils::crypto_utils_secp256k1_ecdsa_key_recover(
+                hash.as_ref().0.as_ptr(),
+                hash.as_ref().0.len(),
+                signature.as_ref().0.as_ptr(),
+                signature.as_ref().0.len(),
+            )
+        });
+        Secp256k1PublicKey(key.try_into().unwrap())
+    }
 }

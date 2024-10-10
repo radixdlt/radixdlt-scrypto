@@ -340,6 +340,12 @@ pub mod crypto_utils {
             public_key_len: usize,
             signature_ptr: *const u8,
             signature_len: usize) -> u32;
+
+        pub fn crypto_utils_secp256k1_ecdsa_key_recover(
+            message_ptr: *const u8,
+            message_len: usize,
+            signature_ptr: *const u8,
+            signature_len: usize) -> Buffer;
     }
 }
 

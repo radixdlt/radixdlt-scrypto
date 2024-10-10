@@ -370,4 +370,12 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
+
+    fn crypto_utils_secp256k1_ecdsa_key_recover(
+        &mut self,
+        message: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
 }
