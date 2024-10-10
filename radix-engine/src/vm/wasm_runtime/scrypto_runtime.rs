@@ -55,30 +55,23 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
     }
 
     #[cold]
-    pub fn consume_wasm_execution_units_unoptimized(
+    fn consume_wasm_execution_exceeding_buffer(
         &mut self,
-        mut n: u32,
+        n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Use buffer
-        let min = u32::min(self.wasm_execution_units_buffer, n);
-        self.wasm_execution_units_buffer -= min;
-        n -= min;
-
-        // If not covered, request from the system
-        if n > 0 {
-            let amount_to_request = n
-                .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
-                .unwrap_or(u32::MAX);
-            self.api
-                .consume_cost_units(ClientCostingEntry::RunWasmCode {
-                    package_address: &self.package_address,
-                    export_name: &self.export_name,
-                    wasm_execution_units: amount_to_request,
-                })
-                .map_err(InvokeError::downstream)?;
-            self.wasm_execution_units_buffer += amount_to_request - n;
-        }
-
+        assert!(n > self.wasm_execution_units_buffer);
+        let n_remaining_after_buffer_used = n - self.wasm_execution_units_buffer;
+        let amount_to_request = n_remaining_after_buffer_used
+            .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
+            .unwrap_or(u32::MAX);
+        self.api
+            .consume_cost_units(ClientCostingEntry::RunWasmCode {
+                package_address: &self.package_address,
+                export_name: &self.export_name,
+                wasm_execution_units: amount_to_request,
+            })
+            .map_err(InvokeError::downstream)?;
+        self.wasm_execution_units_buffer = amount_to_request - n_remaining_after_buffer_used;
         Ok(())
     }
 }
@@ -407,7 +400,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             self.wasm_execution_units_buffer -= n;
             Ok(())
         } else {
-            self.consume_wasm_execution_units_unoptimized(n)
+            self.consume_wasm_execution_exceeding_buffer(n)
         }
     }
 
