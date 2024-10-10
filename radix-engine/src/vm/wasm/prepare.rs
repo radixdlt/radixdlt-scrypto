@@ -1504,6 +1504,50 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_import_protocol_mismatch() {
+        let wat = r#"
+            (module
+                (import "env" "name_to_replace" (func $some_func (param i32) (result i32)))
+            )
+            "#;
+
+        for (current_version, expected_version, names) in [
+            (
+                ScryptoVmVersion::V1_0,
+                ScryptoVmVersion::crypto_utils_v1(),
+                vec![
+                    CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME,
+                    CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME,
+                    CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME,
+                    CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME,
+                    CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
+                ],
+            ),
+            (
+                ScryptoVmVersion::V1_1,
+                ScryptoVmVersion::crypto_utils_v2(),
+                vec![
+                    CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME,
+                    CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME,
+                    CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
+                ],
+            ),
+        ] {
+            for name in names {
+                assert_invalid_wasm!(
+                    wat.replace("name_to_replace", name),
+                    PrepareError::InvalidImport(InvalidImport::ProtocolVersionMismatch {
+                        name: name.to_string(),
+                        current_version: current_version.into(),
+                        expected_version: expected_version.into(),
+                    }),
+                    |w| WasmModule::enforce_import_constraints(w, current_version)
+                );
+            }
+        }
+    }
+
+    #[test]
     fn test_enforce_global_limit() {
         assert_invalid_wasm!(
             r#"
