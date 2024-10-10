@@ -53,6 +53,34 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
             String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
         Ok((package_address, blueprint_name))
     }
+
+    #[cold]
+    pub fn consume_wasm_execution_units_unoptimized(
+        &mut self,
+        mut n: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        // Use buffer
+        let min = u32::min(self.wasm_execution_units_buffer, n);
+        self.wasm_execution_units_buffer -= min;
+        n -= min;
+
+        // If not covered, request from the system
+        if n > 0 {
+            let amount_to_request = n
+                .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
+                .unwrap_or(u32::MAX);
+            self.api
+                .consume_cost_units(ClientCostingEntry::RunWasmCode {
+                    package_address: &self.package_address,
+                    export_name: &self.export_name,
+                    wasm_execution_units: amount_to_request,
+                })
+                .map_err(InvokeError::downstream)?;
+            self.wasm_execution_units_buffer += amount_to_request - n;
+        }
+
+        Ok(())
+    }
 }
 
 impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
@@ -370,31 +398,17 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.allocate_buffer(blueprint_id.blueprint_name.into_bytes())
     }
 
+    #[inline]
     fn consume_wasm_execution_units(
         &mut self,
-        mut n: u32,
+        n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Use buffer
-        let min = u32::min(self.wasm_execution_units_buffer, n);
-        self.wasm_execution_units_buffer -= min;
-        n -= min;
-
-        // If not covered, request from the system
-        if n > 0 {
-            let amount_to_request = n
-                .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
-                .unwrap_or(u32::MAX);
-            self.api
-                .consume_cost_units(ClientCostingEntry::RunWasmCode {
-                    package_address: &self.package_address,
-                    export_name: &self.export_name,
-                    wasm_execution_units: amount_to_request,
-                })
-                .map_err(InvokeError::downstream)?;
-            self.wasm_execution_units_buffer += amount_to_request - n;
+        if n <= self.wasm_execution_units_buffer {
+            self.wasm_execution_units_buffer -= n;
+            Ok(())
+        } else {
+            self.consume_wasm_execution_units_unoptimized(n)
         }
-
-        Ok(())
     }
 
     fn instance_of(
