@@ -148,7 +148,7 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    fn validate(
+    pub fn validate(
         self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
