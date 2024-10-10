@@ -1,7 +1,7 @@
 use crate::blueprints::transaction_processor::{
     IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
 };
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::{ApplicationError, IntentError, RuntimeError, SystemError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_common::prelude::{scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
 use radix_engine_interface::api::{AttachedModuleId, SystemApi};
@@ -97,7 +97,7 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
             InstructionV2::AssertNextCallReturnsOnly(_) => todo!(),
             InstructionV2::AssertNextCallReturnsInclude(_) => todo!(),
-            InstructionV2::AssertBucketContents(_) => todo!(),
+            InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
@@ -314,6 +314,36 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertBucketContents {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        let bucket = objects.get_bucket(&self.bucket_id)?;
+
+        let resource_address = bucket.resource_address(api)?;
+        if resource_address.is_fungible() {
+            let amount = bucket.amount(api)?;
+            self.constraint.validate_fungible(amount).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
+        } else {
+            let ids = bucket.non_fungible_local_ids(api)?;
+            self.constraint.validate_non_fungible(ids).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
+        }
+
         Ok(InstructionOutput::None)
     }
 }
