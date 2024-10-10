@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::transaction_processor::*;
 
 use super::TransactionProcessorBlueprint;
-use super::TransactionProcessorRunInput;
 use super::TransactionProcessorV1MinorVersion;
 
 pub struct TransactionProcessorNativePackage;

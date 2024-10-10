@@ -300,12 +300,16 @@ pub enum SystemError {
     SystemPanic(String),
 
     CannotLockFeeInChildSubintent(usize),
-    YieldError(YieldError),
+    IntentError(IntentError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum YieldError {
+pub enum IntentError {
+    CannotVerifyParentOnRoot,
     CannotYieldProof,
+    VerifyParentFailed,
+    InvalidIntentIndex(usize),
+    NoParentToYieldTo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

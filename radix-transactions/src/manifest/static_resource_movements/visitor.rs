@@ -18,6 +18,8 @@ pub struct StaticResourceMovementsVisitor {
     invocation_static_information: IndexMap<usize, InvocationStaticInformation>,
     /// Details about the currently running instruction. Has a value between OnStartInstruction and OnEndInstruction.
     current_instruction: Option<CurrentInstruction>,
+    /// Details the assertion to apply to the contents returned from the next invocation.
+    next_invocation_assertion: Option<(OwnedNextCallAssertion, ChangeSource)>,
 }
 
 pub struct CurrentInstruction {
@@ -51,15 +53,18 @@ impl ChangeSource {
 impl StaticResourceMovementsVisitor {
     pub fn new(initial_worktop_state_is_unknown: bool) -> Self {
         let mut worktop = TrackedResources::new_empty();
+
         if initial_worktop_state_is_unknown {
             worktop.mut_add_unspecified_resources([ChangeSource::InitialYieldFromParent])
         }
+
         Self {
             worktop,
             tracked_buckets: Default::default(),
             tracked_named_addresses: Default::default(),
             invocation_static_information: Default::default(),
             current_instruction: None,
+            next_invocation_assertion: None,
         }
     }
 
@@ -82,7 +87,7 @@ impl StaticResourceMovementsVisitor {
             instruction_index: current_instruction.index,
         };
 
-        let invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
+        let mut invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
             Some((matched_invocation, receiver)) => {
                 matched_invocation.output(InvocationDetails {
                     receiver,
@@ -94,6 +99,21 @@ impl StaticResourceMovementsVisitor {
                 change_source,
             ]),
         };
+
+        if let Some((assertion, change_source)) = self.next_invocation_assertion.take() {
+            // FUTURE TWEAK: Could output an inequality constraints when handling the assertions,
+            // for use in any analyzers.
+            match assertion.as_ref() {
+                NextCallAssertion::ReturnsOnly { constraints } => {
+                    invocation_output
+                        .handle_resources_only_assertion(constraints, change_source)?;
+                }
+                NextCallAssertion::ReturnsInclude { constraints } => {
+                    invocation_output
+                        .handle_resources_include_assertion(constraints, change_source)?;
+                }
+            }
+        }
 
         // Add the returned resources to the worktop
         self.worktop.add(invocation_output.clone())?;
@@ -109,53 +129,81 @@ impl StaticResourceMovementsVisitor {
         &self,
         invocation_kind: InvocationKind,
         args: &ManifestValue,
-    ) -> Result<Option<(TypedNativeInvocation, InvocationReceiver)>, StaticResourceMovementsError>
-    {
+    ) -> Result<
+        Option<(TypedManifestNativeInvocation, InvocationReceiver)>,
+        StaticResourceMovementsError,
+    > {
         // Creating a typed native invocation to use in interpreting the invocation.
-        Ok(match invocation_kind {
+        match invocation_kind {
+            InvocationKind::DirectMethod { address, method } => {
+                let resolved_dynamic_address = ResolvedDynamicAddress::StaticAddress(*address);
+                let Some(typed_invocation) =
+                    TypedManifestNativeInvocation::from_direct_method_invocation(
+                        &resolved_dynamic_address,
+                        method,
+                        args,
+                    )?
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver = InvocationReceiver::DirectAccess(*address);
+                Ok(Some((typed_invocation, invocation_receiver)))
+            }
             InvocationKind::Method {
-                address: DynamicGlobalAddress::Static(global_address),
-                module_id: ModuleId::Main,
-                method,
-            } => TypedNativeInvocation::from_main_module_method_invocation(
-                global_address,
-                method,
-                args,
-            )?
-            .map(|value| (value, InvocationReceiver::GlobalMethod(*global_address))),
-            InvocationKind::Method {
-                address: DynamicGlobalAddress::Named(named_address),
-                module_id: ModuleId::Main,
+                address,
+                module_id,
                 method,
             } => {
-                let blueprint_id = self.tracked_named_addresses.get(named_address)
-                    .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
-                TypedNativeInvocation::from_blueprint_method_invocation(
-                    &blueprint_id.package_address,
-                    blueprint_id.blueprint_name.as_str(),
+                let resolved_dynamic_address = match address {
+                    DynamicGlobalAddress::Static(global_address) => {
+                        ResolvedDynamicAddress::StaticAddress(*global_address)
+                    }
+                    DynamicGlobalAddress::Named(named_address) => {
+                        let blueprint_id = self.tracked_named_addresses.get(named_address)
+                            .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
+                        ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                            blueprint_id.clone(),
+                        )
+                    }
+                };
+                let Some(typed_invocation) = TypedManifestNativeInvocation::from_method_invocation(
+                    &resolved_dynamic_address,
+                    module_id,
                     method,
                     args,
                 )?
-                .map(|value| (value, InvocationReceiver::GlobalMethodOnReservedAddress))
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver =
+                    InvocationReceiver::GlobalMethod(resolved_dynamic_address);
+                Ok(Some((typed_invocation, invocation_receiver)))
             }
             InvocationKind::Function {
                 address: DynamicPackageAddress::Static(package_address),
                 blueprint,
                 function,
-            } => TypedNativeInvocation::from_function_invocation(
-                package_address,
-                blueprint,
-                function,
-                args,
-            )?
-            .map(|value| (value, InvocationReceiver::BlueprintFunction)),
-            // Can't convert into a typed native invocation.
-            InvocationKind::DirectMethod { .. }
-            | InvocationKind::YieldToParent
+            } => {
+                let blueprint_id = BlueprintId::new(package_address, blueprint);
+                let Some(typed_invocation) =
+                    TypedManifestNativeInvocation::from_function_invocation(
+                        &blueprint_id,
+                        function,
+                        args,
+                    )?
+                else {
+                    return Ok(None);
+                };
+                let invocation_receiver = InvocationReceiver::BlueprintFunction(blueprint_id);
+                Ok(Some((typed_invocation, invocation_receiver)))
+            }
+            InvocationKind::YieldToParent
             | InvocationKind::YieldToChild { .. }
-            | InvocationKind::Method { .. }
-            | InvocationKind::Function { .. } => None,
-        })
+            | InvocationKind::Function {
+                address: DynamicPackageAddress::Named(_),
+                ..
+            } => Ok(None),
+        }
     }
 
     fn current_instruction_index(&mut self) -> usize {
@@ -298,13 +346,61 @@ impl StaticResourceMovementsVisitor {
         Ok(())
     }
 
-    fn handle_worktop_assertion(
+    fn handle_resource_assertion(
         &mut self,
-        OnWorktopAssertion { assertion }: OnWorktopAssertion,
+        OnResourceAssertion { assertion }: OnResourceAssertion,
     ) -> Result<(), StaticResourceMovementsError> {
+        // FUTURE TWEAK: Could add inequality constraints when handling assertions,
+        // for use in any analyzers.
         let change_source = ChangeSource::assertion_at(self.current_instruction_index());
-        self.worktop
-            .handle_worktop_assertion(assertion, change_source)
+        match assertion {
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount {
+                resource_address,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::non_zero(),
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
+                resource_address,
+                amount,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::at_least_amount(amount)?,
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
+                resource_address,
+                ids,
+            }) => self.worktop.handle_resource_assertion(
+                *resource_address,
+                ResourceBounds::at_least_non_fungibles(ids.iter().cloned()),
+                change_source,
+            ),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly { constraints }) => self
+                .worktop
+                .handle_resources_only_assertion(constraints, change_source),
+            ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude { constraints }) => self
+                .worktop
+                .handle_resources_include_assertion(constraints, change_source),
+            ResourceAssertion::NextCall(next_call_assertion) => {
+                if self.next_invocation_assertion.is_some() {
+                    panic!("Interpreter should have verified that a next call assertion must be used before another is created");
+                }
+                self.next_invocation_assertion = Some((next_call_assertion.into(), change_source));
+                Ok(())
+            }
+            ResourceAssertion::Bucket(BucketAssertion::Contents { bucket, constraint }) => {
+                let (_, tracked_resource) = self
+                    .tracked_buckets
+                    .get_mut(&bucket)
+                    .expect("Interpreter should have already validated that the bucket exists");
+                tracked_resource.handle_assertion(
+                    ResourceBounds::new_for_manifest_constraint(constraint)?,
+                    change_source,
+                )
+            }
+        }
     }
 
     fn handle_new_named_address(
@@ -373,8 +469,8 @@ impl ManifestInterpretationVisitor for StaticResourceMovementsVisitor {
         }
     }
 
-    fn on_worktop_assertion(&mut self, event: OnWorktopAssertion) -> ControlFlow<Self::Output> {
-        match self.handle_worktop_assertion(event) {
+    fn on_resource_assertion(&mut self, event: OnResourceAssertion) -> ControlFlow<Self::Output> {
+        match self.handle_resource_assertion(event) {
             Ok(()) => ControlFlow::Continue(()),
             Err(err) => ControlFlow::Break(err),
         }

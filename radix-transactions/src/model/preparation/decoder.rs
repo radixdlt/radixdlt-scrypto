@@ -71,8 +71,8 @@ impl PreparationSettings {
     pub const fn cuttlefish() -> Self {
         Self {
             v2_transactions_permitted: true,
-            max_child_subintents_per_intent: 128,
-            max_subintents_per_transaction: 128,
+            max_child_subintents_per_intent: 32,
+            max_subintents_per_transaction: 32,
             ..Self::babylon()
         }
     }

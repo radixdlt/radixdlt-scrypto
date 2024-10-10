@@ -19,6 +19,7 @@ pub struct StaticManifestInterpreter<'a, M: ReadableManifest + ?Sized> {
     address_reservation_state: Vec<AddressReservationState<'a>>,
     named_address_state: Vec<NamedAddressState<'a>>,
     intent_state: Vec<IntentState<'a>>,
+    next_instruction_requirement: NextInstructionRequirement,
 }
 
 // --------------------------------------------
@@ -55,6 +56,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             address_reservation_state: Default::default(),
             named_address_state: Default::default(),
             intent_state: Default::default(),
+            next_instruction_requirement: NextInstructionRequirement::None,
         }
     }
 
@@ -153,7 +155,16 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     ) -> ControlFlow<V::Output> {
         let effect = instruction.effect();
         self.location = ManifestLocation::Instruction { index };
-        visitor.on_start_instruction(OnStartInstruction { index, effect })?;
+
+        match self
+            .next_instruction_requirement
+            .handle_next_instruction(effect)
+        {
+            Ok(()) => {}
+            Err(error) => return ControlFlow::Break(error.into()),
+        }
+
+        visitor.on_start_instruction(OnStartInstruction { index })?;
 
         match effect {
             Effect::CreateBucket { source_amount } => {
@@ -223,21 +234,14 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     blueprint_name,
                 )?;
             }
-            Effect::WorktopAssertion { assertion } => {
-                visitor.on_worktop_assertion(OnWorktopAssertion { assertion })?;
+            Effect::ResourceAssertion { assertion } => {
+                self.handle_resource_assertion(visitor, assertion)?;
             }
-            Effect::Verification { verification } => {
-                match verification {
-                    VerificationKind::Parent => {
-                        if !self.manifest.is_subintent() {
-                            return ControlFlow::Break(
-                                ManifestValidationError::InstructionNotSupportedInTransactionIntent
-                                    .into(),
-                            );
-                        }
-                    }
-                }
-                visitor.on_verification(OnVerification { kind: verification })?;
+            Effect::Verification {
+                verification,
+                access_rule,
+            } => {
+                self.handle_verification(visitor, verification, access_rule)?;
             }
         }
 
@@ -267,6 +271,10 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         &mut self,
         visitor: &mut V,
     ) -> ControlFlow<V::Output> {
+        match self.next_instruction_requirement.validate_at_end() {
+            Ok(()) => {}
+            Err(error) => return ControlFlow::Break(error.into()),
+        }
         if self.validation_ruleset.validate_no_dangling_nodes {
             for (index, state) in self.bucket_state.iter().enumerate() {
                 if state.consumed_at.is_none() {
@@ -448,6 +456,93 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                 }
             }
         }
+        ControlFlow::Continue(())
+    }
+
+    #[must_use]
+    fn handle_resource_assertion<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+        assertion: ResourceAssertion<'a>,
+    ) -> ControlFlow<V::Output> {
+        if self.validation_ruleset.validate_resource_assertions {
+            match assertion {
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount { .. }) => {
+                    // Nothing to validate
+                }
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
+                    amount,
+                    ..
+                }) => {
+                    if amount.is_negative() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                }
+                ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
+                    resource_address,
+                    ..
+                }) => {
+                    if resource_address.is_fungible() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                }
+                ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly { constraints })
+                | ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude { constraints }) => {
+                    if !constraints.is_valid() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                }
+                ResourceAssertion::NextCall(NextCallAssertion::ReturnsOnly { constraints })
+                | ResourceAssertion::NextCall(NextCallAssertion::ReturnsInclude { constraints }) => {
+                    if !constraints.is_valid() {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                    self.next_instruction_requirement =
+                        NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion;
+                }
+                ResourceAssertion::Bucket(BucketAssertion::Contents { bucket, constraint }) => {
+                    // Check the bucket currently exists
+                    let state = self.get_existing_bucket::<V>(bucket)?;
+                    let resource_address = state.source_amount.resource_address();
+                    if !constraint.is_valid_for(resource_address) {
+                        return ControlFlow::Break(
+                            ManifestValidationError::InvalidResourceConstraint.into(),
+                        );
+                    }
+                }
+            }
+        }
+        visitor.on_resource_assertion(OnResourceAssertion { assertion })
+    }
+
+    #[must_use]
+    fn handle_verification<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+        verification_kind: VerificationKind,
+        access_rule: &AccessRule,
+    ) -> ControlFlow<V::Output> {
+        match verification_kind {
+            VerificationKind::Parent => {
+                if !self.manifest.is_subintent() {
+                    return ControlFlow::Break(
+                        ManifestValidationError::InstructionNotSupportedInTransactionIntent.into(),
+                    );
+                }
+            }
+        }
+        visitor.on_verification(OnVerification {
+            kind: verification_kind,
+            access_rule,
+        })?;
         ControlFlow::Continue(())
     }
 
@@ -802,6 +897,39 @@ pub enum IntentType {
     Child,
 }
 
+enum NextInstructionRequirement {
+    None,
+    RequiredInvocationDueToNextCallAssertion,
+}
+
+impl NextInstructionRequirement {
+    fn handle_next_instruction(
+        &mut self,
+        effect: ManifestInstructionEffect,
+    ) -> Result<(), ManifestValidationError> {
+        match self {
+            NextInstructionRequirement::None => Ok(()),
+            NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion => {
+                if matches!(effect, ManifestInstructionEffect::Invocation { .. }) {
+                    *self = NextInstructionRequirement::None;
+                    Ok(())
+                } else {
+                    Err(ManifestValidationError::InstructionFollowingNextCallAssertionWasNotInvocation)
+                }
+            }
+        }
+    }
+
+    fn validate_at_end(&self) -> Result<(), ManifestValidationError> {
+        match self {
+            NextInstructionRequirement::None => Ok(()),
+            NextInstructionRequirement::RequiredInvocationDueToNextCallAssertion => {
+                Err(ManifestValidationError::ManifestEndedWhilstExpectingNextCallAssertion)
+            }
+        }
+    }
+}
+
 // TODO can add:
 // * validate_preallocated_address_against_blueprint
 // ...
@@ -812,6 +940,7 @@ pub struct ValidationRuleset {
     pub validate_bucket_proof_lock: bool,
     pub validate_no_dangling_nodes: bool,
     pub validate_dynamic_address_in_command_part: bool,
+    pub validate_resource_assertions: bool,
 }
 
 impl Default for ValidationRuleset {
@@ -841,6 +970,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: true,
             validate_dynamic_address_in_command_part: true,
+            validate_resource_assertions: true,
         }
     }
 
@@ -851,6 +981,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: false,
             validate_dynamic_address_in_command_part: false,
+            validate_resource_assertions: false,
         }
     }
 
@@ -861,6 +992,7 @@ impl ValidationRuleset {
             validate_bucket_proof_lock: true,
             validate_no_dangling_nodes: true,
             validate_dynamic_address_in_command_part: true,
+            validate_resource_assertions: true,
         }
     }
 }
@@ -886,6 +1018,9 @@ pub enum ManifestValidationError {
     SubintentDoesNotEndWithYieldToParent,
     ProofCannotBePassedToAnotherIntent,
     TooManyInstructions,
+    InvalidResourceConstraint,
+    InstructionFollowingNextCallAssertionWasNotInvocation,
+    ManifestEndedWhilstExpectingNextCallAssertion,
 }
 
 // We allow unused variables so we don't have to prefix them all with `_`
@@ -973,7 +1108,7 @@ pub trait ManifestInterpretationVisitor {
     }
 
     #[must_use]
-    fn on_worktop_assertion(&mut self, details: OnWorktopAssertion) -> ControlFlow<Self::Output> {
+    fn on_resource_assertion(&mut self, details: OnResourceAssertion) -> ControlFlow<Self::Output> {
         ControlFlow::Continue(())
     }
 
@@ -992,49 +1127,57 @@ impl ManifestInterpretationVisitor for () {
     type Output = ManifestValidationError;
 }
 
-pub struct OnStartInstruction<'a> {
+/// The instruction has not yet passed validity checks, therefore is not included in the event.
+pub struct OnStartInstruction {
     pub index: usize,
-    pub effect: ManifestInstructionEffect<'a>,
 }
 
+/// The instruction and its effects have passed validity checks.
 pub struct OnEndInstruction<'a> {
     pub index: usize,
     pub effect: ManifestInstructionEffect<'a>,
 }
 
+/// A valid bucket has been created.
 pub struct OnNewBucket<'s, 'a> {
     pub bucket: ManifestBucket,
     pub state: &'s BucketState<'a>,
 }
 
+/// A bucket has been consumed in a valid manner.
 pub struct OnConsumeBucket<'s, 'a> {
     pub bucket: ManifestBucket,
     pub state: &'s BucketState<'a>,
     pub destination: BucketDestination<'a>,
 }
 
+/// A valid proof has been created.
 pub struct OnNewProof<'s, 'a> {
     pub proof: ManifestProof,
     pub state: &'s ProofState<'a>,
 }
 
+/// A proof has been consumed in a valid manner.
 pub struct OnConsumeProof<'s, 'a> {
     pub proof: ManifestProof,
     pub state: &'s ProofState<'a>,
     pub destination: ProofDestination<'a>,
 }
 
+/// A valid address reservation has been created.
 pub struct OnNewAddressReservation<'s, 'a> {
     pub address_reservation: ManifestAddressReservation,
     pub state: &'s AddressReservationState<'a>,
 }
 
+/// An address reservation has been consumed in a valid manner.
 pub struct OnConsumeAddressReservation<'s, 'a> {
     pub address_reservation: ManifestAddressReservation,
     pub state: &'s AddressReservationState<'a>,
     pub destination: AddressReservationDestination<'a>,
 }
 
+/// A valid named address has been created.
 pub struct OnNewNamedAddress<'s, 'a> {
     pub named_address: ManifestNamedAddress,
     pub state: &'s NamedAddressState<'a>,
@@ -1042,37 +1185,46 @@ pub struct OnNewNamedAddress<'s, 'a> {
     pub blueprint_name: &'a str,
 }
 
+/// A valid named intent has been created.
 pub struct OnNewIntent<'s, 'a> {
     pub intent: ManifestNamedIntent,
     pub state: &'s IntentState<'a>,
 }
 
+/// A valid auth zone bulk-drop instruction has been processed.
 pub struct OnDropAuthZoneProofs {
     pub drop_all_signature_proofs: bool,
     pub drop_all_non_signature_proofs: bool,
 }
 
+/// An expression has been passed into an invocation.
 pub struct OnPassExpression<'a> {
     pub expression: ManifestExpression,
     pub destination: ExpressionDestination<'a>,
 }
 
+/// A blob has been registered
 pub struct OnRegisterBlob<'a> {
     pub blob_ref: ManifestBlobRef,
     pub content: &'a [u8],
 }
 
+/// A blob has been passed into an invocation.
 pub struct OnPassBlob<'a> {
     pub blob_ref: ManifestBlobRef,
     pub destination: BlobDestination<'a>,
 }
 
-pub struct OnWorktopAssertion<'a> {
-    pub assertion: WorktopAssertion<'a>,
+/// A valid assertion has been processed.
+pub struct OnResourceAssertion<'a> {
+    pub assertion: ResourceAssertion<'a>,
 }
 
-pub struct OnVerification {
+/// A valid verification has been processed.
+pub struct OnVerification<'a> {
     pub kind: VerificationKind,
+    pub access_rule: &'a AccessRule,
 }
 
+/// The manifest has finished processing, and has passed validity checks.
 pub struct OnFinish;

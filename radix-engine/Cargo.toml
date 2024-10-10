@@ -31,7 +31,7 @@ paste = { workspace = true }
 radix-common-derive = { workspace = true }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 
-inferno = { workspace = true }
+inferno = { workspace = true, optional = true }
 tempfile = { workspace = true }
 
 walkdir = { workspace = true, optional = true }
@@ -98,6 +98,9 @@ full_wasm_benchmarks = []
 
 # This flag disables package size limit, memory size limit and fee limit
 coverage = [ "radix-common/coverage" ]
+
+# This feature flag adds the ability for flamegraphs to be generated for the costing in the receipt.
+flamegraph = ["dep:inferno"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

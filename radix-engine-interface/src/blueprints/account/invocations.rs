@@ -65,6 +65,8 @@ pub const ACCOUNT_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 
+pub type AccountCreateManifestInput = AccountCreateInput;
+
 pub type AccountCreateOutput = (Global<AccountMarker>, Bucket);
 
 //==================
@@ -75,6 +77,8 @@ pub const ACCOUNT_SECURIFY_IDENT: &str = "securify";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountSecurifyInput {}
+
+pub type AccountSecurifyManifestInput = AccountSecurifyInput;
 
 pub type AccountSecurifyOutput = Bucket;
 
@@ -89,6 +93,8 @@ pub struct AccountLockFeeInput {
     pub amount: Decimal,
 }
 
+pub type AccountLockFeeManifestInput = AccountLockFeeInput;
+
 pub type AccountLockFeeOutput = ();
 
 //=============================
@@ -101,6 +107,8 @@ pub const ACCOUNT_LOCK_CONTINGENT_FEE_IDENT: &str = "lock_contingent_fee";
 pub struct AccountLockContingentFeeInput {
     pub amount: Decimal,
 }
+
+pub type AccountLockContingentFeeManifestInput = AccountLockContingentFeeInput;
 
 pub type AccountLockContingentFeeOutput = ();
 
@@ -152,6 +160,8 @@ pub struct AccountWithdrawInput {
     pub amount: Decimal,
 }
 
+pub type AccountWithdrawManifestInput = AccountWithdrawInput;
+
 pub type AccountWithdrawOutput = Bucket;
 
 //=========================
@@ -165,6 +175,8 @@ pub struct AccountWithdrawNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
+
+pub type AccountWithdrawNonFungiblesManifestInput = AccountWithdrawNonFungiblesInput;
 
 pub type AccountWithdrawNonFungiblesOutput = Bucket;
 
@@ -180,6 +192,8 @@ pub struct AccountLockFeeAndWithdrawInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
+
+pub type AccountLockFeeAndWithdrawManifestInput = AccountLockFeeAndWithdrawInput;
 
 pub type AccountLockFeeAndWithdrawOutput = Bucket;
 
@@ -197,6 +211,9 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
+pub type AccountLockFeeAndWithdrawNonFungiblesManifestInput =
+    AccountLockFeeAndWithdrawNonFungiblesInput;
+
 pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
 
 //================================
@@ -210,6 +227,8 @@ pub struct AccountCreateProofOfAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
+
+pub type AccountCreateProofOfAmountManifestInput = AccountCreateProofOfAmountInput;
 
 pub type AccountCreateProofOfAmountOutput = Proof;
 
@@ -225,6 +244,8 @@ pub struct AccountCreateProofOfNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
+pub type AccountCreateProofOfNonFungiblesManifestInput = AccountCreateProofOfNonFungiblesInput;
+
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 
 //=================================
@@ -237,6 +258,8 @@ pub const ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT: &str = "set_default_deposit_ru
 pub struct AccountSetDefaultDepositRuleInput {
     pub default: DefaultDepositRule,
 }
+
+pub type AccountSetDefaultDepositRuleManifestInput = AccountSetDefaultDepositRuleInput;
 
 pub type AccountSetDefaultDepositRuleOutput = ();
 
@@ -252,6 +275,8 @@ pub struct AccountSetResourcePreferenceInput {
     pub resource_preference: ResourcePreference,
 }
 
+pub type AccountSetResourcePreferenceManifestInput = AccountSetResourcePreferenceInput;
+
 pub type AccountSetResourcePreferenceOutput = ();
 
 //============================
@@ -264,6 +289,8 @@ pub const ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT: &str = "remove_resource_pref
 pub struct AccountRemoveResourcePreferenceInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type AccountRemoveResourcePreferenceManifestInput = AccountRemoveResourcePreferenceInput;
 
 pub type AccountRemoveResourcePreferenceOutput = ();
 
@@ -359,6 +386,8 @@ pub struct AccountBurnInput {
     pub amount: Decimal,
 }
 
+pub type AccountBurnManifestInput = AccountBurnInput;
+
 pub type AccountBurnOutput = ();
 
 //=====================
@@ -373,18 +402,22 @@ pub struct AccountBurnNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
+pub type AccountBurnNonFungiblesManifestInput = AccountBurnNonFungiblesInput;
+
 pub type AccountBurnNonFungiblesOutput = ();
 
 //==================================
 // Account Add Authorized Depositor
 //==================================
 
-pub const ACCOUNT_ADD_AUTHORIZED_DEPOSITOR: &str = "add_authorized_depositor";
+pub const ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT: &str = "add_authorized_depositor";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountAddAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
+
+pub type AccountAddAuthorizedDepositorManifestInput = AccountAddAuthorizedDepositorInput;
 
 pub type AccountAddAuthorizedDepositorOutput = ();
 
@@ -392,12 +425,14 @@ pub type AccountAddAuthorizedDepositorOutput = ();
 // Account Remove Authorized Depositor
 //=====================================
 
-pub const ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR: &str = "remove_authorized_depositor";
+pub const ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT: &str = "remove_authorized_depositor";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountRemoveAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
+
+pub type AccountRemoveAuthorizedDepositorManifestInput = AccountRemoveAuthorizedDepositorInput;
 
 pub type AccountRemoveAuthorizedDepositorOutput = ();
 
@@ -411,6 +446,8 @@ pub const ACCOUNT_BALANCE_IDENT: &str = "balance";
 pub struct AccountBalanceInput {
     pub resource_address: ResourceAddress,
 }
+
+pub type AccountBalanceManifestInput = AccountBalanceInput;
 
 pub type AccountBalanceOutput = Decimal;
 
@@ -426,6 +463,8 @@ pub struct AccountNonFungibleLocalIdsInput {
     pub limit: u32,
 }
 
+pub type AccountNonFungibleLocalIdsManifestInput = AccountNonFungibleLocalIdsInput;
+
 pub type AccountNonFungibleLocalIdsOutput = IndexSet<NonFungibleLocalId>;
 
 //==========================
@@ -439,5 +478,7 @@ pub struct AccountHasNonFungibleInput {
     pub resource_address: ResourceAddress,
     pub local_id: NonFungibleLocalId,
 }
+
+pub type AccountHasNonFungibleManifestInput = AccountHasNonFungibleInput;
 
 pub type AccountHasNonFungibleOutput = bool;

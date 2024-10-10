@@ -87,6 +87,8 @@ pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties"
 )]
 pub struct PackageClaimRoyaltiesInput {}
 
+pub type PackageClaimRoyaltiesManifestInput = PackageClaimRoyaltiesInput;
+
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
 /// The set of blueprints and their associated definitions for a package

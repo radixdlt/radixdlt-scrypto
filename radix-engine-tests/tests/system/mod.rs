@@ -55,6 +55,7 @@ mod subintent_leaks;
 mod subintent_lock_fee;
 mod subintent_structure;
 mod subintent_txn_shape;
+mod subintent_verify_parent;
 mod subintent_yield;
 mod system;
 mod system_access_rule;
