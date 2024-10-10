@@ -61,7 +61,6 @@ pub enum TransactionValidationError {
     ManifestValidationError(ManifestValidationError),
     InvalidMessage(InvalidMessageError),
     SubintentError(SubintentValidationError),
-    Other(String),
     TooManySignatures {
         total: usize,
         limit: usize,

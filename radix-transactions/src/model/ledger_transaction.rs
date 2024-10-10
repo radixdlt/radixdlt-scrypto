@@ -56,9 +56,31 @@ impl RawLedgerTransaction {
         &self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
-    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
         let prepared = PreparedLedgerTransaction::prepare(self, validator.preparation_settings())?;
         prepared.validate(validator, accepted_kind)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum LedgerTransactionValidationError {
+    ValidationError(TransactionValidationError),
+    GenesisTransactionNotCurrentlyPermitted,
+    UserTransactionNotCurrentlyPermitted,
+    ValidateTransactionNotCurrentlyPermitted,
+    ProtocolUpdateNotCurrentlyPermitted,
+    FlashNotCurrentlyPermitted,
+}
+
+impl From<TransactionValidationError> for LedgerTransactionValidationError {
+    fn from(value: TransactionValidationError) -> Self {
+        Self::ValidationError(value)
+    }
+}
+
+impl From<PrepareError> for LedgerTransactionValidationError {
+    fn from(value: PrepareError) -> Self {
+        Self::ValidationError(value.into())
     }
 }
 
@@ -130,37 +152,37 @@ impl PreparedLedgerTransaction {
         self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
-    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
         let validated_inner = match self.inner {
             PreparedLedgerTransactionInner::Genesis(t) => {
                 if !accepted_kind.permits_genesis() {
-                    return Err(TransactionValidationError::Other(
-                        "Genesis transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::GenesisTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::Genesis(t)
             }
             PreparedLedgerTransactionInner::User(t) => {
                 if !accepted_kind.permits_user() {
-                    return Err(TransactionValidationError::Other(
-                        "User transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::UserTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::User(t.validate(validator)?)
             }
             PreparedLedgerTransactionInner::Validator(t) => {
                 if !accepted_kind.permits_validator() {
-                    return Err(TransactionValidationError::Other(
-                        "Round update transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::ValidateTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::Validator(t)
             }
             PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
                 if !accepted_kind.permits_protocol_update() {
-                    return Err(TransactionValidationError::Other(
-                        "Protocol update transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::ProtocolUpdateNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::ProtocolUpdate(t)
             }
@@ -398,7 +420,7 @@ impl PreparedTransaction for PreparedLedgerTransaction {
 }
 
 impl IntoExecutable for PreparedLedgerTransaction {
-    type Error = LedgerTransactionExecutableError;
+    type Error = LedgerTransactionValidationError;
 
     fn into_executable(
         self,
@@ -421,18 +443,6 @@ pub enum ValidatedLedgerTransactionInner {
     ProtocolUpdate(PreparedFlashTransactionV1),
 }
 
-#[derive(Debug, Clone)]
-pub enum LedgerTransactionExecutableError {
-    IsFlashTransaction,
-    ValidationError(TransactionValidationError),
-}
-
-impl From<TransactionValidationError> for LedgerTransactionExecutableError {
-    fn from(value: TransactionValidationError) -> Self {
-        Self::ValidationError(value)
-    }
-}
-
 impl ValidatedLedgerTransaction {
     pub fn intent_hash_if_user(&self) -> Option<TransactionIntentHash> {
         match &self.inner {
@@ -443,14 +453,14 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    /// Note - returns None if it's a flash transaction
+    /// Returns an error if the transaction is a flash
     pub fn create_executable(
         self,
-    ) -> Result<ExecutableTransaction, LedgerTransactionExecutableError> {
+    ) -> Result<ExecutableTransaction, LedgerTransactionValidationError> {
         match self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
                 PreparedGenesisTransaction::Flash(_) => {
-                    Err(LedgerTransactionExecutableError::IsFlashTransaction)
+                    Err(LedgerTransactionValidationError::FlashNotCurrentlyPermitted)
                 }
                 PreparedGenesisTransaction::Transaction(t) => {
                     Ok(t.create_executable(btreeset!(system_execution(SystemExecution::Protocol))))
@@ -459,7 +469,7 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
             ValidatedLedgerTransactionInner::Validator(t) => Ok(t.create_executable()),
             ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
-                Err(LedgerTransactionExecutableError::IsFlashTransaction)
+                Err(LedgerTransactionValidationError::FlashNotCurrentlyPermitted)
             }
         }
     }
@@ -494,7 +504,7 @@ impl ValidatedLedgerTransaction {
 }
 
 impl IntoExecutable for ValidatedLedgerTransaction {
-    type Error = LedgerTransactionExecutableError;
+    type Error = LedgerTransactionValidationError;
 
     fn into_executable(
         self,
