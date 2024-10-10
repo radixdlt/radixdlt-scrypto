@@ -138,6 +138,12 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn check_timestamp(&self) -> u32 {
+        // Equivalent to an `IOAccess::ReadFromDb`
+        40_000
+    }
+
+    #[inline]
     pub fn run_native_code_cost(
         &self,
         package_address: &PackageAddress,

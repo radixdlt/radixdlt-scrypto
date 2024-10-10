@@ -213,6 +213,15 @@ impl ScenarioCore {
     /// });
     /// ```
     pub fn v2_transaction(&mut self, transaction_name: impl Into<String>) -> TransactionV2Builder {
+        self.v2_transaction_with_timestamp_range(transaction_name, None, None)
+    }
+
+    pub fn v2_transaction_with_timestamp_range(
+        &mut self,
+        transaction_name: impl Into<String>,
+        min_proposer_timestamp_inclusive: Option<Instant>,
+        max_proposer_timestamp_exclusive: Option<Instant>,
+    ) -> TransactionV2Builder {
         let nonce = self.nonce;
         self.nonce += 1;
         self.next_transaction_name = Some(transaction_name.into());
@@ -221,8 +230,8 @@ impl ScenarioCore {
                 network_id: self.network.id,
                 start_epoch_inclusive: self.epoch,
                 end_epoch_exclusive: self.epoch.next().unwrap(),
-                min_proposer_timestamp_inclusive: None,
-                max_proposer_timestamp_exclusive: None,
+                min_proposer_timestamp_inclusive,
+                max_proposer_timestamp_exclusive,
                 intent_discriminator: nonce as u64,
             })
             .transaction_header(TransactionHeaderV2 {

@@ -96,6 +96,18 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                     .sign(&config.parent_account_key)
                     .complete(core)
             })
+            .successful_transaction(|core, config, state| {
+                core.v2_transaction_with_timestamp_range(
+                    "with_timestamp_range",
+                    None,
+                    Some(Instant::new(i64::MAX)),
+                )
+                .manifest_builder(|builder| {
+                    builder.lock_standard_test_fee(state.parent_account.unwrap())
+                })
+                .sign(&config.parent_account_key)
+                .complete(core)
+            })
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()

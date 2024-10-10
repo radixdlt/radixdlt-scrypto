@@ -30,7 +30,7 @@ pub struct EpochRange {
     pub end_epoch_exclusive: Epoch,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ProposerTimestampRange {
     pub start_timestamp_inclusive: Option<Instant>,
     pub end_timestamp_exclusive: Option<Instant>,
