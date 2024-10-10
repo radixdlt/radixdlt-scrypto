@@ -17,7 +17,6 @@ mod bucket;
 mod component;
 mod consensus_manager;
 mod core;
-mod crypto_utils;
 mod data_validation;
 mod deep_sbor;
 mod epoch;
