@@ -1374,7 +1374,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         notary_is_signatory: false,
                         tip_percentage,
                     },
-                    instructions: InstructionsV1(Rc::new(manifest.instructions)),
+                    instructions: InstructionsV1(manifest.instructions),
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },

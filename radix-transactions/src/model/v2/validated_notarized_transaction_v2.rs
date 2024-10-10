@@ -149,7 +149,7 @@ fn create_executable_intent(
     let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
     ExecutableIntent {
-        encoded_instructions: Rc::new(validated_info.encoded_instructions),
+        encoded_instructions: validated_info.encoded_instructions,
         auth_zone_init,
         references: core.instructions.references.clone(),
         blobs: core.blobs.blobs_by_hash.clone(),

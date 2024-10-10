@@ -108,9 +108,9 @@ pub enum PreparedTestTransaction {
 
 #[derive(ManifestSbor)]
 pub struct PreparedTestIntent {
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
     pub hash: Hash,
     pub children_subintent_indices: Vec<SubintentIndex>,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -124,7 +124,7 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
@@ -139,7 +139,7 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
@@ -148,15 +148,15 @@ impl PreparedTestIntent {
         })
     }
 
-    pub fn get_executable(&self) -> ExecutableIntent {
-        let auth_zone_init = AuthZoneInit::proofs(self.initial_proofs.clone());
+    pub fn into_executable_intent(self) -> ExecutableIntent {
+        let auth_zone_init = AuthZoneInit::proofs(self.initial_proofs);
 
         ExecutableIntent {
-            encoded_instructions: self.encoded_instructions.clone(),
+            encoded_instructions: self.encoded_instructions,
             auth_zone_init,
-            references: self.references.clone(),
-            blobs: self.blobs.clone(),
-            children_subintent_indices: self.children_subintent_indices.clone(),
+            references: self.references,
+            blobs: self.blobs,
+            children_subintent_indices: self.children_subintent_indices,
         }
     }
 }
@@ -249,12 +249,12 @@ impl IntoExecutable for TestTransaction {
     ) -> Result<ExecutableTransaction, Self::Error> {
         Ok(self
             .prepare(validator.preparation_settings())?
-            .get_executable())
+            .into_unvalidated_executable())
     }
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(&self) -> ExecutableTransaction {
+    pub fn into_unvalidated_executable(self) -> ExecutableTransaction {
         match self {
             PreparedTestTransaction::V1(intent) => {
                 let num_of_signature_validations = intent.initial_proofs.len() + 1;
@@ -286,7 +286,7 @@ impl PreparedTestTransaction {
                 root_intent,
                 subintents,
             } => {
-                let all_intents = core::iter::once(root_intent)
+                let all_intents = core::iter::once(&root_intent)
                     .chain(subintents.iter())
                     .collect::<Vec<_>>();
                 let payload_size = all_intents
@@ -319,10 +319,10 @@ impl PreparedTestTransaction {
                 };
 
                 ExecutableTransaction::new_v2(
-                    root_intent.get_executable(),
+                    root_intent.into_executable_intent(),
                     subintents
-                        .iter()
-                        .map(|intent| intent.get_executable())
+                        .into_iter()
+                        .map(|intent| intent.into_executable_intent())
                         .collect(),
                     context,
                 )
@@ -338,6 +338,6 @@ impl IntoExecutable for PreparedTestTransaction {
         self,
         _validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        Ok(self.get_executable())
+        Ok(self.into_unvalidated_executable())
     }
 }

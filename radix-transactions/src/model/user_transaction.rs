@@ -290,7 +290,7 @@ impl IntoExecutable for ValidatedUserTransaction {
 impl ValidatedUserTransaction {
     pub fn create_executable(self) -> ExecutableTransaction {
         match self {
-            Self::V1(t) => t.get_executable(),
+            Self::V1(t) => t.create_executable(),
             Self::V2(t) => t.create_executable(),
         }
     }
@@ -305,7 +305,7 @@ mod tests {
         let network = NetworkDefinition::simulator();
 
         let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
-        
+
         let header = TransactionHeaderV1 {
             network_id: network.id,
             start_epoch_inclusive: Epoch::of(1),
@@ -333,13 +333,12 @@ mod tests {
         assert_eq!(notarized, decoded_notarized);
     }
 
-
     #[test]
     fn notarized_transaction_v2_can_be_decoded_as_user_transaction() {
         let network = NetworkDefinition::simulator();
 
         let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
-        
+
         let header = TransactionHeaderV2 {
             notary_public_key: notary_private_key.public_key().into(),
             notary_is_signatory: false,
