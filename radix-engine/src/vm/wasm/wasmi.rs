@@ -812,6 +812,28 @@ fn secp256k1_ecdsa_verify(
     runtime.crypto_utils_secp256k1_ecdsa_verify(message, public_key, signature)
 }
 
+fn secp256k1_ecdsa_key_recover(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime
+        .crypto_utils_secp256k1_ecdsa_key_recover(message, signature)
+        .map(|buffer| buffer.0)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1513,6 +1535,24 @@ impl WasmiModule {
                 .map_err(|e| Error::host(e))
             },
         );
+        let host_secp2561k1_ecdsa_key_recover = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u64, Error> {
+                secp256k1_ecdsa_key_recover(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
 
         let mut linker = <Linker<HostState>>::new(module.engine());
 
@@ -1710,6 +1750,11 @@ impl WasmiModule {
             linker,
             CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
             host_secp2561k1_ecdsa_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME,
+            host_secp2561k1_ecdsa_key_recover
         );
 
         #[cfg(feature = "radix_engine_tests")]

@@ -173,6 +173,7 @@ pub enum WasmRuntimeError {
     InvalidSecp256k1Signature(ParseSecp256k1SignatureError),
 
     InvalidHash(ParseHashError),
+    Secp256k1KeyRecoveryError,
 }
 
 impl SelfError for WasmRuntimeError {

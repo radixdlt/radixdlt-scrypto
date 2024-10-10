@@ -738,4 +738,23 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         Ok(verify_secp256k1(&hash, &public_key, &signature) as u32)
     }
+
+    #[trace_resources]
+    fn crypto_utils_secp256k1_ecdsa_key_recover(
+        &mut self,
+        message: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
+        let signature = Secp256k1Signature::try_from(signature.as_ref())
+            .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
+
+        // TODO costing
+        // self.api
+        //     .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaVerify)?;
+        let key = recover_secp256k1(&hash, &signature)
+            .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
+
+        self.allocate_buffer(key.to_vec())
+    }
 }
