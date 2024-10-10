@@ -18,7 +18,7 @@ jobs:
       - name: Build radix-engine-tests
         run: |
              cd radix-engine-tests
-             cargo test --release --no-run --features resource_tracker --test crypto_utils
+             cargo test --release --no-run --features resource_tracker --test crypto_utils_folder
              # cargo test --release --no-run --features resource_tracker
              rm -f ../target/release/deps/transaction_multi_threaded-*
              rm -f ../target/release/deps/*.d
