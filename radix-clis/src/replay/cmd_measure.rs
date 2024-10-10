@@ -96,7 +96,7 @@ impl TxnMeasure {
             let iter = rx.iter();
             for tx_payload in iter {
                 let tx_start_time = std::time::Instant::now();
-                let (validated, receipt) = execute_ledger_transaction(
+                let (kinded_hash, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
@@ -112,12 +112,12 @@ impl TxnMeasure {
                 let database_updates = receipt.into_state_updates().create_database_updates();
                 database.commit(&database_updates);
                 let tx_processing_time = tx_start_time.elapsed();
-                if let ValidatedLedgerTransactionInner::User(tx) = validated.inner {
+                if let LedgerTransactionKindedHash::User(hash) = kinded_hash {
                     writeln!(
                         output,
                         "{},{},{},{}",
                         TransactionHashBech32Encoder::new(&network)
-                            .encode(&tx.transaction_intent_hash())
+                            .encode(&hash)
                             .unwrap(),
                         tx_processing_time.as_micros(),
                         execution_cost_units.unwrap(),

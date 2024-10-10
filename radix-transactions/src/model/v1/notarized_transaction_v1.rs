@@ -44,7 +44,7 @@ impl IntoExecutable for NotarizedTransactionV1 {
         self,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        let executable = self.prepare_and_validate(validator)?.get_executable();
+        let executable = self.prepare_and_validate(validator)?.create_executable();
         Ok(executable)
     }
 }

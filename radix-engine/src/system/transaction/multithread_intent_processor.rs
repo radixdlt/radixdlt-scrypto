@@ -41,7 +41,7 @@ impl MultiThreadIntentProcessor {
         let mut txn_processors = vec![];
 
         // Setup
-        for (thread_id, intent) in executable.all_intents().enumerate() {
+        for (thread_id, intent) in executable.into_intents().enumerate() {
             api.kernel_switch_stack(thread_id)?;
 
             let mut system_service = SystemService::new(api);
@@ -69,9 +69,9 @@ impl MultiThreadIntentProcessor {
 
             let mut system_service = SystemService::new(api);
             let txn_processor = IntentProcessor::<InstructionV2>::init(
-                intent.encoded_instructions.clone(),
+                intent.encoded_instructions,
                 global_address_reservations.clone(),
-                intent.blobs.clone(),
+                intent.blobs,
                 MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
                 &mut system_service,
             )?;

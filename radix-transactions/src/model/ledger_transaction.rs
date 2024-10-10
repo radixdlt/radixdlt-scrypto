@@ -453,11 +453,11 @@ impl ValidatedLedgerTransaction {
                     Err(LedgerTransactionExecutableError::IsFlashTransaction)
                 }
                 PreparedGenesisTransaction::Transaction(t) => {
-                    Ok(t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))))
+                    Ok(t.create_executable(btreeset!(system_execution(SystemExecution::Protocol))))
                 }
             },
             ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
-            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.get_executable()),
+            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.create_executable()),
             ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
                 Err(LedgerTransactionExecutableError::IsFlashTransaction)
             }

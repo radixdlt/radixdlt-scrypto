@@ -24,11 +24,11 @@ pub struct TransactionProcessorRunManifestInput {
 
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
 #[derive(Debug, Eq, PartialEq, ScryptoEncode)]
-pub struct TransactionProcessorRunInputEfficientEncodable {
-    pub manifest_encoded_instructions: Rc<Vec<u8>>,
-    pub global_address_reservations: Vec<GlobalAddressReservation>,
-    pub references: Rc<IndexSet<Reference>>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
+    pub manifest_encoded_instructions: &'a [u8],
+    pub global_address_reservations: &'a [GlobalAddressReservation],
+    pub references: &'a IndexSet<Reference>,
+    pub blobs: &'a IndexMap<Hash, Vec<u8>>,
 }
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

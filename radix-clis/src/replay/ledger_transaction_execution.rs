@@ -35,19 +35,41 @@ impl LedgerTransactionReceipt {
     }
 }
 
+pub enum LedgerTransactionKindedHash {
+    Genesis(SystemTransactionHash),
+    User(NotarizedTransactionHash),
+    Validator(Hash),
+    ProtocolUpdate(Hash),
+}
+
 pub fn execute_ledger_transaction<S: SubstateDatabase>(
     database: &S,
     vm_modules: &impl VmInitialize,
     network: &NetworkDefinition,
     raw: &RawLedgerTransaction,
     trace: bool,
-) -> (ValidatedLedgerTransaction, LedgerTransactionReceipt) {
+) -> (LedgerTransactionKindedHash, LedgerTransactionReceipt) {
     let validator = TransactionValidator::new(database, network);
     let validated = raw
         .validate(&validator, AcceptedLedgerTransactionKind::Any)
         .expect("Ledger transaction should be valid");
 
-    let receipt = match &validated.inner {
+    let kinded_hash = match &validated.inner {
+        ValidatedLedgerTransactionInner::Genesis(tx) => {
+            LedgerTransactionKindedHash::Genesis(tx.system_transaction_hash())
+        }
+        ValidatedLedgerTransactionInner::User(tx) => {
+            LedgerTransactionKindedHash::User(tx.notarized_transaction_hash())
+        }
+        ValidatedLedgerTransactionInner::Validator(tx) => {
+            LedgerTransactionKindedHash::Validator(tx.summary.hash)
+        }
+        ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
+            LedgerTransactionKindedHash::ProtocolUpdate(tx.flash_transaction_hash().into_hash())
+        }
+    };
+
+    let receipt = match validated.inner {
         ValidatedLedgerTransactionInner::Genesis(prepared_genesis_tx) => {
             match prepared_genesis_tx {
                 PreparedGenesisTransaction::Flash(_) => {
@@ -61,7 +83,9 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
                             .with_cost_breakdown(trace),
-                        tx.get_executable(btreeset!(system_execution(SystemExecution::Protocol))),
+                        tx.create_executable(btreeset!(system_execution(
+                            SystemExecution::Protocol
+                        ))),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
                 }
@@ -74,7 +98,7 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                tx.clone().create_executable(),
+                tx.create_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }
@@ -85,14 +109,14 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_system_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                tx.get_executable(),
+                tx.create_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }
         ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
-            LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates.clone())
+            LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates)
         }
     };
 
-    (validated, receipt)
+    (kinded_hash, receipt)
 }

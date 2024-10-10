@@ -27,6 +27,10 @@ define_raw_transaction_payload!(
 define_wrapped_hash!(NotarizedTransactionHash);
 
 impl RawNotarizedTransaction {
+    pub fn into_typed(&self) -> Result<UserTransaction, DecodeError> {
+        manifest_decode(self.as_slice())
+    }
+
     pub fn prepare(
         &self,
         settings: &PreparationSettings,

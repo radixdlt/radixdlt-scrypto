@@ -210,9 +210,8 @@ impl TransactionValidator {
             .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(
-            &transaction.signed_intent.intent.instructions.inner.0,
-        )?);
+        let encoded_instructions =
+            manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
@@ -231,7 +230,7 @@ impl TransactionValidator {
 
         self.validate_intent_v1(&intent)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(&intent.instructions.inner.0)?);
+        let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
         Ok(ValidatedPreviewIntent {
             intent,

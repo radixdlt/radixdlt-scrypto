@@ -199,9 +199,9 @@ Enum<3u8>(
                     Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
-                Rc::new(indexmap!(
+                indexmap!(
                     hash(&[1, 2]) => vec![1, 2]
-                )),
+                ),
                 ExecutionContext {
                     unique_hash: expected_intent_hash.0,
                     intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {

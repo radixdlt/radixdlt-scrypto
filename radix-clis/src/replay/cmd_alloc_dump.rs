@@ -123,7 +123,7 @@ impl TxnAllocDump {
                 INFO_ALLOC.set_enable(true);
                 INFO_ALLOC.reset_counters();
 
-                let (validated, receipt) = execute_ledger_transaction(
+                let (kinded_hash, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
@@ -140,15 +140,13 @@ impl TxnAllocDump {
                     .map(|x| x.total_execution_cost_units_consumed.clone());
                 let database_updates = receipt.into_state_updates().create_database_updates();
                 database.commit(&database_updates);
-                match validated.inner {
-                    ValidatedLedgerTransactionInner::User(tx) => {
+                match kinded_hash {
+                    LedgerTransactionKindedHash::User(hash) => {
                         if dump_user {
                             writeln!(
                                 output,
                                 "user,{},{},{},{},{}",
-                                address_encoder
-                                    .encode(&tx.transaction_intent_hash())
-                                    .unwrap(),
+                                address_encoder.encode(&hash).unwrap(),
                                 execution_cost_units.unwrap(),
                                 heap_allocations_sum,
                                 heap_current_level,
@@ -157,12 +155,12 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    ValidatedLedgerTransactionInner::Genesis(tx) => {
+                    LedgerTransactionKindedHash::Genesis(hash) => {
                         if dump_genesis {
                             writeln!(
                                 output,
                                 "genesis,{},{},{},{},{}",
-                                tx.system_transaction_hash().0,
+                                hash.0,
                                 execution_cost_units.unwrap_or_default(),
                                 heap_allocations_sum,
                                 heap_current_level,
@@ -171,12 +169,12 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    ValidatedLedgerTransactionInner::Validator(tx) => {
+                    LedgerTransactionKindedHash::Validator(hash) => {
                         if dump_round {
                             writeln!(
                                 output,
-                                "round_update,{},{},{},{},{}",
-                                tx.summary.hash,
+                                "validator,{},{},{},{},{}",
+                                hash,
                                 execution_cost_units.unwrap_or_default(),
                                 heap_allocations_sum,
                                 heap_current_level,
@@ -185,12 +183,12 @@ impl TxnAllocDump {
                             .map_err(Error::IOError)?
                         }
                     }
-                    ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
+                    LedgerTransactionKindedHash::ProtocolUpdate(hash) => {
                         if dump_round {
                             writeln!(
                                 output,
-                                "flash,{},{},{},{},{}",
-                                tx.summary.hash,
+                                "protocol_update,{},{},{},{},{}",
+                                hash,
                                 execution_cost_units.unwrap_or_default(),
                                 heap_allocations_sum,
                                 heap_current_level,

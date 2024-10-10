@@ -75,7 +75,7 @@ impl TxnExecute {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
-                let (_validated, receipt) = execute_ledger_transaction(
+                let (_hash, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
