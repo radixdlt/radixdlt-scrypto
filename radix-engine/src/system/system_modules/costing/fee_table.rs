@@ -564,8 +564,8 @@ impl FeeTable {
         // Based on  `test_crypto_scrypto_verify_secp256k1_ecdsa_costing`
         //   instructions_cnt = 464236 (input is always 32 bytes long)
         //   Lets round:
-        //     444420.94242 -> 446000
-        let instructions_cnt = 446000;
+        //     464236 -> 500000
+        let instructions_dnt = 500000;
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
