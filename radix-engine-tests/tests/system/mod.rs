@@ -81,3 +81,4 @@ mod vault;
 mod vault_burn;
 mod vault_freeze;
 mod worktop;
+mod assert_next_call_returns;
