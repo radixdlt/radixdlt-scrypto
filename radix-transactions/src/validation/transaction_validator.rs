@@ -186,6 +186,10 @@ impl TransactionValidator {
         }
     }
 
+    pub fn config(&self) -> &TransactionValidationConfig {
+        &self.config
+    }
+
     pub fn preparation_settings(&self) -> &PreparationSettings {
         &self.config.preparation_settings
     }

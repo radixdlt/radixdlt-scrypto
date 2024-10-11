@@ -25,7 +25,7 @@ pub struct ValidatedPreviewIntent {
 
 #[allow(deprecated)]
 impl ValidatedPreviewIntent {
-    pub fn into_executable_transaction(self) -> ExecutableTransaction {
+    pub fn create_executable(self) -> ExecutableTransaction {
         let intent = self.intent;
         let flags = self.flags;
 

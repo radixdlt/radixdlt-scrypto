@@ -101,6 +101,27 @@ pub struct NotarySignatureV2(pub SignatureV1);
 pub type PreparedNotarySignatureV2 = SummarizedRawValueBody<NotarySignatureV2>;
 
 impl PreparedNotarizedTransactionV2 {
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        let transaction_intent = &self.signed_intent.transaction_intent;
+
+        let root_intent_expiry_epoch = transaction_intent
+            .root_intent_core
+            .header
+            .inner
+            .end_epoch_exclusive;
+        let non_root_intent_expiry_epochs = transaction_intent
+            .non_root_subintents
+            .subintents
+            .iter()
+            .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
+
+        // Unwrapping as we know it's non-empty
+        std::iter::once(root_intent_expiry_epoch)
+            .chain(non_root_intent_expiry_epochs)
+            .min()
+            .unwrap()
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

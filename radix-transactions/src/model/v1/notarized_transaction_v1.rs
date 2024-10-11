@@ -60,6 +60,11 @@ define_transaction_payload!(
 );
 
 impl PreparedNotarizedTransactionV1 {
+    #[allow(deprecated)]
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        self.signed_intent.intent.header.inner.end_epoch_exclusive
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

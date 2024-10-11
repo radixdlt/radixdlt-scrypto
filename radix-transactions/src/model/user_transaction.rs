@@ -159,6 +159,13 @@ pub enum PreparedUserTransaction {
 }
 
 impl PreparedUserTransaction {
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        match self {
+            PreparedUserTransaction::V1(t) => t.end_epoch_exclusive(),
+            PreparedUserTransaction::V2(t) => t.end_epoch_exclusive(),
+        }
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,
@@ -288,6 +295,15 @@ impl IntoExecutable for ValidatedUserTransaction {
 }
 
 impl ValidatedUserTransaction {
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        match self {
+            ValidatedUserTransaction::V1(t) => t.prepared.end_epoch_exclusive(),
+            ValidatedUserTransaction::V2(t) => {
+                t.overall_validity_range.epoch_range.end_epoch_exclusive
+            }
+        }
+    }
+
     pub fn create_executable(self) -> ExecutableTransaction {
         match self {
             Self::V1(t) => t.create_executable(),

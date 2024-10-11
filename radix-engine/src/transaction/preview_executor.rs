@@ -36,6 +36,6 @@ pub fn execute_preview(
         substate_db,
         vm_modules,
         &execution_config,
-        validated.into_executable_transaction(),
+        validated.create_executable(),
     ))
 }
