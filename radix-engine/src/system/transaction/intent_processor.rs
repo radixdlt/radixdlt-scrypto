@@ -60,9 +60,9 @@ pub struct IntentProcessor<I: TxnInstruction + ManifestDecode + ManifestCategori
 
 impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
-        manifest_encoded_instructions: Vec<u8>,
+        manifest_encoded_instructions: &[u8],
         global_address_reservations: Vec<GlobalAddressReservation>,
-        blobs: IndexMap<Hash, Vec<u8>>,
+        blobs: Arc<IndexMap<Hash, Vec<u8>>>,
         max_total_size_of_blobs: usize,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
@@ -165,13 +165,13 @@ pub struct IntentProcessorObjects {
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
     address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+    blobs_by_hash: Arc<IndexMap<Hash, Vec<u8>>>,
     max_total_size_of_blobs: usize,
 }
 
 impl IntentProcessorObjects {
     fn new(
-        blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+        blobs_by_hash: Arc<IndexMap<Hash, Vec<u8>>>,
         global_address_reservations: Vec<GlobalAddressReservation>,
         max_total_size_of_blobs: usize,
     ) -> Self {

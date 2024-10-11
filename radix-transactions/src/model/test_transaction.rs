@@ -97,7 +97,6 @@ pub struct TestIntentV2 {
     pub children_subintent_indices: Vec<SubintentIndex>,
 }
 
-#[derive(ManifestSbor)]
 pub enum PreparedTestTransaction {
     V1(PreparedTestIntent),
     V2 {
@@ -106,11 +105,10 @@ pub enum PreparedTestTransaction {
     },
 }
 
-#[derive(ManifestSbor)]
 pub struct PreparedTestIntent {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Arc<[u8]>,
     pub references: IndexSet<Reference>,
-    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub blobs: Arc<IndexMap<Hash, Vec<u8>>>,
     pub hash: Hash,
     pub children_subintent_indices: Vec<SubintentIndex>,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -124,9 +122,9 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
             hash: intent.hash,
             children_subintent_indices: vec![],
             initial_proofs: intent.initial_proofs,
@@ -139,9 +137,9 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
             hash: intent.hash,
             children_subintent_indices: intent.children_subintent_indices,
             initial_proofs: intent.initial_proofs,

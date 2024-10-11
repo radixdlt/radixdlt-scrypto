@@ -166,6 +166,22 @@ impl PreparedUserTransaction {
         }
     }
 
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+        }
+    }
+
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
+            PreparedUserTransaction::V1(_) => Box::new(core::iter::empty()),
+            PreparedUserTransaction::V2(t) => Box::new(t.non_root_subintent_hashes()),
+        };
+        boxed_iterator
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,
@@ -310,6 +326,29 @@ impl ValidatedUserTransaction {
             Self::V2(t) => t.create_executable(),
         }
     }
+
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+        }
+    }
+
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
+            ValidatedUserTransaction::V1(_) => Box::new(core::iter::empty()),
+            ValidatedUserTransaction::V2(t) => Box::new(t.prepared.non_root_subintent_hashes()),
+        };
+        boxed_iterator
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+pub struct UserTransactionHashes {
+    pub transaction_intent_hash: TransactionIntentHash,
+    pub signed_transaction_intent_hash: SignedTransactionIntentHash,
+    pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
 #[cfg(test)]

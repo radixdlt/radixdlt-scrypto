@@ -120,27 +120,23 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    pub fn create_identifiers(&self) -> PayloadIdentifiers {
-        PayloadIdentifiers {
+    pub fn create_identifiers(&self) -> LedgerTransactionHashes {
+        LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
-            typed: match &self.inner {
-                PreparedLedgerTransactionInner::Genesis(t) => {
-                    TypedTransactionIdentifiers::Genesis {
-                        system_transaction_hash: t.system_transaction_hash(),
-                    }
-                }
-                PreparedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
+            kinded: match &self.inner {
+                PreparedLedgerTransactionInner::Genesis(t) => KindedTransactionHashes::Genesis {
+                    system_transaction_hash: t.system_transaction_hash(),
                 },
+                PreparedLedgerTransactionInner::User(t) => {
+                    KindedTransactionHashes::User(t.hashes())
+                }
                 PreparedLedgerTransactionInner::Validator(t) => {
-                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                    KindedTransactionHashes::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
                 PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
-                    TypedTransactionIdentifiers::FlashV1 {
+                    KindedTransactionHashes::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
@@ -474,27 +470,23 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    pub fn create_identifiers(&self) -> PayloadIdentifiers {
-        PayloadIdentifiers {
+    pub fn create_identifiers(&self) -> LedgerTransactionHashes {
+        LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
-            typed: match &self.inner {
-                ValidatedLedgerTransactionInner::Genesis(t) => {
-                    TypedTransactionIdentifiers::Genesis {
-                        system_transaction_hash: t.system_transaction_hash(),
-                    }
-                }
-                ValidatedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
+            kinded: match &self.inner {
+                ValidatedLedgerTransactionInner::Genesis(t) => KindedTransactionHashes::Genesis {
+                    system_transaction_hash: t.system_transaction_hash(),
                 },
+                ValidatedLedgerTransactionInner::User(t) => {
+                    KindedTransactionHashes::User(t.hashes())
+                }
                 ValidatedLedgerTransactionInner::Validator(t) => {
-                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                    KindedTransactionHashes::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
                 ValidatedLedgerTransactionInner::ProtocolUpdate(t) => {
-                    TypedTransactionIdentifiers::FlashV1 {
+                    KindedTransactionHashes::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
@@ -515,21 +507,23 @@ impl IntoExecutable for ValidatedLedgerTransaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct PayloadIdentifiers {
+pub struct LedgerTransactionHashes {
     pub ledger_transaction_hash: LedgerTransactionHash,
-    pub typed: TypedTransactionIdentifiers,
+    pub kinded: KindedTransactionHashes,
+}
+
+impl LedgerTransactionHashes {
+    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+        self.kinded.as_user()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypedTransactionIdentifiers {
+pub enum KindedTransactionHashes {
     Genesis {
         system_transaction_hash: SystemTransactionHash,
     },
-    User {
-        intent_hash: TransactionIntentHash,
-        signed_intent_hash: SignedTransactionIntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-    },
+    User(#[sbor(flatten)] UserTransactionHashes),
     RoundUpdateV1 {
         round_update_hash: RoundUpdateTransactionHash,
     },
@@ -538,25 +532,10 @@ pub enum TypedTransactionIdentifiers {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserTransactionIdentifiers<'a> {
-    pub intent_hash: &'a TransactionIntentHash,
-    pub signed_intent_hash: &'a SignedTransactionIntentHash,
-    pub notarized_transaction_hash: &'a NotarizedTransactionHash,
-}
-
-impl TypedTransactionIdentifiers {
-    pub fn user(&self) -> Option<UserTransactionIdentifiers> {
+impl KindedTransactionHashes {
+    pub fn as_user(&self) -> Option<UserTransactionHashes> {
         match self {
-            TypedTransactionIdentifiers::User {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            } => Some(UserTransactionIdentifiers {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            }),
+            KindedTransactionHashes::User(user) => Some(*user),
             _ => None,
         }
     }

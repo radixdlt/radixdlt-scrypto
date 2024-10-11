@@ -39,7 +39,7 @@ impl ValidatedNotarizedTransactionV1 {
             self.encoded_instructions,
             AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
             intent.instructions.references.clone(),
-            intent.blobs.blobs_by_hash.clone(),
+            intent.blobs.blobs_by_hash,
             ExecutionContext {
                 unique_hash: intent_hash.0,
                 intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {

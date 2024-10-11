@@ -122,6 +122,15 @@ impl PreparedNotarizedTransactionV2 {
             .unwrap()
     }
 
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        self.signed_intent
+            .transaction_intent
+            .non_root_subintents
+            .subintents
+            .iter()
+            .map(|s| s.subintent_hash())
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

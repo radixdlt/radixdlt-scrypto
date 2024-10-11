@@ -4,10 +4,10 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableIntent {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Arc<[u8]>,
     pub auth_zone_init: AuthZoneInit,
     pub references: IndexSet<Reference>,
-    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub blobs: Arc<IndexMap<Hash, Vec<u8>>>,
     /// An index of the subintent in the parent ExecutableTransaction
     /// Validation ensures that each subintent has a unique parent
     /// and a unique path from the transaction intent.
@@ -87,10 +87,10 @@ pub struct ExecutionContext {
 
 impl ExecutableTransaction {
     pub fn new_v1(
-        encoded_instructions_v1: Vec<u8>,
+        encoded_instructions_v1: impl Into<Arc<[u8]>>,
         auth_zone_init: AuthZoneInit,
         references: IndexSet<Reference>,
-        blobs: IndexMap<Hash, Vec<u8>>,
+        blobs: impl Into<Arc<IndexMap<Hash, Vec<u8>>>>,
         context: ExecutionContext,
     ) -> Self {
         let mut references = references;
@@ -115,9 +115,9 @@ impl ExecutableTransaction {
         Self {
             context,
             transaction_intent: ExecutableIntent {
-                encoded_instructions: encoded_instructions_v1,
+                encoded_instructions: encoded_instructions_v1.into(),
                 references,
-                blobs,
+                blobs: blobs.into(),
                 auth_zone_init,
                 children_subintent_indices: vec![],
             },

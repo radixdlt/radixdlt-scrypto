@@ -202,7 +202,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
 
     let invalid_encoded_instructions = vec![0xde, 0xad, 0xbe, 0xef];
     let references = Default::default();
-    let blobs = Default::default();
+    let blobs: IndexMap<Hash, Vec<u8>> = Default::default();
 
     let executable = ExecutableTransaction::new_v1(
         invalid_encoded_instructions,

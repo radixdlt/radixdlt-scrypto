@@ -727,8 +727,8 @@ impl TransactionValidator {
                 &intent_relationships.non_root_subintents,
             )?;
         let root_intent_info = ValidatedIntentInformationV2 {
+            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
             children_subintent_indices: intent_relationships.root_intent.children,
-            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?,
             signature_validations: root_signature_validations,
         };
         let non_root_subintents_info = non_root_subintents
@@ -740,7 +740,8 @@ impl TransactionValidator {
                     Ok(ValidatedIntentInformationV2 {
                         encoded_instructions: manifest_encode(
                             &subintent.intent_core.instructions.inner.0,
-                        )?,
+                        )?
+                        .into(),
                         signature_validations: self
                             .validate_subintent_signatures_v2(subintent, signatures)?,
                         children_subintent_indices: info.children,

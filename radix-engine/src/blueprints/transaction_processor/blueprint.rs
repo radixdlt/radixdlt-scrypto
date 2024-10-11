@@ -41,9 +41,9 @@ impl TransactionProcessorBlueprint {
             TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
         };
         let mut txn_processor_single_thread = IntentProcessor::<InstructionV1>::init(
-            manifest_encoded_instructions,
+            manifest_encoded_instructions.as_slice(),
             global_address_reservations,
-            blobs,
+            blobs.into(),
             max_total_size_of_blobs,
             api,
         )?;

@@ -69,7 +69,7 @@ impl MultiThreadIntentProcessor {
 
             let mut system_service = SystemService::new(api);
             let txn_processor = IntentProcessor::<InstructionV2>::init(
-                intent.encoded_instructions,
+                intent.encoded_instructions.as_ref(),
                 global_address_reservations.clone(),
                 intent.blobs,
                 MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,

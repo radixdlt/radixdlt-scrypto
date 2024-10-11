@@ -188,7 +188,7 @@ Enum<3u8>(
         assert_eq!(
             executable,
             ExecutableTransaction::new_v1(
-                manifest_encode(&manifest.instructions).unwrap().into(),
+                manifest_encode(&manifest.instructions).unwrap(),
                 AuthZoneInit::proofs(btreeset!(
                     NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
                     NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())

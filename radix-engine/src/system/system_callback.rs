@@ -195,7 +195,7 @@ impl SystemVersion {
                     TRANSACTION_PROCESSOR_BLUEPRINT,
                     TRANSACTION_PROCESSOR_RUN_IDENT,
                     scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.as_slice(),
+                        manifest_encoded_instructions: intent.encoded_instructions.as_ref(),
                         global_address_reservations: global_address_reservations.as_slice(),
                         references: &intent.references,
                         blobs: &intent.blobs,

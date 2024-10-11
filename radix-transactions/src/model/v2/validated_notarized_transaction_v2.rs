@@ -32,7 +32,7 @@ pub struct OverallValidityRangeV2 {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ValidatedIntentInformationV2 {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Arc<[u8]>,
     pub signature_validations: SignatureValidations,
     pub children_subintent_indices: Vec<SubintentIndex>,
 }
@@ -152,7 +152,7 @@ fn create_executable_intent(
         encoded_instructions: validated_info.encoded_instructions,
         auth_zone_init,
         references: core.instructions.references.clone(),
-        blobs: core.blobs.blobs_by_hash.clone(),
+        blobs: Arc::new(core.blobs.blobs_by_hash.clone()),
         children_subintent_indices: validated_info.children_subintent_indices.clone(),
     }
 }
