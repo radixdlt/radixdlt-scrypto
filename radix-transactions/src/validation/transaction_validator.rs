@@ -186,6 +186,11 @@ impl TransactionValidator {
         }
     }
 
+    /// Will typically be [`Some`], but [`None`] if the validator is network-independent.
+    pub fn network_id(&self) -> Option<u8> {
+        self.required_network_id
+    }
+
     pub fn config(&self) -> &TransactionValidationConfig {
         &self.config
     }
