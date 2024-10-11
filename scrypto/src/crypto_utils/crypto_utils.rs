@@ -125,14 +125,14 @@ impl CryptoUtils {
 
     /// Performs ECDSA Secp256k1 verification.
     pub fn secp256k1_ecdsa_verify(
-        hash: impl AsRef<Hash>,
+        message_hash: impl AsRef<Hash>,
         public_key: impl AsRef<Secp256k1PublicKey>,
         signature: impl AsRef<Secp256k1Signature>,
     ) -> bool {
         unsafe {
             crypto_utils::crypto_utils_secp256k1_ecdsa_verify(
-                hash.as_ref().0.as_ptr(),
-                hash.as_ref().0.len(),
+                message_hash.as_ref().0.as_ptr(),
+                message_hash.as_ref().0.len(),
                 public_key.as_ref().0.as_ptr(),
                 public_key.as_ref().0.len(),
                 signature.as_ref().0.as_ptr(),
@@ -143,13 +143,13 @@ impl CryptoUtils {
 
     /// Performs ECDSA Secp256k1 key recovery.
     pub fn secp256k1_ecdsa_key_recover(
-        hash: impl AsRef<Hash>,
+        message_hash: impl AsRef<Hash>,
         signature: impl AsRef<Secp256k1Signature>,
     ) -> Secp256k1PublicKey {
         let key = copy_buffer(unsafe {
             crypto_utils::crypto_utils_secp256k1_ecdsa_key_recover(
-                hash.as_ref().0.as_ptr(),
-                hash.as_ref().0.len(),
+                message_hash.as_ref().0.as_ptr(),
+                message_hash.as_ref().0.len(),
                 signature.as_ref().0.as_ptr(),
                 signature.as_ref().0.len(),
             )
