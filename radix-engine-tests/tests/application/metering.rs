@@ -497,7 +497,15 @@ fn get_aggregate_verify_test_data(
 }
 
 fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
-    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+    let package_address = ledger.publish_package_simple((
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "crypto_scrypto_v2.wasm")
+            .to_vec(),
+        manifest_decode(include_workspace_asset_bytes!(
+            "radix-transaction-scenarios",
+            "crypto_scrypto_v2.rpd"
+        ))
+        .unwrap(),
+    ));
 
     let msg = "Test";
     let msg_hash = hash(msg);

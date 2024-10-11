@@ -1,17 +1,17 @@
-Total Cost (XRD)                                                           ,            1.04261726606,    100.0%
-- Execution Cost (XRD)                                                     ,                0.6659639,     63.9%
+Total Cost (XRD)                                                           ,            1.04152171606,    100.0%
+- Execution Cost (XRD)                                                     ,               0.66486835,     63.8%
 - Finalization Cost (XRD)                                                  ,                0.0102517,      1.0%
-- Storage Cost (XRD)                                                       ,            0.36640166606,     35.1%
+- Storage Cost (XRD)                                                       ,            0.36640166606,     35.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 13319278,    100.0%
+Execution Cost Breakdown                                                   ,                 13297367,    100.0%
 - AfterInvoke                                                              ,                      518,      0.0%
 - AllocateNodeId                                                           ,                     1455,      0.0%
 - BeforeInvoke                                                             ,                     7778,      0.1%
 - Blake2b256Hash                                                           ,                       91,      0.0%
 - Bls12381G2SignatureAggregate                                             ,                   243986,      1.8%
-- Bls12381V1AggregateVerify                                                ,                  2001824,     15.0%
-- Bls12381V1FastAggregateVerify                                            ,                   632277,      4.7%
+- Bls12381V1AggregateVerify                                                ,                  2001824,     15.1%
+- Bls12381V1FastAggregateVerify                                            ,                   632277,      4.8%
 - Bls12381V1Verify                                                         ,                   461378,      3.5%
 - CheckReference                                                           ,                    80024,      0.6%
 - CloseSubstate                                                            ,                    18576,      0.1%
@@ -24,14 +24,14 @@ Execution Cost Breakdown                                                   ,    
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   121872,      0.9%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      0.3%
-- OpenSubstate::GlobalPackage                                              ,                  3504013,     26.3%
+- OpenSubstate::GlobalPackage                                              ,                  3496682,     26.3%
 - OpenSubstate::InternalFungibleVault                                      ,                    90202,      0.7%
 - OpenSubstate::InternalGenericComponent                                   ,                    18682,      0.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.3%
 - PinNode                                                                  ,                      180,      0.0%
-- PrepareWasmCode                                                          ,                  2290000,     17.2%
+- PrepareWasmCode                                                          ,                  2282710,     17.2%
 - QueryActor                                                               ,                     1000,      0.0%
-- ReadSubstate                                                             ,                  2359901,     17.7%
+- ReadSubstate                                                             ,                  2352611,     17.7%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.1%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.1%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.3%
