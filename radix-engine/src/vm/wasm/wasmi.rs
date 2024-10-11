@@ -858,7 +858,8 @@ fn secp256k1_ecdsa_key_recover(
     signature_ptr: u32,
     signature_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
     let signature = read_memory(

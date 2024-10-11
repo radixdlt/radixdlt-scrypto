@@ -497,7 +497,6 @@ fn get_aggregate_verify_test_data(
 }
 
 fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
-    println!("crypto_scrypto_v2");
     let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
 
     let msg = "Test";
