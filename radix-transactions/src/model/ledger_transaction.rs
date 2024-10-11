@@ -60,6 +60,38 @@ impl RawLedgerTransaction {
         let prepared = PreparedLedgerTransaction::prepare(self, validator.preparation_settings())?;
         prepared.validate(validator, accepted_kind)
     }
+
+    pub fn create_executable(
+        &self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<ExecutableTransaction, LedgerTransactionValidationError> {
+        let validated = self.validate(validator, accepted_kind)?;
+        validated.create_executable()
+    }
+
+    pub fn create_executable_and_hashes(
+        &self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<(ExecutableTransaction, LedgerTransactionHashes), LedgerTransactionValidationError>
+    {
+        let validated = self.validate(validator, accepted_kind)?;
+        let hashes = validated.create_hashes();
+        let executable = validated.create_executable()?;
+        Ok((executable, hashes))
+    }
+}
+
+impl IntoExecutable for RawLedgerTransaction {
+    type Error = LedgerTransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.create_executable(validator, AcceptedLedgerTransactionKind::Any)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -449,6 +481,12 @@ impl ValidatedLedgerTransaction {
         }
     }
 
+    /// Panics if the transaction is a flash transaction
+    pub fn create_non_flash_executable(self) -> ExecutableTransaction {
+        self.create_executable()
+            .expect("The caller should be certain this is not a flash transaction")
+    }
+
     /// Returns an error if the transaction is a flash
     pub fn create_executable(
         self,
@@ -470,7 +508,7 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    pub fn create_identifiers(&self) -> LedgerTransactionHashes {
+    pub fn create_hashes(&self) -> LedgerTransactionHashes {
         LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
             kinded: match &self.inner {
