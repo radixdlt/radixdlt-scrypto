@@ -64,6 +64,9 @@ impl IntoExecutable for ExecutableTransaction {
 }
 
 /// This is an executable form of the transaction, post stateless validation.
+///
+/// It is intended to be relatively cheaply cloneable, and is cloned sometimes in the node
+/// (e.g. for each re-execution in the mempool, between prepare and execution...)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {
     pub(crate) transaction_intent: ExecutableIntent,

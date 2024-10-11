@@ -151,7 +151,7 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    pub fn create_identifiers(&self) -> LedgerTransactionHashes {
+    pub fn create_hashes(&self) -> LedgerTransactionHashes {
         LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
             kinded: match &self.inner {
@@ -538,11 +538,13 @@ impl ValidatedLedgerTransaction {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdentifiedLedgerExecutable {
     pub executable: LedgerExecutable,
     pub hashes: LedgerTransactionHashes,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LedgerExecutable {
     /// Should be resolved as create_system_bootstrap_flash() but due to crate issues it can't be
     GenesisFlash,
