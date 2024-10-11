@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            1.04152171606,    100.0%
-- Execution Cost (XRD)                                                     ,               0.66486835,     63.8%
+Total Cost (XRD)                                                           ,            1.04160111606,    100.0%
+- Execution Cost (XRD)                                                     ,               0.66494775,     63.8%
 - Finalization Cost (XRD)                                                  ,                0.0102517,      1.0%
 - Storage Cost (XRD)                                                       ,            0.36640166606,     35.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 13297367,    100.0%
+Execution Cost Breakdown                                                   ,                 13298955,    100.0%
 - AfterInvoke                                                              ,                      518,      0.0%
 - AllocateNodeId                                                           ,                     1455,      0.0%
 - BeforeInvoke                                                             ,                     7778,      0.1%
@@ -17,7 +17,7 @@ Execution Cost Breakdown                                                   ,    
 - CloseSubstate                                                            ,                    18576,      0.1%
 - CreateNode                                                               ,                    13376,      0.1%
 - DropNode                                                                 ,                    23681,      0.2%
-- Ed25519Verify                                                            ,                    13149,      0.1%
+- Ed25519Verify                                                            ,                    14737,      0.1%
 - EmitEvent                                                                ,                      556,      0.0%
 - Keccak256Hash                                                            ,                      215,      0.0%
 - LockFee                                                                  ,                      500,      0.0%

@@ -552,9 +552,9 @@ impl FeeTable {
         //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   Lets round:
         //     33.08798 -> 34
-        //     444420.94242 -> 446000 (increased to get more accurate difference between calculated
-        //          and measured instruction)
-        let instructions_cnt = add(mul(cast(size), 34), 446000);
+        //     444420.94242 -> 500000 (increased slightly make sure we get the positive difference between
+        //             calculated and measured number of instructions)
+        let instructions_cnt = add(mul(cast(size), 34), 500000);
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
