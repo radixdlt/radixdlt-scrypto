@@ -233,5 +233,12 @@ fn transfer_test(c: &mut Criterion) {
     fwk.print_report();
 }
 
-criterion_group!(resources_usage, transfer_test);
+criterion_group!(
+    name = resources_usage;
+    config = Criterion::default()
+                .sample_size(10)
+                .measurement_time(core::time::Duration::from_secs(5))
+                .warm_up_time(core::time::Duration::from_millis(500));
+    targets = transfer_test
+);
 criterion_main!(resources_usage);

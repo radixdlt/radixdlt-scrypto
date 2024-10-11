@@ -136,7 +136,10 @@ struct EmptyStruct {}
 
 criterion_group!(
     name = benches;
-    config = Criterion::default();
+    config = Criterion::default()
+                .sample_size(10)
+                .measurement_time(core::time::Duration::from_secs(5))
+                .warm_up_time(core::time::Duration::from_millis(500));
     targets = decompile_notarized_intent_benchmarks
 );
 criterion_main!(benches);

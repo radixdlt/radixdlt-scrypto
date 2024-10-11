@@ -108,5 +108,12 @@ fn bench_transfer(c: &mut Criterion) {
     });
 }
 
-criterion_group!(transfer, bench_transfer);
+criterion_group!(
+    name = transfer;
+    config = Criterion::default()
+                .sample_size(10)
+                .measurement_time(core::time::Duration::from_secs(5))
+                .warm_up_time(core::time::Duration::from_millis(500));
+    targets = bench_transfer
+);
 criterion_main!(transfer);

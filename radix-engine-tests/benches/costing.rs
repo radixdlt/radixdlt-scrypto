@@ -401,8 +401,12 @@ fn bench_execute_transaction_reading_big_vec_substates(c: &mut Criterion) {
 }
 
 criterion_group!(
-    costing,
-    bench_decode_rpd_to_manifest_value,
+    name = costing;
+    config = Criterion::default()
+                .sample_size(10)
+                .measurement_time(core::time::Duration::from_secs(5))
+                .warm_up_time(core::time::Duration::from_millis(500));
+    targets = bench_decode_rpd_to_manifest_value,
     bench_decode_rpd_to_manifest_raw_value,
     bench_decode_encoded_u8_array_to_manifest_value,
     bench_decode_encoded_u8_array_to_manifest_raw_value,
@@ -414,7 +418,7 @@ criterion_group!(
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
     bench_spin_loop,
-    bench_spin_loop_v2,
+    bench_spin_loop_v2,  // This benchmark takes up to 300s with default config
     bench_instantiate_radiswap,
     bench_instantiate_flash_loan,
     bench_deserialize_wasm,
