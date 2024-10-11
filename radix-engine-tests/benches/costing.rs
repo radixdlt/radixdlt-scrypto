@@ -244,6 +244,46 @@ fn bench_spin_loop_v2(c: &mut Criterion) {
     });
 }
 
+// Usage: cargo bench --bench costing -- spin_loop_v3
+// This is an basically the same as 'spin_loop_should_end_in_reasonable_amount_of_time' test,
+// but it is benchmarked for more precise results.
+fn bench_spin_loop_v3(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (code, definition) = PackageLoader::get("fee");
+    let package_address =
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "bucket")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Fee",
+                "new",
+                manifest_args!(lookup.bucket("bucket")),
+            )
+        })
+        .build();
+
+    let component_address = ledger
+        .execute_manifest(manifest.clone(), [])
+        .expect_commit_success()
+        .new_component_addresses()[0];
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", manifest_args!())
+        .build();
+
+    c.bench_function("costing::spin_loop_v3", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
 macro_rules! bench_instantiate {
     ($what:literal) => {
         paste! {
@@ -419,6 +459,7 @@ criterion_group!(
     bench_validate_secp256k1,
     bench_spin_loop,
     bench_spin_loop_v2,  // This benchmark takes up to 300s with default config
+    bench_spin_loop_v3,
     bench_instantiate_radiswap,
     bench_instantiate_flash_loan,
     bench_deserialize_wasm,
