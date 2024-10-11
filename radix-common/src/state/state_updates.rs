@@ -23,9 +23,9 @@ impl StateUpdates {
     }
 
     /// Starts a Node-level update.
-    pub fn of_node(&mut self, node_id: NodeId) -> &mut NodeStateUpdates {
+    pub fn of_node(&mut self, node_id: impl Into<NodeId>) -> &mut NodeStateUpdates {
         self.by_node
-            .entry(node_id)
+            .entry(node_id.into())
             .or_insert_with(|| NodeStateUpdates::Delta {
                 by_partition: index_map_new(),
             })
@@ -109,14 +109,23 @@ impl NodeStateUpdates {
         key: impl ResolvableSubstateKey<'a>,
         value: impl ScryptoEncode,
     ) -> Self {
+        self.mut_set_substate(partition_num, key, value);
+        self
+    }
+
+    pub fn mut_set_substate<'a>(
+        &mut self,
+        partition_num: PartitionNumber,
+        key: impl ResolvableSubstateKey<'a>,
+        value: impl ScryptoEncode,
+    ) {
         let Self::Delta {
             ref mut by_partition,
         } = self;
         by_partition
             .entry(partition_num)
             .or_default()
-            .set_substate(key.into_substate_key(), value);
-        self
+            .mut_set_substate(key.into_substate_key(), value);
     }
 
     /// Starts a Partition-level update.
@@ -182,6 +191,15 @@ impl Default for PartitionStateUpdates {
 
 impl PartitionStateUpdates {
     pub fn set_substate<'a>(
+        mut self,
+        key: impl ResolvableSubstateKey<'a>,
+        value: impl ScryptoEncode,
+    ) -> Self {
+        self.mut_set_substate(key, value);
+        self
+    }
+
+    pub fn mut_set_substate<'a>(
         &mut self,
         key: impl ResolvableSubstateKey<'a>,
         value: impl ScryptoEncode,

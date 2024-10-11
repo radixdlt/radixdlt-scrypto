@@ -250,7 +250,7 @@ impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
         match (batch_group_index, batch_index) {
             (0, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::flash(
                 "flash",
-                create_substate_flash_for_genesis().state_updates,
+                create_system_bootstrap_flash_state_updates(),
             )),
             (0, 1) => {
                 ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::genesis_transaction(

@@ -54,7 +54,7 @@ mod test {
                         self.event_hasher
                             .concat_mut(scrypto_encode(&c.application_events).unwrap());
                         self.state_change_hasher
-                            .concat_mut(scrypto_encode(&c.state_updates).unwrap())
+                            .concat_mut(scrypto_encode(&c.state_updates).unwrap());
                     }
                     TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
                 }
@@ -224,7 +224,7 @@ mod test {
                     self.event_hasher
                         .concat_mut(scrypto_encode(&c.application_events).unwrap());
                     self.state_update_hasher
-                        .concat_mut(scrypto_encode(&c.state_updates).unwrap())
+                        .concat_mut(scrypto_encode(&c.state_updates).unwrap());
                 }
                 TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
             }

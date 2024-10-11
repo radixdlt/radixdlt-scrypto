@@ -70,16 +70,15 @@ impl RawLedgerTransaction {
         validated.create_executable()
     }
 
-    pub fn create_executable_and_hashes(
+    pub fn create_identifiable_ledger_executable(
         &self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
-    ) -> Result<(ExecutableTransaction, LedgerTransactionHashes), LedgerTransactionValidationError>
-    {
+    ) -> Result<IdentifiedLedgerExecutable, LedgerTransactionValidationError> {
         let validated = self.validate(validator, accepted_kind)?;
         let hashes = validated.create_hashes();
-        let executable = validated.create_executable()?;
-        Ok((executable, hashes))
+        let executable = validated.create_ledger_executable();
+        Ok(IdentifiedLedgerExecutable { executable, hashes })
     }
 }
 
@@ -481,30 +480,36 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    /// Panics if the transaction is a flash transaction
-    pub fn create_non_flash_executable(self) -> ExecutableTransaction {
-        self.create_executable()
-            .expect("The caller should be certain this is not a flash transaction")
+    pub fn create_ledger_executable(self) -> LedgerExecutable {
+        match self.inner {
+            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
+                PreparedGenesisTransaction::Flash(_) => LedgerExecutable::GenesisFlash,
+                PreparedGenesisTransaction::Transaction(t) => LedgerExecutable::Transaction {
+                    executable: t
+                        .create_executable(btreeset!(system_execution(SystemExecution::Protocol))),
+                },
+            },
+            ValidatedLedgerTransactionInner::User(t) => LedgerExecutable::Transaction {
+                executable: t.create_executable(),
+            },
+            ValidatedLedgerTransactionInner::Validator(t) => LedgerExecutable::Transaction {
+                executable: t.create_executable(),
+            },
+            ValidatedLedgerTransactionInner::ProtocolUpdate(t) => LedgerExecutable::Flash {
+                updates: t.state_updates,
+            },
+        }
     }
 
     /// Returns an error if the transaction is a flash
     pub fn create_executable(
         self,
     ) -> Result<ExecutableTransaction, LedgerTransactionValidationError> {
-        match self.inner {
-            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
-                PreparedGenesisTransaction::Flash(_) => {
-                    Err(LedgerTransactionValidationError::FlashNotCurrentlyPermitted)
-                }
-                PreparedGenesisTransaction::Transaction(t) => {
-                    Ok(t.create_executable(btreeset!(system_execution(SystemExecution::Protocol))))
-                }
-            },
-            ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
-            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.create_executable()),
-            ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
+        match self.create_ledger_executable() {
+            LedgerExecutable::GenesisFlash | LedgerExecutable::Flash { .. } => {
                 Err(LedgerTransactionValidationError::FlashNotCurrentlyPermitted)
             }
+            LedgerExecutable::Transaction { executable } => Ok(executable),
         }
     }
 
@@ -531,6 +536,24 @@ impl ValidatedLedgerTransaction {
             },
         }
     }
+}
+
+pub struct IdentifiedLedgerExecutable {
+    pub executable: LedgerExecutable,
+    pub hashes: LedgerTransactionHashes,
+}
+
+pub enum LedgerExecutable {
+    /// Should be resolved as create_system_bootstrap_flash() but due to crate issues it can't be
+    GenesisFlash,
+    Flash {
+        /// Can be converted into a FlashReceipt with a before_store
+        /// and then to a TransactionReceipt.
+        updates: StateUpdates,
+    },
+    Transaction {
+        executable: ExecutableTransaction,
+    },
 }
 
 impl IntoExecutable for ValidatedLedgerTransaction {
