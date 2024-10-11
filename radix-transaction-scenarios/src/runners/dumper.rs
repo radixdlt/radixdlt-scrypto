@@ -12,6 +12,56 @@ mod test {
     use radix_transactions::manifest::*;
     use std::path::*;
 
+    //=========================
+    // PROTOCOL UPDATE TRIGGERS
+    //=========================
+
+    #[test]
+    #[ignore = "Run this test to update the generated protocol update receipts"]
+    pub fn update_all_generated_protocol_update_receipts() {
+        run_all_protocol_updates(AlignerExecutionMode::Write)
+    }
+
+    #[test]
+    pub fn validate_all_generated_protocol_update_receipts() {
+        run_all_protocol_updates(AlignerExecutionMode::Assert)
+    }
+
+    //==================
+    // SCENARIO TRIGGERS
+    //==================
+
+    #[test]
+    #[ignore = "Run this test to update the generated scenarios"]
+    pub fn update_all_generated_scenarios() {
+        run_all_scenarios(AlignerExecutionMode::Write, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to update a single scenario"]
+    pub fn update_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Write,
+            [get_scenario("basic_subintents")],
+        )
+    }
+
+    #[test]
+    pub fn validate_all_generated_scenarios() {
+        run_all_scenarios(AlignerExecutionMode::Assert, all_scenarios_iter())
+    }
+
+    #[test]
+    #[ignore = "Run this test manually to validate a single scenario"]
+    pub fn validate_single_scenario() {
+        run_all_scenarios(
+            AlignerExecutionMode::Assert,
+            [get_scenario("basic_subintents")],
+        )
+    }
+
+    //=============================
+
     pub fn run_all_protocol_updates(mode: AlignerExecutionMode) {
         let network_definition = NetworkDefinition::simulator();
         let address_encoder = AddressBech32Encoder::new(&network_definition);
@@ -135,7 +185,11 @@ mod test {
                 hooks.state_change_hasher.finalize().to_string()[0..16].to_string();
             let event_digest = hooks.event_hasher.finalize().to_string()[0..16].to_string();
 
-            writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
+            writeln!(&mut summary, "========= SUMMARY HASHES =========").unwrap();
+
+            let testnet_scenario_names = default_testnet_scenarios_at_version(protocol_version)
+                .map(|v| v.metadata().logical_name)
+                .collect::<Vec<_>>();
 
             if protocol_version == ProtocolVersion::LATEST {
                 writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.").unwrap();
@@ -155,21 +209,22 @@ mod test {
                 .unwrap();
             };
 
-            writeln!(&mut summary).unwrap();
+            if testnet_scenario_names.len() > 0 {
+                writeln!(&mut summary).unwrap();
+                writeln!(&mut summary, "==== POST ENACTMENT SCENARIOS ====").unwrap();
+                writeln!(&mut summary, "The following scenarios are set by default to run on testnets after this protocol update.").unwrap();
+                if protocol_version == ProtocolVersion::LATEST {
+                    writeln!(&mut summary, "If there are any changes to this list after deploying a testnet, the testnet's ledger will need to be wiped (*not allowed on stokenet*) or the network's protocol update configuration will need to be customised in the node to override the scenarios run on it.").unwrap();
+                } else {
+                    writeln!(&mut summary, "This list should NEVER change, else it will cause divergence for any nodes applying the protocol update.").unwrap();
+                }
+                for scenario_name in testnet_scenario_names {
+                    writeln!(&mut summary, "=> {scenario_name}").unwrap();
+                }
+            }
 
             version_folder.put_file("protocol_update_summary.txt", summary);
         }
-    }
-
-    #[test]
-    #[ignore = "Run this test to update the generated protocol update receipts"]
-    pub fn update_all_generated_protocol_update_receipts() {
-        run_all_protocol_updates(AlignerExecutionMode::Write)
-    }
-
-    #[test]
-    pub fn validate_all_generated_protocol_update_receipts() {
-        run_all_protocol_updates(AlignerExecutionMode::Assert)
     }
 
     struct ScenarioDumpingHooks {
@@ -427,35 +482,6 @@ mod test {
                     });
             }
         }
-    }
-
-    #[test]
-    #[ignore = "Run this test to update the generated scenarios"]
-    pub fn update_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Write, all_scenarios_iter())
-    }
-
-    #[test]
-    #[ignore = "Run this test manually to update a single scenario"]
-    pub fn update_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Write,
-            [get_scenario("basic_subintents")],
-        )
-    }
-
-    #[test]
-    pub fn validate_all_generated_scenarios() {
-        run_all_scenarios(AlignerExecutionMode::Assert, all_scenarios_iter())
-    }
-
-    #[test]
-    #[ignore = "Run this test manually to validate a single scenario"]
-    pub fn validate_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Assert,
-            [get_scenario("basic_subintents")],
-        )
     }
 
     #[test]
