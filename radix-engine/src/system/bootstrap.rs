@@ -248,8 +248,8 @@ impl FlashReceipt {
 }
 
 pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
-    // The slightly weird order is so that it matches the BTreeMap order of the LegacyStateUpdates,
-    // for a consistent genesis.
+    // The slightly weird order is so that it matches the historic order when this
+    // used to be ordered by a BTreeMap over the node ids.
     let package_flashes = [
         (
             PACKAGE_PACKAGE,

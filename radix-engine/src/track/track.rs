@@ -50,7 +50,15 @@ pub struct TrackedSubstates {
 impl TrackedSubstates {
     pub fn to_state_updates(self) -> (IndexSet<NodeId>, StateUpdates) {
         let mut new_nodes = index_set_new();
-        let mut system_updates = index_map_new();
+        let mut state_updates = StateUpdates::empty();
+
+        for (node_id, partition_num) in self.deleted_partitions {
+            state_updates
+                .of_node(node_id)
+                .of_partition(partition_num)
+                .delete();
+        }
+
         for (node_id, tracked_node) in self.tracked_nodes {
             if tracked_node.is_new {
                 new_nodes.insert(node_id);
@@ -77,17 +85,14 @@ impl TrackedSubstates {
                         partition_updates.insert(tracked.substate_key, update);
                     }
                 }
-                system_updates.insert((node_id.clone(), partition_num), partition_updates);
+                state_updates
+                    .of_node(node_id)
+                    .of_partition(partition_num)
+                    .update_substates(partition_updates);
             }
         }
 
-        (
-            new_nodes,
-            StateUpdates::from(LegacyStateUpdates {
-                partition_deletions: self.deleted_partitions,
-                system_updates,
-            }),
-        )
+        (new_nodes, state_updates)
     }
 }
 

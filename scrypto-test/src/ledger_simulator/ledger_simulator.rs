@@ -1410,7 +1410,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         notary_is_signatory: false,
                         tip_percentage,
                     },
-                    instructions: InstructionsV1(manifest.instructions),
+                    instructions: InstructionsV1::from(manifest.instructions),
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },
@@ -2413,27 +2413,24 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = commit_result
+    let substate_updates = commit_result
         .state_updates
         .clone()
-        .into_legacy()
-        .system_updates;
-    for ((node_id, partition_num), partition_updates) in (&system_updates).into_iter() {
-        for (substate_key, database_update) in partition_updates.into_iter() {
-            let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
-                    .expect("Substate key should be typeable");
-            if !typed_substate_key.value_is_mappable() {
-                continue;
+        .into_flattened_substate_updates();
+    for ((node_id, partition_num, substate_key), database_update) in substate_updates.into_iter() {
+        let typed_substate_key =
+            to_typed_substate_key(node_id.entity_type().unwrap(), partition_num, &substate_key)
+                .expect("Substate key should be typeable");
+        if !typed_substate_key.value_is_mappable() {
+            continue;
+        }
+        match database_update {
+            DatabaseUpdate::Set(raw_value) => {
+                // Check that typed value mapping works
+                to_typed_substate_value(&typed_substate_key, &raw_value)
+                    .expect("Substate value should be typeable");
             }
-            match database_update {
-                DatabaseUpdate::Set(raw_value) => {
-                    // Check that typed value mapping works
-                    to_typed_substate_value(&typed_substate_key, raw_value)
-                        .expect("Substate value should be typeable");
-                }
-                DatabaseUpdate::Delete => {}
-            }
+            DatabaseUpdate::Delete => {}
         }
     }
 }
