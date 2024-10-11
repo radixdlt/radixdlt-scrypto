@@ -223,6 +223,27 @@ fn bench_spin_loop(c: &mut Criterion) {
     );
 }
 
+// Usage: cargo bench --bench costing -- spin_loop_v2
+fn bench_spin_loop_v2(c: &mut Criterion) {
+    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
+        code,
+        single_function_package_definition("Test", "f"),
+    ));
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+
+    c.bench_function("costing::spin_loop_v2", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
 macro_rules! bench_instantiate {
     ($what:literal) => {
         paste! {
@@ -393,6 +414,7 @@ criterion_group!(
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
     bench_spin_loop,
+    bench_spin_loop_v2,
     bench_instantiate_radiswap,
     bench_instantiate_flash_loan,
     bench_deserialize_wasm,
