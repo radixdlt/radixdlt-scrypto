@@ -200,11 +200,5 @@ fn do_swap(
         .expect_commit_success();
 }
 
-criterion_group!(
-    name = radiswap;
-    config = Criterion::default()
-                .sample_size(10)
-                .measurement_time(core::time::Duration::from_secs(5))
-                .warm_up_time(core::time::Duration::from_millis(500));
-    targets = bench_radiswap);
+criterion_group!(radiswap, bench_radiswap);
 criterion_main!(radiswap);

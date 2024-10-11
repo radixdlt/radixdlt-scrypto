@@ -107,12 +107,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = validation;
-    config = Criterion::default()
-                .sample_size(10)
-                .measurement_time(core::time::Duration::from_secs(5))
-                .warm_up_time(core::time::Duration::from_millis(500));
-    targets = bench_secp256k1_validation,
+    validation,
+    bench_secp256k1_validation,
     bench_ed25519_validation,
     bench_bls_validation_short,
     bench_bls_validation_long,

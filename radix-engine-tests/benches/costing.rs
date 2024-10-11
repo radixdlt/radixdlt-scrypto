@@ -441,12 +441,8 @@ fn bench_execute_transaction_reading_big_vec_substates(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = costing;
-    config = Criterion::default()
-                .sample_size(10)
-                .measurement_time(core::time::Duration::from_secs(5))
-                .warm_up_time(core::time::Duration::from_millis(500));
-    targets = bench_decode_rpd_to_manifest_value,
+    costing,
+    bench_decode_rpd_to_manifest_value,
     bench_decode_rpd_to_manifest_raw_value,
     bench_decode_encoded_u8_array_to_manifest_value,
     bench_decode_encoded_u8_array_to_manifest_raw_value,
@@ -473,8 +469,8 @@ criterion_group!(
     config = Criterion::default()
                 .sample_size(20)
                 .measurement_time(core::time::Duration::from_secs(20))
-                .warm_up_time(core::time::Duration::from_millis(2000));
-    targets =     bench_spin_loop_v2,
+                .warm_up_time(core::time::Duration::from_millis(3000));
+    targets = bench_spin_loop_v2,
     bench_spin_loop_v3,
 );
 criterion_main!(costing, costing_long);
