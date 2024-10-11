@@ -458,8 +458,6 @@ criterion_group!(
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
     bench_spin_loop,
-    bench_spin_loop_v2,  // This benchmark takes up to 300s with default config
-    bench_spin_loop_v3,
     bench_instantiate_radiswap,
     bench_instantiate_flash_loan,
     bench_deserialize_wasm,
@@ -468,4 +466,15 @@ criterion_group!(
     bench_execute_transaction_creating_big_vec_substates,
     bench_execute_transaction_reading_big_vec_substates,
 );
-criterion_main!(costing);
+
+// This group is for longer benchmarks, which might be counted in seconds
+criterion_group!(
+    name = costing_long;
+    config = Criterion::default()
+                .sample_size(20)
+                .measurement_time(core::time::Duration::from_secs(20))
+                .warm_up_time(core::time::Duration::from_millis(2000));
+    targets =     bench_spin_loop_v2,
+    bench_spin_loop_v3,
+);
+criterion_main!(costing, costing_long);
