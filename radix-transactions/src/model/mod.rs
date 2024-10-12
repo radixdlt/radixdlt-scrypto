@@ -223,7 +223,6 @@ Enum<3u8>(
                     costing_parameters: TransactionCostingParameters {
                         tip: TipSpecifier::Percentage(4),
                         free_credit_in_xrd: dec!(0),
-                        abort_when_loan_repaid: false,
                     },
                     disable_limits_and_costing_modules: false,
                     proposer_timestamp_range: None,

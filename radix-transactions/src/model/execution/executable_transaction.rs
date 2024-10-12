@@ -197,11 +197,6 @@ impl ExecutableTransaction {
         self
     }
 
-    pub fn abort_when_loan_repaid(mut self) -> Self {
-        self.context.costing_parameters.abort_when_loan_repaid = true;
-        self
-    }
-
     pub fn unique_hash(&self) -> &Hash {
         &self.context.unique_hash
     }

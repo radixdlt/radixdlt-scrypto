@@ -102,10 +102,6 @@ pub struct TransactionCostingParameters {
 
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
-
-    /// Whether to abort the transaction run when the loan is repaid.
-    /// This is used when test-executing pending transactions.
-    pub abort_when_loan_repaid: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -171,12 +167,6 @@ impl Default for TipSpecifier {
     }
 }
 
-// Note: TransactionCostingParametersReceiptV1 has diverged from TransactionCostingParameters because
-// with the bottlenose release and the addition of abort_when_loan_repaid, we broke compatibility of
-// the encoded transaction receipt.
-//
-// Relevant discussion:
-// https://rdxworks.slack.com/archives/C060RCS9MPW/p1715762426579329?thread_ts=1714585544.709299&cid=C060RCS9MPW
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, Default)]
 pub struct TransactionCostingParametersReceiptV1 {
     pub tip_percentage: u16,

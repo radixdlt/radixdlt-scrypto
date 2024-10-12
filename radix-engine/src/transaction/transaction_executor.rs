@@ -118,6 +118,9 @@ pub struct SystemOverrides {
     pub disable_costing: bool,
     pub disable_limits: bool,
     pub disable_auth: bool,
+    /// Whether to abort the transaction run when the loan is repaid.
+    /// This is used when test-executing pending transactions.
+    pub abort_when_loan_repaid: bool,
     /// This is required for pre-bottlenose testnets which need to override
     /// the default Mainnet network definition
     pub network_definition: Option<NetworkDefinition>,
@@ -132,6 +135,11 @@ impl SystemOverrides {
             ..Default::default()
         }
     }
+
+    pub fn set_abort_when_loan_repaid(mut self) -> Self {
+        self.abort_when_loan_repaid = true;
+        self
+    }
 }
 
 impl Default for SystemOverrides {
@@ -140,6 +148,7 @@ impl Default for SystemOverrides {
             disable_costing: false,
             disable_limits: false,
             disable_auth: false,
+            abort_when_loan_repaid: false,
             network_definition: None,
             costing_parameters: None,
             limit_parameters: None,
@@ -205,10 +214,31 @@ impl ExecutionConfig {
         }
     }
 
+    pub fn for_validator_transaction(network_definition: NetworkDefinition) -> Self {
+        Self {
+            ..Self::with_network(network_definition)
+        }
+    }
+
     pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             ..Self::with_network(network_definition)
         }
+    }
+
+    pub fn for_notarized_transaction_rejection_check(
+        network_definition: NetworkDefinition,
+    ) -> Self {
+        Self::with_network(network_definition)
+            .update_system_overrides(|overrides| overrides.set_abort_when_loan_repaid())
+    }
+
+    pub fn update_system_overrides(
+        mut self,
+        update: impl FnOnce(SystemOverrides) -> SystemOverrides,
+    ) -> Self {
+        self.system_overrides = Some(update(self.system_overrides.unwrap_or_default()));
+        self
     }
 
     pub fn for_test_transaction() -> Self {

@@ -1415,6 +1415,8 @@ impl<V: SystemCallbackObject> System<V> {
             enabled_modules
         };
 
+        let mut abort_when_loan_repaid = false;
+
         // Override system configuration
         if let Some(system_overrides) = &init_input.system_overrides {
             if let Some(costing_override) = &system_overrides.costing_parameters {
@@ -1440,6 +1442,10 @@ impl<V: SystemCallbackObject> System<V> {
             if system_overrides.disable_limits {
                 enabled_modules.remove(EnabledModules::LIMITS);
             }
+
+            if system_overrides.abort_when_loan_repaid {
+                abort_when_loan_repaid = true;
+            }
         }
 
         let costing_module = CostingModule {
@@ -1447,6 +1453,7 @@ impl<V: SystemCallbackObject> System<V> {
             fee_reserve: SystemLoanFeeReserve::new(
                 system_parameters.costing_parameters,
                 executable.costing_parameters().clone(),
+                abort_when_loan_repaid,
             ),
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),

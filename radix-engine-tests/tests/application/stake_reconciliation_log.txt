@@ -8,7 +8,7 @@ successes:
 -------------------------------------------------------Executable-------------------------------------------------------
 Intent hash: 5d6e434515e6f7a9efdd0a046334738394506250d275438576b588a05527aa3b
 Payload size: 221
-Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0, abort_when_loan_repaid: false }
+Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0 }
 Pre-allocated addresses: []
 Blobs: []
 References: {Reference(c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6), Reference(0d906318c6318c6ee313598c6318c6318cf7bcaa2e954a9626318c6318c6), Reference(9a4c6318c6318c686701820c6318c6318cf7d75139d5aad5e6318c6318c6)}
@@ -675,7 +675,7 @@ Success
 -------------------------------------------------------Executable-------------------------------------------------------
 Intent hash: 23eba8edb30754a90a5a7b465d1bb2100f12c311e51c434533340e76439e5034
 Payload size: 186
-Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0, abort_when_loan_repaid: false }
+Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0 }
 Pre-allocated addresses: []
 Blobs: []
 References: {Reference(c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6), Reference(c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42)}
@@ -2140,7 +2140,7 @@ Success
 -------------------------------------------------------Executable-------------------------------------------------------
 Intent hash: 8dd1c8b2b20ef56c53586bf34b6d3c5503222e77f6f576491dcdfed3296cb92d
 Payload size: 365
-Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0, abort_when_loan_repaid: false }
+Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0 }
 Pre-allocated addresses: []
 Blobs: []
 References: {Reference(c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6), Reference(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), Reference(860c6318c6318c6c4e1b40cc6318c6318cf7bca52eb54a6a86318c6318c6), Reference(c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42)}
@@ -5966,7 +5966,7 @@ Success
 -------------------------------------------------------Executable-------------------------------------------------------
 Intent hash: ad65383dcd738957afcd8f18dc5705f5a51497888a571db9106f8c48e6208c2e
 Payload size: 255
-Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0, abort_when_loan_repaid: false }
+Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0 }
 Pre-allocated addresses: []
 Blobs: []
 References: {Reference(c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6), Reference(c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42), Reference(9a4c6318c6318c66346e98cc6318c6318cf7d63aa2a913c6a6318c6318c6), Reference(83f95cf2600c1eae862b8b46d0fc179579deb4c4bf7e75f33ee8324b2813), Reference(9a4c6318c6318c686701820c6318c6318cf7d75139d5aad5e6318c6318c6)}
@@ -7238,7 +7238,7 @@ Success
 -------------------------------------------------------Executable-------------------------------------------------------
 Intent hash: 6a59c911c73b552c5032fae98f5d49b44848af4cda5fbd28143938a4d6b62343
 Payload size: 472
-Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0, abort_when_loan_repaid: false }
+Transaction costing parameters: TransactionCostingParameters { tip_percentage: 0, free_credit_in_xrd: 0 }
 Pre-allocated addresses: []
 Blobs: []
 References: {Reference(c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c6), Reference(c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42), Reference(9a4c6318c6318c66346e98cc6318c6318cf7d63aa2a913c6a6318c6318c6), Reference(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), Reference(83f95cf2600c1eae862b8b46d0fc179579deb4c4bf7e75f33ee8324b2813), Reference(9a4c6318c6318c686701820c6318c6318cf7d75139d5aad5e6318c6318c6)}

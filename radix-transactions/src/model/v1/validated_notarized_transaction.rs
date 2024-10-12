@@ -56,7 +56,6 @@ impl ValidatedNotarizedTransactionV1 {
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::Percentage(header.tip_percentage),
                     free_credit_in_xrd: Decimal::ZERO,
-                    abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
                 disable_limits_and_costing_modules: false,
