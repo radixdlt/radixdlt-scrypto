@@ -183,7 +183,7 @@ impl SystemVersion {
     fn execute_transaction<Y: SystemBasedKernelApi>(
         &self,
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let output = match self {
@@ -206,8 +206,11 @@ impl SystemVersion {
                 output
             }
             SystemVersion::V2 => {
-                let mut txn_threads =
-                    MultiThreadIntentProcessor::init(executable, global_address_reservations, api)?;
+                let mut txn_threads = MultiThreadIntentProcessor::init(
+                    executable,
+                    global_address_reservations.as_slice(),
+                    api,
+                )?;
                 txn_threads.execute(api)?;
                 let output = txn_threads
                     .threads
@@ -1633,7 +1636,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
 
     fn execute<Y: SystemBasedKernelApi>(
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
 

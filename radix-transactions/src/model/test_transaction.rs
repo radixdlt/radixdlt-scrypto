@@ -106,9 +106,9 @@ pub enum PreparedTestTransaction {
 }
 
 pub struct PreparedTestIntent {
-    pub encoded_instructions: Arc<[u8]>,
+    pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
-    pub blobs: Arc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
     pub hash: Hash,
     pub children_subintent_indices: Vec<SubintentIndex>,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,

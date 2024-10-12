@@ -42,8 +42,8 @@ impl TransactionProcessorBlueprint {
         };
         let mut txn_processor_single_thread = IntentProcessor::<InstructionV1>::init(
             manifest_encoded_instructions.as_slice(),
-            global_address_reservations,
-            blobs.into(),
+            &global_address_reservations,
+            &blobs,
             max_total_size_of_blobs,
             api,
         )?;

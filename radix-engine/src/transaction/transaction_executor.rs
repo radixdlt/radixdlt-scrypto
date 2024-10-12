@@ -262,18 +262,18 @@ pub fn execute_transaction<'v, V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
     vm_modules: &'v V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
+    executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {
     let vm_init = VmInit::load(substate_db, vm_modules);
     let system_init = SystemInit::load(substate_db, execution_config.clone(), vm_init);
-    KernelInit::load(substate_db, system_init).execute(executable)
+    KernelInit::load(substate_db, system_init).execute(executable.as_ref())
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     substate_db: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
+    executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(substate_db, vm_modules, execution_config, executable);
     if let TransactionResult::Commit(commit) = &receipt.result {

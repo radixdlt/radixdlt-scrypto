@@ -1226,7 +1226,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         };
         let kernel_init = KernelInit::load(&self.database, system_init);
 
-        let transaction_receipt = kernel_init.execute(executable);
+        let transaction_receipt = kernel_init.execute(&executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit.state_updates.create_database_updates();

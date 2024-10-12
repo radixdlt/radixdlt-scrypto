@@ -4,10 +4,10 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableIntent {
-    pub encoded_instructions: Arc<[u8]>,
+    pub encoded_instructions: Vec<u8>,
     pub auth_zone_init: AuthZoneInit,
     pub references: IndexSet<Reference>,
-    pub blobs: Arc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
     /// An index of the subintent in the parent ExecutableTransaction
     /// Validation ensures that each subintent has a unique parent
     /// and a unique path from the transaction intent.
@@ -65,13 +65,18 @@ impl IntoExecutable for ExecutableTransaction {
 
 /// This is an executable form of the transaction, post stateless validation.
 ///
-/// It is intended to be relatively cheaply cloneable, and is cloned sometimes in the node
-/// (e.g. for each re-execution in the mempool, between prepare and execution...)
+/// An `&ExecutableTransaction` is used to execute in the engine.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {
     pub(crate) transaction_intent: ExecutableIntent,
     pub(crate) subintents: Vec<ExecutableIntent>,
     pub(crate) context: ExecutionContext,
+}
+
+impl AsRef<ExecutableTransaction> for ExecutableTransaction {
+    fn as_ref(&self) -> &ExecutableTransaction {
+        self
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,10 +95,10 @@ pub struct ExecutionContext {
 
 impl ExecutableTransaction {
     pub fn new_v1(
-        encoded_instructions_v1: impl Into<Arc<[u8]>>,
+        encoded_instructions_v1: Vec<u8>,
         auth_zone_init: AuthZoneInit,
         references: IndexSet<Reference>,
-        blobs: impl Into<Arc<IndexMap<Hash, Vec<u8>>>>,
+        blobs: IndexMap<Hash, Vec<u8>>,
         context: ExecutionContext,
     ) -> Self {
         let mut references = references;
@@ -118,9 +123,9 @@ impl ExecutableTransaction {
         Self {
             context,
             transaction_intent: ExecutableIntent {
-                encoded_instructions: encoded_instructions_v1.into(),
+                encoded_instructions: encoded_instructions_v1,
                 references,
-                blobs: blobs.into(),
+                blobs,
                 auth_zone_init,
                 children_subintent_indices: vec![],
             },
@@ -239,10 +244,6 @@ impl ExecutableTransaction {
 
     pub fn all_intents(&self) -> impl Iterator<Item = &ExecutableIntent> {
         iter::once(&self.transaction_intent).chain(self.subintents.iter())
-    }
-
-    pub fn into_intents(self) -> impl Iterator<Item = ExecutableIntent> {
-        iter::once(self.transaction_intent).chain(self.subintents.into_iter())
     }
 
     pub fn intent_hash_nullifications(&self) -> &[IntentHashNullification] {
