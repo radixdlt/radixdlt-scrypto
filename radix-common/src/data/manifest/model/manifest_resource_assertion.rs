@@ -253,12 +253,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if ids.is_empty() {
-                    return Err(ResourceConstraintError::NonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExactAmount {
+                    return Err(ResourceConstraintError::ExpectExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -266,7 +266,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::AtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
@@ -274,7 +274,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids) => {
                 if !expected_exact_ids.eq(&ids) {
-                    return Err(ResourceConstraintError::ExactNonFungibles {
+                    return Err(ResourceConstraintError::ExpectExactNonFungibles {
                         expected_exact_ids: Box::new(expected_exact_ids),
                         actual_ids: Box::new(ids),
                     });
@@ -282,7 +282,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids) => {
                 if !expected_at_least_ids.is_subset(&ids) {
-                    return Err(ResourceConstraintError::AtLeastNonFungibles {
+                    return Err(ResourceConstraintError::ExpectAtLeastNonFungibles {
                         actual_ids: Box::new(ids),
                         expected_at_least_ids: Box::new(expected_at_least_ids.clone()),
                     });
@@ -291,7 +291,7 @@ impl ManifestResourceConstraint {
             ManifestResourceConstraint::General(constraint) => {
                 constraint
                     .validate_non_fungible(&ids)
-                    .map_err(ResourceConstraintError::General)?;
+                    .map_err(ResourceConstraintError::GeneralResourceConstraintError)?;
             }
         }
 
@@ -302,12 +302,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if amount.is_zero() {
-                    return Err(ResourceConstraintError::NonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExactAmount {
+                    return Err(ResourceConstraintError::ExpectExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -315,22 +315,22 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::AtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
                 }
             }
             ManifestResourceConstraint::ExactNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::AtLeastNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::General(constraint) => {
                 constraint
                     .validate_fungible(amount)
-                    .map_err(ResourceConstraintError::General)?;
+                    .map_err(ResourceConstraintError::GeneralResourceConstraintError)?;
             }
         }
 
@@ -340,25 +340,25 @@ impl ManifestResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceConstraintError {
-    NonZeroAmount,
-    ExactAmount {
+    ExpectNonZeroAmount,
+    ExpectExactAmount {
         expected_exact_amount: Decimal,
         actual_amount: Decimal,
     },
-    AtLeastAmount {
+    ExpectAtLeastAmount {
         expected_at_least_amount: Decimal,
         actual_amount: Decimal,
     },
-    ExactNonFungibles {
+    ExpectExactNonFungibles {
         expected_exact_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
-    AtLeastNonFungibles {
+    ExpectAtLeastNonFungibles {
         expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
-    General(GeneralResourceConstraintError),
-    ExpectedNonFungibleResourceButIsFungible,
+    GeneralResourceConstraintError(GeneralResourceConstraintError),
+    ExpectNonFungibleResourceButIsFungible,
 }
 
 /// [`GeneralResourceConstraint`] captures constraints on the balance of a single fungible
@@ -998,13 +998,6 @@ impl AllowedIds {
         match self {
             AllowedIds::Allowlist(allowlist) => allowlist.is_empty(),
             AllowedIds::Any => true,
-        }
-    }
-
-    pub fn has_constraints(&self) -> bool {
-        match self {
-            AllowedIds::Allowlist(allowlist) => !allowlist.is_empty(),
-            AllowedIds::Any => false,
         }
     }
 

@@ -67,6 +67,11 @@ fn run_all(mode: CostingTaskMode) {
             &run_mint_small_size_nfts_from_manifest,
             "cost_mint_small_size_nfts_from_manifest.csv",
         );
+
+        // Run cost tests for crypto_utils test from Cuttlefish onward
+        if protocol_version >= ProtocolVersion::Cuttlefish {
+            execute(&run_crypto_utils_tests, "cost_crypto_utils.csv");
+        }
     }
 }
 
@@ -458,6 +463,178 @@ fn run_mint_nfts_from_manifest(
         scrypto_encode(&nft_data).unwrap().len()
     );
     println!("Managed to mint {} NFTs", n);
+    receipt
+}
+
+fn get_aggregate_verify_test_data(
+    cnt: u32,
+    msg_size: usize,
+) -> (
+    Vec<Bls12381G1PrivateKey>,
+    Vec<Bls12381G1PublicKey>,
+    Vec<Vec<u8>>,
+    Vec<Bls12381G2Signature>,
+) {
+    let sks: Vec<Bls12381G1PrivateKey> = (1..(cnt + 1))
+        .map(|i| Bls12381G1PrivateKey::from_u64(i.into()).unwrap())
+        .collect();
+
+    let msgs: Vec<Vec<u8>> = (1..(cnt + 1))
+        .map(|i| {
+            let u: u8 = (i % u8::MAX as u32) as u8;
+            vec![u; msg_size]
+        })
+        .collect();
+    let sigs: Vec<Bls12381G2Signature> = sks
+        .iter()
+        .zip(msgs.clone())
+        .map(|(sk, msg)| sk.sign_v1(&msg))
+        .collect();
+
+    let pks: Vec<Bls12381G1PublicKey> = sks.iter().map(|sk| sk.public_key()).collect();
+
+    (sks, pks, msgs, sigs)
+}
+
+fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
+    let package_address = ledger.publish_package_simple((
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "crypto_scrypto_v2.wasm")
+            .to_vec(),
+        manifest_decode(include_workspace_asset_bytes!(
+            "radix-transaction-scenarios",
+            "crypto_scrypto_v2.rpd"
+        ))
+        .unwrap(),
+    ));
+
+    let msg = "Test";
+    let msg_hash = hash(msg);
+    let bls_pk = Bls12381G1PublicKey::from_str("93b1aa7542a5423e21d8e84b4472c31664412cc604a666e9fdf03baf3c758e728c7a11576ebb01110ac39a0df95636e2").unwrap();
+    let msg_hash_bls_signature = Bls12381G2Signature::from_str("8b84ff5a1d4f8095ab8a80518ac99230ed24a7d1ec90c4105f9c719aa7137ed5d7ce1454d4a953f5f55f3959ab416f3014f4cd2c361e4d32c6b4704a70b0e2e652a908f501acb54ec4e79540be010e3fdc1fbf8e7af61625705e185a71c884f1").unwrap();
+
+    let (sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10);
+
+    // Aggregate the signature
+    let agg_sig_multiple_msgs = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
+    let pks_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
+        pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
+
+    let sigs: Vec<Bls12381G2Signature> = sks
+        .iter()
+        .map(|sk| sk.sign_v1(msg_hash.as_bytes()))
+        .collect();
+
+    // Aggregate the signature
+    let agg_sig_single_msg = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
+
+    let ed25519_pk = Ed25519PublicKey::from_str(
+        "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+    )
+    .unwrap();
+    let ed25519_msg_hash_signature = Ed25519Signature::from_str("cf0ca64435609b85ab170da339d415bbac87d678dfd505969be20adc6b5971f4ee4b4620c602bcbc34fd347596546675099d696265f4a42a16df343da1af980e").unwrap();
+
+    let secp256k1_pk = Secp256k1PublicKey::from_str(
+        "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    )
+    .unwrap();
+    let secp256k1_msg_hash_signature = Secp256k1Signature::from_str("00eb8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122").unwrap();
+
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(FAUCET, 1_000)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "keccak256_hash",
+                manifest_args!(&msg_hash),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "blake2b_256_hash",
+                manifest_args!(&msg_hash),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_v1_verify",
+                manifest_args!(msg_hash.as_bytes(), &bls_pk, &msg_hash_bls_signature),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_g2_signature_aggregate",
+                manifest_args!(&sigs),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_v1_aggregate_verify",
+                manifest_args!(&pks_msgs, &agg_sig_multiple_msgs),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_v1_fast_aggregate_verify",
+                manifest_args!(msg_hash.as_bytes(), &pks, &agg_sig_single_msg),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "ed25519_verify",
+                manifest_args!(
+                    msg_hash.as_bytes(),
+                    &ed25519_pk,
+                    &ed25519_msg_hash_signature
+                ),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "secp256k1_ecdsa_verify",
+                manifest_args!(&msg_hash, &secp256k1_pk, &secp256k1_msg_hash_signature),
+            )
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "secp256k1_ecdsa_key_recover",
+                manifest_args!(&msg_hash, &secp256k1_msg_hash_signature),
+            )
+            .build(),
+        vec![],
+    );
+
+    // Make sure above operations return positive results
+    assert!(verify_bls12381_v1(
+        msg_hash.as_bytes(),
+        &bls_pk,
+        &msg_hash_bls_signature
+    ));
+    assert!(aggregate_verify_bls12381_v1(
+        &pks_msgs,
+        &agg_sig_multiple_msgs
+    ));
+    assert!(fast_aggregate_verify_bls12381_v1(
+        msg_hash.as_bytes(),
+        &pks,
+        &agg_sig_single_msg
+    ));
+    assert!(verify_ed25519(
+        msg_hash.as_bytes(),
+        &ed25519_pk,
+        &ed25519_msg_hash_signature
+    ));
+    assert!(verify_secp256k1(
+        &msg_hash,
+        &secp256k1_pk,
+        &secp256k1_msg_hash_signature
+    ));
+    assert_eq!(
+        recover_secp256k1(&msg_hash, &secp256k1_msg_hash_signature).unwrap(),
+        secp256k1_pk
+    );
+    receipt.expect_commit_success();
+
     receipt
 }
 

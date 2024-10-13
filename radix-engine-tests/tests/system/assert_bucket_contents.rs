@@ -10,7 +10,7 @@ fn asserting_incorrect_non_zero_amount_should_fail() {
     test_fungible_constraint(
         dec!(0),
         ManifestResourceConstraint::NonZeroAmount,
-        Some(ResourceConstraintError::NonZeroAmount),
+        Some(ResourceConstraintError::ExpectNonZeroAmount),
     )
 }
 
@@ -31,7 +31,7 @@ fn asserting_incorrect_exact_amount_should_fail() {
     test_fungible_constraint(
         actual_amount,
         ManifestResourceConstraint::ExactAmount(expected_exact_amount),
-        Some(ResourceConstraintError::ExactAmount {
+        Some(ResourceConstraintError::ExpectExactAmount {
             actual_amount,
             expected_exact_amount,
         }),
@@ -55,7 +55,7 @@ fn asserting_incorrect_at_least_amount_should_fail() {
     test_fungible_constraint(
         actual_amount,
         ManifestResourceConstraint::AtLeastAmount(expected_atleast_amount),
-        Some(ResourceConstraintError::AtLeastAmount {
+        Some(ResourceConstraintError::ExpectAtLeastAmount {
             actual_amount,
             expected_at_least_amount: expected_atleast_amount,
         }),
@@ -79,7 +79,7 @@ fn asserting_incorrect_at_least_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids.clone()),
-        Some(ResourceConstraintError::AtLeastNonFungibles {
+        Some(ResourceConstraintError::ExpectAtLeastNonFungibles {
             actual_ids: Box::new(
                 actual_ids
                     .into_iter()
@@ -115,7 +115,7 @@ fn asserting_incorrect_exact_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids.clone()),
-        Some(ResourceConstraintError::ExactNonFungibles {
+        Some(ResourceConstraintError::ExpectExactNonFungibles {
             actual_ids: Box::new(
                 actual_ids
                     .into_iter()
@@ -210,7 +210,7 @@ fn asserting_incorrect_fungible_lower_bound_general_constraint_should_fail() {
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::General(
+        Some(ResourceConstraintError::GeneralResourceConstraintError(
             GeneralResourceConstraintError::LowerBoundAmountNotSatisfied {
                 actual: amount,
                 lower_bound_inclusive: lower_bound,
@@ -232,7 +232,7 @@ fn asserting_incorrect_fungible_upper_bound_general_constraint_should_fail() {
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::General(
+        Some(ResourceConstraintError::GeneralResourceConstraintError(
             GeneralResourceConstraintError::UpperBoundAmountNotSatisfied {
                 actual: amount,
                 upper_bound_inclusive: upper_bound,
@@ -253,7 +253,7 @@ fn asserting_incorrect_non_fungible_required_ids_general_constraint_should_fail(
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::General(
+        Some(ResourceConstraintError::GeneralResourceConstraintError(
             GeneralResourceConstraintError::MissingRequiredNonFungible {
                 missing_id: NonFungibleLocalId::from(3),
             },
@@ -276,7 +276,7 @@ fn asserting_incorrect_non_fungible_allowed_ids_general_constraint_should_fail()
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::General(
+        Some(ResourceConstraintError::GeneralResourceConstraintError(
             GeneralResourceConstraintError::InvalidNonFungible {
                 invalid_id: NonFungibleLocalId::from(1),
             },
@@ -320,7 +320,7 @@ fn asserting_incorrect_empty_bucket_lower_bound_general_constraint_should_fail()
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::General(
+        Some(ResourceConstraintError::GeneralResourceConstraintError(
             GeneralResourceConstraintError::ExpectNonZeroAmount,
         )),
     );
