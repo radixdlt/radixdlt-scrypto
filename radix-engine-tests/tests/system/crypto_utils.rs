@@ -575,6 +575,26 @@ fn crypto_scrypto_secp256k1_ecdsa_verify(
     )
 }
 
+fn crypto_scrypto_secp256k1_ecdsa_key_recover(
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    hash: Hash,
+    signature: Secp256k1Signature,
+) -> TransactionReceipt {
+    runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "secp256k1_ecdsa_key_recover",
+                manifest_args!(hash, signature),
+            )
+            .build(),
+        vec![],
+    )
+}
+
 #[test]
 fn test_crypto_scrypto_verify_ed25519() {
     // Arrange
@@ -655,6 +675,46 @@ fn test_crypto_scrypto_verify_secp256k1_ecdsa() {
 
     // Assert
     assert!(!msg2_verify);
+}
+
+#[test]
+fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v2"));
+
+    let hash1 = hash("Test");
+    let pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+    let hash1_signature = "00eb8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
+
+    let pk = Secp256k1PublicKey::from_str(pk).unwrap();
+    let hash1_signature = Secp256k1Signature::from_str(hash1_signature).unwrap();
+
+    // Act
+    let pk_recovered: Secp256k1PublicKey = get_output!(crypto_scrypto_secp256k1_ecdsa_key_recover(
+        &mut ledger,
+        package_address,
+        hash1,
+        hash1_signature,
+    ));
+
+    // Assert
+    assert_eq!(pk, pk_recovered);
+
+    // Test for key recovery error
+    let invalid_signature = "01cd8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
+    let invalid_signature = Secp256k1Signature::from_str(invalid_signature).unwrap();
+
+    let key_recovery_error = get_failure!(crypto_scrypto_secp256k1_ecdsa_key_recover(
+        &mut ledger,
+        package_address,
+        hash1,
+        invalid_signature,
+    ));
+
+    // Assert
+    assert!(key_recovery_error.contains("Secp256k1KeyRecoveryError"));
 }
 
 fn bls12381_invalid_signature_aggregate<F>(protocol: ProtocolVersion, assert_receipt: F)

@@ -53,6 +53,27 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
             String::from_utf8(blueprint_name).map_err(|_| WasmRuntimeError::InvalidString)?;
         Ok((package_address, blueprint_name))
     }
+
+    #[cold]
+    fn consume_wasm_execution_exceeding_buffer(
+        &mut self,
+        n: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        assert!(n > self.wasm_execution_units_buffer);
+        let n_remaining_after_buffer_used = n - self.wasm_execution_units_buffer;
+        let amount_to_request = n_remaining_after_buffer_used
+            .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
+            .unwrap_or(u32::MAX);
+        self.api
+            .consume_cost_units(ClientCostingEntry::RunWasmCode {
+                package_address: &self.package_address,
+                export_name: &self.export_name,
+                wasm_execution_units: amount_to_request,
+            })
+            .map_err(InvokeError::downstream)?;
+        self.wasm_execution_units_buffer = amount_to_request - n_remaining_after_buffer_used;
+        Ok(())
+    }
 }
 
 impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
@@ -370,31 +391,17 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.allocate_buffer(blueprint_id.blueprint_name.into_bytes())
     }
 
+    #[inline]
     fn consume_wasm_execution_units(
         &mut self,
-        mut n: u32,
+        n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Use buffer
-        let min = u32::min(self.wasm_execution_units_buffer, n);
-        self.wasm_execution_units_buffer -= min;
-        n -= min;
-
-        // If not covered, request from the system
-        if n > 0 {
-            let amount_to_request = n
-                .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
-                .unwrap_or(u32::MAX);
-            self.api
-                .consume_cost_units(ClientCostingEntry::RunWasmCode {
-                    package_address: &self.package_address,
-                    export_name: &self.export_name,
-                    wasm_execution_units: amount_to_request,
-                })
-                .map_err(InvokeError::downstream)?;
-            self.wasm_execution_units_buffer += amount_to_request - n;
+        if n <= self.wasm_execution_units_buffer {
+            self.wasm_execution_units_buffer -= n;
+            Ok(())
+        } else {
+            self.consume_wasm_execution_exceeding_buffer(n)
         }
-
-        Ok(())
     }
 
     fn instance_of(
@@ -692,7 +699,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        // TODO: costing
+        self.api
+            .consume_cost_units(ClientCostingEntry::Blake2b256Hash { size: data.len() })?;
 
         let hash = blake2b_256_hash(data);
 
@@ -710,7 +718,11 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             .map_err(WasmRuntimeError::InvalidEd25519PublicKey)?;
         let signature = Ed25519Signature::try_from(signature.as_ref())
             .map_err(WasmRuntimeError::InvalidEd25519Signature)?;
-        // TODO: costing
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Ed25519Verify {
+                size: message.len(),
+            })?;
 
         Ok(verify_ed25519(&message, &public_key, &signature) as u32)
     }
@@ -728,8 +740,28 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
         let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
 
-        // TODO: costing
+        self.api
+            .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaVerify)?;
 
         Ok(verify_secp256k1(&hash, &public_key, &signature) as u32)
+    }
+
+    #[trace_resources]
+    fn crypto_utils_secp256k1_ecdsa_key_recover(
+        &mut self,
+        message: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
+        let signature = Secp256k1Signature::try_from(signature.as_ref())
+            .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaKeyRecover)?;
+
+        let key = recover_secp256k1(&hash, &signature)
+            .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
+
+        self.allocate_buffer(key.to_vec())
     }
 }
