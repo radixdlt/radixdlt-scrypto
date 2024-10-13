@@ -94,7 +94,7 @@ impl ProtocolUpdateExecutor {
                         .generate_batch(store, batch_group_index, batch_index);
                 for (transaction_index, transaction) in batch.transactions.into_iter().enumerate() {
                     let receipt = match &transaction {
-                        ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
+                        ProtocolUpdateTransaction::FlashTransactionV1(flash) => {
                             let db_updates = flash.state_updates.create_database_updates();
                             let receipt = if H::IS_ENABLED {
                                 let before_store = &*store;
@@ -111,13 +111,15 @@ impl ProtocolUpdateExecutor {
                             store.commit(&db_updates);
                             receipt
                         }
-                        ProtocolUpdateTransactionDetails::SystemTransactionV1 {
-                            transaction,
-                            is_genesis,
-                            ..
-                        } => {
-                            let execution_config = if *is_genesis {
-                                ExecutionConfig::for_genesis_transaction(
+                        ProtocolUpdateTransaction::SystemTransactionV1(
+                            ProtocolSystemTransactionV1 {
+                                transaction,
+                                disable_auth,
+                                ..
+                            },
+                        ) => {
+                            let execution_config = if *disable_auth {
+                                ExecutionConfig::for_auth_disabled_system_transaction(
                                     self.network_definition.clone(),
                                 )
                             } else {
@@ -242,7 +244,7 @@ pub struct OnProtocolTransactionExecuted<'a> {
     pub batch_group_name: &'a str,
     pub batch_index: usize,
     pub transaction_index: usize,
-    pub transaction: &'a ProtocolUpdateTransactionDetails,
+    pub transaction: &'a ProtocolUpdateTransaction,
     pub receipt: &'a TransactionReceipt,
     pub resultant_store: &'a mut dyn SubstateDatabase,
 }

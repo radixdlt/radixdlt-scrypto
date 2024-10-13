@@ -190,6 +190,10 @@ impl ExecutionConfig {
     }
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
+        Self::for_auth_disabled_system_transaction(network_definition)
+    }
+
+    pub fn for_auth_disabled_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             system_overrides: Some(SystemOverrides {
                 disable_costing: true,

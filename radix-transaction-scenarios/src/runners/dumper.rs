@@ -110,10 +110,10 @@ mod test {
                 }
 
                 match transaction {
-                    ProtocolUpdateTransactionDetails::FlashV1Transaction(_) => {}
-                    ProtocolUpdateTransactionDetails::SystemTransactionV1 {
-                        transaction, ..
-                    } => {
+                    ProtocolUpdateTransaction::FlashTransactionV1(_) => {}
+                    ProtocolUpdateTransaction::SystemTransactionV1(
+                        ProtocolSystemTransactionV1 { transaction, .. },
+                    ) => {
                         // Write manifest
                         let manifest_string = decompile(
                             &SystemTransactionManifestV1::from_transaction(transaction),
