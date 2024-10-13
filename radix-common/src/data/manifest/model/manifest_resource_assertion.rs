@@ -253,12 +253,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if ids.is_empty() {
-                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExpectExactAmount {
+                    return Err(ResourceConstraintError::ExpectedExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -266,7 +266,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
@@ -274,7 +274,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids) => {
                 if !expected_exact_ids.eq(&ids) {
-                    return Err(ResourceConstraintError::ExpectExactNonFungibles {
+                    return Err(ResourceConstraintError::ExpectedExactNonFungibles {
                         expected_exact_ids: Box::new(expected_exact_ids),
                         actual_ids: Box::new(ids),
                     });
@@ -282,7 +282,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids) => {
                 if !expected_at_least_ids.is_subset(&ids) {
-                    return Err(ResourceConstraintError::ExpectAtLeastNonFungibles {
+                    return Err(ResourceConstraintError::ExpectedAtLeastNonFungibles {
                         actual_ids: Box::new(ids),
                         expected_at_least_ids: Box::new(expected_at_least_ids.clone()),
                     });
@@ -302,12 +302,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if amount.is_zero() {
-                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExpectExactAmount {
+                    return Err(ResourceConstraintError::ExpectedExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -315,17 +315,17 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
                 }
             }
             ManifestResourceConstraint::ExactNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::AtLeastNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::General(constraint) => {
                 constraint
@@ -340,25 +340,25 @@ impl ManifestResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceConstraintError {
-    ExpectNonZeroAmount,
-    ExpectExactAmount {
+    ExpectedNonZeroAmount,
+    ExpectedExactAmount {
         expected_exact_amount: Decimal,
         actual_amount: Decimal,
     },
-    ExpectAtLeastAmount {
+    ExpectedAtLeastAmount {
         expected_at_least_amount: Decimal,
         actual_amount: Decimal,
     },
-    ExpectExactNonFungibles {
+    ExpectedExactNonFungibles {
         expected_exact_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
-    ExpectAtLeastNonFungibles {
+    ExpectedAtLeastNonFungibles {
         expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
     GeneralResourceConstraintError(GeneralResourceConstraintError),
-    ExpectNonFungibleResourceButIsFungible,
+    ExpectedNonFungibleResourceButIsFungible,
 }
 
 /// [`GeneralResourceConstraint`] captures constraints on the balance of a single fungible
@@ -537,7 +537,7 @@ impl GeneralResourceConstraint {
         match self.lower_bound {
             LowerBound::NonZero => {
                 if amount.is_zero() {
-                    return Err(GeneralResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(GeneralResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             LowerBound::Inclusive(inclusive) => {
@@ -636,7 +636,7 @@ impl GeneralResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GeneralResourceConstraintError {
-    ExpectNonZeroAmount,
+    ExpectedNonZeroAmount,
     LowerBoundAmountNotSatisfied {
         lower_bound_inclusive: Decimal,
         actual: Decimal,

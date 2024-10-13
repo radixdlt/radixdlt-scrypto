@@ -10,7 +10,7 @@ fn asserting_incorrect_non_zero_amount_should_fail() {
     test_fungible_constraint(
         dec!(0),
         ManifestResourceConstraint::NonZeroAmount,
-        Some(ResourceConstraintError::ExpectNonZeroAmount),
+        Some(ResourceConstraintError::ExpectedNonZeroAmount),
     )
 }
 
@@ -31,7 +31,7 @@ fn asserting_incorrect_exact_amount_should_fail() {
     test_fungible_constraint(
         actual_amount,
         ManifestResourceConstraint::ExactAmount(expected_exact_amount),
-        Some(ResourceConstraintError::ExpectExactAmount {
+        Some(ResourceConstraintError::ExpectedExactAmount {
             actual_amount,
             expected_exact_amount,
         }),
@@ -55,7 +55,7 @@ fn asserting_incorrect_at_least_amount_should_fail() {
     test_fungible_constraint(
         actual_amount,
         ManifestResourceConstraint::AtLeastAmount(expected_atleast_amount),
-        Some(ResourceConstraintError::ExpectAtLeastAmount {
+        Some(ResourceConstraintError::ExpectedAtLeastAmount {
             actual_amount,
             expected_at_least_amount: expected_atleast_amount,
         }),
@@ -79,7 +79,7 @@ fn asserting_incorrect_at_least_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids.clone()),
-        Some(ResourceConstraintError::ExpectAtLeastNonFungibles {
+        Some(ResourceConstraintError::ExpectedAtLeastNonFungibles {
             actual_ids: Box::new(
                 actual_ids
                     .into_iter()
@@ -115,7 +115,7 @@ fn asserting_incorrect_exact_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids.clone()),
-        Some(ResourceConstraintError::ExpectExactNonFungibles {
+        Some(ResourceConstraintError::ExpectedExactNonFungibles {
             actual_ids: Box::new(
                 actual_ids
                     .into_iter()
@@ -321,7 +321,7 @@ fn asserting_incorrect_empty_bucket_lower_bound_general_constraint_should_fail()
         amount,
         ManifestResourceConstraint::General(constraint),
         Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::ExpectNonZeroAmount,
+            GeneralResourceConstraintError::ExpectedNonZeroAmount,
         )),
     );
 }

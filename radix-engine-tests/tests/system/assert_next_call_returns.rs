@@ -133,7 +133,7 @@ fn assert_incorrect_next_call_returns_include_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::IntentError(IntentError::AssertNextCallReturnsFailed(
-        ManifestResourceConstraintsError::ResourceConstraint(ResourceConstraintError::ExactAmount { .. }))))));
+        ManifestResourceConstraintsError::ResourceConstraint(ResourceConstraintError::ExpectedExactAmount { .. }))))));
 }
 
 fn create_pool(
