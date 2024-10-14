@@ -89,7 +89,7 @@ impl TransactionManifestV2 {
 
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            InstructionsV2(self.instructions),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,
@@ -101,7 +101,7 @@ impl TransactionManifestV2 {
         self,
     ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            InstructionsV2(self.instructions),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,

@@ -441,7 +441,7 @@ mod tests {
     }
 
     fn create_childless_subintent_instructions_v2() -> (InstructionsV2, Hash) {
-        let instructions = InstructionsV2(Rc::new(vec![]));
+        let instructions = InstructionsV2(vec![]);
         let expected_hash = hash_encoded_sbor_value_body(&instructions);
 
         let actual_hash = instructions
