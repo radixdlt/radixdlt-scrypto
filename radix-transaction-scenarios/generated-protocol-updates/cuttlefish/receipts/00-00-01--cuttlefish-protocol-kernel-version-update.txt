@@ -15,9 +15,10 @@ STATE UPDATES: 1 entity
 └─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
   └─ Partition(32): 1 change
     └─ Set: KernelBoot
-       Value: KernelBoot::V2(
-         AlwaysVisibleGlobalNodesVersion::V2,
-       )
+       Value: KernelBoot::V2 {
+         global_nodes_version: AlwaysVisibleGlobalNodesVersion::V2,
+         dispatch_get_stack_id_events: true,
+       }
 
 OUTPUTS: 0
 

@@ -127,22 +127,6 @@
       "variant_id": 2,
       "variant_name": "Execution",
       "fields": {
-        "simple_name": "GetStackId",
-        "item": {
-          "variant_id": 25,
-          "variant_name": "GetStackId",
-          "fields": []
-        },
-        "cost_units": 500
-      }
-    }
-  },
-  {
-    "depth": "0",
-    "item": {
-      "variant_id": 2,
-      "variant_name": "Execution",
-      "fields": {
         "simple_name": "AllocateNodeId",
         "item": {
           "variant_id": 10,
@@ -13368,7 +13352,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999989999.26559051862"
+                            "99999999999989999.26581551862"
                           ]
                         },
                         {
@@ -20234,22 +20218,6 @@
       "variant_id": 2,
       "variant_name": "Execution",
       "fields": {
-        "simple_name": "GetStackId",
-        "item": {
-          "variant_id": 25,
-          "variant_name": "GetStackId",
-          "fields": []
-        },
-        "cost_units": 500
-      }
-    }
-  },
-  {
-    "depth": "3",
-    "item": {
-      "variant_id": 2,
-      "variant_name": "Execution",
-      "fields": {
         "simple_name": "LockFee",
         "item": {
           "variant_id": 30,
@@ -20523,7 +20491,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999989999.26559051862"
+                            "99999999999989999.26581551862"
                           ]
                         },
                         {
@@ -20571,7 +20539,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999989999.26559051862"
+                            "99999999999989999.26581551862"
                           ]
                         },
                         {
@@ -20619,7 +20587,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999984999.26559051862"
+                            "99999999999984999.26581551862"
                           ]
                         },
                         {
@@ -37018,7 +36986,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999984999.26559051862"
+                            "99999999999984999.26581551862"
                           ]
                         },
                         {
@@ -41786,7 +41754,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999984999.26559051862"
+                            "99999999999984999.26581551862"
                           ]
                         },
                         {
@@ -41834,7 +41802,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999984999.26559051862"
+                            "99999999999984999.26581551862"
                           ]
                         },
                         {
@@ -41882,7 +41850,7 @@
                         {
                           "variant_id": 0,
                           "fields": [
-                            "99999999999974999.26559051862"
+                            "99999999999974999.26581551862"
                           ]
                         },
                         {
@@ -79693,22 +79661,6 @@
           }
         },
         "cost_units": 1605
-      }
-    }
-  },
-  {
-    "depth": "1",
-    "item": {
-      "variant_id": 2,
-      "variant_name": "Execution",
-      "fields": {
-        "simple_name": "GetStackId",
-        "item": {
-          "variant_id": 25,
-          "variant_name": "GetStackId",
-          "fields": []
-        },
-        "cost_units": 500
       }
     }
   },
