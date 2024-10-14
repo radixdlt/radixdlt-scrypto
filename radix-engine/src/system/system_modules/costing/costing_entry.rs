@@ -22,6 +22,7 @@ pub enum ExecutionCostingEntry<'a> {
         event: &'a CheckReferenceEvent<'a>,
     },
     CheckIntentValidity,
+    CheckTimestamp,
 
     /* run code */
     RunNativeCode {
@@ -160,6 +161,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
             ExecutionCostingEntry::CheckReference { event } => ft.check_reference(event),
             ExecutionCostingEntry::CheckIntentValidity => ft.check_intent_validity(),
+            ExecutionCostingEntry::CheckTimestamp => ft.check_timestamp(),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -312,6 +314,7 @@ pub mod owned {
             event: CheckReferenceEventOwned,
         },
         CheckIntentValidity,
+        CheckTimestamp,
 
         /* run code */
         RunNativeCode {
@@ -559,6 +562,7 @@ pub mod owned {
                     event: event.into(),
                 },
                 ExecutionCostingEntry::CheckIntentValidity => Self::CheckIntentValidity,
+                ExecutionCostingEntry::CheckTimestamp => Self::CheckTimestamp,
                 ExecutionCostingEntry::RunNativeCode {
                     package_address,
                     export_name,

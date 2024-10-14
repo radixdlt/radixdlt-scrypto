@@ -1,0 +1,5 @@
+CALL_METHOD
+    Address("account_sim1c9efznpk7w0xwdav45jj944cj677hcqj9el3atswwfw4dt84z3pun5")
+    "lock_fee"
+    Decimal("5000")
+;
