@@ -35,7 +35,10 @@ pub type KernelBootSubstate = KernelBoot;
 ))]
 pub enum KernelBoot {
     V1,
-    V2(AlwaysVisibleGlobalNodesVersion),
+    V2 {
+        global_nodes_version: AlwaysVisibleGlobalNodesVersion,
+        dispatch_get_stack_id_events: bool,
+    },
 }
 
 impl KernelBoot {
@@ -55,18 +58,34 @@ impl KernelBoot {
     }
 
     pub fn cuttlefish() -> Self {
-        Self::V2(AlwaysVisibleGlobalNodesVersion::V2)
+        Self::V2 {
+            global_nodes_version: AlwaysVisibleGlobalNodesVersion::V2,
+            dispatch_get_stack_id_events: true,
+        }
     }
 
     pub fn always_visible_global_nodes_version(&self) -> AlwaysVisibleGlobalNodesVersion {
         match self {
             KernelBoot::V1 => AlwaysVisibleGlobalNodesVersion::V1,
-            KernelBoot::V2(version) => *version,
+            KernelBoot::V2 {
+                global_nodes_version,
+                ..
+            } => *global_nodes_version,
         }
     }
 
     pub fn always_visible_global_nodes(&self) -> &'static IndexSet<NodeId> {
         always_visible_global_nodes(self.always_visible_global_nodes_version())
+    }
+
+    pub fn dispatch_get_stack_id_events(&self) -> bool {
+        match self {
+            KernelBoot::V1 => false,
+            KernelBoot::V2 {
+                dispatch_get_stack_id_events,
+                ..
+            } => *dispatch_get_stack_id_events,
+        }
     }
 }
 
@@ -160,6 +179,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
             &mut self.id_allocator,
             &mut system,
             call_frame_inits,
+            kernel_boot.dispatch_get_stack_id_events(),
         );
 
         // Execution
@@ -339,6 +359,8 @@ pub struct Kernel<
 
     /// Upper system layer
     callback: &'g mut M,
+
+    dispatch_get_stack_id_events: bool,
 }
 
 #[cfg(feature = "radix_engine_tests")]
@@ -349,6 +371,7 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
+        dispatch_get_stack_id_events: bool,
     ) -> Self {
         Self::new(
             store,
@@ -362,6 +385,7 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
                     AlwaysVisibleGlobalNodesVersion::latest(),
                 ),
             }],
+            dispatch_get_stack_id_events,
         )
     }
 }
@@ -372,6 +396,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
         call_frame_inits: Vec<CallFrameInit<M::CallFrameData>>,
+        dispatch_get_stack_id_events: bool,
     ) -> Self {
         Kernel {
             stacks: KernelStacks::new(call_frame_inits),
@@ -385,6 +410,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
             },
             id_allocator,
             callback,
+            dispatch_get_stack_id_events,
         }
     }
 }
@@ -1243,7 +1269,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     type CallFrameData = M::CallFrameData;
 
     fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
-        M::on_get_stack_id(&mut as_read_only!(self))?;
+        if self.dispatch_get_stack_id_events {
+            M::on_get_stack_id(&mut as_read_only!(self))?;
+        }
 
         Ok(self.stacks.current_stack)
     }
@@ -1302,6 +1330,7 @@ where
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
+        dispatch_get_stack_id_events: bool,
     ) -> Kernel<'g, M, S> {
         Self {
             stacks: KernelStacks::new(vec![CallFrameInit {
@@ -1313,6 +1342,7 @@ where
             substate_io,
             id_allocator,
             callback,
+            dispatch_get_stack_id_events,
         }
     }
 }

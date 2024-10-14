@@ -84,6 +84,22 @@
       "variant_id": 2,
       "variant_name": "Execution",
       "fields": {
+        "simple_name": "GetStackId",
+        "item": {
+          "variant_id": 25,
+          "variant_name": "GetStackId",
+          "fields": []
+        },
+        "cost_units": 500
+      }
+    }
+  },
+  {
+    "depth": "0",
+    "item": {
+      "variant_id": 2,
+      "variant_name": "Execution",
+      "fields": {
         "simple_name": "AllocateNodeId",
         "item": {
           "variant_id": 10,
@@ -18003,7 +18019,7 @@
       "fields": {
         "simple_name": "QueryActor",
         "item": {
-          "variant_id": 28,
+          "variant_id": 33,
           "variant_name": "QueryActor",
           "fields": []
         },
@@ -18451,7 +18467,7 @@
       "fields": {
         "simple_name": "QueryActor",
         "item": {
-          "variant_id": 28,
+          "variant_id": 33,
           "variant_name": "QueryActor",
           "fields": []
         },
@@ -20156,9 +20172,25 @@
       "variant_id": 2,
       "variant_name": "Execution",
       "fields": {
-        "simple_name": "LockFee",
+        "simple_name": "GetStackId",
         "item": {
           "variant_id": 25,
+          "variant_name": "GetStackId",
+          "fields": []
+        },
+        "cost_units": 500
+      }
+    }
+  },
+  {
+    "depth": "3",
+    "item": {
+      "variant_id": 2,
+      "variant_name": "Execution",
+      "fields": {
+        "simple_name": "LockFee",
+        "item": {
+          "variant_id": 30,
           "variant_name": "LockFee",
           "fields": []
         },
@@ -20174,7 +20206,7 @@
       "fields": {
         "simple_name": "EmitEvent",
         "item": {
-          "variant_id": 31,
+          "variant_id": 36,
           "variant_name": "EmitEvent",
           "fields": {
             "size": "28"
@@ -23028,6 +23060,22 @@
           }
         },
         "cost_units": 1605
+      }
+    }
+  },
+  {
+    "depth": "1",
+    "item": {
+      "variant_id": 2,
+      "variant_name": "Execution",
+      "fields": {
+        "simple_name": "GetStackId",
+        "item": {
+          "variant_id": 25,
+          "variant_name": "GetStackId",
+          "fields": []
+        },
+        "cost_units": 500
       }
     }
   },
