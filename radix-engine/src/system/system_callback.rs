@@ -530,7 +530,7 @@ impl<V: SystemCallbackObject> System<V> {
         }
         if current_epoch >= end_epoch_exclusive {
             return Err(RejectionReason::TransactionEpochNoLongerValid {
-                valid_until: end_epoch_exclusive.previous(),
+                valid_until: end_epoch_exclusive.previous().unwrap_or(Epoch::zero()),
                 current_epoch,
             });
         }
@@ -1628,11 +1628,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         .epoch_milli
                         / 1000,
                 );
-                if let Some(t) = range.start_timestamp_inclusive {
-                    if current_time < t {
+                if let Some(start_timestamp_inclusive) = range.start_timestamp_inclusive {
+                    if current_time < start_timestamp_inclusive {
                         return Err(Self::create_rejection_receipt(
                             RejectionReason::TransactionProposerTimestampNotYetValid {
-                                range: range.clone(),
+                                valid_from_inclusive: start_timestamp_inclusive,
                                 current_time,
                             },
                             modules,
@@ -1640,11 +1640,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                     }
                 }
 
-                if let Some(t) = range.end_timestamp_exclusive {
-                    if current_time >= t {
+                if let Some(end_timestamp_exclusive) = range.end_timestamp_exclusive {
+                    if current_time >= end_timestamp_exclusive {
                         return Err(Self::create_rejection_receipt(
                             RejectionReason::TransactionProposerTimestampNoLongerValid {
-                                range: range.clone(),
+                                valid_to_exclusive: end_timestamp_exclusive,
                                 current_time,
                             },
                             modules,

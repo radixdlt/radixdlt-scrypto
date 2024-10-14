@@ -71,7 +71,7 @@ impl StateUpdates {
     }
 
     /// Roughly equivalent to the LegacyStateUpdates (when they existed), ignoring partition resets.
-    /// Should only be used for tests, not for committed to a database.
+    /// Should only be used for tests, not e.g. for committing to a database.
     pub fn into_flattened_substate_updates(
         self,
     ) -> IndexMap<(NodeId, PartitionNumber, SubstateKey), DatabaseUpdate> {
