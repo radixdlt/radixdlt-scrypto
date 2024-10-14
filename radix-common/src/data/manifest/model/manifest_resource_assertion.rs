@@ -200,6 +200,121 @@ impl ManifestResourceConstraint {
             ManifestResourceConstraint::General(general) => general.is_valid_for_non_fungible_use(),
         }
     }
+
+    pub fn validate_non_fungible(
+        self,
+        ids: IndexSet<NonFungibleLocalId>,
+    ) -> Result<(), ResourceConstraintError> {
+        let amount = Decimal::from(ids.len());
+        match self {
+            ManifestResourceConstraint::NonZeroAmount => {
+                if ids.is_empty() {
+                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                }
+            }
+            ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
+                if amount.ne(&expected_exact_amount) {
+                    return Err(ResourceConstraintError::ExpectExactAmount {
+                        actual_amount: amount,
+                        expected_exact_amount,
+                    });
+                }
+            }
+            ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
+                if amount < expected_at_least_amount {
+                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                        expected_at_least_amount,
+                        actual_amount: amount,
+                    });
+                }
+            }
+            ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids) => {
+                if !expected_exact_ids.eq(&ids) {
+                    return Err(ResourceConstraintError::ExpectExactNonFungibles {
+                        expected_exact_ids: Box::new(expected_exact_ids),
+                        actual_ids: Box::new(ids),
+                    });
+                }
+            }
+            ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids) => {
+                if !expected_at_least_ids.is_subset(&ids) {
+                    return Err(ResourceConstraintError::ExpectAtLeastNonFungibles {
+                        actual_ids: Box::new(ids),
+                        expected_at_least_ids: Box::new(expected_at_least_ids.clone()),
+                    });
+                }
+            }
+            ManifestResourceConstraint::General(constraint) => {
+                constraint
+                    .validate_non_fungible(&ids)
+                    .map_err(ResourceConstraintError::GeneralResourceConstraintError)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_fungible(self, amount: Decimal) -> Result<(), ResourceConstraintError> {
+        match self {
+            ManifestResourceConstraint::NonZeroAmount => {
+                if amount.is_zero() {
+                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                }
+            }
+            ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
+                if amount.ne(&expected_exact_amount) {
+                    return Err(ResourceConstraintError::ExpectExactAmount {
+                        actual_amount: amount,
+                        expected_exact_amount,
+                    });
+                }
+            }
+            ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
+                if amount < expected_at_least_amount {
+                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                        expected_at_least_amount,
+                        actual_amount: amount,
+                    });
+                }
+            }
+            ManifestResourceConstraint::ExactNonFungibles(..) => {
+                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+            }
+            ManifestResourceConstraint::AtLeastNonFungibles(..) => {
+                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+            }
+            ManifestResourceConstraint::General(constraint) => {
+                constraint
+                    .validate_fungible(amount)
+                    .map_err(ResourceConstraintError::GeneralResourceConstraintError)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ResourceConstraintError {
+    ExpectNonZeroAmount,
+    ExpectExactAmount {
+        expected_exact_amount: Decimal,
+        actual_amount: Decimal,
+    },
+    ExpectAtLeastAmount {
+        expected_at_least_amount: Decimal,
+        actual_amount: Decimal,
+    },
+    ExpectExactNonFungibles {
+        expected_exact_ids: Box<IndexSet<NonFungibleLocalId>>,
+        actual_ids: Box<IndexSet<NonFungibleLocalId>>,
+    },
+    ExpectAtLeastNonFungibles {
+        expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
+        actual_ids: Box<IndexSet<NonFungibleLocalId>>,
+    },
+    GeneralResourceConstraintError(GeneralResourceConstraintError),
+    ExpectNonFungibleResourceButIsFungible,
 }
 
 /// [`GeneralResourceConstraint`] captures constraints on the balance of a single fungible
@@ -326,17 +441,87 @@ impl GeneralResourceConstraint {
     }
 
     pub fn is_valid_for_fungible_use(&self) -> bool {
-        return self.required_ids.is_empty()
+        self.required_ids.is_empty()
             && self.lower_bound.is_valid_for_fungible_use()
             && self.upper_bound.is_valid_for_fungible_use()
             && self.allowed_ids.is_valid_for_fungible_use()
-            && self.is_valid_independent_of_resource_type();
+            && self.is_valid_independent_of_resource_type()
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.lower_bound.is_valid_for_non_fungible_use()
+        self.lower_bound.is_valid_for_non_fungible_use()
             && self.upper_bound.is_valid_for_non_fungible_use()
-            && self.is_valid_independent_of_resource_type();
+            && self.is_valid_independent_of_resource_type()
+    }
+
+    pub fn validate_fungible(&self, amount: Decimal) -> Result<(), GeneralResourceConstraintError> {
+        self.validate_amount(amount)?;
+        // Static checker should have validated that there are no invalid non fungible checks
+        Ok(())
+    }
+
+    pub fn validate_non_fungible(
+        &self,
+        ids: &IndexSet<NonFungibleLocalId>,
+    ) -> Result<(), GeneralResourceConstraintError> {
+        self.validate_amount(Decimal::from(ids.len()))?;
+
+        for id in &self.required_ids {
+            if !ids.contains(id) {
+                return Err(GeneralResourceConstraintError::MissingRequiredNonFungible {
+                    missing_id: id.clone(),
+                });
+            }
+        }
+        match &self.allowed_ids {
+            AllowedIds::Allowlist(allowed) => {
+                for id in ids {
+                    if !allowed.contains(id) {
+                        return Err(GeneralResourceConstraintError::InvalidNonFungible {
+                            invalid_id: id.clone(),
+                        });
+                    }
+                }
+            }
+            AllowedIds::Any => {}
+        }
+
+        Ok(())
+    }
+
+    fn validate_amount(&self, amount: Decimal) -> Result<(), GeneralResourceConstraintError> {
+        match self.lower_bound {
+            LowerBound::NonZero => {
+                if amount.is_zero() {
+                    return Err(GeneralResourceConstraintError::ExpectNonZeroAmount);
+                }
+            }
+            LowerBound::Inclusive(inclusive) => {
+                if amount < inclusive {
+                    return Err(
+                        GeneralResourceConstraintError::LowerBoundAmountNotSatisfied {
+                            lower_bound_inclusive: inclusive,
+                            actual: amount,
+                        },
+                    );
+                }
+            }
+        }
+        match self.upper_bound {
+            UpperBound::Inclusive(inclusive) => {
+                if amount > inclusive {
+                    return Err(
+                        GeneralResourceConstraintError::UpperBoundAmountNotSatisfied {
+                            upper_bound_inclusive: inclusive,
+                            actual: amount,
+                        },
+                    );
+                }
+            }
+            UpperBound::Unbounded => {}
+        }
+
+        Ok(())
     }
 
     pub fn is_valid_independent_of_resource_type(&self) -> bool {
@@ -403,6 +588,25 @@ impl GeneralResourceConstraint {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum GeneralResourceConstraintError {
+    ExpectNonZeroAmount,
+    LowerBoundAmountNotSatisfied {
+        lower_bound_inclusive: Decimal,
+        actual: Decimal,
+    },
+    UpperBoundAmountNotSatisfied {
+        upper_bound_inclusive: Decimal,
+        actual: Decimal,
+    },
+    MissingRequiredNonFungible {
+        missing_id: NonFungibleLocalId,
+    },
+    InvalidNonFungible {
+        invalid_id: NonFungibleLocalId,
+    },
 }
 
 /// Represents a lower bound on a non-negative decimal.

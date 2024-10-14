@@ -61,5 +61,12 @@ mod component_module {
         ) -> bool {
             CryptoUtils::secp256k1_ecdsa_verify(&hash, &pub_key, &signature)
         }
+
+        pub fn secp256k1_ecdsa_key_recover(
+            hash: Hash,
+            signature: Secp256k1Signature,
+        ) -> Secp256k1PublicKey {
+            CryptoUtils::secp256k1_ecdsa_key_recover(&hash, &signature)
+        }
     }
 }

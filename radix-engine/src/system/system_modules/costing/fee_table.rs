@@ -138,6 +138,12 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn check_timestamp(&self) -> u32 {
+        // Equivalent to an `IOAccess::ReadFromDb`
+        40_000
+    }
+
+    #[inline]
     pub fn run_native_code_cost(
         &self,
         package_address: &PackageAddress,
@@ -552,9 +558,9 @@ impl FeeTable {
         //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
         //   Lets round:
         //     33.08798 -> 34
-        //     444420.94242 -> 446000 (increased to get more accurate difference between calculated
-        //          and measured instruction)
-        let instructions_cnt = add(mul(cast(size), 34), 446000);
+        //     444420.94242 -> 500000 (increased slightly make sure we get the positive difference between
+        //             calculated and measured number of instructions)
+        let instructions_cnt = add(mul(cast(size), 34), 500000);
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
@@ -564,11 +570,23 @@ impl FeeTable {
         // Based on  `test_crypto_scrypto_verify_secp256k1_ecdsa_costing`
         //   instructions_cnt = 464236 (input is always 32 bytes long)
         //   Lets round:
-        //     444420.94242 -> 446000
-        let instructions_cnt = 446000;
+        //     464236 -> 500000
+        let instructions_cnt = 500000;
         // Convert to cost units
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
+
+    #[inline]
+    pub fn secp256k1_ecdsa_key_recover_cost(&self) -> u32 {
+        // Based on  `test_crypto_scrypto_key_recover_secp256k1_ecdsa`
+        //   instructions_cnt = 464236 (input is always 32 bytes long)
+        //   Lets round:
+        //     463506 -> 500000
+        let instructions_cnt = 500000;
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side

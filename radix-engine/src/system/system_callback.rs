@@ -1615,6 +1615,64 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             }
         }
 
+        if let Some(range) = executable.overall_proposer_timestamp_range() {
+            if range.start_timestamp_inclusive.is_some() || range.end_timestamp_exclusive.is_some()
+            {
+                let substate: ConsensusManagerProposerMilliTimestampFieldSubstate = store
+                    .read_substate(
+                        CONSENSUS_MANAGER.as_node_id(),
+                        MAIN_BASE_PARTITION,
+                        &ConsensusManagerField::ProposerMilliTimestamp.into(),
+                    )
+                    .unwrap()
+                    .as_typed()
+                    .unwrap();
+                let current_time = Instant::new(
+                    substate
+                        .into_payload()
+                        .fully_update_and_into_latest_version()
+                        .epoch_milli
+                        / 1000,
+                );
+                if let Some(t) = range.start_timestamp_inclusive {
+                    if current_time < t {
+                        return Err(Self::create_rejection_receipt(
+                            RejectionReason::TransactionProposerTimestampNotYetValid {
+                                range: range.clone(),
+                                current_time,
+                            },
+                            modules,
+                        ));
+                    }
+                }
+
+                if let Some(t) = range.end_timestamp_exclusive {
+                    if current_time >= t {
+                        return Err(Self::create_rejection_receipt(
+                            RejectionReason::TransactionProposerTimestampNoLongerValid {
+                                range: range.clone(),
+                                current_time,
+                            },
+                            modules,
+                        ));
+                    }
+                }
+
+                if let Some(costing) = modules.costing_mut() {
+                    if let Err(error) =
+                        costing.apply_deferred_execution_cost(ExecutionCostingEntry::CheckTimestamp)
+                    {
+                        return Err(Self::create_rejection_receipt(
+                            RejectionReason::BootloadingError(
+                                BootloadingError::FailedToApplyDeferredCosts(error),
+                            ),
+                            modules,
+                        ));
+                    }
+                }
+            }
+        }
+
         let call_frame_inits = match Self::build_call_frame_inits_with_reference_check(
             executable.all_intents(),
             &mut modules,
