@@ -11,6 +11,8 @@ pub const METADATA_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct MetadataCreateInput {}
 
+pub type MetadataCreateManifestInput = MetadataCreateInput;
+
 pub type MetadataCreateOutput = Own;
 
 pub const METADATA_CREATE_WITH_DATA_IDENT: &str = "create_with_data";
@@ -19,6 +21,8 @@ pub const METADATA_CREATE_WITH_DATA_IDENT: &str = "create_with_data";
 pub struct MetadataCreateWithDataInput {
     pub data: MetadataInit,
 }
+
+pub type MetadataCreateWithDataManifestInput = MetadataCreateWithDataInput;
 
 pub type MetadataCreateWithDataOutput = Own;
 
@@ -30,6 +34,8 @@ pub struct MetadataSetInput {
     pub value: MetadataValue,
 }
 
+pub type MetadataSetManifestInput = MetadataSetInput;
+
 pub type MetadataSetOutput = ();
 
 pub const METADATA_LOCK_IDENT: &str = "lock";
@@ -38,6 +44,8 @@ pub const METADATA_LOCK_IDENT: &str = "lock";
 pub struct MetadataLockInput {
     pub key: String,
 }
+
+pub type MetadataLockManifestInput = MetadataLockInput;
 
 pub type MetadataLockOutput = ();
 
@@ -48,6 +56,8 @@ pub struct MetadataGetInput {
     pub key: String,
 }
 
+pub type MetadataGetManifestInput = MetadataGetInput;
+
 pub type MetadataGetOutput = Option<MetadataValue>;
 
 pub const METADATA_REMOVE_IDENT: &str = "remove";
@@ -56,5 +66,7 @@ pub const METADATA_REMOVE_IDENT: &str = "remove";
 pub struct MetadataRemoveInput {
     pub key: String,
 }
+
+pub type MetadataRemoveManifestInput = MetadataRemoveInput;
 
 pub type MetadataRemoveOutput = bool;

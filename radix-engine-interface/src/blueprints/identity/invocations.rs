@@ -17,6 +17,8 @@ pub struct IdentityCreateAdvancedInput {
     pub owner_role: OwnerRole,
 }
 
+pub type IdentityCreateAdvancedManifestInput = IdentityCreateAdvancedInput;
+
 pub type IdentityCreateAdvancedOutput = Global<IdentityMarker>;
 
 pub const IDENTITY_CREATE_IDENT: &str = "create";
@@ -25,11 +27,15 @@ pub const IDENTITY_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentityCreateInput {}
 
+pub type IdentityCreateManifestInput = IdentityCreateInput;
+
 pub type IdentityCreateOutput = (Global<IdentityMarker>, Bucket);
 
 pub const IDENTITY_SECURIFY_IDENT: &str = "securify";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentitySecurifyToSingleBadgeInput {}
+
+pub type IdentitySecurifyToSingleBadgeManifestInput = IdentitySecurifyToSingleBadgeInput;
 
 pub type IdentitySecurifyToSingleBadgeOutput = Bucket;

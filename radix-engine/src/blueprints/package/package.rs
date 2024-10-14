@@ -446,11 +446,10 @@ fn validate_auth(
                     }
                 }
 
-                functions
-                    .values()
-                    .map(RoleAssignmentNativePackage::verify_access_rule)
-                    .collect::<Result<_, _>>()
-                    .map_err(PackageError::RoleAssignmentError)?;
+                for access_rule in functions.values() {
+                    RoleAssignmentNativePackage::verify_access_rule(access_rule)
+                        .map_err(PackageError::RoleAssignmentError)?;
+                }
             }
         }
 

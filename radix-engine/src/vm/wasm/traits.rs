@@ -230,6 +230,31 @@ pub trait WasmRuntime {
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_blake2b_256_hash(
+        &mut self,
+        data: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_ed25519_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_secp256k1_ecdsa_verify(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>>;
+
+    fn crypto_utils_secp256k1_ecdsa_key_recover(
+        &mut self,
+        message: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invocable Scrypto module.

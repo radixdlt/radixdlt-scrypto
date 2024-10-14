@@ -108,6 +108,44 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                 .sign(&config.parent_account_key)
                 .complete(core)
             })
+            .successful_transaction(|core, config, state| {
+                // We verify depth five fails in the subintent_structure.rs tests
+                let depth_four_child = core
+                    .v2_subintent()
+                    .manifest_builder(|builder| builder.yield_to_parent(()))
+                    .complete(core);
+
+                let depth_three_child = core
+                    .v2_subintent()
+                    .add_signed_child("depth_four_child", depth_four_child)
+                    .manifest_builder(|builder| {
+                        builder
+                            .yield_to_child("depth_four_child", ())
+                            .yield_to_parent(())
+                    })
+                    .complete(core);
+
+                let depth_two_child = core
+                    .v2_subintent()
+                    .add_signed_child("depth_three_child", depth_three_child)
+                    .manifest_builder(|builder| {
+                        builder
+                            .yield_to_child("depth_three_child", ())
+                            .yield_to_parent(())
+                    })
+                    .complete(core);
+
+                // Root transaction intent is depth 1
+                core.v2_transaction("depth_four_transaction")
+                    .add_signed_child("depth_two_child", depth_two_child)
+                    .manifest_builder(|builder| {
+                        builder
+                            .lock_standard_test_fee(state.parent_account.unwrap())
+                            .yield_to_child("depth_two_child", ())
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()

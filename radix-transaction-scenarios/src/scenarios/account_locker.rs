@@ -228,7 +228,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                             )
                             .call_method(
                                 state.account_rejecting_all_deposits.unwrap(),
-                                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                                 AccountAddAuthorizedDepositorInput {
                                     badge: global_caller(state.account_locker.unwrap()),
                                 },

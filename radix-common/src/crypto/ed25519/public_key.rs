@@ -46,6 +46,18 @@ impl TryFrom<&[u8]> for Ed25519PublicKey {
     }
 }
 
+impl AsRef<Self> for Ed25519PublicKey {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Ed25519PublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 //======
 // hash
 //======
@@ -95,7 +107,7 @@ impl IsPublicKeyHash for Ed25519PublicKeyHash {
 //======
 
 /// Represents an error when parsing ED25519 public key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseEd25519PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),

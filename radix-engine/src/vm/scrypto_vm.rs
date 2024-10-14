@@ -48,13 +48,14 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         export_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
-        _vm_api: &V,
+        vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
                 api,
                 self.package_address,
                 export_name.to_string(),
+                vm_api.get_scrypto_version(),
             ));
 
             let mut input = Vec::new();

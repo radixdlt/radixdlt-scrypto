@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_common::prelude::*;
 
 // Main roles
 pub const MINTER_ROLE: &str = "minter";
@@ -34,6 +35,11 @@ pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ResourceManagerBurnManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type ResourceManagerBurnOutput = ();
 
 pub const RESOURCE_MANAGER_PACKAGE_BURN_IDENT: &str = "package_burn";
@@ -43,19 +49,28 @@ pub struct ResourceManagerPackageBurnInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ResourceManagerPackageBurnManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type ResourceManagerPackageBurnOutput = ();
 
 pub const RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT: &str = "create_empty_vault";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateEmptyVaultInput {}
+
+pub type ResourceManagerCreateEmptyVaultManifestInput = ResourceManagerCreateEmptyVaultInput;
 
 pub type ResourceManagerCreateEmptyVaultOutput = Vault;
 
 pub const RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT: &str = "create_empty_bucket";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerCreateEmptyBucketInput {}
+
+pub type ResourceManagerCreateEmptyBucketManifestInput = ResourceManagerCreateEmptyBucketInput;
 
 pub type ResourceManagerCreateEmptyBucketOutput = Bucket;
 
@@ -66,28 +81,40 @@ pub struct ResourceManagerDropEmptyBucketInput {
     pub bucket: Bucket,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ResourceManagerDropEmptyBucketManifestInput {
+    pub bucket: ManifestBucket,
+}
+
 pub type ResourceManagerDropEmptyBucketOutput = ();
 
 pub const RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT: &str = "get_resource_type";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerGetResourceTypeInput {}
+
+pub type ResourceManagerGetResourceTypeManifestInput = ResourceManagerGetResourceTypeInput;
 
 pub type ResourceManagerGetResourceTypeOutput = ResourceType;
 
 pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerGetTotalSupplyInput {}
+
+pub type ResourceManagerGetTotalSupplyManifestInput = ResourceManagerGetTotalSupplyInput;
 
 pub type ResourceManagerGetTotalSupplyOutput = Option<Decimal>;
 
 pub const RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT: &str = "amount_for_withdrawal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceManagerGetAmountForWithdrawalInput {
     pub request_amount: Decimal,
     pub withdraw_strategy: WithdrawStrategy,
 }
+
+pub type ResourceManagerGetAmountForWithdrawalManifestInput =
+    ResourceManagerGetAmountForWithdrawalInput;
 
 pub type ResourceManagerGetAmountForWithdrawalOutput = Decimal;

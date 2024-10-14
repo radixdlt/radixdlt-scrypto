@@ -1,20 +1,27 @@
 use super::*;
 use radix_common::prelude::*;
+
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::locker::*;
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_tracker::*;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::role_assignment::*;
+use radix_engine_interface::object_modules::royalty::*;
 
-pub trait StaticInvocationResourcesOutput {
+pub trait StaticInvocationResourcesOutput
+where
+    Self: ManifestEncode + ManifestDecode,
+{
     fn output(
         &self,
         details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let _ = details;
-        Ok(TrackedResources::new_empty())
-    }
+    ) -> Result<TrackedResources, StaticResourceMovementsError>;
 }
 
 pub struct InvocationDetails<'a> {
@@ -25,344 +32,286 @@ pub struct InvocationDetails<'a> {
 
 #[derive(Debug)]
 pub enum InvocationReceiver {
-    GlobalMethod(GlobalAddress),
-    GlobalMethodOnReservedAddress,
+    GlobalMethod(ResolvedDynamicAddress<GlobalAddress>),
     DirectAccess(InternalAddress),
-    BlueprintFunction,
+    BlueprintFunction(BlueprintId),
 }
 
+macro_rules! no_output_static_invocation_resources_output_impl {
+    (
+        $(
+            $output_ident: ident
+        ),* $(,)?
+    ) => {
+        $(
+            impl StaticInvocationResourcesOutput for $output_ident {
+                fn output(
+                    &self,
+                    _details: InvocationDetails
+                ) -> Result<TrackedResources, StaticResourceMovementsError> {
+                    Ok(TrackedResources::new_empty())
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! unknown_output_static_invocation_resources_output_impl {
+    (
+        $(
+            $output_ident: ident
+        ),* $(,)?
+    ) => {
+        $(
+            impl StaticInvocationResourcesOutput for $output_ident {
+                fn output(
+                    &self,
+                    details: InvocationDetails
+                ) -> Result<TrackedResources, StaticResourceMovementsError> {
+                    Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                        details.source
+                    ]))
+                }
+            }
+        )*
+    };
+}
+
+no_output_static_invocation_resources_output_impl![
+    // AccessController
+    AccessControllerCreateManifestInput,
+    AccessControllerCreateProofManifestInput,
+    AccessControllerInitiateRecoveryAsPrimaryManifestInput,
+    AccessControllerInitiateRecoveryAsRecoveryManifestInput,
+    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalManifestInput,
+    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalManifestInput,
+    AccessControllerTimedConfirmRecoveryManifestInput,
+    AccessControllerCancelPrimaryRoleRecoveryProposalManifestInput,
+    AccessControllerCancelRecoveryRoleRecoveryProposalManifestInput,
+    AccessControllerLockPrimaryRoleManifestInput,
+    AccessControllerUnlockPrimaryRoleManifestInput,
+    AccessControllerStopTimedRecoveryManifestInput,
+    AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryManifestInput,
+    AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryManifestInput,
+    AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptManifestInput,
+    AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptManifestInput,
+    AccessControllerLockRecoveryFeeManifestInput,
+    AccessControllerContributeRecoveryFeeManifestInput,
+    // Account
+    AccountCreateAdvancedManifestInput,
+    AccountLockFeeManifestInput,
+    AccountLockContingentFeeManifestInput,
+    AccountDepositManifestInput,
+    AccountDepositBatchManifestInput,
+    AccountBurnManifestInput,
+    AccountBurnNonFungiblesManifestInput,
+    AccountCreateProofOfAmountManifestInput,
+    AccountCreateProofOfNonFungiblesManifestInput,
+    AccountSetDefaultDepositRuleManifestInput,
+    AccountSetResourcePreferenceManifestInput,
+    AccountRemoveResourcePreferenceManifestInput,
+    AccountTryDepositOrAbortManifestInput,
+    AccountTryDepositBatchOrAbortManifestInput,
+    AccountAddAuthorizedDepositorManifestInput,
+    AccountRemoveAuthorizedDepositorManifestInput,
+    // ConsensusManager
+    ConsensusManagerCreateManifestInput,
+    ConsensusManagerGetCurrentEpochManifestInput,
+    ConsensusManagerStartManifestInput,
+    ConsensusManagerGetCurrentTimeManifestInputV1,
+    ConsensusManagerGetCurrentTimeManifestInputV2,
+    ConsensusManagerCompareCurrentTimeManifestInputV1,
+    ConsensusManagerCompareCurrentTimeManifestInputV2,
+    ConsensusManagerNextRoundManifestInput,
+    // Validator
+    ValidatorRegisterManifestInput,
+    ValidatorUnregisterManifestInput,
+    ValidatorUpdateKeyManifestInput,
+    ValidatorUpdateFeeManifestInput,
+    ValidatorUpdateAcceptDelegatedStakeManifestInput,
+    ValidatorAcceptsDelegatedStakeManifestInput,
+    ValidatorTotalStakeXrdAmountManifestInput,
+    ValidatorTotalStakeUnitSupplyManifestInput,
+    ValidatorGetRedemptionValueManifestInput,
+    ValidatorSignalProtocolUpdateReadinessManifestInput,
+    ValidatorGetProtocolUpdateReadinessManifestInput,
+    ValidatorLockOwnerStakeUnitsManifestInput,
+    ValidatorStartUnlockOwnerStakeUnitsManifestInput,
+    ValidatorApplyEmissionManifestInput,
+    ValidatorApplyRewardManifestInput,
+    // Identity
+    IdentityCreateAdvancedManifestInput,
+    // AccountLocker
+    AccountLockerInstantiateManifestInput,
+    AccountLockerStoreManifestInput,
+    AccountLockerGetAmountManifestInput,
+    AccountLockerGetNonFungibleLocalIdsManifestInput,
+    // Package
+    PackagePublishWasmAdvancedManifestInput,
+    PackagePublishNativeManifestInput,
+    // OneResourcePool
+    OneResourcePoolInstantiateManifestInput,
+    OneResourcePoolProtectedDepositManifestInput,
+    OneResourcePoolGetRedemptionValueManifestInput,
+    OneResourcePoolGetVaultAmountManifestInput,
+    // TwoResourcePool
+    TwoResourcePoolInstantiateManifestInput,
+    TwoResourcePoolProtectedDepositManifestInput,
+    TwoResourcePoolGetRedemptionValueManifestInput,
+    TwoResourcePoolGetVaultAmountsManifestInput,
+    // MultiResourcePool
+    MultiResourcePoolInstantiateManifestInput,
+    MultiResourcePoolProtectedDepositManifestInput,
+    MultiResourcePoolGetRedemptionValueManifestInput,
+    MultiResourcePoolGetVaultAmountsManifestInput,
+    // ResourceManager
+    ResourceManagerBurnManifestInput,
+    ResourceManagerPackageBurnManifestInput,
+    ResourceManagerGetTotalSupplyManifestInput,
+    ResourceManagerGetResourceTypeManifestInput,
+    ResourceManagerCreateEmptyVaultManifestInput,
+    ResourceManagerGetAmountForWithdrawalManifestInput,
+    ResourceManagerDropEmptyBucketManifestInput,
+    // FungibleResourceManager
+    FungibleResourceManagerCreateManifestInput,
+    // NonFungibleResourceManager
+    NonFungibleResourceManagerCreateManifestInput,
+    NonFungibleResourceManagerGetNonFungibleManifestInput,
+    NonFungibleResourceManagerUpdateDataManifestInput,
+    NonFungibleResourceManagerExistsManifestInput,
+    // Vault
+    VaultGetAmountManifestInput,
+    VaultFreezeManifestInput,
+    VaultUnfreezeManifestInput,
+    VaultBurnManifestInput,
+    VaultPutManifestInput,
+    // FungibleVault
+    FungibleVaultLockFeeManifestInput,
+    FungibleVaultCreateProofOfAmountManifestInput,
+    FungibleVaultLockFungibleAmountManifestInput,
+    FungibleVaultUnlockFungibleAmountManifestInput,
+    // NonFungibleVault
+    NonFungibleVaultGetNonFungibleLocalIdsManifestInput,
+    NonFungibleVaultContainsNonFungibleManifestInput,
+    NonFungibleVaultCreateProofOfNonFungiblesManifestInput,
+    NonFungibleVaultLockNonFungiblesManifestInput,
+    NonFungibleVaultUnlockNonFungiblesManifestInput,
+    NonFungibleVaultBurnNonFungiblesManifestInput,
+    // TransactionTracker
+    TransactionTrackerCreateManifestInput,
+    // Metadata
+    MetadataCreateManifestInput,
+    MetadataCreateWithDataManifestInput,
+    MetadataSetManifestInput,
+    MetadataLockManifestInput,
+    MetadataGetManifestInput,
+    MetadataRemoveManifestInput,
+    // RoleAssignment
+    RoleAssignmentCreateManifestInput,
+    RoleAssignmentSetOwnerManifestInput,
+    RoleAssignmentLockOwnerManifestInput,
+    RoleAssignmentSetManifestInput,
+    RoleAssignmentGetManifestInput,
+    // ComponentRoyalty
+    ComponentRoyaltyCreateManifestInput,
+    ComponentRoyaltySetManifestInput,
+    ComponentRoyaltyLockManifestInput,
+];
+
+unknown_output_static_invocation_resources_output_impl![
+    /* AccessController */
+    // The withdrawn badge is of an unknown resource
+    AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptManifestInput,
+    // The withdrawn badge is of an unknown resource
+    AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptManifestInput,
+    // The minted badge is of a new / unknown resource
+    AccessControllerMintRecoveryBadgesManifestInput,
+    // The validator stake unit resource is unknown at static validation time
+    /* Validator */
+    ValidatorStakeAsOwnerManifestInput,
+    // The validator stake unit resource is unknown at static validation time
+    ValidatorStakeManifestInput,
+    // The validator unstake receipt is unknown at static validation time
+    ValidatorUnstakeManifestInput,
+    // This can return validator stake units which are an unknown resource at static validation time
+    ValidatorFinishUnlockOwnerStakeUnitsManifestInput,
+    // This generates and returns a new badge resource, which is unknowable at static time
+    /* AccountLocker */
+    AccountLockerInstantiateSimpleManifestInput,
+    /* OneResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    OneResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    OneResourcePoolRedeemManifestInput,
+    // This returns an unknown resource but a known amount which we can't do much with.
+    OneResourcePoolProtectedWithdrawManifestInput,
+    /* TwoResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    TwoResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    TwoResourcePoolRedeemManifestInput,
+    /* MultiResourcePool */
+    // This returns pool units of an unknown resource address and an unknown amount.
+    MultiResourcePoolContributeManifestInput,
+    // This returns unknown resources of an unknown amount from the redemption.
+    MultiResourcePoolRedeemManifestInput,
+    /* FungibleResourceManager */
+    // This returns this resource so we know the amount but we don't know the resource address
+    // so we can't do much with that.
+    FungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    /* NonFungibleResourceManager */
+    // This returns this resource so we know the ids but we don't know the resource address
+    // so we can't do much with that.
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    // This returns this resource so we know the ids but we don't know the resource address
+    // so we can't do much with that.
+    NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput,
+    /* Vault */
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultTakeManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultTakeAdvancedManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    VaultRecallManifestInput,
+    /* NonFungibleVault */
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    NonFungibleVaultTakeNonFungiblesManifestInput,
+    // We don't know what resource is in the vault. We know the amount/ids returned but not the
+    // resource address.
+    NonFungibleVaultRecallNonFungiblesManifestInput,
+];
+
 // region:Typed Invocation
-impl StaticInvocationResourcesOutput for TypedNativeInvocation {
+impl StaticInvocationResourcesOutput for TypedManifestNativeInvocation {
     fn output(
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        match self {
-            TypedNativeInvocation::AccessControllerPackage(access_controller_invocations) => {
-                match access_controller_invocations {
-                    AccessControllerInvocations::AccessControllerBlueprint(
-                        access_controller_blueprint_invocations,
-                    ) => match access_controller_blueprint_invocations {
-                        AccessControllerBlueprintInvocations::Function(access_controller_function) => {
-                            match access_controller_function {
-                                AccessControllerFunction::Create(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                        AccessControllerBlueprintInvocations::Method(access_controller_method) => {
-                            match access_controller_method {
-                                AccessControllerMethod::CreateProof(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::InitiateRecoveryAsPrimary(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::InitiateRecoveryAsRecovery(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::QuickConfirmPrimaryRoleRecoveryProposal(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::QuickConfirmRecoveryRoleRecoveryProposal(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::TimedConfirmRecovery(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::StopTimedRecovery(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::MintRecoveryBadges(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::LockRecoveryFee(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::WithdrawRecoveryFee(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::ContributeRecoveryFee(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::InitiateBadgeWithdrawAttemptAsPrimary(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::InitiateBadgeWithdrawAttemptAsRecovery(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::QuickConfirmPrimaryRoleBadgeWithdrawAttempt(
-                                    input,
-                                ) => input.output(details),
-                                AccessControllerMethod::QuickConfirmRecoveryRoleBadgeWithdrawAttempt(
-                                    input,
-                                ) => input.output(details),
-                                AccessControllerMethod::CancelPrimaryRoleRecoveryProposal(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::CancelRecoveryRoleRecoveryProposal(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::CancelPrimaryRoleBadgeWithdrawAttempt(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::CancelRecoveryRoleBadgeWithdrawAttempt(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::LockPrimaryRole(input) => {
-                                    input.output(details)
-                                }
-                                AccessControllerMethod::UnlockPrimaryRole(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                    },
-                }
-            }
-            TypedNativeInvocation::AccountPackage(account_invocations) => match account_invocations {
-                AccountInvocations::AccountBlueprint(account_blueprint_invocations) => {
-                    match account_blueprint_invocations {
-                        AccountBlueprintInvocations::Function(account_function) => match account_function {
-                            AccountFunction::Create(input) => {
-                                input.output(details)
-                            }
-                            AccountFunction::CreateAdvanced(input) => {
-                                input.output(details)
-                            }
-                        },
-                        AccountBlueprintInvocations::Method(account_method) => match account_method {
-                            AccountMethod::Securify(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::LockFee(input) => input.output(details),
-                            AccountMethod::LockContingentFee(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::Deposit(input) => input.output(details),
-                            AccountMethod::Withdraw(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::WithdrawNonFungibles(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::LockFeeAndWithdraw(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::LockFeeAndWithdrawNonFungibles(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::CreateProofOfAmount(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::CreateProofOfNonFungibles(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::SetDefaultDepositRule(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::SetResourcePreference(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::RemoveResourcePreference(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::TryDepositOrAbort(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::Burn(input) => input.output(details),
-                            AccountMethod::BurnNonFungibles(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::AddAuthorizedDepositor(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::RemoveAuthorizedDepositor(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::TryDepositOrRefund(input) => {
-                                input.output(details)
-                            }
-                            AccountMethod::DepositBatch(input) => input.output(details),
-                            AccountMethod::TryDepositBatchOrRefund(input) => input.output(details),
-                            AccountMethod::TryDepositBatchOrAbort(input) => input.output(details),
-                        },
-                    }
-                }
-            },
-            TypedNativeInvocation::ConsensusManagerPackage(consensus_manager_invocations) => {
-                match consensus_manager_invocations {
-                    ConsensusManagerInvocations::ValidatorBlueprint(validator_blueprint_invocations) => {
-                        match validator_blueprint_invocations {
-                            ValidatorBlueprintInvocations::Function(validator_function) => {
-                                match *validator_function {}
-                            }
-                            ValidatorBlueprintInvocations::Method(validator_method) => {
-                                match validator_method {
-                                    ValidatorMethod::Register(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::Unregister(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::StakeAsOwner(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::Stake(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::Unstake(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::ClaimXrd(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::UpdateKey(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::UpdateFee(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::UpdateAcceptDelegatedStake(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::AcceptsDelegatedStake(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::TotalStakeXrdAmount(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::TotalStakeUnitSupply(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::GetRedemptionValue(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::SignalProtocolUpdateReadiness(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::GetProtocolUpdateReadiness(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::LockOwnerStakeUnits(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::StartUnlockOwnerStakeUnits(input) => {
-                                        input.output(details)
-                                    }
-                                    ValidatorMethod::FinishUnlockOwnerStakeUnits(input) => {
-                                        input.output(details)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    ConsensusManagerInvocations::ConsensusManagerBlueprint(
-                        consensus_manager_blueprint_invocations,
-                    ) => match consensus_manager_blueprint_invocations {
-                        ConsensusManagerBlueprintInvocations::Function(consensus_manager_function) => {
-                            match consensus_manager_function {
-                                ConsensusManagerFunction::Create(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                        ConsensusManagerBlueprintInvocations::Method(consensus_manager_method) => {
-                            match consensus_manager_method {
-                                ConsensusManagerMethod::GetCurrentEpoch(input) => {
-                                    input.output(details)
-                                }
-                                ConsensusManagerMethod::Start(input) => {
-                                    input.output(details)
-                                }
-                                ConsensusManagerMethod::GetCurrentTime(input) => {
-                                    input.output(details)
-                                }
-                                ConsensusManagerMethod::NextRound(input) => {
-                                    input.output(details)
-                                }
-                                ConsensusManagerMethod::CreateValidator(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                    },
-                }
-            }
-            TypedNativeInvocation::IdentityPackage(identity_invocations) => match identity_invocations {
-                IdentityInvocations::IdentityBlueprint(identity_blueprint_invocations) => {
-                    match identity_blueprint_invocations {
-                        IdentityBlueprintInvocations::Function(identity_function) => {
-                            match identity_function {
-                                IdentityFunction::Create(input) => {
-                                    input.output(details)
-                                }
-                                IdentityFunction::CreateAdvanced(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                        IdentityBlueprintInvocations::Method(identity_method) => match identity_method {
-                            IdentityMethod::Securify(input) => {
-                                input.output(details)
-                            }
-                        },
-                    }
-                }
-            },
-            TypedNativeInvocation::LockerPackage(locker_invocations) => match locker_invocations {
-                LockerInvocations::AccountLockerBlueprint(account_locker_blueprint_invocations) => {
-                    match account_locker_blueprint_invocations {
-                        AccountLockerBlueprintInvocations::Function(account_locker_function) => {
-                            match account_locker_function {
-                                AccountLockerFunction::Instantiate(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerFunction::InstantiateSimple(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                        AccountLockerBlueprintInvocations::Method(account_locker_method) => {
-                            match account_locker_method {
-                                AccountLockerMethod::Store(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::Airdrop(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::Recover(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::RecoverNonFungibles(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::Claim(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::ClaimNonFungibles(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::GetAmount(input) => {
-                                    input.output(details)
-                                }
-                                AccountLockerMethod::GetNonFungibleLocalIds(input) => {
-                                    input.output(details)
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-        }
+        uniform_match_on_manifest_typed_invocation!(self => (input) => input.output(details))
     }
 }
 // endregion:Typed Invocation
 
-// region:Account
-impl StaticInvocationResourcesOutput for AccountCreateAdvancedManifestInput {}
+// region:AccessController
+impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            XRD,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
+    }
+}
+// endregion:AccessController
 
-impl StaticInvocationResourcesOutput for AccountCreateInput {
+// region:Account
+impl StaticInvocationResourcesOutput for AccountCreateManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -374,40 +323,35 @@ impl StaticInvocationResourcesOutput for AccountCreateInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountSecurifyInput {
+impl StaticInvocationResourcesOutput for AccountSecurifyManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     ACCOUNT_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
-                .add_resource(
-                    ACCOUNT_OWNER_BADGE,
-                    TrackedResource::exact_amount(1, [details.source])?,
-                ),
-            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            ) => TrackedResources::new_empty().add_resource(
+                ACCOUNT_OWNER_BADGE,
+                TrackedResource::exact_amount(1, [details.source])?,
+            ),
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
         }
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockFeeInput {}
-
-impl StaticInvocationResourcesOutput for AccountLockContingentFeeInput {}
-
-impl StaticInvocationResourcesOutput for AccountDepositManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountDepositBatchManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountWithdrawInput {
+impl StaticInvocationResourcesOutput for AccountWithdrawManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -419,7 +363,7 @@ impl StaticInvocationResourcesOutput for AccountWithdrawInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
+impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -431,7 +375,7 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawInput {
+impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -443,7 +387,7 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesInput {
+impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -454,16 +398,6 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesIn
         )
     }
 }
-
-impl StaticInvocationResourcesOutput for AccountCreateProofOfAmountInput {}
-
-impl StaticInvocationResourcesOutput for AccountCreateProofOfNonFungiblesInput {}
-
-impl StaticInvocationResourcesOutput for AccountSetDefaultDepositRuleInput {}
-
-impl StaticInvocationResourcesOutput for AccountSetResourcePreferenceInput {}
-
-impl StaticInvocationResourcesOutput for AccountRemoveResourcePreferenceInput {}
 
 impl StaticInvocationResourcesOutput for AccountTryDepositOrRefundManifestInput {
     fn output(
@@ -517,135 +451,9 @@ fn handle_possible_refund(
 
     Ok(refunded_resources)
 }
-
-impl StaticInvocationResourcesOutput for AccountTryDepositOrAbortManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountTryDepositBatchOrAbortManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountBurnInput {}
-
-impl StaticInvocationResourcesOutput for AccountBurnNonFungiblesInput {}
-
-impl StaticInvocationResourcesOutput for AccountAddAuthorizedDepositorInput {}
-
-impl StaticInvocationResourcesOutput for AccountRemoveAuthorizedDepositorInput {}
 // endregion:Account
 
-// region:Access Controller
-impl StaticInvocationResourcesOutput for AccessControllerCreateManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerCreateProofInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsPrimaryInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerInitiateRecoveryAsRecoveryInput {}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput
-{
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput
-{
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput
-{
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput
-{
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The withdrawn badge is of an unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput
-{
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The withdrawn badge is of an unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for AccessControllerTimedConfirmRecoveryInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerCancelPrimaryRoleRecoveryProposalInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerCancelRecoveryRoleRecoveryProposalInput {}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput
-{
-}
-
-impl StaticInvocationResourcesOutput
-    for AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput
-{
-}
-
-impl StaticInvocationResourcesOutput for AccessControllerLockPrimaryRoleInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerUnlockPrimaryRoleInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerStopTimedRecoveryInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerMintRecoveryBadgesInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The minted badge is of a new / unknown resource
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for AccessControllerLockRecoveryFeeInput {}
-
-impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        TrackedResources::new_empty().add_resource(
-            XRD,
-            TrackedResource::exact_amount(self.amount, [details.source])?,
-        )
-    }
-}
-
-impl StaticInvocationResourcesOutput for AccessControllerContributeRecoveryFeeManifestInput {}
-// endregion:Access Controller
-
-// region:Consensus Manager
-impl StaticInvocationResourcesOutput for ConsensusManagerCreateManifestInput {}
-
-impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentEpochInput {}
-
-impl StaticInvocationResourcesOutput for ConsensusManagerStartInput {}
-
-impl StaticInvocationResourcesOutput for ConsensusManagerGetCurrentTimeInputV2 {}
-
-impl StaticInvocationResourcesOutput for ConsensusManagerCompareCurrentTimeInputV2 {}
-
-impl StaticInvocationResourcesOutput for ConsensusManagerNextRoundInput {}
-
+// region:ConsensusManager
 impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifestInput {
     fn output(
         &self,
@@ -657,41 +465,9 @@ impl StaticInvocationResourcesOutput for ConsensusManagerCreateValidatorManifest
         )
     }
 }
+// endregion:ConsensusManager
 
-impl StaticInvocationResourcesOutput for ValidatorRegisterInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorUnregisterInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorStakeAsOwnerManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator stake unit resource is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for ValidatorStakeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator stake unit resource is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for ValidatorUnstakeManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // The validator unstake receipt is unknown at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
+// region:Validator
 impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     fn output(
         &self,
@@ -702,47 +478,10 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for ValidatorUpdateKeyInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorUpdateFeeInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorUpdateAcceptDelegatedStakeInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorAcceptsDelegatedStakeInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorTotalStakeXrdAmountInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorTotalStakeUnitSupplyInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorGetRedemptionValueInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorSignalProtocolUpdateReadinessInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorGetProtocolUpdateReadinessInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorApplyEmissionInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorApplyRewardInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorLockOwnerStakeUnitsManifestInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorStartUnlockOwnerStakeUnitsInput {}
-
-impl StaticInvocationResourcesOutput for ValidatorFinishUnlockOwnerStakeUnitsInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This can return validator stake units which are an unknown resource at static validation time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-// endregion:Consensus Manager
+// endregion:Validator
 
 // region:Identity
-impl StaticInvocationResourcesOutput for IdentityCreateAdvancedInput {}
-
-impl StaticInvocationResourcesOutput for IdentityCreateInput {
+impl StaticInvocationResourcesOutput for IdentityCreateManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -754,25 +493,28 @@ impl StaticInvocationResourcesOutput for IdentityCreateInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
+impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         Ok(match details.receiver {
-            InvocationReceiver::GlobalMethod(global_address) => {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
                 let local_id = NonFungibleLocalId::bytes(global_address.as_bytes()).unwrap();
                 TrackedResources::new_empty().add_resource(
                     IDENTITY_OWNER_BADGE,
                     TrackedResource::exact_non_fungibles([local_id], [details.source]),
                 )?
             }
-            InvocationReceiver::GlobalMethodOnReservedAddress => TrackedResources::new_empty()
-                .add_resource(
-                    IDENTITY_OWNER_BADGE,
-                    TrackedResource::exact_amount(1, [details.source])?,
-                )?,
-            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction => {
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            ) => TrackedResources::new_empty().add_resource(
+                IDENTITY_OWNER_BADGE,
+                TrackedResource::exact_amount(1, [details.source])?,
+            )?,
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => {
                 unreachable!()
             }
         })
@@ -780,21 +522,7 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeInput {
 }
 // endregion:Identity
 
-// region:Account Locker
-impl StaticInvocationResourcesOutput for AccountLockerInstantiateManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountLockerInstantiateSimpleManifestInput {
-    fn output(
-        &self,
-        details: InvocationDetails,
-    ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        // This generates and returns a new badge resource, which is unknowable at static time
-        Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([details.source]))
-    }
-}
-
-impl StaticInvocationResourcesOutput for AccountLockerStoreManifestInput {}
-
+// region:AccountLocker
 impl StaticInvocationResourcesOutput for AccountLockerAirdropManifestInput {
     fn output(
         &self,
@@ -854,11 +582,7 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
         )
     }
 }
-
-impl StaticInvocationResourcesOutput for AccountLockerGetAmountManifestInput {}
-
-impl StaticInvocationResourcesOutput for AccountLockerGetNonFungibleLocalIdsManifestInput {}
-// endregion:Account Locker
+// endregion:AccountLocker
 
 // region:Package
 impl StaticInvocationResourcesOutput for PackagePublishWasmManifestInput {
@@ -873,11 +597,7 @@ impl StaticInvocationResourcesOutput for PackagePublishWasmManifestInput {
     }
 }
 
-impl StaticInvocationResourcesOutput for PackagePublishWasmAdvancedManifestInput {}
-
-impl StaticInvocationResourcesOutput for PackagePublishNativeManifestInput {}
-
-impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesInput {
+impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesManifestInput {
     fn output(
         &self,
         details: InvocationDetails,
@@ -887,3 +607,209 @@ impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesInput {
     }
 }
 // endregion:Package
+
+// region:TwoResourcePool
+impl StaticInvocationResourcesOutput for TwoResourcePoolProtectedWithdrawManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
+    }
+}
+// endregion:TwoResourcePool
+
+// region:MultiResourcePool
+impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty().add_resource(
+            self.resource_address,
+            TrackedResource::exact_amount(self.amount, [details.source])?,
+        )
+    }
+}
+// endregion:MultiResourcePool
+
+// region:FungibleResourceManager
+impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // If the receiver is a global address then we can return something useful. Otherwise it
+        // is a known amount and an unknown resource address.
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
+                // Attempt to convert the global address to a resource address. Error if that fails.
+                if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
+                    TrackedResources::new_empty().add_resource(
+                        resource_address,
+                        TrackedResource::exact_amount(self.amount, [details.source])?,
+                    )
+                } else {
+                    Err(StaticResourceMovementsError::NotAResourceAddress(
+                        global_address,
+                    ))
+                }
+            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
+            | InvocationReceiver::DirectAccess(_)
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            ),
+        }
+    }
+}
+
+impl StaticInvocationResourcesOutput for ResourceManagerCreateEmptyBucketInput {
+    fn output(
+        &self,
+        _: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // An empty bucket is returned so we just return an empty set of `TrackedResources`. I have
+        // this as a manual implementation instead of one of the invocations in the macro invocation
+        // because NONE of the invocations there return a bucket while this invocation returns a
+        // bucket. To be consistent and have all invocations returning a bucket have a manual impl
+        // I'm keeping this manual and hand-written implementation with a comment on why it's here
+        // and why this invocation returns nothing.
+        Ok(TrackedResources::new_empty())
+    }
+}
+// endregion:FungibleResourceManager
+
+// region:NonFungibleResourceManager
+impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // If the receiver is a global address then we can return something useful. Otherwise it
+        // is a known ids and an unknown resource address.
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
+                // Attempt to convert the global address to a resource address. Error if that fails.
+                if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
+                    TrackedResources::new_empty().add_resource(
+                        resource_address,
+                        TrackedResource::exact_non_fungibles(
+                            self.entries.keys().cloned(),
+                            [details.source],
+                        ),
+                    )
+                } else {
+                    Err(StaticResourceMovementsError::NotAResourceAddress(
+                        global_address,
+                    ))
+                }
+            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
+            | InvocationReceiver::DirectAccess(_)
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            ),
+        }
+    }
+}
+
+impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // If the receiver is a global address then we can return something useful. Otherwise it
+        // is a known amount and an unknown resource address.
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
+                // Attempt to convert the global address to a resource address. Error if that fails.
+                if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
+                    TrackedResources::new_empty().add_resource(
+                        resource_address,
+                        TrackedResource::exact_amount(self.entries.len(), [details.source])?,
+                    )
+                } else {
+                    Err(StaticResourceMovementsError::NotAResourceAddress(
+                        global_address,
+                    ))
+                }
+            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
+            | InvocationReceiver::DirectAccess(_)
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            ),
+        }
+    }
+}
+
+impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRuidManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        // If the receiver is a global address then we can return something useful. Otherwise it
+        // is a known amount and an unknown resource address.
+        match details.receiver {
+            InvocationReceiver::GlobalMethod(ResolvedDynamicAddress::StaticAddress(
+                global_address,
+            )) => {
+                // Attempt to convert the global address to a resource address. Error if that fails.
+                if let Ok(resource_address) = ResourceAddress::try_from(global_address) {
+                    TrackedResources::new_empty().add_resource(
+                        resource_address,
+                        TrackedResource::exact_amount(Decimal::ONE, [details.source])?,
+                    )
+                } else {
+                    Err(StaticResourceMovementsError::NotAResourceAddress(
+                        global_address,
+                    ))
+                }
+            }
+            InvocationReceiver::GlobalMethod(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+            )
+            | InvocationReceiver::DirectAccess(_)
+            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            ),
+        }
+    }
+}
+// endregion:NonFungibleResourceManager
+
+// region:ComponentRoyalty
+impl StaticInvocationResourcesOutput for ComponentClaimRoyaltiesManifestInput {
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        TrackedResources::new_empty()
+            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
+    }
+}
+// endregion:ComponentRoyalty

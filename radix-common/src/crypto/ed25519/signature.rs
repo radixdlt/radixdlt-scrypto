@@ -1,3 +1,4 @@
+use crate::ScryptoSbor;
 use radix_rust::copy_u8_array;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -33,11 +34,23 @@ impl TryFrom<&[u8]> for Ed25519Signature {
     }
 }
 
+impl AsRef<Self> for Ed25519Signature {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Ed25519Signature {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 //======
 // error
 //======
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseEd25519SignatureError {
     InvalidHex(String),
     InvalidLength(usize),
