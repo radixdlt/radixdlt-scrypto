@@ -1,5 +1,7 @@
-# Below version includes rust 1.80.1
-ARG RUST_IMAGE_VERSION=@sha256:e8e40c50bfb54c0a76218f480cc69783b908430de87b59619c1dca847fdbd753
+# Below version includes rust 1.81.0
+# To find a new fixed image, search for the version with the -slim-bookworm tag here:
+# https://hub.docker.com/_/rust/tags
+ARG RUST_IMAGE_VERSION=@sha256:9f1bb107f9433aadaeaa07e015070ca7a9708c234685ba8aba7e417cbf144390
 # If you want to use latest version then uncomment next line
 # ARG RUST_IMAGE_VERSION=:slim-bookworm
 # Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bookworm"

@@ -7,12 +7,15 @@ runs:
     - name: Install Rust toolchain
       uses: RDXWorks-actions/toolchain@master
       with:
-        # IMPORTANT: If you update this Rust version:
-        # * Ensure you also update it in the README in two places:
-        #   - "Install Rust - we recommend to use Rust XXXX"
-        #   - "rustup default XXXX"
-        # * Ensure you update the version in the "radix-clis-scrypto-coverage" step,
-        #   or update the comment explaining why a different version is used.
+        # IMPORTANT:
+        # To update the Rust version, you must update it in five total places (including the toolchain below):
+        # => [README.md - part 1] Update "Install Rust - we recommend to use Rust XXXX"
+        # => [README.md - part 2] Update "rustup default XXXX"
+        # => [action.yml - part 1] Update "toolchain: XXXX" below
+        # => [action.yml - part 2] Update the three lines starting "rustup toolchain install nightly-...`
+        #    in the "radix-clis-scrypto-coverage" step, or update the comment explaining why a
+        #    different version is used.
+        # => [Dockerfile] Update `ARG RUST_IMAGE_VERSION=` in the deterministic builder
         toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown
