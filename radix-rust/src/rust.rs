@@ -266,19 +266,19 @@ pub mod collections {
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
-        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+        pub type DefaultHashBuilder = fxhash::FxBuildHasher;
 
         #[cfg(feature = "alloc")]
         pub use hashbrown::hash_map::*;
         #[cfg(not(feature = "alloc"))]
         pub use std::collections::hash_map::*;
 
+        #[cfg(not(feature = "alloc"))]
+        pub use fxhash::FxHashMap as ext_HashMap;
         #[cfg(feature = "alloc")]
         pub use hashbrown::HashMap as ext_HashMap;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashMap as ext_HashMap;
 
-        pub type HashMap<K, V, S = DefaultHashBuilder> = ext_HashMap<K, V, S>;
+        pub type HashMap<K, V> = ext_HashMap<K, V>;
 
         /// Creates an empty map with capacity 0 and default Hasher
         pub fn new<K, V>() -> HashMap<K, V> {
@@ -319,19 +319,19 @@ pub mod collections {
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
-        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+        pub type DefaultHashBuilder = fxhash::FxBuildHasher;
 
         #[cfg(feature = "alloc")]
         pub use hashbrown::hash_set::*;
         #[cfg(not(feature = "alloc"))]
         pub use std::collections::hash_set::*;
 
+        #[cfg(not(feature = "alloc"))]
+        pub use fxhash::FxHashSet as ext_HashSet;
         #[cfg(feature = "alloc")]
         pub use hashbrown::HashSet as ext_HashSet;
-        #[cfg(not(feature = "alloc"))]
-        pub use std::collections::HashSet as ext_HashSet;
 
-        pub type HashSet<K> = ext_HashSet<K, DefaultHashBuilder>;
+        pub type HashSet<V> = ext_HashSet<V>;
 
         /// Creates an empty set with capacity 0 and default Hasher
         pub fn new<K>() -> HashSet<K> {
@@ -394,7 +394,7 @@ pub mod collections {
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
-        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+        pub type DefaultHashBuilder = fxhash::FxBuildHasher;
 
         // See https://github.com/bluss/indexmap/pull/207
         // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexMap<K, V>` and that the `FromIter` impl works in no-std.
@@ -456,7 +456,7 @@ pub mod collections {
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
-        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+        pub type DefaultHashBuilder = fxhash::FxBuildHasher;
 
         // See https://github.com/bluss/indexmap/pull/207
         // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexSet<K>` and that the `FromIter` impl works in no-std.
@@ -516,7 +516,7 @@ pub mod collections {
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
         pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
-        pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
+        pub type DefaultHashBuilder = fxhash::FxBuildHasher;
 
         /// A thin wrapper around a `HashMap`, which guarantees that a `HashMap` usage will not
         /// result in a non-deterministic execution (simply by disallowing the iteration over its
