@@ -1,12 +1,5 @@
-# Below version includes rust 1.81.0
-# To find a new fixed image, search for the version with the -slim-bookworm tag here:
 # https://hub.docker.com/_/rust/tags
-ARG RUST_IMAGE_VERSION=@sha256:9f1bb107f9433aadaeaa07e015070ca7a9708c234685ba8aba7e417cbf144390
-# If you want to use latest version then uncomment next line
-# ARG RUST_IMAGE_VERSION=:slim-bookworm
-# Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bookworm"
-
-FROM rust${RUST_IMAGE_VERSION} AS base-image
+FROM rust:1.81.0-slim-bookworm AS base-image
 
 RUN apt update && apt install -y \
     cmake=3.25.1-1 \

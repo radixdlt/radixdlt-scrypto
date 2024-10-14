@@ -9,13 +9,13 @@ runs:
       with:
         # IMPORTANT:
         # To update the Rust version, you must update it in five total places (including the toolchain below):
-        # => [README.md - part 1] Update "Install Rust - we recommend to use Rust XXXX"
-        # => [README.md - part 2] Update "rustup default XXXX"
-        # => [action.yml - part 1] Update "toolchain: XXXX" below
-        # => [action.yml - part 2] Update the three lines starting "rustup toolchain install nightly-...`
+        # => [README.md - part 1] Update "Install Rust - we recommend to use Rust X.XX.X"
+        # => [README.md - part 2] Update "rustup default X.XX.X"
+        # => [action.yml - part 1] Update "toolchain: X.XX.X" below
+        # => [action.yml - part 2] Update the three lines starting "rustup toolchain install nightly-202?-??-??"
         #    in the "radix-clis-scrypto-coverage" step, or update the comment explaining why a
         #    different version is used.
-        # => [Dockerfile] Update `ARG RUST_IMAGE_VERSION=` in the deterministic builder
+        # => [Dockerfile] Update "FROM rust:X.XX.X-slim-bookworm AS base-image" in the deterministic builder
         toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown
