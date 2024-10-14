@@ -207,7 +207,6 @@ Enum<3u8>(
                     intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                         intent_hash: expected_intent_hash,
                         expiry_epoch: Epoch::of(66),
-                        ignore_duplicate: false,
                     }],
                     epoch_range: Some(EpochRange {
                         start_epoch_inclusive: Epoch::of(55),

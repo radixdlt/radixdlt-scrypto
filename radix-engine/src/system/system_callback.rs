@@ -910,6 +910,12 @@ impl<V: SystemCallbackObject> System<V> {
                     expiry_epoch,
                     ..
                 } => (intent_hash.into_hash(), expiry_epoch),
+                IntentHashNullification::SimulatedTransactionIntent { simulated } => {
+                    let intent_hash = simulated.intent_hash();
+                    let expiry_epoch =
+                        simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
+                    (intent_hash.into_hash(), expiry_epoch)
+                }
                 IntentHashNullification::Subintent {
                     intent_hash,
                     expiry_epoch,
@@ -925,7 +931,7 @@ impl<V: SystemCallbackObject> System<V> {
             };
 
             let partition_number = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
-                .expect("Validation of the max expiry epoch window should ensure that the expiry epoch is in range for the transaction tracker");
+                .expect("Validation of the max expiry epoch window combined with the current epoch check on launch should ensure that the expiry epoch is in range for the transaction tracker");
 
             // Update the status of the intent hash
             track
@@ -1556,38 +1562,26 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch,
-                    ignore_duplicate,
                 } => {
-                    if *ignore_duplicate {
-                        Ok(())
-                    } else {
-                        Self::validate_intent_hash_uncosted(
-                            store,
-                            intent_hash.as_hash(),
-                            *expiry_epoch,
-                        )
-                    }
+                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
+                }
+                IntentHashNullification::SimulatedTransactionIntent { .. } => {
+                    // No validation is done on a simulated transaction intent used during preview
+                    Ok(())
                 }
                 IntentHashNullification::Subintent {
                     intent_hash,
                     expiry_epoch,
-                    ignore_duplicate,
                 } => {
-                    if *ignore_duplicate {
-                        Ok(())
-                    } else {
-                        Self::validate_intent_hash_uncosted(
-                            store,
-                            intent_hash.as_hash(),
-                            *expiry_epoch,
-                        )
-                    }
+                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
                 }
             }
             .and_then(|_| {
                 match hash_nullification {
-                    IntentHashNullification::TransactionIntent { .. } => {
+                    IntentHashNullification::TransactionIntent { .. }
+                    | IntentHashNullification::SimulatedTransactionIntent { .. } => {
                         // Transaction intent nullification is historically not costed.
+                        // If this changes, it should be applied to both TransactionIntents and SimulatedTransactionIntents
                     }
                     IntentHashNullification::Subintent { .. } => {
                         num_of_intent_statuses += 1;

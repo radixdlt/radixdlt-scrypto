@@ -69,30 +69,49 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentHashNullification {
     /// Should be checked with transaction tracker.
-    /// Will be written
+    /// Assuming the transaction gets committed, this will be persisted/nullified regardless of success
     TransactionIntent {
         intent_hash: TransactionIntentHash,
         expiry_epoch: Epoch,
-        ignore_duplicate: bool,
+    },
+    /// Used in preview. For realistic preview, should be billed as if it were a real transaction intent nullification.
+    /// But it shouldn't error or prevent the preview from running.
+    SimulatedTransactionIntent {
+        simulated: SimulatedTransactionIntentNullification,
     },
     /// Subintent - should only be written on failure
     Subintent {
         intent_hash: SubintentHash,
         expiry_epoch: Epoch,
-        ignore_duplicate: bool,
     },
 }
 
 impl IntentHashNullification {
-    pub fn intent_hash(&self) -> Option<IntentHash> {
+    pub fn intent_hash(&self) -> IntentHash {
         match self {
             IntentHashNullification::TransactionIntent { intent_hash, .. } => {
-                Some(IntentHash::Transaction(*intent_hash))
+                IntentHash::Transaction(*intent_hash)
+            }
+            IntentHashNullification::SimulatedTransactionIntent { simulated } => {
+                IntentHash::Transaction(simulated.intent_hash())
             }
             IntentHashNullification::Subintent { intent_hash, .. } => {
-                Some(IntentHash::Subintent(*intent_hash))
+                IntentHash::Subintent(*intent_hash)
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimulatedTransactionIntentNullification;
+
+impl SimulatedTransactionIntentNullification {
+    pub fn intent_hash(&self) -> TransactionIntentHash {
+        TransactionIntentHash::from_hash(Hash([0; Hash::LENGTH]))
+    }
+
+    pub fn expiry_epoch(&self, current_epoch: Epoch) -> Epoch {
+        current_epoch.next().unwrap_or(Epoch::of(u64::MAX))
     }
 }
 

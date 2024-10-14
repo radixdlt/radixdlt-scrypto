@@ -122,12 +122,10 @@ impl IntentHash {
             IntentHash::Transaction(tx_intent_hash) => IntentHashNullification::TransactionIntent {
                 intent_hash: tx_intent_hash,
                 expiry_epoch,
-                ignore_duplicate: false,
             },
             IntentHash::Subintent(subintent_hash) => IntentHashNullification::Subintent {
                 intent_hash: subintent_hash,
                 expiry_epoch,
-                ignore_duplicate: false,
             },
         }
     }

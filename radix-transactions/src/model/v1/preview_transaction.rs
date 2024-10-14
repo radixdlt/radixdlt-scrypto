@@ -54,6 +54,17 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.transaction_intent_hash();
 
+        let nullification = if flags.skip_epoch_check {
+            IntentHashNullification::SimulatedTransactionIntent {
+                simulated: SimulatedTransactionIntentNullification,
+            }
+        } else {
+            IntentHashNullification::TransactionIntent {
+                intent_hash,
+                expiry_epoch: intent.header.inner.end_epoch_exclusive,
+            }
+        };
+
         ExecutableTransaction::new_v1(
             self.encoded_instructions,
             AuthZoneInit::new(initial_proofs, simulate_every_proof_under_resources),
@@ -61,11 +72,7 @@ impl ValidatedPreviewIntent {
             intent.blobs.blobs_by_hash,
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
-                    intent_hash,
-                    expiry_epoch: intent.header.inner.end_epoch_exclusive,
-                    ignore_duplicate: flags.skip_epoch_check,
-                }],
+                intent_hash_nullifications: vec![nullification],
                 epoch_range: if flags.skip_epoch_check {
                     None
                 } else {

@@ -45,7 +45,6 @@ impl ValidatedNotarizedTransactionV1 {
                 intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
-                    ignore_duplicate: false,
                 }],
                 epoch_range: Some(EpochRange {
                     start_epoch_inclusive: header.start_epoch_inclusive,
