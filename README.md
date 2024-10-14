@@ -51,7 +51,7 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
     - Set Rust version
     ```bash
     rustup update
-    rustup default 1.80.1
+    rustup default 1.81.0
     ```
 
 2. Enable `cargo` in the current shell:

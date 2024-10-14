@@ -13,7 +13,7 @@ runs:
         #   - "rustup default XXXX"
         # * Ensure you update the version in the "radix-clis-scrypto-coverage" step,
         #   or update the comment explaining why a different version is used.
-        toolchain: 1.80.1
+        toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown
         components: rustfmt
