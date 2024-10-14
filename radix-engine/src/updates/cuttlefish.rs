@@ -147,49 +147,49 @@ fn generate_principal_batch(
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
     if let UpdateSetting::Enabled(NoSettings) = &system_logic_update {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-protocol-system-logic-updates",
             generate_system_logic_v2_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_settings) = &kernel_version_update {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-protocol-kernel-version-update",
             generate_always_visible_global_nodes_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &transaction_validation_update {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-transaction-validation-updates",
             generate_cuttlefish_transaction_validation_updates(),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &account_getter_methods {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-account-getter-methods",
             generate_cuttlefish_account_getters_extension_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &update_metadata {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-update-metadata",
             generate_cuttlefish_metadata_fix(store),
         ));
     }
     if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-update-number-of-min-rounds-per-epoch",
             generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &update_identity_to_not_create_royalty_module {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-update-identity-to-not-create-royalty-module",
             generate_cuttlefish_update_identity_to_not_create_royalty_module(store),
         ));
     }
     if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_crypto_utils_v2 {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "cuttlefish-vm-boot-to-enable-crypto-utils-v2",
             generate_vm_boot_to_enable_crypto_utils_v2(),
         ));

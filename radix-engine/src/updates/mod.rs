@@ -12,62 +12,69 @@ pub use bottlenose::*;
 pub use cuttlefish::*;
 pub use protocol_builder::*;
 pub use protocol_updates::*;
-use radix_transactions::model::SystemTransactionV1;
+use radix_transactions::model::{FlashTransactionV1, SystemTransactionV1};
 
-// TODO AFTER MERGE WITH NODE: Replace with node's UpdateTransaction
-#[derive(Clone)]
-pub enum ProtocolUpdateTransactionDetails {
-    FlashV1Transaction(FlashProtocolUpdateTransactionDetails),
-    SystemTransactionV1 {
-        name: String,
-        is_genesis: bool,
-        transaction: SystemTransactionV1,
-    },
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProtocolUpdateTransaction {
+    FlashTransactionV1(FlashTransactionV1),
+    SystemTransactionV1(ProtocolSystemTransactionV1),
 }
 
-impl ProtocolUpdateTransactionDetails {
+impl From<FlashTransactionV1> for ProtocolUpdateTransaction {
+    fn from(value: FlashTransactionV1) -> Self {
+        Self::FlashTransactionV1(value)
+    }
+}
+
+impl From<ProtocolSystemTransactionV1> for ProtocolUpdateTransaction {
+    fn from(value: ProtocolSystemTransactionV1) -> Self {
+        Self::SystemTransactionV1(value)
+    }
+}
+
+impl ProtocolUpdateTransaction {
     pub fn flash(name: &str, state_updates: StateUpdates) -> Self {
-        Self::FlashV1Transaction(FlashProtocolUpdateTransactionDetails {
+        Self::FlashTransactionV1(FlashTransactionV1 {
             name: name.to_string(),
             state_updates,
         })
     }
 
     pub fn genesis_transaction(name: &str, transaction: SystemTransactionV1) -> Self {
-        Self::SystemTransactionV1 {
+        Self::SystemTransactionV1(ProtocolSystemTransactionV1 {
             name: name.to_string(),
-            is_genesis: true,
+            disable_auth: true,
             transaction,
-        }
+        })
     }
 
     pub fn name(&self) -> Option<&str> {
         match self {
-            ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
-                Some(flash.name.as_str())
-            }
-            ProtocolUpdateTransactionDetails::SystemTransactionV1 { name, .. } => {
-                Some(name.as_str())
-            }
+            ProtocolUpdateTransaction::FlashTransactionV1(tx) => Some(tx.name.as_str()),
+            ProtocolUpdateTransaction::SystemTransactionV1(tx) => Some(tx.name.as_str()),
         }
     }
 }
 
-// TODO AFTER MERGE WITH NODE: Merge replace with node's FlashTransactionV1
-#[derive(Clone)]
-pub struct FlashProtocolUpdateTransactionDetails {
+/// At present, this isn't actually saved in the node - instead just the
+/// SystemTransactionV1 is saved.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct ProtocolSystemTransactionV1 {
     pub name: String,
-    pub state_updates: StateUpdates,
+    pub disable_auth: bool,
+    pub transaction: SystemTransactionV1,
 }
 
 /// A set of transactions which all get committed together with the same proof.
-/// To avoid memory overflows, this should be kept small (e.g. one transaction each).
+/// To avoid memory overflows, this should be kept small enough to comfortably fit into
+/// memory (e.g. one transaction per batch).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolUpdateBatch {
-    pub transactions: Vec<ProtocolUpdateTransactionDetails>,
+    pub transactions: Vec<ProtocolUpdateTransaction>,
 }
 
 impl ProtocolUpdateBatch {
-    pub fn single(single_transaction: ProtocolUpdateTransactionDetails) -> Self {
+    pub fn single(single_transaction: ProtocolUpdateTransaction) -> Self {
         Self {
             transactions: vec![single_transaction],
         }

@@ -28,14 +28,14 @@ use radix_transactions::model::{ExecutableTransaction, InstructionV2};
 use sbor::prelude::ToString;
 
 /// Multi-thread intent processor for executing multiple subintents
-pub struct MultiThreadIntentProcessor {
-    pub threads: Vec<(IntentProcessor<InstructionV2>, Vec<usize>)>,
+pub struct MultiThreadIntentProcessor<'e> {
+    pub threads: Vec<(IntentProcessor<'e, InstructionV2>, Vec<usize>)>,
 }
 
-impl MultiThreadIntentProcessor {
+impl<'e> MultiThreadIntentProcessor<'e> {
     pub fn init<Y: SystemBasedKernelApi>(
-        executable: ExecutableTransaction,
-        global_address_reservations: Vec<GlobalAddressReservation>,
+        executable: &'e ExecutableTransaction,
+        global_address_reservations: &[GlobalAddressReservation],
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         let mut txn_processors = vec![];
@@ -69,9 +69,9 @@ impl MultiThreadIntentProcessor {
 
             let mut system_service = SystemService::new(api);
             let txn_processor = IntentProcessor::<InstructionV2>::init(
-                intent.encoded_instructions.clone(),
-                global_address_reservations.clone(),
-                intent.blobs.clone(),
+                intent.encoded_instructions.as_ref(),
+                global_address_reservations,
+                &intent.blobs,
                 MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
                 &mut system_service,
             )?;

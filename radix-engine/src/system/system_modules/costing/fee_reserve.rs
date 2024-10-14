@@ -107,6 +107,7 @@ impl RoyaltyRecipient {
 pub struct SystemLoanFeeReserve {
     costing_parameters: CostingParameters,
     transaction_costing_parameters: TransactionCostingParameters,
+    abort_when_loan_repaid: bool,
 
     /// (Cache) The effective execution cost unit price, with tips considered
     effective_execution_cost_unit_price: Decimal,
@@ -143,6 +144,7 @@ impl Default for SystemLoanFeeReserve {
         Self::new(
             CostingParameters::babylon_genesis(),
             TransactionCostingParameters::default(),
+            false,
         )
     }
 }
@@ -162,6 +164,7 @@ impl SystemLoanFeeReserve {
     pub fn new(
         costing_parameters: CostingParameters,
         transaction_costing_parameters: TransactionCostingParameters,
+        abort_when_loan_repaid: bool,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -198,6 +201,7 @@ impl SystemLoanFeeReserve {
         Self {
             costing_parameters,
             transaction_costing_parameters,
+            abort_when_loan_repaid,
 
             // Cache
             effective_execution_cost_unit_price,
@@ -385,7 +389,7 @@ impl SystemLoanFeeReserve {
             });
         }
 
-        if self.transaction_costing_parameters.abort_when_loan_repaid {
+        if self.abort_when_loan_repaid {
             return Err(FeeReserveError::Abort(
                 AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
             ));
@@ -604,9 +608,12 @@ mod tests {
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip = TipSpecifier::Percentage(tip_percentage);
-        transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
-        SystemLoanFeeReserve::new(costing_parameters, transaction_costing_parameters)
+        SystemLoanFeeReserve::new(
+            costing_parameters,
+            transaction_costing_parameters,
+            abort_when_loan_repaid,
+        )
     }
 
     #[test]
