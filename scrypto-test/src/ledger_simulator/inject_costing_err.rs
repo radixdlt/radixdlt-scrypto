@@ -335,6 +335,48 @@ impl<E: KernelTransactionExecutor> KernelCallbackObject for InjectCostingError<E
         let mut api = wrapped_api!(api);
         E::on_drop_node_mut(node_id, &mut api)
     }
+
+    fn on_get_stack_id<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        E::on_get_stack_id(&mut api)
+    }
+
+    fn on_switch_stack<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        E::on_switch_stack(&mut api)
+    }
+
+    fn on_send_to_stack<Y: KernelInternalApi<System = Self>>(
+        value: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        E::on_send_to_stack(value, &mut api)
+    }
+
+    fn on_set_call_frame_data<Y: KernelInternalApi<System = Self>>(
+        data: &Self::CallFrameData,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        E::on_set_call_frame_data(data, &mut api)
+    }
+
+    fn on_get_owned_nodes<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        E::on_get_owned_nodes(&mut api)
+    }
 }
 
 pub struct WrappedKernelApi<
@@ -515,7 +557,7 @@ impl<
 {
     type CallFrameData = E::CallFrameData;
 
-    fn kernel_get_stack_id(&self) -> usize {
+    fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
         self.api.kernel_get_stack_id()
     }
 

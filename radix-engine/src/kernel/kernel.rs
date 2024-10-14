@@ -1242,11 +1242,15 @@ where
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for Kernel<'g, M, S> {
     type CallFrameData = M::CallFrameData;
 
-    fn kernel_get_stack_id(&self) -> usize {
-        self.stacks.current_stack
+    fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
+        M::on_get_stack_id(&mut as_read_only!(self))?;
+
+        Ok(self.stacks.current_stack)
     }
 
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
+        M::on_switch_stack(&mut as_read_only!(self))?;
+
         self.stacks.switch(id)?;
         Ok(())
     }
@@ -1256,6 +1260,8 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
         id: usize,
         value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        M::on_send_to_stack(value, &mut as_read_only!(self))?;
+
         let message = CallFrameMessage::from_output(value);
 
         let (cur, other) = self.stacks.cur_mut_and_other_mut(id);
@@ -1268,11 +1274,15 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     }
 
     fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
+        M::on_set_call_frame_data(&data, &mut as_read_only!(self))?;
+
         *self.stacks.cur_mut().data_mut() = data;
         Ok(())
     }
 
     fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
+        M::on_get_owned_nodes(&mut as_read_only!(self))?;
+
         Ok(self.stacks.cur().owned_nodes())
     }
 }

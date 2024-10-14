@@ -44,7 +44,7 @@ impl<E: KernelTransactionExecutor> KernelApi for MockKernel<E> {
 impl<E: KernelTransactionExecutor> KernelStackApi for MockKernel<E> {
     type CallFrameData = E::CallFrameData;
 
-    fn kernel_get_stack_id(&self) -> usize {
+    fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
         panic1!()
     }
 

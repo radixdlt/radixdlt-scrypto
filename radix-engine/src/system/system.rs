@@ -110,8 +110,8 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
         self.api.kernel_get_system()
     }
 
-    pub fn is_root_thread(&self) -> bool {
-        self.api.kernel_get_stack_id() == 0
+    pub fn is_root_thread(&mut self) -> Result<bool, RuntimeError> {
+        Ok(self.api.kernel_get_stack_id()? == 0)
     }
 }
 
@@ -2233,7 +2233,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
     fn start_lock_fee(&mut self, amount: Decimal, contingent: bool) -> Result<bool, RuntimeError> {
         // Child subintents are only allowed to use contingent fees
         if !contingent {
-            let stack_id = self.api.kernel_get_stack_id();
+            let stack_id = self.api.kernel_get_stack_id()?;
             if stack_id != 0 {
                 return Err(RuntimeError::SystemError(
                     SystemError::CannotLockFeeInChildSubintent(stack_id),

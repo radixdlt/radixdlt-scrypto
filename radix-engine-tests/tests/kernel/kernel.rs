@@ -198,6 +198,38 @@ impl KernelCallbackObject for TestCallbackObject {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    fn on_get_stack_id<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_switch_stack<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_send_to_stack<Y: KernelInternalApi<System = Self>>(
+        _value: &IndexedScryptoValue,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_set_call_frame_data<Y: KernelInternalApi<System = Self>>(
+        _data: &Self::CallFrameData,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_get_owned_nodes<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 enum MoveVariation {
