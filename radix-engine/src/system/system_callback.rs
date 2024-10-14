@@ -1607,8 +1607,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         }
 
         if let Some(range) = executable.overall_proposer_timestamp_range() {
-            if !range.start_timestamp_inclusive.is_none()
-                || !range.end_timestamp_exclusive.is_none()
+            if range.start_timestamp_inclusive.is_some() || range.end_timestamp_exclusive.is_some()
             {
                 let substate: ConsensusManagerProposerMilliTimestampFieldSubstate = store
                     .read_substate(
