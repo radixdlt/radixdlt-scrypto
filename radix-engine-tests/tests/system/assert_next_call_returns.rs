@@ -13,7 +13,7 @@ fn when_more_is_returned_assert_next_call_returns_include_should_succeed() {
             },
             false,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
 }
@@ -30,7 +30,7 @@ fn when_more_is_returned_assert_next_call_returns_only_should_fail() {
             },
             true,
             use_yield,
-            Some(ManifestResourceConstraintsError::UnwantedResourcesExist),
+            |_, resource2| Some(ManifestResourceConstraintsError::UnwantedResourcesExist(resource2)),
         );
     }
 }
@@ -52,7 +52,7 @@ fn when_exact_is_returned_assert_next_call_returns_include_should_succeed() {
             },
             false,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
 }
@@ -74,7 +74,7 @@ fn when_exact_is_returned_assert_next_call_returns_only_should_succeed() {
             },
             true,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
 }
@@ -93,7 +93,7 @@ fn when_less_is_returned_assert_next_call_returns_include_should_fail() {
             },
             false,
             use_yield,
-            Some(ManifestResourceConstraintsError::ResourceConstraint(
+            |_, _| Some(ManifestResourceConstraintsError::ResourceConstraint(
                 ResourceConstraintError::ExpectedAtLeastAmount {
                     expected_at_least_amount: dec!(1),
                     actual_amount: dec!(0),
@@ -117,7 +117,7 @@ fn when_less_is_returned_assert_next_call_returns_only_should_fail() {
             },
             true,
             use_yield,
-            Some(ManifestResourceConstraintsError::ResourceConstraint(
+            |_, _| Some(ManifestResourceConstraintsError::ResourceConstraint(
                 ResourceConstraintError::ExpectedAtLeastAmount {
                     expected_at_least_amount: dec!(1),
                     actual_amount: dec!(0),
@@ -134,7 +134,7 @@ fn when_empty_constraints_on_assert_next_call_returns_include_should_succeed() {
             |_resource1, _resource2| ManifestResourceConstraints::new(),
             false,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
 }
@@ -146,7 +146,7 @@ fn when_empty_constraints_on_assert_next_call_returns_only_should_fail() {
             |_resource1, _resource2| ManifestResourceConstraints::new(),
             true,
             use_yield,
-            Some(ManifestResourceConstraintsError::UnwantedResourcesExist),
+            |_, resource2| Some(ManifestResourceConstraintsError::UnwantedResourcesExist(resource2)),
         );
     }
 }
@@ -169,7 +169,7 @@ fn when_extra_zero_constraints_on_assert_next_call_returns_include_should_succee
             },
             false,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
 }
@@ -192,23 +192,66 @@ fn when_extra_zero_constraints_on_assert_next_call_returns_only_should_succeed()
             },
             true,
             use_yield,
-            None,
+            |_, _| None,
         );
     }
+}
+
+#[test]
+fn when_withdrawing_zero_amount_with_zero_constraints_on_assert_next_call_returns_include_should_succeed() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+
+    // Act
+    let manifest = ManifestBuilder::new_v2()
+        .lock_fee_from_faucet()
+        .assert_next_call_returns_only(ManifestResourceConstraints::new()
+            .with(XRD, ManifestResourceConstraint::ExactAmount(dec!(0))))
+        .withdraw_from_account(account, XRD, dec!(0))
+        .build();
+    let transaction = TestTransaction::new_v2_builder(ledger.next_transaction_nonce())
+        .finish_with_root_intent(manifest, [public_key.signature_proof()]);
+    let receipt = ledger.execute_test_transaction(transaction);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn when_withdrawing_zero_non_fungibles_with_zero_constraints_on_assert_next_call_returns_include_should_succeed() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_non_fungible_resource(account);
+
+    // Act
+    let manifest = ManifestBuilder::new_v2()
+        .lock_fee_from_faucet()
+        .assert_next_call_returns_only(ManifestResourceConstraints::new()
+            .with(resource, ManifestResourceConstraint::ExactNonFungibles(indexset!())))
+        .withdraw_from_account(account, resource, dec!(0))
+        .build();
+    let transaction = TestTransaction::new_v2_builder(ledger.next_transaction_nonce())
+        .finish_with_root_intent(manifest, [public_key.signature_proof()]);
+    let receipt = ledger.execute_test_transaction(transaction);
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 fn run_return_two_resources_test(
     constraints: fn(ResourceAddress, ResourceAddress) -> ManifestResourceConstraints,
     exact: bool,
     use_yield: bool,
-    result: Option<ManifestResourceConstraintsError>,
+    expected_result: fn(ResourceAddress, ResourceAddress) -> Option<ManifestResourceConstraintsError>,
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let transaction = {
+    let (transaction, resource1, resource2) = {
         if !use_yield {
             let (pool, lp, resource1, resource2) = create_pool(&mut ledger, account, &public_key);
             let mut builder = ManifestBuilder::new_v2()
@@ -232,8 +275,8 @@ fn run_return_two_resources_test(
                 })
                 .deposit_entire_worktop(account)
                 .build();
-            TestTransaction::new_v2_builder(ledger.next_transaction_nonce())
-                .finish_with_root_intent(manifest, [public_key.signature_proof()])
+            (TestTransaction::new_v2_builder(ledger.next_transaction_nonce())
+                .finish_with_root_intent(manifest, [public_key.signature_proof()]), resource1, resource2)
         } else {
             let resource1 = ledger.create_freely_mintable_fungible_resource(
                 OwnerRole::None,
@@ -262,7 +305,7 @@ fn run_return_two_resources_test(
 
             let mut txn_builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
             let child = txn_builder.add_subintent(child, [public_key.signature_proof()]);
-            txn_builder.finish_with_root_intent(
+            let transaction = txn_builder.finish_with_root_intent(
                 ManifestBuilder::new_v2()
                     .lock_fee_from_faucet()
                     .use_child("child", child)
@@ -279,14 +322,15 @@ fn run_return_two_resources_test(
                     })
                     .build(),
                 [public_key.signature_proof()],
-            )
+            );
+            (transaction, resource1, resource2)
         }
     };
 
     let receipt = ledger.execute_test_transaction(transaction);
 
     // Assert
-    if let Some(error) = result {
+     if let Some(error) = expected_result(resource1, resource2) {
         receipt.expect_specific_failure(|e| {
             e.eq(&RuntimeError::SystemError(SystemError::IntentError(
                 IntentError::AssertNextCallReturnsFailed(error.clone()),

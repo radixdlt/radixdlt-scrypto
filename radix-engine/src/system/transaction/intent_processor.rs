@@ -160,7 +160,7 @@ impl<'a, I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcesso
     }
 }
 
-pub struct NextCallReturnConstraints {
+pub struct NextCallReturnsConstraints {
     pub constraints: ManifestResourceConstraints,
     pub exact: bool,
 }
@@ -174,7 +174,7 @@ pub struct IntentProcessorObjects<'a> {
     blobs_by_hash: &'a IndexMap<Hash, Vec<u8>>,
     max_total_size_of_blobs: usize,
 
-    pub next_call_return_constraints: Option<NextCallReturnConstraints>,
+    pub next_call_return_constraints: Option<NextCallReturnsConstraints>,
 }
 
 impl<'a> IntentProcessorObjects<'a> {
@@ -440,11 +440,11 @@ impl<'a> IntentProcessorObjects<'a> {
 struct ResourceConstraintChecker {
     fungible_resources: BTreeMap<ResourceAddress, Decimal>,
     non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
-    constraints: NextCallReturnConstraints,
+    constraints: NextCallReturnsConstraints,
 }
 
 impl ResourceConstraintChecker {
-    fn new(constraints: NextCallReturnConstraints) -> Self {
+    fn new(constraints: NextCallReturnsConstraints) -> Self {
         Self {
             fungible_resources: Default::default(),
             non_fungible_resources: Default::default(),

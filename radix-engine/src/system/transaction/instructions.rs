@@ -314,7 +314,7 @@ impl TxnNormalInstruction for AssertNextCallReturnsOnly {
         objects: &mut IntentProcessorObjects,
         _api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
-        objects.next_call_return_constraints = Some(NextCallReturnConstraints {
+        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
             constraints: self.constraints,
             exact: true,
         });
@@ -330,7 +330,7 @@ impl TxnNormalInstruction for AssertNextCallReturnsInclude {
         objects: &mut IntentProcessorObjects,
         _api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
-        objects.next_call_return_constraints = Some(NextCallReturnConstraints {
+        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
             constraints: self.constraints,
             exact: false,
         });
