@@ -4,7 +4,7 @@ use radix_common::constants::AuthAddresses;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedNotarizedTransactionV1 {
     pub prepared: PreparedNotarizedTransactionV1,
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub signer_keys: Vec<PublicKey>,
     pub num_of_signature_validations: usize,
 }
@@ -29,23 +29,22 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 
 #[allow(deprecated)]
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable(&self) -> ExecutableTransaction {
-        let intent = &self.prepared.signed_intent.intent;
-        let header = &intent.header.inner;
+    pub fn create_executable(self) -> ExecutableTransaction {
+        let intent = self.prepared.signed_intent.intent;
         let intent_hash = intent.transaction_intent_hash();
-        let summary = &self.prepared.summary;
+        let header = intent.header.inner;
+        let summary = self.prepared.summary;
 
         ExecutableTransaction::new_v1(
-            self.encoded_instructions.clone(),
+            self.encoded_instructions,
             AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
             intent.instructions.references.clone(),
-            intent.blobs.blobs_by_hash.clone(),
+            intent.blobs.blobs_by_hash,
             ExecutionContext {
                 unique_hash: intent_hash.0,
                 intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
-                    ignore_duplicate: false,
                 }],
                 epoch_range: Some(EpochRange {
                     start_epoch_inclusive: header.start_epoch_inclusive,
@@ -54,9 +53,8 @@ impl ValidatedNotarizedTransactionV1 {
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {
-                    tip: TipSpecifier::Percentage(intent.header.inner.tip_percentage),
+                    tip: TipSpecifier::Percentage(header.tip_percentage),
                     free_credit_in_xrd: Decimal::ZERO,
-                    abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
                 disable_limits_and_costing_modules: false,

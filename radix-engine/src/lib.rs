@@ -41,14 +41,18 @@ pub(crate) mod internal_prelude {
     pub use crate::blueprints::internal_prelude::*;
     pub use crate::errors::*;
     pub use crate::init::*;
+    pub use crate::kernel::kernel_api::*;
     pub use crate::system::system_substates::*;
     pub use crate::{
         dispatch, event_schema, function_schema, method_auth_template, roles_template,
     };
     pub use radix_blueprint_schema_init::*;
     pub use radix_common::prelude::*;
+    pub use radix_engine_interface::api::*;
     pub use radix_engine_interface::blueprints::component::*;
     pub use radix_engine_interface::prelude::*;
+    pub use radix_native_sdk::resource::*;
+    pub use radix_native_sdk::runtime::*;
     pub use radix_substate_store_interface::interface::*;
     pub use sbor::rust::ops::AddAssign;
     pub use sbor::rust::ops::SubAssign;

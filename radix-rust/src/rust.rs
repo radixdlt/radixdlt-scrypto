@@ -34,6 +34,7 @@ pub mod prelude {
     pub use super::mem;
     pub use super::rc::Rc;
     pub use super::str::FromStr;
+    pub use super::sync::Arc;
     pub use super::vec;
 }
 

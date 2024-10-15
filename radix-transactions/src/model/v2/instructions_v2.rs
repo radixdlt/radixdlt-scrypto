@@ -3,17 +3,23 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct InstructionsV2(pub Rc<Vec<InstructionV2>>);
+pub struct InstructionsV2(pub Vec<InstructionV2>);
+
+impl InstructionsV2 {
+    pub fn to_vec(&self) -> Vec<InstructionV2> {
+        self.0.clone()
+    }
+}
 
 impl From<Vec<InstructionV2>> for InstructionsV2 {
     fn from(value: Vec<InstructionV2>) -> Self {
-        InstructionsV2(Rc::new(value))
+        InstructionsV2(value)
     }
 }
 
 impl From<InstructionsV2> for Vec<InstructionV2> {
     fn from(value: InstructionsV2) -> Self {
-        value.0.as_ref().clone()
+        value.0
     }
 }
 

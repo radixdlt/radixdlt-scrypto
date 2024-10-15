@@ -39,7 +39,7 @@ impl TransactionPartialPrepare for BlobsV1 {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedBlobsV1 {
-    pub blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs_by_hash: IndexMap<Hash, Vec<u8>>,
     pub summary: Summary,
 }
 
@@ -59,7 +59,7 @@ impl TransactionPreparableFromValue for PreparedBlobsV1 {
         }
 
         Ok(PreparedBlobsV1 {
-            blobs_by_hash: Rc::new(blobs_by_hash),
+            blobs_by_hash,
             summary,
         })
     }

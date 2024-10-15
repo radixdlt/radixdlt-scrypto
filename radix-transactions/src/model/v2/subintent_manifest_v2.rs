@@ -88,7 +88,7 @@ impl SubintentManifestV2 {
 
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,
@@ -100,7 +100,7 @@ impl SubintentManifestV2 {
         self,
     ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,

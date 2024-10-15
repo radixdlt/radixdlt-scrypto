@@ -34,7 +34,6 @@ use crate::vm::ScryptoVmVersionError;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
-use radix_transactions::model::ProposerTimestampRange;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -49,19 +48,21 @@ pub trait CanBeAbortion {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
     TransactionEpochNotYetValid {
+        /// `start_epoch_inclusive`
         valid_from: Epoch,
         current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: Option<Epoch>,
+        /// One epoch before `end_epoch_exclusive`
+        valid_until: Epoch,
         current_epoch: Epoch,
     },
     TransactionProposerTimestampNotYetValid {
-        range: ProposerTimestampRange,
+        valid_from_inclusive: Instant,
         current_time: Instant,
     },
     TransactionProposerTimestampNoLongerValid {
-        range: ProposerTimestampRange,
+        valid_to_exclusive: Instant,
         current_time: Instant,
     },
     IntentHashPreviouslyCommitted,

@@ -98,7 +98,7 @@ impl<
     /// Executes a transaction
     pub fn execute(
         self,
-        executable: <I::For as KernelTransactionExecutor>::Executable,
+        executable: &<I::For as KernelTransactionExecutor>::Executable,
     ) -> <I::For as KernelTransactionExecutor>::Receipt {
         let boot_loader = BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
@@ -134,7 +134,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
         mut self,
         kernel_boot: KernelBoot,
         callback_init: E::Init,
-        executable: E::Executable,
+        executable: &E::Executable,
     ) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {

@@ -50,19 +50,19 @@ pub enum ResumeResult {
     Done,
 }
 
-pub struct IntentProcessor<I: TxnInstruction + ManifestDecode + ManifestCategorize> {
+pub struct IntentProcessor<'a, I: TxnInstruction + ManifestDecode + ManifestCategorize> {
     remaining_instructions: VecDeque<I>,
     worktop: Worktop,
-    objects: IntentProcessorObjects,
+    objects: IntentProcessorObjects<'a>,
     pub instruction_index: usize,
     pub outputs: Vec<InstructionOutput>,
 }
 
-impl<I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<I> {
+impl<'a, I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcessor<'a, I> {
     pub fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
-        manifest_encoded_instructions: Rc<Vec<u8>>,
-        global_address_reservations: Vec<GlobalAddressReservation>,
-        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+        manifest_encoded_instructions: &[u8],
+        global_address_reservations: &[GlobalAddressReservation],
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
         max_total_size_of_blobs: usize,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
@@ -165,22 +165,22 @@ pub struct NextCallReturnConstraints {
     pub exact: bool,
 }
 
-pub struct IntentProcessorObjects {
+pub struct IntentProcessorObjects<'a> {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
     pub proof_mapping: IndexMap<ManifestProof, NodeId>,
     address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
     address_mapping: NonIterMap<ManifestNamedAddress, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
+    blobs_by_hash: &'a IndexMap<Hash, Vec<u8>>,
     max_total_size_of_blobs: usize,
 
     pub next_call_return_constraints: Option<NextCallReturnConstraints>,
 }
 
-impl IntentProcessorObjects {
+impl<'a> IntentProcessorObjects<'a> {
     fn new(
-        blobs_by_hash: Rc<IndexMap<Hash, Vec<u8>>>,
-        global_address_reservations: Vec<GlobalAddressReservation>,
+        blobs_by_hash: &'a IndexMap<Hash, Vec<u8>>,
+        global_address_reservations: &[GlobalAddressReservation],
         max_total_size_of_blobs: usize,
     ) -> Self {
         let mut processor = Self {
@@ -196,7 +196,7 @@ impl IntentProcessorObjects {
 
         for address_reservation in global_address_reservations {
             processor
-                .create_manifest_address_reservation(address_reservation)
+                .create_manifest_address_reservation(address_reservation.clone())
                 .unwrap();
         }
         processor
@@ -483,15 +483,15 @@ impl ResourceConstraintChecker {
     }
 }
 
-pub struct IntentProcessorObjectsWithApi<'a, 'p, 'w, Y: SystemApi<RuntimeError>> {
-    pub(crate) worktop: &'w mut Worktop,
-    pub(crate) objects: &'p mut IntentProcessorObjects,
+pub struct IntentProcessorObjectsWithApi<'a, 'e, Y: SystemApi<RuntimeError>> {
+    pub(crate) worktop: &'a mut Worktop,
+    pub(crate) objects: &'a mut IntentProcessorObjects<'e>,
     pub(crate) api: &'a mut Y,
     pub(crate) current_total_size_of_blobs: usize,
 }
 
-impl<'a, 'p, 'w, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
-    for IntentProcessorObjectsWithApi<'a, 'p, 'w, Y>
+impl<'a, 'e, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
+    for IntentProcessorObjectsWithApi<'a, 'e, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
         self.objects.take_bucket(&b).map(|x| x.0)

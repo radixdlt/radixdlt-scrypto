@@ -186,6 +186,15 @@ impl TransactionValidator {
         }
     }
 
+    /// Will typically be [`Some`], but [`None`] if the validator is network-independent.
+    pub fn network_id(&self) -> Option<u8> {
+        self.required_network_id
+    }
+
+    pub fn config(&self) -> &TransactionValidationConfig {
+        &self.config
+    }
+
     pub fn preparation_settings(&self) -> &PreparationSettings {
         &self.config.preparation_settings
     }
@@ -210,9 +219,8 @@ impl TransactionValidator {
             .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(
-            &transaction.signed_intent.intent.instructions.inner.0,
-        )?);
+        let encoded_instructions =
+            manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
@@ -231,7 +239,7 @@ impl TransactionValidator {
 
         self.validate_intent_v1(&intent)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(&intent.instructions.inner.0)?);
+        let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
         Ok(ValidatedPreviewIntent {
             intent,
@@ -719,8 +727,8 @@ impl TransactionValidator {
                 &intent_relationships.non_root_subintents,
             )?;
         let root_intent_info = ValidatedIntentInformationV2 {
+            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
             children_subintent_indices: intent_relationships.root_intent.children,
-            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?,
             signature_validations: root_signature_validations,
         };
         let non_root_subintents_info = non_root_subintents
@@ -732,7 +740,8 @@ impl TransactionValidator {
                     Ok(ValidatedIntentInformationV2 {
                         encoded_instructions: manifest_encode(
                             &subintent.intent_core.instructions.inner.0,
-                        )?,
+                        )?
+                        .into(),
                         signature_validations: self
                             .validate_subintent_signatures_v2(subintent, signatures)?,
                         children_subintent_indices: info.children,

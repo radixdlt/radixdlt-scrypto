@@ -21,6 +21,12 @@ pub fn all_scenarios_iter() -> impl Iterator<Item = &'static dyn ScenarioCreator
     ALL_SCENARIOS.values().map(|v| v.as_ref())
 }
 
+pub fn default_testnet_scenarios_at_version(
+    protocol_version: ProtocolVersion,
+) -> impl Iterator<Item = &'static dyn ScenarioCreatorObjectSafe> {
+    all_scenarios_iter().filter(move |v| v.metadata().testnet_run_at == Some(protocol_version))
+}
+
 pub fn get_scenario(logical_name: &str) -> &'static dyn ScenarioCreatorObjectSafe {
     ALL_SCENARIOS.get(logical_name).unwrap().as_ref()
 }
@@ -43,6 +49,8 @@ lazy_static::lazy_static! {
         // scenarios get run, if multiple scenarios can get run at a given time.
         // This order therefore shouldn't be changed, to avoid affecting historic
         // execution on testnets.
+
+        // testnet_run_at: BABYLON
         add(&mut map, transfer_xrd::TransferXrdScenarioCreator);
         add(&mut map, radiswap::RadiswapScenarioCreator);
         add(&mut map, metadata::MetadataScenarioCreator);
@@ -53,10 +61,14 @@ lazy_static::lazy_static! {
         add(&mut map, non_fungible_resource_with_remote_type::NonFungibleResourceWithRemoteTypeScenarioCreator);
         add(&mut map, kv_store_with_remote_type::KVStoreScenarioCreator);
         add(&mut map, max_transaction::MaxTransactionScenarioCreator);
-        add(&mut map, royalties::RoyaltiesScenarioCreator);
+
+        // testnet_run_at: BOTTLENOSE
         add(&mut map, account_locker::AccountLockerScenarioCreator);
         add(&mut map, maya_router::MayaRouterScenarioCreator);
         add(&mut map, access_controller_v2::AccessControllerV2ScenarioCreator);
+
+        // testnet_run_at: CUTTLEFISH
+        add(&mut map, royalties::RoyaltiesScenarioCreator);
         add(&mut map, basic_subintents::BasicSubintentsScenarioCreator);
 
         map

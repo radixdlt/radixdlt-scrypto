@@ -201,8 +201,8 @@ fn bench_spin_loop(c: &mut Criterion) {
                 TransactionCostingParameters {
                     free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
                     tip: Default::default(),
-                    abort_when_loan_repaid: false,
                 },
+                false,
             );
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(

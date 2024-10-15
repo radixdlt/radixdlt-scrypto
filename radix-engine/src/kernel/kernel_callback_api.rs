@@ -171,7 +171,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Start execution
     fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: Self::Executable,
+        executable: &Self::Executable,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution

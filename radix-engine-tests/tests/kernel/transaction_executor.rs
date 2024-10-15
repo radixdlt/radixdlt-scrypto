@@ -139,7 +139,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     assert_eq!(
         rejection_error,
         &RejectionReason::TransactionEpochNoLongerValid {
-            valid_until: Some(valid_until_epoch),
+            valid_until: valid_until_epoch,
             current_epoch
         }
     );

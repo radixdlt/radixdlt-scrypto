@@ -97,7 +97,7 @@ impl<
 
     fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         E::execute(&mut api, executable)

@@ -1,8 +1,4 @@
-use crate::rust::borrow::Cow;
-use crate::rust::borrow::ToOwned;
-use crate::rust::boxed::Box;
-use crate::rust::cell::RefCell;
-use crate::rust::rc::Rc;
+use crate::internal_prelude::*;
 use crate::value_kind::*;
 use crate::*;
 
@@ -100,6 +96,29 @@ impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Rc<T> {
     }
 }
 
+impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Arc<T> {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        T::value_kind()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Arc<T> {
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
+impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Arc<T> {
+    fn get_discriminator(&self) -> u8 {
+        self.as_ref().get_discriminator()
+    }
+
+    fn get_length(&self) -> usize {
+        self.as_ref().get_length()
+    }
+}
+
 impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for RefCell<T> {
     #[inline]
     fn value_kind() -> ValueKind<X> {
@@ -173,6 +192,18 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Rc<T> 
     }
 }
 
+impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Arc<T> {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_value_kind(encoder)
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_ref().encode_body(encoder)
+    }
+}
+
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for RefCell<T> {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -228,6 +259,21 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Rc<T> 
     }
 }
 
+impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Arc<T> {
+    #[inline]
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<X>,
+    ) -> Result<Self, DecodeError> {
+        // This sadly won't allow us to decode into `Arc<[X]>` but we can't do that without
+        // some form of specialization, or we could create an `ArcSlice<T>` newtype to permit this.
+        // For now, we can use `Arc<Vec<u8>>` in these cases, even if it's a double-indirection.
+        Ok(Arc::new(T::decode_body_with_value_kind(
+            decoder, value_kind,
+        )?))
+    }
+}
+
 impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCell<T> {
     #[inline]
     fn decode_body_with_value_kind(
@@ -261,5 +307,6 @@ mod schema {
 
     wrapped_generic_describe!(T, Box<T>, T);
     wrapped_generic_describe!(T, Rc<T>, T);
+    wrapped_generic_describe!(T, Arc<T>, T);
     wrapped_generic_describe!(T, RefCell<T>, T);
 }
