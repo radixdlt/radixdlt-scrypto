@@ -1112,9 +1112,7 @@ impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
         f: &mut F,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        // The state updates are bizarrely full of lots of partitions with empty updates,
-        // so we remove them to avoid polluting the output.
-        let state_updates = self.0.rebuild_without_empty_entries();
+        let state_updates = self.0;
         let system_structure = self.1;
         context.format_top_level_title_with_detail(
             f,

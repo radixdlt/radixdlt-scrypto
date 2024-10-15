@@ -2,7 +2,7 @@ Name: account_authorized_depositors
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 928ded391511ceee (allowed to change if not deployed to any network)
+State changes: 4feea71836f65a97 (allowed to change if not deployed to any network)
 Events       : db4e6f13834fc4ce (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==

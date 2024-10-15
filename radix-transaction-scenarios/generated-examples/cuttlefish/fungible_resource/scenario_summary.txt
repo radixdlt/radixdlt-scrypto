@@ -2,7 +2,7 @@ Name: fungible_resource
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: c6668fcc4c774764 (allowed to change if not deployed to any network)
+State changes: d28e7fe06868719d (allowed to change if not deployed to any network)
 Events       : f8620fd13a040715 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==

@@ -65,30 +65,37 @@ impl TrackedSubstates {
             }
 
             for (partition_num, tracked_partition) in tracked_node.tracked_partitions {
-                let mut partition_updates = index_map_new();
-                for tracked in tracked_partition.substates.into_values() {
-                    let update = match tracked.substate_value {
-                        TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => None,
-                        TrackedSubstateValue::ReadNonExistAndWrite(substate)
-                        | TrackedSubstateValue::New(substate) => {
-                            Some(DatabaseUpdate::Set(substate.value.into()))
-                        }
-                        TrackedSubstateValue::ReadExistAndWrite(_, write)
-                        | TrackedSubstateValue::WriteOnly(write) => match write {
-                            Write::Delete => Some(DatabaseUpdate::Delete),
-                            Write::Update(substate) => {
-                                Some(DatabaseUpdate::Set(substate.value.into()))
+                let partition_updates: IndexMap<_, _> = tracked_partition
+                    .substates
+                    .into_values()
+                    .filter_map(|tracked| {
+                        let update = match tracked.substate_value {
+                            TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => {
+                                return None
                             }
-                        },
-                    };
-                    if let Some(update) = update {
-                        partition_updates.insert(tracked.substate_key, update);
-                    }
+                            TrackedSubstateValue::ReadNonExistAndWrite(substate)
+                            | TrackedSubstateValue::New(substate) => {
+                                DatabaseUpdate::Set(substate.value.into())
+                            }
+                            TrackedSubstateValue::ReadExistAndWrite(_, write)
+                            | TrackedSubstateValue::WriteOnly(write) => match write {
+                                Write::Delete => DatabaseUpdate::Delete,
+                                Write::Update(substate) => {
+                                    DatabaseUpdate::Set(substate.value.into())
+                                }
+                            },
+                        };
+                        Some((tracked.substate_key, update))
+                    })
+                    .collect();
+
+                // Filter out empty partition updates, to avoid wasted work downstream (e.g. in the Merkle Tree in the node)
+                if partition_updates.len() > 0 {
+                    state_updates
+                        .of_node(node_id)
+                        .of_partition(partition_num)
+                        .mut_update_substates(partition_updates);
                 }
-                state_updates
-                    .of_node(node_id)
-                    .of_partition(partition_num)
-                    .update_substates(partition_updates);
             }
         }
 

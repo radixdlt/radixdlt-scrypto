@@ -2,7 +2,7 @@ Name: radiswap
 
 == SUMMARY HASHES ==
 These Anemone hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 7f4fc3b858013cf9 (should never change)
+State changes: 00228a7578419040 (should never change)
 Events       : a9dc72ab9f4754cb (should never change)
 
 == INTERESTING ADDRESSES ==

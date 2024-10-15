@@ -2,7 +2,7 @@ Name: fungible_resource
 
 == SUMMARY HASHES ==
 These Babylon hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 2b628da2fd5f10a2 (should never change)
+State changes: e77b1d9acc961d06 (should never change)
 Events       : c42e7da52af922fb (should never change)
 
 == INTERESTING ADDRESSES ==

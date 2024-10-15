@@ -2,7 +2,7 @@ Name: global_n_owned
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: c0b433e25757d94f (should never change)
+State changes: c92ceafbc3bbda3c (should never change)
 Events       : 4f8404841812beac (should never change)
 
 == INTERESTING ADDRESSES ==

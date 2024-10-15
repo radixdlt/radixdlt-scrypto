@@ -2,7 +2,7 @@ Name: transfer_xrd
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 65a7703ffc552473 (allowed to change if not deployed to any network)
+State changes: 4ef729439808e9a5 (allowed to change if not deployed to any network)
 Events       : fbaf91bd6b461b0f (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==

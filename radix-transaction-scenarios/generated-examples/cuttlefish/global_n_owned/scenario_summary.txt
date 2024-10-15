@@ -2,7 +2,7 @@ Name: global_n_owned
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 8472f69ea77238d2 (allowed to change if not deployed to any network)
+State changes: a57fd4a73d3acfeb (allowed to change if not deployed to any network)
 Events       : f121a4c24949b79f (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
