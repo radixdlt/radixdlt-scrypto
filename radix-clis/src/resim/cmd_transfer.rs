@@ -68,7 +68,7 @@ impl Transfer {
             .try_deposit_entire_worktop_or_refund(self.recipient.0, None)
             .build();
         handle_manifest(
-            manifest,
+            manifest.into(),
             &self.signing_keys,
             &self.network,
             &self.manifest,

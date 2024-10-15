@@ -14,3 +14,17 @@ pub mod scrypto_bindgen;
 pub mod utils;
 
 pub mod error;
+
+pub mod prelude {
+    pub(crate) use crate::utils::*;
+    pub(crate) use clap::Parser;
+    pub(crate) use radix_common::prelude::*;
+    pub(crate) use radix_engine::utils::*;
+    pub(crate) use radix_engine_interface::prelude::*;
+    pub(crate) use radix_transactions::manifest::*;
+    pub(crate) use radix_transactions::prelude::*;
+    pub(crate) use std::env;
+    pub(crate) use std::fmt;
+    pub(crate) use std::fs;
+    pub(crate) use std::path::{Path, PathBuf};
+}

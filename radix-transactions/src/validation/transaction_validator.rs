@@ -269,15 +269,9 @@ impl TransactionValidator {
         if instructions.len() > self.config.max_instructions {
             return Err(ManifestValidationError::TooManyInstructions.into());
         }
-        impl<'a> ReadableManifest for (&'a [InstructionV1], &'a IndexMap<Hash, Vec<u8>>) {
-            type Instruction = InstructionV1;
-
+        impl<'a> ReadableManifestBase for (&'a [InstructionV1], &'a IndexMap<Hash, Vec<u8>>) {
             fn is_subintent(&self) -> bool {
                 false
-            }
-
-            fn get_instructions(&self) -> &[Self::Instruction] {
-                self.0
             }
 
             fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
@@ -286,6 +280,13 @@ impl TransactionValidator {
 
             fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
                 ManifestObjectNamesRef::Unknown
+            }
+        }
+        impl<'a> TypedReadableManifest for (&'a [InstructionV1], &'a IndexMap<Hash, Vec<u8>>) {
+            type Instruction = InstructionV1;
+
+            fn get_typed_instructions(&self) -> &[Self::Instruction] {
+                self.0
             }
         }
 
@@ -943,7 +944,7 @@ impl TransactionValidator {
         if instructions.len() > self.config.max_instructions {
             return Err(ManifestValidationError::TooManyInstructions);
         }
-        impl<'a> ReadableManifest
+        impl<'a> ReadableManifestBase
             for (
                 &'a [InstructionV2],
                 &'a IndexMap<Hash, Vec<u8>>,
@@ -951,14 +952,8 @@ impl TransactionValidator {
                 bool,
             )
         {
-            type Instruction = InstructionV2;
-
             fn is_subintent(&self) -> bool {
                 self.3
-            }
-
-            fn get_instructions(&self) -> &[Self::Instruction] {
-                self.0
             }
 
             fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
@@ -971,6 +966,20 @@ impl TransactionValidator {
 
             fn get_child_subintents(&self) -> &[ChildSubintent] {
                 &self.2
+            }
+        }
+        impl<'a> TypedReadableManifest
+            for (
+                &'a [InstructionV2],
+                &'a IndexMap<Hash, Vec<u8>>,
+                &'a [ChildSubintent],
+                bool,
+            )
+        {
+            type Instruction = InstructionV2;
+
+            fn get_typed_instructions(&self) -> &[Self::Instruction] {
+                self.0
             }
         }
         let mut yield_summary = ManifestYieldSummary {
