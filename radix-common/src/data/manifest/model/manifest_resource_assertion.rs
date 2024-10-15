@@ -176,12 +176,16 @@ impl ManifestResourceConstraints {
         if exact {
             for (fungible_resource, amount) in fungible_resources {
                 if amount.is_positive() {
-                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(fungible_resource));
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        fungible_resource,
+                    ));
                 }
             }
             for (non_fungible_resource, ids) in non_fungible_resources {
                 if !ids.is_empty() {
-                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(non_fungible_resource));
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        non_fungible_resource,
+                    ));
                 }
             }
         }
