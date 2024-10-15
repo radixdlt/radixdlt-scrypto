@@ -1,10 +1,4 @@
-use clap::Parser;
-use radix_common::prelude::*;
-use radix_engine::utils::*;
-use radix_transactions::manifest::*;
-use std::fmt;
-use std::path::PathBuf;
-use std::str::FromStr;
+use crate::prelude::*;
 
 /// Radix transaction manifest decompiler
 #[derive(Parser, Debug)]
@@ -69,7 +63,8 @@ pub fn run() -> Result<(), String> {
         .map_err(Error::InstructionSchemaValidationError)?;
 
     let decompiled = decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
-    std::fs::write(&args.output, &decompiled).map_err(Error::IoError)?;
+
+    write_ensuring_folder_exists(&args.output, &decompiled).map_err(Error::IoError)?;
 
     if args.export_blobs {
         let directory = args.output.parent().unwrap();

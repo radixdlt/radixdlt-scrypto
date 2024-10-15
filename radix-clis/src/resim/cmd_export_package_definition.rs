@@ -21,7 +21,7 @@ impl ExportPackageDefinition {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         match export_package_schema(self.package_address.0) {
             Ok(schema) => {
-                fs::write(
+                write_ensuring_folder_exists(
                     &self.output,
                     scrypto_encode(&schema).map_err(Error::SborEncodeError)?,
                 )

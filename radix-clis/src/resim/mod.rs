@@ -53,26 +53,16 @@ pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
 pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
+use crate::prelude::*;
 use clap::{Parser, Subcommand};
-use radix_common::crypto::{hash, Secp256k1PrivateKey};
-use radix_common::network::NetworkDefinition;
-use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_interface::types::FromPublicKey;
-use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_transactions::manifest::*;
-use radix_transactions::prelude::*;
 use radix_transactions::validation::TransactionValidator;
-use std::env;
-use std::fs;
-use std::path::PathBuf;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -206,14 +196,14 @@ pub fn handle_manifest<O: std::io::Write>(
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
                 let manifest_str =
                     decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
-                fs::write(path, manifest_str).map_err(Error::IOError)?;
+                write_ensuring_folder_exists(path, manifest_str).map_err(Error::IOError)?;
                 for (blob_hash, blob) in manifest.get_blobs() {
                     let mut blob_path = path
                         .parent()
                         .expect("Manifest file parent not found")
                         .to_owned();
                     blob_path.push(format!("{}.blob", blob_hash));
-                    fs::write(blob_path, blob).map_err(Error::IOError)?;
+                    write_ensuring_folder_exists(blob_path, blob).map_err(Error::IOError)?;
                 }
             }
             Ok(None)

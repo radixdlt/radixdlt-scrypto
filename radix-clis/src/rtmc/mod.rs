@@ -1,10 +1,4 @@
-use clap::Parser;
-use radix_common::prelude::*;
-use radix_engine::utils::*;
-use radix_transactions::manifest::*;
-use std::fmt;
-use std::path::PathBuf;
-use std::str::FromStr;
+use crate::prelude::*;
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -84,7 +78,7 @@ pub fn run() -> Result<(), String> {
     validate_call_arguments_to_native_components(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;
 
-    std::fs::write(
+    write_ensuring_folder_exists(
         args.output,
         manifest_encode(&manifest).map_err(Error::EncodeError)?,
     )
