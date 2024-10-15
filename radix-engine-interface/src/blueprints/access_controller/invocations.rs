@@ -44,6 +44,8 @@ pub const ACCESS_CONTROLLER_CREATE_PROOF_IDENT: &str = "create_proof";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerCreateProofInput {}
 
+pub type AccessControllerCreateProofManifestInput = AccessControllerCreateProofInput;
+
 pub type AccessControllerCreateProofOutput = Proof;
 
 //================================================
@@ -58,6 +60,9 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
+
+pub type AccessControllerInitiateRecoveryAsPrimaryManifestInput =
+    AccessControllerInitiateRecoveryAsPrimaryInput;
 
 pub type AccessControllerInitiateRecoveryAsPrimaryOutput = ();
 
@@ -74,6 +79,9 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+pub type AccessControllerInitiateRecoveryAsRecoveryManifestInput =
+    AccessControllerInitiateRecoveryAsRecoveryInput;
+
 pub type AccessControllerInitiateRecoveryAsRecoveryOutput = ();
 
 //==============================================================
@@ -86,6 +94,9 @@ pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT: &s
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput;
 
+pub type AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryManifestInput =
+    AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput;
+
 pub type AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput = ();
 
 //===============================================================
@@ -97,6 +108,9 @@ pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT: &
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput;
+
+pub type AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryManifestInput =
+    AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput;
 
 pub type AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput = ();
 
@@ -113,6 +127,9 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+pub type AccessControllerQuickConfirmPrimaryRoleRecoveryProposalManifestInput =
+    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput;
+
 pub type AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput = ();
 
 //========================================================
@@ -128,6 +145,9 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+pub type AccessControllerQuickConfirmRecoveryRoleRecoveryProposalManifestInput =
+    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput;
+
 pub type AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput = ();
 
 //=====================================================================
@@ -140,6 +160,9 @@ pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_ID
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput;
 
+pub type AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptManifestInput =
+    AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput;
+
 pub type AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput = Bucket;
 
 //======================================================================
@@ -151,6 +174,9 @@ pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_I
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput;
+
+pub type AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptManifestInput =
+    AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput;
 
 pub type AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput = Bucket;
 
@@ -166,6 +192,9 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+pub type AccessControllerTimedConfirmRecoveryManifestInput =
+    AccessControllerTimedConfirmRecoveryInput;
+
 pub type AccessControllerTimedConfirmRecoveryOutput = ();
 
 //=========================================================
@@ -177,6 +206,9 @@ pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerCancelPrimaryRoleRecoveryProposalInput;
+
+pub type AccessControllerCancelPrimaryRoleRecoveryProposalManifestInput =
+    AccessControllerCancelPrimaryRoleRecoveryProposalInput;
 
 pub type AccessControllerCancelPrimaryRoleRecoveryProposalOutput = ();
 
@@ -190,6 +222,9 @@ pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 
+pub type AccessControllerCancelRecoveryRoleRecoveryProposalManifestInput =
+    AccessControllerCancelRecoveryRoleRecoveryProposalInput;
+
 pub type AccessControllerCancelRecoveryRoleRecoveryProposalOutput = ();
 
 //==============================================================
@@ -201,6 +236,9 @@ pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &s
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput;
+
+pub type AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptManifestInput =
+    AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput;
 
 pub type AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput = ();
 
@@ -214,6 +252,9 @@ pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput;
 
+pub type AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptManifestInput =
+    AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput;
+
 pub type AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput = ();
 
 //=====================================
@@ -225,6 +266,8 @@ pub const ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT: &str = "lock_primary_role";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerLockPrimaryRoleInput;
 
+pub type AccessControllerLockPrimaryRoleManifestInput = AccessControllerLockPrimaryRoleInput;
+
 pub type AccessControllerLockPrimaryRoleOutput = ();
 
 //=======================================
@@ -235,6 +278,8 @@ pub const ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT: &str = "unlock_primary_ro
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccessControllerUnlockPrimaryRoleInput;
+
+pub type AccessControllerUnlockPrimaryRoleManifestInput = AccessControllerUnlockPrimaryRoleInput;
 
 pub type AccessControllerUnlockPrimaryRoleOutput = ();
 
@@ -250,6 +295,8 @@ pub struct AccessControllerStopTimedRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
+pub type AccessControllerStopTimedRecoveryManifestInput = AccessControllerStopTimedRecoveryInput;
+
 pub type AccessControllerStopTimedRecoveryOutput = ();
 
 //========================================
@@ -262,6 +309,8 @@ pub const ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT: &str = "mint_recovery_ba
 pub struct AccessControllerMintRecoveryBadgesInput {
     pub non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
 }
+
+pub type AccessControllerMintRecoveryBadgesManifestInput = AccessControllerMintRecoveryBadgesInput;
 
 pub type AccessControllerMintRecoveryBadgesOutput = Bucket;
 
@@ -278,6 +327,8 @@ pub struct AccessControllerLockRecoveryFeeInput {
     pub amount: Decimal,
 }
 
+pub type AccessControllerLockRecoveryFeeManifestInput = AccessControllerLockRecoveryFeeInput;
+
 pub type AccessControllerLockRecoveryFeeOutput = ();
 
 //========================
@@ -290,6 +341,9 @@ pub const ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT: &str = "withdraw_recove
 pub struct AccessControllerWithdrawRecoveryFeeInput {
     pub amount: Decimal,
 }
+
+pub type AccessControllerWithdrawRecoveryFeeManifestInput =
+    AccessControllerWithdrawRecoveryFeeInput;
 
 pub type AccessControllerWithdrawRecoveryFeeOutput = Bucket;
 

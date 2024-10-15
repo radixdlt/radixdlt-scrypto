@@ -38,14 +38,8 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                     unreachable!()
                 };
                 let manifest = TransactionManifestV1 {
-                    instructions: transaction.signed_intent.intent.instructions.inner.into(),
-                    blobs: transaction
-                        .signed_intent
-                        .intent
-                        .blobs
-                        .blobs_by_hash
-                        .as_ref()
-                        .clone(),
+                    instructions: transaction.signed_intent.intent.instructions.inner.0,
+                    blobs: transaction.signed_intent.intent.blobs.blobs_by_hash,
                     object_names: Default::default(),
                 };
                 decompile(&manifest, &NetworkDefinition::simulator()).unwrap()
@@ -66,13 +60,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                     };
                     let manifest = TransactionManifestV1 {
                         instructions: transaction.signed_intent.intent.instructions.inner.into(),
-                        blobs: transaction
-                            .signed_intent
-                            .intent
-                            .blobs
-                            .blobs_by_hash
-                            .as_ref()
-                            .clone(),
+                        blobs: transaction.signed_intent.intent.blobs.blobs_by_hash,
                         object_names: Default::default(),
                     };
                     let decompiled = decompile(&manifest, &NetworkDefinition::simulator()).unwrap();

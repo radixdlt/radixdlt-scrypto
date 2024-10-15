@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
+    CheckReferenceEvent, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
@@ -125,10 +125,22 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn ref_check(&self, event: &RefCheckEvent) -> u32 {
+    pub fn check_reference(&self, event: &CheckReferenceEvent) -> u32 {
         match event {
-            RefCheckEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+            CheckReferenceEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }
+    }
+
+    #[inline]
+    pub fn check_intent_validity(&self) -> u32 {
+        // Equivalent to an `IOAccess::ReadFromDbNotFound`
+        160000
+    }
+
+    #[inline]
+    pub fn check_timestamp(&self) -> u32 {
+        // Equivalent to an `IOAccess::ReadFromDb`
+        40_000
     }
 
     #[inline]
@@ -522,6 +534,59 @@ impl FeeTable {
         instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
+    #[inline]
+    pub fn blake2b256_hash_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_blake2b_256_costing`
+        // - For sizes less than 100, instruction count remains the same.
+        // - For greater sizes following linear equation might be applied:
+        //   instructions_cnt = 14.79642 * size + 1111.02264
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     14.79642  -> 15
+        //     1111.02264 -> 1600 (increased to get more accurate difference between calculated
+        //          and measured instruction)
+        let size = if size < 100 { 100 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 15), 1600);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn ed25519_verify_cost(&self, size: usize) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_ed25519_costing`
+        //   instructions_cnt = 33.08798 * size + 444420.94242
+        //   (used: https://www.socscistatistics.com/tests/regression/default.aspx)
+        //   Lets round:
+        //     33.08798 -> 34
+        //     444420.94242 -> 500000 (increased slightly make sure we get the positive difference between
+        //             calculated and measured number of instructions)
+        let instructions_cnt = add(mul(cast(size), 34), 500000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn secp256k1_ecdsa_verify_cost(&self) -> u32 {
+        // Based on  `test_crypto_scrypto_verify_secp256k1_ecdsa_costing`
+        //   instructions_cnt = 464236 (input is always 32 bytes long)
+        //   Lets round:
+        //     464236 -> 500000
+        let instructions_cnt = 500000;
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
+    pub fn secp256k1_ecdsa_key_recover_cost(&self) -> u32 {
+        // Based on  `test_crypto_scrypto_key_recover_secp256k1_ecdsa`
+        //   instructions_cnt = 464236 (input is always 32 bytes long)
+        //   Lets round:
+        //     463506 -> 500000
+        let instructions_cnt = 500000;
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
     //======================
     // Finalization costs
     // This is primarily to account for the additional work on the Node side
@@ -555,6 +620,12 @@ impl FeeTable {
             sum += add(cast(log.1.len()) / 4, 1_000)
         }
         sum
+    }
+
+    #[inline]
+    pub fn commit_intent_status(&self, num_of_intent_statuses: usize) -> u32 {
+        // Equivalent to a substate insertion
+        mul(cast(num_of_intent_statuses), 100_000)
     }
 }
 

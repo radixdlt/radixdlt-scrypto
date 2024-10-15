@@ -1,3 +1,4 @@
+use crate::ScryptoSbor;
 use radix_rust::copy_u8_array;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
@@ -33,11 +34,23 @@ impl TryFrom<&[u8]> for Secp256k1Signature {
     }
 }
 
+impl AsRef<Self> for Secp256k1Signature {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
+impl AsRef<[u8]> for Secp256k1Signature {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 //======
 // error
 //======
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ParseSecp256k1SignatureError {
     InvalidHex(String),
     InvalidLength(usize),

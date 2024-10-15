@@ -5,6 +5,8 @@ use radix_common::data::manifest::model::*;
 use radix_common::math::*;
 use radix_common::prelude::*;
 
+pub const TWO_RESOURCE_POOL_BLUEPRINT: &str = "TwoResourcePool";
+
 define_type_marker!(Some(POOL_PACKAGE), TwoResourcePool);
 
 define_invocation! {

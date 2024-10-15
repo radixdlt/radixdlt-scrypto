@@ -1,24 +1,14 @@
-use crate::blueprints::transaction_processor::{
-    IntentProcessorObjects, IntentProcessorObjectsWithApi, TransactionProcessorError,
-};
-use crate::errors::{ApplicationError, RuntimeError};
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_common::prelude::{scrypto_encode, BlueprintId, ManifestValue, Own, ScryptoValue};
-use radix_engine_interface::api::{AttachedModuleId, SystemApi};
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_interface::prelude::{IndexedScryptoValue, Proof};
-use radix_native_sdk::resource::{
-    NativeBucket, NativeFungibleBucket, NativeNonFungibleBucket, NativeProof, Worktop,
-};
-use radix_native_sdk::runtime::LocalAuthZone;
-use radix_rust::prelude::*;
+use crate::blueprints::transaction_processor::*;
+use crate::internal_prelude::*;
+use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_transactions::data::transform;
 use radix_transactions::manifest::*;
-use radix_transactions::model::{InstructionV1, InstructionV2};
+use radix_transactions::prelude::*;
 
-pub enum Yield {
-    ToChild(usize, ScryptoValue),
-    ToParent(ScryptoValue),
+pub enum MultiThreadResult {
+    SwitchToChild(usize, ScryptoValue),
+    SwitchToParent(ScryptoValue),
+    VerifyParent(AccessRule),
 }
 
 pub trait TxnInstruction {
@@ -27,7 +17,7 @@ pub trait TxnInstruction {
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError>;
+    ) -> Result<(InstructionOutput, Option<MultiThreadResult>), RuntimeError>;
 }
 
 impl TxnInstruction for InstructionV1 {
@@ -36,7 +26,7 @@ impl TxnInstruction for InstructionV1 {
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
+    ) -> Result<(InstructionOutput, Option<MultiThreadResult>), RuntimeError> {
         let output = match self {
             InstructionV1::TakeAllFromWorktop(i) => i.execute(worktop, objects, api),
             InstructionV1::TakeFromWorktop(i) => i.execute(worktop, objects, api),
@@ -83,7 +73,7 @@ impl TxnInstruction for InstructionV2 {
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<(InstructionOutput, Option<Yield>), RuntimeError> {
+    ) -> Result<(InstructionOutput, Option<MultiThreadResult>), RuntimeError> {
         let output = match self {
             InstructionV2::TakeAllFromWorktop(i) => i.execute(worktop, objects, api),
             InstructionV2::TakeFromWorktop(i) => i.execute(worktop, objects, api),
@@ -96,7 +86,7 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
             InstructionV2::AssertNextCallReturnsOnly(_) => todo!(),
             InstructionV2::AssertNextCallReturnsInclude(_) => todo!(),
-            InstructionV2::AssertBucketContents(_) => todo!(),
+            InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::CreateProofFromAuthZoneOfAmount(i) => i.execute(worktop, objects, api),
@@ -124,7 +114,11 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::DropNamedProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::DropAllProofs(i) => i.execute(worktop, objects, api),
             InstructionV2::AllocateGlobalAddress(i) => i.execute(worktop, objects, api),
-            InstructionV2::VerifyParent(_) => todo!(),
+            InstructionV2::VerifyParent(i) => {
+                return i
+                    .execute(worktop, objects, api)
+                    .map(|rtn| (InstructionOutput::None, Some(rtn)));
+            }
             InstructionV2::YieldToChild(i) => {
                 return i
                     .execute(worktop, objects, api)
@@ -141,22 +135,22 @@ impl TxnInstruction for InstructionV2 {
     }
 }
 
-pub trait YieldingInstruction {
+pub trait MultiThreadInstruction {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<Yield, RuntimeError>;
+    ) -> Result<MultiThreadResult, RuntimeError>;
 }
 
-impl YieldingInstruction for YieldToChild {
+impl MultiThreadInstruction for YieldToChild {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<Yield, RuntimeError> {
+    ) -> Result<MultiThreadResult, RuntimeError> {
         // TODO: should we disallow blobs in yield instructions?
         let scrypto_value = {
             let mut processor_with_api = IntentProcessorObjectsWithApi {
@@ -168,17 +162,20 @@ impl YieldingInstruction for YieldToChild {
             transform(self.args, &mut processor_with_api)?
         };
 
-        Ok(Yield::ToChild(self.child_index.0 as usize, scrypto_value))
+        Ok(MultiThreadResult::SwitchToChild(
+            self.child_index.0 as usize,
+            scrypto_value,
+        ))
     }
 }
 
-impl YieldingInstruction for YieldToParent {
+impl MultiThreadInstruction for YieldToParent {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
         objects: &mut IntentProcessorObjects,
         api: &mut Y,
-    ) -> Result<Yield, RuntimeError> {
+    ) -> Result<MultiThreadResult, RuntimeError> {
         // TODO: should we disallow blobs in yield instructions?
         let scrypto_value = {
             let mut processor_with_api = IntentProcessorObjectsWithApi {
@@ -190,7 +187,18 @@ impl YieldingInstruction for YieldToParent {
             transform(self.args, &mut processor_with_api)?
         };
 
-        Ok(Yield::ToParent(scrypto_value))
+        Ok(MultiThreadResult::SwitchToParent(scrypto_value))
+    }
+}
+
+impl MultiThreadInstruction for VerifyParent {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        _objects: &mut IntentProcessorObjects,
+        _api: &mut Y,
+    ) -> Result<MultiThreadResult, RuntimeError> {
+        Ok(MultiThreadResult::VerifyParent(self.access_rule))
     }
 }
 
@@ -295,6 +303,36 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertBucketContents {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        let bucket = objects.get_bucket(&self.bucket_id)?;
+
+        let resource_address = bucket.resource_address(api)?;
+        if resource_address.is_fungible() {
+            let amount = bucket.amount(api)?;
+            self.constraint.validate_fungible(amount).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
+        } else {
+            let ids = bucket.non_fungible_local_ids(api)?;
+            self.constraint.validate_non_fungible(ids).map_err(|e| {
+                RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::AssertBucketContentsFailed(e),
+                ))
+            })?;
+        }
+
         Ok(InstructionOutput::None)
     }
 }

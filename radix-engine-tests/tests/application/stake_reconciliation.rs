@@ -9,7 +9,7 @@ use scrypto_test::prelude::*;
 // bigger and changed the costing.
 //
 // The best way to debug this is to run the following to dump a new trace.
-// cargo test --package radix-engine-tests --test application -- application::stake_reconciliation::test_stake_reconciliation --exact --show-output > radix-engine-tests/tests/application/reconciliation_log.txt
+// cargo test --package radix-engine-tests -- application::stake_reconciliation::test_stake_reconciliation --exact --show-output > radix-engine-tests/tests/application/reconciliation_log.txt
 //
 // And look for line/s which are different. Likely it'll be some substate write.
 // Then look further down this test for a block of code to uncomment, which can be used to read that

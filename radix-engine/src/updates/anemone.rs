@@ -109,25 +109,25 @@ fn generate_principal_batch(
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
     if let UpdateSetting::Enabled(_) = &validator_fee_fix {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "anemone-validator-fee-fix",
             generate_validator_creation_fee_fix_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_) = &seconds_precision {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "anemone-seconds-precision",
             generate_seconds_precision_timestamp_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_) = &vm_boot_to_enable_bls128_and_keccak256 {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "anemone-vm-boot",
             generate_vm_boot_for_bls128_and_keccak256_state_updates(),
         ));
     }
     if let UpdateSetting::Enabled(_) = &pools_update {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "anemone-pools",
             generate_pool_math_precision_fix_state_updates(store),
         ));
@@ -354,7 +354,7 @@ fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates {
         BOOT_LOADER_PARTITION,
         BootLoaderField::VmBoot,
         VmBoot::V1 {
-            scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
+            scrypto_version: ScryptoVmVersion::crypto_utils_v1().into(),
         },
     )
 }

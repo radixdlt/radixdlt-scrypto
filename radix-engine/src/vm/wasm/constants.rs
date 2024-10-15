@@ -88,6 +88,12 @@ pub const CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME: &str =
 pub const CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME: &str =
     "crypto_utils_bls12381_g2_signature_aggregate";
 pub const CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak256_hash";
+pub const CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME: &str = "crypto_utils_blake2b_256_hash";
+pub const CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME: &str = "crypto_utils_ed25519_verify";
+pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME: &str =
+    "crypto_utils_secp256k1_ecdsa_verify";
+pub const CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME: &str =
+    "crypto_utils_secp256k1_ecdsa_key_recover";
 
 //=================
 // WASM Shim

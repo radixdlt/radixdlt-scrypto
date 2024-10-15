@@ -203,7 +203,7 @@ impl ConsensusManagerNativePackage {
                     ValidatorBlueprint::get_redemption_value(input.amount_of_stake_units, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS_IDENT => {
                 let input: ValidatorSignalProtocolUpdateReadinessInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))

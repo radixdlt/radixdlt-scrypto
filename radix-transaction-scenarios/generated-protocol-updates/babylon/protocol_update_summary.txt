@@ -1,7 +1,20 @@
 Name: Babylon
 
-== SUMMARY HASHES ==
+========= SUMMARY HASHES =========
 These Babylon hashes should NEVER change, else they will cause divergence when run historically.
 State changes: d0442077ef9c4d22 (should never change)
 Events       : a9bb58d27fc1ad0f (should never change)
 
+==== POST ENACTMENT SCENARIOS ====
+The following scenarios are set by default to run on testnets after this protocol update.
+This list should NEVER change, else it will cause divergence for any nodes applying the protocol update.
+=> transfer_xrd
+=> radiswap
+=> metadata
+=> fungible_resource
+=> non_fungible_resource
+=> account_authorized_depositors
+=> global_n_owned
+=> non_fungible_resource_with_remote_type
+=> kv_store_with_remote_type
+=> max_transaction

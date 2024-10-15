@@ -1,0 +1,12 @@
+USE_CHILD
+    NamedIntent("depth_two_child")
+    Intent("subtxid_sim19g96myqenx4pzdn6l4uxsxj60nx7857j98gzmkwu0wj37acfxy9s32vud4")
+;
+CALL_METHOD
+    Address("account_sim1c9efznpk7w0xwdav45jj944cj677hcqj9el3atswwfw4dt84z3pun5")
+    "lock_fee"
+    Decimal("5000")
+;
+YIELD_TO_CHILD
+    NamedIntent("depth_two_child")
+;

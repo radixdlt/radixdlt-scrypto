@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::blueprints::test_utils::invocations::*;
+use radix_engine_interface::blueprints::test_utils::*;
 
 use super::TestUtilsBlueprint;
 

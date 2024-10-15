@@ -48,6 +48,8 @@ impl CanBeAbortion for FeeReserveError {
 pub trait PreExecutionFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
 
+    fn consume_deferred_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
+
     fn consume_deferred_storage(
         &mut self,
         storage_type: StorageType,
@@ -105,6 +107,7 @@ impl RoyaltyRecipient {
 pub struct SystemLoanFeeReserve {
     costing_parameters: CostingParameters,
     transaction_costing_parameters: TransactionCostingParameters,
+    abort_when_loan_repaid: bool,
 
     /// (Cache) The effective execution cost unit price, with tips considered
     effective_execution_cost_unit_price: Decimal,
@@ -122,6 +125,7 @@ pub struct SystemLoanFeeReserve {
 
     // Finalization costs
     finalization_cost_units_committed: u32,
+    finalization_cost_units_deferred: u32,
 
     /// Royalty costs
     royalty_cost_committed: Decimal,
@@ -140,6 +144,7 @@ impl Default for SystemLoanFeeReserve {
         Self::new(
             CostingParameters::babylon_genesis(),
             TransactionCostingParameters::default(),
+            false,
         )
     }
 }
@@ -159,6 +164,7 @@ impl SystemLoanFeeReserve {
     pub fn new(
         costing_parameters: CostingParameters,
         transaction_costing_parameters: TransactionCostingParameters,
+        abort_when_loan_repaid: bool,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -195,6 +201,7 @@ impl SystemLoanFeeReserve {
         Self {
             costing_parameters,
             transaction_costing_parameters,
+            abort_when_loan_repaid,
 
             // Cache
             effective_execution_cost_unit_price,
@@ -209,6 +216,7 @@ impl SystemLoanFeeReserve {
             execution_cost_units_deferred: 0,
 
             finalization_cost_units_committed: 0,
+            finalization_cost_units_deferred: 0,
 
             royalty_cost_breakdown: index_map_new(),
             royalty_cost_committed: Decimal::ZERO,
@@ -358,6 +366,10 @@ impl SystemLoanFeeReserve {
         self.consume_execution_internal(self.execution_cost_units_deferred)?;
         self.execution_cost_units_deferred = 0;
 
+        // Apply deferred finalization cost
+        self.consume_finalization_internal(self.finalization_cost_units_deferred)?;
+        self.finalization_cost_units_deferred = 0;
+
         // Apply deferred storage cost
         let types: Vec<StorageType> = self.storage_cost_deferred.keys().cloned().collect();
         for t in types {
@@ -377,7 +389,7 @@ impl SystemLoanFeeReserve {
             });
         }
 
-        if self.transaction_costing_parameters.abort_when_loan_repaid {
+        if self.abort_when_loan_repaid {
             return Err(FeeReserveError::Abort(
                 AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
             ));
@@ -403,6 +415,12 @@ impl SystemLoanFeeReserve {
 impl PreExecutionFeeReserve for SystemLoanFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
         checked_add_assign(&mut self.execution_cost_units_deferred, cost_units)?;
+
+        Ok(())
+    }
+
+    fn consume_deferred_finalization(&mut self, cost_units: u32) -> Result<(), FeeReserveError> {
+        checked_add_assign(&mut self.finalization_cost_units_deferred, cost_units)?;
 
         Ok(())
     }
@@ -590,9 +608,12 @@ mod tests {
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip = TipSpecifier::Percentage(tip_percentage);
-        transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
-        SystemLoanFeeReserve::new(costing_parameters, transaction_costing_parameters)
+        SystemLoanFeeReserve::new(
+            costing_parameters,
+            transaction_costing_parameters,
+            abort_when_loan_repaid,
+        )
     }
 
     #[test]

@@ -35,10 +35,10 @@ impl Ed25519PrivateKey {
         Ed25519PublicKey(self.signing_key().verifying_key().to_bytes())
     }
 
-    pub fn sign(&self, msg_hash: &impl IsHash) -> Ed25519Signature {
+    pub fn sign(&self, msg: impl AsRef<[u8]>) -> Ed25519Signature {
         // SHA512 is used here
 
-        Ed25519Signature(self.signing_key().sign(msg_hash.as_ref()).to_bytes())
+        Ed25519Signature(self.signing_key().sign(msg.as_ref()).to_bytes())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

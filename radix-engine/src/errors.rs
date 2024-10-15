@@ -48,12 +48,22 @@ pub trait CanBeAbortion {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
     TransactionEpochNotYetValid {
+        /// `start_epoch_inclusive`
         valid_from: Epoch,
         current_epoch: Epoch,
     },
     TransactionEpochNoLongerValid {
-        valid_until: Option<Epoch>,
+        /// One epoch before `end_epoch_exclusive`
+        valid_until: Epoch,
         current_epoch: Epoch,
+    },
+    TransactionProposerTimestampNotYetValid {
+        valid_from_inclusive: Instant,
+        current_time: Instant,
+    },
+    TransactionProposerTimestampNoLongerValid {
+        valid_to_exclusive: Instant,
+        current_time: Instant,
     },
     IntentHashPreviouslyCommitted,
     IntentHashPreviouslyCancelled,
@@ -300,12 +310,17 @@ pub enum SystemError {
     SystemPanic(String),
 
     CannotLockFeeInChildSubintent(usize),
-    YieldError(YieldError),
+    IntentError(IntentError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum YieldError {
+pub enum IntentError {
+    CannotVerifyParentOnRoot,
     CannotYieldProof,
+    VerifyParentFailed,
+    InvalidIntentIndex(usize),
+    NoParentToYieldTo,
+    AssertBucketContentsFailed(ResourceConstraintError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

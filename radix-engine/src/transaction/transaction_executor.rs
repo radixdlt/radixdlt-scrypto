@@ -118,6 +118,9 @@ pub struct SystemOverrides {
     pub disable_costing: bool,
     pub disable_limits: bool,
     pub disable_auth: bool,
+    /// Whether to abort the transaction run when the loan is repaid.
+    /// This is used when test-executing pending transactions.
+    pub abort_when_loan_repaid: bool,
     /// This is required for pre-bottlenose testnets which need to override
     /// the default Mainnet network definition
     pub network_definition: Option<NetworkDefinition>,
@@ -126,24 +129,35 @@ pub struct SystemOverrides {
 }
 
 impl SystemOverrides {
-    pub fn with_network(network_definition: NetworkDefinition) -> Self {
+    const fn internal_default(network_definition: Option<NetworkDefinition>) -> Self {
         Self {
-            network_definition: Some(network_definition),
-            ..Default::default()
+            disable_costing: false,
+            disable_limits: false,
+            disable_auth: false,
+            abort_when_loan_repaid: false,
+            network_definition,
+            costing_parameters: None,
+            limit_parameters: None,
         }
+    }
+
+    pub const fn default_with_no_network() -> Self {
+        Self::internal_default(None)
+    }
+
+    pub const fn with_network(network_definition: NetworkDefinition) -> Self {
+        Self::internal_default(Some(network_definition))
+    }
+
+    pub fn set_abort_when_loan_repaid(mut self) -> Self {
+        self.abort_when_loan_repaid = true;
+        self
     }
 }
 
 impl Default for SystemOverrides {
     fn default() -> Self {
-        Self {
-            disable_costing: false,
-            disable_limits: false,
-            disable_auth: false,
-            network_definition: None,
-            costing_parameters: None,
-            limit_parameters: None,
-        }
+        Self::default_with_no_network()
     }
 }
 
@@ -158,8 +172,10 @@ pub struct ExecutionConfig {
     pub system_overrides: Option<SystemOverrides>,
 }
 
-impl Default for ExecutionConfig {
-    fn default() -> Self {
+impl ExecutionConfig {
+    /// Creates an `ExecutionConfig` using default configurations.
+    /// This is internal. Clients should use `for_xxx` constructors instead.
+    const fn default_with_no_network() -> Self {
         Self {
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
@@ -168,19 +184,21 @@ impl Default for ExecutionConfig {
             enable_debug_information: false,
         }
     }
-}
 
-impl ExecutionConfig {
     /// Creates an `ExecutionConfig` using default configurations.
     /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn with_network(network_definition: NetworkDefinition) -> Self {
+    fn default_with_network(network_definition: NetworkDefinition) -> Self {
         Self {
             system_overrides: Some(SystemOverrides::with_network(network_definition)),
-            ..Default::default()
+            ..Self::default_with_no_network()
         }
     }
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
+        Self::for_auth_disabled_system_transaction(network_definition)
+    }
+
+    pub fn for_auth_disabled_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             system_overrides: Some(SystemOverrides {
                 disable_costing: true,
@@ -189,7 +207,7 @@ impl ExecutionConfig {
                 network_definition: Some(network_definition),
                 ..Default::default()
             }),
-            ..Default::default()
+            ..Self::default_with_no_network()
         }
     }
 
@@ -201,21 +219,42 @@ impl ExecutionConfig {
                 network_definition: Some(network_definition),
                 ..Default::default()
             }),
-            ..Default::default()
+            ..Self::default_with_no_network()
+        }
+    }
+
+    pub fn for_validator_transaction(network_definition: NetworkDefinition) -> Self {
+        Self {
+            ..Self::default_with_network(network_definition)
         }
     }
 
     pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            ..Self::with_network(network_definition)
+            ..Self::default_with_network(network_definition)
         }
+    }
+
+    pub fn for_notarized_transaction_rejection_check(
+        network_definition: NetworkDefinition,
+    ) -> Self {
+        Self::default_with_network(network_definition)
+            .update_system_overrides(|overrides| overrides.set_abort_when_loan_repaid())
+    }
+
+    pub fn update_system_overrides(
+        mut self,
+        update: impl FnOnce(SystemOverrides) -> SystemOverrides,
+    ) -> Self {
+        self.system_overrides = Some(update(self.system_overrides.unwrap_or_default()));
+        self
     }
 
     pub fn for_test_transaction() -> Self {
         Self {
             enable_kernel_trace: true,
             enable_cost_breakdown: true,
-            ..Self::with_network(NetworkDefinition::simulator())
+            ..Self::default_with_network(NetworkDefinition::simulator())
         }
     }
 
@@ -230,7 +269,7 @@ impl ExecutionConfig {
         Self {
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
-            ..Self::with_network(network_definition)
+            ..Self::default_with_network(network_definition)
         }
     }
 
@@ -243,7 +282,7 @@ impl ExecutionConfig {
                 network_definition: Some(network_definition),
                 ..Default::default()
             }),
-            ..Default::default()
+            ..Self::default_with_no_network()
         }
     }
 
@@ -262,18 +301,18 @@ pub fn execute_transaction<'v, V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
     vm_modules: &'v V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
+    executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {
     let vm_init = VmInit::load(substate_db, vm_modules);
     let system_init = SystemInit::load(substate_db, execution_config.clone(), vm_init);
-    KernelInit::load(substate_db, system_init).execute(executable)
+    KernelInit::load(substate_db, system_init).execute(executable.as_ref())
 }
 
 pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     substate_db: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransaction,
+    executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(substate_db, vm_modules, execution_config, executable);
     if let TransactionResult::Commit(commit) = &receipt.result {

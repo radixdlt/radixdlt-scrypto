@@ -44,7 +44,7 @@ impl IntoExecutable for NotarizedTransactionV1 {
         self,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        let executable = self.prepare_and_validate(validator)?.get_executable();
+        let executable = self.prepare_and_validate(validator)?.create_executable();
         Ok(executable)
     }
 }
@@ -60,6 +60,11 @@ define_transaction_payload!(
 );
 
 impl PreparedNotarizedTransactionV1 {
+    #[allow(deprecated)]
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        self.signed_intent.intent.header.inner.end_epoch_exclusive
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

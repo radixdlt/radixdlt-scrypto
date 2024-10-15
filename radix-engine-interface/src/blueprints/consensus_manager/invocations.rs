@@ -228,12 +228,16 @@ pub const CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT: &str = "get_current_epoch";
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ConsensusManagerGetCurrentEpochInput;
 
+pub type ConsensusManagerGetCurrentEpochManifestInput = ConsensusManagerGetCurrentEpochInput;
+
 pub type ConsensusManagerGetCurrentEpochOutput = Epoch;
 
 pub const CONSENSUS_MANAGER_START_IDENT: &str = "start";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ConsensusManagerStartInput {}
+
+pub type ConsensusManagerStartManifestInput = ConsensusManagerStartInput;
 
 pub type ConsensusManagerStartOutput = ();
 
@@ -260,17 +264,21 @@ pub struct ConsensusManagerGetCurrentTimeInputV1 {
     pub precision: TimePrecisionV1,
 }
 
+pub type ConsensusManagerGetCurrentTimeManifestInputV1 = ConsensusManagerGetCurrentTimeInputV1;
+
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 #[sbor(type_name = "ConsensusManagerGetCurrentTimeInput")]
 pub struct ConsensusManagerGetCurrentTimeInputV2 {
     pub precision: TimePrecisionV2,
 }
 
+pub type ConsensusManagerGetCurrentTimeManifestInputV2 = ConsensusManagerGetCurrentTimeInputV2;
+
 pub type ConsensusManagerGetCurrentTimeOutput = Instant;
 
 pub const CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 #[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
 pub struct ConsensusManagerCompareCurrentTimeInputV1 {
     pub instant: Instant,
@@ -278,13 +286,19 @@ pub struct ConsensusManagerCompareCurrentTimeInputV1 {
     pub operator: TimeComparisonOperator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub type ConsensusManagerCompareCurrentTimeManifestInputV1 =
+    ConsensusManagerCompareCurrentTimeInputV1;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 #[sbor(type_name = "ConsensusManagerCompareCurrentTimeInput")]
 pub struct ConsensusManagerCompareCurrentTimeInputV2 {
     pub instant: Instant,
     pub precision: TimePrecisionV2,
     pub operator: TimeComparisonOperator,
 }
+
+pub type ConsensusManagerCompareCurrentTimeManifestInputV2 =
+    ConsensusManagerCompareCurrentTimeInputV2;
 
 pub type ConsensusManagerCompareCurrentTimeOutput = bool;
 
@@ -308,6 +322,8 @@ pub struct ConsensusManagerNextRoundInput {
     // will then no longer be required.
     pub leader_proposal_history: LeaderProposalHistory,
 }
+
+pub type ConsensusManagerNextRoundManifestInput = ConsensusManagerNextRoundInput;
 
 impl ConsensusManagerNextRoundInput {
     /// Creates a "next round" input for a regular (happy-path, in terms of consensus) round
@@ -379,12 +395,16 @@ pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorRegisterInput {}
 
+pub type ValidatorRegisterManifestInput = ValidatorRegisterInput;
+
 pub type ValidatorRegisterOutput = ();
 
 pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorUnregisterInput {}
+
+pub type ValidatorUnregisterManifestInput = ValidatorUnregisterInput;
 
 pub type ValidatorUnregisterOutput = ();
 
@@ -448,6 +468,8 @@ pub struct ValidatorUpdateKeyInput {
     pub key: Secp256k1PublicKey,
 }
 
+pub type ValidatorUpdateKeyManifestInput = ValidatorUpdateKeyInput;
+
 pub type ValidatorUpdateKeyOutput = ();
 
 pub const VALIDATOR_UPDATE_FEE_IDENT: &str = "update_fee";
@@ -459,6 +481,8 @@ pub struct ValidatorUpdateFeeInput {
     pub new_fee_factor: Decimal,
 }
 
+pub type ValidatorUpdateFeeManifestInput = ValidatorUpdateFeeInput;
+
 pub type ValidatorUpdateFeeOutput = ();
 
 pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
@@ -468,12 +492,17 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
     pub accept_delegated_stake: bool,
 }
 
+pub type ValidatorUpdateAcceptDelegatedStakeManifestInput =
+    ValidatorUpdateAcceptDelegatedStakeInput;
+
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
 
 pub const VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT: &str = "accepts_delegated_stake";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorAcceptsDelegatedStakeInput {}
+
+pub type ValidatorAcceptsDelegatedStakeManifestInput = ValidatorAcceptsDelegatedStakeInput;
 
 pub type ValidatorAcceptsDelegatedStakeOutput = bool;
 
@@ -482,12 +511,16 @@ pub const VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT: &str = "total_stake_xrd_amount
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorTotalStakeXrdAmountInput {}
 
+pub type ValidatorTotalStakeXrdAmountManifestInput = ValidatorTotalStakeXrdAmountInput;
+
 pub type ValidatorTotalStakeXrdAmountOutput = Decimal;
 
 pub const VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT: &str = "total_stake_unit_supply";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorTotalStakeUnitSupplyInput {}
+
+pub type ValidatorTotalStakeUnitSupplyManifestInput = ValidatorTotalStakeUnitSupplyInput;
 
 pub type ValidatorTotalStakeUnitSupplyOutput = Decimal;
 
@@ -498,14 +531,20 @@ pub struct ValidatorGetRedemptionValueInput {
     pub amount_of_stake_units: Decimal,
 }
 
+pub type ValidatorGetRedemptionValueManifestInput = ValidatorGetRedemptionValueInput;
+
 pub type ValidatorGetRedemptionValueOutput = Decimal;
 
-pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
+pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS_IDENT: &str =
+    "signal_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorSignalProtocolUpdateReadinessInput {
     pub vote: String,
 }
+
+pub type ValidatorSignalProtocolUpdateReadinessManifestInput =
+    ValidatorSignalProtocolUpdateReadinessInput;
 
 pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
 
@@ -513,6 +552,9 @@ pub const VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT: &str = "get_protocol_up
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorGetProtocolUpdateReadinessInput {}
+
+pub type ValidatorGetProtocolUpdateReadinessManifestInput =
+    ValidatorGetProtocolUpdateReadinessInput;
 
 pub type ValidatorGetProtocolUpdateReadinessOutput = Option<String>;
 
@@ -531,6 +573,19 @@ pub struct ValidatorApplyEmissionInput {
     pub proposals_missed: u64,
 }
 
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorApplyEmissionManifestInput {
+    /// A bucket with the emitted XRDs for this validator.
+    /// The validator should subtract the configured fee from this amount.
+    pub xrd_bucket: ManifestBucket,
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: Epoch,
+    /// A number of proposals successfully made by this validator during the emission period.
+    pub proposals_made: u64,
+    /// A number of proposals missed by this validator during the emission period.
+    pub proposals_missed: u64,
+}
+
 pub type ValidatorApplyEmissionOutput = ();
 
 pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
@@ -539,6 +594,14 @@ pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
 pub struct ValidatorApplyRewardInput {
     /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
     pub xrd_bucket: Bucket,
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: Epoch,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ValidatorApplyRewardManifestInput {
+    /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
+    pub xrd_bucket: ManifestBucket,
     /// The *concluded* epoch's number. Informational-only.
     pub epoch: Epoch,
 }
@@ -566,11 +629,17 @@ pub struct ValidatorStartUnlockOwnerStakeUnitsInput {
     pub requested_stake_unit_amount: Decimal,
 }
 
+pub type ValidatorStartUnlockOwnerStakeUnitsManifestInput =
+    ValidatorStartUnlockOwnerStakeUnitsInput;
+
 pub type ValidatorStartUnlockOwnerStakeUnitsOutput = ();
 
 pub const VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "finish_unlock_owner_stake_units";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ValidatorFinishUnlockOwnerStakeUnitsInput {}
+
+pub type ValidatorFinishUnlockOwnerStakeUnitsManifestInput =
+    ValidatorFinishUnlockOwnerStakeUnitsInput;
 
 pub type ValidatorFinishUnlockOwnerStakeUnitsOutput = Bucket;

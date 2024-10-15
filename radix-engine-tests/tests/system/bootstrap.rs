@@ -178,21 +178,22 @@ fn assert_complete_system_structure(result: &CommitResult) {
         event_system_structures,
     } = &result.system_structure;
 
-    let system_updates = result.state_updates.clone().into_legacy().system_updates;
-    for ((node_id, partition_num), by_substate_key) in &system_updates {
-        for substate_key in by_substate_key.keys() {
-            let structure = substate_system_structures
-                .get(node_id)
-                .and_then(|partition_structures| partition_structures.get(partition_num))
-                .and_then(|substate_structures| substate_structures.get(substate_key));
-            assert!(
-                structure.is_some(),
-                "missing system structure for {:?}:{:?}:{:?}",
-                node_id,
-                partition_num,
-                substate_key
-            );
-        }
+    let substate_updates = result
+        .state_updates
+        .clone()
+        .into_flattened_substate_updates();
+    for (node_id, partition_num, substate_key) in substate_updates.keys() {
+        let structure = substate_system_structures
+            .get(node_id)
+            .and_then(|partition_structures| partition_structures.get(partition_num))
+            .and_then(|substate_structures| substate_structures.get(substate_key));
+        assert!(
+            structure.is_some(),
+            "missing system structure for {:?}:{:?}:{:?}",
+            node_id,
+            partition_num,
+            substate_key
+        );
     }
 
     for (event_type_id, _data) in &result.application_events {

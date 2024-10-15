@@ -72,8 +72,8 @@ impl<
         executable: &ExecutableTransaction,
         init_input: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt> {
-        let (mut system, call_frame_inits) = E::init(
+    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>, usize), Self::Receipt> {
+        let (mut system, call_frame_inits, num_of_intent_statuses) = E::init(
             store,
             executable,
             init_input.system_input,
@@ -91,20 +91,26 @@ impl<
                 wrapped: system,
             },
             call_frame_inits,
+            num_of_intent_statuses,
         ))
     }
 
     fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         E::execute(&mut api, executable)
     }
 
-    fn finalize(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finalize(
+        &mut self,
+        store_commit_info: StoreCommitInfo,
+        num_of_intent_statuses: usize,
+    ) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.wrapped.finalize(store_commit_info)
+        self.wrapped
+            .finalize(store_commit_info, num_of_intent_statuses)
     }
 
     fn create_receipt<S: SubstateDatabase>(

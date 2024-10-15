@@ -15,7 +15,6 @@ pub enum HeaderValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
-    TooManySignaturesForIntent,
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
@@ -62,7 +61,24 @@ pub enum TransactionValidationError {
     ManifestValidationError(ManifestValidationError),
     InvalidMessage(InvalidMessageError),
     SubintentError(SubintentValidationError),
-    Other(String),
+    TooManySignatures {
+        total: usize,
+        limit: usize,
+    },
+    TooManySignaturesForIntent {
+        index: usize,
+        total: usize,
+        limit: usize,
+    },
+    TooManyReferences {
+        total: usize,
+        limit: usize,
+    },
+    TooManyReferencesForIntent {
+        index: usize,
+        total: usize,
+        limit: usize,
+    },
 }
 
 impl From<PrepareError> for TransactionValidationError {
@@ -143,7 +159,6 @@ pub enum InvalidMessageError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubintentValidationError {
-    TooManySubintents { limit: usize, actual: usize },
     DuplicateSubintent(SubintentHash),
     SubintentHasMultipleParents(SubintentHash),
     ChildSubintentNotIncludedInTransaction(SubintentHash),

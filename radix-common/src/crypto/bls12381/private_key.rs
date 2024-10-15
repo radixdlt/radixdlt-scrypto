@@ -21,16 +21,15 @@ impl Bls12381G1PrivateKey {
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
-        if slice.len() != Bls12381G1PrivateKey::LENGTH {
+        if slice.len() != Self::LENGTH {
             return Err(());
         }
         Ok(Self(SecretKey::from_bytes(slice).map_err(|_| ())?))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
-        let mut bytes = [0u8; Bls12381G1PrivateKey::LENGTH];
-        (&mut bytes[Bls12381G1PrivateKey::LENGTH - 8..Bls12381G1PrivateKey::LENGTH])
-            .copy_from_slice(&n.to_be_bytes());
+        let mut bytes = [0u8; Self::LENGTH];
+        (&mut bytes[Self::LENGTH - 8..Self::LENGTH]).copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKey::from_bytes(&bytes).map_err(|_| ())?))
     }
@@ -128,7 +127,7 @@ mod tests {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> =
             pks.iter().zip(msgs).map(|(pk, sk)| (*pk, sk)).collect();
@@ -142,7 +141,7 @@ mod tests {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(1, 1, 10);
 
         // Aggregate the signature (in fact it does not make sense to aggregate one signature)
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         // Aggregated signature of one signature must be the same
         assert_eq!(agg_sig, sigs[0]);
@@ -159,7 +158,7 @@ mod tests {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         let mut msgs_rev = msgs.clone();
         msgs_rev.reverse();
@@ -179,7 +178,7 @@ mod tests {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 10, 10);
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         // Skip the last key and message tuple
         let pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)> = pks
@@ -197,7 +196,7 @@ mod tests {
         );
 
         // Aggregate the signatures from incomplete messages
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs[0..9]).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs[0..9], true).unwrap();
         // Verify the incomplete messages against public keys and aggregated
         // signature from incomplete messages
         assert!(aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
@@ -208,7 +207,7 @@ mod tests {
         let (_sks, pks, msgs, sigs) = get_aggregate_verify_test_data(10, 1, 10);
 
         // Aggregate the signature
-        let agg_sig = Bls12381G2Signature::aggregate(&sigs).unwrap();
+        let agg_sig = Bls12381G2Signature::aggregate(&sigs, true).unwrap();
 
         // Verify the message against public keys and aggregated signature
         assert!(fast_aggregate_verify_bls12381_v1(

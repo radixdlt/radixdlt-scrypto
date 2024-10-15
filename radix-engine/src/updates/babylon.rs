@@ -248,22 +248,20 @@ impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
         batch_index: usize,
     ) -> ProtocolUpdateBatch {
         match (batch_group_index, batch_index) {
-            (0, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::flash(
+            (0, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::flash(
                 "flash",
-                create_substate_flash_for_genesis().state_updates,
+                create_system_bootstrap_flash_state_updates(),
             )),
-            (0, 1) => {
-                ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::genesis_transaction(
-                    "bootstrap",
-                    create_system_bootstrap_transaction(
-                        self.settings.genesis_epoch,
-                        self.settings.consensus_manager_config.clone(),
-                        self.settings.initial_time_ms,
-                        self.settings.initial_current_leader,
-                        self.settings.faucet_supply,
-                    ),
-                ))
-            }
+            (0, 1) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
+                "bootstrap",
+                create_system_bootstrap_transaction(
+                    self.settings.genesis_epoch,
+                    self.settings.consensus_manager_config.clone(),
+                    self.settings.initial_time_ms,
+                    self.settings.initial_current_leader,
+                    self.settings.faucet_supply,
+                ),
+            )),
             (1, batch_index) => {
                 let chunk = self
                     .settings
@@ -273,17 +271,15 @@ impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
                     .clone();
                 let chunk_number = batch_index;
                 let transaction = create_genesis_data_ingestion_transaction(chunk, chunk_number);
-                ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::genesis_transaction(
+                ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
                     &format!("chunk-{chunk_number:04}"),
                     transaction,
                 ))
             }
-            (2, 0) => {
-                ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::genesis_transaction(
-                    "wrap-up",
-                    create_genesis_wrap_up_transaction(),
-                ))
-            }
+            (2, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
+                "wrap-up",
+                create_genesis_wrap_up_transaction(),
+            )),
             _ => {
                 panic!("batch index out of range")
             }

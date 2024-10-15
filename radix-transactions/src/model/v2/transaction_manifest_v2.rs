@@ -82,7 +82,7 @@ impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
 impl TransactionManifestV2 {
     pub fn from_intent_core(intent: &IntentCoreV2) -> Self {
         Self {
-            instructions: intent.instructions.clone().into(),
+            instructions: intent.instructions.to_vec(),
             blobs: intent.blobs.clone().into(),
             children: intent.children.children.clone(),
             object_names: ManifestObjectNames::Unknown,
@@ -91,7 +91,7 @@ impl TransactionManifestV2 {
 
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,
@@ -103,7 +103,7 @@ impl TransactionManifestV2 {
         self,
     ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
         (
-            InstructionsV2(Rc::new(self.instructions)),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,

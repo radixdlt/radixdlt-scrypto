@@ -34,7 +34,9 @@ impl TransactionValidationConfig {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
 pub struct TransactionValidationConfigV1 {
-    pub max_signatures_per_intent: usize,
+    /// Signer signatures only, not including notary signature
+    pub max_signer_signatures_per_intent: usize,
+    pub max_references_per_intent: usize,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
     pub max_epoch_range: u64,
@@ -47,10 +49,11 @@ pub struct TransactionValidationConfigV1 {
     pub v2_transactions_allowed: bool,
     pub min_tip_basis_points: u32,
     pub max_tip_basis_points: u32,
-    pub max_subintent_count: usize,
     /// A setting of N here allows a total depth of N + 1 if you
     /// include the root transaction intent.
     pub max_subintent_depth: usize,
+    pub max_total_signer_signatures: usize,
+    pub max_total_references: usize,
 }
 
 impl TransactionValidationConfig {
@@ -60,7 +63,8 @@ impl TransactionValidationConfig {
 
     pub const fn babylon() -> Self {
         Self {
-            max_signatures_per_intent: 16,
+            max_signer_signatures_per_intent: 16,
+            max_references_per_intent: usize::MAX,
             min_tip_percentage: 0,
             max_tip_percentage: u16::MAX,
             max_instructions: usize::MAX,
@@ -72,17 +76,18 @@ impl TransactionValidationConfig {
             preparation_settings: PreparationSettings::babylon(),
             // V2-only settings
             v2_transactions_allowed: true,
-            max_subintent_count: 0,
             max_subintent_depth: 0,
             min_tip_basis_points: 0,
             max_tip_basis_points: 0,
+            max_total_signer_signatures: usize::MAX,
+            max_total_references: usize::MAX,
         }
     }
 
     pub const fn cuttlefish() -> Self {
         Self {
+            max_references_per_intent: 512,
             v2_transactions_allowed: true,
-            max_subintent_count: 128,
             max_subintent_depth: 3,
             min_tip_basis_points: 0,
             max_instructions: 1000,
@@ -93,6 +98,8 @@ impl TransactionValidationConfig {
             // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
             preparation_settings: PreparationSettings::cuttlefish(),
+            max_total_signer_signatures: 64,
+            max_total_references: 512,
             ..Self::babylon()
         }
     }
@@ -179,6 +186,15 @@ impl TransactionValidator {
         }
     }
 
+    /// Will typically be [`Some`], but [`None`] if the validator is network-independent.
+    pub fn network_id(&self) -> Option<u8> {
+        self.required_network_id
+    }
+
+    pub fn config(&self) -> &TransactionValidationConfig {
+        &self.config
+    }
+
     pub fn preparation_settings(&self) -> &PreparationSettings {
         &self.config.preparation_settings
     }
@@ -188,15 +204,23 @@ impl TransactionValidator {
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-        self.validate_intent_v1(&transaction.signed_intent.intent)?;
+        self.check_reference_limits(vec![
+            &transaction.signed_intent.intent.instructions.references,
+        ])?;
 
-        let encoded_instructions = Rc::new(manifest_encode(
-            &transaction.signed_intent.intent.instructions.inner.0,
-        )?);
+        self.check_signature_limits(
+            &transaction.signed_intent.intent_signatures.inner.signatures,
+            None,
+        )?;
+
+        self.validate_intent_v1(&transaction.signed_intent.intent)?;
 
         let (signer_keys, num_of_signature_validations) = self
             .validate_signatures_v1(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
+
+        let encoded_instructions =
+            manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
@@ -215,7 +239,7 @@ impl TransactionValidator {
 
         self.validate_intent_v1(&intent)?;
 
-        let encoded_instructions = Rc::new(manifest_encode(&intent.instructions.inner.0)?);
+        let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
         Ok(ValidatedPreviewIntent {
             intent,
@@ -391,10 +415,6 @@ impl TransactionValidator {
         notary_public_key: &PublicKey,
         notary_signature: &SignatureV1,
     ) -> Result<(Vec<PublicKey>, usize), SignatureValidationError> {
-        if transaction_intent_signatures.len() > self.config.max_signatures_per_intent {
-            return Err(SignatureValidationError::TooManySignaturesForIntent);
-        }
-
         let mut signers = index_set_with_capacity(transaction_intent_signatures.len() + 1);
         for intent_signature in transaction_intent_signatures.iter() {
             let public_key = recover(&transaction_intent_hash.0, &intent_signature.0)
@@ -503,9 +523,28 @@ impl TransactionValidator {
                 2,
             ));
         }
+
         let transaction_intent = &prepared.signed_intent.transaction_intent;
+        let transaction_intent_signatures = &prepared.signed_intent.transaction_intent_signatures;
         let non_root_subintents = &transaction_intent.non_root_subintents;
         let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
+
+        self.check_reference_limits(
+            [&transaction_intent.root_intent_core.instructions.references]
+                .into_iter()
+                .chain(
+                    non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|x| &x.intent_core.instructions.references),
+                )
+                .collect(),
+        )?;
+
+        self.check_signature_limits(
+            &transaction_intent_signatures.inner.signatures,
+            Some(non_root_subintent_signatures),
+        )?;
 
         self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
 
@@ -558,6 +597,23 @@ impl TransactionValidator {
         let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
         let non_root_subintent_signatures = &prepared.non_root_subintent_signatures;
 
+        self.check_reference_limits(
+            [&root_subintent.intent_core.instructions.references]
+                .into_iter()
+                .chain(
+                    non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|x| &x.intent_core.instructions.references),
+                )
+                .collect(),
+        )?;
+
+        self.check_signature_limits(
+            &root_subintent_signatures.inner.signatures,
+            Some(non_root_subintent_signatures),
+        )?;
+
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
             root_intent_info,
@@ -578,6 +634,69 @@ impl TransactionValidator {
             root_subintent_yield_to_parent_count: root_yield_to_parent_count,
             non_root_subintents_info,
         })
+    }
+
+    pub fn check_reference_limits(
+        &self,
+        intent_references: Vec<&IndexSet<Reference>>,
+    ) -> Result<(), TransactionValidationError> {
+        let mut total = 0;
+        for (index, refs) in intent_references.iter().enumerate() {
+            if refs.len() > self.config.max_references_per_intent {
+                return Err(TransactionValidationError::TooManyReferencesForIntent {
+                    index,
+                    total: refs.len(),
+                    limit: self.config.max_references_per_intent,
+                });
+            }
+            total += refs.len();
+        }
+
+        if total > self.config.max_total_references {
+            return Err(TransactionValidationError::TooManyReferences {
+                total,
+                limit: self.config.max_total_references,
+            });
+        }
+
+        Ok(())
+    }
+
+    pub fn check_signature_limits(
+        &self,
+        root_subintent_signatures: &[IntentSignatureV1],
+        non_root_subintent_signatures: Option<&PreparedNonRootSubintentSignaturesV2>,
+    ) -> Result<(), TransactionValidationError> {
+        if root_subintent_signatures.len() > self.config.max_signer_signatures_per_intent {
+            return Err(TransactionValidationError::TooManySignaturesForIntent {
+                index: 0,
+                total: root_subintent_signatures.len(),
+                limit: self.config.max_signer_signatures_per_intent,
+            });
+        }
+        let mut total = root_subintent_signatures.len();
+        if let Some(sigs) = non_root_subintent_signatures {
+            for (index, intent_sigs) in sigs.by_subintent.iter().enumerate() {
+                if intent_sigs.inner.signatures.len() > self.config.max_signer_signatures_per_intent
+                {
+                    return Err(TransactionValidationError::TooManySignaturesForIntent {
+                        index,
+                        total: intent_sigs.inner.signatures.len(),
+                        limit: self.config.max_signer_signatures_per_intent,
+                    });
+                }
+                total += intent_sigs.inner.signatures.len();
+            }
+        }
+
+        if total > self.config.max_total_signer_signatures {
+            return Err(TransactionValidationError::TooManySignatures {
+                total,
+                limit: self.config.max_total_signer_signatures,
+            });
+        }
+
+        Ok(())
     }
 
     pub fn validate_transaction_subtree_v2(
@@ -609,8 +728,8 @@ impl TransactionValidator {
                 &intent_relationships.non_root_subintents,
             )?;
         let root_intent_info = ValidatedIntentInformationV2 {
+            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
             children_subintent_indices: intent_relationships.root_intent.children,
-            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?,
             signature_validations: root_signature_validations,
         };
         let non_root_subintents_info = non_root_subintents
@@ -622,7 +741,8 @@ impl TransactionValidator {
                     Ok(ValidatedIntentInformationV2 {
                         encoded_instructions: manifest_encode(
                             &subintent.intent_core.instructions.inner.0,
-                        )?,
+                        )?
+                        .into(),
                         signature_validations: self
                             .validate_subintent_signatures_v2(subintent, signatures)?,
                         children_subintent_indices: info.children,
@@ -899,7 +1019,7 @@ impl TransactionValidator {
                 &prepared.notary_signature.inner.0,
             )?;
 
-        Ok(SignatureValidations::Validated {
+        Ok(SignatureValidations {
             num_validations,
             signer_keys,
         })
@@ -910,7 +1030,6 @@ impl TransactionValidator {
         prepared: &PreparedSubintentV2,
         signatures: &PreparedIntentSignaturesV2,
     ) -> Result<SignatureValidations, SignatureValidationError> {
-        // TODO: Move to lazily evaluated
         let intent_signatures = &signatures.inner.signatures;
         let intent_hash = prepared.subintent_hash();
         let mut signers = index_set_with_capacity(intent_signatures.len());
@@ -926,7 +1045,7 @@ impl TransactionValidator {
                 return Err(SignatureValidationError::DuplicateSigner);
             }
         }
-        Ok(SignatureValidations::Validated {
+        Ok(SignatureValidations {
             num_validations: intent_signatures.len(),
             signer_keys: signers.into_iter().collect(),
         })
@@ -941,13 +1060,6 @@ impl TransactionValidator {
         root_intent_core: &PreparedIntentCoreV2,
         subintents: &[PreparedSubintentV2],
     ) -> Result<IntentRelationships, SubintentValidationError> {
-        if subintents.len() > self.config.max_subintent_count {
-            return Err(SubintentValidationError::TooManySubintents {
-                limit: self.config.max_subintent_count,
-                actual: subintents.len(),
-            });
-        }
-
         let mut root_intent_details = RootIntentRelationshipDetails::default();
         let mut all_subintent_details =
             IndexMap::<SubintentHash, SubIntentRelationshipDetails>::default();
@@ -1290,9 +1402,11 @@ mod tests {
     #[test]
     fn test_invalid_signatures() {
         assert_invalid_tx!(
-            TransactionValidationError::SignatureValidationError(
-                SignatureValidationError::TooManySignaturesForIntent
-            ),
+            TransactionValidationError::TooManySignaturesForIntent {
+                index: 0,
+                total: 19,
+                limit: 16
+            },
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
@@ -1686,5 +1800,187 @@ mod tests {
                 ManifestValidationError::BucketAlreadyUsed(ManifestBucket(0), _,)
             ))
         ));
+    }
+
+    #[test]
+    fn too_many_signatures_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_signatures: usize,
+        ) -> SignedPartialTransactionV2 {
+            let mut builder = PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|builder| builder.yield_to_parent(()));
+
+            for i in 0..num_signatures {
+                let signer =
+                    Secp256k1PrivateKey::from_u64(((subintent_index + 1) * 1000 + i) as u64)
+                        .unwrap();
+                builder = builder.sign(&signer);
+            }
+
+            builder.build()
+        }
+
+        fn create_transaction(signature_counts: Vec<usize>) -> NotarizedTransactionV2 {
+            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, signature_count) in signature_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *signature_count),
+                )
+            }
+
+            builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in signature_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                })
+                .sign(&signer)
+                .notarize(&notary)
+                .build_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert!(matches!(
+            create_transaction(vec![10]).prepare_and_validate(&validator),
+            Ok(_)
+        ));
+        assert_eq!(
+            create_transaction(vec![10, 20]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManySignaturesForIntent {
+                index: 1,
+                total: 20,
+                limit: 16
+            })
+        );
+        assert_eq!(
+            create_transaction(vec![10, 10, 10, 10, 10, 10, 10]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManySignatures {
+                total: 71, // 70 from subintent, 1 from transaction intent
+                limit: 64
+            })
+        );
+    }
+
+    #[test]
+    fn too_many_references_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_references: usize,
+        ) -> SignedPartialTransactionV2 {
+            PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|mut builder| {
+                    for i in 0..num_references {
+                        let mut address =
+                            [EntityType::GlobalPreallocatedSecp256k1Account as u8; NodeId::LENGTH];
+                        address[1..9].copy_from_slice(
+                            &(((subintent_index + 1) * 1000 + i) as u64).to_le_bytes(),
+                        );
+                        builder = builder.call_method(
+                            ComponentAddress::new_or_panic(address),
+                            "method_name",
+                            (),
+                        );
+                    }
+
+                    builder.yield_to_parent(())
+                })
+                .sign(&Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
+                .build()
+        }
+
+        fn create_transaction(reference_counts: Vec<usize>) -> NotarizedTransactionV2 {
+            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, reference_count) in reference_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *reference_count),
+                )
+            }
+
+            builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in reference_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                })
+                .sign(&signer)
+                .notarize(&notary)
+                .build_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert!(matches!(
+            create_transaction(vec![100]).prepare_and_validate(&validator),
+            Ok(_)
+        ));
+        assert_eq!(
+            create_transaction(vec![100, 600]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManyReferencesForIntent {
+                index: 2,
+                total: 600,
+                limit: 512
+            })
+        );
+        assert_eq!(
+            create_transaction(vec![500, 500]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::TooManyReferences {
+                total: 1001, // 1000 from subintent, 1 from transaction intent
+                limit: 512
+            })
+        );
     }
 }

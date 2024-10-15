@@ -1226,7 +1226,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         };
         let kernel_init = KernelInit::load(&self.database, system_init);
 
-        let transaction_receipt = kernel_init.execute(executable);
+        let transaction_receipt = kernel_init.execute(&executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit.state_updates.create_database_updates();
@@ -1261,6 +1261,42 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .manifest(manifest)
             .notarize(&notary)
             .build()
+    }
+
+    pub fn default_notary(&self) -> Ed25519PrivateKey {
+        Ed25519PrivateKey::from_u64(1337).unwrap()
+    }
+
+    pub fn v2_transaction_builder(&mut self) -> TransactionV2Builder {
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: current_epoch,
+                end_epoch_exclusive: current_epoch.next().unwrap(),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: nonce as u64,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: self.default_notary().public_key().into(),
+                notary_is_signatory: false,
+                tip_basis_points: 0,
+            })
+    }
+
+    pub fn v2_partial_transaction_builder(&mut self) -> PartialTransactionV2Builder {
+        let current_epoch = self.get_current_epoch();
+        let nonce = self.next_transaction_nonce();
+        PartialTransactionV2Builder::new().intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: current_epoch,
+            end_epoch_exclusive: current_epoch.next().unwrap(),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: nonce as u64,
+        })
     }
 
     /// If you have a non-raw notarized tranasaction, you will need to do:
@@ -1374,7 +1410,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         notary_is_signatory: false,
                         tip_percentage,
                     },
-                    instructions: InstructionsV1(Rc::new(manifest.instructions)),
+                    instructions: InstructionsV1::from(manifest.instructions),
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },
@@ -2377,27 +2413,24 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = commit_result
+    let substate_updates = commit_result
         .state_updates
         .clone()
-        .into_legacy()
-        .system_updates;
-    for ((node_id, partition_num), partition_updates) in (&system_updates).into_iter() {
-        for (substate_key, database_update) in partition_updates.into_iter() {
-            let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
-                    .expect("Substate key should be typeable");
-            if !typed_substate_key.value_is_mappable() {
-                continue;
+        .into_flattened_substate_updates();
+    for ((node_id, partition_num, substate_key), database_update) in substate_updates.into_iter() {
+        let typed_substate_key =
+            to_typed_substate_key(node_id.entity_type().unwrap(), partition_num, &substate_key)
+                .expect("Substate key should be typeable");
+        if !typed_substate_key.value_is_mappable() {
+            continue;
+        }
+        match database_update {
+            DatabaseUpdate::Set(raw_value) => {
+                // Check that typed value mapping works
+                to_typed_substate_value(&typed_substate_key, &raw_value)
+                    .expect("Substate value should be typeable");
             }
-            match database_update {
-                DatabaseUpdate::Set(raw_value) => {
-                    // Check that typed value mapping works
-                    to_typed_substate_value(&typed_substate_key, raw_value)
-                        .expect("Substate value should be typeable");
-                }
-                DatabaseUpdate::Delete => {}
-            }
+            DatabaseUpdate::Delete => {}
         }
     }
 }

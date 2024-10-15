@@ -163,7 +163,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             Err(error) => return ControlFlow::Break(error.into()),
         }
 
-        visitor.on_start_instruction(OnStartInstruction { index, effect })?;
+        visitor.on_start_instruction(OnStartInstruction { index })?;
 
         match effect {
             Effect::CreateBucket { source_amount } => {
@@ -1134,49 +1134,57 @@ impl ManifestInterpretationVisitor for () {
     type Output = ManifestValidationError;
 }
 
-pub struct OnStartInstruction<'a> {
+/// The instruction has not yet passed validity checks, therefore is not included in the event.
+pub struct OnStartInstruction {
     pub index: usize,
-    pub effect: ManifestInstructionEffect<'a>,
 }
 
+/// The instruction and its effects have passed validity checks.
 pub struct OnEndInstruction<'a> {
     pub index: usize,
     pub effect: ManifestInstructionEffect<'a>,
 }
 
+/// A valid bucket has been created.
 pub struct OnNewBucket<'s, 'a> {
     pub bucket: ManifestBucket,
     pub state: &'s BucketState<'a>,
 }
 
+/// A bucket has been consumed in a valid manner.
 pub struct OnConsumeBucket<'s, 'a> {
     pub bucket: ManifestBucket,
     pub state: &'s BucketState<'a>,
     pub destination: BucketDestination<'a>,
 }
 
+/// A valid proof has been created.
 pub struct OnNewProof<'s, 'a> {
     pub proof: ManifestProof,
     pub state: &'s ProofState<'a>,
 }
 
+/// A proof has been consumed in a valid manner.
 pub struct OnConsumeProof<'s, 'a> {
     pub proof: ManifestProof,
     pub state: &'s ProofState<'a>,
     pub destination: ProofDestination<'a>,
 }
 
+/// A valid address reservation has been created.
 pub struct OnNewAddressReservation<'s, 'a> {
     pub address_reservation: ManifestAddressReservation,
     pub state: &'s AddressReservationState<'a>,
 }
 
+/// An address reservation has been consumed in a valid manner.
 pub struct OnConsumeAddressReservation<'s, 'a> {
     pub address_reservation: ManifestAddressReservation,
     pub state: &'s AddressReservationState<'a>,
     pub destination: AddressReservationDestination<'a>,
 }
 
+/// A valid named address has been created.
 pub struct OnNewNamedAddress<'s, 'a> {
     pub named_address: ManifestNamedAddress,
     pub state: &'s NamedAddressState<'a>,
@@ -1184,38 +1192,46 @@ pub struct OnNewNamedAddress<'s, 'a> {
     pub blueprint_name: &'a str,
 }
 
+/// A valid named intent has been created.
 pub struct OnNewIntent<'s, 'a> {
     pub intent: ManifestNamedIntent,
     pub state: &'s IntentState<'a>,
 }
 
+/// A valid auth zone bulk-drop instruction has been processed.
 pub struct OnDropAuthZoneProofs {
     pub drop_all_signature_proofs: bool,
     pub drop_all_non_signature_proofs: bool,
 }
 
+/// An expression has been passed into an invocation.
 pub struct OnPassExpression<'a> {
     pub expression: ManifestExpression,
     pub destination: ExpressionDestination<'a>,
 }
 
+/// A blob has been registered
 pub struct OnRegisterBlob<'a> {
     pub blob_ref: ManifestBlobRef,
     pub content: &'a [u8],
 }
 
+/// A blob has been passed into an invocation.
 pub struct OnPassBlob<'a> {
     pub blob_ref: ManifestBlobRef,
     pub destination: BlobDestination<'a>,
 }
 
+/// A valid assertion has been processed.
 pub struct OnResourceAssertion<'a> {
     pub assertion: ResourceAssertion<'a>,
 }
 
+/// A valid verification has been processed.
 pub struct OnVerification<'a> {
     pub kind: VerificationKind,
     pub access_rule: &'a AccessRule,
 }
 
+/// The manifest has finished processing, and has passed validity checks.
 pub struct OnFinish;

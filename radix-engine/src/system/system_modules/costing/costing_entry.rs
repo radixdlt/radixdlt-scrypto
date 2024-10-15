@@ -1,8 +1,8 @@
 use super::FeeTable;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
+    CheckReferenceEvent, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
@@ -18,9 +18,11 @@ pub enum ExecutionCostingEntry<'a> {
     ValidateTxPayload {
         size: usize,
     },
-    RefCheck {
-        event: &'a RefCheckEvent<'a>,
+    CheckReference {
+        event: &'a CheckReferenceEvent<'a>,
     },
+    CheckIntentValidity,
+    CheckTimestamp,
 
     /* run code */
     RunNativeCode {
@@ -132,6 +134,14 @@ pub enum ExecutionCostingEntry<'a> {
     Keccak256Hash {
         size: usize,
     },
+    Blake2b256Hash {
+        size: usize,
+    },
+    Ed25519Verify {
+        size: usize,
+    },
+    Secp256k1EcdsaVerify,
+    Secp256k1EcdsaKeyRecover,
 }
 
 #[derive(Debug, IntoStaticStr)]
@@ -139,6 +149,7 @@ pub enum FinalizationCostingEntry<'a> {
     CommitStateUpdates { store_commit: &'a StoreCommit },
     CommitEvents { events: &'a Vec<Event> },
     CommitLogs { logs: &'a Vec<(Level, String)> },
+    CommitIntentStatus { num_of_intent_statuses: usize },
 }
 
 impl<'a> ExecutionCostingEntry<'a> {
@@ -148,7 +159,9 @@ impl<'a> ExecutionCostingEntry<'a> {
                 num_signatures: num_of_signatures,
             } => ft.verify_tx_signatures_cost(*num_of_signatures),
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
-            ExecutionCostingEntry::RefCheck { event } => ft.ref_check(event),
+            ExecutionCostingEntry::CheckReference { event } => ft.check_reference(event),
+            ExecutionCostingEntry::CheckIntentValidity => ft.check_intent_validity(),
+            ExecutionCostingEntry::CheckTimestamp => ft.check_timestamp(),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -208,6 +221,12 @@ impl<'a> ExecutionCostingEntry<'a> {
                 ft.bls12381_g2_signature_aggregate_cost(*signatures_cnt)
             }
             ExecutionCostingEntry::Keccak256Hash { size } => ft.keccak256_hash_cost(*size),
+            ExecutionCostingEntry::Blake2b256Hash { size } => ft.blake2b256_hash_cost(*size),
+            ExecutionCostingEntry::Ed25519Verify { size } => ft.ed25519_verify_cost(*size),
+            ExecutionCostingEntry::Secp256k1EcdsaVerify => ft.secp256k1_ecdsa_verify_cost(),
+            ExecutionCostingEntry::Secp256k1EcdsaKeyRecover => {
+                ft.secp256k1_ecdsa_key_recover_cost()
+            }
         }
     }
 }
@@ -220,6 +239,10 @@ impl<'a> FinalizationCostingEntry<'a> {
             }
             FinalizationCostingEntry::CommitEvents { events } => ft.commit_events_cost(events),
             FinalizationCostingEntry::CommitLogs { logs } => ft.commit_logs_cost(logs),
+
+            FinalizationCostingEntry::CommitIntentStatus {
+                num_of_intent_statuses,
+            } => ft.commit_intent_status(*num_of_intent_statuses),
         }
     }
 }
@@ -287,9 +310,11 @@ pub mod owned {
         ValidateTxPayload {
             size: usize,
         },
-        RefCheck {
-            event: RefCheckEventOwned,
+        CheckReference {
+            event: CheckReferenceEventOwned,
         },
+        CheckIntentValidity,
+        CheckTimestamp,
 
         /* run code */
         RunNativeCode {
@@ -401,6 +426,14 @@ pub mod owned {
         Keccak256Hash {
             size: usize,
         },
+        Blake2b256Hash {
+            size: usize,
+        },
+        Ed25519Verify {
+            size: usize,
+        },
+        Secp256k1EcdsaVerify,
+        Secp256k1EcdsaKeyRecover,
     }
 
     /// An owned model equivalent of [`CreateNodeEvent`].
@@ -427,7 +460,7 @@ pub mod owned {
 
     /// An owned model equivalent of [`RefCheckEvent`].
     #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
-    pub enum RefCheckEventOwned {
+    pub enum CheckReferenceEventOwned {
         IOAccess(IOAccess),
     }
 
@@ -525,9 +558,11 @@ pub mod owned {
                 ExecutionCostingEntry::ValidateTxPayload { size } => {
                     Self::ValidateTxPayload { size }
                 }
-                ExecutionCostingEntry::RefCheck { event } => Self::RefCheck {
+                ExecutionCostingEntry::CheckReference { event } => Self::CheckReference {
                     event: event.into(),
                 },
+                ExecutionCostingEntry::CheckIntentValidity => Self::CheckIntentValidity,
+                ExecutionCostingEntry::CheckTimestamp => Self::CheckTimestamp,
                 ExecutionCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
@@ -624,6 +659,10 @@ pub mod owned {
                     Self::Bls12381G2SignatureAggregate { signatures_cnt }
                 }
                 ExecutionCostingEntry::Keccak256Hash { size } => Self::Keccak256Hash { size },
+                ExecutionCostingEntry::Blake2b256Hash { size } => Self::Blake2b256Hash { size },
+                ExecutionCostingEntry::Ed25519Verify { size } => Self::Ed25519Verify { size },
+                ExecutionCostingEntry::Secp256k1EcdsaVerify => Self::Secp256k1EcdsaVerify,
+                ExecutionCostingEntry::Secp256k1EcdsaKeyRecover => Self::Secp256k1EcdsaKeyRecover,
             }
         }
     }
@@ -680,10 +719,10 @@ pub mod owned {
         }
     }
 
-    impl<'a> From<&'a RefCheckEvent<'a>> for RefCheckEventOwned {
-        fn from(value: &'a RefCheckEvent<'a>) -> Self {
+    impl<'a> From<&'a CheckReferenceEvent<'a>> for CheckReferenceEventOwned {
+        fn from(value: &'a CheckReferenceEvent<'a>) -> Self {
             match value {
-                RefCheckEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+                CheckReferenceEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }
         }
     }

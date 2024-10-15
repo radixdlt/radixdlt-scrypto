@@ -51,11 +51,15 @@ macro_rules! grab_runtime {
     ($caller: expr) => {{
         let runtime: &mut Box<dyn WasmRuntime> =
             unsafe { &mut *$caller.data().runtime_ptr.assume_init() };
-        let memory = match $caller.get_export(EXPORT_MEMORY) {
+        runtime
+    }};
+}
+macro_rules! grab_memory {
+    ($caller: expr) => {{
+        match $caller.get_export(EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
-        };
-        (memory, runtime)
+        }
     }};
 }
 
@@ -65,7 +69,8 @@ fn consume_buffer(
     buffer_id: BufferId,
     destination_ptr: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let result = runtime.buffer_consume(buffer_id);
     match result {
@@ -86,7 +91,8 @@ fn call_method(
     args_ptr: u32,
     args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
@@ -106,7 +112,8 @@ fn call_direct_method(
     args_ptr: u32,
     args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
@@ -127,7 +134,8 @@ fn call_module_method(
     args_ptr: u32,
     args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
@@ -149,7 +157,8 @@ fn call_function(
     args_ptr: u32,
     args_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let package_address = read_memory(
         caller.as_context_mut(),
@@ -178,7 +187,8 @@ fn new_object(
     object_states_ptr: u32,
     object_states_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .object_new(
@@ -203,7 +213,8 @@ fn new_key_value_store(
     schema_id_ptr: u32,
     schema_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .key_value_store_new(read_memory(
@@ -222,7 +233,8 @@ fn allocate_global_address(
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .address_allocate(
@@ -247,7 +259,8 @@ fn get_reservation_address(
     node_id_ptr: u32,
     node_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .address_get_reservation_address(read_memory(
@@ -262,7 +275,7 @@ fn get_reservation_address(
 fn execution_cost_unit_limit(
     caller: Caller<'_, HostState>,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.costing_get_execution_cost_unit_limit()
 }
@@ -270,7 +283,7 @@ fn execution_cost_unit_limit(
 fn execution_cost_unit_price(
     caller: Caller<'_, HostState>,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime
         .costing_get_execution_cost_unit_price()
@@ -280,7 +293,7 @@ fn execution_cost_unit_price(
 fn finalization_cost_unit_limit(
     caller: Caller<'_, HostState>,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.costing_get_finalization_cost_unit_limit()
 }
@@ -288,7 +301,7 @@ fn finalization_cost_unit_limit(
 fn finalization_cost_unit_price(
     caller: Caller<'_, HostState>,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime
         .costing_get_finalization_cost_unit_price()
@@ -296,19 +309,19 @@ fn finalization_cost_unit_price(
 }
 
 fn usd_price(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.costing_get_usd_price().map(|buffer| buffer.0)
 }
 
 fn tip_percentage(caller: Caller<'_, HostState>) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.costing_get_tip_percentage()
 }
 
 fn fee_balance(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.costing_get_fee_balance().map(|buffer| buffer.0)
 }
@@ -322,7 +335,8 @@ fn globalize_object(
     address_ptr: u32,
     address_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .globalize_object(
@@ -342,7 +356,8 @@ fn instance_of(
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime.instance_of(
         read_memory(
@@ -371,7 +386,8 @@ fn blueprint_id(
     component_id_ptr: u32,
     component_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .blueprint_id(read_memory(
@@ -388,7 +404,8 @@ fn get_outer_object(
     component_id_ptr: u32,
     component_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     runtime
         .get_outer_object(read_memory(
@@ -408,7 +425,8 @@ fn lock_key_value_store_entry(
     offset_len: u32,
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
@@ -420,7 +438,8 @@ fn key_value_entry_get(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+
     runtime.key_value_entry_get(handle).map(|buffer| buffer.0)
 }
 
@@ -430,7 +449,8 @@ fn key_value_entry_set(
     buffer_ptr: u32,
     buffer_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
     let data = read_memory(caller.as_context_mut(), memory, buffer_ptr, buffer_len)?;
     runtime.key_value_entry_set(handle, data)
 }
@@ -439,7 +459,8 @@ fn key_value_entry_remove(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+
     runtime
         .key_value_entry_remove(handle)
         .map(|buffer| buffer.0)
@@ -449,7 +470,8 @@ fn unlock_key_value_entry(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+
     runtime.key_value_entry_close(handle)
 }
 
@@ -460,7 +482,8 @@ fn key_value_store_remove(
     key_ptr: u32,
     key_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let key = read_memory(caller.as_context_mut(), memory, key_ptr, key_len)?;
 
@@ -475,7 +498,8 @@ fn lock_field(
     field: u32,
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+
     runtime.actor_open_field(object_handle, field as u8, flags)
 }
 
@@ -483,7 +507,7 @@ fn field_lock_read(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.field_entry_read(handle).map(|buffer| buffer.0)
 }
@@ -494,7 +518,8 @@ fn field_lock_write(
     data_ptr: u32,
     data_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
@@ -505,7 +530,7 @@ fn field_lock_release(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.field_entry_close(handle)
 }
@@ -514,7 +539,7 @@ fn actor_get_node_id(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.actor_get_node_id(handle).map(|buffer| buffer.0)
 }
@@ -522,22 +547,24 @@ fn actor_get_node_id(
 fn get_package_address(
     caller: Caller<'_, HostState>,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.actor_get_package_address().map(|buffer| buffer.0)
 }
 
 fn get_blueprint_name(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.actor_get_blueprint_name().map(|buffer| buffer.0)
 }
 
+#[inline]
 fn consume_wasm_execution_units(
     caller: Caller<'_, HostState>,
     n: u64,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (_memory, runtime) = grab_runtime!(caller);
+    let runtime: &mut Box<dyn WasmRuntime> =
+        unsafe { &mut *caller.data().runtime_ptr.assume_init() };
 
     // TODO: wasm-instrument uses u64 for cost units. We need to decide if we want to move from u32
     // to u64 as well.
@@ -552,7 +579,8 @@ fn emit_event(
     event_data_len: u32,
     flags: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let event_name = read_memory(
         caller.as_context_mut(),
@@ -576,13 +604,13 @@ fn emit_event(
 fn get_transaction_hash(
     caller: Caller<'_, HostState>,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.sys_get_transaction_hash().map(|buffer| buffer.0)
 }
 
 fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (_, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
 
     runtime.sys_generate_ruid().map(|buffer| buffer.0)
 }
@@ -594,7 +622,8 @@ fn emit_log(
     message_ptr: u32,
     message_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
@@ -607,7 +636,8 @@ fn bech32_encode_address(
     address_ptr: u32,
     address_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let address = read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?;
 
@@ -621,7 +651,8 @@ fn panic(
     message_ptr: u32,
     message_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
@@ -637,7 +668,8 @@ fn bls12381_v1_verify(
     signature_ptr: u32,
     signature_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
     let public_key = read_memory(
@@ -663,7 +695,8 @@ fn bls12381_v1_aggregate_verify(
     signature_ptr: u32,
     signature_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let pub_keys_and_msgs = read_memory(
         caller.as_context_mut(),
@@ -690,7 +723,8 @@ fn bls12381_v1_fast_aggregate_verify(
     signature_ptr: u32,
     signature_len: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
     let public_keys = read_memory(
@@ -714,7 +748,8 @@ fn bls12381_g2_signature_aggregate(
     signatures_ptr: u32,
     signatures_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let signatures = read_memory(
         caller.as_context_mut(),
@@ -733,12 +768,109 @@ fn keccak256_hash(
     data_ptr: u32,
     data_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
     runtime
         .crypto_utils_keccak256_hash(data)
+        .map(|buffer| buffer.0)
+}
+
+fn blake2b_256_hash(
+    mut caller: Caller<'_, HostState>,
+    data_ptr: u32,
+    data_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
+
+    let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
+
+    runtime
+        .crypto_utils_blake2b_256_hash(data)
+        .map(|buffer| buffer.0)
+}
+
+fn ed25519_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_ed25519_verify(message, public_key, signature)
+}
+
+fn secp256k1_ecdsa_verify(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    public_key_ptr: u32,
+    public_key_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let public_key = read_memory(
+        caller.as_context_mut(),
+        memory,
+        public_key_ptr,
+        public_key_len,
+    )?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime.crypto_utils_secp256k1_ecdsa_verify(message, public_key, signature)
+}
+
+fn secp256k1_ecdsa_key_recover(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime
+        .crypto_utils_secp256k1_ecdsa_key_recover(message, signature)
         .map(|buffer| buffer.0)
 }
 
@@ -749,7 +881,7 @@ fn test_host_read_memory(
     data_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     // - attempt to read data of given length data starting from given memory offset memory_ptr
-    let (memory, _runtime) = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     read_memory(caller.as_context_mut(), memory, memory_offs, data_len)?;
 
@@ -764,7 +896,7 @@ fn test_host_write_memory(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     // - generate some random data of of given length data_len
     // - attempt to write this data into given memory offset memory_ptr
-    let (memory, _runtime) = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
 
     let data = vec![0u8; data_len as usize];
     write_memory(caller.as_context_mut(), memory, memory_ptr, &data)?;
@@ -777,7 +909,7 @@ fn test_host_check_memory_is_clean(
     caller: Caller<'_, HostState>,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     // - attempt to read data of given length data starting from given memory offset memory_ptr
-    let (memory, _runtime) = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
     let store_ctx = caller.as_context();
 
     let data = memory.data(&store_ctx);
@@ -1392,6 +1524,76 @@ impl WasmiModule {
             },
         );
 
+        let host_blake2b_256_hash = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Error> {
+                blake2b_256_hash(caller, data_ptr, data_len).map_err(|e| Error::host(e))
+            },
+        );
+
+        let host_ed25519_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Error> {
+                ed25519_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
+        let host_secp2561k1_ecdsa_verify = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             public_key_ptr: u32,
+             public_key_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u32, Error> {
+                secp256k1_ecdsa_verify(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    public_key_ptr,
+                    public_key_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
+        let host_secp2561k1_ecdsa_key_recover = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u64, Error> {
+                secp256k1_ecdsa_key_recover(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| Error::host(e))
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new(module.engine());
 
         linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
@@ -1569,11 +1771,30 @@ impl WasmiModule {
             CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME,
             host_bls12381_g2_signature_aggregate
         );
-
         linker_define!(
             linker,
             CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
             host_keccak256_hash
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME,
+            host_blake2b_256_hash
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME,
+            host_ed25519_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
+            host_secp2561k1_ecdsa_verify
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME,
+            host_secp2561k1_ecdsa_key_recover
         );
 
         #[cfg(feature = "radix_engine_tests")]

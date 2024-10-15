@@ -65,7 +65,7 @@ impl TxnSync {
             let vm_modules = VmModules::default();
             let iter = rx.iter();
             for (tx_payload, expected_state_root_hash) in iter {
-                let (_validated, receipt) = execute_ledger_transaction(
+                let (_hash, receipt) = execute_ledger_transaction(
                     &database,
                     &vm_modules,
                     &network,
@@ -210,30 +210,9 @@ define_single_versioned! {
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiersV1 {
-    pub payload: PayloadIdentifiers,
+    pub payload: LedgerTransactionHashes,
     pub resultant_ledger_hashes: LedgerHashes,
     pub proposer_timestamp_ms: i64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct PayloadIdentifiers {
-    pub ledger_transaction_hash: LedgerTransactionHash,
-    pub typed: TypedTransactionIdentifiers,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypedTransactionIdentifiers {
-    Genesis {
-        system_transaction_hash: SystemTransactionHash,
-    },
-    User {
-        intent_hash: TransactionIntentHash,
-        signed_intent_hash: SignedTransactionIntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-    },
-    RoundUpdateV1 {
-        round_update_hash: RoundUpdateTransactionHash,
-    },
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Sbor)]

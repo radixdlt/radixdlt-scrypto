@@ -30,7 +30,7 @@ pub struct EpochRange {
     pub end_epoch_exclusive: Epoch,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ProposerTimestampRange {
     pub start_timestamp_inclusive: Option<Instant>,
     pub end_timestamp_exclusive: Option<Instant>,
@@ -69,30 +69,49 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentHashNullification {
     /// Should be checked with transaction tracker.
-    /// Will be written
+    /// Assuming the transaction gets committed, this will be persisted/nullified regardless of success
     TransactionIntent {
         intent_hash: TransactionIntentHash,
         expiry_epoch: Epoch,
-        ignore_duplicate: bool,
+    },
+    /// Used in preview. For realistic preview, should be billed as if it were a real transaction intent nullification.
+    /// But it shouldn't error or prevent the preview from running.
+    SimulatedTransactionIntent {
+        simulated: SimulatedTransactionIntentNullification,
     },
     /// Subintent - should only be written on failure
     Subintent {
         intent_hash: SubintentHash,
         expiry_epoch: Epoch,
-        ignore_duplicate: bool,
     },
 }
 
 impl IntentHashNullification {
-    pub fn intent_hash(&self) -> Option<IntentHash> {
+    pub fn intent_hash(&self) -> IntentHash {
         match self {
             IntentHashNullification::TransactionIntent { intent_hash, .. } => {
-                Some(IntentHash::Transaction(*intent_hash))
+                IntentHash::Transaction(*intent_hash)
+            }
+            IntentHashNullification::SimulatedTransactionIntent { simulated } => {
+                IntentHash::Transaction(simulated.intent_hash())
             }
             IntentHashNullification::Subintent { intent_hash, .. } => {
-                Some(IntentHash::Subintent(*intent_hash))
+                IntentHash::Subintent(*intent_hash)
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimulatedTransactionIntentNullification;
+
+impl SimulatedTransactionIntentNullification {
+    pub fn intent_hash(&self) -> TransactionIntentHash {
+        TransactionIntentHash::from_hash(Hash([0; Hash::LENGTH]))
+    }
+
+    pub fn expiry_epoch(&self, current_epoch: Epoch) -> Epoch {
+        current_epoch.next().unwrap_or(Epoch::of(u64::MAX))
     }
 }
 
@@ -102,10 +121,6 @@ pub struct TransactionCostingParameters {
 
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
-
-    /// Whether to abort the transaction run when the loan is repaid.
-    /// This is used when test-executing pending transactions.
-    pub abort_when_loan_repaid: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -171,12 +186,6 @@ impl Default for TipSpecifier {
     }
 }
 
-// Note: TransactionCostingParametersReceiptV1 has diverged from TransactionCostingParameters because
-// with the bottlenose release and the addition of abort_when_loan_repaid, we broke compatibility of
-// the encoded transaction receipt.
-//
-// Relevant discussion:
-// https://rdxworks.slack.com/archives/C060RCS9MPW/p1715762426579329?thread_ts=1714585544.709299&cid=C060RCS9MPW
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, Default)]
 pub struct TransactionCostingParametersReceiptV1 {
     pub tip_percentage: u16,

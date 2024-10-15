@@ -3,6 +3,7 @@
 mod address;
 mod allocated_address;
 mod arguments;
+mod assert_bucket_contents;
 mod auth_account;
 mod auth_component;
 mod auth_mutability;
@@ -53,7 +54,9 @@ mod schema_sanity_check;
 mod subintent_auth;
 mod subintent_leaks;
 mod subintent_lock_fee;
+mod subintent_structure;
 mod subintent_txn_shape;
+mod subintent_verify_parent;
 mod subintent_yield;
 mod system;
 mod system_access_rule;

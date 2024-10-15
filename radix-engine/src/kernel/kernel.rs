@@ -98,7 +98,7 @@ impl<
     /// Executes a transaction
     pub fn execute(
         self,
-        executable: <I::For as KernelTransactionExecutor>::Executable,
+        executable: &<I::For as KernelTransactionExecutor>::Executable,
     ) -> <I::For as KernelTransactionExecutor>::Receipt {
         let boot_loader = BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
@@ -134,7 +134,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
         mut self,
         kernel_boot: KernelBoot,
         callback_init: E::Init,
-        executable: E::Executable,
+        executable: &E::Executable,
     ) -> E::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -149,7 +149,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
             kernel_boot.always_visible_global_nodes(),
         );
 
-        let (mut system, call_frame_inits) = match system_init_result {
+        let (mut system, call_frame_inits, num_of_intent_statuses) = match system_init_result {
             Ok(success) => success,
             Err(receipt) => return receipt,
         };
@@ -177,7 +177,9 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
 
             // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-            kernel.callback.finalize(commit_info)?;
+            kernel
+                .callback
+                .finalize(commit_info, num_of_intent_statuses)?;
 
             Ok(output)
         }()

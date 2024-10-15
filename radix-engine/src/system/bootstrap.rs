@@ -23,6 +23,7 @@ use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_tracker::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
@@ -246,8 +247,9 @@ impl FlashReceipt {
     }
 }
 
-pub fn create_system_bootstrap_flash(
-) -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
+pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
+    // The slightly weird order is so that it matches the historic order when this
+    // used to be ordered by a BTreeMap over the node ids.
     let package_flashes = [
         (
             PACKAGE_PACKAGE,
@@ -264,6 +266,26 @@ pub fn create_system_bootstrap_flash(
                     partition_num: SCHEMAS_PARTITION,
                 }],
             },
+        ),
+        (
+            ROYALTY_MODULE_PACKAGE,
+            RoyaltyNativePackage::definition(),
+            NativeCodeId::RoyaltyCode1 as u64,
+            metadata_init! {
+                "name" => "Royalty Package".to_owned(), locked;
+                "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
+            },
+            btreemap!(),
+        ),
+        (
+            RESOURCE_PACKAGE,
+            ResourceNativePackage::definition(),
+            NativeCodeId::ResourceCode1 as u64,
+            metadata_init! {
+                "name" => "Resource Package".to_owned(), locked;
+                "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
+            },
+            btreemap!(),
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
@@ -296,26 +318,6 @@ pub fn create_system_bootstrap_flash(
             btreemap!(),
         ),
         (
-            RESOURCE_PACKAGE,
-            ResourceNativePackage::definition(),
-            NativeCodeId::ResourceCode1 as u64,
-            metadata_init! {
-                "name" => "Resource Package".to_owned(), locked;
-                "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
-            },
-            btreemap!(),
-        ),
-        (
-            ROYALTY_MODULE_PACKAGE,
-            RoyaltyNativePackage::definition(),
-            NativeCodeId::RoyaltyCode1 as u64,
-            metadata_init! {
-                "name" => "Royalty Package".to_owned(), locked;
-                "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
-            },
-            btreemap!(),
-        ),
-        (
             TEST_UTILS_PACKAGE,
             TestUtilsNativePackage::definition(),
             NativeCodeId::TestUtilsCode1 as u64,
@@ -327,7 +329,7 @@ pub fn create_system_bootstrap_flash(
         ),
     ];
 
-    let mut to_flash = BTreeMap::new();
+    let mut to_flash = StateUpdates::empty();
 
     for (address, definition, native_code_id, metadata_init, system_instructions) in package_flashes
     {
@@ -351,11 +353,10 @@ pub fn create_system_bootstrap_flash(
         };
 
         for (partition_num, partition_substates) in partitions {
-            let mut substates = BTreeMap::new();
+            let partition_updates = to_flash.of_node(address).of_partition(partition_num);
             for (key, value) in partition_substates {
-                substates.insert(key, value.into());
+                partition_updates.mut_set_substate(key, value.to_scrypto_value());
             }
-            to_flash.insert((address.into_node_id(), partition_num), substates);
         }
     }
 
@@ -363,129 +364,27 @@ pub fn create_system_bootstrap_flash(
 }
 
 pub fn create_substate_flash_for_genesis() -> FlashReceipt {
-    let substate_flash = create_system_bootstrap_flash();
-    let mut system_updates = index_map_new();
-    let mut new_packages = index_set_new();
-    let mut new_components = index_set_new();
-    let mut new_resources = index_set_new();
-    let mut new_vaults = index_set_new();
-
-    for ((node_id, partition_num), substates) in substate_flash {
-        let mut substate_updates = index_map_new();
-        for (substate_key, value) in substates {
-            substate_updates.insert(substate_key, DatabaseUpdate::Set(value));
-        }
-
-        system_updates.insert((node_id, partition_num), substate_updates);
-        if node_id.is_global_package() {
-            new_packages.insert(PackageAddress::new_or_panic(node_id.0));
-        }
-        if node_id.is_global_component() {
-            new_components.insert(ComponentAddress::new_or_panic(node_id.0));
-        }
-        if node_id.is_global_resource_manager() {
-            new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
-        }
-        if node_id.is_internal_vault() {
-            new_vaults.insert(InternalAddress::new_or_panic(node_id.0));
-        }
-    }
-
-    let state_updates = StateUpdates::from(LegacyStateUpdates {
-        partition_deletions: index_set_new(),
-        system_updates,
-    });
-    let flashed_db = FlashedSubstateDatabase {
-        flash_updates: state_updates.create_database_updates(),
-    };
-    let mut substate_schema_mapper =
-        SubstateSchemaMapper::new(SystemDatabaseReader::new(&flashed_db));
-    substate_schema_mapper.add_for_all_individually_updated(&state_updates);
-    let substate_system_structures = substate_schema_mapper.done();
-
-    FlashReceipt {
-        state_updates,
-        state_update_summary: StateUpdateSummary {
-            new_packages,
-            new_components,
-            new_resources,
-            new_vaults,
-            vault_balance_changes: index_map_new(),
-        },
-        substate_system_structures,
-    }
+    let state_updates = create_system_bootstrap_flash_state_updates();
+    FlashReceipt::from_state_updates(state_updates, &EmptySubstateDatabase)
 }
 
-/// A [`SubstateDatabase`] implementation holding only the initial [`DatabaseUpdates`] from a system
-/// bootstrap flash.
-struct FlashedSubstateDatabase {
-    flash_updates: DatabaseUpdates,
-}
+struct EmptySubstateDatabase;
 
-impl SubstateDatabase for FlashedSubstateDatabase {
+impl SubstateDatabase for EmptySubstateDatabase {
     fn get_raw_substate_by_db_key(
         &self,
-        partition_key: &DbPartitionKey,
-        sort_key: &DbSortKey,
+        _partition_key: &DbPartitionKey,
+        _sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
-        let DbPartitionKey {
-            node_key,
-            partition_num,
-        } = partition_key;
-        self.flash_updates
-            .node_updates
-            .get(node_key)
-            .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
-            .and_then(|partition_updates| match partition_updates {
-                PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
-                    .get(sort_key)
-                    .and_then(|update| match update {
-                        DatabaseUpdate::Set(value) => Some(value.clone()),
-                        DatabaseUpdate::Delete => None,
-                    }),
-                PartitionDatabaseUpdates::Reset {
-                    new_substate_values,
-                } => new_substate_values.get(sort_key).cloned(),
-            })
+        None
     }
 
     fn list_raw_values_from_db_key(
         &self,
-        partition_key: &DbPartitionKey,
-        from_sort_key: Option<&DbSortKey>,
+        _partition_key: &DbPartitionKey,
+        _from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
-        let DbPartitionKey {
-            node_key,
-            partition_num,
-        } = partition_key;
-        let mut entries = self
-            .flash_updates
-            .node_updates
-            .get(node_key)
-            .and_then(|node_updates| node_updates.partition_updates.get(partition_num))
-            .into_iter()
-            .flat_map(|partition_updates| {
-                let effective_entries = match partition_updates {
-                    PartitionDatabaseUpdates::Delta { substate_updates } => {
-                        Box::new(substate_updates.iter().filter_map(|(sort_key, update)| {
-                            match update {
-                                DatabaseUpdate::Set(value) => Some((sort_key, value)),
-                                DatabaseUpdate::Delete => None,
-                            }
-                        })) as Box<dyn Iterator<Item = _>>
-                    }
-                    PartitionDatabaseUpdates::Reset {
-                        new_substate_values,
-                    } => Box::new(new_substate_values.iter()),
-                };
-                effective_entries.map(|(sort_key, value)| (sort_key.clone(), value.clone()))
-            })
-            // It is more performant to filter before sorting (than sort + skip-while)
-            .filter(|(sort_key, _value)| Some(sort_key) >= from_sort_key)
-            .collect::<Vec<_>>();
-        // The method's contract requires the results to be in the key's order (ascending):
-        entries.sort_by(|(left_key, _), (right_key, _)| left_key.cmp(right_key));
-        Box::new(entries.into_iter())
+        Box::new(core::iter::empty())
     }
 }
 

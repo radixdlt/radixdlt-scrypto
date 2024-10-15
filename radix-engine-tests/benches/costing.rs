@@ -201,8 +201,8 @@ fn bench_spin_loop(c: &mut Criterion) {
                 TransactionCostingParameters {
                     free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
                     tip: Default::default(),
-                    abort_when_loan_repaid: false,
                 },
+                false,
             );
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
@@ -221,6 +221,67 @@ fn bench_spin_loop(c: &mut Criterion) {
         "WASM execution units consumed: {}",
         wasm_execution_units_consumed
     );
+}
+
+// Usage: cargo bench --bench costing -- spin_loop_v2
+fn bench_spin_loop_v2(c: &mut Criterion) {
+    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
+        code,
+        single_function_package_definition("Test", "f"),
+    ));
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+
+    c.bench_function("costing::spin_loop_v2", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
+// Usage: cargo bench --bench costing -- spin_loop_v3
+// This is an basically the same as 'spin_loop_should_end_in_reasonable_amount_of_time' test,
+// but it is benchmarked for more precise results.
+fn bench_spin_loop_v3(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (code, definition) = PackageLoader::get("fee");
+    let package_address =
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "bucket")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Fee",
+                "new",
+                manifest_args!(lookup.bucket("bucket")),
+            )
+        })
+        .build();
+
+    let component_address = ledger
+        .execute_manifest(manifest.clone(), [])
+        .expect_commit_success()
+        .new_component_addresses()[0];
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_method(component_address, "spin_loop", manifest_args!())
+        .build();
+
+    c.bench_function("costing::spin_loop_v3", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
 }
 
 macro_rules! bench_instantiate {
@@ -401,4 +462,15 @@ criterion_group!(
     bench_execute_transaction_creating_big_vec_substates,
     bench_execute_transaction_reading_big_vec_substates,
 );
-criterion_main!(costing);
+
+// This group is for longer benchmarks, which might be counted in seconds
+criterion_group!(
+    name = costing_long;
+    config = Criterion::default()
+                .sample_size(20)
+                .measurement_time(core::time::Duration::from_secs(20))
+                .warm_up_time(core::time::Duration::from_millis(3000));
+    targets = bench_spin_loop_v2,
+    bench_spin_loop_v3,
+);
+criterion_main!(costing, costing_long);

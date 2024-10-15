@@ -1,7 +1,13 @@
 Name: Bottlenose
 
-== SUMMARY HASHES ==
+========= SUMMARY HASHES =========
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
 State changes: ab0cc6ce75fc39a6 (should never change)
 Events       : 9ca58416e9131fa1 (should never change)
 
+==== POST ENACTMENT SCENARIOS ====
+The following scenarios are set by default to run on testnets after this protocol update.
+This list should NEVER change, else it will cause divergence for any nodes applying the protocol update.
+=> account_locker
+=> maya_router
+=> access-controller-v2

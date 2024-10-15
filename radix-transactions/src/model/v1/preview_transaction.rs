@@ -18,19 +18,19 @@ pub struct PreviewIntentV1 {
 
 pub struct ValidatedPreviewIntent {
     pub intent: PreparedIntentV1,
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
 }
 
 #[allow(deprecated)]
 impl ValidatedPreviewIntent {
-    pub fn get_executable(&self) -> ExecutableTransaction {
-        let intent = &self.intent;
-        let flags = &self.flags;
+    pub fn create_executable(self) -> ExecutableTransaction {
+        let intent = self.intent;
+        let flags = self.flags;
 
         let mut simulate_every_proof_under_resources = BTreeSet::new();
-        if self.flags.assume_all_signature_proofs {
+        if flags.assume_all_signature_proofs {
             simulate_every_proof_under_resources.insert(SECP256K1_SIGNATURE_RESOURCE);
             simulate_every_proof_under_resources.insert(ED25519_SIGNATURE_RESOURCE);
         }
@@ -38,12 +38,11 @@ impl ValidatedPreviewIntent {
         let header = &intent.header.inner;
         let fee_payment = TransactionCostingParameters {
             tip: TipSpecifier::Percentage(header.tip_percentage),
-            free_credit_in_xrd: if self.flags.use_free_credit {
+            free_credit_in_xrd: if flags.use_free_credit {
                 Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap()
             } else {
                 Decimal::ZERO
             },
-            abort_when_loan_repaid: false,
         };
 
         let mut initial_proofs = AuthAddresses::signer_set(&self.signer_public_keys);
@@ -55,18 +54,25 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.transaction_intent_hash();
 
+        let nullification = if flags.skip_epoch_check {
+            IntentHashNullification::SimulatedTransactionIntent {
+                simulated: SimulatedTransactionIntentNullification,
+            }
+        } else {
+            IntentHashNullification::TransactionIntent {
+                intent_hash,
+                expiry_epoch: intent.header.inner.end_epoch_exclusive,
+            }
+        };
+
         ExecutableTransaction::new_v1(
-            self.encoded_instructions.clone(),
+            self.encoded_instructions,
             AuthZoneInit::new(initial_proofs, simulate_every_proof_under_resources),
-            intent.instructions.references.clone(),
-            intent.blobs.blobs_by_hash.clone(),
+            intent.instructions.references,
+            intent.blobs.blobs_by_hash,
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
-                    intent_hash,
-                    expiry_epoch: intent.header.inner.end_epoch_exclusive,
-                    ignore_duplicate: flags.skip_epoch_check,
-                }],
+                intent_hash_nullifications: vec![nullification],
                 epoch_range: if flags.skip_epoch_check {
                     None
                 } else {
@@ -75,7 +81,7 @@ impl ValidatedPreviewIntent {
                         end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
                     })
                 },
-                payload_size: self.intent.summary.effective_length,
+                payload_size: intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],

@@ -5,9 +5,8 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use scrypto_test::prelude::*;
-
 use radix_transactions::validation::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
@@ -45,6 +44,71 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     );
 }
 
+fn create_v2_transaction(
+    min_proposer_timestamp_inclusive: Option<Instant>,
+    max_proposer_timestamp_exclusive: Option<Instant>,
+) -> NotarizedTransactionV2 {
+    // create key pairs
+    let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+    let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+
+    TransactionV2Builder::new()
+        .intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: Epoch::of(0),
+            end_epoch_exclusive: Epoch::of(100),
+            min_proposer_timestamp_inclusive,
+            max_proposer_timestamp_exclusive,
+            intent_discriminator: 0,
+        })
+        .manifest_builder(|builder| builder.lock_fee_from_faucet())
+        .transaction_header(TransactionHeaderV2 {
+            notary_public_key: notary.public_key().into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        })
+        .sign(&signer)
+        .notarize(&notary)
+        .build()
+}
+
+#[test]
+fn transaction_with_invalid_timestamp_range_should_be_rejected() {
+    let epoch = 1;
+    let round = 5;
+    let proposer_timestamp_ms = 1_000_000;
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    ledger.set_current_epoch(Epoch::of(epoch));
+    ledger.advance_to_round_at_timestamp(Round::of(round), proposer_timestamp_ms);
+
+    let receipt = ledger.execute_transaction(
+        create_v2_transaction(Some(Instant::new(proposer_timestamp_ms / 1000 + 1)), None),
+        ExecutionConfig::for_test_transaction(),
+    );
+    assert!(matches!(
+        receipt.expect_rejection(),
+        &RejectionReason::TransactionProposerTimestampNotYetValid { .. }
+    ));
+
+    let receipt = ledger.execute_transaction(
+        create_v2_transaction(None, Some(Instant::new(proposer_timestamp_ms / 1000))),
+        ExecutionConfig::for_test_transaction(),
+    );
+    assert!(matches!(
+        receipt.expect_rejection(),
+        &RejectionReason::TransactionProposerTimestampNoLongerValid { .. }
+    ));
+
+    let receipt = ledger.execute_transaction(
+        create_v2_transaction(
+            Some(Instant::new(proposer_timestamp_ms / 1000 - 1)),
+            Some(Instant::new(proposer_timestamp_ms / 1000 + 1)),
+        ),
+        ExecutionConfig::for_test_transaction(),
+    );
+    receipt.expect_commit_success();
+}
+
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
@@ -75,7 +139,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     assert_eq!(
         rejection_error,
         &RejectionReason::TransactionEpochNoLongerValid {
-            valid_until: Some(valid_until_epoch),
+            valid_until: valid_until_epoch,
             current_epoch
         }
     );
