@@ -1,7 +1,13 @@
 use crate::internal_prelude::*;
 
 pub trait BuildableManifest:
-    TypedReadableManifest + Into<AnyManifest> + ManifestEncode + Default + Eq + Debug
+    TypedReadableManifest
+    + Into<AnyManifest>
+    + TryFrom<AnyManifest, Error = ()>
+    + ManifestEncode
+    + Default
+    + Eq
+    + Debug
 {
     fn add_instruction(&mut self, instruction: Self::Instruction);
     fn add_blob(&mut self, hash: Hash, content: Vec<u8>);
@@ -32,6 +38,24 @@ pub trait BuildableManifest:
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, String>;
+
+    fn to_raw(self) -> Result<RawManifest, EncodeError> {
+        let any_manifest: AnyManifest = self.into();
+        any_manifest.to_raw()
+    }
+
+    fn from_raw(raw: &RawManifest) -> Result<Self, String> {
+        let any_manifest = AnyManifest::from_raw(raw)
+            .map_err(|err| format!("Could not decode as `AnyManifest`: {err:?}"))?;
+        Self::try_from(any_manifest)
+            .map_err(|()| format!("Encoded manifest was not of the correct type"))
+    }
+
+    fn decode_arbitrary(bytes: impl AsRef<[u8]>) -> Result<Self, String> {
+        let any_manifest = AnyManifest::attempt_decode_from_arbitrary_payload(bytes.as_ref())?;
+        Self::try_from(any_manifest)
+            .map_err(|()| format!("Encoded manifest was not of the correct type"))
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -28,9 +28,31 @@ impl From<TransactionManifestV1> for AnyManifest {
     }
 }
 
+impl TryFrom<AnyManifest> for TransactionManifestV1 {
+    type Error = ();
+
+    fn try_from(value: AnyManifest) -> Result<Self, Self::Error> {
+        match value {
+            AnyManifest::V1(manifest) => Ok(manifest),
+            _ => Err(()),
+        }
+    }
+}
+
 impl From<SystemTransactionManifestV1> for AnyManifest {
     fn from(value: SystemTransactionManifestV1) -> Self {
         Self::SystemV1(value)
+    }
+}
+
+impl TryFrom<AnyManifest> for SystemTransactionManifestV1 {
+    type Error = ();
+
+    fn try_from(value: AnyManifest) -> Result<Self, Self::Error> {
+        match value {
+            AnyManifest::SystemV1(manifest) => Ok(manifest),
+            _ => Err(()),
+        }
     }
 }
 
@@ -40,13 +62,46 @@ impl From<TransactionManifestV2> for AnyManifest {
     }
 }
 
+impl TryFrom<AnyManifest> for TransactionManifestV2 {
+    type Error = ();
+
+    fn try_from(value: AnyManifest) -> Result<Self, Self::Error> {
+        match value {
+            AnyManifest::V2(manifest) => Ok(manifest),
+            _ => Err(()),
+        }
+    }
+}
+
 impl From<SubintentManifestV2> for AnyManifest {
     fn from(value: SubintentManifestV2) -> Self {
         Self::SubintentV2(value)
     }
 }
 
+impl TryFrom<AnyManifest> for SubintentManifestV2 {
+    type Error = ();
+
+    fn try_from(value: AnyManifest) -> Result<Self, Self::Error> {
+        match value {
+            AnyManifest::SubintentV2(manifest) => Ok(manifest),
+            _ => Err(()),
+        }
+    }
+}
+
+// It's not technically a conventional transaction payload, but let's reuse the macro
+define_raw_transaction_payload!(RawManifest, TransactionPayloadKind::Other);
+
 impl AnyManifest {
+    pub fn to_raw(&self) -> Result<RawManifest, EncodeError> {
+        Ok(RawManifest::from_vec(manifest_encode(self)?))
+    }
+
+    pub fn from_raw(raw: &RawManifest) -> Result<Self, DecodeError> {
+        Ok(manifest_decode(raw.as_slice())?)
+    }
+
     pub fn attempt_decode_from_arbitrary_payload(bytes: &[u8]) -> Result<Self, String> {
         // First, try to decode as AnyManifest
         if let Ok(any_manifest) = manifest_decode::<Self>(bytes) {
