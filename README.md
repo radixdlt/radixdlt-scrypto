@@ -9,7 +9,7 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
 
 ## Installation
 
-1. Install Rust - we recommend to use Rust 1.80.1
+1. Install Rust - we recommend to use Rust 1.81.0
     - Install Rust (if Rust is installed you can skip this step)
      - Windows:
        - Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
@@ -51,7 +51,7 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
     - Set Rust version
     ```bash
     rustup update
-    rustup default 1.80.1
+    rustup default 1.81.0
     ```
 
 2. Enable `cargo` in the current shell:
