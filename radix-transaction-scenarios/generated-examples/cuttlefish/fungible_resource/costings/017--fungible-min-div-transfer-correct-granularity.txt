@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.40573142083,    100.0%
-- Execution Cost (XRD)                                                     ,               0.23752155,     58.5%
+Total Cost (XRD)                                                           ,            0.40591172083,    100.0%
+- Execution Cost (XRD)                                                     ,               0.23770185,     58.6%
 - Finalization Cost (XRD)                                                  ,               0.03650745,      9.0%
-- Storage Cost (XRD)                                                       ,            0.13170242083,     32.5%
+- Storage Cost (XRD)                                                       ,            0.13170242083,     32.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  4750431,    100.0%
+Execution Cost Breakdown                                                   ,                  4754037,    100.0%
 - AfterInvoke                                                              ,                      504,      0.0%
 - AllocateNodeId                                                           ,                     1746,      0.0%
 - BeforeInvoke                                                             ,                     1764,      0.0%
@@ -13,11 +13,13 @@ Execution Cost Breakdown                                                   ,    
 - CreateNode                                                               ,                    15850,      0.3%
 - DropNode                                                                 ,                    26729,      0.6%
 - EmitEvent                                                                ,                     3480,      0.1%
+- GetOwnedNodes                                                            ,                     1000,      0.0%
+- GetStackId                                                               ,                     1000,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      110,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   257074,      5.4%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      0.9%
-- OpenSubstate::GlobalPackage                                              ,                  1912823,     40.3%
+- OpenSubstate::GlobalPackage                                              ,                  1912823,     40.2%
 - OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   691764,     14.6%
 - OpenSubstate::InternalFungibleVault                                      ,                   223423,      4.7%
 - OpenSubstate::InternalGenericComponent                                   ,                    54068,      1.1%
@@ -38,6 +40,8 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      2.6%
 - RunNativeCode::withdraw                                                  ,                    57851,      1.2%
 - RunWasmCode::Faucet_lock_fee                                             ,                    24589,      0.5%
+- SetCallFrameData                                                         ,                      606,      0.0%
+- SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    18960,      0.4%
 - VerifyTxSignatures                                                       ,                    14000,      0.3%
 - WriteSubstate                                                            ,                    10062,      0.2%

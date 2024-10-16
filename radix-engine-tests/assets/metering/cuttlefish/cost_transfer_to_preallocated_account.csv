@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.41078482909,    100.0%
-- Execution Cost (XRD)                                                     ,               0.19114095,     46.5%
+Total Cost (XRD)                                                           ,            0.41101512909,    100.0%
+- Execution Cost (XRD)                                                     ,               0.19137125,     46.6%
 - Finalization Cost (XRD)                                                  ,                0.0515111,     12.5%
 - Storage Cost (XRD)                                                       ,            0.16813277909,     40.9%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3822819,    100.0%
+Execution Cost Breakdown                                                   ,                  3827425,    100.0%
 - AfterInvoke                                                              ,                      586,      0.0%
 - AllocateNodeId                                                           ,                     2231,      0.1%
 - BeforeInvoke                                                             ,                     2698,      0.1%
@@ -13,13 +13,15 @@ Execution Cost Breakdown                                                   ,    
 - CreateNode                                                               ,                    20314,      0.5%
 - DropNode                                                                 ,                    33040,      0.9%
 - EmitEvent                                                                ,                     3480,      0.1%
+- GetOwnedNodes                                                            ,                     1000,      0.0%
+- GetStackId                                                               ,                     2000,      0.1%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
 - MoveModule                                                               ,                     1400,      0.0%
 - OpenSubstate::GlobalAccount                                              ,                   249472,      6.5%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   175335,      4.6%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    42686,      1.1%
-- OpenSubstate::GlobalPackage                                              ,                  1795971,     47.0%
+- OpenSubstate::GlobalPackage                                              ,                  1795971,     46.9%
 - OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   487127,     12.7%
 - OpenSubstate::InternalFungibleVault                                      ,                    96660,      2.5%
 - OpenSubstate::InternalGenericComponent                                   ,                    60054,      1.6%
@@ -39,7 +41,9 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::take_FungibleVault                                        ,                    42457,      1.1%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      3.2%
 - RunNativeCode::withdraw                                                  ,                    57851,      1.5%
+- SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                      371,      0.0%
+- SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                     9880,      0.3%
 - VerifyTxSignatures                                                       ,                    14000,      0.4%
 - WriteSubstate                                                            ,                     9792,      0.3%

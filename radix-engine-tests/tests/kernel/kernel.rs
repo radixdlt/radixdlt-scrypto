@@ -198,6 +198,38 @@ impl KernelCallbackObject for TestCallbackObject {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    fn on_get_stack_id<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_switch_stack<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_send_to_stack<Y: KernelInternalApi<System = Self>>(
+        _value: &IndexedScryptoValue,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_set_call_frame_data<Y: KernelInternalApi<System = Self>>(
+        _data: &Self::CallFrameData,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_get_owned_nodes<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 enum MoveVariation {
@@ -214,7 +246,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback, false);
 
     let child_id = {
         let child_id = kernel
@@ -351,7 +383,7 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback, false);
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

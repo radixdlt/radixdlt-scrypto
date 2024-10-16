@@ -702,4 +702,44 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
 
         Ok(())
     }
+
+    fn on_get_stack_id(api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        api.module()
+            .apply_execution_cost(ExecutionCostingEntry::GetStackId)
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+
+        Ok(())
+    }
+
+    fn on_switch_stack(api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        api.module()
+            .apply_execution_cost(ExecutionCostingEntry::SwitchStack)
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+
+        Ok(())
+    }
+
+    fn on_send_to_stack(api: &mut ModuleApi, data_len: usize) -> Result<(), RuntimeError> {
+        api.module()
+            .apply_execution_cost(ExecutionCostingEntry::SendToStack { data_len })
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+
+        Ok(())
+    }
+
+    fn on_set_call_frame_data(api: &mut ModuleApi, data_len: usize) -> Result<(), RuntimeError> {
+        api.module()
+            .apply_execution_cost(ExecutionCostingEntry::SetCallFrameData { data_len })
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+
+        Ok(())
+    }
+
+    fn on_get_owned_nodes(api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        api.module()
+            .apply_execution_cost(ExecutionCostingEntry::GetOwnedNodes)
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+
+        Ok(())
+    }
 }
