@@ -261,6 +261,30 @@ where
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
+                    let transaction = next.raw_transaction.into_typed().unwrap();
+                    match transaction {
+                        UserTransaction::V1(_) => {}
+                        UserTransaction::V2(tx) => {
+                            for subintent in tx
+                                .signed_transaction_intent
+                                .transaction_intent
+                                .non_root_subintents
+                                .0
+                            {
+                                let payload = subintent.to_raw().unwrap();
+
+                                let hash = subintent
+                                    .prepare(&PreparationSettingsV1::cuttlefish())
+                                    .unwrap()
+                                    .summary
+                                    .hash;
+
+                                println!("{}", hex::encode(payload.as_slice()));
+                                println!("{}", hex::encode(hash.as_slice()));
+                            }
+                        }
+                    }
+
                     let receipt = self.execute_transaction(
                         &next.raw_transaction,
                         &scenario_hooks.adapt_execution_config(
