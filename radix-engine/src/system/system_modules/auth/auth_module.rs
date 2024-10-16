@@ -86,12 +86,12 @@ impl AuthModule {
     fn on_call_function_auth_zone_params<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
-    ) -> (BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>) {
+    ) -> Result<(BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>), RuntimeError> {
         let is_root_call_frame = system
             .kernel_get_system_state()
             .current_call_frame
             .is_root();
-        let is_root_thread = system.is_root_thread();
+        let is_root_thread = system.is_root_thread()?;
         if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
             if let Some(auth_zone_init) = &auth_module.generate_transaction_processor_auth_zone {
@@ -102,15 +102,15 @@ impl AuthModule {
                         .blueprint_name
                         .eq(TRANSACTION_PROCESSOR_BLUEPRINT);
                 if is_transaction_processor_blueprint {
-                    return (
+                    return Ok((
                         auth_zone_init.simulate_every_proof_under_resources.clone(),
                         auth_zone_init.initial_non_fungible_id_proofs.clone(),
-                    );
+                    ));
                 }
             }
         }
 
-        (BTreeSet::new(), BTreeSet::new())
+        Ok((BTreeSet::new(), BTreeSet::new()))
     }
 
     pub fn on_call_function<Y: SystemBasedKernelApi>(
@@ -121,7 +121,7 @@ impl AuthModule {
         // Create AuthZone
         let auth_zone = {
             let (virtual_resources, virtual_non_fungibles) =
-                Self::on_call_function_auth_zone_params(system, blueprint_id);
+                Self::on_call_function_auth_zone_params(system, blueprint_id)?;
             Self::create_auth_zone(system, None, virtual_resources, virtual_non_fungibles)?
         };
 

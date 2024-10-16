@@ -2,7 +2,7 @@ Name: Cuttlefish
 
 ========= SUMMARY HASHES =========
 These Cuttlefish hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
-State changes: 0b94da260d8d0b4f (allowed to change if not deployed to any network)
+State changes: c3e6fb5db79e9bcb (allowed to change if not deployed to any network)
 Events       : 9ca58416e9131fa1 (allowed to change if not deployed to any network)
 
 ==== POST ENACTMENT SCENARIOS ====

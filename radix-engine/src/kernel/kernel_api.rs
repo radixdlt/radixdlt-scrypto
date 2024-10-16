@@ -176,7 +176,7 @@ pub trait KernelStackApi {
     type CallFrameData;
 
     /// Gets the stack id which is currently being used
-    fn kernel_get_stack_id(&self) -> usize;
+    fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError>;
 
     /// Achieves a context switch by switching the underlying callframe/stack
     fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError>;
