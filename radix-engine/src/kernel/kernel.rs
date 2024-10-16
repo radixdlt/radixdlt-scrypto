@@ -1269,6 +1269,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     type CallFrameData = M::CallFrameData;
 
     fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
+        // Before cuttlefish, this method is called `kernel_get_current_depth`.
+        // It's primarily used to decide if a frame is root or not.
+        // It was uncosted, thus we introduce the following condition to allow replay of historical transactions.
         if self.dispatch_get_stack_id_events {
             M::on_get_stack_id(&mut as_read_only!(self))?;
         }
