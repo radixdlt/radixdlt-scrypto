@@ -826,6 +826,99 @@ fn system_loan_should_cover_intended_use_case() {
     println!("\n{:?}", receipt);
 }
 
+/// Verifying that the system loan covers an extended use case:
+/// 1. Self-notary signature on the TX
+/// 2. Create proof from account
+/// 3. Call lock_fee on component, passing in a badge and doing a badge check
+///
+/// This is not strictly required, but if this test breaks in future, we'll want to discuss this as a team.
+#[test]
+fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let network = NetworkDefinition::simulator();
+    let (_, private_key, account_address) = ledger.new_account(true);
+
+    let manifest_dir = std::path::PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let package_dir = manifest_dir.join("assets").join("blueprints").join("fee");
+    let compiled =
+        scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs);
+    let package_address = ledger.publish_package_simple(compiled);
+    let deploy_receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "Fee",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
+            })
+            .build(),
+        [],
+    );
+    let component_address = deploy_receipt
+        .expect_commit_success()
+        .state_update_summary
+        .new_components[0];
+    let doge_resource = deploy_receipt
+        .expect_commit_success()
+        .state_update_summary
+        .new_resources[0];
+
+    ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_method(component_address, "get_doge", ())
+                .try_deposit_entire_worktop_or_abort(account_address, None)
+                .build(),
+            [],
+        )
+        .expect_commit_success();
+
+    // Act
+    let main_manifest = ManifestBuilder::new()
+        .create_proof_from_account_of_amount(account_address, doge_resource, 1)
+        .pop_from_auth_zone("proof")
+        .call_method_with_name_lookup(component_address, "lock_fee_with_badge_check", |lookup| {
+            (lookup.proof("proof"),)
+        })
+        .build();
+
+    let main_transaction = create_notarized_transaction_advanced(
+        &mut ledger,
+        &network,
+        main_manifest,
+        vec![],       // no additional signers
+        &private_key, // notarize with signer key
+        true,
+    );
+
+    let receipt = ledger.execute_transaction(
+        main_transaction,
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
+            .with_cost_breakdown(true),
+    );
+
+    // Assert and print
+    receipt.expect_commit_success();
+    println!(
+        "\n{}",
+        format_cost_breakdown(&receipt.fee_summary, receipt.fee_details.as_ref().unwrap())
+    );
+
+    let encoder = AddressBech32Encoder::for_simulator();
+    let display_context = TransactionReceiptDisplayContextBuilder::new()
+        .schema_lookup_from_db(ledger.substate_db())
+        .encoder(&encoder)
+        .build();
+    println!("\n{}", receipt.display(display_context));
+}
+
 #[test]
 fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejected() {
     // Arrange
