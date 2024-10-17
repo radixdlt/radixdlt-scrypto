@@ -906,6 +906,7 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
 
     // Assert and print
     receipt.expect_commit_success();
+    #[cfg(feature = "std")]
     println!(
         "\n{}",
         format_cost_breakdown(&receipt.fee_summary, receipt.fee_details.as_ref().unwrap())
