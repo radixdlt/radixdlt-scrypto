@@ -173,6 +173,27 @@ impl TestTransaction {
         )
     }
 
+    pub fn new_from_any_manifest(
+        any_manifest: AnyManifest,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> Result<Self, String> {
+        match any_manifest {
+            AnyManifest::V1(manifest) => {
+                Ok(Self::new_v1_from_nonce(manifest, nonce, initial_proofs))
+            }
+            AnyManifest::SystemV1(_) => Err(format!(
+                "Cannot convert a system manifest to a test transaction"
+            )),
+            AnyManifest::V2(manifest) => {
+                Ok(Self::new_v2_builder(nonce).finish_with_root_intent(manifest, initial_proofs))
+            }
+            AnyManifest::SubintentV2(_) => Err(format!(
+                "Cannot convert a subintent manifest to a test transaction"
+            )),
+        }
+    }
+
     pub fn new_v1(
         manifest: TransactionManifestV1,
         hash: Hash,

@@ -361,6 +361,31 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn get_stack_id(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn get_owned_nodes(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn switch_stack(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn send_to_stack(&self, data_len: usize) -> u32 {
+        500 + Self::data_processing_cost(data_len)
+    }
+
+    #[inline]
+    pub fn set_call_frame_data(&self, data_len: usize) -> u32 {
+        500 + Self::data_processing_cost(data_len)
+    }
+
+    #[inline]
     pub fn lock_fee_cost(&self) -> u32 {
         500
     }

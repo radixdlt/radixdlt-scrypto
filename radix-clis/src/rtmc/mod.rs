@@ -1,11 +1,4 @@
-use clap::Parser;
-use radix_common::prelude::*;
-use radix_engine::utils::*;
-use radix_transactions::manifest::*;
-use radix_transactions::prelude::*;
-use std::fmt;
-use std::path::PathBuf;
-use std::str::FromStr;
+use crate::prelude::*;
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -26,6 +19,10 @@ pub struct Args {
     /// Input file
     #[clap(required = true)]
     input: PathBuf,
+
+    /// The manifest type [V1 | SystemV1 | V2 | SubintentV2], defaults to V2
+    #[clap(short, long)]
+    kind: Option<String>,
 }
 
 #[derive(Debug)]
@@ -33,6 +30,7 @@ pub enum Error {
     IoError(std::io::Error),
     EncodeError(sbor::EncodeError),
     ParseNetworkError(ParseNetworkError),
+    ManifestValidationError(ManifestValidationError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
@@ -64,16 +62,23 @@ pub fn run() -> Result<(), String> {
         }
     }
 
-    let manifest = compile_manifest_with_pretty_error::<TransactionManifestV1>(
+    let manifest_kind = ManifestKind::parse_or_latest(args.kind.as_ref().map(|x| x.as_str()))?;
+    let manifest = compile_any_manifest_with_pretty_error(
         &content,
+        manifest_kind,
         &network,
         BlobProvider::new_with_blobs(blobs),
         CompileErrorDiagnosticsStyle::TextTerminalColors,
     )?;
 
+    manifest
+        .validate(ValidationRuleset::all())
+        .map_err(Error::ManifestValidationError)?;
+
     validate_call_arguments_to_native_components(&manifest)
         .map_err(Error::InstructionSchemaValidationError)?;
-    std::fs::write(
+
+    write_ensuring_folder_exists(
         args.output,
         manifest_encode(&manifest).map_err(Error::EncodeError)?,
     )

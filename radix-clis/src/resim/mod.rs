@@ -25,8 +25,8 @@ mod dumper;
 mod error;
 
 pub use addressing::*;
-pub use cmd_call_function::*;
-pub use cmd_call_method::*;
+pub use cmd_call_function::CallFunction;
+pub use cmd_call_method::CallMethod;
 pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_new_account::*;
@@ -53,26 +53,16 @@ pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
 pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
+use crate::prelude::*;
 use clap::{Parser, Subcommand};
-use radix_common::crypto::{hash, Secp256k1PrivateKey};
-use radix_common::network::NetworkDefinition;
-use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_interface::types::FromPublicKey;
-use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_transactions::manifest::decompile;
-use radix_transactions::prelude::*;
 use radix_transactions::validation::TransactionValidator;
-use std::env;
-use std::fs;
-use std::path::PathBuf;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -184,7 +174,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 }
 
 pub fn handle_manifest<O: std::io::Write>(
-    manifest: TransactionManifestV1,
+    manifest: AnyManifest,
     signing_keys: &Option<String>,
     network: &Option<String>,
     write_manifest: &Option<PathBuf>,
@@ -196,19 +186,24 @@ pub fn handle_manifest<O: std::io::Write>(
         Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
     };
+
+    manifest
+        .validate(ValidationRuleset::all())
+        .map_err(|err| format!("{err:?}"))?;
+
     match write_manifest {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let manifest_str = decompile(&manifest, &network).map_err(Error::DecompileError)?;
-                fs::write(path, manifest_str).map_err(Error::IOError)?;
-                for blob in manifest.blobs.values() {
-                    let blob_hash = hash(&blob);
+                let manifest_str =
+                    decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
+                write_ensuring_folder_exists(path, manifest_str).map_err(Error::IOError)?;
+                for (blob_hash, blob) in manifest.get_blobs() {
                     let mut blob_path = path
                         .parent()
                         .expect("Manifest file parent not found")
                         .to_owned();
                     blob_path.push(format!("{}.blob", blob_hash));
-                    fs::write(blob_path, blob).map_err(Error::IOError)?;
+                    write_ensuring_folder_exists(blob_path, blob).map_err(Error::IOError)?;
                 }
             }
             Ok(None)
@@ -225,7 +220,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
             let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
-            let transaction = TestTransaction::new_v1_from_nonce(manifest, nonce, initial_proofs);
+            let transaction =
+                TestTransaction::new_from_any_manifest(manifest, nonce, initial_proofs)?;
 
             let receipt = execute_and_commit_transaction(
                 &mut db,

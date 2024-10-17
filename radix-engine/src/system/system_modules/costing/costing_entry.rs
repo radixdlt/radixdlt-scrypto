@@ -99,6 +99,17 @@ pub enum ExecutionCostingEntry<'a> {
         event: &'a DrainSubstatesEvent<'a>,
     },
 
+    /* stack api */
+    GetStackId,
+    GetOwnedNodes,
+    SwitchStack,
+    SendToStack {
+        data_len: usize,
+    },
+    SetCallFrameData {
+        data_len: usize,
+    },
+
     /* system */
     LockFee,
     QueryFeeReserve,
@@ -199,6 +210,13 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
             ExecutionCostingEntry::ScanSortedSubstates { event } => {
                 ft.scan_sorted_substates_cost(event)
+            }
+            ExecutionCostingEntry::GetStackId => ft.get_stack_id(),
+            ExecutionCostingEntry::GetOwnedNodes => ft.get_owned_nodes(),
+            ExecutionCostingEntry::SwitchStack => ft.switch_stack(),
+            ExecutionCostingEntry::SendToStack { data_len } => ft.send_to_stack(*data_len),
+            ExecutionCostingEntry::SetCallFrameData { data_len } => {
+                ft.set_call_frame_data(*data_len)
             }
             ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
             ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
@@ -389,6 +407,16 @@ pub mod owned {
         },
         DrainSubstates {
             event: DrainSubstatesEventOwned,
+        },
+
+        GetStackId,
+        GetOwnedNodes,
+        SwitchStack,
+        SendToStack {
+            data_len: usize,
+        },
+        SetCallFrameData {
+            data_len: usize,
         },
 
         /* system */
@@ -636,6 +664,13 @@ pub mod owned {
                 ExecutionCostingEntry::DrainSubstates { event } => Self::DrainSubstates {
                     event: event.into(),
                 },
+                ExecutionCostingEntry::GetStackId => Self::GetStackId,
+                ExecutionCostingEntry::GetOwnedNodes => Self::GetOwnedNodes,
+                ExecutionCostingEntry::SwitchStack => Self::SwitchStack,
+                ExecutionCostingEntry::SendToStack { data_len } => Self::SendToStack { data_len },
+                ExecutionCostingEntry::SetCallFrameData { data_len } => {
+                    Self::SetCallFrameData { data_len }
+                }
                 ExecutionCostingEntry::LockFee => Self::LockFee,
                 ExecutionCostingEntry::QueryFeeReserve => Self::QueryFeeReserve,
                 ExecutionCostingEntry::QueryCostingModule => Self::QueryCostingModule,

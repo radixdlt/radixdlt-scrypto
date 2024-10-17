@@ -454,6 +454,58 @@ impl SystemModuleMixer {
             on_scan_sorted_substates(&mut api.system_module_api(), event)
         )
     }
+
+    #[trace_resources]
+    pub fn on_get_stack_id(
+        api: &mut impl SystemBasedKernelInternalApi,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_get_stack_id(&mut api.system_module_api())
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_switch_stack(
+        api: &mut impl SystemBasedKernelInternalApi,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_switch_stack(&mut api.system_module_api())
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_send_to_stack(
+        api: &mut impl SystemBasedKernelInternalApi,
+        data_len: usize,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_send_to_stack(&mut api.system_module_api(), data_len)
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_set_call_frame_data(
+        api: &mut impl SystemBasedKernelInternalApi,
+        data_len: usize,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_set_call_frame_data(&mut api.system_module_api(), data_len)
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_get_owned_nodes(
+        api: &mut impl SystemBasedKernelInternalApi,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_get_owned_nodes(&mut api.system_module_api())
+        )
+    }
 }
 
 impl SystemModuleMixer {
