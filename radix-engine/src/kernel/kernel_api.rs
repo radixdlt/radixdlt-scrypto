@@ -226,12 +226,12 @@ pub trait KernelInternalApi {
 
     /// Returns the current stack id.
     ///
-    /// Used by kernel trace, execution trace, costing system modules and `start_lock_fee` only.
+    /// Used by kernel trace, execution trace, costing system modules and `start_lock_fee` system function only.
     fn kernel_get_current_stack_id_uncosted(&self) -> usize;
 
     /// Returns the visibility of a node.
     ///
-    /// Used by auth system module only.
+    /// Used by auth system module and `actor_get_node_id` system function only.
     fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility;
 
     /// Returns the value of a substate.
