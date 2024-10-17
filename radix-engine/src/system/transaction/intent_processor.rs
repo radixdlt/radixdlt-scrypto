@@ -438,8 +438,8 @@ impl<'a> IntentProcessorObjects<'a> {
 }
 
 struct ResourceConstraintChecker {
-    fungible_resources: BTreeMap<ResourceAddress, Decimal>,
-    non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+    fungible_resources: IndexMap<ResourceAddress, Decimal>,
+    non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
     constraints: NextCallReturnsConstraints,
 }
 

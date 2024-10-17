@@ -160,9 +160,9 @@ fn when_empty_constraints_on_assert_next_call_returns_only_should_fail() {
             |_resource1, _resource2| ManifestResourceConstraints::new(),
             true,
             next_call_type,
-            |_, resource2| {
+            |resource1, _resource2| {
                 Some(ManifestResourceConstraintsError::UnwantedResourcesExist(
-                    resource2,
+                    resource1,
                 ))
             },
         );

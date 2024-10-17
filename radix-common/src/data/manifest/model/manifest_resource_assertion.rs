@@ -151,21 +151,21 @@ impl ManifestResourceConstraints {
 
     pub fn validate(
         self,
-        mut fungible_resources: BTreeMap<ResourceAddress, Decimal>,
-        mut non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+        mut fungible_resources: IndexMap<ResourceAddress, Decimal>,
+        mut non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
         exact: bool,
     ) -> Result<(), ManifestResourceConstraintsError> {
         for (resource_address, constraint) in self.specified_resources {
             if resource_address.is_fungible() {
                 let amount = fungible_resources
-                    .remove(&resource_address)
+                    .swap_remove(&resource_address)
                     .unwrap_or_default();
                 constraint
                     .validate_fungible(amount)
                     .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
             } else {
                 let ids = non_fungible_resources
-                    .remove(&resource_address)
+                    .swap_remove(&resource_address)
                     .unwrap_or_default();
                 constraint
                     .validate_non_fungible(ids)
