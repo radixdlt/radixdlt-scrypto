@@ -203,6 +203,10 @@ pub struct SystemState<'a, M: KernelCallbackObject> {
 }
 
 /// Internal API for system modules only.
+///
+/// TODO: Do not use uncosted API within protocol
+/// The uncosted APIs should be used by non-consensus related system modules only, i.e. kernel
+/// trace and execution trace. All other usages should be migrated away, ideally as a whole.
 pub trait KernelInternalApi {
     type System: KernelCallbackObject;
 
@@ -217,12 +221,12 @@ pub trait KernelInternalApi {
 
     /// Returns the current stack depth.
     ///
-    /// Used by kernel trace, execution trace system modules only.
+    /// Used by kernel trace, execution trace and costing system modules only.
     fn kernel_get_current_stack_depth_uncosted(&self) -> usize;
 
     /// Returns the current stack id.
     ///
-    /// Used by kernel trace, execution trace system modules only.
+    /// Used by kernel trace, execution trace, costing system modules and `start_lock_fee` only.
     fn kernel_get_current_stack_id_uncosted(&self) -> usize;
 
     /// Returns the visibility of a node.

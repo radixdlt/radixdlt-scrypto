@@ -269,7 +269,6 @@ where
                     id_allocator,
                     system_config,
                     kernel_boot.always_visible_global_nodes(),
-                    kernel_boot.dispatch_get_stack_id_events(),
                 )
             },
         ));
