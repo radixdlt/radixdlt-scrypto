@@ -2,7 +2,7 @@ Name: kv_store_with_remote_type
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: ea5513e054085c12 (should never change)
+State changes: 9dad2786f858d3b0 (should never change)
 Events       : 5cee7212d12c4efa (should never change)
 
 == INTERESTING ADDRESSES ==

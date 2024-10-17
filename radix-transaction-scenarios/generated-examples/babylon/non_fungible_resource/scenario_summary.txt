@@ -2,7 +2,7 @@ Name: non_fungible_resource
 
 == SUMMARY HASHES ==
 These Babylon hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 9199f8aee0e3a9f3 (should never change)
+State changes: 5352c3c49d4cd05f (should never change)
 Events       : 2174dcae7eac2748 (should never change)
 
 == INTERESTING ADDRESSES ==

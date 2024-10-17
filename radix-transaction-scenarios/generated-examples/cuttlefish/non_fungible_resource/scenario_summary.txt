@@ -2,7 +2,7 @@ Name: non_fungible_resource
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: be711ff2d0a56ff6 (allowed to change if not deployed to any network)
+State changes: 5c99a5838d99a50f (allowed to change if not deployed to any network)
 Events       : 032b7ce3704a2fd9 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
