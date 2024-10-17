@@ -375,6 +375,9 @@ impl<'g, C, L, H: CallFrameSubstateReadHandler<C, L>> SubstateReadHandler
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
 pub struct CallFrame<C, L> {
+    /// The stack id.
+    stack_id: usize,
+
     /// The frame id
     depth: usize,
 
@@ -566,11 +569,13 @@ pub struct CallFrameInit<C> {
     pub global_addresses: IndexSet<GlobalAddress>,
     pub direct_accesses: IndexSet<InternalAddress>,
     pub always_visible_global_nodes: &'static IndexSet<NodeId>,
+    pub stack_id: usize,
 }
 
 impl<C, L: Clone> CallFrame<C, L> {
     pub fn new_root(init: CallFrameInit<C>) -> Self {
         let mut call_frame = Self {
+            stack_id: init.stack_id,
             depth: 0,
             call_frame_data: init.data,
             stable_references: Default::default(),
@@ -598,6 +603,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         message: CallFrameMessage,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
+            stack_id: parent.stack_id,
             depth: parent.depth + 1,
             call_frame_data,
             stable_references: Default::default(),
@@ -671,6 +677,10 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         Ok(())
+    }
+
+    pub fn stack_id(&self) -> usize {
+        self.stack_id
     }
 
     pub fn depth(&self) -> usize {

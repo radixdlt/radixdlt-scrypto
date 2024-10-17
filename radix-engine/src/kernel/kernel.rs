@@ -384,6 +384,7 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
                 always_visible_global_nodes: always_visible_global_nodes(
                     AlwaysVisibleGlobalNodesVersion::latest(),
                 ),
+                stack_id: 0,
             }],
             dispatch_get_stack_id_events,
         )
@@ -659,12 +660,16 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
 {
     type System = M;
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
         self.stacks.cur().get_node_visibility(node_id)
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
         self.stacks.cur().depth()
+    }
+
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        self.stacks.current_stack
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -708,12 +713,16 @@ where
 impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
     type System = M;
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
         self.current_frame.depth()
+    }
+
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        self.current_frame.stack_id()
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -1269,7 +1278,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     type CallFrameData = M::CallFrameData;
 
     fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
-        // Before cuttlefish, this method is called `kernel_get_current_depth`.
+        // Before cuttlefish, this method is called `kernel_get_current_stack_depth_uncosted`.
         // It's primarily used to decide if a frame is root or not.
         // It was uncosted, thus we introduce the following condition to allow replay of historical transactions.
         if self.dispatch_get_stack_id_events {
@@ -1341,6 +1350,7 @@ where
                 direct_accesses: Default::default(),
                 global_addresses: Default::default(),
                 always_visible_global_nodes,
+                stack_id: 0,
             }]),
             substate_io,
             id_allocator,

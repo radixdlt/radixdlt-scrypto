@@ -251,7 +251,7 @@ impl AuthModule {
                 Actor::Root | Actor::BlueprintHook(..) => (None, None),
                 Actor::Method(current_method_actor) => {
                     let node_visibility =
-                        system.kernel_get_node_visibility(&current_method_actor.node_id);
+                        system.kernel_get_node_visibility_uncosted(&current_method_actor.node_id);
                     let current_ref_origin = node_visibility
                         .reference_origin(current_method_actor.node_id)
                         .unwrap();

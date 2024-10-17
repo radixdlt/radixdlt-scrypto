@@ -467,7 +467,7 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
             }
             CreateNodeEvent::IOAccess(..) => {}
             CreateNodeEvent::End(node_id) => {
-                let current_depth = api.current_stack_depth();
+                let current_depth = api.current_stack_depth_uncosted();
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
                 let system_state = api.system_state();
                 Self::resolve_from_system(system_state.system).handle_after_create_node(
@@ -488,7 +488,7 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
                 api.module().handle_before_drop_node(resource_summary);
             }
             DropNodeEvent::End(..) => {
-                let current_depth = api.current_stack_depth();
+                let current_depth = api.current_stack_depth_uncosted();
                 let system_state = api.system_state();
                 system_state
                     .system
@@ -528,7 +528,7 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
         api: &mut ModuleApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
-        let current_depth = api.current_stack_depth();
+        let current_depth = api.current_stack_depth_uncosted();
         let resource_summary = ResourceSummary::from_message(api, message);
 
         let system_state = api.system_state();
