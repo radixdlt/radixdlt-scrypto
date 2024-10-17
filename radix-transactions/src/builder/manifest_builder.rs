@@ -2351,6 +2351,20 @@ where
             args: arguments.resolve(),
         })
     }
+
+    pub fn yield_to_child_with_name_lookup<T: ResolvableArguments>(
+        self,
+        child_manifest_intent: impl ExistingManifestIntent,
+        arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
+    ) -> Self {
+        let intent = child_manifest_intent.resolve(&self.registrar);
+        let args = arguments_creator(&self.name_lookup()).resolve();
+
+        self.add_v2_instruction(YieldToChild {
+            child_index: ManifestNamedIntentIndex(intent.0),
+            args,
+        })
+    }
 }
 
 impl<M: BuildableManifestWithParent> ManifestBuilder<M>
