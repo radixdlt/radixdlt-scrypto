@@ -839,10 +839,10 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
     let network = NetworkDefinition::simulator();
     let (_, private_key, account_address) = ledger.new_account(true);
 
-    let manifest_dir = std::path::PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let package_dir = manifest_dir.join("assets").join("blueprints").join("fee");
-    let compiled =
-        scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs);
+    // NOTE: We can't use `PackageLoader::get` here because it builds with `CompileProfile::FastWithTraceLogs`
+    // This test's passing is very borderline, and compiling without optimizations means the test doesn't pass.
+    // Therefore we have to make sure we do build with optimizations:
+    let compiled = Compile::compile(path_local_blueprint!("fee"), CompileProfile::Standard);
     let package_address = ledger.publish_package_simple(compiled);
     let deploy_receipt = ledger.execute_manifest(
         ManifestBuilder::new()
