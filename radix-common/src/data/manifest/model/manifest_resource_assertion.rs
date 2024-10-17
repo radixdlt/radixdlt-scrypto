@@ -132,6 +132,10 @@ impl ManifestResourceConstraints {
         self.specified_resources.iter()
     }
 
+    pub fn len(&self) -> usize {
+        self.specified_resources().len()
+    }
+
     pub fn is_valid(&self) -> bool {
         for (resource_address, constraint) in self.iter() {
             if !constraint.is_valid_for(resource_address) {
@@ -144,6 +148,56 @@ impl ManifestResourceConstraints {
     pub fn contains_specified_resource(&self, resource_address: &ResourceAddress) -> bool {
         self.specified_resources.contains_key(resource_address)
     }
+
+    pub fn validate(
+        self,
+        mut fungible_resources: IndexMap<ResourceAddress, Decimal>,
+        mut non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+        exact: bool,
+    ) -> Result<(), ManifestResourceConstraintsError> {
+        for (resource_address, constraint) in self.specified_resources {
+            if resource_address.is_fungible() {
+                let amount = fungible_resources
+                    .swap_remove(&resource_address)
+                    .unwrap_or_default();
+                constraint
+                    .validate_fungible(amount)
+                    .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
+            } else {
+                let ids = non_fungible_resources
+                    .swap_remove(&resource_address)
+                    .unwrap_or_default();
+                constraint
+                    .validate_non_fungible(ids)
+                    .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
+            }
+        }
+
+        if exact {
+            for (fungible_resource, amount) in fungible_resources {
+                if amount.is_positive() {
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        fungible_resource,
+                    ));
+                }
+            }
+            for (non_fungible_resource, ids) in non_fungible_resources {
+                if !ids.is_empty() {
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        non_fungible_resource,
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ManifestResourceConstraintsError {
+    ResourceConstraint(ResourceConstraintError),
+    UnwantedResourcesExist(ResourceAddress),
 }
 
 impl IntoIterator for ManifestResourceConstraints {
@@ -209,12 +263,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if ids.is_empty() {
-                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExpectExactAmount {
+                    return Err(ResourceConstraintError::ExpectedExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -222,7 +276,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
@@ -230,7 +284,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids) => {
                 if !expected_exact_ids.eq(&ids) {
-                    return Err(ResourceConstraintError::ExpectExactNonFungibles {
+                    return Err(ResourceConstraintError::ExpectedExactNonFungibles {
                         expected_exact_ids: Box::new(expected_exact_ids),
                         actual_ids: Box::new(ids),
                     });
@@ -238,7 +292,7 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids) => {
                 if !expected_at_least_ids.is_subset(&ids) {
-                    return Err(ResourceConstraintError::ExpectAtLeastNonFungibles {
+                    return Err(ResourceConstraintError::ExpectedAtLeastNonFungibles {
                         actual_ids: Box::new(ids),
                         expected_at_least_ids: Box::new(expected_at_least_ids.clone()),
                     });
@@ -258,12 +312,12 @@ impl ManifestResourceConstraint {
         match self {
             ManifestResourceConstraint::NonZeroAmount => {
                 if amount.is_zero() {
-                    return Err(ResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(ResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             ManifestResourceConstraint::ExactAmount(expected_exact_amount) => {
                 if amount.ne(&expected_exact_amount) {
-                    return Err(ResourceConstraintError::ExpectExactAmount {
+                    return Err(ResourceConstraintError::ExpectedExactAmount {
                         actual_amount: amount,
                         expected_exact_amount,
                     });
@@ -271,17 +325,17 @@ impl ManifestResourceConstraint {
             }
             ManifestResourceConstraint::AtLeastAmount(expected_at_least_amount) => {
                 if amount < expected_at_least_amount {
-                    return Err(ResourceConstraintError::ExpectAtLeastAmount {
+                    return Err(ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount,
                         actual_amount: amount,
                     });
                 }
             }
             ManifestResourceConstraint::ExactNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::AtLeastNonFungibles(..) => {
-                return Err(ResourceConstraintError::ExpectNonFungibleResourceButIsFungible);
+                return Err(ResourceConstraintError::ExpectedNonFungibleResourceButIsFungible);
             }
             ManifestResourceConstraint::General(constraint) => {
                 constraint
@@ -296,25 +350,25 @@ impl ManifestResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceConstraintError {
-    ExpectNonZeroAmount,
-    ExpectExactAmount {
+    ExpectedNonZeroAmount,
+    ExpectedExactAmount {
         expected_exact_amount: Decimal,
         actual_amount: Decimal,
     },
-    ExpectAtLeastAmount {
+    ExpectedAtLeastAmount {
         expected_at_least_amount: Decimal,
         actual_amount: Decimal,
     },
-    ExpectExactNonFungibles {
+    ExpectedExactNonFungibles {
         expected_exact_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
-    ExpectAtLeastNonFungibles {
+    ExpectedAtLeastNonFungibles {
         expected_at_least_ids: Box<IndexSet<NonFungibleLocalId>>,
         actual_ids: Box<IndexSet<NonFungibleLocalId>>,
     },
     GeneralResourceConstraintError(GeneralResourceConstraintError),
-    ExpectNonFungibleResourceButIsFungible,
+    ExpectedNonFungibleResourceButIsFungible,
 }
 
 /// [`GeneralResourceConstraint`] captures constraints on the balance of a single fungible
@@ -493,7 +547,7 @@ impl GeneralResourceConstraint {
         match self.lower_bound {
             LowerBound::NonZero => {
                 if amount.is_zero() {
-                    return Err(GeneralResourceConstraintError::ExpectNonZeroAmount);
+                    return Err(GeneralResourceConstraintError::ExpectedNonZeroAmount);
                 }
             }
             LowerBound::Inclusive(inclusive) => {
@@ -592,7 +646,7 @@ impl GeneralResourceConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum GeneralResourceConstraintError {
-    ExpectNonZeroAmount,
+    ExpectedNonZeroAmount,
     LowerBoundAmountNotSatisfied {
         lower_bound_inclusive: Decimal,
         actual: Decimal,

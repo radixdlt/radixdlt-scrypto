@@ -4,6 +4,7 @@ mod address;
 mod allocated_address;
 mod arguments;
 mod assert_bucket_contents;
+mod assert_next_call_returns;
 mod auth_account;
 mod auth_component;
 mod auth_mutability;
