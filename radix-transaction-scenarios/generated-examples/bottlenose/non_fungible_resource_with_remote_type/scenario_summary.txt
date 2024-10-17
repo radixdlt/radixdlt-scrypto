@@ -2,7 +2,7 @@ Name: non_fungible_resource_with_remote_type
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 05505bff77029c76 (should never change)
+State changes: 4397b1824bcd12c8 (should never change)
 Events       : c1e3b3d35e25af71 (should never change)
 
 == INTERESTING ADDRESSES ==

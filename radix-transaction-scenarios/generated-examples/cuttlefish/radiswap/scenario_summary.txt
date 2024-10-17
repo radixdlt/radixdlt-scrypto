@@ -2,7 +2,7 @@ Name: radiswap
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 9832d6704759cc0f (allowed to change if not deployed to any network)
+State changes: 2aac9e2cf7956ae5 (allowed to change if not deployed to any network)
 Events       : 01c5a2d96b4feb22 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==

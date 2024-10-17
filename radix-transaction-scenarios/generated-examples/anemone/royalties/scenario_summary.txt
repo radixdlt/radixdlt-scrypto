@@ -2,7 +2,7 @@ Name: royalties
 
 == SUMMARY HASHES ==
 These Anemone hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 7c2a27e040f8c897 (should never change)
+State changes: ab48cc86048ec783 (should never change)
 Events       : 22c5d8a9501d0101 (should never change)
 
 == INTERESTING ADDRESSES ==

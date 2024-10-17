@@ -50,21 +50,21 @@ impl StateUpdates {
         let new_value = scrypto_encode(&new_value).expect("New substate value should be encodable");
         self.of_node(node_id.into())
             .of_partition(partition_num)
-            .update_substates([(
+            .mut_update_substates([(
                 substate_key.into_substate_key(),
                 DatabaseUpdate::Set(new_value),
             )]);
         self
     }
 
-    pub fn rebuild_without_empty_entries(&self) -> Self {
+    pub fn rebuild_without_empty_entries(self) -> Self {
         Self {
             by_node: self
                 .by_node
-                .iter()
+                .into_iter()
                 .filter_map(|(node_id, by_partition)| {
-                    let by_partition = by_partition.without_empty_entries()?;
-                    Some((*node_id, by_partition))
+                    let by_partition = by_partition.rebuild_without_empty_entries()?;
+                    Some((node_id, by_partition))
                 })
                 .collect(),
         }
@@ -179,14 +179,15 @@ impl NodeStateUpdates {
         }
     }
 
-    pub fn without_empty_entries(&self) -> Option<Self> {
+    pub fn rebuild_without_empty_entries(self) -> Option<Self> {
         match self {
             NodeStateUpdates::Delta { by_partition } => {
                 let replaced = by_partition
-                    .iter()
+                    .into_iter()
                     .filter_map(|(partition_num, partition_state_updates)| {
-                        let new_substate = partition_state_updates.without_empty_entries()?;
-                        Some((*partition_num, new_substate))
+                        let new_substate =
+                            partition_state_updates.rebuild_without_empty_entries()?;
+                        Some((partition_num, new_substate))
                     })
                     .collect::<IndexMap<_, _>>();
                 if replaced.len() > 0 {
@@ -268,8 +269,43 @@ impl PartitionStateUpdates {
         }
     }
 
+    pub fn mut_update_substate<'a>(
+        &mut self,
+        key: impl ResolvableSubstateKey<'a>,
+        database_update: DatabaseUpdate,
+    ) {
+        let substate_key = key.into_substate_key();
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => {
+                by_substate.insert(substate_key, database_update);
+            }
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            }) => match database_update {
+                DatabaseUpdate::Set(new_value) => {
+                    new_substate_values.insert(substate_key, new_value);
+                }
+                DatabaseUpdate::Delete => {
+                    let existed = new_substate_values.swap_remove(&substate_key).is_some();
+                    if !existed {
+                        panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
+                    }
+                }
+            },
+        }
+    }
+
+    pub fn update_substate<'a>(
+        mut self,
+        key: impl ResolvableSubstateKey<'a>,
+        database_update: DatabaseUpdate,
+    ) -> Self {
+        self.mut_update_substate(key, database_update);
+        self
+    }
+
     /// Applies the given updates on top of the current updates to the partition.
-    pub fn update_substates(
+    pub fn mut_update_substates(
         &mut self,
         updates: impl IntoIterator<Item = (SubstateKey, DatabaseUpdate)>,
     ) {
@@ -295,20 +331,26 @@ impl PartitionStateUpdates {
         }
     }
 
-    pub fn without_empty_entries(&self) -> Option<Self> {
+    pub fn update_substates(
+        mut self,
+        updates: impl IntoIterator<Item = (SubstateKey, DatabaseUpdate)>,
+    ) -> Self {
+        self.mut_update_substates(updates);
+        self
+    }
+
+    pub fn rebuild_without_empty_entries(self) -> Option<Self> {
         match self {
-            PartitionStateUpdates::Delta { by_substate } => {
+            PartitionStateUpdates::Delta { ref by_substate } => {
                 if by_substate.len() > 0 {
-                    Some(PartitionStateUpdates::Delta {
-                        by_substate: by_substate.clone(),
-                    })
+                    Some(self)
                 } else {
                     None
                 }
             }
-            PartitionStateUpdates::Batch(x) => {
-                // We shouldn't filter out batch updates like resets, even if they set nothing new
-                Some(PartitionStateUpdates::Batch(x.clone()))
+            PartitionStateUpdates::Batch(_) => {
+                // We musn't filter out batch updates like resets, even if they set nothing new
+                Some(self)
             }
         }
     }

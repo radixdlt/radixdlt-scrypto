@@ -2,7 +2,7 @@ Name: non_fungible_resource
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 64d704b087db117b (should never change)
+State changes: a3c7a37bd06c7e45 (should never change)
 Events       : a4656ca0adcbea33 (should never change)
 
 == INTERESTING ADDRESSES ==

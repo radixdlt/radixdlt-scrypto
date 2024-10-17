@@ -231,6 +231,7 @@ impl FlashReceipt {
         state_updates: StateUpdates,
         before_store: &impl SubstateDatabase,
     ) -> Self {
+        let state_updates = state_updates.rebuild_without_empty_entries();
         let state_update_summary =
             StateUpdateSummary::new_from_state_updates_on_db(before_store, &state_updates);
         let substate_system_structures = {
@@ -353,9 +354,17 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         };
 
         for (partition_num, partition_substates) in partitions {
-            let partition_updates = to_flash.of_node(address).of_partition(partition_num);
-            for (key, value) in partition_substates {
-                partition_updates.mut_set_substate(key, value.to_scrypto_value());
+            let partition_updates: IndexMap<_, _> = partition_substates
+                .into_iter()
+                .map(|(key, value)| (key, DatabaseUpdate::Set(value.into())))
+                .collect();
+
+            // To avoid creating wasted structure in StateUpdates, only create this partition if a change exists.
+            if partition_updates.len() > 0 {
+                to_flash
+                    .of_node(address)
+                    .of_partition(partition_num)
+                    .mut_update_substates(partition_updates);
             }
         }
     }

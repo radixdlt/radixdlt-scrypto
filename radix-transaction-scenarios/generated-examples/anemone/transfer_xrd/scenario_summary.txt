@@ -2,7 +2,7 @@ Name: transfer_xrd
 
 == SUMMARY HASHES ==
 These Anemone hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 4075cb6237f0d9b7 (should never change)
+State changes: ff038eb3989f5793 (should never change)
 Events       : 2ca9f5aeeedaeaee (should never change)
 
 == INTERESTING ADDRESSES ==

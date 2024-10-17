@@ -2,7 +2,7 @@ Name: kv_store_with_remote_type
 
 == SUMMARY HASHES ==
 These Anemone hashes should NEVER change, else they will cause divergence when run historically.
-State changes: a946bb50da0c70cb (should never change)
+State changes: 17194436393382f0 (should never change)
 Events       : b2873f909e179ae4 (should never change)
 
 == INTERESTING ADDRESSES ==

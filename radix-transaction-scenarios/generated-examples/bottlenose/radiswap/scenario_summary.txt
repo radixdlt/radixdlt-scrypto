@@ -2,7 +2,7 @@ Name: radiswap
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: dddf399b904c13d5 (should never change)
+State changes: bb597fa246e815c1 (should never change)
 Events       : f2d7b9ddb0d31fe3 (should never change)
 
 == INTERESTING ADDRESSES ==

@@ -2,7 +2,7 @@ Name: royalties
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: e4d58971d0357c24 (allowed to change if not deployed to any network)
+State changes: fcb1d2e9f2fa4704 (allowed to change if not deployed to any network)
 Events       : f5f719451c84e20d (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==

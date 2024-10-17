@@ -84,9 +84,9 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
             // TODO: implement the following instructions
             InstructionV2::AssertWorktopResourcesOnly(_)
-            | InstructionV2::AssertWorktopResourcesInclude(_)
-            | InstructionV2::AssertNextCallReturnsOnly(_)
-            | InstructionV2::AssertNextCallReturnsInclude(_) => Ok(InstructionOutput::None),
+            | InstructionV2::AssertWorktopResourcesInclude(_) => Ok(InstructionOutput::None),
+            InstructionV2::AssertNextCallReturnsOnly(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertNextCallReturnsInclude(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
             InstructionV2::PopFromAuthZone(i) => i.execute(worktop, objects, api),
             InstructionV2::PushToAuthZone(i) => i.execute(worktop, objects, api),
@@ -304,6 +304,38 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertNextCallReturnsOnly {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        _api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
+            constraints: self.constraints,
+            exact: true,
+        });
+
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertNextCallReturnsInclude {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        _worktop: &mut Worktop,
+        objects: &mut IntentProcessorObjects,
+        _api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
+            constraints: self.constraints,
+            exact: false,
+        });
+
         Ok(InstructionOutput::None)
     }
 }
