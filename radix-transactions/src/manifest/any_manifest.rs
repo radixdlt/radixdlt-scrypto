@@ -202,13 +202,16 @@ impl ReadableManifestBase for AnyManifest {
         }
     }
 
-    fn get_child_subintents(&self) -> &[ChildSubintent] {
-        match self {
-            AnyManifest::V1(m) => m.get_child_subintents(),
-            AnyManifest::SystemV1(m) => m.get_child_subintents(),
-            AnyManifest::V2(m) => m.get_child_subintents(),
-            AnyManifest::SubintentV2(m) => m.get_child_subintents(),
-        }
+    fn get_child_subintent_hashes<'a>(
+        &'a self,
+    ) -> impl ExactSizeIterator<Item = &'a ChildSubintentSpecifier> {
+        let iterator: Box<dyn ExactSizeIterator<Item = &'a ChildSubintentSpecifier>> = match self {
+            AnyManifest::V1(m) => Box::new(m.get_child_subintent_hashes()),
+            AnyManifest::SystemV1(m) => Box::new(m.get_child_subintent_hashes()),
+            AnyManifest::V2(m) => Box::new(m.get_child_subintent_hashes()),
+            AnyManifest::SubintentV2(m) => Box::new(m.get_child_subintent_hashes()),
+        };
+        iterator
     }
 }
 

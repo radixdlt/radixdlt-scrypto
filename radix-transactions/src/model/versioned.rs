@@ -468,8 +468,10 @@ mod tests {
         (message, expected_hash)
     }
 
-    fn create_childless_child_intents_v2() -> (ChildIntentsV2, Hash) {
-        let children: ChildIntentsV2 = ChildIntentsV2 { children: vec![] };
+    fn create_childless_child_intents_v2() -> (ChildSubintentSpecifiersV2, Hash) {
+        let children: ChildSubintentSpecifiersV2 = ChildSubintentSpecifiersV2 {
+            children: Default::default(),
+        };
         // Concatenation of all hashes
         let empty: [u8; 0] = [];
         let expected_hash = hash(&empty);

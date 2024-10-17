@@ -51,7 +51,7 @@ impl TestTransactionV2Builder {
         &self,
         instructions: InstructionsV2,
         blobs: BlobsV1,
-        child_intents: ChildIntentsV2,
+        child_intents: ChildSubintentSpecifiersV2,
         proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
     ) -> TestIntentV2 {
         let children_subintent_indices = child_intents

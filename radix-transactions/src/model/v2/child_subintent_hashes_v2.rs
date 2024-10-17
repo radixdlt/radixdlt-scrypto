@@ -1,23 +1,26 @@
 use crate::internal_prelude::*;
 use decompiler::*;
 
+/// Specification of an intent
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct ChildIntentsV2 {
-    pub children: Vec<ChildSubintent>,
+pub struct ChildSubintentSpecifiersV2 {
+    pub children: IndexSet<ChildSubintentSpecifier>,
 }
 
-impl TransactionPartialPrepare for ChildIntentsV2 {
-    type Prepared = PreparedChildIntentsV2;
+impl TransactionPartialPrepare for ChildSubintentSpecifiersV2 {
+    type Prepared = PreparedChildSubintentSpecifiersV2V2;
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+/// A new-type of a [`SubintentHash`], representing that the subintent is claimed
+/// to be a child of the given intent.
+#[derive(Debug, Clone, Eq, Hash, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct ChildSubintent {
+pub struct ChildSubintentSpecifier {
     pub hash: SubintentHash,
 }
 
-impl ChildSubintent {
+impl ChildSubintentSpecifier {
     pub fn decompile_as_pseudo_instruction(
         &self,
         context: &mut DecompilationContext,
@@ -64,14 +67,14 @@ impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedChildIntentsV2 {
-    pub children: Vec<ChildSubintent>,
+pub struct PreparedChildSubintentSpecifiersV2V2 {
+    pub children: IndexSet<ChildSubintentSpecifier>,
     pub summary: Summary,
 }
 
-impl_has_summary!(PreparedChildIntentsV2);
+impl_has_summary!(PreparedChildSubintentSpecifiersV2V2);
 
-impl TransactionPreparableFromValueBody for PreparedChildIntentsV2 {
+impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2V2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let max_child_subintents_per_intent = decoder.settings().max_child_subintents_per_intent;
         let (hashes, summary) =
@@ -81,15 +84,16 @@ impl TransactionPreparableFromValueBody for PreparedChildIntentsV2 {
                 max_child_subintents_per_intent,
             )?;
 
-        Ok(Self {
-            children: hashes
-                .into_iter()
-                .map(|h| ChildSubintent {
-                    hash: SubintentHash::from_hash(h.hash),
-                })
-                .collect(),
-            summary,
-        })
+        let mut children = index_set_with_capacity(hashes.len());
+        for raw_hash in hashes {
+            if !children.insert(ChildSubintentSpecifier {
+                hash: SubintentHash::from_hash(raw_hash.hash),
+            }) {
+                return Err(PrepareError::DecodeError(DecodeError::DuplicateKey));
+            }
+        }
+
+        Ok(Self { children, summary })
     }
 
     fn value_kind() -> ManifestValueKind {

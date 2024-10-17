@@ -12,7 +12,7 @@ use crate::internal_prelude::*;
 pub struct SubintentManifestV2 {
     pub instructions: Vec<InstructionV2>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    pub children: Vec<ChildSubintent>,
+    pub children: IndexSet<ChildSubintentSpecifier>,
     pub object_names: ManifestObjectNames,
 }
 
@@ -25,8 +25,10 @@ impl ReadableManifestBase for SubintentManifestV2 {
         self.blobs.iter()
     }
 
-    fn get_child_subintents(&self) -> &[ChildSubintent] {
-        &self.children
+    fn get_child_subintent_hashes<'a>(
+        &'a self,
+    ) -> impl ExactSizeIterator<Item = &'a ChildSubintentSpecifier> {
+        self.children.iter()
     }
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
@@ -60,7 +62,9 @@ impl BuildableManifest for SubintentManifestV2 {
     }
 
     fn add_child_subintent(&mut self, hash: SubintentHash) -> Result<(), ManifestBuildError> {
-        self.children.push(ChildSubintent { hash });
+        if !self.children.insert(ChildSubintentSpecifier { hash }) {
+            return Err(ManifestBuildError::DuplicateChildSubintentHash);
+        }
         Ok(())
     }
 
@@ -88,11 +92,11 @@ impl SubintentManifestV2 {
         }
     }
 
-    pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
+    pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildSubintentSpecifiersV2) {
         (
             self.instructions.into(),
             self.blobs.into(),
-            ChildIntentsV2 {
+            ChildSubintentSpecifiersV2 {
                 children: self.children,
             },
         )
@@ -100,11 +104,16 @@ impl SubintentManifestV2 {
 
     pub fn for_intent_with_names(
         self,
-    ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
+    ) -> (
+        InstructionsV2,
+        BlobsV1,
+        ChildSubintentSpecifiersV2,
+        ManifestObjectNames,
+    ) {
         (
             self.instructions.into(),
             self.blobs.into(),
-            ChildIntentsV2 {
+            ChildSubintentSpecifiersV2 {
                 children: self.children,
             },
             self.object_names,

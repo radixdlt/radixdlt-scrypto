@@ -938,7 +938,7 @@ impl TransactionValidator {
         &self,
         instructions: &[InstructionV2],
         blobs: &IndexMap<Hash, Vec<u8>>,
-        children: &[ChildSubintent],
+        children: &IndexSet<ChildSubintentSpecifier>,
         is_subintent: bool,
     ) -> Result<ManifestYieldSummary, ManifestValidationError> {
         if instructions.len() > self.config.max_instructions {
@@ -948,7 +948,7 @@ impl TransactionValidator {
             for (
                 &'a [InstructionV2],
                 &'a IndexMap<Hash, Vec<u8>>,
-                &'a [ChildSubintent],
+                &'a IndexSet<ChildSubintentSpecifier>,
                 bool,
             )
         {
@@ -964,15 +964,17 @@ impl TransactionValidator {
                 ManifestObjectNamesRef::Unknown
             }
 
-            fn get_child_subintents(&self) -> &[ChildSubintent] {
-                &self.2
+            fn get_child_subintent_hashes<'b>(
+                &'b self,
+            ) -> impl ExactSizeIterator<Item = &'b ChildSubintentSpecifier> {
+                self.2.iter()
             }
         }
         impl<'a> TypedReadableManifest
             for (
                 &'a [InstructionV2],
                 &'a IndexMap<Hash, Vec<u8>>,
-                &'a [ChildSubintent],
+                &'a IndexSet<ChildSubintentSpecifier>,
                 bool,
             )
         {
@@ -1058,20 +1060,20 @@ impl TransactionValidator {
         &self,
         root_intent_hash: IntentHash,
         root_intent_core: &PreparedIntentCoreV2,
-        subintents: &[PreparedSubintentV2],
+        non_root_subintents: &[PreparedSubintentV2],
     ) -> Result<IntentRelationships, SubintentValidationError> {
         let mut root_intent_details = RootIntentRelationshipDetails::default();
-        let mut all_subintent_details =
+        let mut non_root_subintent_details =
             IndexMap::<SubintentHash, SubIntentRelationshipDetails>::default();
 
         // STEP 1
         // ------
         // * We establish that the subintents are unique
         // * We create an index from the SubintentHash to SubintentIndex
-        for subintent in subintents.iter() {
+        for subintent in non_root_subintents.iter() {
             let subintent_hash = subintent.subintent_hash();
             let details = SubIntentRelationshipDetails::default();
-            if let Some(_) = all_subintent_details.insert(subintent_hash, details) {
+            if let Some(_) = non_root_subintent_details.insert(subintent_hash, details) {
                 return Err(SubintentValidationError::DuplicateSubintent(subintent_hash));
             }
         }
@@ -1090,9 +1092,9 @@ impl TransactionValidator {
         {
             let parent_hash = root_intent_hash;
             let intent_details = &mut root_intent_details;
-            for child_subintent in root_intent_core.children.children.iter() {
-                let child_hash = child_subintent.hash;
-                let (subintent_index, _, subintent_details) = all_subintent_details
+            for child_subintent_hash in root_intent_core.children.children.iter() {
+                let child_hash = child_subintent_hash.hash;
+                let (subintent_index, _, subintent_details) = non_root_subintent_details
                     .get_full_mut(&child_hash)
                     .ok_or_else(|| {
                         SubintentValidationError::ChildSubintentNotIncludedInTransaction(child_hash)
@@ -1111,14 +1113,14 @@ impl TransactionValidator {
         }
 
         // STEP 2B - Handle the children of each subintent
-        for subintent in subintents.iter() {
+        for subintent in non_root_subintents.iter() {
             let subintent_hash = subintent.subintent_hash();
             let parent_hash: IntentHash = subintent_hash.into();
             let children = &subintent.intent_core.children.children;
             let mut children_details = Vec::with_capacity(children.len());
             for child_subintent in children.iter() {
                 let child_hash = child_subintent.hash;
-                let (subintent_index, _, subintent_details) = all_subintent_details
+                let (subintent_index, _, subintent_details) = non_root_subintent_details
                     .get_full_mut(&child_hash)
                     .ok_or_else(|| {
                         SubintentValidationError::ChildSubintentNotIncludedInTransaction(child_hash)
@@ -1132,7 +1134,7 @@ impl TransactionValidator {
                 }
                 children_details.push(SubintentIndex(subintent_index));
             }
-            all_subintent_details
+            non_root_subintent_details
                 .get_mut(&subintent_hash)
                 .unwrap()
                 .children = children_details;
@@ -1161,10 +1163,10 @@ impl TransactionValidator {
                 break;
             };
             if depth > max_depth {
-                let (hash, _) = all_subintent_details.get_index(index.0).unwrap();
+                let (hash, _) = non_root_subintent_details.get_index(index.0).unwrap();
                 return Err(SubintentValidationError::SubintentExceedsMaxDepth(*hash));
             }
-            let (_, subintent_details) = all_subintent_details.get_index_mut(index.0).unwrap();
+            let (_, subintent_details) = non_root_subintent_details.get_index_mut(index.0).unwrap();
             subintent_details.depth = depth;
             for index in subintent_details.children.iter() {
                 work_list.push((*index, depth + 1));
@@ -1181,7 +1183,7 @@ impl TransactionValidator {
         //
         // Therefore there is a unique path from every subintent to the root
         // So we have confirmed the subintents form a tree.
-        for (hash, details) in all_subintent_details.iter() {
+        for (hash, details) in non_root_subintent_details.iter() {
             if details.depth == 0 {
                 return Err(
                     SubintentValidationError::SubintentIsNotReachableFromTheTransactionIntent(
@@ -1193,7 +1195,7 @@ impl TransactionValidator {
 
         Ok(IntentRelationships {
             root_intent: root_intent_details,
-            non_root_subintents: all_subintent_details,
+            non_root_subintents: non_root_subintent_details,
         })
     }
 }

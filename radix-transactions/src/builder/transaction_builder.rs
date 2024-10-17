@@ -161,7 +161,7 @@ impl TransactionV1Builder {
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
 #[derive(Default)]
 pub struct PartialTransactionV2Builder {
-    non_root_subintents: IndexMap<
+    child_partial_transactions: IndexMap<
         String,
         (
             SubintentHash,
@@ -183,6 +183,11 @@ impl PartialTransactionV2Builder {
         Default::default()
     }
 
+    /// When used with the [`manifest_builder`][Self::manifest_builder] method, the provided name and hash
+    /// are provided automatically via [`use_child`][ManifestBuilder::use_child] at the start of manifest creation.
+    ///
+    /// When used with the [`manifest`][Self::manifest] method, the provided name is simply ignored - names
+    /// are returned from the provided manifest.
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
@@ -198,7 +203,7 @@ impl PartialTransactionV2Builder {
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
-        let replaced = self.non_root_subintents.insert(
+        let replaced = self.child_partial_transactions.insert(
             name.to_string(),
             (hash, signed_partial_transaction, object_names),
         );
@@ -210,16 +215,32 @@ impl PartialTransactionV2Builder {
 
     /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
     /// These children will get added to the manifest for you, with the corresponding names.
-    /// We don't have just a `manifest` method as it is too easy to forget to register a child.
     pub fn manifest_builder(
         mut self,
         build_manifest: impl FnOnce(SubintentManifestV2Builder) -> SubintentManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = SubintentManifestV2Builder::new_typed();
-        for (child_name, (hash, _, _)) in self.non_root_subintents.iter() {
+        for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.root_subintent_manifest = Some(build_manifest(manifest_builder).build());
+        self
+    }
+
+    /// Panics:
+    /// * If called with a manifest which references different children to those provided by [`add_signed_child`][Self::add_signed_child].
+    pub fn manifest(mut self, manifest: SubintentManifestV2) -> Self {
+        let known_subintent_hashes: IndexSet<_> = self
+            .child_partial_transactions
+            .values()
+            .map(|(hash, _, _)| ChildSubintentSpecifier { hash: *hash })
+            .collect();
+        if &manifest.children != &known_subintent_hashes {
+            panic!(
+                "The manifest's children hashes do not match those provided by `add_signed_child`"
+            );
+        }
+        self.root_subintent_manifest = Some(manifest);
         self
     }
 
@@ -308,7 +329,9 @@ impl PartialTransactionV2Builder {
         let mut aggregated_subintents = vec![];
         let mut aggregated_subintent_signatures = vec![];
         let mut aggregated_subintent_object_names = vec![];
-        for (_name, (_hash, child_partial_transaction, object_names)) in self.non_root_subintents {
+        for (_name, (_hash, child_partial_transaction, object_names)) in
+            self.child_partial_transactions
+        {
             let SignedPartialTransactionV2 {
                 partial_transaction,
                 root_subintent_signatures: root_intent_signatures,
@@ -418,7 +441,7 @@ pub struct TransactionV2Builder {
     // Note - these names are long, but agreed with Yulong that we would clarify
     // non_root_subintents from root_subintent / transaction_intent so this is
     // applying that logic to these field names
-    non_root_subintents: IndexMap<
+    child_partial_transactions: IndexMap<
         String,
         (
             SubintentHash,
@@ -446,6 +469,11 @@ impl TransactionV2Builder {
         Default::default()
     }
 
+    /// When used with the [`manifest_builder`][Self::manifest_builder] method, the provided name and hash
+    /// are provided automatically via [`use_child`][ManifestBuilder::use_child] at the start of manifest creation.
+    ///
+    /// When used with the [`manifest`][Self::manifest] method, the provided name is simply ignored - names
+    /// are returned from the provided manifest.
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
@@ -462,7 +490,7 @@ impl TransactionV2Builder {
             .expect("Child signed partial transation could not be prepared");
         let hash = prepared.subintent_hash();
         let name = name.as_ref();
-        let replaced = self.non_root_subintents.insert(
+        let replaced = self.child_partial_transactions.insert(
             name.to_string(),
             (hash, signed_partial_transaction, object_names),
         );
@@ -474,16 +502,32 @@ impl TransactionV2Builder {
 
     /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
     /// These children will get added to the manifest for you, with the corresponding names.
-    /// We don't have just a `manifest` method as it is too easy to forget to register a child.
     pub fn manifest_builder(
         mut self,
         build_manifest: impl FnOnce(TransactionManifestV2Builder) -> TransactionManifestV2Builder,
     ) -> Self {
         let mut manifest_builder = TransactionManifestV2Builder::new_typed();
-        for (child_name, (hash, _, _)) in self.non_root_subintents.iter() {
+        for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.transaction_intent_manifest = Some(build_manifest(manifest_builder).build());
+        self
+    }
+
+    /// ## Panics:
+    /// * If called with a manifest which references different children to those provided by [`add_signed_child`][Self::add_signed_child].
+    pub fn manifest(mut self, manifest: TransactionManifestV2) -> Self {
+        let known_subintent_hashes: IndexSet<_> = self
+            .child_partial_transactions
+            .values()
+            .map(|(hash, _, _)| ChildSubintentSpecifier { hash: *hash })
+            .collect();
+        if &manifest.children != &known_subintent_hashes {
+            panic!(
+                "The manifest's children hashes do not match those provided by `add_signed_child`"
+            );
+        }
+        self.transaction_intent_manifest = Some(manifest);
         self
     }
 
@@ -513,7 +557,7 @@ impl TransactionV2Builder {
                 .expect("Manifest must be provided before this action is performed");
             let (instructions, blobs, child_hashes, root_object_names) =
                 manifest.for_intent_with_names();
-            let subintents = mem::take(&mut self.non_root_subintents);
+            let subintents = mem::take(&mut self.child_partial_transactions);
 
             let mut aggregated_subintents = vec![];
             let mut aggregated_subintent_signatures = vec![];

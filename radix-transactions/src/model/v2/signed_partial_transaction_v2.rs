@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-/// An analogue of a [`SignedTransactionIntentV2`], except with a subintent at the root.
+/// An analogue of a [`SignedTransactionIntentV2`], except with a [`SubintentV2`] at the root.
 ///
 /// This is intended to represent a fully signed, incomplete sub-tree of the transaction,
 /// and be a canonical model for building, storing and transferring this signed subtree.

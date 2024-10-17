@@ -135,7 +135,7 @@ pub fn decompile(
             preallocated_address.decompile_as_pseudo_instruction(&mut context)?;
         output_instruction(&mut buf, &context, psuedo_instruction)?;
     }
-    for child_subintent in manifest.get_child_subintents() {
+    for child_subintent in manifest.get_child_subintent_hashes() {
         let psuedo_instruction = child_subintent.decompile_as_pseudo_instruction(&mut context)?;
         output_instruction(&mut buf, &context, psuedo_instruction)?;
     }

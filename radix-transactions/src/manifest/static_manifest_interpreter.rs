@@ -81,7 +81,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         visitor: &mut V,
     ) -> ControlFlow<V::Output> {
         self.handle_preallocated_addresses(visitor, self.manifest.get_preallocated_addresses())?;
-        self.handle_child_subintents(visitor, self.manifest.get_child_subintents())?;
+        self.handle_child_subintents(visitor, self.manifest.get_child_subintent_hashes())?;
         self.handle_blobs(visitor, self.manifest.get_blobs())?;
         for (index, instruction_effect) in self.manifest.iter_instruction_effects().enumerate() {
             self.handle_instruction(visitor, index, instruction_effect)?;
@@ -112,7 +112,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
     fn handle_child_subintents<V: ManifestInterpretationVisitor>(
         &mut self,
         visitor: &mut V,
-        child_subintents: &'a [ChildSubintent],
+        child_subintents: impl Iterator<Item = &'a ChildSubintentSpecifier>,
     ) -> ControlFlow<V::Output> {
         for child_subintent in child_subintents {
             self.handle_new_intent(
@@ -360,7 +360,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
             }
             InvocationKind::YieldToChild { child_index } => {
                 let index = child_index.0 as usize;
-                if index >= self.manifest.get_child_subintents().len() {
+                if index >= self.manifest.get_child_subintent_hashes().len() {
                     return ControlFlow::Break(
                         ManifestValidationError::ChildIntentNotRegistered(child_index).into(),
                     );

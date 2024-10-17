@@ -67,6 +67,7 @@ pub enum DefaultTestExecutionConfigType {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ManifestBuildError {
+    DuplicateChildSubintentHash,
     ChildSubintentsUnsupportedByManifestType,
     PreallocatedAddressesUnsupportedByManifestType,
 }
@@ -93,8 +94,10 @@ pub trait ReadableManifestBase {
     fn get_preallocated_addresses(&self) -> &[PreAllocatedAddress] {
         &NO_PREALLOCATED_ADDRESSES
     }
-    fn get_child_subintents(&self) -> &[ChildSubintent] {
-        &NO_CHILD_SUBINTENTS
+    fn get_child_subintent_hashes<'a>(
+        &'a self,
+    ) -> impl ExactSizeIterator<Item = &'a ChildSubintentSpecifier> {
+        NO_CHILD_SUBINTENTS.iter()
     }
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef;
 }
@@ -133,4 +136,4 @@ impl<T: TypedReadableManifest + ?Sized> ReadableManifest for T {
 }
 
 static NO_PREALLOCATED_ADDRESSES: [PreAllocatedAddress; 0] = [];
-static NO_CHILD_SUBINTENTS: [ChildSubintent; 0] = [];
+static NO_CHILD_SUBINTENTS: [ChildSubintentSpecifier; 0] = [];
