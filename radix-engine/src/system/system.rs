@@ -109,10 +109,6 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
     pub fn system(&mut self) -> &mut System<Y::SystemCallback> {
         self.api.kernel_get_system()
     }
-
-    pub fn is_root_thread(&mut self) -> Result<bool, RuntimeError> {
-        Ok(self.api.kernel_get_stack_id()? == 0)
-    }
 }
 
 #[cfg_attr(
@@ -2233,7 +2229,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
     fn start_lock_fee(&mut self, amount: Decimal, contingent: bool) -> Result<bool, RuntimeError> {
         // Child subintents are only allowed to use contingent fees
         if !contingent {
-            let stack_id = self.api.kernel_get_stack_id()?;
+            let stack_id = self.api.kernel_get_current_stack_id_uncosted();
             if stack_id != 0 {
                 return Err(RuntimeError::SystemError(
                     SystemError::CannotLockFeeInChildSubintent(stack_id),
@@ -2504,7 +2500,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemActorApi<RuntimeError> for SystemService
                 }
 
                 if let Some(node_id) = actor.node_id() {
-                    let visibility = self.kernel_get_node_visibility(&node_id);
+                    let visibility = self.kernel_get_node_visibility_uncosted(&node_id);
                     if let ReferenceOrigin::Global(address) =
                         visibility.reference_origin(node_id).unwrap()
                     {
@@ -3018,12 +3014,16 @@ impl<'a, Y: SystemBasedKernelApi> KernelInternalApi for SystemService<'a, Y> {
         self.api.kernel_get_system_state()
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
-        self.api.kernel_get_current_depth()
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_depth_uncosted()
     }
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
-        self.api.kernel_get_node_visibility(node_id)
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_id_uncosted()
+    }
+
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
+        self.api.kernel_get_node_visibility_uncosted(node_id)
     }
 
     fn kernel_read_substate_uncosted(

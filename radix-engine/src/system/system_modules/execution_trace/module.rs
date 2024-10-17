@@ -461,13 +461,16 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
     SystemModule<ModuleApi> for ExecutionTraceModule
 {
     fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
+        if api.current_stack_id_uncosted() != 0 {
+            return Ok(());
+        }
         match event {
             CreateNodeEvent::Start(..) => {
                 api.module().handle_before_create_node();
             }
             CreateNodeEvent::IOAccess(..) => {}
             CreateNodeEvent::End(node_id) => {
-                let current_depth = api.current_stack_depth();
+                let current_depth = api.current_stack_depth_uncosted();
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
                 let system_state = api.system_state();
                 Self::resolve_from_system(system_state.system).handle_after_create_node(
@@ -482,13 +485,17 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
     }
 
     fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
+        if api.current_stack_id_uncosted() != 0 {
+            return Ok(());
+        }
+
         match event {
             DropNodeEvent::Start(node_id) => {
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
                 api.module().handle_before_drop_node(resource_summary);
             }
             DropNodeEvent::End(..) => {
-                let current_depth = api.current_stack_depth();
+                let current_depth = api.current_stack_depth_uncosted();
                 let system_state = api.system_state();
                 system_state
                     .system
@@ -506,6 +513,10 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
         api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
+        if api.current_stack_id_uncosted() != 0 {
+            return Ok(());
+        }
+
         let message = CallFrameMessage::from_input(&invocation.args, &invocation.call_frame_data);
         let resource_summary = ResourceSummary::from_message(api, &message);
         let callee = &invocation.call_frame_data;
@@ -528,7 +539,11 @@ impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtens
         api: &mut ModuleApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
-        let current_depth = api.current_stack_depth();
+        if api.current_stack_id_uncosted() != 0 {
+            return Ok(());
+        }
+
+        let current_depth = api.current_stack_depth_uncosted();
         let resource_summary = ResourceSummary::from_message(api, message);
 
         let system_state = api.system_state();

@@ -17,7 +17,6 @@ STATE UPDATES: 1 entity
     └─ Set: KernelBoot
        Value: KernelBoot::V2 {
          global_nodes_version: AlwaysVisibleGlobalNodesVersion::V2,
-         dispatch_get_stack_id_events: true,
        }
 
 OUTPUTS: 0

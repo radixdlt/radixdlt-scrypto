@@ -2377,6 +2377,15 @@ where
         })
     }
 
+    pub fn yield_to_parent_with_name_lookup<T: ResolvableArguments>(
+        self,
+        arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
+    ) -> Self {
+        let args = arguments_creator(&self.name_lookup()).resolve();
+
+        self.add_v2_instruction(YieldToParent { args })
+    }
+
     pub fn verify_parent(self, access_rule: AccessRule) -> Self {
         self.add_v2_instruction(VerifyParent { access_rule })
     }

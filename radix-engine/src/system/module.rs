@@ -42,8 +42,9 @@ pub trait SystemModuleApi {
 
     fn system_state(&mut self) -> SystemState<'_, System<Self::SystemCallback>>;
 
-    /// Gets the number of call frames that are currently in the call frame stack
-    fn current_stack_depth(&self) -> usize;
+    fn current_stack_depth_uncosted(&self) -> usize;
+
+    fn current_stack_id_uncosted(&self) -> usize;
 }
 
 impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>> + ?Sized> SystemModuleApi
@@ -59,8 +60,12 @@ impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>> + ?Si
         self.api.kernel_get_system_state()
     }
 
-    fn current_stack_depth(&self) -> usize {
-        self.api.kernel_get_current_depth()
+    fn current_stack_depth_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_depth_uncosted()
+    }
+
+    fn current_stack_id_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_id_uncosted()
     }
 }
 

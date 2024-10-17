@@ -91,7 +91,7 @@ impl AuthModule {
             .kernel_get_system_state()
             .current_call_frame
             .is_root();
-        let is_root_thread = system.is_root_thread()?;
+        let is_root_thread = system.kernel_get_current_stack_id_uncosted() == 0;
         if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
             if let Some(auth_zone_init) = &auth_module.generate_transaction_processor_auth_zone {
@@ -251,7 +251,7 @@ impl AuthModule {
                 Actor::Root | Actor::BlueprintHook(..) => (None, None),
                 Actor::Method(current_method_actor) => {
                     let node_visibility =
-                        system.kernel_get_node_visibility(&current_method_actor.node_id);
+                        system.kernel_get_node_visibility_uncosted(&current_method_actor.node_id);
                     let current_ref_origin = node_visibility
                         .reference_origin(current_method_actor.node_id)
                         .unwrap();

@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,           31.47005886469,    100.0%
-- Execution Cost (XRD)                                                     ,               0.61822305,      2.0%
+Total Cost (XRD)                                                           ,           31.46993386469,    100.0%
+- Execution Cost (XRD)                                                     ,               0.61809805,      2.0%
 - Finalization Cost (XRD)                                                  ,                0.0783874,      0.2%
 - Storage Cost (XRD)                                                       ,           30.77344841469,     97.8%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 12364461,    100.0%
+Execution Cost Breakdown                                                   ,                 12361961,    100.0%
 - AfterInvoke                                                              ,                      326,      0.0%
 - AllocateNodeId                                                           ,                     1552,      0.0%
 - BeforeInvoke                                                             ,                   182304,      1.5%
@@ -14,7 +14,6 @@ Execution Cost Breakdown                                                   ,    
 - DropNode                                                                 ,                    20742,      0.2%
 - EmitEvent                                                                ,                     1128,      0.0%
 - GetOwnedNodes                                                            ,                     1000,      0.0%
-- GetStackId                                                               ,                     2500,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      110,      0.0%
 - MoveModule                                                               ,                     3360,      0.0%

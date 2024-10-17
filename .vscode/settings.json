@@ -59,6 +59,7 @@
         "systemtransaction",
         "transactiontracker",
         "txid",
+        "uncosted",
         "undeposited",
         "Undesignated",
         "Unmergeable",

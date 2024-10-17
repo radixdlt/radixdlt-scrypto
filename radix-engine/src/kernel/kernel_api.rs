@@ -202,26 +202,41 @@ pub struct SystemState<'a, M: KernelCallbackObject> {
     pub caller_call_frame: &'a M::CallFrameData,
 }
 
-/// Internal API for kernel modules.
-/// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
+/// Internal API for system modules only.
+///
+/// TODO: Do not use uncosted API within protocol
+/// The uncosted APIs should be used by non-consensus related system modules only, i.e. kernel
+/// trace and execution trace. All other usages should be migrated away, ideally as a whole.
 pub trait KernelInternalApi {
     type System: KernelCallbackObject;
 
-    /// Retrieves data associated with the kernel upstream layer (system)
+    /// Returns the system.
     #[inline]
     fn kernel_get_system(&mut self) -> &mut Self::System {
         self.kernel_get_system_state().system
     }
 
+    /// Returns the system state.
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
 
-    /// Gets the number of call frames that are currently in the call frame stack
-    fn kernel_get_current_depth(&self) -> usize;
+    /// Returns the current stack depth.
+    ///
+    /// Used by kernel trace, execution trace and costing system modules only.
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize;
 
-    /// Returns the visibility of a node
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
+    /// Returns the current stack id.
+    ///
+    /// Used by kernel trace, execution trace, costing system modules and `start_lock_fee` system function only.
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize;
 
-    /// Only intended for use in debug modules
+    /// Returns the visibility of a node.
+    ///
+    /// Used by auth system module and `actor_get_node_id` system function only.
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility;
+
+    /// Returns the value of a substate.
+    ///
+    /// Used by execution trace system module only.
     fn kernel_read_substate_uncosted(
         &self,
         node_id: &NodeId,

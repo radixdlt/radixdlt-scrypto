@@ -193,7 +193,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for LimitsModu
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
-        let current_depth = api.current_stack_depth();
+        let current_depth = api.current_stack_depth_uncosted();
         if current_depth == api.module().config.max_call_depth {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
