@@ -128,7 +128,7 @@ impl ProtocolUpdateBatchGenerator for BottlenoseBatchGenerator {
         }
     }
 
-    fn batch_count(&self, batch_group_index: usize) -> usize {
+    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
         match batch_group_index {
             0 => 1,
             _ => panic!("Invalid batch_group_index: {batch_group_index}"),

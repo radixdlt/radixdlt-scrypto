@@ -88,7 +88,9 @@ impl ProtocolUpdateExecutor {
             } else {
                 0
             };
-            for batch_index in start_at_batch..self.batch_generator.batch_count(batch_group_index) {
+            for batch_index in
+                start_at_batch..self.batch_generator.batch_count(&*store, batch_group_index)
+            {
                 let batch =
                     self.batch_generator
                         .generate_batch(store, batch_group_index, batch_index);

@@ -286,7 +286,7 @@ impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
         }
     }
 
-    fn batch_count(&self, batch_group_index: usize) -> usize {
+    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
         match batch_group_index {
             0 => 2,
             1 => self.settings.genesis_data_chunks.len(),

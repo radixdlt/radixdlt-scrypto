@@ -159,22 +159,42 @@ impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
     }
 }
 
-// TODO AFTER MERGE WITH NODE: Merge with UpdateBatchGenerator
-/// This must be stateless, to allow the update to be resumed.
+/// Generates batches for the protocol update. These are structured as:
+/// * One or more named batch groups
+/// * One or more batches under each batch group.
+///   Each batch is committed separately in the node. Separating into batches allows the
+///   node not to have to hold too much in memory at any given time.
+///
+/// The batch generation must be stateless (aside from the database), to allow the update
+/// to be resumed in the node mid-way through after a restart.
+///
+/// Therefore any transient state required between batches must be stored in the database,
+/// and we must ensure that whilst each batch group is executing, the content of
+/// [`batch_count`][batch_count] and [`generate_batch`][generate_batch] is fixed. This
+/// is explained further in the `generate_batch` docs.
+///
+/// [generate_batch]: ProtocolUpdateBatchGenerator::generate_batch
+/// [batch_count]: ProtocolUpdateBatchGenerator::batch_count
 pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
     fn status_tracking_enabled(&self) -> bool {
         true
     }
 
     /// Generate a batch of transactions to be committed atomically with a proof.
-    /// *Panics* if the given batch index is outside the range (see [`Self::batch_count()`]).
     ///
     /// It should be assumed that the [`SubstateDatabase`] has *committed all previous batches*.
     /// This ensures that the update is deterministically continuable if the Node shuts down
     /// mid-update.
     ///
-    /// TODO(potential API improvement): This is the interface currently needed by the Node, to
-    /// allow the update to be resumed; it is not great, and we could improve this in future.
+    /// If a protocol update needs to do some complicated/inline batch updates to substates, you may need to:
+    /// * Have a first batch group where the planned work is saved batch-by-batch to some special partition
+    /// * Have a second batch group where the planned work is performed, by reading from this special partition
+    /// * Have a third batch group where the planned work is deleted
+    ///
+    /// ## Panics
+    /// Should panic if:
+    /// * Called with a `batch_group_index >= self.batch_group_descriptors().len()`
+    /// * Called with a `batch_index >= self.batch_count(store, batch_group_index)`
     fn generate_batch(
         &self,
         store: &dyn SubstateDatabase,
@@ -182,21 +202,30 @@ pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
         batch_index: usize,
     ) -> ProtocolUpdateBatch;
 
-    /// Returns the number of contained batch groups.
+    /// Returns an "UpperCamelCase" descriptor for each batch group which forms part of the update.
+    ///
     /// Each batch group is a logical grouping of batches.
+    ///
     /// For example, at genesis, there are three batch groups:
-    /// * Bootstrap (Flash + Bootstrap Txn)
-    /// * Chunk Execution
-    /// * Wrap up
+    /// * "Bootstrap" (Flash + Bootstrap Txn)
+    /// * "Chunks"
+    /// * "WrapUp"
+    /// * (And optionally "Scenarios", which is added by the node)
     ///
     /// The [`Self::generate_batch()`] expects the `batch_group_index`
     /// to be in the range `[0, self.batch_group_descriptors().len() - 1]`.
     fn batch_group_descriptors(&self) -> Vec<String>;
 
-    /// Returns the number of contained batches.
-    /// For a fixed batch group, [`Self::generate_batch()`] expects `batch_index`
+    /// Returns the number of contained batches in the given batch group.
+    ///
+    /// Whilst this takes a `store`, the count and content of batches MUST be *fixed*
+    /// for the duration of the batch group's execution. This ensures the update can be
+    /// resumed mid-way through. An example of how this might work is given in the
+    /// `generate_batch` method.
+    ///
+    /// For a fixed batch group, [`generate_batch`][Self::generate_batch] expects `batch_index`
     /// to be in the range `[0, self.batch_count() - 1]`.
-    fn batch_count(&self, batch_group_index: usize) -> usize;
+    fn batch_count(&self, store: &dyn SubstateDatabase, batch_group_index: usize) -> usize;
 }
 
 pub trait ProtocolUpdateBatchGeneratorDynClone {
@@ -235,7 +264,7 @@ impl ProtocolUpdateBatchGenerator for NoOpBatchGenerator {
         vec![]
     }
 
-    fn batch_count(&self, _batch_group_index: usize) -> usize {
+    fn batch_count(&self, _store: &dyn SubstateDatabase, _batch_group_index: usize) -> usize {
         0
     }
 }
