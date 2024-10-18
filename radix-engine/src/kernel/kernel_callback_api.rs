@@ -171,7 +171,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Start execution
     fn execute<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: Self::Executable,
+        executable: &Self::Executable,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
@@ -335,6 +335,28 @@ pub trait KernelCallbackObject: Sized {
     /// Callback before a node is dropped
     fn on_drop_node_mut<Y: KernelApi<CallbackObject = Self>>(
         node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>;
+
+    fn on_get_stack_id<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>;
+
+    fn on_switch_stack<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>;
+
+    fn on_send_to_stack<Y: KernelInternalApi<System = Self>>(
+        value: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>;
+
+    fn on_set_call_frame_data<Y: KernelInternalApi<System = Self>>(
+        data: &Self::CallFrameData,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>;
+
+    fn on_get_owned_nodes<Y: KernelInternalApi<System = Self>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError>;
 }

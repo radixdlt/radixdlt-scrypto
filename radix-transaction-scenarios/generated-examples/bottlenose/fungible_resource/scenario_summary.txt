@@ -2,7 +2,7 @@ Name: fungible_resource
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 63f28f5cb46bff0e (should never change)
+State changes: 18de01a4176c0cf7 (should never change)
 Events       : 4ce99305c513d412 (should never change)
 
 == INTERESTING ADDRESSES ==

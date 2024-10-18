@@ -16,15 +16,9 @@ pub struct TransactionManifestV2 {
     pub object_names: ManifestObjectNames,
 }
 
-impl ReadableManifest for TransactionManifestV2 {
-    type Instruction = InstructionV2;
-
+impl ReadableManifestBase for TransactionManifestV2 {
     fn is_subintent(&self) -> bool {
         false
-    }
-
-    fn get_instructions(&self) -> &[Self::Instruction] {
-        &self.instructions
     }
 
     fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
@@ -37,6 +31,14 @@ impl ReadableManifest for TransactionManifestV2 {
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
+    }
+}
+
+impl TypedReadableManifest for TransactionManifestV2 {
+    type Instruction = InstructionV2;
+
+    fn get_typed_instructions(&self) -> &[Self::Instruction] {
+        &self.instructions
     }
 }
 
@@ -80,7 +82,7 @@ impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
 impl TransactionManifestV2 {
     pub fn from_intent_core(intent: &IntentCoreV2) -> Self {
         Self {
-            instructions: intent.instructions.clone().into(),
+            instructions: intent.instructions.to_vec(),
             blobs: intent.blobs.clone().into(),
             children: intent.children.children.clone(),
             object_names: ManifestObjectNames::Unknown,
@@ -89,7 +91,7 @@ impl TransactionManifestV2 {
 
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
         (
-            InstructionsV2(self.instructions),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,
@@ -101,7 +103,7 @@ impl TransactionManifestV2 {
         self,
     ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
         (
-            InstructionsV2(self.instructions),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,

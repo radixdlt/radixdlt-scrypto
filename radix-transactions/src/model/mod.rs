@@ -188,7 +188,7 @@ Enum<3u8>(
         assert_eq!(
             executable,
             ExecutableTransaction::new_v1(
-                manifest_encode(&manifest.instructions).unwrap().into(),
+                manifest_encode(&manifest.instructions).unwrap(),
                 AuthZoneInit::proofs(btreeset!(
                     NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
                     NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
@@ -199,15 +199,14 @@ Enum<3u8>(
                     Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
-                Rc::new(indexmap!(
+                indexmap!(
                     hash(&[1, 2]) => vec![1, 2]
-                )),
+                ),
                 ExecutionContext {
                     unique_hash: expected_intent_hash.0,
                     intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                         intent_hash: expected_intent_hash,
                         expiry_epoch: Epoch::of(66),
-                        ignore_duplicate: false,
                     }],
                     epoch_range: Some(EpochRange {
                         start_epoch_inclusive: Epoch::of(55),
@@ -223,7 +222,6 @@ Enum<3u8>(
                     costing_parameters: TransactionCostingParameters {
                         tip: TipSpecifier::Percentage(4),
                         free_credit_in_xrd: dec!(0),
-                        abort_when_loan_repaid: false,
                     },
                     disable_limits_and_costing_modules: false,
                     proposer_timestamp_range: None,

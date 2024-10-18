@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            1.12177385354,    100.0%
-- Execution Cost (XRD)                                                     ,               0.34342695,     30.6%
+Total Cost (XRD)                                                           ,            1.12207915354,    100.0%
+- Execution Cost (XRD)                                                     ,               0.34373225,     30.6%
 - Finalization Cost (XRD)                                                  ,               0.21777715,     19.4%
 - Storage Cost (XRD)                                                       ,            0.56056975354,     50.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6868539,    100.0%
+Execution Cost Breakdown                                                   ,                  6874645,    100.0%
 - AfterInvoke                                                              ,                      726,      0.0%
 - AllocateNodeId                                                           ,                     3395,      0.0%
 - BeforeInvoke                                                             ,                     5456,      0.1%
@@ -13,6 +13,8 @@ Execution Cost Breakdown                                                   ,    
 - CreateNode                                                               ,                    31516,      0.5%
 - DropNode                                                                 ,                    49517,      0.7%
 - EmitEvent                                                                ,                     6342,      0.1%
+- GetOwnedNodes                                                            ,                     1000,      0.0%
+- GetStackId                                                               ,                     3500,      0.1%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                      110,      0.0%
 - MoveModule                                                               ,                     8120,      0.1%
@@ -26,9 +28,9 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.6%
 - OpenSubstate::InternalNonFungibleVault                                   ,                     6869,      0.1%
 - PinNode                                                                  ,                      372,      0.0%
-- PrepareWasmCode                                                          ,                   353866,      5.2%
+- PrepareWasmCode                                                          ,                   353866,      5.1%
 - QueryActor                                                               ,                     2000,      0.0%
-- ReadSubstate                                                             ,                   566910,      8.3%
+- ReadSubstate                                                             ,                   566910,      8.2%
 - RunNativeCode::Worktop_drain                                             ,                    11224,      0.2%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.3%
 - RunNativeCode::Worktop_put                                               ,                    29033,      0.4%
@@ -45,7 +47,9 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::set                                                       ,                   125226,      1.8%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      1.8%
 - RunWasmCode::Faucet_lock_fee                                             ,                    24589,      0.4%
+- SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                     1057,      0.0%
+- SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    52720,      0.8%
 - VerifyTxSignatures                                                       ,                    14000,      0.2%
 - WriteSubstate                                                            ,                    15344,      0.2%

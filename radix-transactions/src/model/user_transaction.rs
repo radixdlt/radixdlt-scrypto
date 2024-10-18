@@ -69,10 +69,16 @@ impl UserSubintentManifest {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+const V1_DISCRIMINATOR: u8 = TransactionDiscriminator::V1Notarized as u8;
+const V2_DISCRIMINATOR: u8 = TransactionDiscriminator::V2Notarized as u8;
+
+/// This can be used like [`VersionedTransactionPayload`], but just for notarized transactions.
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub enum UserTransaction {
-    V1(NotarizedTransactionV1),
-    V2(NotarizedTransactionV2),
+    #[sbor(discriminator(V1_DISCRIMINATOR))]
+    V1(#[sbor(flatten)] NotarizedTransactionV1),
+    #[sbor(discriminator(V2_DISCRIMINATOR))]
+    V2(#[sbor(flatten)] NotarizedTransactionV2),
 }
 
 impl From<NotarizedTransactionV1> for UserTransaction {
@@ -84,6 +90,15 @@ impl From<NotarizedTransactionV1> for UserTransaction {
 impl From<NotarizedTransactionV2> for UserTransaction {
     fn from(value: NotarizedTransactionV2) -> Self {
         Self::V2(value)
+    }
+}
+
+impl From<UserTransaction> for LedgerTransaction {
+    fn from(value: UserTransaction) -> Self {
+        match value {
+            UserTransaction::V1(tx) => LedgerTransaction::UserV1(Box::new(tx)),
+            UserTransaction::V2(tx) => LedgerTransaction::UserV2(Box::new(tx)),
+        }
     }
 }
 
@@ -144,6 +159,29 @@ pub enum PreparedUserTransaction {
 }
 
 impl PreparedUserTransaction {
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        match self {
+            PreparedUserTransaction::V1(t) => t.end_epoch_exclusive(),
+            PreparedUserTransaction::V2(t) => t.end_epoch_exclusive(),
+        }
+    }
+
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+        }
+    }
+
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
+            PreparedUserTransaction::V1(_) => Box::new(core::iter::empty()),
+            PreparedUserTransaction::V2(t) => Box::new(t.non_root_subintent_hashes()),
+        };
+        boxed_iterator
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,
@@ -273,10 +311,119 @@ impl IntoExecutable for ValidatedUserTransaction {
 }
 
 impl ValidatedUserTransaction {
+    pub fn end_epoch_exclusive(&self) -> Epoch {
+        match self {
+            ValidatedUserTransaction::V1(t) => t.prepared.end_epoch_exclusive(),
+            ValidatedUserTransaction::V2(t) => {
+                t.overall_validity_range.epoch_range.end_epoch_exclusive
+            }
+        }
+    }
+
     pub fn create_executable(self) -> ExecutableTransaction {
         match self {
-            Self::V1(t) => t.get_executable(),
+            Self::V1(t) => t.create_executable(),
             Self::V2(t) => t.create_executable(),
         }
+    }
+
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+        }
+    }
+
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
+            ValidatedUserTransaction::V1(_) => Box::new(core::iter::empty()),
+            ValidatedUserTransaction::V2(t) => Box::new(t.prepared.non_root_subintent_hashes()),
+        };
+        boxed_iterator
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+pub struct UserTransactionHashes {
+    pub transaction_intent_hash: TransactionIntentHash,
+    pub signed_transaction_intent_hash: SignedTransactionIntentHash,
+    pub notarized_transaction_hash: NotarizedTransactionHash,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn notarized_transaction_v1_can_be_decoded_as_user_transaction() {
+        let network = NetworkDefinition::simulator();
+
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
+
+        let header = TransactionHeaderV1 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::of(1),
+            end_epoch_exclusive: Epoch::of(5),
+            nonce: 0,
+            notary_public_key: notary_private_key.public_key().into(),
+            notary_is_signatory: false,
+            tip_percentage: 0,
+        };
+
+        let notarized = TransactionBuilder::new()
+            .header(header)
+            .manifest(ManifestBuilder::new_v1().build())
+            .notarize(&notary_private_key)
+            .build();
+
+        let raw = notarized.to_raw().unwrap();
+
+        let user_transaction = raw.into_typed().unwrap();
+
+        let UserTransaction::V1(decoded_notarized) = user_transaction else {
+            panic!("Was not v1");
+        };
+
+        assert_eq!(notarized, decoded_notarized);
+    }
+
+    #[test]
+    fn notarized_transaction_v2_can_be_decoded_as_user_transaction() {
+        let network = NetworkDefinition::simulator();
+
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
+
+        let header = TransactionHeaderV2 {
+            notary_public_key: notary_private_key.public_key().into(),
+            notary_is_signatory: false,
+            tip_basis_points: 51,
+        };
+
+        let intent_header = IntentHeaderV2 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::of(1),
+            end_epoch_exclusive: Epoch::of(5),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 21,
+        };
+
+        let notarized = TransactionV2Builder::new()
+            .transaction_header(header)
+            .intent_header(intent_header)
+            .manifest_builder(|builder| builder)
+            .notarize(&notary_private_key)
+            .build();
+
+        let raw = notarized.to_raw().unwrap();
+
+        let user_transaction = raw.into_typed().unwrap();
+
+        let UserTransaction::V2(decoded_notarized) = user_transaction else {
+            panic!("Was not v2");
+        };
+
+        assert_eq!(notarized, decoded_notarized);
     }
 }

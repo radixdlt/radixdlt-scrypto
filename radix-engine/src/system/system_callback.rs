@@ -183,7 +183,7 @@ impl SystemVersion {
     fn execute_transaction<Y: SystemBasedKernelApi>(
         &self,
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let output = match self {
@@ -195,10 +195,10 @@ impl SystemVersion {
                     TRANSACTION_PROCESSOR_BLUEPRINT,
                     TRANSACTION_PROCESSOR_RUN_IDENT,
                     scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
-                        global_address_reservations,
-                        references: Rc::new(intent.references.clone()),
-                        blobs: intent.blobs.clone(),
+                        manifest_encoded_instructions: intent.encoded_instructions.as_ref(),
+                        global_address_reservations: global_address_reservations.as_slice(),
+                        references: &intent.references,
+                        blobs: &intent.blobs,
                     })
                     .unwrap(),
                 )?;
@@ -206,8 +206,11 @@ impl SystemVersion {
                 output
             }
             SystemVersion::V2 => {
-                let mut txn_threads =
-                    MultiThreadIntentProcessor::init(executable, global_address_reservations, api)?;
+                let mut txn_threads = MultiThreadIntentProcessor::init(
+                    executable,
+                    global_address_reservations.as_slice(),
+                    api,
+                )?;
                 txn_threads.execute(api)?;
                 let output = txn_threads
                     .threads
@@ -527,7 +530,7 @@ impl<V: SystemCallbackObject> System<V> {
         }
         if current_epoch >= end_epoch_exclusive {
             return Err(RejectionReason::TransactionEpochNoLongerValid {
-                valid_until: end_epoch_exclusive.previous(),
+                valid_until: end_epoch_exclusive.previous().unwrap_or(Epoch::zero()),
                 current_epoch,
             });
         }
@@ -907,6 +910,12 @@ impl<V: SystemCallbackObject> System<V> {
                     expiry_epoch,
                     ..
                 } => (intent_hash.into_hash(), expiry_epoch),
+                IntentHashNullification::SimulatedTransactionIntent { simulated } => {
+                    let intent_hash = simulated.intent_hash();
+                    let expiry_epoch =
+                        simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
+                    (intent_hash.into_hash(), expiry_epoch)
+                }
                 IntentHashNullification::Subintent {
                     intent_hash,
                     expiry_epoch,
@@ -922,7 +931,7 @@ impl<V: SystemCallbackObject> System<V> {
             };
 
             let partition_number = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
-                .expect("Validation of the max expiry epoch window should ensure that the expiry epoch is in range for the transaction tracker");
+                .expect("Validation of the max expiry epoch window combined with the current epoch check on launch should ensure that the expiry epoch is in range for the transaction tracker");
 
             // Update the status of the intent hash
             track
@@ -1412,6 +1421,8 @@ impl<V: SystemCallbackObject> System<V> {
             enabled_modules
         };
 
+        let mut abort_when_loan_repaid = false;
+
         // Override system configuration
         if let Some(system_overrides) = &init_input.system_overrides {
             if let Some(costing_override) = &system_overrides.costing_parameters {
@@ -1437,6 +1448,10 @@ impl<V: SystemCallbackObject> System<V> {
             if system_overrides.disable_limits {
                 enabled_modules.remove(EnabledModules::LIMITS);
             }
+
+            if system_overrides.abort_when_loan_repaid {
+                abort_when_loan_repaid = true;
+            }
         }
 
         let costing_module = CostingModule {
@@ -1444,6 +1459,7 @@ impl<V: SystemCallbackObject> System<V> {
             fee_reserve: SystemLoanFeeReserve::new(
                 system_parameters.costing_parameters,
                 executable.costing_parameters().clone(),
+                abort_when_loan_repaid,
             ),
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),
@@ -1546,38 +1562,26 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch,
-                    ignore_duplicate,
                 } => {
-                    if *ignore_duplicate {
-                        Ok(())
-                    } else {
-                        Self::validate_intent_hash_uncosted(
-                            store,
-                            intent_hash.as_hash(),
-                            *expiry_epoch,
-                        )
-                    }
+                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
+                }
+                IntentHashNullification::SimulatedTransactionIntent { .. } => {
+                    // No validation is done on a simulated transaction intent used during preview
+                    Ok(())
                 }
                 IntentHashNullification::Subintent {
                     intent_hash,
                     expiry_epoch,
-                    ignore_duplicate,
                 } => {
-                    if *ignore_duplicate {
-                        Ok(())
-                    } else {
-                        Self::validate_intent_hash_uncosted(
-                            store,
-                            intent_hash.as_hash(),
-                            *expiry_epoch,
-                        )
-                    }
+                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
                 }
             }
             .and_then(|_| {
                 match hash_nullification {
-                    IntentHashNullification::TransactionIntent { .. } => {
+                    IntentHashNullification::TransactionIntent { .. }
+                    | IntentHashNullification::SimulatedTransactionIntent { .. } => {
                         // Transaction intent nullification is historically not costed.
+                        // If this changes, it should be applied to both TransactionIntents and SimulatedTransactionIntents
                     }
                     IntentHashNullification::Subintent { .. } => {
                         num_of_intent_statuses += 1;
@@ -1624,11 +1628,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         .epoch_milli
                         / 1000,
                 );
-                if let Some(t) = range.start_timestamp_inclusive {
-                    if current_time < t {
+                if let Some(start_timestamp_inclusive) = range.start_timestamp_inclusive {
+                    if current_time < start_timestamp_inclusive {
                         return Err(Self::create_rejection_receipt(
                             RejectionReason::TransactionProposerTimestampNotYetValid {
-                                range: range.clone(),
+                                valid_from_inclusive: start_timestamp_inclusive,
                                 current_time,
                             },
                             modules,
@@ -1636,11 +1640,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                     }
                 }
 
-                if let Some(t) = range.end_timestamp_exclusive {
-                    if current_time >= t {
+                if let Some(end_timestamp_exclusive) = range.end_timestamp_exclusive {
+                    if current_time >= end_timestamp_exclusive {
                         return Err(Self::create_rejection_receipt(
                             RejectionReason::TransactionProposerTimestampNoLongerValid {
-                                range: range.clone(),
+                                valid_to_exclusive: end_timestamp_exclusive,
                                 current_time,
                             },
                             modules,
@@ -1691,7 +1695,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
 
     fn execute<Y: SystemBasedKernelApi>(
         api: &mut Y,
-        executable: ExecutableTransaction,
+        executable: &ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
 
@@ -2137,6 +2141,38 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
         Ok(())
+    }
+
+    fn on_get_stack_id<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_get_stack_id(api)
+    }
+
+    fn on_switch_stack<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_switch_stack(api)
+    }
+
+    fn on_send_to_stack<Y: KernelInternalApi<System = Self>>(
+        value: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_send_to_stack(api, value.len())
+    }
+
+    fn on_set_call_frame_data<Y: KernelInternalApi<System = Self>>(
+        data: &Self::CallFrameData,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_set_call_frame_data(api, data.len())
+    }
+
+    fn on_get_owned_nodes<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_get_owned_nodes(api)
     }
 
     //--------------------------------------------------------------------------

@@ -20,7 +20,8 @@ impl ScenarioCreator for RoyaltiesScenarioCreator {
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "royalties",
         protocol_min_requirement: ProtocolVersion::Babylon,
-        testnet_run_at: Some(ProtocolVersion::Babylon),
+        // It was missed previously, so we will run it at Cuttlefish instead
+        testnet_run_at: Some(ProtocolVersion::Cuttlefish),
         safe_to_run_on_used_ledger: true,
     };
 

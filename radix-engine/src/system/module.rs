@@ -262,4 +262,24 @@ pub trait SystemModule<ModuleApi: SystemModuleApiFor<Self>>:
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    fn on_get_stack_id(_api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_switch_stack(_api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_send_to_stack(_api: &mut ModuleApi, _data_len: usize) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_set_call_frame_data(_api: &mut ModuleApi, _data_len: usize) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_get_owned_nodes(_api: &mut ModuleApi) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }

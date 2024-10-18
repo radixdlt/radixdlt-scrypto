@@ -2,7 +2,7 @@ Name: account_locker
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: 4125290881db5015 (should never change)
+State changes: 84a96b0e2c318c26 (should never change)
 Events       : 03ba5fe8dc1932d2 (should never change)
 
 == INTERESTING ADDRESSES ==

@@ -27,6 +27,10 @@ define_raw_transaction_payload!(
 define_wrapped_hash!(NotarizedTransactionHash);
 
 impl RawNotarizedTransaction {
+    pub fn into_typed(&self) -> Result<UserTransaction, DecodeError> {
+        manifest_decode(self.as_slice())
+    }
+
     pub fn prepare(
         &self,
         settings: &PreparationSettings,
@@ -118,12 +122,10 @@ impl IntentHash {
             IntentHash::Transaction(tx_intent_hash) => IntentHashNullification::TransactionIntent {
                 intent_hash: tx_intent_hash,
                 expiry_epoch,
-                ignore_duplicate: false,
             },
             IntentHash::Subintent(subintent_hash) => IntentHashNullification::Subintent {
                 intent_hash: subintent_hash,
                 expiry_epoch,
-                ignore_duplicate: false,
             },
         }
     }

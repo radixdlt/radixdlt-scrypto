@@ -105,21 +105,21 @@ impl<'a> DecompilationContext<'a> {
 }
 
 pub fn decompile_any(
-    manifest: &AnyTransactionManifest,
+    manifest: &AnyManifest,
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     match manifest {
-        AnyTransactionManifest::V1(m) => decompile(m, network),
-        AnyTransactionManifest::SystemV1(m) => decompile(m, network),
-        AnyTransactionManifest::V2(m) => decompile(m, network),
-        AnyTransactionManifest::SubintentV2(m) => decompile(m, network),
+        AnyManifest::V1(m) => decompile(m, network),
+        AnyManifest::SystemV1(m) => decompile(m, network),
+        AnyManifest::V2(m) => decompile(m, network),
+        AnyManifest::SubintentV2(m) => decompile(m, network),
     }
 }
 
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    manifest: &impl ReadableManifest,
+    manifest: &impl TypedReadableManifest,
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     let address_bech32_encoder = AddressBech32Encoder::new(network);
@@ -139,7 +139,7 @@ pub fn decompile(
         let psuedo_instruction = child_subintent.decompile_as_pseudo_instruction(&mut context)?;
         output_instruction(&mut buf, &context, psuedo_instruction)?;
     }
-    for inst in manifest.get_instructions() {
+    for inst in manifest.get_typed_instructions() {
         let decompiled = inst.decompile(&mut context)?;
         output_instruction(&mut buf, &context, decompiled)?;
     }

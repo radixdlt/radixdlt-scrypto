@@ -48,7 +48,7 @@ impl<'a> IntoExecutable for SystemTransactionV1WithProofs<'a> {
         let executable = self
             .transaction
             .prepare(validator.preparation_settings())?
-            .get_executable(self.initial_proofs);
+            .create_executable(self.initial_proofs);
         Ok(executable)
     }
 }
@@ -63,7 +63,7 @@ impl TransactionPayload for SystemTransactionV1 {
 }
 
 pub struct PreparedSystemTransactionV1 {
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
     pub blobs: PreparedBlobsV1,
     pub pre_allocated_addresses: PreparedPreAllocatedAddresses,
@@ -98,7 +98,7 @@ impl PreparedTransaction for PreparedSystemTransactionV1 {
                 ExpectedHeaderKind::EnumWithValueKind,
             )?;
         Ok(Self {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs,
             pre_allocated_addresses,
@@ -123,7 +123,7 @@ impl TransactionPreparableFromValue for PreparedSystemTransactionV1 {
                 ExpectedHeaderKind::TupleWithValueKind,
             )?;
         Ok(Self {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs,
             pre_allocated_addresses,
@@ -135,15 +135,15 @@ impl TransactionPreparableFromValue for PreparedSystemTransactionV1 {
 
 #[allow(deprecated)]
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable(
-        &self,
+    pub fn create_executable(
+        self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> ExecutableTransaction {
         ExecutableTransaction::new_v1(
-            self.encoded_instructions.clone(),
+            self.encoded_instructions,
             AuthZoneInit::proofs(initial_proofs),
-            self.references.clone(),
-            self.blobs.blobs_by_hash.clone(),
+            self.references,
+            self.blobs.blobs_by_hash,
             ExecutionContext {
                 unique_hash: self.hash_for_execution.hash,
                 intent_hash_nullifications: vec![],
@@ -153,9 +153,8 @@ impl PreparedSystemTransactionV1 {
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
-                    abort_when_loan_repaid: false,
                 },
-                pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
+                pre_allocated_addresses: self.pre_allocated_addresses.inner,
                 disable_limits_and_costing_modules: true,
                 proposer_timestamp_range: None,
             },

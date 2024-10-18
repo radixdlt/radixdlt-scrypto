@@ -97,7 +97,6 @@ pub struct TestIntentV2 {
     pub children_subintent_indices: Vec<SubintentIndex>,
 }
 
-#[derive(ManifestSbor)]
 pub enum PreparedTestTransaction {
     V1(PreparedTestIntent),
     V2 {
@@ -106,11 +105,10 @@ pub enum PreparedTestTransaction {
     },
 }
 
-#[derive(ManifestSbor)]
 pub struct PreparedTestIntent {
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
     pub hash: Hash,
     pub children_subintent_indices: Vec<SubintentIndex>,
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -124,9 +122,9 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
             hash: intent.hash,
             children_subintent_indices: vec![],
             initial_proofs: intent.initial_proofs,
@@ -139,24 +137,24 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
             hash: intent.hash,
             children_subintent_indices: intent.children_subintent_indices,
             initial_proofs: intent.initial_proofs,
         })
     }
 
-    pub fn get_executable(&self) -> ExecutableIntent {
-        let auth_zone_init = AuthZoneInit::proofs(self.initial_proofs.clone());
+    pub fn into_executable_intent(self) -> ExecutableIntent {
+        let auth_zone_init = AuthZoneInit::proofs(self.initial_proofs);
 
         ExecutableIntent {
-            encoded_instructions: self.encoded_instructions.clone(),
+            encoded_instructions: self.encoded_instructions,
             auth_zone_init,
-            references: self.references.clone(),
-            blobs: self.blobs.clone(),
-            children_subintent_indices: self.children_subintent_indices.clone(),
+            references: self.references,
+            blobs: self.blobs,
+            children_subintent_indices: self.children_subintent_indices,
         }
     }
 }
@@ -173,6 +171,27 @@ impl TestTransaction {
             hash(format!("Test transaction: {}", nonce)),
             initial_proofs,
         )
+    }
+
+    pub fn new_from_any_manifest(
+        any_manifest: AnyManifest,
+        nonce: u32,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> Result<Self, String> {
+        match any_manifest {
+            AnyManifest::V1(manifest) => {
+                Ok(Self::new_v1_from_nonce(manifest, nonce, initial_proofs))
+            }
+            AnyManifest::SystemV1(_) => Err(format!(
+                "Cannot convert a system manifest to a test transaction"
+            )),
+            AnyManifest::V2(manifest) => {
+                Ok(Self::new_v2_builder(nonce).finish_with_root_intent(manifest, initial_proofs))
+            }
+            AnyManifest::SubintentV2(_) => Err(format!(
+                "Cannot convert a subintent manifest to a test transaction"
+            )),
+        }
     }
 
     pub fn new_v1(
@@ -249,12 +268,12 @@ impl IntoExecutable for TestTransaction {
     ) -> Result<ExecutableTransaction, Self::Error> {
         Ok(self
             .prepare(validator.preparation_settings())?
-            .get_executable())
+            .into_unvalidated_executable())
     }
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(&self) -> ExecutableTransaction {
+    pub fn into_unvalidated_executable(self) -> ExecutableTransaction {
         match self {
             PreparedTestTransaction::V1(intent) => {
                 let num_of_signature_validations = intent.initial_proofs.len() + 1;
@@ -274,7 +293,6 @@ impl PreparedTestTransaction {
                         costing_parameters: TransactionCostingParameters {
                             tip: TipSpecifier::None,
                             free_credit_in_xrd: Decimal::ZERO,
-                            abort_when_loan_repaid: false,
                         },
                         pre_allocated_addresses: vec![],
                         disable_limits_and_costing_modules: false,
@@ -286,7 +304,7 @@ impl PreparedTestTransaction {
                 root_intent,
                 subintents,
             } => {
-                let all_intents = core::iter::once(root_intent)
+                let all_intents = core::iter::once(&root_intent)
                     .chain(subintents.iter())
                     .collect::<Vec<_>>();
                 let payload_size = all_intents
@@ -311,7 +329,6 @@ impl PreparedTestTransaction {
                     costing_parameters: TransactionCostingParameters {
                         tip: TipSpecifier::None,
                         free_credit_in_xrd: Decimal::ZERO,
-                        abort_when_loan_repaid: false,
                     },
                     pre_allocated_addresses: vec![],
                     disable_limits_and_costing_modules: false,
@@ -319,10 +336,10 @@ impl PreparedTestTransaction {
                 };
 
                 ExecutableTransaction::new_v2(
-                    root_intent.get_executable(),
+                    root_intent.into_executable_intent(),
                     subintents
-                        .iter()
-                        .map(|intent| intent.get_executable())
+                        .into_iter()
+                        .map(|intent| intent.into_executable_intent())
                         .collect(),
                     context,
                 )
@@ -338,6 +355,6 @@ impl IntoExecutable for PreparedTestTransaction {
         self,
         _validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
-        Ok(self.get_executable())
+        Ok(self.into_unvalidated_executable())
     }
 }

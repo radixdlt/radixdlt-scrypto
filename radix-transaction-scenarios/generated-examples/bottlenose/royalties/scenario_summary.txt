@@ -2,7 +2,7 @@ Name: royalties
 
 == SUMMARY HASHES ==
 These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
-State changes: d4e0d282c65f9a66 (should never change)
+State changes: 7a5eea9b74699078 (should never change)
 Events       : a392c2748132656e (should never change)
 
 == INTERESTING ADDRESSES ==

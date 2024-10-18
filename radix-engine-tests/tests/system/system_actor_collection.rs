@@ -86,14 +86,13 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    let system_updates = result.state_updates.clone().into_legacy().system_updates;
-    for ((node_id, _partition_num), updates) in &system_updates {
-        for (_key, update) in updates {
-            if matches!(update, DatabaseUpdate::Set(..))
-                && node_id.eq(component_address.as_node_id())
-            {
-                panic!("No database writes to the component should have occurred");
-            }
+    let substate_updates = result
+        .state_updates
+        .clone()
+        .into_flattened_substate_updates();
+    for ((node_id, _partition_num, _key), update) in substate_updates {
+        if matches!(update, DatabaseUpdate::Set(..)) && node_id.eq(component_address.as_node_id()) {
+            panic!("No database writes to the component should have occurred");
         }
     }
 }

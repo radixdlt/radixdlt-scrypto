@@ -16,15 +16,9 @@ pub struct SubintentManifestV2 {
     pub object_names: ManifestObjectNames,
 }
 
-impl ReadableManifest for SubintentManifestV2 {
-    type Instruction = InstructionV2;
-
+impl ReadableManifestBase for SubintentManifestV2 {
     fn is_subintent(&self) -> bool {
         true
-    }
-
-    fn get_instructions(&self) -> &[Self::Instruction] {
-        &self.instructions
     }
 
     fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
@@ -37,6 +31,14 @@ impl ReadableManifest for SubintentManifestV2 {
 
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
         self.object_names.as_ref()
+    }
+}
+
+impl TypedReadableManifest for SubintentManifestV2 {
+    type Instruction = InstructionV2;
+
+    fn get_typed_instructions(&self) -> &[Self::Instruction] {
+        &self.instructions
     }
 }
 
@@ -88,7 +90,7 @@ impl SubintentManifestV2 {
 
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
         (
-            InstructionsV2(self.instructions),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,
@@ -100,7 +102,7 @@ impl SubintentManifestV2 {
         self,
     ) -> (InstructionsV2, BlobsV1, ChildIntentsV2, ManifestObjectNames) {
         (
-            InstructionsV2(self.instructions),
+            self.instructions.into(),
             self.blobs.into(),
             ChildIntentsV2 {
                 children: self.children,

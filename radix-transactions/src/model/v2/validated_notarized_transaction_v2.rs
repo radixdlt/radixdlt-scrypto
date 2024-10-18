@@ -128,7 +128,6 @@ impl ValidatedNotarizedTransactionV2 {
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::BasisPoints(transaction_header.tip_basis_points),
                     free_credit_in_xrd: Decimal::ZERO,
-                    abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
                 disable_limits_and_costing_modules: false,
@@ -149,10 +148,10 @@ fn create_executable_intent(
     let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
     ExecutableIntent {
-        encoded_instructions: Rc::new(validated_info.encoded_instructions),
+        encoded_instructions: validated_info.encoded_instructions,
         auth_zone_init,
-        references: core.instructions.references.clone(),
-        blobs: core.blobs.blobs_by_hash.clone(),
-        children_subintent_indices: validated_info.children_subintent_indices.clone(),
+        references: core.instructions.references,
+        blobs: core.blobs.blobs_by_hash,
+        children_subintent_indices: validated_info.children_subintent_indices,
     }
 }

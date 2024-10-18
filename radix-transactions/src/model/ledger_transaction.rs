@@ -56,9 +56,62 @@ impl RawLedgerTransaction {
         &self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
-    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
         let prepared = PreparedLedgerTransaction::prepare(self, validator.preparation_settings())?;
         prepared.validate(validator, accepted_kind)
+    }
+
+    pub fn create_executable(
+        &self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<ExecutableTransaction, LedgerTransactionValidationError> {
+        let validated = self.validate(validator, accepted_kind)?;
+        validated.create_executable()
+    }
+
+    pub fn create_identifiable_ledger_executable(
+        &self,
+        validator: &TransactionValidator,
+        accepted_kind: AcceptedLedgerTransactionKind,
+    ) -> Result<IdentifiedLedgerExecutable, LedgerTransactionValidationError> {
+        let validated = self.validate(validator, accepted_kind)?;
+        let hashes = validated.create_hashes();
+        let executable = validated.create_ledger_executable();
+        Ok(IdentifiedLedgerExecutable { executable, hashes })
+    }
+}
+
+impl IntoExecutable for RawLedgerTransaction {
+    type Error = LedgerTransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.create_executable(validator, AcceptedLedgerTransactionKind::Any)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum LedgerTransactionValidationError {
+    ValidationError(TransactionValidationError),
+    GenesisTransactionNotCurrentlyPermitted,
+    UserTransactionNotCurrentlyPermitted,
+    ValidateTransactionNotCurrentlyPermitted,
+    ProtocolUpdateNotCurrentlyPermitted,
+    FlashNotCurrentlyPermitted,
+}
+
+impl From<TransactionValidationError> for LedgerTransactionValidationError {
+    fn from(value: TransactionValidationError) -> Self {
+        Self::ValidationError(value)
+    }
+}
+
+impl From<PrepareError> for LedgerTransactionValidationError {
+    fn from(value: PrepareError) -> Self {
+        Self::ValidationError(value.into())
     }
 }
 
@@ -98,27 +151,23 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    pub fn create_identifiers(&self) -> PayloadIdentifiers {
-        PayloadIdentifiers {
+    pub fn create_hashes(&self) -> LedgerTransactionHashes {
+        LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
-            typed: match &self.inner {
-                PreparedLedgerTransactionInner::Genesis(t) => {
-                    TypedTransactionIdentifiers::Genesis {
-                        system_transaction_hash: t.system_transaction_hash(),
-                    }
-                }
-                PreparedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
+            kinded: match &self.inner {
+                PreparedLedgerTransactionInner::Genesis(t) => KindedTransactionHashes::Genesis {
+                    system_transaction_hash: t.system_transaction_hash(),
                 },
+                PreparedLedgerTransactionInner::User(t) => {
+                    KindedTransactionHashes::User(t.hashes())
+                }
                 PreparedLedgerTransactionInner::Validator(t) => {
-                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                    KindedTransactionHashes::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
                 PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
-                    TypedTransactionIdentifiers::FlashV1 {
+                    KindedTransactionHashes::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
@@ -126,41 +175,41 @@ impl PreparedLedgerTransaction {
         }
     }
 
-    fn validate(
+    pub fn validate(
         self,
         validator: &TransactionValidator,
         accepted_kind: AcceptedLedgerTransactionKind,
-    ) -> Result<ValidatedLedgerTransaction, TransactionValidationError> {
+    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
         let validated_inner = match self.inner {
             PreparedLedgerTransactionInner::Genesis(t) => {
                 if !accepted_kind.permits_genesis() {
-                    return Err(TransactionValidationError::Other(
-                        "Genesis transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::GenesisTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::Genesis(t)
             }
             PreparedLedgerTransactionInner::User(t) => {
                 if !accepted_kind.permits_user() {
-                    return Err(TransactionValidationError::Other(
-                        "User transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::UserTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::User(t.validate(validator)?)
             }
             PreparedLedgerTransactionInner::Validator(t) => {
                 if !accepted_kind.permits_validator() {
-                    return Err(TransactionValidationError::Other(
-                        "Round update transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::ValidateTransactionNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::Validator(t)
             }
             PreparedLedgerTransactionInner::ProtocolUpdate(t) => {
                 if !accepted_kind.permits_protocol_update() {
-                    return Err(TransactionValidationError::Other(
-                        "Protocol update transaction not permitted at this point".to_string(),
-                    ));
+                    return Err(
+                        LedgerTransactionValidationError::ProtocolUpdateNotCurrentlyPermitted,
+                    );
                 }
                 ValidatedLedgerTransactionInner::ProtocolUpdate(t)
             }
@@ -398,7 +447,7 @@ impl PreparedTransaction for PreparedLedgerTransaction {
 }
 
 impl IntoExecutable for PreparedLedgerTransaction {
-    type Error = LedgerTransactionExecutableError;
+    type Error = LedgerTransactionValidationError;
 
     fn into_executable(
         self,
@@ -421,18 +470,6 @@ pub enum ValidatedLedgerTransactionInner {
     ProtocolUpdate(PreparedFlashTransactionV1),
 }
 
-#[derive(Debug, Clone)]
-pub enum LedgerTransactionExecutableError {
-    IsFlashTransaction,
-    ValidationError(TransactionValidationError),
-}
-
-impl From<TransactionValidationError> for LedgerTransactionExecutableError {
-    fn from(value: TransactionValidationError) -> Self {
-        Self::ValidationError(value)
-    }
-}
-
 impl ValidatedLedgerTransaction {
     pub fn intent_hash_if_user(&self) -> Option<TransactionIntentHash> {
         match &self.inner {
@@ -443,48 +480,56 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    /// Note - returns None if it's a flash transaction
-    pub fn create_executable(
-        self,
-    ) -> Result<ExecutableTransaction, LedgerTransactionExecutableError> {
+    pub fn create_ledger_executable(self) -> LedgerExecutable {
         match self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis {
-                PreparedGenesisTransaction::Flash(_) => {
-                    Err(LedgerTransactionExecutableError::IsFlashTransaction)
-                }
-                PreparedGenesisTransaction::Transaction(t) => {
-                    Ok(t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))))
-                }
+                PreparedGenesisTransaction::Flash(_) => LedgerExecutable::GenesisFlash,
+                PreparedGenesisTransaction::Transaction(t) => LedgerExecutable::Transaction {
+                    executable: t
+                        .create_executable(btreeset!(system_execution(SystemExecution::Protocol))),
+                },
             },
-            ValidatedLedgerTransactionInner::User(t) => Ok(t.create_executable()),
-            ValidatedLedgerTransactionInner::Validator(t) => Ok(t.get_executable()),
-            ValidatedLedgerTransactionInner::ProtocolUpdate(_) => {
-                Err(LedgerTransactionExecutableError::IsFlashTransaction)
-            }
+            ValidatedLedgerTransactionInner::User(t) => LedgerExecutable::Transaction {
+                executable: t.create_executable(),
+            },
+            ValidatedLedgerTransactionInner::Validator(t) => LedgerExecutable::Transaction {
+                executable: t.create_executable(),
+            },
+            ValidatedLedgerTransactionInner::ProtocolUpdate(t) => LedgerExecutable::Flash {
+                updates: t.state_updates,
+            },
         }
     }
 
-    pub fn create_identifiers(&self) -> PayloadIdentifiers {
-        PayloadIdentifiers {
+    /// Returns an error if the transaction is a flash
+    pub fn create_executable(
+        self,
+    ) -> Result<ExecutableTransaction, LedgerTransactionValidationError> {
+        match self.create_ledger_executable() {
+            LedgerExecutable::GenesisFlash | LedgerExecutable::Flash { .. } => {
+                Err(LedgerTransactionValidationError::FlashNotCurrentlyPermitted)
+            }
+            LedgerExecutable::Transaction { executable } => Ok(executable),
+        }
+    }
+
+    pub fn create_hashes(&self) -> LedgerTransactionHashes {
+        LedgerTransactionHashes {
             ledger_transaction_hash: self.ledger_transaction_hash(),
-            typed: match &self.inner {
-                ValidatedLedgerTransactionInner::Genesis(t) => {
-                    TypedTransactionIdentifiers::Genesis {
-                        system_transaction_hash: t.system_transaction_hash(),
-                    }
-                }
-                ValidatedLedgerTransactionInner::User(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_transaction_intent_hash(),
-                    notarized_transaction_hash: t.notarized_transaction_hash(),
+            kinded: match &self.inner {
+                ValidatedLedgerTransactionInner::Genesis(t) => KindedTransactionHashes::Genesis {
+                    system_transaction_hash: t.system_transaction_hash(),
                 },
+                ValidatedLedgerTransactionInner::User(t) => {
+                    KindedTransactionHashes::User(t.hashes())
+                }
                 ValidatedLedgerTransactionInner::Validator(t) => {
-                    TypedTransactionIdentifiers::RoundUpdateV1 {
+                    KindedTransactionHashes::RoundUpdateV1 {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
                 ValidatedLedgerTransactionInner::ProtocolUpdate(t) => {
-                    TypedTransactionIdentifiers::FlashV1 {
+                    KindedTransactionHashes::FlashV1 {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
@@ -493,8 +538,28 @@ impl ValidatedLedgerTransaction {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IdentifiedLedgerExecutable {
+    pub executable: LedgerExecutable,
+    pub hashes: LedgerTransactionHashes,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LedgerExecutable {
+    /// Should be resolved as create_system_bootstrap_flash() but due to crate issues it can't be
+    GenesisFlash,
+    Flash {
+        /// Can be converted into a FlashReceipt with a before_store
+        /// and then to a TransactionReceipt.
+        updates: StateUpdates,
+    },
+    Transaction {
+        executable: ExecutableTransaction,
+    },
+}
+
 impl IntoExecutable for ValidatedLedgerTransaction {
-    type Error = LedgerTransactionExecutableError;
+    type Error = LedgerTransactionValidationError;
 
     fn into_executable(
         self,
@@ -505,21 +570,23 @@ impl IntoExecutable for ValidatedLedgerTransaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct PayloadIdentifiers {
+pub struct LedgerTransactionHashes {
     pub ledger_transaction_hash: LedgerTransactionHash,
-    pub typed: TypedTransactionIdentifiers,
+    pub kinded: KindedTransactionHashes,
+}
+
+impl LedgerTransactionHashes {
+    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+        self.kinded.as_user()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypedTransactionIdentifiers {
+pub enum KindedTransactionHashes {
     Genesis {
         system_transaction_hash: SystemTransactionHash,
     },
-    User {
-        intent_hash: TransactionIntentHash,
-        signed_intent_hash: SignedTransactionIntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-    },
+    User(#[sbor(flatten)] UserTransactionHashes),
     RoundUpdateV1 {
         round_update_hash: RoundUpdateTransactionHash,
     },
@@ -528,25 +595,10 @@ pub enum TypedTransactionIdentifiers {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserTransactionIdentifiers<'a> {
-    pub intent_hash: &'a TransactionIntentHash,
-    pub signed_intent_hash: &'a SignedTransactionIntentHash,
-    pub notarized_transaction_hash: &'a NotarizedTransactionHash,
-}
-
-impl TypedTransactionIdentifiers {
-    pub fn user(&self) -> Option<UserTransactionIdentifiers> {
+impl KindedTransactionHashes {
+    pub fn as_user(&self) -> Option<UserTransactionHashes> {
         match self {
-            TypedTransactionIdentifiers::User {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            } => Some(UserTransactionIdentifiers {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            }),
+            KindedTransactionHashes::User(user) => Some(*user),
             _ => None,
         }
     }

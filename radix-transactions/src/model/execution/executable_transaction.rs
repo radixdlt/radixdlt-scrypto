@@ -2,12 +2,12 @@ use std::iter;
 
 use crate::internal_prelude::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableIntent {
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub encoded_instructions: Vec<u8>,
     pub auth_zone_init: AuthZoneInit,
     pub references: IndexSet<Reference>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
     /// An index of the subintent in the parent ExecutableTransaction
     /// Validation ensures that each subintent has a unique parent
     /// and a unique path from the transaction intent.
@@ -64,14 +64,22 @@ impl IntoExecutable for ExecutableTransaction {
 }
 
 /// This is an executable form of the transaction, post stateless validation.
-#[derive(Debug, PartialEq, Eq)]
+///
+/// An `&ExecutableTransaction` is used to execute in the engine.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {
     pub(crate) transaction_intent: ExecutableIntent,
     pub(crate) subintents: Vec<ExecutableIntent>,
     pub(crate) context: ExecutionContext,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+impl AsRef<ExecutableTransaction> for ExecutableTransaction {
+    fn as_ref(&self) -> &ExecutableTransaction {
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionContext {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     pub unique_hash: Hash,
@@ -87,10 +95,10 @@ pub struct ExecutionContext {
 
 impl ExecutableTransaction {
     pub fn new_v1(
-        encoded_instructions_v1: Rc<Vec<u8>>,
+        encoded_instructions_v1: Vec<u8>,
         auth_zone_init: AuthZoneInit,
         references: IndexSet<Reference>,
-        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+        blobs: IndexMap<Hash, Vec<u8>>,
         context: ExecutionContext,
     ) -> Self {
         let mut references = references;
@@ -189,11 +197,6 @@ impl ExecutableTransaction {
         self
     }
 
-    pub fn abort_when_loan_repaid(mut self) -> Self {
-        self.context.costing_parameters.abort_when_loan_repaid = true;
-        self
-    }
-
     pub fn unique_hash(&self) -> &Hash {
         &self.context.unique_hash
     }
@@ -264,5 +267,20 @@ impl ExecutableTransaction {
         }
 
         references
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ExecutableTransaction;
+
+    fn assert_send<T: Send>() {}
+    fn assert_sync<T: Sync>() {}
+
+    #[test]
+    fn check_executable_transaction_can_be_cached_in_the_node_mempool_and_be_shared_between_threads(
+    ) {
+        assert_send::<ExecutableTransaction>();
+        assert_sync::<ExecutableTransaction>();
     }
 }

@@ -156,49 +156,49 @@ fn generate_principal_batch(
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
     if let UpdateSetting::Enabled(_) = &add_owner_role_getter {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-owner-role-getter",
             generate_owner_role_getter_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_) = &add_locker_package {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-locker-package",
             generate_locker_package_state_updates(),
         ));
     }
     if let UpdateSetting::Enabled(_) = &fix_account_try_deposit_or_refund_behaviour {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-account-try-deposit-or-refund",
             generate_account_bottlenose_extension_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(settings) = &move_protocol_params_to_state {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-protocol-params-to-state",
             generate_protocol_params_to_state_updates(settings.network_definition.clone()),
         ));
     }
     if let UpdateSetting::Enabled(_) = &update_access_controller_to_add_xrd_fee_vault {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-access-controller-xrd-fee-vault",
             generate_access_controller_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_) = &impose_a_limit_on_transaction_processor_blobs {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-transaction-processor-blob-limits",
             generate_transaction_processor_blob_limits_state_updates(store),
         ));
     }
     if let UpdateSetting::Enabled(_) = &ref_cost_checks {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-add-deferred-reference-check-cost",
             generate_ref_check_costs_state_updates(),
         ));
     }
     if let UpdateSetting::Enabled(_) = &restrict_reserved_role_key {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
+        transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-restrict-role-assignment-reserved-role-key",
             generate_restrict_reserved_role_key_state_updates(store),
         ));

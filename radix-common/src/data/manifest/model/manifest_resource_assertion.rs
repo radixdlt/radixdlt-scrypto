@@ -151,23 +151,22 @@ impl ManifestResourceConstraints {
 
     pub fn validate(
         self,
-        mut fungible_resources: BTreeMap<ResourceAddress, Decimal>,
-        mut non_fungible_resources: BTreeMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+        mut fungible_resources: IndexMap<ResourceAddress, Decimal>,
+        mut non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
         exact: bool,
     ) -> Result<(), ManifestResourceConstraintsError> {
         for (resource_address, constraint) in self.specified_resources {
             if resource_address.is_fungible() {
                 let amount = fungible_resources
-                    .remove(&resource_address)
+                    .swap_remove(&resource_address)
                     .unwrap_or_default();
                 constraint
                     .validate_fungible(amount)
                     .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
             } else {
                 let ids = non_fungible_resources
-                    .remove(&resource_address)
-                    .unwrap_or_default()
-                    .clone();
+                    .swap_remove(&resource_address)
+                    .unwrap_or_default();
                 constraint
                     .validate_non_fungible(ids)
                     .map_err(ManifestResourceConstraintsError::ResourceConstraint)?;
@@ -175,8 +174,19 @@ impl ManifestResourceConstraints {
         }
 
         if exact {
-            if !fungible_resources.is_empty() || !non_fungible_resources.is_empty() {
-                return Err(ManifestResourceConstraintsError::UnwantedResourcesExist);
+            for (fungible_resource, amount) in fungible_resources {
+                if amount.is_positive() {
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        fungible_resource,
+                    ));
+                }
+            }
+            for (non_fungible_resource, ids) in non_fungible_resources {
+                if !ids.is_empty() {
+                    return Err(ManifestResourceConstraintsError::UnwantedResourcesExist(
+                        non_fungible_resource,
+                    ));
+                }
             }
         }
 
@@ -187,7 +197,7 @@ impl ManifestResourceConstraints {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ManifestResourceConstraintsError {
     ResourceConstraint(ResourceConstraintError),
-    UnwantedResourcesExist,
+    UnwantedResourcesExist(ResourceAddress),
 }
 
 impl IntoIterator for ManifestResourceConstraints {

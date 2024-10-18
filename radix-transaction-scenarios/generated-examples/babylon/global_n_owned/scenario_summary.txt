@@ -2,7 +2,7 @@ Name: global_n_owned
 
 == SUMMARY HASHES ==
 These Babylon hashes should NEVER change, else they will cause divergence when run historically.
-State changes: eca6661e225d61c8 (should never change)
+State changes: 572c98d2fd9fbc97 (should never change)
 Events       : 5defe78e4694e3a5 (should never change)
 
 == INTERESTING ADDRESSES ==
