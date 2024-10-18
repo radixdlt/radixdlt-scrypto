@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
 
-#[derive(Clone)]
+#[derive(Clone, ScryptoSbor)]
 pub struct BottlenoseSettings {
     /// Exposes a getter method for reading owner role rule.
     pub add_owner_role_getter: UpdateSetting<NoSettings>,
@@ -41,7 +41,7 @@ pub struct BottlenoseSettings {
     pub restrict_reserved_role_key: UpdateSetting<NoSettings>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Sbor)]
 pub struct ProtocolParamsSettings {
     pub network_definition: NetworkDefinition,
 }

@@ -81,7 +81,8 @@ impl ProtocolUpdateBatch {
     }
 }
 
-pub trait UpdateSettings: Sized {
+/// This requires [`ScryptoSbor`] so it can be used to override configuration in the node for tests.
+pub trait UpdateSettings: Sized + ScryptoSbor {
     type BatchGenerator: ProtocolUpdateBatchGenerator;
 
     fn protocol_version() -> ProtocolVersion;
@@ -130,7 +131,7 @@ impl<T: Default> DefaultForNetwork for T {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Sbor)]
 pub enum UpdateSetting<T: UpdateSettingMarker> {
     Enabled(T),
     Disabled,
@@ -148,7 +149,7 @@ impl UpdateSetting<NoSettings> {
 
 pub trait UpdateSettingMarker {}
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Sbor)]
 pub struct NoSettings;
 
 impl UpdateSettingMarker for NoSettings {}

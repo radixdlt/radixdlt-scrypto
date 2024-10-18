@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_transactions::validation::*;
 
-#[derive(Clone)]
+#[derive(Clone, ScryptoSbor)]
 pub struct CuttlefishSettings {
     /// Add configuration for system logic versioning
     pub system_logic_update: UpdateSetting<NoSettings>,
@@ -79,7 +79,7 @@ impl UpdateSettings for CuttlefishSettings {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Sbor)]
 pub enum UpdateNumberOfMinRoundsPerEpochSettings {
     Set { value: u64 },
     SetIfEquals { if_equals: u64, to_value: u64 },

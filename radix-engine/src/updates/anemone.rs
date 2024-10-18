@@ -7,7 +7,7 @@ use crate::system::system_db_reader::*;
 use crate::vm::*;
 use sbor::{generate_full_schema, TypeAggregator};
 
-#[derive(Clone)]
+#[derive(Clone, ScryptoSbor)]
 pub struct AnemoneSettings {
     /// Changes the cost associated with validator creation.
     pub validator_fee_fix: UpdateSetting<NoSettings>,
