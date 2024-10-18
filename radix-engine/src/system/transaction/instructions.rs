@@ -82,8 +82,9 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContains(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
-            InstructionV2::AssertWorktopResourcesOnly(_) => todo!(),
-            InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
+            // TODO: implement the following instructions
+            InstructionV2::AssertWorktopResourcesOnly(_)
+            | InstructionV2::AssertWorktopResourcesInclude(_) => Ok(InstructionOutput::None),
             InstructionV2::AssertNextCallReturnsOnly(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertNextCallReturnsInclude(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
