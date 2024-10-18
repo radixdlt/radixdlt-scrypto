@@ -55,7 +55,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     );
     let mut track = Track::new(&database);
     let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
-    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system, false);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate
     let result = kernel.kernel_open_substate(

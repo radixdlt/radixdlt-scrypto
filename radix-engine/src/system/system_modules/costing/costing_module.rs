@@ -478,7 +478,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-        let depth = api.current_stack_depth();
+        let depth = api.current_stack_depth_uncosted();
         let is_root = api.system_state().current_call_frame.is_root();
         let costing_module = api.module();
 
@@ -515,7 +515,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
 
     #[inline(always)]
     fn after_invoke(api: &mut ModuleApi, output: &IndexedScryptoValue) -> Result<(), RuntimeError> {
-        let depth = api.current_stack_depth();
+        let depth = api.current_stack_depth_uncosted();
 
         // Add invocation information to the execution cost breakdown.
         if let Some(ref mut detailed_cost_breakdown) = api.module().detailed_cost_breakdown {
@@ -543,7 +543,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
     }
 
     fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::CreateNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -560,7 +560,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
     }
 
     fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::DropNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -569,7 +569,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
     }
 
     fn on_move_module(api: &mut ModuleApi, event: &MoveModuleEvent) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::MoveModule { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -581,7 +581,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::OpenSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -610,7 +610,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::ReadSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -622,7 +622,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::WriteSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -634,7 +634,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::CloseSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
@@ -695,7 +695,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         api: &mut ModuleApi,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        api.module().current_depth = api.current_stack_depth();
+        api.module().current_depth = api.current_stack_depth_uncosted();
         api.module()
             .apply_execution_cost(ExecutionCostingEntry::AllocateNodeId)
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;

@@ -231,7 +231,7 @@ impl SystemVersion {
         match self {
             SystemVersion::V1 => {
                 // Skip client-side costing requested by TransactionProcessor
-                if api.kernel_get_current_depth() == 1 {
+                if api.kernel_get_current_stack_depth_uncosted() == 1 {
                     return false;
                 }
             }
@@ -1127,7 +1127,7 @@ impl<V: SystemCallbackObject> System<V> {
         always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
         let mut init_call_frames = vec![];
-        for intent in intents {
+        for (index, intent) in intents.enumerate() {
             let (global_addresses, direct_accesses) = Self::reference_check(
                 &intent.references,
                 modules,
@@ -1140,6 +1140,7 @@ impl<V: SystemCallbackObject> System<V> {
                 global_addresses,
                 direct_accesses,
                 always_visible_global_nodes,
+                stack_id: index,
             });
         }
 

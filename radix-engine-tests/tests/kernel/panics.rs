@@ -203,11 +203,15 @@ impl<E: KernelTransactionExecutor> KernelInternalApi for MockKernel<E> {
         panic1!()
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
         panic1!()
     }
 
-    fn kernel_get_node_visibility(&self, _: &NodeId) -> NodeVisibility {
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        panic1!()
+    }
+
+    fn kernel_get_node_visibility_uncosted(&self, _: &NodeId) -> NodeVisibility {
         panic1!()
     }
 

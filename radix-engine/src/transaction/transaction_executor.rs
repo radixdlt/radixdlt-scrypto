@@ -291,6 +291,11 @@ impl ExecutionConfig {
         self
     }
 
+    pub fn with_execution_trace(mut self, depth: Option<usize>) -> Self {
+        self.execution_trace = depth;
+        self
+    }
+
     pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
         self.enable_cost_breakdown = enabled;
         self

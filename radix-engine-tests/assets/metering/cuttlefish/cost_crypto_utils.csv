@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            1.04200641606,    100.0%
-- Execution Cost (XRD)                                                     ,               0.66535305,     63.9%
+Total Cost (XRD)                                                           ,            1.04173141606,    100.0%
+- Execution Cost (XRD)                                                     ,               0.66507805,     63.8%
 - Finalization Cost (XRD)                                                  ,                0.0102517,      1.0%
 - Storage Cost (XRD)                                                       ,            0.36640166606,     35.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 13307061,    100.0%
+Execution Cost Breakdown                                                   ,                 13301561,    100.0%
 - AfterInvoke                                                              ,                      518,      0.0%
 - AllocateNodeId                                                           ,                     1455,      0.0%
 - BeforeInvoke                                                             ,                     7778,      0.1%
@@ -20,7 +20,6 @@ Execution Cost Breakdown                                                   ,    
 - Ed25519Verify                                                            ,                    14737,      0.1%
 - EmitEvent                                                                ,                      556,      0.0%
 - GetOwnedNodes                                                            ,                     1000,      0.0%
-- GetStackId                                                               ,                     5500,      0.0%
 - Keccak256Hash                                                            ,                      215,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
