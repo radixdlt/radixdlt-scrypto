@@ -1,7 +1,7 @@
 use super::*;
 use crate::system::bootstrap::*;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct BabylonSettings {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub genesis_epoch: Epoch,
