@@ -82,8 +82,8 @@ impl TxnInstruction for InstructionV2 {
             InstructionV2::AssertWorktopContainsAny(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContains(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertWorktopContainsNonFungibles(i) => i.execute(worktop, objects, api),
-            InstructionV2::AssertWorktopResourcesOnly(_) => todo!(),
-            InstructionV2::AssertWorktopResourcesInclude(_) => todo!(),
+            InstructionV2::AssertWorktopResourcesOnly(i) => i.execute(worktop, objects, api),
+            InstructionV2::AssertWorktopResourcesInclude(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertNextCallReturnsOnly(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertNextCallReturnsInclude(i) => i.execute(worktop, objects, api),
             InstructionV2::AssertBucketContents(i) => i.execute(worktop, objects, api),
@@ -303,6 +303,32 @@ impl TxnNormalInstruction for AssertWorktopContainsNonFungibles {
             self.ids.into_iter().collect(),
             api,
         )?;
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertWorktopResourcesInclude {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        _objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        worktop.assert_resources_include(self.constraints, api)?;
+
+        Ok(InstructionOutput::None)
+    }
+}
+
+impl TxnNormalInstruction for AssertWorktopResourcesOnly {
+    fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
+        self,
+        worktop: &mut Worktop,
+        _objects: &mut IntentProcessorObjects,
+        api: &mut Y,
+    ) -> Result<InstructionOutput, RuntimeError> {
+        worktop.assert_resources_only(self.constraints, api)?;
+
         Ok(InstructionOutput::None)
     }
 }

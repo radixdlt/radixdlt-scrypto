@@ -2,6 +2,7 @@ use radix_common::constants::RESOURCE_PACKAGE;
 use radix_common::data::scrypto::model::*;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::math::Decimal;
+use radix_common::prelude::ManifestResourceConstraints;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -137,6 +138,32 @@ impl Worktop {
                 ids,
             })
             .unwrap(),
+        )?;
+        Ok(())
+    }
+
+    pub fn assert_resources_include<Y: SystemApi<E>, E: SystemApiError>(
+        &self,
+        constraints: ManifestResourceConstraints,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let _rtn = api.call_method(
+            self.0.as_node_id(),
+            WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT,
+            scrypto_encode(&WorktopAssertResourcesIncludeInput { constraints }).unwrap(),
+        )?;
+        Ok(())
+    }
+
+    pub fn assert_resources_only<Y: SystemApi<E>, E: SystemApiError>(
+        &self,
+        constraints: ManifestResourceConstraints,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let _rtn = api.call_method(
+            self.0.as_node_id(),
+            WORKTOP_ASSERT_RESOURCES_ONLY_IDENT,
+            scrypto_encode(&WorktopAssertResourcesOnlyInput { constraints }).unwrap(),
         )?;
         Ok(())
     }

@@ -21,6 +21,11 @@ pub enum NativeCodeId {
     /// * Changes   : N/A
     ResourceCode1 = 1u64,
 
+    /// * Introduced: Cuttlefish
+    /// * Coverage  : `WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT` and `WORKTOP_ASSERT_RESOURCES_ONLY_IDENT`
+    /// * Changes   : Add assert resources methods to the worktop blueprint
+    ResourceCode2 = 26u64,
+
     /// * Introduced: Babylon
     /// * Coverage  : All identity blueprints
     /// * Changes   : N/A

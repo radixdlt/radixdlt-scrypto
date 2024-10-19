@@ -130,6 +130,24 @@ pub type WorktopAssertContainsNonFungiblesManifestInput = WorktopAssertContainsN
 
 pub type WorktopAssertContainsNonFungiblesOutput = ();
 
+pub const WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT: &str = "Worktop_assert_resources_include";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct WorktopAssertResourcesIncludeInput {
+    pub constraints: ManifestResourceConstraints,
+}
+
+pub type WorktopAssertResourcesIncludeOutput = ();
+
+pub const WORKTOP_ASSERT_RESOURCES_ONLY_IDENT: &str = "Worktop_assert_resources_only";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct WorktopAssertResourcesOnlyInput {
+    pub constraints: ManifestResourceConstraints,
+}
+
+pub type WorktopAssertResourcesOnlyOutput = ();
+
 pub const WORKTOP_DRAIN_IDENT: &str = "Worktop_drain";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
