@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 ///
 /// The use of lazy Generator traits is designed to allow the content of batch groups /
 /// batches to be resolved lazily (e.g. with input from the database).
-pub trait ProtocolUpdateGenerator {
+pub trait ProtocolUpdateGenerator: 'static {
     fn enable_status_tracking_into_substate_database(&self) -> bool {
         true
     }
