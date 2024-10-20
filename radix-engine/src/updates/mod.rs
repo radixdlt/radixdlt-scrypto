@@ -196,11 +196,10 @@ impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
 ///
 /// Therefore any transient state required between batches must be stored in the database,
 /// and we must ensure that whilst each batch group is executing, the content of
-/// [`batch_count`][batch_count] and [`generate_batch`][generate_batch] is fixed. This
-/// is explained further in the `generate_batch` docs.
+/// the batch is fixed.
 ///
-/// [generate_batch]: ProtocolUpdateBatchGenerator::generate_batch
-/// [batch_count]: ProtocolUpdateBatchGenerator::batch_count
+/// The use of lazy Generator traits is designed to allow the content of batch groups /
+/// batches to be resolved lazily (e.g. with input from the database).
 pub trait ProtocolUpdateGenerator: ProtocolUpdateBatchGeneratorDynClone {
     fn enable_status_tracking_into_substate_database(&self) -> bool {
         true
