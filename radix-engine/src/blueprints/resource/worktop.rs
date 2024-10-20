@@ -514,7 +514,8 @@ impl WorktopBlueprintCuttlefishExtension {
                         .add_child_type_and_descendents::<WorktopAssertResourcesIncludeInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<WorktopAssertResourcesOnlyInput>(),
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertResourcesIncludeOutput>(),
                 ),
                 export: WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT.to_string(),
             },
