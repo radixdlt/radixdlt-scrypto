@@ -33,16 +33,24 @@ impl From<ProtocolSystemTransactionV1> for ProtocolUpdateTransaction {
 }
 
 impl ProtocolUpdateTransaction {
-    pub fn flash(name: &str, state_updates: StateUpdates) -> Self {
+    pub fn flash(name: impl Into<String>, state_updates: StateUpdates) -> Self {
+        let name = name.into();
+        if name != name.to_ascii_lowercase().as_str() {
+            panic!("Protocol transaction names should be in kebab-case for consistency");
+        }
         Self::FlashTransactionV1(FlashTransactionV1 {
-            name: name.to_string(),
+            name: name.into(),
             state_updates,
         })
     }
 
-    pub fn genesis_transaction(name: &str, transaction: SystemTransactionV1) -> Self {
+    pub fn genesis_transaction(name: impl Into<String>, transaction: SystemTransactionV1) -> Self {
+        let name = name.into();
+        if name != name.to_ascii_lowercase().as_str() {
+            panic!("Protocol transaction names should be in kebab-case for consistency");
+        }
         Self::SystemTransactionV1(ProtocolSystemTransactionV1 {
-            name: name.to_string(),
+            name: name.into(),
             disable_auth: true,
             transaction,
         })
@@ -74,6 +82,23 @@ pub struct ProtocolUpdateBatch {
 }
 
 impl ProtocolUpdateBatch {
+    pub fn empty() -> Self {
+        Self {
+            transactions: vec![],
+        }
+    }
+
+    pub fn new(transactions: impl IntoIterator<Item = ProtocolUpdateTransaction>) -> Self {
+        Self {
+            transactions: transactions.into_iter().collect(),
+        }
+    }
+
+    pub fn mut_add_flash(&mut self, name: impl Into<String>, updates: StateUpdates) {
+        self.transactions
+            .push(ProtocolUpdateTransaction::flash(name, updates))
+    }
+
     pub fn single(single_transaction: ProtocolUpdateTransaction) -> Self {
         Self {
             transactions: vec![single_transaction],
@@ -83,7 +108,7 @@ impl ProtocolUpdateBatch {
 
 /// This requires [`ScryptoSbor`] so it can be used to override configuration in the node for tests.
 pub trait UpdateSettings: Sized + ScryptoSbor {
-    type BatchGenerator: ProtocolUpdateBatchGenerator;
+    type UpdateGenerator: ProtocolUpdateGenerator;
 
     fn protocol_version() -> ProtocolVersion;
 
@@ -91,7 +116,7 @@ pub trait UpdateSettings: Sized + ScryptoSbor {
 
     fn all_disabled() -> Self;
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator;
+    fn create_generator(&self) -> Self::UpdateGenerator;
 
     fn enable(mut self, prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<NoSettings>) -> Self {
         *prop(&mut self) = UpdateSetting::Enabled(NoSettings);
@@ -176,96 +201,167 @@ impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
 ///
 /// [generate_batch]: ProtocolUpdateBatchGenerator::generate_batch
 /// [batch_count]: ProtocolUpdateBatchGenerator::batch_count
-pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
-    fn status_tracking_enabled(&self) -> bool {
+pub trait ProtocolUpdateGenerator: ProtocolUpdateBatchGeneratorDynClone {
+    fn enable_status_tracking_into_substate_database(&self) -> bool {
         true
     }
 
-    /// Generate a batch of transactions to be committed atomically with a proof.
+    /// Return the list of batch groups for the protocol update.
     ///
-    /// It should be assumed that the [`SubstateDatabase`] has *committed all previous batches*.
-    /// This ensures that the update is deterministically continuable if the Node shuts down
-    /// mid-update.
+    /// Each should be a fixed, conceptual step in the update process.
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>>;
+}
+
+/// Each batch group is a logical grouping of batches.
+///
+/// For example, at genesis, there are three batch groups:
+/// * `"bootstrap"` (flash + bootstrap transaction)
+/// * `"chunks"`
+/// * `"wrap-up"`
+/// * The node also adds a `"scenarios"` batch group.
+pub trait ProtocolUpdateBatchGroupGenerator<'a> {
+    /// This is `&'static` because batch groups are intended to be fixed conceptual steps
+    /// in the protocol update.
+    ///
+    /// The batch-group name should be kebab-case for consistency.
+    fn batch_group_name(&self) -> &'static str;
+
+    /// The content of these batches must be *fully reproducible* from the state of the store
+    /// *before any updates were committed*. This is why we return an array of batch generators.
     ///
     /// If a protocol update needs to do some complicated/inline batch updates to substates, you may need to:
     /// * Have a first batch group where the planned work is saved batch-by-batch to some special partition
     /// * Have a second batch group where the planned work is performed, by reading from this special partition
     /// * Have a third batch group where the planned work is deleted
-    ///
-    /// ## Panics
-    /// Should panic if:
-    /// * Called with a `batch_group_index >= self.batch_group_descriptors().len()`
-    /// * Called with a `batch_index >= self.batch_count(store, batch_group_index)`
-    fn generate_batch(
-        &self,
+    fn generate_batches(
+        self: Box<Self>,
         store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch;
+    ) -> Vec<Box<dyn ProtocolUpdateBatchGenerator + 'a>>;
+}
 
-    /// Returns an "UpperCamelCase" descriptor for each batch group which forms part of the update.
-    ///
-    /// Each batch group is a logical grouping of batches.
-    ///
-    /// For example, at genesis, there are three batch groups:
-    /// * "Bootstrap" (Flash + Bootstrap Txn)
-    /// * "Chunks"
-    /// * "WrapUp"
-    /// * (And optionally "Scenarios", which is added by the node)
-    ///
-    /// The [`Self::generate_batch()`] expects the `batch_group_index`
-    /// to be in the range `[0, self.batch_group_descriptors().len() - 1]`.
-    fn batch_group_descriptors(&self) -> Vec<String>;
+/// Generate a batch of transactions to be committed atomically with a proof.
+///
+/// It should be assumed that the [`SubstateDatabase`] has *committed all previous batches*.
+/// This ensures that the update is deterministically continuable if the node shuts down
+/// mid-update.
+pub trait ProtocolUpdateBatchGenerator {
+    /// The batch name should be kebab-case for consistency
+    fn batch_name(&self) -> &str;
 
-    /// Returns the number of contained batches in the given batch group.
-    ///
-    /// Whilst this takes a `store`, the count and content of batches MUST be *fixed*
-    /// for the duration of the batch group's execution. This ensures the update can be
-    /// resumed mid-way through. An example of how this might work is given in the
-    /// `generate_batch` method.
-    ///
-    /// For a fixed batch group, [`generate_batch`][Self::generate_batch] expects `batch_index`
-    /// to be in the range `[0, self.batch_count() - 1]`.
-    fn batch_count(&self, store: &dyn SubstateDatabase, batch_group_index: usize) -> usize;
+    /// Generates the content of the batch
+    fn generate_batch(self: Box<Self>, store: &dyn SubstateDatabase) -> ProtocolUpdateBatch;
 }
 
 pub trait ProtocolUpdateBatchGeneratorDynClone {
-    fn clone_box(&self) -> Box<dyn ProtocolUpdateBatchGenerator>;
+    fn clone_box(&self) -> Box<dyn ProtocolUpdateGenerator>;
 }
 
 impl<T> ProtocolUpdateBatchGeneratorDynClone for T
 where
-    T: 'static + ProtocolUpdateBatchGenerator + Clone,
+    T: 'static + ProtocolUpdateGenerator + Clone,
 {
-    fn clone_box(&self) -> Box<dyn ProtocolUpdateBatchGenerator> {
+    fn clone_box(&self) -> Box<dyn ProtocolUpdateGenerator> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<dyn ProtocolUpdateBatchGenerator> {
-    fn clone(&self) -> Box<dyn ProtocolUpdateBatchGenerator> {
+impl Clone for Box<dyn ProtocolUpdateGenerator> {
+    fn clone(&self) -> Box<dyn ProtocolUpdateGenerator> {
         self.clone_box()
     }
 }
 
 #[derive(Clone)]
-struct NoOpBatchGenerator;
+struct NoOpGenerator;
 
-impl ProtocolUpdateBatchGenerator for NoOpBatchGenerator {
-    fn generate_batch(
-        &self,
-        _store: &dyn SubstateDatabase,
-        _batch_group_index: usize,
-        _batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        panic!("This should not be called because batch_group_descriptors is empty")
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
+impl ProtocolUpdateGenerator for NoOpGenerator {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator>> {
         vec![]
     }
+}
 
-    fn batch_count(&self, _store: &dyn SubstateDatabase, _batch_group_index: usize) -> usize {
-        0
+/// A simple batch group generator, which knows its batches in advance.
+///
+/// For some protocol updates, you might want to use a custom batch group generator,
+/// which is more lazy, or sources its work from the database.
+pub struct FixedBatchGroupGenerator<'a> {
+    name: &'static str,
+    batches: Vec<Box<dyn ProtocolUpdateBatchGenerator + 'a>>,
+}
+
+impl<'a> FixedBatchGroupGenerator<'a> {
+    pub fn named(name: &'static str) -> Self {
+        if name != name.to_ascii_lowercase().as_str() {
+            panic!("Protocol update batch group names should be in kebab-case for consistency");
+        }
+        Self {
+            name,
+            batches: vec![],
+        }
+    }
+
+    pub fn add_bespoke_batch(mut self, batch: impl ProtocolUpdateBatchGenerator + 'a) -> Self {
+        self.batches.push(Box::new(batch));
+        self
+    }
+
+    pub fn add_batch(
+        self,
+        name: impl Into<String>,
+        generator: impl FnOnce(&dyn SubstateDatabase) -> ProtocolUpdateBatch + 'a,
+    ) -> Self {
+        self.add_bespoke_batch(BatchGenerator::new(name, generator))
+    }
+
+    pub fn build(self) -> Box<dyn ProtocolUpdateBatchGroupGenerator<'a> + 'a> {
+        Box::new(self)
+    }
+}
+
+impl<'a> ProtocolUpdateBatchGroupGenerator<'a> for FixedBatchGroupGenerator<'a> {
+    fn batch_group_name(&self) -> &'static str {
+        self.name
+    }
+
+    fn generate_batches(
+        self: Box<Self>,
+        _store: &dyn SubstateDatabase,
+    ) -> Vec<Box<dyn ProtocolUpdateBatchGenerator + 'a>> {
+        self.batches
+    }
+}
+
+pub struct BatchGenerator<'a> {
+    name: String,
+    generator: Box<dyn FnOnce(&dyn SubstateDatabase) -> ProtocolUpdateBatch + 'a>,
+}
+
+impl<'a> BatchGenerator<'a> {
+    pub fn new(
+        name: impl Into<String>,
+        generator: impl FnOnce(&dyn SubstateDatabase) -> ProtocolUpdateBatch + 'a,
+    ) -> Self {
+        let name = name.into();
+        if name.to_ascii_lowercase() != name {
+            panic!("Protocol update batch names should be in kebab-case for consistency");
+        }
+        Self {
+            name,
+            generator: Box::new(generator),
+        }
+    }
+
+    pub fn build(self) -> Box<dyn ProtocolUpdateBatchGenerator + 'a> {
+        Box::new(self)
+    }
+}
+
+impl<'a> ProtocolUpdateBatchGenerator for BatchGenerator<'a> {
+    fn batch_name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    fn generate_batch(self: Box<Self>, store: &dyn SubstateDatabase) -> ProtocolUpdateBatch {
+        (self.generator)(store)
     }
 }

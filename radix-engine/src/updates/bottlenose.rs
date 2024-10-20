@@ -57,7 +57,7 @@ impl DefaultForNetwork for ProtocolParamsSettings {
 }
 
 impl UpdateSettings for BottlenoseSettings {
-    type BatchGenerator = BottlenoseBatchGenerator;
+    type UpdateGenerator = BottlenoseGenerator;
 
     fn protocol_version() -> ProtocolVersion {
         ProtocolVersion::Bottlenose
@@ -92,56 +92,33 @@ impl UpdateSettings for BottlenoseSettings {
         }
     }
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator {
-        BottlenoseBatchGenerator {
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        BottlenoseGenerator {
             settings: self.clone(),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct BottlenoseBatchGenerator {
+pub struct BottlenoseGenerator {
     settings: BottlenoseSettings,
 }
 
-impl ProtocolUpdateBatchGenerator for BottlenoseBatchGenerator {
-    fn status_tracking_enabled(&self) -> bool {
-        // This was launched without status tracking,
-        // so we can't add it in later to avoid divergence
+impl ProtocolUpdateGenerator for BottlenoseGenerator {
+    fn enable_status_tracking_into_substate_database(&self) -> bool {
+        // This was launched without status tracking, so we can't add it in later to avoid divergence
         false
     }
 
-    fn generate_batch(
-        &self,
-        store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        match (batch_group_index, batch_index) {
-            (0, 0) => {
-                // Just a single batch for Bottlenose, perhaps in future updates we should have separate batches for each update?
-                generate_principal_batch(store, &self.settings)
-            }
-            _ => {
-                panic!("batch index out of range")
-            }
-        }
-    }
-
-    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => 1,
-            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
-        }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec!["Principal".to_string()]
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![FixedBatchGroupGenerator::named("principal")
+            .add_batch("primary", |store| generate_batch(store, &self.settings))
+            .build()]
     }
 }
 
 #[deny(unused_variables)]
-fn generate_principal_batch(
+fn generate_batch(
     store: &dyn SubstateDatabase,
     BottlenoseSettings {
         add_owner_role_getter,

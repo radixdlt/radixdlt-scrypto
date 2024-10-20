@@ -35,7 +35,7 @@ pub struct CuttlefishSettings {
 }
 
 impl UpdateSettings for CuttlefishSettings {
-    type BatchGenerator = CuttlefishBatchGenerator;
+    type UpdateGenerator = CuttlefishGenerator;
 
     fn protocol_version() -> ProtocolVersion {
         ProtocolVersion::Cuttlefish
@@ -72,8 +72,8 @@ impl UpdateSettings for CuttlefishSettings {
         }
     }
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator {
-        Self::BatchGenerator {
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        Self::UpdateGenerator {
             settings: self.clone(),
         }
     }
@@ -97,42 +97,20 @@ impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
 impl UpdateSettingMarker for UpdateNumberOfMinRoundsPerEpochSettings {}
 
 #[derive(Clone)]
-pub struct CuttlefishBatchGenerator {
+pub struct CuttlefishGenerator {
     settings: CuttlefishSettings,
 }
 
-impl ProtocolUpdateBatchGenerator for CuttlefishBatchGenerator {
-    fn generate_batch(
-        &self,
-        store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        match (batch_group_index, batch_index) {
-            // Each batch is committed as one.
-            // To avoid large memory usage, large batches should be split up,
-            // e.g. `(0, 1) => generate_second_batch(..)`
-            (0, 0) => generate_principal_batch(store, &self.settings),
-            _ => {
-                panic!("batch index out of range")
-            }
-        }
-    }
-
-    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => 1,
-            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
-        }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec!["Principal".to_string()]
+impl ProtocolUpdateGenerator for CuttlefishGenerator {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![FixedBatchGroupGenerator::named("principal")
+            .add_batch("primary", |store| generate_batch(store, &self.settings))
+            .build()]
     }
 }
 
 #[deny(unused_variables)]
-fn generate_principal_batch(
+fn generate_batch(
     store: &dyn SubstateDatabase,
     CuttlefishSettings {
         system_logic_update,
@@ -145,56 +123,64 @@ fn generate_principal_batch(
         vm_boot_to_enable_crypto_utils_v2,
     }: &CuttlefishSettings,
 ) -> ProtocolUpdateBatch {
-    let mut transactions = vec![];
+    let mut batch = ProtocolUpdateBatch::empty();
+
     if let UpdateSetting::Enabled(NoSettings) = &system_logic_update {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-protocol-system-logic-updates",
             generate_system_logic_v2_updates(store),
-        ));
+        );
     }
-    if let UpdateSetting::Enabled(_settings) = &kernel_version_update {
-        transactions.push(ProtocolUpdateTransaction::flash(
+
+    if let UpdateSetting::Enabled(NoSettings) = &kernel_version_update {
+        batch.mut_add_flash(
             "cuttlefish-protocol-kernel-version-update",
             generate_always_visible_global_nodes_updates(store),
-        ));
+        );
     }
+
     if let UpdateSetting::Enabled(NoSettings) = &transaction_validation_update {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-transaction-validation-updates",
             generate_cuttlefish_transaction_validation_updates(),
-        ));
+        );
     }
+
     if let UpdateSetting::Enabled(NoSettings) = &account_getter_methods {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-account-getter-methods",
             generate_cuttlefish_account_getters_extension_state_updates(store),
-        ));
+        );
     }
+
     if let UpdateSetting::Enabled(NoSettings) = &update_metadata {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-update-metadata",
             generate_cuttlefish_metadata_fix(store),
-        ));
+        );
     }
     if let UpdateSetting::Enabled(settings) = &update_number_of_min_rounds_per_epoch {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-update-number-of-min-rounds-per-epoch",
             generate_cuttlefish_update_min_rounds_per_epoch(store, *settings),
-        ));
+        );
     }
+
     if let UpdateSetting::Enabled(NoSettings) = &update_identity_to_not_create_royalty_module {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-update-identity-to-not-create-royalty-module",
             generate_cuttlefish_update_identity_to_not_create_royalty_module(store),
-        ));
+        );
     }
+
     if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_crypto_utils_v2 {
-        transactions.push(ProtocolUpdateTransaction::flash(
+        batch.mut_add_flash(
             "cuttlefish-vm-boot-to-enable-crypto-utils-v2",
             generate_vm_boot_to_enable_crypto_utils_v2(),
-        ));
+        );
     }
-    ProtocolUpdateBatch { transactions }
+
+    batch
 }
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {

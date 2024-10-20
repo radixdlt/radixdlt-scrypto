@@ -11,7 +11,7 @@ use super::*;
 pub struct ProtocolUpdateExecutor {
     pub network_definition: NetworkDefinition,
     pub protocol_version: ProtocolVersion,
-    pub batch_generator: Box<dyn ProtocolUpdateBatchGenerator>,
+    pub generator: Box<dyn ProtocolUpdateGenerator>,
     pub start_at_batch_group_index: usize,
     pub start_at_batch_index_in_first_group: usize,
 }
@@ -19,11 +19,11 @@ pub struct ProtocolUpdateExecutor {
 impl ProtocolUpdateExecutor {
     pub fn new_for_version(protocol_version: ProtocolVersion, settings: &ProtocolSettings) -> Self {
         let network_definition = settings.network_definition.clone();
-        let batch_generator = settings.resolve_batch_generator_for_update(&protocol_version);
+        let generator = settings.resolve_generator_for_update(&protocol_version);
         Self {
             network_definition,
             protocol_version,
-            batch_generator,
+            generator,
             start_at_batch_group_index: 0,
             start_at_batch_index_in_first_group: 0,
         }
@@ -35,11 +35,11 @@ impl ProtocolUpdateExecutor {
         from_inclusive: (usize, usize),
     ) -> Self {
         let network_definition = settings.network_definition.clone();
-        let batch_generator = settings.resolve_batch_generator_for_update(&protocol_version);
+        let batch_generator = settings.resolve_generator_for_update(&protocol_version);
         Self {
             network_definition,
             protocol_version,
-            batch_generator,
+            generator: batch_generator,
             start_at_batch_group_index: from_inclusive.0,
             start_at_batch_index_in_first_group: from_inclusive.1,
         }
@@ -50,11 +50,11 @@ impl ProtocolUpdateExecutor {
         update_settings: US,
     ) -> Self {
         let protocol_version = US::protocol_version();
-        let batch_generator = Box::new(update_settings.create_batch_generator());
+        let batch_generator = Box::new(update_settings.create_generator());
         Self {
             network_definition,
             protocol_version,
-            batch_generator,
+            generator: batch_generator,
             start_at_batch_group_index: 0,
             start_at_batch_index_in_first_group: 0,
         }
@@ -74,26 +74,29 @@ impl ProtocolUpdateExecutor {
         hooks: &mut H,
         vm_modules: &M,
     ) {
-        let add_status_update = self.batch_generator.status_tracking_enabled();
+        let add_status_update = self
+            .generator
+            .enable_status_tracking_into_substate_database();
 
-        for (batch_group_index, batch_group_name) in self
-            .batch_generator
-            .batch_group_descriptors()
+        let batch_groups = self.generator.batch_groups();
+
+        for (batch_group_index, batch_group_generator) in batch_groups
             .into_iter()
-            .enumerate()
             .skip(self.start_at_batch_group_index)
+            .enumerate()
         {
+            let batch_group_name = batch_group_generator.batch_group_name();
             let start_at_batch = if batch_group_index == self.start_at_batch_group_index {
                 self.start_at_batch_index_in_first_group
             } else {
                 0
             };
-            for batch_index in
-                start_at_batch..self.batch_generator.batch_count(&*store, batch_group_index)
+            let batches = batch_group_generator.generate_batches(&*store);
+            for (batch_index, batch_generator) in
+                batches.into_iter().skip(start_at_batch).enumerate()
             {
-                let batch =
-                    self.batch_generator
-                        .generate_batch(store, batch_group_index, batch_index);
+                let batch_name = batch_generator.batch_name().to_string();
+                let batch = batch_generator.generate_batch(store);
                 for (transaction_index, transaction) in batch.transactions.into_iter().enumerate() {
                     let receipt = match &transaction {
                         ProtocolUpdateTransaction::FlashTransactionV1(flash) => {
@@ -155,8 +158,9 @@ impl ProtocolUpdateExecutor {
                         hooks.on_transaction_executed(OnProtocolTransactionExecuted {
                             protocol_version: self.protocol_version,
                             batch_group_index,
-                            batch_group_name: &batch_group_name,
+                            batch_group_name,
                             batch_index,
+                            batch_name: &batch_name,
                             transaction_index,
                             transaction: &transaction,
                             receipt: &receipt,
@@ -166,8 +170,8 @@ impl ProtocolUpdateExecutor {
                 }
 
                 if add_status_update {
-                    // In the node's executor, this will likely need to be in a separate transaction,
-                    // so it gets tracked properly by the merkle tree etc
+                    // A scrypto-only executor feature.
+                    // In the node's executor, this state is tracked in the `LedgerProofOrigin`.
                     store.update_substate(
                         TRANSACTION_TRACKER,
                         PROTOCOL_UPDATE_STATUS_PARTITION,
@@ -185,12 +189,14 @@ impl ProtocolUpdateExecutor {
                         ),
                     );
                 }
+
                 if H::IS_ENABLED {
                     hooks.on_transaction_batch_committed(OnProtocolTransactionBatchCommitted {
                         protocol_version: self.protocol_version,
                         batch_group_index,
-                        batch_group_name: &batch_group_name,
+                        batch_group_name,
                         batch_index,
+                        batch_name: &batch_name,
                         status_update_committed: add_status_update,
                         resultant_store: store,
                     });
@@ -198,8 +204,8 @@ impl ProtocolUpdateExecutor {
             }
         }
         if add_status_update {
-            // In the node's executor, this will likely need to be in a separate transaction,
-            // so it gets tracked properly by the merkle tree etc
+            // A scrypto-only executor feature.
+            // In the node's executor, this state is tracked in the `LedgerProofOrigin`.
             store.update_substate(
                 TRANSACTION_TRACKER,
                 PROTOCOL_UPDATE_STATUS_PARTITION,
@@ -245,6 +251,7 @@ pub struct OnProtocolTransactionExecuted<'a> {
     pub batch_group_index: usize,
     pub batch_group_name: &'a str,
     pub batch_index: usize,
+    pub batch_name: &'a str,
     pub transaction_index: usize,
     pub transaction: &'a ProtocolUpdateTransaction,
     pub receipt: &'a TransactionReceipt,
@@ -256,6 +263,7 @@ pub struct OnProtocolTransactionBatchCommitted<'a> {
     pub batch_group_index: usize,
     pub batch_group_name: &'a str,
     pub batch_index: usize,
+    pub batch_name: &'a str,
     pub status_update_committed: bool,
     pub resultant_store: &'a mut dyn SubstateDatabase,
 }
@@ -285,16 +293,16 @@ pub struct ProtocolSettings {
 }
 
 impl ProtocolSettings {
-    pub fn resolve_batch_generator_for_update(
+    pub fn resolve_generator_for_update(
         &self,
         protocol_version: &ProtocolVersion,
-    ) -> Box<dyn ProtocolUpdateBatchGenerator> {
+    ) -> Box<dyn ProtocolUpdateGenerator> {
         match protocol_version {
-            ProtocolVersion::Unbootstrapped => Box::new(NoOpBatchGenerator),
-            ProtocolVersion::Babylon => Box::new(self.babylon.create_batch_generator()),
-            ProtocolVersion::Anemone => Box::new(self.anemone.create_batch_generator()),
-            ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_batch_generator()),
-            ProtocolVersion::Cuttlefish => Box::new(self.cuttlefish.create_batch_generator()),
+            ProtocolVersion::Unbootstrapped => Box::new(NoOpGenerator),
+            ProtocolVersion::Babylon => Box::new(self.babylon.create_generator()),
+            ProtocolVersion::Anemone => Box::new(self.anemone.create_generator()),
+            ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_generator()),
+            ProtocolVersion::Cuttlefish => Box::new(self.cuttlefish.create_generator()),
         }
     }
 }

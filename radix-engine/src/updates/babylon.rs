@@ -208,7 +208,7 @@ impl BabylonSettings {
 }
 
 impl UpdateSettings for BabylonSettings {
-    type BatchGenerator = BabylonBatchGenerator;
+    type UpdateGenerator = BabylonGenerator;
 
     fn protocol_version() -> ProtocolVersion {
         ProtocolVersion::Babylon
@@ -222,84 +222,69 @@ impl UpdateSettings for BabylonSettings {
         Self::test_default()
     }
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator {
-        Self::BatchGenerator {
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        Self::UpdateGenerator {
             settings: self.clone(),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct BabylonBatchGenerator {
+pub struct BabylonGenerator {
     settings: BabylonSettings,
 }
 
-impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
-    fn status_tracking_enabled(&self) -> bool {
-        // This was launched without status tracking,
-        // so we can't add it in later to avoid divergence
+impl ProtocolUpdateGenerator for BabylonGenerator {
+    fn enable_status_tracking_into_substate_database(&self) -> bool {
+        // This was launched without status tracking, so we can't add it in later to avoid divergence
         false
     }
 
-    fn generate_batch(
-        &self,
-        _store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        match (batch_group_index, batch_index) {
-            (0, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::flash(
-                "flash",
-                create_system_bootstrap_flash_state_updates(),
-            )),
-            (0, 1) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
-                "bootstrap",
-                create_system_bootstrap_transaction(
-                    self.settings.genesis_epoch,
-                    self.settings.consensus_manager_config.clone(),
-                    self.settings.initial_time_ms,
-                    self.settings.initial_current_leader,
-                    self.settings.faucet_supply,
-                ),
-            )),
-            (1, batch_index) => {
-                let chunk = self
-                    .settings
-                    .genesis_data_chunks
-                    .get(batch_index)
-                    .unwrap()
-                    .clone();
-                let chunk_number = batch_index;
-                let transaction = create_genesis_data_ingestion_transaction(chunk, chunk_number);
-                ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
-                    &format!("chunk-{chunk_number:04}"),
-                    transaction,
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        let bootstrap = FixedBatchGroupGenerator::named("bootstrap")
+            .add_batch("flash", |_| {
+                ProtocolUpdateBatch::single(ProtocolUpdateTransaction::flash(
+                    "flash",
+                    create_system_bootstrap_flash_state_updates(),
                 ))
-            }
-            (2, 0) => ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
+            })
+            .add_batch("bootstrap", |_| {
+                ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
+                    "bootstrap",
+                    create_system_bootstrap_transaction(
+                        self.settings.genesis_epoch,
+                        self.settings.consensus_manager_config.clone(),
+                        self.settings.initial_time_ms,
+                        self.settings.initial_current_leader,
+                        self.settings.faucet_supply,
+                    ),
+                ))
+            });
+
+        let mut chunks = FixedBatchGroupGenerator::named("chunks");
+        for (chunk_index, chunk) in self.settings.genesis_data_chunks.iter().enumerate() {
+            let chunk_name = match chunk {
+                GenesisDataChunk::Validators { .. } => "validators",
+                GenesisDataChunk::Stakes { .. } => "stakes",
+                GenesisDataChunk::Resources { .. } => "resources",
+                GenesisDataChunk::ResourceBalances { .. } => "resource-balances",
+                GenesisDataChunk::XrdBalances { .. } => "xrd-balances",
+            };
+            chunks = chunks.add_batch(chunk_name, move |_| {
+                ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
+                    &format!("chunk-{chunk_index:04}"),
+                    create_genesis_data_ingestion_transaction(chunk.clone(), chunk_index),
+                ))
+            });
+        }
+
+        let wrap_up = FixedBatchGroupGenerator::named("wrap-up").add_batch("wrap-up", |_| {
+            ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
                 "wrap-up",
                 create_genesis_wrap_up_transaction(),
-            )),
-            _ => {
-                panic!("batch index out of range")
-            }
-        }
-    }
+            ))
+        });
 
-    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => 2,
-            1 => self.settings.genesis_data_chunks.len(),
-            2 => 1,
-            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
-        }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec![
-            "Bootstrap".to_string(),
-            "Chunks".to_string(),
-            "WrapUp".to_string(),
-        ]
+        vec![bootstrap.build(), chunks.build(), wrap_up.build()]
     }
 }
