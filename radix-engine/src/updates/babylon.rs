@@ -1,4 +1,5 @@
 use super::*;
+use crate::internal_prelude::*;
 use crate::system::bootstrap::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -229,7 +230,6 @@ impl UpdateSettings for BabylonSettings {
     }
 }
 
-#[derive(Clone)]
 pub struct BabylonGenerator {
     settings: BabylonSettings,
 }

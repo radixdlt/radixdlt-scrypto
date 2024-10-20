@@ -1,6 +1,7 @@
 use super::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel::KernelBoot;
 use crate::object_modules::metadata::*;
 use crate::system::system_callback::*;
@@ -94,9 +95,12 @@ impl Default for UpdateNumberOfMinRoundsPerEpochSettings {
     }
 }
 
-impl UpdateSettingMarker for UpdateNumberOfMinRoundsPerEpochSettings {}
+impl UpdateSettingContent for UpdateNumberOfMinRoundsPerEpochSettings {
+    fn default_setting(_: &NetworkDefinition) -> Self {
+        Self::default()
+    }
+}
 
-#[derive(Clone)]
 pub struct CuttlefishGenerator {
     settings: CuttlefishSettings,
 }

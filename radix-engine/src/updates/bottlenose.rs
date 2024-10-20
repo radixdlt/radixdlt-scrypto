@@ -4,6 +4,7 @@ use crate::blueprints::access_controller::v2::AccessControllerV2NativePackage;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::*;
@@ -46,10 +47,8 @@ pub struct ProtocolParamsSettings {
     pub network_definition: NetworkDefinition,
 }
 
-impl UpdateSettingMarker for ProtocolParamsSettings {}
-
-impl DefaultForNetwork for ProtocolParamsSettings {
-    fn default_for_network(network_definition: &NetworkDefinition) -> Self {
+impl UpdateSettingContent for ProtocolParamsSettings {
+    fn default_setting(network_definition: &NetworkDefinition) -> Self {
         Self {
             network_definition: network_definition.clone(),
         }
@@ -99,7 +98,6 @@ impl UpdateSettings for BottlenoseSettings {
     }
 }
 
-#[derive(Clone)]
 pub struct BottlenoseGenerator {
     settings: BottlenoseSettings,
 }
@@ -132,19 +130,19 @@ fn generate_batch(
     }: &BottlenoseSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
-    if let UpdateSetting::Enabled(_) = &add_owner_role_getter {
+    if let UpdateSetting::Enabled(NoSettings) = &add_owner_role_getter {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-owner-role-getter",
             generate_owner_role_getter_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &add_locker_package {
+    if let UpdateSetting::Enabled(NoSettings) = &add_locker_package {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-locker-package",
             generate_locker_package_state_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &fix_account_try_deposit_or_refund_behaviour {
+    if let UpdateSetting::Enabled(NoSettings) = &fix_account_try_deposit_or_refund_behaviour {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-account-try-deposit-or-refund",
             generate_account_bottlenose_extension_state_updates(store),
@@ -156,25 +154,25 @@ fn generate_batch(
             generate_protocol_params_to_state_updates(settings.network_definition.clone()),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &update_access_controller_to_add_xrd_fee_vault {
+    if let UpdateSetting::Enabled(NoSettings) = &update_access_controller_to_add_xrd_fee_vault {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-access-controller-xrd-fee-vault",
             generate_access_controller_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &impose_a_limit_on_transaction_processor_blobs {
+    if let UpdateSetting::Enabled(NoSettings) = &impose_a_limit_on_transaction_processor_blobs {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-transaction-processor-blob-limits",
             generate_transaction_processor_blob_limits_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &ref_cost_checks {
+    if let UpdateSetting::Enabled(NoSettings) = &ref_cost_checks {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-add-deferred-reference-check-cost",
             generate_ref_check_costs_state_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &restrict_reserved_role_key {
+    if let UpdateSetting::Enabled(NoSettings) = &restrict_reserved_role_key {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-restrict-role-assignment-reserved-role-key",
             generate_restrict_reserved_role_key_state_updates(store),

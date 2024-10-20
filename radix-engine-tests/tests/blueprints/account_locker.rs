@@ -3055,7 +3055,7 @@ pub impl DefaultLedgerSimulator {
         execution_config.system_overrides = Some(SystemOverrides {
             disable_auth,
             disable_costing,
-            ..SystemOverrides::default_for_network(&NetworkDefinition::mainnet())
+            ..SystemOverrides::with_network(NetworkDefinition::mainnet())
         });
 
         let nonce = self.next_transaction_nonce();

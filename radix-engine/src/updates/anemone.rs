@@ -3,6 +3,7 @@ use crate::blueprints::consensus_manager::*;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
+use crate::internal_prelude::*;
 use crate::system::system_db_reader::*;
 use crate::vm::*;
 use sbor::{generate_full_schema, TypeAggregator};
@@ -56,7 +57,6 @@ impl UpdateSettings for AnemoneSettings {
     }
 }
 
-#[derive(Clone)]
 pub struct AnemoneGenerator {
     settings: AnemoneSettings,
 }
@@ -86,28 +86,28 @@ fn generate_batch(
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
 
-    if let UpdateSetting::Enabled(_) = &validator_fee_fix {
+    if let UpdateSetting::Enabled(NoSettings) = &validator_fee_fix {
         batch.mut_add_flash(
             "anemone-validator-fee-fix",
             generate_validator_creation_fee_fix_state_updates(store),
         );
     }
 
-    if let UpdateSetting::Enabled(_) = &seconds_precision {
+    if let UpdateSetting::Enabled(NoSettings) = &seconds_precision {
         batch.mut_add_flash(
             "anemone-seconds-precision",
             generate_seconds_precision_timestamp_state_updates(store),
         );
     }
 
-    if let UpdateSetting::Enabled(_) = &vm_boot_to_enable_bls128_and_keccak256 {
+    if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_bls128_and_keccak256 {
         batch.mut_add_flash(
             "anemone-vm-boot",
             generate_vm_boot_for_bls128_and_keccak256_state_updates(),
         );
     }
 
-    if let UpdateSetting::Enabled(_) = &pools_update {
+    if let UpdateSetting::Enabled(NoSettings) = &pools_update {
         batch.mut_add_flash(
             "anemone-pools",
             generate_pool_math_precision_fix_state_updates(store),
