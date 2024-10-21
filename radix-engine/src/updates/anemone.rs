@@ -11,7 +11,7 @@ use sbor::{generate_full_schema, TypeAggregator};
 #[derive(Clone, ScryptoSbor)]
 pub struct AnemoneSettings {
     /// Changes the cost associated with validator creation.
-    pub validator_fee_fix: UpdateSetting<NoSettings>,
+    pub validator_fee_fix: UpdateSetting<AnemoneValidatorCreationFee>,
 
     /// Exposes second-precision timestamp.
     pub seconds_precision: UpdateSetting<NoSettings>,
@@ -57,6 +57,21 @@ impl UpdateSettings for AnemoneSettings {
     }
 }
 
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct AnemoneValidatorCreationFee {
+    usd_fee: Decimal,
+}
+
+impl UpdateSettingContent for AnemoneValidatorCreationFee {
+    fn default_setting(network_definition: &NetworkDefinition) -> Self {
+        let usd_fee = match network_definition.id {
+            241 => dec!(1), // Node integration test network
+            _ => dec!(100), // All others including mainnet
+        };
+        Self { usd_fee }
+    }
+}
+
 pub struct AnemoneGenerator {
     settings: AnemoneSettings,
 }
@@ -86,10 +101,10 @@ fn generate_batch(
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
 
-    if let UpdateSetting::Enabled(NoSettings) = &validator_fee_fix {
+    if let UpdateSetting::Enabled(creation_fee) = &validator_fee_fix {
         batch.mut_add_flash(
             "anemone-validator-fee-fix",
-            generate_validator_creation_fee_fix_state_updates(store),
+            generate_validator_creation_fee_fix_state_updates(store, creation_fee),
         );
     }
 
@@ -119,6 +134,7 @@ fn generate_batch(
 
 fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
+    validator_creation_fee: &AnemoneValidatorCreationFee,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_node_id = CONSENSUS_MANAGER.into_node_id();
@@ -132,7 +148,7 @@ fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase + ?Size
         .unwrap();
 
     let mut config = versioned_config.fully_update_and_into_latest_version();
-    config.config.validator_creation_usd_cost = Decimal::from(100);
+    config.config.validator_creation_usd_cost = validator_creation_fee.usd_fee;
 
     let updated_substate = config.into_locked_substate();
 
