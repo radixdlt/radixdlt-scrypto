@@ -91,7 +91,9 @@ fn protocol_updates_can_be_resumed_between_batches_from_cuttlefish() {
         ProtocolUpdateStatus::InProgress {
             latest_commit: LatestProtocolUpdateCommitBatch {
                 batch_group_index: stop_after_batch.1,
+                batch_group_name: "principal".to_string(),
                 batch_index: stop_after_batch.2,
+                batch_name: "primary".to_string(),
             },
         }
     );

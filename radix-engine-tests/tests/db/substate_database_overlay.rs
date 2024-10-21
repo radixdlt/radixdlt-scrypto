@@ -508,7 +508,9 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
                 status_update_committed,
                 protocol_version,
                 batch_group_index,
+                batch_group_name,
                 batch_index,
+                batch_name,
                 ..
             } = event;
             if status_update_committed {
@@ -525,7 +527,9 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
                                 update_status: ProtocolUpdateStatus::InProgress {
                                     latest_commit: LatestProtocolUpdateCommitBatch {
                                         batch_group_index,
+                                        batch_group_name: batch_group_name.to_string(),
                                         batch_index,
+                                        batch_name: batch_name.to_string(),
                                     },
                                 },
                             },
