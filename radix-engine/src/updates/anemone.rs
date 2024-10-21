@@ -59,7 +59,7 @@ impl UpdateSettings for AnemoneSettings {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct AnemoneValidatorCreationFee {
-    usd_fee: Decimal,
+    pub usd_fee: Decimal,
 }
 
 impl UpdateSettingContent for AnemoneValidatorCreationFee {
