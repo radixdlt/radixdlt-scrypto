@@ -1659,13 +1659,13 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> Result<[u8; 2], RuntimeError
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?;
 
-    let stake_100k_whole_units = Decimal::from(10)
+    let stake_100k_whole_units = dec!(10)
         .checked_powi(Decimal::SCALE.into())
         .and_then(|power| stake_100k.checked_div(power))
         .ok_or(RuntimeError::ApplicationError(
             ApplicationError::ValidatorError(ValidatorError::UnexpectedDecimalComputationError),
         ))?
-        .0;
+        .attos();
 
     let stake_u16 = if stake_100k_whole_units > I192::from(u16::MAX) {
         u16::MAX

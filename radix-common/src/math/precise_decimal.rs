@@ -27,15 +27,20 @@ use crate::*;
 /// The finite set of values are of the form `m / 10^36`, where `m` is
 /// an integer such that `-2^(256 - 1) <= m < 2^(256 - 1)`.
 ///
+/// ```text
 /// Fractional part: ~120 bits / 36 digits
 /// Integer part   : 136 bits / 41 digits
 /// Max            :  57896044618658097711785492504343953926634.992332820282019728792003956564819967
 /// Min            : -57896044618658097711785492504343953926634.992332820282019728792003956564819968
+/// ```
 ///
-/// Unless otherwise specified, all operations will panic if underflow/overflow.
+/// Unless otherwise specified, all operations will panic if there is underflow/overflow.
+///
+/// To create a PreciseDecimal with a certain number of precise `10^(-36)` subunits,
+/// use [`PreciseDecimal::from_precise_subunits`].
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PreciseDecimal(pub InnerPreciseDecimal);
+pub struct PreciseDecimal(InnerPreciseDecimal);
 
 pub type InnerPreciseDecimal = I256;
 
@@ -67,6 +72,10 @@ impl PreciseDecimal {
 
     pub const ZERO: Self = Self(I256::ZERO);
 
+    pub const ONE_PRECISE_SUBUNIT: Self = Self(I256::ONE);
+    // Possibly we should have `ONE_SUBUNIT == ONE_ATTO`, but I don't want to confuse
+    // users who may think `ONE_SUBUNIT == ONE_PRECISE_SUBUNIT`.
+    pub const ONE_ATTO: Self = Self(I256::from_digits([1000000000000000000, 0, 0, 0]));
     pub const ONE_HUNDREDTH: Self = Self(I256::from_digits([
         4003012203950112768,
         542101086242752,
@@ -98,27 +107,37 @@ impl PreciseDecimal {
         0,
     ]));
 
-    /// Returns `PreciseDecimal` of 0.
-    pub fn zero() -> Self {
+    /// Constructs a [`PreciseDecimal`] from its underlying `10^(-36)` subunits.
+    pub const fn from_precise_subunits(attos: I256) -> Self {
+        Self(attos)
+    }
+
+    /// Returns the underlying `10^(-36)` subunits of the [`PreciseDecimal`].
+    pub const fn precise_subunits(self) -> I256 {
+        self.0
+    }
+
+    /// Returns a [`PreciseDecimal`] with value 0.
+    pub const fn zero() -> Self {
         Self::ZERO
     }
 
-    /// Returns `PreciseDecimal` of 1.
-    pub fn one() -> Self {
+    /// Returns a [`PreciseDecimal`] with value 1.
+    pub const fn one() -> Self {
         Self::ONE
     }
 
-    /// Whether this decimal is zero.
+    /// Whether the value is zero.
     pub fn is_zero(&self) -> bool {
         self.0 == I256::zero()
     }
 
-    /// Whether this decimal is positive.
+    /// Whether the value is positive.
     pub fn is_positive(&self) -> bool {
         self.0 > I256::zero()
     }
 
-    /// Whether this decimal is negative.
+    /// Whether the value is negative.
     pub fn is_negative(&self) -> bool {
         self.0 < I256::zero()
     }
@@ -912,7 +931,7 @@ impl fmt::Display for ParsePreciseDecimalError {
 
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(I256::try_from(val.0).unwrap() * I256::TEN.pow(Self::SCALE - Decimal::SCALE))
+        Self(I256::try_from(val.attos()).unwrap() * I256::TEN.pow(Self::SCALE - Decimal::SCALE))
     }
 }
 
@@ -931,7 +950,7 @@ impl CheckedTruncate<Decimal> for PreciseDecimal {
             .0
             .checked_div(I256::TEN.pow(Self::SCALE - Decimal::SCALE))?;
 
-        Some(Decimal(a_256.try_into().ok()?))
+        Some(Decimal::from_attos(a_256.try_into().ok()?))
     }
 }
 
@@ -1089,6 +1108,11 @@ mod tests {
         assert_eq!(test_pdec!("10"), PreciseDecimal::TEN);
         assert_eq!(test_pdec!("100"), PreciseDecimal::ONE_HUNDRED);
         assert_eq!(test_pdec!("0.01"), PreciseDecimal::ONE_HUNDREDTH);
+        assert_eq!(test_pdec!("0.000000000000000001"), PreciseDecimal::ONE_ATTO);
+        assert_eq!(
+            test_pdec!("0.000000000000000000000000000000000001"),
+            PreciseDecimal::ONE_PRECISE_SUBUNIT
+        );
 
         assert_eq!("0", PreciseDecimal::ZERO.to_string());
         assert_eq!("1", PreciseDecimal::ONE.to_string());
@@ -1096,6 +1120,11 @@ mod tests {
         assert_eq!("10", PreciseDecimal::TEN.to_string());
         assert_eq!("100", PreciseDecimal::ONE_HUNDRED.to_string());
         assert_eq!("0.01", PreciseDecimal::ONE_HUNDREDTH.to_string());
+        assert_eq!("0.000000000000000001", PreciseDecimal::ONE_ATTO.to_string());
+        assert_eq!(
+            "0.000000000000000000000000000000000001",
+            PreciseDecimal::ONE_PRECISE_SUBUNIT.to_string()
+        );
     }
 
     #[test]

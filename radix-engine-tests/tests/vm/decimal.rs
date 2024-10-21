@@ -85,7 +85,7 @@ fn test_dec_macro_valid() {
     assert_eq!(X13, Decimal::MIN);
 
     const X14: Decimal = dec!("0.000000000000000048");
-    assert_eq!(X14, Decimal(I192::from(48)));
+    assert_eq!(X14, Decimal::from_attos(I192::from(48)));
 }
 
 #[test]
@@ -147,6 +147,11 @@ fn test_pdec_macro_valid() {
     const X13: PreciseDecimal =
         pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
     assert_eq!(X13, PreciseDecimal::MIN);
+
+    {
+        let x = pdec!("0.000000000000000001");
+        assert_eq!(x, PreciseDecimal::ONE_ATTO);
+    }
 }
 #[test]
 fn test_dec_macro_in_scrypto() {

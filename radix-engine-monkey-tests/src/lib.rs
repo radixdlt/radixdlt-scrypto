@@ -66,7 +66,7 @@ impl SystemTestFuzzer {
                 1 => Decimal::ONE,
                 2 => Decimal::MAX,
                 3 => Decimal::MIN,
-                _ => Decimal(I192::ONE),
+                _ => Decimal::ONE_ATTO,
             },
             1 => {
                 let amount = self.rng.gen_range(0u64..u64::MAX);
@@ -80,12 +80,12 @@ impl SystemTestFuzzer {
                 let mut bytes = [0u8; 24];
                 let (start, _end) = bytes.split_at_mut(8);
                 self.rng.fill_bytes(start);
-                Decimal(I192::from_le_bytes(&bytes))
+                Decimal::from_attos(I192::from_le_bytes(&bytes))
             }
             _ => {
                 let mut bytes = [0u8; 24];
                 self.rng.fill_bytes(&mut bytes);
-                Decimal(I192::from_le_bytes(&bytes))
+                Decimal::from_attos(I192::from_le_bytes(&bytes))
             }
         }
     }

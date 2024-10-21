@@ -171,7 +171,7 @@ fn calling_get_redemption_value_on_staked_validator_with_smallest_amount_should_
             .call_method(
                 validator_address,
                 VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
-                manifest_args!(Decimal(I192::ONE)),
+                manifest_args!(Decimal::from_attos(I192::ONE)),
             )
             .build(),
         vec![],

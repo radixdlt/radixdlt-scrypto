@@ -10,7 +10,7 @@ macro_rules! atto {
     (
         $($tokens: tt)*
     ) => {
-        Decimal(I192::from($($tokens)*))
+        Decimal::from_attos(I192::from($($tokens)*))
     };
 }
 

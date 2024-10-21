@@ -155,14 +155,14 @@ pub fn to_decimal(input: TokenStream) -> Result<TokenStream> {
     let expr = parse::<Expr>(input)?;
 
     let decimal = get_decimal_from_expr(&expr, false)?;
-    let int = decimal.0;
+    let int = decimal.attos();
     let arr = int.to_digits();
     let i0 = arr[0];
     let i1 = arr[1];
     let i2 = arr[2];
 
     Ok(TokenStream::from(quote! {
-        radix_common::math::Decimal(radix_common::math::I192::from_digits([#i0, #i1, #i2]))
+        radix_common::math::Decimal::from_attos(radix_common::math::I192::from_digits([#i0, #i1, #i2]))
     }))
 }
 
@@ -171,7 +171,7 @@ pub fn to_precise_decimal(input: TokenStream) -> Result<TokenStream> {
     let expr = parse::<Expr>(input)?;
 
     let decimal = get_precise_decimal_from_expr(&expr, false)?;
-    let int = decimal.0;
+    let int = decimal.precise_subunits();
     let arr = int.to_digits();
     let i0 = arr[0];
     let i1 = arr[1];
@@ -179,6 +179,6 @@ pub fn to_precise_decimal(input: TokenStream) -> Result<TokenStream> {
     let i3 = arr[3];
 
     Ok(TokenStream::from(quote! {
-        radix_common::math::PreciseDecimal(radix_common::math::I256::from_digits([#i0, #i1, #i2, #i3]))
+        radix_common::math::PreciseDecimal::from_precise_subunits(radix_common::math::I256::from_digits([#i0, #i1, #i2, #i3]))
     }))
 }
