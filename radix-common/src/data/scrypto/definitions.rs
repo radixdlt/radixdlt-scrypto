@@ -7,7 +7,9 @@ pub use crate::constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
+#[allow(deprecated)]
 pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
+pub type ScryptoUntypedTraverser<'a> = UntypedTraverser<'a, ScryptoCustomTraversal>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 // ScryptoRawValue and friends are defined in custom_payload_wrappers.rs
