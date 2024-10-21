@@ -103,6 +103,10 @@ impl From<UserTransaction> for LedgerTransaction {
 }
 
 impl UserTransaction {
+    pub fn from_raw(raw: &RawNotarizedTransaction) -> Result<Self, DecodeError> {
+        manifest_decode(raw.as_slice())
+    }
+
     pub fn prepare(
         self,
         settings: &PreparationSettings,
