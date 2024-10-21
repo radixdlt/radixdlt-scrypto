@@ -4,6 +4,7 @@ use crate::blueprints::access_controller::v2::AccessControllerV2NativePackage;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::*;
@@ -46,10 +47,8 @@ pub struct ProtocolParamsSettings {
     pub network_definition: NetworkDefinition,
 }
 
-impl UpdateSettingMarker for ProtocolParamsSettings {}
-
-impl DefaultForNetwork for ProtocolParamsSettings {
-    fn default_for_network(network_definition: &NetworkDefinition) -> Self {
+impl UpdateSettingContent for ProtocolParamsSettings {
+    fn default_setting(network_definition: &NetworkDefinition) -> Self {
         Self {
             network_definition: network_definition.clone(),
         }
@@ -57,7 +56,7 @@ impl DefaultForNetwork for ProtocolParamsSettings {
 }
 
 impl UpdateSettings for BottlenoseSettings {
-    type BatchGenerator = BottlenoseBatchGenerator;
+    type UpdateGenerator = BottlenoseGenerator;
 
     fn protocol_version() -> ProtocolVersion {
         ProtocolVersion::Bottlenose
@@ -92,56 +91,32 @@ impl UpdateSettings for BottlenoseSettings {
         }
     }
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator {
-        BottlenoseBatchGenerator {
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        BottlenoseGenerator {
             settings: self.clone(),
         }
     }
 }
 
-#[derive(Clone)]
-pub struct BottlenoseBatchGenerator {
+pub struct BottlenoseGenerator {
     settings: BottlenoseSettings,
 }
 
-impl ProtocolUpdateBatchGenerator for BottlenoseBatchGenerator {
-    fn status_tracking_enabled(&self) -> bool {
-        // This was launched without status tracking,
-        // so we can't add it in later to avoid divergence
+impl ProtocolUpdateGenerator for BottlenoseGenerator {
+    fn enable_status_tracking_into_substate_database(&self) -> bool {
+        // This was launched without status tracking, so we can't add it in later to avoid divergence
         false
     }
 
-    fn generate_batch(
-        &self,
-        store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        match (batch_group_index, batch_index) {
-            (0, 0) => {
-                // Just a single batch for Bottlenose, perhaps in future updates we should have separate batches for each update?
-                generate_principal_batch(store, &self.settings)
-            }
-            _ => {
-                panic!("batch index out of range")
-            }
-        }
-    }
-
-    fn batch_count(&self, _store: &dyn SubstateDatabase, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => 1,
-            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
-        }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec!["Principal".to_string()]
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![FixedBatchGroupGenerator::named("principal")
+            .add_batch("primary", |store| generate_batch(store, &self.settings))
+            .build()]
     }
 }
 
 #[deny(unused_variables)]
-fn generate_principal_batch(
+fn generate_batch(
     store: &dyn SubstateDatabase,
     BottlenoseSettings {
         add_owner_role_getter,
@@ -155,19 +130,19 @@ fn generate_principal_batch(
     }: &BottlenoseSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
-    if let UpdateSetting::Enabled(_) = &add_owner_role_getter {
+    if let UpdateSetting::Enabled(NoSettings) = &add_owner_role_getter {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-owner-role-getter",
             generate_owner_role_getter_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &add_locker_package {
+    if let UpdateSetting::Enabled(NoSettings) = &add_locker_package {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-locker-package",
             generate_locker_package_state_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &fix_account_try_deposit_or_refund_behaviour {
+    if let UpdateSetting::Enabled(NoSettings) = &fix_account_try_deposit_or_refund_behaviour {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-account-try-deposit-or-refund",
             generate_account_bottlenose_extension_state_updates(store),
@@ -179,25 +154,25 @@ fn generate_principal_batch(
             generate_protocol_params_to_state_updates(settings.network_definition.clone()),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &update_access_controller_to_add_xrd_fee_vault {
+    if let UpdateSetting::Enabled(NoSettings) = &update_access_controller_to_add_xrd_fee_vault {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-access-controller-xrd-fee-vault",
             generate_access_controller_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &impose_a_limit_on_transaction_processor_blobs {
+    if let UpdateSetting::Enabled(NoSettings) = &impose_a_limit_on_transaction_processor_blobs {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-transaction-processor-blob-limits",
             generate_transaction_processor_blob_limits_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &ref_cost_checks {
+    if let UpdateSetting::Enabled(NoSettings) = &ref_cost_checks {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-add-deferred-reference-check-cost",
             generate_ref_check_costs_state_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &restrict_reserved_role_key {
+    if let UpdateSetting::Enabled(NoSettings) = &restrict_reserved_role_key {
         transactions.push(ProtocolUpdateTransaction::flash(
             "bottlenose-restrict-role-assignment-reserved-role-key",
             generate_restrict_reserved_role_key_state_updates(store),
