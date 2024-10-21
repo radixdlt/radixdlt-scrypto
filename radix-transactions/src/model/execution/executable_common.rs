@@ -145,9 +145,11 @@ impl TipSpecifier {
         // * In order to make this math a bit cheaper, we multiply in I192 space to save a division
         match self {
             TipSpecifier::None => Decimal::ZERO,
-            TipSpecifier::Percentage(percentage) => Decimal(I192::from(*percentage) * dec!(0.01).0),
+            TipSpecifier::Percentage(percentage) => {
+                Decimal::from_attos(I192::from(*percentage) * dec!(0.01).attos())
+            }
             TipSpecifier::BasisPoints(basis_points) => {
-                Decimal(I192::from(*basis_points) * dec!(0.0001).0)
+                Decimal::from_attos(I192::from(*basis_points) * dec!(0.0001).attos())
             }
         }
     }

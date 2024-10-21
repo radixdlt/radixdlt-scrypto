@@ -16,7 +16,7 @@ use radix_native_sdk::runtime::Runtime;
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 lazy_static! {
-    static ref MAX_MINT_AMOUNT: Decimal = Decimal(I192::from(2).pow(152)); // 2^152 subunits
+    static ref MAX_MINT_AMOUNT: Decimal = Decimal::from_attos(I192::from(2).pow(152)); // 2^152 subunits
 }
 
 declare_native_blueprint_state! {

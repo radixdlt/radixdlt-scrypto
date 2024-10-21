@@ -856,7 +856,7 @@ pub fn contribute_fails_without_proper_authority_present() {
 #[test]
 fn contribution_of_large_values_should_not_cause_panic() {
     // Arrange
-    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let max_mint_amount = Decimal::from_attos(I192::from(2).pow(152));
     let mut ledger = TestEnvironment::new((18, 18));
 
     let manifest = ManifestBuilder::new()
@@ -898,7 +898,7 @@ fn contribution_of_large_values_should_not_cause_panic() {
 #[test]
 fn get_redemption_value_should_not_panic_on_large_values() {
     // Arrange
-    let mint_amount = Decimal(I192::from(2).pow(60));
+    let mint_amount = Decimal::from_attos(I192::from(2).pow(60));
     let mut ledger = TestEnvironment::new((18, 18));
     let receipt = ledger.contribute(
         (ledger.pool_resource1, mint_amount),
@@ -924,7 +924,7 @@ fn get_redemption_value_should_not_panic_on_large_values() {
 #[test]
 fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
     // Arrange
-    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let max_mint_amount = Decimal::from_attos(I192::from(2).pow(152));
     let mut ledger = TestEnvironment::new((18, 18));
 
     let manifest = ManifestBuilder::new()

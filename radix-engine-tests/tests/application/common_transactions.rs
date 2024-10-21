@@ -117,7 +117,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_max_initial_supply_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let initial_supply = Decimal(I192::from(2).pow(152));
+        let initial_supply = Decimal::from_attos(I192::from(2).pow(152));
 
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!(
@@ -135,7 +135,7 @@ fn creating_a_fungible_resource_with_max_initial_supply_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_exceeded_initial_supply_fails() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let initial_supply = Decimal(I192::from(2).pow(152) + I192::ONE);
+        let initial_supply = Decimal::from_attos(I192::from(2).pow(152) + I192::ONE);
 
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!(
@@ -233,7 +233,7 @@ fn minting_of_fungible_resource_max_mint_amount_succeeds() {
          minter_badge_resource_address,
          mintable_fungible_resource_address,
          address_bech32_encoder| {
-            let mint_amount = Decimal(I192::from(2).pow(152));
+            let mint_amount = Decimal::from_attos(I192::from(2).pow(152));
 
             let manifest = replace_variables!(
                 include_workspace_transaction_examples_str!("resources/mint/fungible/mint.rtm"),
@@ -259,7 +259,7 @@ fn minting_of_fungible_resource_exceed_max_mint_amount_fails() {
          minter_badge_resource_address,
          mintable_fungible_resource_address,
          address_bech32_encoder| {
-            let mint_amount = Decimal(I192::from(2).pow(152) + I192::ONE);
+            let mint_amount = Decimal::from_attos(I192::from(2).pow(152) + I192::ONE);
 
             let manifest = replace_variables!(
                 include_workspace_transaction_examples_str!("resources/mint/fungible/mint.rtm"),

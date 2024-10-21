@@ -28,15 +28,20 @@ use super::CheckedTruncate;
 /// The finite set of values are of the form `m / 10^18`, where `m` is
 /// an integer such that `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ///
+/// ```text
 /// Fractional part: ~60 bits/18 digits
 /// Integer part   : 132 bits /40 digits
 /// Max            :  3138550867693340381917894711603833208051.177722232017256447
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
+/// ```
 ///
-/// Unless otherwise specified, all operations will panic if underflow/overflow.
+/// Unless otherwise specified, all operations will panic if there is underflow/overflow.
+///
+/// To create a Decimal with a certain number of `10^(-18)` subunits, use
+/// [`Decimal::from_attos`] or equivalently [`Decimal::from_subunits`].
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Decimal(pub InnerDecimal);
+pub struct Decimal(InnerDecimal);
 
 pub type InnerDecimal = I192;
 
@@ -68,37 +73,59 @@ impl Decimal {
 
     pub const ZERO: Self = Self(I192::ZERO);
 
+    pub const ONE_ATTO: Self = Self(I192::ONE);
+    pub const ONE_SUBUNIT: Self = Self::ONE_ATTO;
     pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
     pub const ONE_TENTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 1), 0, 0]));
     pub const ONE: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]));
     pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
     pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
 
+    /// Constructs a [`Decimal`] from its underlying `10^(-18)` subunits.
     pub const fn from_attos(attos: I192) -> Self {
         Self(attos)
     }
 
-    /// Returns `Decimal` of 0.
+    /// Constructs a [`Decimal`] from its underlying `10^(-18)` subunits.
+    ///
+    /// This is an alias of [`from_attos`][Self::from_attos], for consistency with [`PreciseDecimal::from_precise_subunits`].
+    pub const fn from_subunits(subunits: I192) -> Self {
+        Self(subunits)
+    }
+
+    /// Returns the underlying `10^(-18)` subunits of the [`Decimal`].
+    pub const fn attos(self) -> I192 {
+        self.0
+    }
+
+    /// Returns the underlying `10^(-18)` subunits of the [`Decimal`].
+    ///
+    /// This is an alias of [`attos`][Self::attos], for consistency with [`PreciseDecimal::precise_subunits`].
+    pub const fn subunits(self) -> I192 {
+        self.0
+    }
+
+    /// Returns a [`Decimal`] with value 0.
     pub const fn zero() -> Self {
         Self::ZERO
     }
 
-    /// Returns `Decimal` of 1.
+    /// Returns a [`Decimal`] with value 1.
     pub const fn one() -> Self {
         Self::ONE
     }
 
-    /// Whether this decimal is zero.
+    /// Whether this value is zero.
     pub fn is_zero(&self) -> bool {
         self.0 == I192::ZERO
     }
 
-    /// Whether this decimal is positive.
+    /// Whether this value is positive.
     pub fn is_positive(&self) -> bool {
         self.0 > I192::ZERO
     }
 
-    /// Whether this decimal is negative.
+    /// Whether this value is negative.
     pub fn is_negative(&self) -> bool {
         self.0 < I192::ZERO
     }
@@ -1030,6 +1057,7 @@ mod tests {
         assert_eq!(test_dec!("10"), Decimal::TEN);
         assert_eq!(test_dec!("100"), Decimal::ONE_HUNDRED);
         assert_eq!(test_dec!("0.01"), Decimal::ONE_HUNDREDTH);
+        assert_eq!(test_dec!("0.000000000000000001"), Decimal::ONE_ATTO);
 
         assert_eq!("0", Decimal::ZERO.to_string());
         assert_eq!("1", Decimal::ONE.to_string());
@@ -1037,6 +1065,7 @@ mod tests {
         assert_eq!("10", Decimal::TEN.to_string());
         assert_eq!("100", Decimal::ONE_HUNDRED.to_string());
         assert_eq!("0.01", Decimal::ONE_HUNDREDTH.to_string());
+        assert_eq!("0.000000000000000001", Decimal::ONE_ATTO.to_string());
     }
 
     #[test]

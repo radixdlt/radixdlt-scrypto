@@ -660,7 +660,7 @@ pub fn owner_can_update_pool_metadata() {
 #[test]
 fn get_redemption_value_should_not_panic_on_large_values() {
     // Arrange
-    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let max_mint_amount = Decimal::from_attos(I192::from(2).pow(152));
     let mut ledger = TestEnvironment::new(18);
     let receipt = ledger.contribute(max_mint_amount, true);
     receipt.expect_commit_success();
