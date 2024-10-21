@@ -182,7 +182,9 @@ impl ProtocolUpdateExecutor {
                                 update_status: ProtocolUpdateStatus::InProgress {
                                     latest_commit: LatestProtocolUpdateCommitBatch {
                                         batch_group_index,
+                                        batch_group_name: batch_group_name.to_string(),
                                         batch_index,
+                                        batch_name: batch_name.to_string(),
                                     },
                                 },
                             },
