@@ -77,7 +77,7 @@ pub struct AnemoneGenerator {
 }
 
 impl ProtocolUpdateGenerator for AnemoneGenerator {
-    fn enable_status_tracking_into_substate_database(&self) -> bool {
+    fn insert_status_tracking_flash_transactions(&self) -> bool {
         // This was launched without status tracking, so we can't add it in later to avoid divergence
         false
     }

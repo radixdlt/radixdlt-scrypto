@@ -74,9 +74,7 @@ impl ProtocolUpdateExecutor {
         hooks: &mut H,
         vm_modules: &M,
     ) {
-        let add_status_update = self
-            .generator
-            .enable_status_tracking_into_substate_database();
+        let add_status_update = self.generator.insert_status_tracking_flash_transactions();
 
         let mut batch_groups = self.generator.batch_groups();
 
