@@ -34,7 +34,7 @@ use sbor::rust::prelude::*;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()
-        && amount.0 % I192::from(10i128.pow((18 - divisibility).into())) == I192::from(0)
+        && amount.attos() % I192::from(10i128.pow((18 - divisibility).into())) == I192::from(0)
 }
 
 pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {

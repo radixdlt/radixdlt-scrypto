@@ -237,7 +237,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal(I192::from(1)), XRD));
+    let xrd_auth = rule!(require_amount(Decimal::ONE_ATTO, XRD));
     let account = ledger.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = ledger.new_allocated_account();
 
@@ -290,7 +290,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 fn can_update_updatable_owner_role_account() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal(I192::from(1)), XRD));
+    let xrd_auth = rule!(require_amount(Decimal::from_attos(I192::from(1)), XRD));
     let account = ledger.new_account_advanced(OwnerRole::Updatable(xrd_auth));
 
     // Act

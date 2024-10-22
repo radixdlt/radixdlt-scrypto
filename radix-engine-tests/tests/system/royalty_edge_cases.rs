@@ -8,7 +8,7 @@ const DECIMAL_MIN: Decimal = Decimal::MIN;
 const DECIMAL_MAX: Decimal = Decimal::MAX;
 
 const DECIMAL_ZERO: Decimal = Decimal::ZERO;
-const DECIMAL_VERY_SMALL: Decimal = Decimal(I192::ONE);
+const DECIMAL_VERY_SMALL: Decimal = Decimal::ONE_ATTO;
 
 const DECIMAL_ONE: Decimal = Decimal::ONE;
 
