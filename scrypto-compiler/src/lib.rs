@@ -16,6 +16,11 @@ const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
 
+// Radix Engine supports WASM MVP + proposals: mmutable-globals and sign-extension-ops
+// (see radix-engine/src/vm/wasm.prepare.rs)
+// More on CFLAGS for WASM:  https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly
+const TARGET_CLAGS_FOR_WASM: &str = "-mcpu=mvp -mmutable-globals -msign-ext";
+
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
     /// Returns IO Error which occurred during compilation and optional context information.
@@ -59,7 +64,10 @@ pub struct ScryptoCompilerInputParams {
     pub target_directory: Option<PathBuf>,
     /// Compilation profile. If not specified default profile: Release will be used.
     pub profile: Profile,
-    /// List of environment variables to set or unset during compilation. Optional field.
+    /// List of environment variables to set or unset during compilation.
+    /// By default it includes compilation flags for C libraries to configure WASM with the same
+    /// features as Radix Engine.
+    /// TARGET_CFLAGS="-mcpu=mvp -mmutable-globals -msign-ext"
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
     /// List of features, used for 'cargo build --features'. Optional field.
     pub features: IndexSet<String>,
@@ -98,7 +106,12 @@ impl Default for ScryptoCompilerInputParams {
             manifest_path: None,
             target_directory: None,
             profile: Profile::Release,
-            environment_variables: indexmap!(),
+            environment_variables: indexmap!(
+                "TARGET_CFLAGS".to_string() =>
+                EnvironmentVariableAction::Set(
+                    TARGET_CLAGS_FOR_WASM.to_string()
+                )
+            ),
             features: indexset!(),
             no_default_features: false,
             all_features: false,
@@ -756,6 +769,7 @@ impl ScryptoCompiler {
 
     fn wasm_optimize(&self, wasm_path: &Path) -> Result<(), ScryptoCompilerError> {
         if let Some(wasm_opt_config) = &self.input_params.wasm_optimization {
+            println!("wasm_optimize {:?}", wasm_path);
             wasm_opt_config
                 .run(wasm_path, wasm_path)
                 .map_err(ScryptoCompilerError::WasmOptimizationError)

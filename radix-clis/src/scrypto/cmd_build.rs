@@ -34,6 +34,10 @@ pub struct Build {
     features: Option<String>,
 
     /// Environment variables to define. Specify as NAME=VALUE or NAME.
+    /// Scrypto compiler internally sets some compilation flags `TARGET_CFLAGS` for C libraries
+    /// to configure WASM with the same features as Radix Engine.
+    /// If you want to override it, then you can use this option.
+    /// If you want to remove TARGET_CFLAGS, then use `--unset-env` option
     #[clap(short, long)]
     env: Option<Vec<String>>,
 
