@@ -81,9 +81,22 @@ impl ProtocolUpdateBatch {
         }
     }
 
+    pub fn add_flash(mut self, name: impl Into<String>, updates: StateUpdates) -> Self {
+        self.mut_add_flash(name, updates);
+        self
+    }
+
     pub fn mut_add_flash(&mut self, name: impl Into<String>, updates: StateUpdates) {
-        self.transactions
-            .push(ProtocolUpdateTransaction::flash(name, updates))
+        self.mut_add(ProtocolUpdateTransaction::flash(name, updates))
+    }
+
+    pub fn add(mut self, transaction: ProtocolUpdateTransaction) -> Self {
+        self.mut_add(transaction);
+        self
+    }
+
+    pub fn mut_add(&mut self, transaction: ProtocolUpdateTransaction) {
+        self.transactions.push(transaction);
     }
 
     pub fn single(single_transaction: ProtocolUpdateTransaction) -> Self {
