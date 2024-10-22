@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
 use radix_engine_tests::common::*;
-use radix_transactions::model::PreviewFlags;
+use radix_transactions::{model::PreviewFlags, validation::TransactionValidator};
 use scrypto_test::prelude::*;
 
 #[test]
@@ -607,4 +607,443 @@ fn traces_for_instruction(
         .iter()
         .filter(|t| t.instruction_index == instruction_index)
         .collect()
+}
+
+#[test]
+fn test_execution_trace_for_transaction_v2() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key1, private_key1, account1) = ledger.new_allocated_account();
+    let (_public_key2, private_key2, account2) = ledger.new_allocated_account();
+
+    // Flow:
+    // 1. root sends child 10 XRD
+    // 2. child deposits 7 XRD
+    // 3. child yields 3 XRD to root
+    // 4. root deposits all
+    let start_epoch_inclusive = ledger.get_current_epoch();
+    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
+    let transaction = TransactionV2Builder::new()
+        .add_signed_child(
+            "child",
+            PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive,
+                    end_epoch_exclusive,
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 1,
+                })
+                .manifest_builder(|builder| {
+                    builder
+                        .take_from_worktop(XRD, 7, "bucket1")
+                        .try_deposit_batch_or_abort(account2, ["bucket1"], None)
+                        .take_all_from_worktop(XRD, "bucket2")
+                        .yield_to_parent_with_name_lookup(|lookup| (lookup.bucket("bucket2"),))
+                })
+                .sign(&private_key2)
+                .build(),
+        )
+        .intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive,
+            end_epoch_exclusive,
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 2,
+        })
+        .manifest_builder(|builder| {
+            builder
+                .lock_fee(account1, 3)
+                .withdraw_from_account(account1, XRD, 10)
+                .take_all_from_worktop(XRD, "bucket")
+                .yield_to_child_with_name_lookup("child", |lookup| (lookup.bucket("bucket"),))
+                .deposit_entire_worktop(account1)
+        })
+        .transaction_header(TransactionHeaderV2 {
+            notary_public_key: public_key1.into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        })
+        .sign(&private_key1)
+        .notarize(&private_key1)
+        .build()
+        .to_raw()
+        .unwrap();
+
+    let executable = transaction
+        .validate(&TransactionValidator::new_for_latest_simulator())
+        .expect("Expected raw transaction to be valid")
+        .create_executable();
+    let receipt = ledger.execute_transaction(
+        executable,
+        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
+            .with_execution_trace(Some(10)),
+    );
+
+    let trace = receipt.expect_commit_success().execution_trace.clone();
+    let expected_trace = r#"Some(
+    TransactionExecutionTrace {
+        execution_traces: [
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c6ee313598c6318c6318cf7bcaa2e954a9626318c6318c6):<Account>,
+                        ident: "withdraw",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 1,
+                input: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 10,
+                        },
+                    },
+                    proofs: {},
+                },
+                children: [
+                    ExecutionTrace {
+                        origin: ScryptoMethod(
+                            ApplicationFnIdentifier {
+                                blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<FungibleVault>,
+                                ident: "take",
+                            },
+                        ),
+                        kernel_call_depth: 1,
+                        current_frame_actor: Method(
+                            NodeId(
+                                "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                            ),
+                        ),
+                        current_frame_depth: 2,
+                        instruction_index: 1,
+                        input: ResourceSummary {
+                            buckets: {},
+                            proofs: {},
+                        },
+                        output: ResourceSummary {
+                            buckets: {
+                                NodeId(
+                                    "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                                ): Fungible {
+                                    resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                                    liquid: 10,
+                                },
+                            },
+                            proofs: {},
+                        },
+                        children: [
+                            ExecutionTrace {
+                                origin: CreateNode,
+                                kernel_call_depth: 2,
+                                current_frame_actor: Method(
+                                    NodeId(
+                                        "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                                    ),
+                                ),
+                                current_frame_depth: 2,
+                                instruction_index: 1,
+                                input: ResourceSummary {
+                                    buckets: {},
+                                    proofs: {},
+                                },
+                                output: ResourceSummary {
+                                    buckets: {
+                                        NodeId(
+                                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                                        ): Fungible {
+                                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                                            liquid: 10,
+                                        },
+                                    },
+                                    proofs: {},
+                                },
+                                children: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<Worktop>,
+                        ident: "Worktop_put",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "f8811b53b24a9f967ff36ae876d1d275740052e56d3e3f0c5cf1f150b15a",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 1,
+                input: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 10,
+                        },
+                    },
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                children: [],
+            },
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<Worktop>,
+                        ident: "Worktop_take_all",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "f8811b53b24a9f967ff36ae876d1d275740052e56d3e3f0c5cf1f150b15a",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 2,
+                input: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 10,
+                        },
+                    },
+                    proofs: {},
+                },
+                children: [],
+            },
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<Worktop>,
+                        ident: "Worktop_put",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "f8811b53b24a9f967ff36ae876d1d275740052e56d3e3f0c5cf1f150b15a",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 3,
+                input: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 3,
+                        },
+                    },
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                children: [],
+            },
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<Worktop>,
+                        ident: "Worktop_drain",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "f8811b53b24a9f967ff36ae876d1d275740052e56d3e3f0c5cf1f150b15a",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 4,
+                input: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 3,
+                        },
+                    },
+                    proofs: {},
+                },
+                children: [],
+            },
+            ExecutionTrace {
+                origin: ScryptoMethod(
+                    ApplicationFnIdentifier {
+                        blueprint_id: PackageAddress(0d906318c6318c6ee313598c6318c6318cf7bcaa2e954a9626318c6318c6):<Account>,
+                        ident: "deposit_batch",
+                    },
+                ),
+                kernel_call_depth: 0,
+                current_frame_actor: Method(
+                    NodeId(
+                        "c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42",
+                    ),
+                ),
+                current_frame_depth: 1,
+                instruction_index: 4,
+                input: ResourceSummary {
+                    buckets: {
+                        NodeId(
+                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                        ): Fungible {
+                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                            liquid: 3,
+                        },
+                    },
+                    proofs: {},
+                },
+                output: ResourceSummary {
+                    buckets: {},
+                    proofs: {},
+                },
+                children: [
+                    ExecutionTrace {
+                        origin: ScryptoMethod(
+                            ApplicationFnIdentifier {
+                                blueprint_id: PackageAddress(0d906318c6318c61e603c64c6318c6318cf7be913d63aafbc6318c6318c6):<FungibleVault>,
+                                ident: "put",
+                            },
+                        ),
+                        kernel_call_depth: 1,
+                        current_frame_actor: Method(
+                            NodeId(
+                                "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                            ),
+                        ),
+                        current_frame_depth: 2,
+                        instruction_index: 4,
+                        input: ResourceSummary {
+                            buckets: {
+                                NodeId(
+                                    "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                                ): Fungible {
+                                    resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                                    liquid: 3,
+                                },
+                            },
+                            proofs: {},
+                        },
+                        output: ResourceSummary {
+                            buckets: {},
+                            proofs: {},
+                        },
+                        children: [
+                            ExecutionTrace {
+                                origin: DropNode,
+                                kernel_call_depth: 2,
+                                current_frame_actor: Method(
+                                    NodeId(
+                                        "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                                    ),
+                                ),
+                                current_frame_depth: 2,
+                                instruction_index: 4,
+                                input: ResourceSummary {
+                                    buckets: {
+                                        NodeId(
+                                            "f86a60c975ad7ef440e3a31a7926af0b51258b92ccc79a83b28dfbfb1c1e",
+                                        ): Fungible {
+                                            resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                                            liquid: 3,
+                                        },
+                                    },
+                                    proofs: {},
+                                },
+                                output: ResourceSummary {
+                                    buckets: {},
+                                    proofs: {},
+                                },
+                                children: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+        resource_changes: {
+            0: [
+                ResourceChange {
+                    node_id: NodeId(
+                        "c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42",
+                    ),
+                    vault_id: NodeId(
+                        "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                    ),
+                    resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                    amount: -0.33513389042,
+                },
+            ],
+            1: [
+                ResourceChange {
+                    node_id: NodeId(
+                        "c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42",
+                    ),
+                    vault_id: NodeId(
+                        "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                    ),
+                    resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                    amount: -10,
+                },
+            ],
+            4: [
+                ResourceChange {
+                    node_id: NodeId(
+                        "c1f7abd48c518b8ebdc6a35abfbe78583725a97eabdc99224571e0d11d42",
+                    ),
+                    vault_id: NodeId(
+                        "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
+                    ),
+                    resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
+                    amount: 3,
+                },
+            ],
+        },
+        fee_locks: FeeLocks {
+            lock: 3,
+            contingent_lock: 0,
+        },
+    },
+)"#;
+    assert_eq!(format!("{:#?}", trace), expected_trace);
 }

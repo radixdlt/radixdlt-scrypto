@@ -3,14 +3,15 @@ use crate::blueprints::consensus_manager::*;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
+use crate::internal_prelude::*;
 use crate::system::system_db_reader::*;
 use crate::vm::*;
 use sbor::{generate_full_schema, TypeAggregator};
 
-#[derive(Clone)]
+#[derive(Clone, ScryptoSbor)]
 pub struct AnemoneSettings {
     /// Changes the cost associated with validator creation.
-    pub validator_fee_fix: UpdateSetting<NoSettings>,
+    pub validator_fee_fix: UpdateSetting<AnemoneValidatorCreationFee>,
 
     /// Exposes second-precision timestamp.
     pub seconds_precision: UpdateSetting<NoSettings>,
@@ -23,7 +24,7 @@ pub struct AnemoneSettings {
 }
 
 impl UpdateSettings for AnemoneSettings {
-    type BatchGenerator = AnemoneBatchGenerator;
+    type UpdateGenerator = AnemoneGenerator;
 
     fn protocol_version() -> ProtocolVersion {
         ProtocolVersion::Anemone
@@ -49,56 +50,47 @@ impl UpdateSettings for AnemoneSettings {
         }
     }
 
-    fn create_batch_generator(&self) -> Self::BatchGenerator {
-        AnemoneBatchGenerator {
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        AnemoneGenerator {
             settings: self.clone(),
         }
     }
 }
 
-#[derive(Clone)]
-pub struct AnemoneBatchGenerator {
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct AnemoneValidatorCreationFee {
+    pub usd_fee: Decimal,
+}
+
+impl UpdateSettingContent for AnemoneValidatorCreationFee {
+    fn default_setting(network_definition: &NetworkDefinition) -> Self {
+        let usd_fee = match network_definition.id {
+            241 => dec!(1), // Node integration test network
+            _ => dec!(100), // All others including mainnet
+        };
+        Self { usd_fee }
+    }
+}
+
+pub struct AnemoneGenerator {
     settings: AnemoneSettings,
 }
 
-impl ProtocolUpdateBatchGenerator for AnemoneBatchGenerator {
-    fn status_tracking_enabled(&self) -> bool {
-        // This was launched without status tracking,
-        // so we can't add it in later to avoid divergence
+impl ProtocolUpdateGenerator for AnemoneGenerator {
+    fn enable_status_tracking_into_substate_database(&self) -> bool {
+        // This was launched without status tracking, so we can't add it in later to avoid divergence
         false
     }
 
-    fn generate_batch(
-        &self,
-        store: &dyn SubstateDatabase,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateBatch {
-        match (batch_group_index, batch_index) {
-            (0, 0) => {
-                // Just a single batch for Anemone, perhaps in future updates we should have separate batches for each update?
-                generate_principal_batch(store, &self.settings)
-            }
-            _ => {
-                panic!("batch index out of range")
-            }
-        }
-    }
-
-    fn batch_count(&self, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => 1,
-            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
-        }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec!["Principal".to_string()]
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![FixedBatchGroupGenerator::named("principal")
+            .add_batch("primary", |store| generate_batch(store, &self.settings))
+            .build()]
     }
 }
 
 #[deny(unused_variables)]
-fn generate_principal_batch(
+fn generate_batch(
     store: &dyn SubstateDatabase,
     AnemoneSettings {
         validator_fee_fix,
@@ -107,36 +99,42 @@ fn generate_principal_batch(
         pools_update,
     }: &AnemoneSettings,
 ) -> ProtocolUpdateBatch {
-    let mut transactions = vec![];
-    if let UpdateSetting::Enabled(_) = &validator_fee_fix {
-        transactions.push(ProtocolUpdateTransaction::flash(
+    let mut batch = ProtocolUpdateBatch::empty();
+
+    if let UpdateSetting::Enabled(creation_fee) = &validator_fee_fix {
+        batch.mut_add_flash(
             "anemone-validator-fee-fix",
-            generate_validator_creation_fee_fix_state_updates(store),
-        ));
+            generate_validator_creation_fee_fix_state_updates(store, creation_fee),
+        );
     }
-    if let UpdateSetting::Enabled(_) = &seconds_precision {
-        transactions.push(ProtocolUpdateTransaction::flash(
+
+    if let UpdateSetting::Enabled(NoSettings) = &seconds_precision {
+        batch.mut_add_flash(
             "anemone-seconds-precision",
             generate_seconds_precision_timestamp_state_updates(store),
-        ));
+        );
     }
-    if let UpdateSetting::Enabled(_) = &vm_boot_to_enable_bls128_and_keccak256 {
-        transactions.push(ProtocolUpdateTransaction::flash(
+
+    if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_bls128_and_keccak256 {
+        batch.mut_add_flash(
             "anemone-vm-boot",
             generate_vm_boot_for_bls128_and_keccak256_state_updates(),
-        ));
+        );
     }
-    if let UpdateSetting::Enabled(_) = &pools_update {
-        transactions.push(ProtocolUpdateTransaction::flash(
+
+    if let UpdateSetting::Enabled(NoSettings) = &pools_update {
+        batch.mut_add_flash(
             "anemone-pools",
             generate_pool_math_precision_fix_state_updates(store),
-        ));
+        );
     }
-    ProtocolUpdateBatch { transactions }
+
+    batch
 }
 
 fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
+    validator_creation_fee: &AnemoneValidatorCreationFee,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_node_id = CONSENSUS_MANAGER.into_node_id();
@@ -150,7 +148,7 @@ fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase + ?Size
         .unwrap();
 
     let mut config = versioned_config.fully_update_and_into_latest_version();
-    config.config.validator_creation_usd_cost = Decimal::from(100);
+    config.config.validator_creation_usd_cost = validator_creation_fee.usd_fee;
 
     let updated_substate = config.into_locked_substate();
 

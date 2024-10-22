@@ -2255,6 +2255,10 @@ pub fn generator_error_diagnostics(
             let title = format!("unsupported instruction for this manifest version");
             (title, "unsupported instruction".to_string())
         }
+        GeneratorErrorKind::ManifestBuildError(ManifestBuildError::DuplicateChildSubintentHash) => {
+            let title = format!("child subintents cannot have the same hash");
+            (title, "duplicate hash".to_string())
+        }
         GeneratorErrorKind::ManifestBuildError(
             ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType,
         ) => {

@@ -10,7 +10,15 @@ use sbor::rust::cell::RefCell;
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
-    pub VersionedTreeNode(TreeNodeVersions) => TreeNode = TreeNodeV1
+    pub VersionedTreeNode(TreeNodeVersions) => TreeNode = TreeNodeV1,
+    outer_attributes: [
+        // This is used in a Rocks CF in the node, so needs to have a backwards compatibility
+        // assertion trait.
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:versioned_tree_node_schema.bin"
+        ))]
+    ]
 }
 
 /// A physical tree node, to be used in the storage.

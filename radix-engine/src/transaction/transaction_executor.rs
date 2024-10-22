@@ -33,6 +33,10 @@ pub struct CostingParameters {
 }
 
 impl CostingParameters {
+    pub fn latest() -> Self {
+        Self::babylon_genesis()
+    }
+
     #[cfg(not(feature = "coverage"))]
     pub fn babylon_genesis() -> Self {
         Self {
@@ -58,6 +62,11 @@ impl CostingParameters {
             state_storage_price: Decimal::zero(),
             archive_storage_price: Decimal::zero(),
         }
+    }
+
+    pub fn with_execution_cost_unit_loan(mut self, loan_units: u32) -> Self {
+        self.execution_cost_unit_loan = loan_units;
+        self
     }
 
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
@@ -147,6 +156,14 @@ impl SystemOverrides {
 
     pub const fn with_network(network_definition: NetworkDefinition) -> Self {
         Self::internal_default(Some(network_definition))
+    }
+
+    pub const fn set_costing_parameters(
+        mut self,
+        costing_parameters: Option<CostingParameters>,
+    ) -> Self {
+        self.costing_parameters = costing_parameters;
+        self
     }
 
     pub fn set_abort_when_loan_repaid(mut self) -> Self {
@@ -288,6 +305,11 @@ impl ExecutionConfig {
 
     pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
         self.enable_kernel_trace = enabled;
+        self
+    }
+
+    pub fn with_execution_trace(mut self, depth: Option<usize>) -> Self {
+        self.execution_trace = depth;
         self
     }
 

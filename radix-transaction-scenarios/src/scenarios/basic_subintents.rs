@@ -146,6 +146,63 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                     .sign(&config.parent_account_key)
                     .complete(core)
             })
+            .failed_transaction(|core, config, state| {
+                let trivial_child1 = core
+                    .v2_subintent()
+                    .manifest_builder(|builder| builder.yield_to_parent(()))
+                    .complete(core);
+                let trivial_child2 = core
+                    .v2_subintent()
+                    .manifest_builder(|builder| builder.yield_to_parent(()))
+                    .complete(core);
+
+                let complex_subintent = core
+                    .v2_subintent()
+                    .add_signed_child("trivial_child1", trivial_child1)
+                    .add_signed_child("trivial_child2", trivial_child2)
+                    .manifest_builder(|builder| {
+                        builder
+                            .assert_worktop_resources_only(
+                                ManifestResourceConstraints::new().with_at_least_non_fungibles(
+                                    GLOBAL_CALLER_RESOURCE,
+                                    [NonFungibleLocalId::integer(1)],
+                                ),
+                            )
+                            .assert_worktop_resources_include(
+                                ManifestResourceConstraints::new().with_exact_amount(XRD, 100),
+                            )
+                            .take_all_from_worktop(XRD, "xrd_bucket")
+                            .assert_bucket_contents(
+                                "xrd_bucket",
+                                ManifestResourceConstraint::NonZeroAmount,
+                            )
+                            .assert_next_call_returns_include(
+                                ManifestResourceConstraints::new().with_exact_non_fungibles(
+                                    GLOBAL_CALLER_RESOURCE,
+                                    [NonFungibleLocalId::integer(1)],
+                                ),
+                            )
+                            .yield_to_child_with_name_lookup("trivial_child1", |lookup| {
+                                (lookup.bucket("xrd_bucket"),)
+                            })
+                            .assert_next_call_returns_only(
+                                ManifestResourceConstraints::new().with_amount_range(XRD, 0, 100),
+                            )
+                            .yield_to_child("trivial_child2", ())
+                            .verify_parent(rule!(require(XRD)))
+                            .yield_to_parent(())
+                    })
+                    .complete(core);
+                core.v2_transaction("transaction_with_complex_subintent")
+                    .add_signed_child("complex_subintent", complex_subintent)
+                    .manifest_builder(|builder| {
+                        builder
+                            .lock_standard_test_fee(state.parent_account.unwrap())
+                            .yield_to_child("complex_subintent", ())
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()

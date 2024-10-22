@@ -599,12 +599,16 @@ impl<
         }
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
-        self.api.kernel_get_current_depth()
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_depth_uncosted()
     }
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
-        self.api.kernel_get_node_visibility(node_id)
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_id_uncosted()
+    }
+
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
+        self.api.kernel_get_node_visibility_uncosted(node_id)
     }
 
     fn kernel_read_substate_uncosted(
@@ -652,12 +656,16 @@ impl<
         }
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
-        self.api.kernel_get_current_depth()
+    fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_depth_uncosted()
     }
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
-        self.api.kernel_get_node_visibility(node_id)
+    fn kernel_get_current_stack_id_uncosted(&self) -> usize {
+        self.api.kernel_get_current_stack_id_uncosted()
+    }
+
+    fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
+        self.api.kernel_get_node_visibility_uncosted(node_id)
     }
 
     fn kernel_read_substate_uncosted(

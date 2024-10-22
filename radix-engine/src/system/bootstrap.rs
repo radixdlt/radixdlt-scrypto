@@ -976,10 +976,10 @@ pub fn create_system_bootstrap_transaction(
 
 pub fn create_genesis_data_ingestion_transaction(
     chunk: GenesisDataChunk,
-    chunk_number: usize,
+    chunk_index: usize,
 ) -> SystemTransactionV1 {
     map_address_allocations_for_manifest(chunk)
-        .into_transaction(hash(format!("Genesis Data Chunk: {}", chunk_number)))
+        .into_transaction(hash(format!("Genesis Data Chunk: {}", chunk_index)))
 }
 
 fn map_address_allocations_for_manifest(

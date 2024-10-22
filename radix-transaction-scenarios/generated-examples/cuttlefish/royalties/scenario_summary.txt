@@ -2,8 +2,8 @@ Name: royalties
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: fcb1d2e9f2fa4704 (allowed to change if not deployed to any network)
-Events       : f5f719451c84e20d (allowed to change if not deployed to any network)
+State changes: 0ac04119ab15e9e9 (allowed to change if not deployed to any network)
+Events       : 8ad38e78377eddad (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
 - royalty_package_address: package_sim1p4qz8edl2w0t5mzwt6zcq0nfnc0ax9rkfawnmsg0s974hxcsggr29z

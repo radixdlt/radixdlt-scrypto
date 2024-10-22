@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,             0.2187036893,    100.0%
-- Execution Cost (XRD)                                                     ,                0.1545641,     70.7%
+Total Cost (XRD)                                                           ,             0.2186536893,    100.0%
+- Execution Cost (XRD)                                                     ,                0.1545141,     70.7%
 - Finalization Cost (XRD)                                                  ,                0.0155022,      7.1%
 - Storage Cost (XRD)                                                       ,             0.0486373893,     22.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3091282,    100.0%
+Execution Cost Breakdown                                                   ,                  3090282,    100.0%
 - AfterInvoke                                                              ,                       76,      0.0%
 - AllocateNodeId                                                           ,                      679,      0.0%
 - BeforeInvoke                                                             ,                      630,      0.0%
@@ -14,7 +14,6 @@ Execution Cost Breakdown                                                   ,    
 - DropNode                                                                 ,                    10969,      0.4%
 - EmitEvent                                                                ,                     1100,      0.0%
 - GetOwnedNodes                                                            ,                     1000,      0.0%
-- GetStackId                                                               ,                     1000,      0.0%
 - LockFee                                                                  ,                      500,      0.0%
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   364827,     11.8%
@@ -24,7 +23,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalGenericComponent                                   ,                    11360,      0.4%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      1.3%
 - PinNode                                                                  ,                       84,      0.0%
-- PrepareWasmCode                                                          ,                   353866,     11.4%
+- PrepareWasmCode                                                          ,                   353866,     11.5%
 - QueryActor                                                               ,                     1000,      0.0%
 - ReadSubstate                                                             ,                   413124,     13.4%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.6%

@@ -1,0 +1,36 @@
+Total Cost (XRD)                                                           ,            0.22615748776,    100.0%
+- Execution Cost (XRD)                                                     ,                0.1277383,     56.5%
+- Finalization Cost (XRD)                                                  ,                        0,      0.0%
+- Storage Cost (XRD)                                                       ,            0.09841918776,     43.5%
+- Tipping Cost (XRD)                                                       ,                        0,      0.0%
+- Royalty Cost (XRD)                                                       ,                        0,      0.0%
+Execution Cost Breakdown                                                   ,                  2554766,    100.0%
+- AfterInvoke                                                              ,                      192,      0.0%
+- AllocateNodeId                                                           ,                     1358,      0.1%
+- BeforeInvoke                                                             ,                      618,      0.0%
+- CheckIntentValidity                                                      ,                   480000,     18.8%
+- CheckReference                                                           ,                    40011,      1.6%
+- CloseSubstate                                                            ,                    13545,      0.5%
+- CreateNode                                                               ,                    10418,      0.4%
+- DropNode                                                                 ,                     7665,      0.3%
+- EmitEvent                                                                ,                      556,      0.0%
+- LockFee                                                                  ,                      500,      0.0%
+- OpenSubstate::GlobalAccount                                              ,                   244472,      9.6%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   126616,      5.0%
+- OpenSubstate::GlobalPackage                                              ,                  1202827,     47.1%
+- OpenSubstate::InternalFungibleVault                                      ,                    85206,      3.3%
+- OpenSubstate::InternalGenericComponent                                   ,                    18133,      0.7%
+- PinNode                                                                  ,                      168,      0.0%
+- QueryActor                                                               ,                     1000,      0.0%
+- ReadSubstate                                                             ,                    92282,      3.6%
+- RunNativeCode::Worktop_take_all                                          ,                    14602,      0.6%
+- RunNativeCode::create_empty_bucket_FungibleResourceManager               ,                    23792,      0.9%
+- RunNativeCode::get_amount_FungibleBucket                                 ,                    11016,      0.4%
+- RunNativeCode::lock_fee                                                  ,                   116047,      4.5%
+- SendToStack                                                              ,                      506,      0.0%
+- SetCallFrameData                                                         ,                     2424,      0.1%
+- SwitchStack                                                              ,                     3000,      0.1%
+- ValidateTxPayload                                                        ,                    41280,      1.6%
+- VerifyTxSignatures                                                       ,                    14000,      0.5%
+- WriteSubstate                                                            ,                     2532,      0.1%
+Finalization Cost Breakdown                                                ,                        0,    100.0%
