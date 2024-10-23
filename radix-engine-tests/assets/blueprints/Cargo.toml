@@ -77,6 +77,7 @@ members = [
     "oracles/oracle_v3",
     "steal",
     "locker-factory",
+    "wasm_limits",
 ]
 resolver = "2"
 
