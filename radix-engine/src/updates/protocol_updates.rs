@@ -78,7 +78,9 @@ pub enum ProtocolUpdateStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct LatestProtocolUpdateCommitBatch {
     pub batch_group_index: usize,
+    pub batch_group_name: String,
     pub batch_index: usize,
+    pub batch_name: String,
 }
 
 macro_rules! count {

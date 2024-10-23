@@ -744,7 +744,7 @@ fn cant_withdraw_without_proper_signature() {
 #[test]
 fn contribution_of_large_values_should_not_cause_panic() {
     // Arrange
-    let max_mint_amount = Decimal(I192::from(2).pow(152));
+    let max_mint_amount = Decimal::from_attos(I192::from(2).pow(152));
     let mut ledger = TestEnvironment::<3>::new([18, 18, 18]);
 
     // Act
@@ -764,7 +764,7 @@ fn contribution_of_large_values_should_not_cause_panic() {
 #[test]
 fn get_redemption_value_should_not_panic_on_large_values() {
     // Arrange
-    let mint_amount = Decimal(I192::from(2).pow(40));
+    let mint_amount = Decimal::from_attos(I192::from(2).pow(40));
     let mut ledger = TestEnvironment::<3>::new([18, 18, 18]);
     let receipt = ledger.contribute(
         indexmap!(

@@ -74,11 +74,20 @@ impl ProtocolUpdateExecutor {
         hooks: &mut H,
         vm_modules: &M,
     ) {
-        let add_status_update = self
-            .generator
-            .enable_status_tracking_into_substate_database();
+        let add_status_update = self.generator.insert_status_tracking_flash_transactions();
 
-        let batch_groups = self.generator.batch_groups();
+        let mut batch_groups = self.generator.batch_groups();
+
+        if add_status_update {
+            // The status update itself will get added when the batch is processed
+            batch_groups.push(
+                FixedBatchGroupGenerator::named("completion")
+                    .add_batch("record-completion", |_| ProtocolUpdateBatch::empty())
+                    .build(),
+            );
+        }
+
+        let batch_group_count = batch_groups.len();
 
         for (batch_group_index, batch_group_generator) in batch_groups
             .into_iter()
@@ -92,11 +101,28 @@ impl ProtocolUpdateExecutor {
                 0
             };
             let batches = batch_group_generator.generate_batches(&*store);
+            let batch_count = batches.len();
+
             for (batch_index, batch_generator) in
                 batches.into_iter().skip(start_at_batch).enumerate()
             {
                 let batch_name = batch_generator.batch_name().to_string();
-                let batch = batch_generator.generate_batch(store);
+                let batch_name = batch_name.as_str();
+
+                let mut batch = batch_generator.generate_batch(store);
+
+                if add_status_update {
+                    batch.mut_add(generate_update_status_flash_transaction(
+                        self.protocol_version,
+                        batch_group_index,
+                        batch_group_name,
+                        batch_group_count,
+                        batch_index,
+                        batch_name,
+                        batch_count,
+                    ));
+                }
+
                 for (transaction_index, transaction) in batch.transactions.into_iter().enumerate() {
                     let receipt = match &transaction {
                         ProtocolUpdateTransaction::FlashTransactionV1(flash) => {
@@ -160,34 +186,13 @@ impl ProtocolUpdateExecutor {
                             batch_group_index,
                             batch_group_name,
                             batch_index,
-                            batch_name: &batch_name,
+                            batch_name,
                             transaction_index,
                             transaction: &transaction,
                             receipt: &receipt,
                             resultant_store: store,
                         });
                     }
-                }
-
-                if add_status_update {
-                    // A scrypto-only executor feature.
-                    // In the node's executor, this state is tracked in the `LedgerProofOrigin`.
-                    store.update_substate(
-                        TRANSACTION_TRACKER,
-                        PROTOCOL_UPDATE_STATUS_PARTITION,
-                        ProtocolUpdateStatusField::Summary,
-                        ProtocolUpdateStatusSummarySubstate::from_latest_version(
-                            ProtocolUpdateStatusSummaryV1 {
-                                protocol_version: self.protocol_version,
-                                update_status: ProtocolUpdateStatus::InProgress {
-                                    latest_commit: LatestProtocolUpdateCommitBatch {
-                                        batch_group_index,
-                                        batch_index,
-                                    },
-                                },
-                            },
-                        ),
-                    );
                 }
 
                 if H::IS_ENABLED {
@@ -203,21 +208,7 @@ impl ProtocolUpdateExecutor {
                 }
             }
         }
-        if add_status_update {
-            // A scrypto-only executor feature.
-            // In the node's executor, this state is tracked in the `LedgerProofOrigin`.
-            store.update_substate(
-                TRANSACTION_TRACKER,
-                PROTOCOL_UPDATE_STATUS_PARTITION,
-                ProtocolUpdateStatusField::Summary,
-                ProtocolUpdateStatusSummarySubstate::from_latest_version(
-                    ProtocolUpdateStatusSummaryV1 {
-                        protocol_version: self.protocol_version,
-                        update_status: ProtocolUpdateStatus::Complete,
-                    },
-                ),
-            );
-        }
+
         if H::IS_ENABLED {
             hooks.on_protocol_update_completed(OnProtocolUpdateCompleted {
                 protocol_version: self.protocol_version,
@@ -226,6 +217,48 @@ impl ProtocolUpdateExecutor {
             });
         }
     }
+}
+
+pub fn generate_update_status_flash_transaction(
+    protocol_version: ProtocolVersion,
+    batch_group_index: usize,
+    batch_group_name: &str,
+    batch_group_count: usize,
+    batch_index: usize,
+    batch_name: &str,
+    batch_count: usize,
+) -> ProtocolUpdateTransaction {
+    let is_last_batch =
+        batch_group_index == batch_group_count - 1 && batch_index == batch_count - 1;
+
+    let status = if is_last_batch {
+        ProtocolUpdateStatusSummary {
+            protocol_version: protocol_version,
+            update_status: ProtocolUpdateStatus::Complete,
+        }
+    } else {
+        ProtocolUpdateStatusSummary {
+            protocol_version: protocol_version,
+            update_status: ProtocolUpdateStatus::InProgress {
+                latest_commit: LatestProtocolUpdateCommitBatch {
+                    batch_group_index,
+                    batch_group_name: batch_group_name.to_string(),
+                    batch_index,
+                    batch_name: batch_name.to_string(),
+                },
+            },
+        }
+    };
+
+    ProtocolUpdateTransaction::flash(
+        "status-summary",
+        StateUpdates::empty().set_substate(
+            TRANSACTION_TRACKER,
+            PROTOCOL_UPDATE_STATUS_PARTITION,
+            ProtocolUpdateStatusField::Summary,
+            ProtocolUpdateStatusSummarySubstate::from_latest_version(status),
+        ),
+    )
 }
 
 #[allow(unused_variables)]
