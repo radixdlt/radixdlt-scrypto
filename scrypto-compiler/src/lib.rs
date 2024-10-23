@@ -1426,7 +1426,7 @@ mod tests {
             .into_iter()
             .map(|(name, value)| {
                 if let Some(value) = value {
-                    format!("{}={}", name.to_str().unwrap(), value.to_str().unwrap())
+                    format!("{}='{}'", name.to_str().unwrap(), value.to_str().unwrap())
                 } else {
                     format!("{}", name.to_str().unwrap())
                 }
@@ -1488,9 +1488,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1519,9 +1519,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1549,9 +1549,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1585,9 +1585,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --release --no-default-features", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --release --no-default-features", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --features scrypto/no-schema --profile release --no-default-features", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --features scrypto/no-schema --profile release --no-default-features", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1617,9 +1617,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
     #[test]
     fn test_command_output_workspace() {
@@ -1647,9 +1647,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1682,9 +1682,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1714,9 +1714,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1747,9 +1747,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1781,9 +1781,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1820,9 +1820,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("CARGO_ENCODED_RUSTFLAGS=-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir' TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
     }
 
     #[test]
