@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.52392903291,    100.0%
-- Execution Cost (XRD)                                                     ,                0.3213051,     61.3%
+Total Cost (XRD)                                                           ,            0.52402928291,    100.0%
+- Execution Cost (XRD)                                                     ,               0.32140535,     61.3%
 - Finalization Cost (XRD)                                                  ,               0.04650745,      8.9%
 - Storage Cost (XRD)                                                       ,            0.15611648291,     29.8%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6426102,    100.0%
+Execution Cost Breakdown                                                   ,                  6428107,    100.0%
 - AfterInvoke                                                              ,                      628,      0.0%
 - AllocateNodeId                                                           ,                     2328,      0.0%
 - BeforeInvoke                                                             ,                     3596,      0.1%
@@ -21,7 +21,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   164648,      2.6%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      0.7%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                   135082,      2.1%
-- OpenSubstate::GlobalPackage                                              ,                  2743347,     42.7%
+- OpenSubstate::GlobalPackage                                              ,                  2744374,     42.7%
 - OpenSubstate::InternalFungibleVault                                      ,                   179737,      2.8%
 - OpenSubstate::InternalGenericComponent                                   ,                    77018,      1.2%
 - OpenSubstate::InternalKeyValueStore                                      ,                   161799,      2.5%
@@ -29,7 +29,7 @@ Execution Cost Breakdown                                                   ,    
 - PinNode                                                                  ,                      276,      0.0%
 - PrepareWasmCode                                                          ,                   353866,      5.5%
 - QueryActor                                                               ,                     3500,      0.1%
-- ReadSubstate                                                             ,                   587014,      9.1%
+- ReadSubstate                                                             ,                   587992,      9.1%
 - RemoveSubstate                                                           ,                    40717,      0.6%
 - RunNativeCode::AuthZone_push                                             ,                    23850,      0.4%
 - RunNativeCode::Worktop_drain                                             ,                    11224,      0.2%
@@ -46,7 +46,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.7%
 - RunNativeCode::on_drop_FungibleProof                                     ,                    14191,      0.2%
 - RunNativeCode::on_move_FungibleProof                                     ,                    16180,      0.3%
-- RunNativeCode::put_NonFungibleVault                                      ,                    35354,      0.6%
+- RunNativeCode::put_NonFungibleVault                                      ,                    35354,      0.5%
 - RunNativeCode::recover_non_fungibles_account_locker                      ,                    64973,      1.0%
 - RunNativeCode::take_non_fungibles                                        ,                    64562,      1.0%
 - RunNativeCode::unlock_amount_FungibleVault                               ,                    23272,      0.4%

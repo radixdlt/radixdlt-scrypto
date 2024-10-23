@@ -2,8 +2,8 @@ Name: global_n_owned
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 9c00b801d589dbaa (allowed to change if not deployed to any network)
-Events       : c30bd0b6e15c9cb4 (allowed to change if not deployed to any network)
+State changes: 8b185a122796d1f7 (allowed to change if not deployed to any network)
+Events       : 011d0ff4510ec313 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
 - global_n_owned_package_address: package_sim1pkaulm4hum34fy2k0tnflzmyh2qvv9vq9kwlpxwrh68k9t36zkng96
