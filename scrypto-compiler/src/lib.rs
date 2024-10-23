@@ -1409,6 +1409,8 @@ pub fn is_scrypto_cargo_locked_env_var_active() -> bool {
 
 #[cfg(test)]
 mod tests {
+    use radix_engine::vm::wasm::PrepareError;
+
     use super::*;
 
     // helper function
@@ -1874,5 +1876,66 @@ mod tests {
         });
 
         assert!(found.is_none());
+    }
+
+    #[test]
+    fn test_compilation_with_wasm_reference_types_disabled() {
+        // Arrange
+        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
+
+        // Act
+        // ScryptoCompiler compiles WASM by default with reference-types disabled.
+        let status = ScryptoCompiler::builder()
+            .manifest_path(blueprint_manifest_path)
+            .compile();
+
+        // Assert
+        assert!(status.is_ok(), "{:?}", status);
+    }
+
+    #[test]
+    fn test_compilation_with_wasm_reference_types_enabled() {
+        // Arrange
+        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
+
+        let llvm_version = Command::new("llvm-config")
+            .arg("--version")
+            .stdout(Stdio::piped())
+            .output()
+            .unwrap()
+            .stdout;
+
+        // `llvm-config -- version` returns 'xx.y.z'
+        //  Let's get the first part 'xx'
+        let llvm_version = String::from_utf8(llvm_version).unwrap();
+        let llvm_version = llvm_version.split(".").next().unwrap();
+        let llvm_version: u8 = llvm_version.parse().unwrap();
+
+        let action = if llvm_version >= 19 {
+            // Since LLVM 19 reference-types are enabled by default, no dedicated CFLAGS needed.
+            // Unset TARGET_CFLAGS to build with default WASM features.
+            EnvironmentVariableAction::Unset
+        } else {
+            // In previous versions reference-types must be enabled explicitly.
+            EnvironmentVariableAction::Set("-mreference-types".to_string())
+        };
+        // Act
+        let status = ScryptoCompiler::builder()
+            .env("TARGET_CFLAGS", action)
+            .manifest_path(blueprint_manifest_path)
+            .compile();
+
+        // Assert
+        // Error is expected here because Radix Engine expects WASM with reference-types disabled.
+        // See `call_indirect.c` for more details.
+        assert!(matches!(
+            status.unwrap_err(),
+            ScryptoCompilerError::SchemaExtractionError(
+                ExtractSchemaError::InvalidWasm(PrepareError::ValidationError(msg))) if msg.contains("reference-types not enabled: zero byte expected")
+        ))
     }
 }
