@@ -366,10 +366,10 @@ impl<'a> IntentProcessorObjects<'a> {
         worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let mut resource_constraint_checker = self
-            .next_call_return_constraints
-            .take()
-            .map(ResourceConstraintChecker::new);
+        let mut resource_constraint_checker =
+            self.next_call_return_constraints.take().map(|constraints| {
+                ResourceConstraintChecker::new(constraints.constraints, constraints.exact)
+            });
 
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
@@ -437,22 +437,24 @@ impl<'a> IntentProcessorObjects<'a> {
     }
 }
 
-struct ResourceConstraintChecker {
+pub struct ResourceConstraintChecker {
     fungible_resources: IndexMap<ResourceAddress, Decimal>,
     non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
-    constraints: NextCallReturnsConstraints,
+    constraints: ManifestResourceConstraints,
+    exact: bool,
 }
 
 impl ResourceConstraintChecker {
-    fn new(constraints: NextCallReturnsConstraints) -> Self {
+    pub fn new(constraints: ManifestResourceConstraints, exact: bool) -> Self {
         Self {
             fungible_resources: Default::default(),
             non_fungible_resources: Default::default(),
             constraints,
+            exact,
         }
     }
 
-    fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
+    pub fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
         if amount.is_positive() {
             self.fungible_resources
                 .entry(resource_address)
@@ -461,7 +463,7 @@ impl ResourceConstraintChecker {
         }
     }
 
-    fn add_non_fungible(
+    pub fn add_non_fungible(
         &mut self,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
@@ -474,11 +476,11 @@ impl ResourceConstraintChecker {
         }
     }
 
-    fn validate(self) -> Result<(), ManifestResourceConstraintsError> {
-        self.constraints.constraints.validate(
+    pub fn validate(self) -> Result<(), ManifestResourceConstraintsError> {
+        self.constraints.validate(
             self.fungible_resources,
             self.non_fungible_resources,
-            self.constraints.exact,
+            self.exact,
         )
     }
 }

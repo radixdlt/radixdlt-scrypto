@@ -1,3 +1,4 @@
+use crate::blueprints::transaction_processor::ResourceConstraintChecker;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -26,6 +27,7 @@ impl WorktopSubstate {
 pub enum WorktopError {
     AssertionFailed,
     InsufficientBalance,
+    ResourceConstraintsError(ManifestResourceConstraintsError),
 }
 
 pub struct WorktopBlueprint;
@@ -35,6 +37,165 @@ pub struct WorktopBlueprint;
 //==============================================
 
 impl WorktopBlueprint {
+    pub fn get_definition() -> BlueprintDefinitionInit {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+        let mut fields = vec![];
+        fields.push(FieldSchema::static_field(
+            aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
+        ));
+
+        let mut functions = index_map_new();
+        functions.insert(
+            WORKTOP_DROP_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopDropInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopDropOutput>(),
+                ),
+                export: WORKTOP_DROP_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_PUT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
+                ),
+                export: WORKTOP_PUT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
+                ),
+                export: WORKTOP_TAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
+                ),
+                export: WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_TAKE_ALL_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
+                ),
+                export: WORKTOP_TAKE_ALL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
+                ),
+                export: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsAmountOutput>(),
+                ),
+                export: WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesOutput>(
+                        ),
+                ),
+                export: WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            WORKTOP_DRAIN_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
+                ),
+                export: WORKTOP_DRAIN_IDENT.to_string(),
+            },
+        );
+        let schema = generate_full_schema(aggregator);
+
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: true,
+            dependencies: indexset!(),
+            feature_set: indexset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema,
+                state: BlueprintStateSchemaInit {
+                    fields,
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                types: BlueprintTypeSchemaInit::default(),
+                functions: BlueprintFunctionsSchemaInit { functions },
+                hooks: BlueprintHooksInit::default(),
+            },
+
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::AllowAll,
+            },
+        }
+    }
+
     pub(crate) fn drop<Y: SystemApi<RuntimeError> + KernelSubstateApi<SystemLockData>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -332,5 +493,125 @@ impl WorktopBlueprint {
         api.field_write_typed(worktop_handle, &worktop)?;
         api.field_close(worktop_handle)?;
         Ok(IndexedScryptoValue::from_typed(&buckets))
+    }
+}
+
+pub struct WorktopBlueprintCuttlefishExtension;
+
+impl WorktopBlueprintCuttlefishExtension {
+    pub fn added_functions_schema() -> (
+        IndexMap<String, FunctionSchemaInit>,
+        VersionedSchema<ScryptoCustomSchema>,
+    ) {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let mut functions = index_map_new();
+        functions.insert(
+            WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertResourcesIncludeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<WorktopAssertResourcesIncludeOutput>(),
+                ),
+                export: WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            WORKTOP_ASSERT_RESOURCES_ONLY_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopAssertResourcesOnlyInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<WorktopAssertResourcesOnlyOutput>(),
+                ),
+                export: WORKTOP_ASSERT_RESOURCES_ONLY_IDENT.to_string(),
+            },
+        );
+
+        let schema = generate_full_schema(aggregator);
+        (functions, schema)
+    }
+
+    pub(crate) fn assert_resources_includes<Y: SystemApi<RuntimeError>>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        let input: WorktopAssertResourcesIncludeInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+
+        Self::assert_resources(input.constraints, false, api)
+    }
+
+    pub(crate) fn assert_resources_only<Y: SystemApi<RuntimeError>>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        let input: WorktopAssertResourcesIncludeInput = input
+            .as_typed()
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+
+        Self::assert_resources(input.constraints, true, api)
+    }
+
+    fn assert_resources<Y: SystemApi<RuntimeError>>(
+        constraints: ManifestResourceConstraints,
+        exact: bool,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        let worktop_handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::read_only(),
+        )?;
+        let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
+
+        let mut constraint_checker = ResourceConstraintChecker::new(constraints, exact);
+
+        for (resource, bucket) in worktop.resources {
+            let bucket = Bucket(bucket.clone());
+            if resource.is_fungible() {
+                let amount = bucket.amount(api)?;
+                constraint_checker.add_fungible(resource, amount);
+            } else {
+                let ids = bucket.non_fungible_local_ids(api)?;
+                constraint_checker.add_non_fungible(resource, ids);
+            }
+        }
+
+        constraint_checker.validate().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                WorktopError::ResourceConstraintsError(e),
+            ))
+        })?;
+
+        api.field_close(worktop_handle)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        match export_name {
+            WORKTOP_ASSERT_RESOURCES_INCLUDE_IDENT => {
+                WorktopBlueprintCuttlefishExtension::assert_resources_includes(input, api)
+            }
+            WORKTOP_ASSERT_RESOURCES_ONLY_IDENT => {
+                WorktopBlueprintCuttlefishExtension::assert_resources_only(input, api)
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
+            )),
+        }
     }
 }

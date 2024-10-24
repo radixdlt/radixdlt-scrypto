@@ -216,7 +216,7 @@ fn when_extra_zero_constraints_on_assert_next_call_returns_only_should_succeed()
 }
 
 #[test]
-fn when_withdrawing_zero_amount_with_zero_constraints_on_assert_next_call_returns_include_should_succeed(
+fn when_withdrawing_zero_amount_with_zero_constraints_on_assert_next_call_returns_only_should_succeed(
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -240,7 +240,7 @@ fn when_withdrawing_zero_amount_with_zero_constraints_on_assert_next_call_return
 }
 
 #[test]
-fn when_withdrawing_zero_non_fungibles_with_zero_constraints_on_assert_next_call_returns_include_should_succeed(
+fn when_withdrawing_zero_non_fungibles_with_zero_constraints_on_assert_next_call_returns_only_should_succeed(
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();

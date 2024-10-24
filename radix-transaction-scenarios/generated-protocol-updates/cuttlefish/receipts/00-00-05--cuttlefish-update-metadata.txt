@@ -1,0 +1,356 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 30 entities
+├─ resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3 across 1 partitions
+  └─ Partition(2): 2 changes
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-xrd.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/xrd"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Package of Direct Caller Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "This is an implicit proof resource, intended for verifying access by specific code. See the info_url for further information.",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_resource.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/package-of-direct-caller-resource"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Global Caller Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "This is an implicit proof resource, intended for verifying access by a specific global caller. In cases where you wish to find out the global caller, you can require the caller to pass their claimed global address into the method, and then verify it with this rule. See the info_url for further information.",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-global_caller_resource.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/global-caller-resource"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5 across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "ECDSA Secp256k1 Signature Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "This is an implicit proof resource, intended for verifying access by a manifest signed with the given ECDSA Secp256k1 key hash. See the info_url for further information.",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_resource.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/secp256k1-signature-resource"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5 across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "EdDSA Ed25519 Signature Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "This is an implicit proof resource, intended for verifying access by a manifest signed with the given EdDSA Ed25519 key hash. See the info_url for further information.",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_resource.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/ed25519-signature-resource"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxw002k0 across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "System Execution Resource",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "This is an implicit proof resource, intended for verifying access by a manifest of a certain type of system transaction, such as a protocol update or a validator transaction. See the info_url for further information.",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets.radixdlt.com/icons/icon-system_execution_resource.png"),
+         ),
+       )
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/system-execution-resource"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxpkgwnrxxxxxxxxx002558553505xxxxxxxxxlah0rl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/package-owner-badge"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxjxu0rl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/validator-owner-badge"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/account-owner-badge"),
+         ),
+       )
+├─ resource_sim1nfxxxxxxxxxxdntwnrxxxxxxxxx002876444928xxxxxxxxxnc50rl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/identity-owner-badge"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/package-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/resource-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/account-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/identity-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/consensus-manager-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/access-controller-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/pool-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxtxnpxrxxxxxxxxx002962227406xxxxxxxxx4dvqkl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/transaction-processor-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxmtdataxxxxxxxxx005246577269xxxxxxxxx9qjump across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/metadata-module-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxryaltyxxxxxxxxx003849573396xxxxxxxxxa0z7mc across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/royalty-module-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxarulesxxxxxxxxx002304462983xxxxxxxxxrgr7fv across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/role-assignment-module-package"),
+         ),
+       )
+├─ package_sim1phua8spmaxapwq56stduucrvztk92gxzjy9c98h0qemfjec00a6qza across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/test-utils-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxgenssxxxxxxxxxx004372642773xxxxxxxxxkjv3q6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/genesis-helper-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/faucet-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxx4d5zd2 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/transaction-tracker-package"),
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/locker-package"),
+         ),
+       )
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/consensus-manager"),
+         ),
+       )
+├─ component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/genesis-helper"),
+         ),
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/faucet"),
+         ),
+       )
+└─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com/info-url/transaction-tracker"),
+         ),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

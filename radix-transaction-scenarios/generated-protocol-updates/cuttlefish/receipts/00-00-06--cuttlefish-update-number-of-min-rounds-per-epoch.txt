@@ -1,0 +1,41 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED ConsensusManagerConfigurationFieldPayload::V1(
+         ConsensusManagerConfigSubstate {
+           config: ConsensusManagerConfig {
+             max_validators: 100u32,
+             epoch_change_condition: EpochChangeCondition {
+               min_round_count: 100u64,
+               max_round_count: 3000u64,
+               target_duration_millis: 300000u64,
+             },
+             num_unstake_epochs: 2016u64,
+             total_emission_xrd_per_epoch: Decimal("2853.881278538812785388"),
+             min_validator_reliability: Decimal("1"),
+             num_owner_stake_units_unlock_epochs: 8064u64,
+             num_fee_increase_delay_epochs: 4032u64,
+             validator_creation_usd_cost: Decimal("100"),
+           },
+         },
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0
