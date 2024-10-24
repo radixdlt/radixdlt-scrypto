@@ -1,0 +1,15 @@
+[workspace]
+
+[package]
+name = "call-indirect"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+scrypto = { path = "../../../../scrypto" }
+
+[build-dependencies]
+cc = { version = "1.1" }
+
+[lib]
+crate-type = ["cdylib", "lib"]
