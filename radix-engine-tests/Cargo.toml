@@ -73,6 +73,10 @@ harness = false
 name = "transaction_validation"
 harness = false
 
+[[bench]]
+name = "metadata_validation"
+harness = false
+
 [lib]
 # Our benches use criterion.rs - which requires disabling normal bench harness
 # generation below - to workaround this issue:
