@@ -17,52 +17,66 @@ pub struct IndexedScryptoValue {
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
 
+#[derive(Default)]
+struct OwnedAndReferenceAggregator {
+    references: Vec<NodeId>,
+    owned_nodes: Vec<NodeId>,
+}
+
+impl<'de> UntypedPayloadVisitor<'de, ScryptoCustomTraversal> for OwnedAndReferenceAggregator {
+    type Output<'t> = Result<(), DecodeError>;
+
+    fn on_terminal_value<'t>(
+        &mut self,
+        details: OnTerminalValue<'t, 'de, ScryptoCustomTraversal>,
+    ) -> core::ops::ControlFlow<Self::Output<'t>> {
+        if let traversal::TerminalValueRef::Custom(custom) = details.value {
+            match custom.0 {
+                ScryptoCustomValue::Reference(node_id) => {
+                    self.references.push(node_id.0.into());
+                }
+                ScryptoCustomValue::Own(node_id) => {
+                    self.owned_nodes.push(node_id.0.into());
+                }
+                ScryptoCustomValue::Decimal(_)
+                | ScryptoCustomValue::PreciseDecimal(_)
+                | ScryptoCustomValue::NonFungibleLocalId(_) => {}
+            }
+        }
+        core::ops::ControlFlow::Continue(())
+    }
+
+    fn on_error<'t>(&mut self, details: OnError<'t, ScryptoCustomTraversal>) -> Self::Output<'t> {
+        Err(details.error)
+    }
+
+    fn on_traversal_end<'t>(
+        &mut self,
+        _details: OnTraversalEnd<'t, ScryptoCustomTraversal>,
+    ) -> Self::Output<'t> {
+        Ok(())
+    }
+}
+
 impl IndexedScryptoValue {
     fn new(bytes: Vec<u8>) -> Result<Self, DecodeError> {
-        let mut traverser = ScryptoTraverser::new(
+        let mut aggregates = OwnedAndReferenceAggregator::default();
+        ScryptoUntypedTraverser::new(
             &bytes,
-            ExpectedStart::PayloadPrefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
-            VecTraverserConfig {
+            UntypedTraverserConfig {
                 max_depth: SCRYPTO_SBOR_V1_MAX_DEPTH,
                 check_exact_end: true,
             },
-        );
-        let mut references = Vec::<NodeId>::new();
-        let mut owned_nodes = Vec::<NodeId>::new();
-        loop {
-            let event = traverser.next_event();
-            match event.event {
-                TraversalEvent::ContainerStart(_) => {}
-                TraversalEvent::ContainerEnd(_) => {}
-                TraversalEvent::TerminalValue(r) => {
-                    if let traversal::TerminalValueRef::Custom(c) = r {
-                        match c.0 {
-                            ScryptoCustomValue::Reference(node_id) => {
-                                references.push(node_id.0.into());
-                            }
-                            ScryptoCustomValue::Own(node_id) => {
-                                owned_nodes.push(node_id.0.into());
-                            }
-                            ScryptoCustomValue::Decimal(_)
-                            | ScryptoCustomValue::PreciseDecimal(_)
-                            | ScryptoCustomValue::NonFungibleLocalId(_) => {}
-                        }
-                    }
-                }
-                TraversalEvent::TerminalValueBatch(_) => {}
-                TraversalEvent::End => {
-                    break;
-                }
-                TraversalEvent::DecodeError(e) => {
-                    return Err(e);
-                }
-            }
-        }
+        )
+        .run_from_start(
+            ExpectedStart::PayloadPrefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
+            &mut aggregates,
+        )?;
 
         Ok(Self {
             bytes,
-            references,
-            owned_nodes,
+            references: aggregates.references,
+            owned_nodes: aggregates.owned_nodes,
             scrypto_value: RefCell::new(None),
         })
     }
