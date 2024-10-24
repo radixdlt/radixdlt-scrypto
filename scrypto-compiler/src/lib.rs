@@ -90,6 +90,8 @@ pub struct ScryptoCompilerInputParams {
     /// Default configuration is equivalent to running the following commands in the CLI:
     /// wasm-opt -0z --strip-debug --strip-dwarf --strip-producers --dce $some_path $some_path
     pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
+    /// If set to true then compiler informs about the compilation progress
+    pub verbose: bool,
 }
 impl Default for ScryptoCompilerInputParams {
     /// Definition of default `ScryptoCompiler` configuration.
@@ -120,6 +122,7 @@ impl Default for ScryptoCompilerInputParams {
             ignore_locked_env_var: false,
             locked: false,
             wasm_optimization,
+            verbose: false,
         };
         // Apply default log level features
         ret.features
@@ -769,7 +772,9 @@ impl ScryptoCompiler {
 
     fn wasm_optimize(&self, wasm_path: &Path) -> Result<(), ScryptoCompilerError> {
         if let Some(wasm_opt_config) = &self.input_params.wasm_optimization {
-            println!("optimizing WASM {:?}", wasm_opt_config);
+            if self.input_params.verbose {
+                println!("Optimizing WASM {:?}", wasm_opt_config);
+            }
             wasm_opt_config
                 .run(wasm_path, wasm_path)
                 .map_err(ScryptoCompilerError::WasmOptimizationError)
@@ -1020,7 +1025,9 @@ impl ScryptoCompiler {
     }
 
     fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        println!("executing command: {}", cmd_to_string(command));
+        if self.input_params.verbose {
+            println!("Executing command: {}", cmd_to_string(command));
+        }
         let status = command.status().map_err(|e| {
             ScryptoCompilerError::IOError(e, Some(String::from("Cargo build command failed.")))
         })?;
@@ -1374,6 +1381,11 @@ impl ScryptoCompilerBuilder {
         self.input_params
             .custom_options
             .extend(options.iter().map(|item| item.to_string()));
+        self
+    }
+
+    pub fn debug(&mut self, verbose: bool) -> &mut Self {
+        self.input_params.verbose = verbose;
         self
     }
 

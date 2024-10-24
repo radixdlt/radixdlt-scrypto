@@ -72,6 +72,10 @@ pub struct Build {
     /// Pass any additional option to `cargo build` call.
     #[clap(long)]
     custom_option: Option<Vec<String>>,
+
+    /// Prints compilation steps.
+    #[clap(short, long)]
+    verbose: bool,
 }
 
 impl Build {
@@ -115,6 +119,7 @@ impl Build {
                 compiler_builder.package(p);
             });
         }
+        compiler_builder.debug(self.verbose);
 
         if let Some(env) = &self.env {
             let env_variables_decoded: Vec<Vec<&str>> = env
