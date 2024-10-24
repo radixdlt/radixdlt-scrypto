@@ -124,7 +124,14 @@ impl Build {
         if let Some(env) = &self.env {
             let env_variables_decoded: Vec<Vec<&str>> = env
                 .iter()
-                .map(|e| e.split('=').collect::<Vec<&str>>())
+                .map(|e|
+                    // Split string on the first '=' occurence.
+                    // This is to cover cases like this:
+                    //   ENV_NAME=foo=bar
+                    match e.split_once('=') {
+                        Some((key, val)) => vec![key, val],
+                        None => vec![e.as_str()],
+                })
                 .collect();
             for v in env_variables_decoded {
                 if v.len() == 1 {
