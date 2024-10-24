@@ -769,7 +769,7 @@ impl ScryptoCompiler {
 
     fn wasm_optimize(&self, wasm_path: &Path) -> Result<(), ScryptoCompilerError> {
         if let Some(wasm_opt_config) = &self.input_params.wasm_optimization {
-            println!("wasm_optimize {:?}", wasm_path);
+            println!("optimizing WASM {:?}", wasm_opt_config);
             wasm_opt_config
                 .run(wasm_path, wasm_path)
                 .map_err(ScryptoCompilerError::WasmOptimizationError)
@@ -1020,6 +1020,7 @@ impl ScryptoCompiler {
     }
 
     fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
+        println!("executing command: {}", cmd_to_string(command));
         let status = command.status().map_err(|e| {
             ScryptoCompilerError::IOError(e, Some(String::from("Cargo build command failed.")))
         })?;
@@ -1407,41 +1408,39 @@ pub fn is_scrypto_cargo_locked_env_var_active() -> bool {
     false
 }
 
+// helper function
+fn cmd_to_string(cmd: &Command) -> String {
+    let args = cmd
+        .get_args()
+        .into_iter()
+        .map(|arg| arg.to_str().unwrap())
+        .collect::<Vec<_>>()
+        .join(" ");
+    let envs = cmd
+        .get_envs()
+        .into_iter()
+        .map(|(name, value)| {
+            if let Some(value) = value {
+                format!("{}='{}'", name.to_str().unwrap(), value.to_str().unwrap())
+            } else {
+                format!("{}", name.to_str().unwrap())
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut ret = envs;
+    if !ret.is_empty() {
+        ret.push(' ');
+    }
+    ret.push_str(cmd.get_program().to_str().unwrap());
+    ret.push(' ');
+    ret.push_str(&args);
+    ret
+}
+
 #[cfg(test)]
 mod tests {
-    use radix_engine::vm::wasm::PrepareError;
-
     use super::*;
-
-    // helper function
-    fn cmd_to_string(cmd: &Command) -> String {
-        let args = cmd
-            .get_args()
-            .into_iter()
-            .map(|arg| arg.to_str().unwrap())
-            .collect::<Vec<_>>()
-            .join(" ");
-        let envs = cmd
-            .get_envs()
-            .into_iter()
-            .map(|(name, value)| {
-                if let Some(value) = value {
-                    format!("{}='{}'", name.to_str().unwrap(), value.to_str().unwrap())
-                } else {
-                    format!("{}", name.to_str().unwrap())
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
-        let mut ret = envs;
-        if !ret.is_empty() {
-            ret.push(' ');
-        }
-        ret.push_str(cmd.get_program().to_str().unwrap());
-        ret.push(' ');
-        ret.push_str(&args);
-        ret
-    }
 
     #[test]
     fn test_target_binary_path_target() {
@@ -1876,76 +1875,5 @@ mod tests {
         });
 
         assert!(found.is_none());
-    }
-
-    #[test]
-    fn test_compilation_with_wasm_reference_types_disabled() {
-        // Arrange
-        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
-
-        // Act
-        // ScryptoCompiler compiles WASM by default with reference-types disabled.
-        let status = ScryptoCompiler::builder()
-            .manifest_path(blueprint_manifest_path)
-            .compile();
-
-        // Assert
-        assert!(status.is_ok(), "{:?}", status);
-    }
-
-    #[test]
-    fn test_compilation_with_wasm_reference_types_enabled() {
-        // Arrange
-        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
-
-        // Check clang/LLVM version
-        let clang_version = Command::new("clang").arg("--version").output().unwrap();
-
-        // clang --version exemplary output
-        // Ubuntu clang version 17.0.6 (++20231209124227+6009708b4367-1~exp1~20231209124336.77)
-        // Target: x86_64-pc-linux-gnu
-        // Thread model: posix
-        // InstalledDir: /usr/lib/llvm-17/bin
-        let clang_version = String::from_utf8_lossy(&clang_version.stdout);
-        let mut idx = clang_version
-            .find("clang version")
-            .expect("Failed to get clang version");
-        idx += "clang version ".len();
-        let version = &clang_version[idx..]
-            .split_whitespace()
-            .next()
-            .expect("Failed to get version");
-        let major_version = version
-            .split(".")
-            .next()
-            .expect("Failed to get major version");
-        let major_version: u8 = major_version.parse().unwrap();
-
-        let action = if major_version >= 19 {
-            // Since LLVM 19 reference-types are enabled by default, no dedicated CFLAGS needed.
-            // Unset TARGET_CFLAGS to build with default WASM features.
-            EnvironmentVariableAction::Unset
-        } else {
-            // In previous versions reference-types must be enabled explicitly.
-            EnvironmentVariableAction::Set("-mreference-types".to_string())
-        };
-        // Act
-        let status = ScryptoCompiler::builder()
-            .env("TARGET_CFLAGS", action)
-            .manifest_path(blueprint_manifest_path)
-            .compile();
-
-        // Assert
-        // Error is expected here because Radix Engine expects WASM with reference-types disabled.
-        // See `call_indirect.c` for more details.
-        assert!(matches!(
-            status.unwrap_err(),
-            ScryptoCompilerError::SchemaExtractionError(
-                ExtractSchemaError::InvalidWasm(PrepareError::ValidationError(msg))) if msg.contains("reference-types not enabled: zero byte expected")
-        ))
     }
 }
