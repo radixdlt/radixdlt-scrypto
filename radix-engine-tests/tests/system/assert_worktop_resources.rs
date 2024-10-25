@@ -269,9 +269,7 @@ fn run_worktop_two_resources_test(
     if let Some(error) = expected_result(resource1, resource2) {
         receipt.expect_specific_failure(|e| {
             e.eq(&RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::ResourceAssertionFailed(
-                    error.clone(),
-                )),
+                ApplicationError::WorktopError(WorktopError::AssertionFailed(error.clone())),
             ))
         });
     } else {

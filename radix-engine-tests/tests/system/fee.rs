@@ -295,15 +295,13 @@ fn test_fee_accounting_failure() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                WorktopError::ResourceAssertionFailed(
-                    ResourceConstraintsError::ResourceConstraintFailed {
-                        resource_address: XRD,
-                        error: ResourceConstraintError::ExpectedAtLeastAmount {
-                            expected_at_least_amount: Decimal::ONE,
-                            actual_amount: Decimal::ZERO,
-                        },
-                    }
-                )
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: XRD,
+                    error: ResourceConstraintError::ExpectedAtLeastAmount {
+                        expected_at_least_amount: Decimal::ONE,
+                        actual_amount: Decimal::ZERO,
+                    },
+                })
             ))
         )
     });
@@ -464,15 +462,13 @@ fn test_contingent_fee_accounting_failure() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                WorktopError::ResourceAssertionFailed(
-                    ResourceConstraintsError::ResourceConstraintFailed {
-                        resource_address: XRD,
-                        error: ResourceConstraintError::ExpectedAtLeastAmount {
-                            expected_at_least_amount: Decimal::ONE,
-                            actual_amount: Decimal::ZERO,
-                        },
-                    }
-                )
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: XRD,
+                    error: ResourceConstraintError::ExpectedAtLeastAmount {
+                        expected_at_least_amount: Decimal::ONE,
+                        actual_amount: Decimal::ZERO,
+                    },
+                })
             ))
         )
     });

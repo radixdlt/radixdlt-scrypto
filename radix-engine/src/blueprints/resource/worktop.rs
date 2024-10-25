@@ -23,10 +23,11 @@ impl WorktopSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WorktopError {
     /// This is now unused, but kept in for backwards compatibility
-    /// of error models (at least for now)
-    AssertionFailed,
+    /// of error models (at least whilst we need to do that for the node,
+    /// so that legacy errors can be serialized to string)
+    BasicAssertionFailed,
     InsufficientBalance,
-    ResourceAssertionFailed(ResourceConstraintsError),
+    AssertionFailed(ResourceConstraintsError),
 }
 
 pub struct WorktopBlueprint;
@@ -408,12 +409,11 @@ impl WorktopBlueprint {
             Decimal::zero()
         };
         if amount.is_zero() {
-            let worktop_error = WorktopError::ResourceAssertionFailed(
-                ResourceConstraintsError::ResourceConstraintFailed {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
                     resource_address: input.resource_address,
                     error: ResourceConstraintError::ExpectedNonZeroAmount,
-                },
-            );
+                });
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(worktop_error),
             ));
@@ -442,15 +442,14 @@ impl WorktopBlueprint {
             Decimal::zero()
         };
         if amount < input.amount {
-            let worktop_error = WorktopError::ResourceAssertionFailed(
-                ResourceConstraintsError::ResourceConstraintFailed {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
                     resource_address: input.resource_address,
                     error: ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount: input.amount,
                         actual_amount: amount,
                     },
-                },
-            );
+                });
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(worktop_error),
             ));
@@ -480,14 +479,13 @@ impl WorktopBlueprint {
             index_set_new()
         };
         if let Some(missing_id) = input.ids.difference(&bucket_ids).next() {
-            let worktop_error = WorktopError::ResourceAssertionFailed(
-                ResourceConstraintsError::ResourceConstraintFailed {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
                     resource_address: input.resource_address,
                     error: ResourceConstraintError::NonFungibleMissing {
                         missing_id: missing_id.clone(),
                     },
-                },
-            );
+                });
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(worktop_error),
             ));
@@ -573,7 +571,7 @@ impl WorktopBlueprintCuttlefishExtension {
             .validate_includes(input.constraints)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                    WorktopError::ResourceAssertionFailed(e),
+                    WorktopError::AssertionFailed(e),
                 ))
             })?;
 
@@ -592,7 +590,7 @@ impl WorktopBlueprintCuttlefishExtension {
             .validate_only(input.constraints)
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                    WorktopError::ResourceAssertionFailed(e),
+                    WorktopError::AssertionFailed(e),
                 ))
             })?;
 
