@@ -160,9 +160,25 @@ impl<'a, I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcesso
     }
 }
 
-pub struct NextCallReturnsConstraints {
+pub struct NextCallReturnsChecker {
     pub constraints: ManifestResourceConstraints,
-    pub exact: bool,
+    pub prevent_unspecified_resource_balances: bool,
+    pub aggregate_balances: AggregateResourceBalances,
+}
+
+impl NextCallReturnsChecker {
+    fn validate(self) -> Result<(), RuntimeError> {
+        let result = if self.prevent_unspecified_resource_balances {
+            self.aggregate_balances.validate_only(self.constraints)
+        } else {
+            self.aggregate_balances.validate_includes(self.constraints)
+        };
+        result.map_err(|error| {
+            RuntimeError::SystemError(SystemError::IntentError(
+                IntentError::AssertNextCallReturnsFailed(error),
+            ))
+        })
+    }
 }
 
 pub struct IntentProcessorObjects<'a> {
@@ -174,7 +190,7 @@ pub struct IntentProcessorObjects<'a> {
     blobs_by_hash: &'a IndexMap<Hash, Vec<u8>>,
     max_total_size_of_blobs: usize,
 
-    pub next_call_return_constraints: Option<NextCallReturnsConstraints>,
+    pub next_call_return_constraints: Option<NextCallReturnsChecker>,
 }
 
 impl<'a> IntentProcessorObjects<'a> {
@@ -366,10 +382,7 @@ impl<'a> IntentProcessorObjects<'a> {
         worktop: &Worktop,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let mut resource_constraint_checker =
-            self.next_call_return_constraints.take().map(|constraints| {
-                ResourceConstraintChecker::new(constraints.constraints, constraints.exact)
-            });
+        let mut resource_constraint_checker = self.next_call_return_constraints.take();
 
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
@@ -388,7 +401,9 @@ impl<'a> IntentProcessorObjects<'a> {
                                 .expect()
                                 .try_into()
                                 .unwrap();
-                            checker.add_fungible(resource_address, bucket.amount(api)?);
+                            checker
+                                .aggregate_balances
+                                .add_fungible(resource_address, bucket.amount(api)?);
                         }
                         worktop.put(bucket, api)?;
                     }
@@ -401,7 +416,7 @@ impl<'a> IntentProcessorObjects<'a> {
                                 .expect()
                                 .try_into()
                                 .unwrap();
-                            checker.add_non_fungible(
+                            checker.aggregate_balances.add_non_fungible(
                                 resource_address,
                                 bucket.non_fungible_local_ids(api)?,
                             );
@@ -426,62 +441,10 @@ impl<'a> IntentProcessorObjects<'a> {
         }
 
         if let Some(checker) = resource_constraint_checker {
-            checker.validate().map_err(|e| {
-                RuntimeError::SystemError(SystemError::IntentError(
-                    IntentError::AssertNextCallReturnsFailed(e),
-                ))
-            })?;
+            checker.validate()?;
         }
 
         Ok(())
-    }
-}
-
-pub struct ResourceConstraintChecker {
-    fungible_resources: IndexMap<ResourceAddress, Decimal>,
-    non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
-    constraints: ManifestResourceConstraints,
-    exact: bool,
-}
-
-impl ResourceConstraintChecker {
-    pub fn new(constraints: ManifestResourceConstraints, exact: bool) -> Self {
-        Self {
-            fungible_resources: Default::default(),
-            non_fungible_resources: Default::default(),
-            constraints,
-            exact,
-        }
-    }
-
-    pub fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
-        if amount.is_positive() {
-            self.fungible_resources
-                .entry(resource_address)
-                .or_default()
-                .add_assign(amount);
-        }
-    }
-
-    pub fn add_non_fungible(
-        &mut self,
-        resource_address: ResourceAddress,
-        ids: IndexSet<NonFungibleLocalId>,
-    ) {
-        if !ids.is_empty() {
-            self.non_fungible_resources
-                .entry(resource_address)
-                .or_default()
-                .extend(ids);
-        }
-    }
-
-    pub fn validate(self) -> Result<(), ManifestResourceConstraintsError> {
-        self.constraints.validate(
-            self.fungible_resources,
-            self.non_fungible_resources,
-            self.exact,
-        )
     }
 }
 

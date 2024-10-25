@@ -466,7 +466,7 @@ pub mod collections {
         /// This is safe for std and no-std use cases (unlike `IndexSet::new` which disappears when std is not in the toolchain - see
         /// [this article](https://faultlore.com/blah/defaults-affect-inference/) for deep technical reasons)
         pub fn new<K>() -> IndexSet<K, DefaultHashBuilder> {
-            IndexSet::with_capacity_and_hasher(0, DefaultHashBuilder::default())
+            IndexSet::with_hasher(DefaultHashBuilder::default())
         }
 
         /// This is safe for std and no-std use cases (unlike `IndexSet::with_capacity` which disappears when std is not in the toolchain - see
@@ -535,10 +535,7 @@ pub mod collections {
         impl<K: Hash + Eq, V> NonIterMap<K, V> {
             /// Creates an empty map.
             pub fn new() -> Self {
-                Self(HashMap::with_capacity_and_hasher(
-                    0,
-                    DefaultHashBuilder::default(),
-                ))
+                Self(HashMap::with_hasher(DefaultHashBuilder::default()))
             }
 
             /// Gets the given key's corresponding entry in the map for in-place manipulation.

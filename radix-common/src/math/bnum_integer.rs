@@ -8,7 +8,7 @@ use num_bigint::BigInt;
 use num_integer::Roots;
 use num_traits::{FromPrimitive, One, Pow, ToPrimitive, Zero};
 use paste::paste;
-use sbor::rust::cmp::{Ord, Ordering, PartialEq, PartialOrd};
+use sbor::rust::cmp::{Ord, PartialEq, PartialOrd};
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
@@ -48,7 +48,7 @@ macro_rules! types {
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
                 #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
-                #[derive(Clone , Copy)]
+                #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);
 
@@ -98,35 +98,6 @@ macro_rules! types {
                 impl One for $t {
                     fn one() -> Self {
                         Self::ONE
-                    }
-                }
-
-                impl Ord for $t {
-                    fn cmp(&self, other: &Self) -> Ordering {
-                        self.0.cmp(&other.0)
-                    }
-                }
-
-                impl PartialOrd for $t {
-                    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                        Some(self.cmp(other))
-                    }
-                }
-
-                // The following three trait implementations must be aligned.
-
-                impl PartialEq for $t {
-                    fn eq(&self, other: &Self) -> bool {
-                        self.0.eq(&other.0)
-                    }
-                }
-
-                impl Eq for $t {
-                }
-
-                impl sbor::rust::hash::Hash for $t {
-                    fn hash<H>(&self, state: &mut H) where H: sbor::rust::hash::Hasher {
-                        self.0.hash(state)
                     }
                 }
             )*

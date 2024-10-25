@@ -33,7 +33,7 @@ fn asserting_incorrect_exact_amount_should_fail() {
         ManifestResourceConstraint::ExactAmount(expected_exact_amount),
         Some(ResourceConstraintError::ExpectedExactAmount {
             actual_amount,
-            expected_exact_amount,
+            expected_amount: expected_exact_amount,
         }),
     )
 }
@@ -79,14 +79,8 @@ fn asserting_incorrect_at_least_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::AtLeastNonFungibles(expected_at_least_ids.clone()),
-        Some(ResourceConstraintError::ExpectedAtLeastNonFungibles {
-            actual_ids: Box::new(
-                actual_ids
-                    .into_iter()
-                    .map(NonFungibleLocalId::from)
-                    .collect(),
-            ),
-            expected_at_least_ids: Box::new(expected_at_least_ids),
+        Some(ResourceConstraintError::NonFungibleMissing {
+            missing_id: NonFungibleLocalId::from(2),
         }),
     )
 }
@@ -115,14 +109,8 @@ fn asserting_incorrect_exact_non_fungibles_should_fail() {
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::ExactNonFungibles(expected_exact_ids.clone()),
-        Some(ResourceConstraintError::ExpectedExactNonFungibles {
-            actual_ids: Box::new(
-                actual_ids
-                    .into_iter()
-                    .map(NonFungibleLocalId::from)
-                    .collect(),
-            ),
-            expected_exact_ids: Box::new(expected_exact_ids),
+        Some(ResourceConstraintError::NonFungibleMissing {
+            missing_id: NonFungibleLocalId::from(3),
         }),
     )
 }
@@ -203,19 +191,17 @@ fn asserting_incorrect_fungible_lower_bound_general_constraint_should_fail() {
     let lower_bound = dec!(10) + Decimal::from_attos(I192::ONE);
     let constraint = GeneralResourceConstraint {
         required_ids: Default::default(),
-        allowed_ids: AllowedIds::Any,
         lower_bound: LowerBound::Inclusive(lower_bound),
         upper_bound: UpperBound::Unbounded,
+        allowed_ids: AllowedIds::Any,
     };
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::LowerBoundAmountNotSatisfied {
-                actual: amount,
-                lower_bound_inclusive: lower_bound,
-            },
-        )),
+        Some(ResourceConstraintError::ExpectedAtLeastAmount {
+            expected_at_least_amount: lower_bound,
+            actual_amount: amount,
+        }),
     );
 }
 
@@ -225,19 +211,17 @@ fn asserting_incorrect_fungible_upper_bound_general_constraint_should_fail() {
     let upper_bound = dec!(10) - Decimal::from_attos(I192::ONE);
     let constraint = GeneralResourceConstraint {
         required_ids: Default::default(),
-        allowed_ids: AllowedIds::Any,
         lower_bound: LowerBound::Inclusive(Decimal::zero()),
         upper_bound: UpperBound::Inclusive(upper_bound),
+        allowed_ids: AllowedIds::Any,
     };
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::UpperBoundAmountNotSatisfied {
-                actual: amount,
-                upper_bound_inclusive: upper_bound,
-            },
-        )),
+        Some(ResourceConstraintError::ExpectedAtMostAmount {
+            expected_at_most_amount: upper_bound,
+            actual_amount: amount,
+        }),
     );
 }
 
@@ -246,18 +230,16 @@ fn asserting_incorrect_non_fungible_required_ids_general_constraint_should_fail(
     let actual_ids = vec![1, 2];
     let constraint = GeneralResourceConstraint {
         required_ids: indexset!(NonFungibleLocalId::from(3)),
-        allowed_ids: AllowedIds::Any,
         lower_bound: LowerBound::Inclusive(Decimal::from(1)),
         upper_bound: UpperBound::Unbounded,
+        allowed_ids: AllowedIds::Any,
     };
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::MissingRequiredNonFungible {
-                missing_id: NonFungibleLocalId::from(3),
-            },
-        )),
+        Some(ResourceConstraintError::NonFungibleMissing {
+            missing_id: NonFungibleLocalId::from(3),
+        }),
     );
 }
 
@@ -266,21 +248,19 @@ fn asserting_incorrect_non_fungible_allowed_ids_general_constraint_should_fail()
     let actual_ids = vec![1, 3];
     let constraint = GeneralResourceConstraint {
         required_ids: indexset!(),
+        lower_bound: LowerBound::NonZero,
+        upper_bound: UpperBound::Inclusive(Decimal::from(2)),
         allowed_ids: AllowedIds::Allowlist(indexset!(
             NonFungibleLocalId::from(3),
             NonFungibleLocalId::from(4)
         )),
-        lower_bound: LowerBound::NonZero,
-        upper_bound: UpperBound::Inclusive(Decimal::from(2)),
     };
     test_non_fungible_constraint(
         actual_ids.clone(),
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::InvalidNonFungible {
-                invalid_id: NonFungibleLocalId::from(1),
-            },
-        )),
+        Some(ResourceConstraintError::NonFungibleNotAllowed {
+            disallowed_id: NonFungibleLocalId::from(1),
+        }),
     );
 }
 
@@ -295,9 +275,9 @@ fn asserting_correct_empty_bucket_general_constraints_should_succeed() {
         for allowed_ids in &allowed_ids_list {
             let constraint = GeneralResourceConstraint {
                 required_ids: Default::default(),
-                allowed_ids: allowed_ids.clone(),
                 lower_bound: LowerBound::Inclusive(amount),
                 upper_bound,
+                allowed_ids: allowed_ids.clone(),
             };
             test_fungible_constraint(
                 amount,
@@ -313,16 +293,14 @@ fn asserting_incorrect_empty_bucket_lower_bound_general_constraint_should_fail()
     let amount = dec!(0);
     let constraint = GeneralResourceConstraint {
         required_ids: Default::default(),
-        allowed_ids: AllowedIds::Any,
         lower_bound: LowerBound::NonZero,
         upper_bound: UpperBound::Unbounded,
+        allowed_ids: AllowedIds::Any,
     };
     test_fungible_constraint(
         amount,
         ManifestResourceConstraint::General(constraint),
-        Some(ResourceConstraintError::GeneralResourceConstraintError(
-            GeneralResourceConstraintError::ExpectedNonZeroAmount,
-        )),
+        Some(ResourceConstraintError::ExpectedNonZeroAmount),
     );
 }
 

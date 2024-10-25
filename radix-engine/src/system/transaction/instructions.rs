@@ -340,9 +340,10 @@ impl TxnNormalInstruction for AssertNextCallReturnsOnly {
         objects: &mut IntentProcessorObjects,
         _api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
-        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
+        objects.next_call_return_constraints = Some(NextCallReturnsChecker {
             constraints: self.constraints,
-            exact: true,
+            prevent_unspecified_resource_balances: true,
+            aggregate_balances: AggregateResourceBalances::new(),
         });
 
         Ok(InstructionOutput::None)
@@ -356,9 +357,10 @@ impl TxnNormalInstruction for AssertNextCallReturnsInclude {
         objects: &mut IntentProcessorObjects,
         _api: &mut Y,
     ) -> Result<InstructionOutput, RuntimeError> {
-        objects.next_call_return_constraints = Some(NextCallReturnsConstraints {
+        objects.next_call_return_constraints = Some(NextCallReturnsChecker {
             constraints: self.constraints,
-            exact: false,
+            prevent_unspecified_resource_balances: false,
+            aggregate_balances: AggregateResourceBalances::new(),
         });
 
         Ok(InstructionOutput::None)
@@ -384,7 +386,7 @@ impl TxnNormalInstruction for AssertBucketContents {
             })?;
         } else {
             let ids = bucket.non_fungible_local_ids(api)?;
-            self.constraint.validate_non_fungible(ids).map_err(|e| {
+            self.constraint.validate_non_fungible(&ids).map_err(|e| {
                 RuntimeError::SystemError(SystemError::IntentError(
                     IntentError::AssertBucketContentsFailed(e),
                 ))
