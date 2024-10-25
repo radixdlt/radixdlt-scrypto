@@ -20,7 +20,6 @@ pub struct ScryptoRuntime<'y, Y: SystemApi<RuntimeError>> {
     package_address: PackageAddress,
     export_name: String,
     wasm_execution_units_buffer: u32,
-    max_number_of_buffers: usize,
     scrypto_vm_version: ScryptoVmVersion,
 }
 
@@ -38,7 +37,6 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
             package_address,
             export_name,
             wasm_execution_units_buffer: 0,
-            max_number_of_buffers: MAX_NUMBER_OF_BUFFERS,
             scrypto_vm_version,
         }
     }
@@ -83,7 +81,14 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         assert!(buffer.len() <= 0xffffffff);
 
-        if self.buffers.len() >= self.max_number_of_buffers {
+        let max_number_of_buffers = match self.scrypto_vm_version {
+            ScryptoVmVersion::V1_0 | ScryptoVmVersion::V1_1 => 32,
+            // Practically speaking, there is little gain of keeping multiple buffers open before
+            // [multi-value](https://github.com/WebAssembly/multi-value/blob/master/proposals/multi-value/Overview.md) is supported and used.
+            // We reduce it to `4` so that the amount of memory that a transaction can consume is reduced, which is beneficial for parallel execution.
+            ScryptoVmVersion::V1_2 => 4,
+        };
+        if self.buffers.len() >= max_number_of_buffers {
             return Err(InvokeError::SelfError(WasmRuntimeError::TooManyBuffers));
         }
 

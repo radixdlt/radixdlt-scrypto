@@ -1332,6 +1332,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
+name = "wasm_limits"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "wasm_non_mvp"
 version = "1.0.0"
 dependencies = [
