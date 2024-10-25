@@ -8,7 +8,14 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
 
 ## Scrypto Development
 
-To set up your development environment, please following the instructions on https://docs.radixdlt.com/docs/getting-rust-scrypto.
+- Setup
+  - [Install rust and the scrypto toolchain](https://docs.radixdlt.com/docs/getting-rust-scrypto)
+  - [Choose an IDE and install the extensions](https://docs.radixdlt.com/docs/choosing-an-ide)
+- Learning
+  - The [learning step-by-step](https://docs.radixdlt.com/docs/learning-step-by-step) guide is our recommended path to start your journey learning scrypto.
+- CLI references
+  - [`scrypto`](https://docs.radixdlt.com/docs/scrypto-cli-tool)
+  - [`resim`](https://docs.radixdlt.com/docs/resim-radix-engine-simulator)
 
 ## Contribute
 
