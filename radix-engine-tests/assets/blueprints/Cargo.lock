@@ -564,6 +564,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "metadata3"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "metadata_component"
 version = "1.0.0"
 dependencies = [

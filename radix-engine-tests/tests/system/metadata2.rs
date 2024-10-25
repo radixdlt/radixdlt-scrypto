@@ -3,7 +3,7 @@ use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_url_validation() {
+fn test_large_vector_of_urls_metadata() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("metadata2"));
     let manifest = ManifestBuilder::new()
@@ -16,7 +16,7 @@ fn test_url_validation() {
 
     // Usage:
     // ```
-    // cargo test --release --package radix-engine-tests --test system_folder -- system::metadata2::test_url_validation --exact --show-output
+    // cargo test --release --package radix-engine-tests --test system_folder -- system::metadata2::test_large_vector_of_urls_metadata --exact --show-output
     // ```
     println!("{:?}", receipt);
     println!("{} ms", end.duration_since(start).as_millis());
