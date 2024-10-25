@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_common::prelude::*;
-use radix_engine::object_modules::metadata::MetadataValueValidationError;
 use scrypto::prelude::CheckedUrl;
 use std::hint::black_box;
 
@@ -8,10 +7,7 @@ use std::hint::black_box;
 fn bench_validate_urls(c: &mut Criterion) {
     c.bench_function("metadata_validation::validate_urls", |b| {
         b.iter(|| {
-            black_box(
-                CheckedUrl::of("https://www.example.com/test?q=x")
-                    .ok_or(MetadataValueValidationError::InvalidURL("".to_owned())),
-            );
+            black_box(CheckedUrl::of("https://www.example.com/test?q=x").unwrap());
         })
     });
 }

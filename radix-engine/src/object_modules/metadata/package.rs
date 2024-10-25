@@ -16,9 +16,11 @@ use super::{RemoveMetadataEvent, SetMetadataEvent};
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum MetadataError {
+    KeyStringExceedsMaxLength { max: usize, actual: usize },
+    ValueSborExceedsMaxLength { max: usize, actual: usize },
     ValueDecodeError(DecodeError),
-    MetadataKeyValidationError(MetadataKeyValidationError),
     MetadataValueValidationError(MetadataValueValidationError),
+    MetadataKeyValidationError(MetadataKeyValidationError),
 }
 
 declare_native_blueprint_state! {
@@ -262,7 +264,7 @@ impl MetadataNativePackage {
     }
 
     /// This method assumes that the data has been pre-checked.
-    pub fn init_system_struct(
+    pub(crate) fn init_system_struct(
         data: IndexMap<Vec<u8>, (Option<Vec<u8>>, bool)>,
     ) -> Result<
         (

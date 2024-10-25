@@ -11,6 +11,8 @@ mod metadata3 {
             let function_name = METADATA_CREATE_WITH_DATA_IDENT;
 
             /*
+                // Use the following code to generate payload
+
                 let mut urls: Vec<UncheckedUrl> = vec![];
                 for _ in 0..100 {
                     urls.push(UncheckedUrl::of(format!("https://www.example.com/test?q=x")));

@@ -11,6 +11,8 @@ mod metadata2 {
             let function_name = METADATA_CREATE_WITH_DATA_IDENT;
 
             /*
+                // Use the following code to generate payload
+
                 let mut urls: Vec<UncheckedUrl> = vec![];
                 for _ in 0..10_000 {
                     urls.push(UncheckedUrl::of(format!("https://www.example.com/test?q=x")));
@@ -20,16 +22,6 @@ mod metadata2 {
                 let mut data = MetadataInit::default();
                 data.set_metadata("urls", urls.clone());
                 let args = scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap();
-
-                [
-                    92, 33, 1, 35, 12, 33, 1, 4, 117, 114, 108, 115, 2, 34, 1, 1, 34, 141, 1,
-                    32, 12,     // Vec<String>
-                    145, 78,    // size = 10001
-                    32, 104, 116, 116, 112, 115, 58, 47, 47, 119, 119, 119, 46, 101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109, 47, 116, 101, 115, 116, 63, 113, 61, 120,
-                    <repeat>
-                    7, 105, 110, 118, 97, 108, 105, 100,
-                    1, 0
-                ]
             */
             let mut args = Vec::with_capacity(330033);
             args.extend([
