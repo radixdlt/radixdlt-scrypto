@@ -88,6 +88,22 @@ Release workflow:
         ```
     more details: [sccache - Shared Compilation Cache](https://github.com/mozilla/sccache)
 
+8. (Optional) Enable LFS to pull assets under `assets-lfs`
+    1. Install `git-lfs`:
+        - MacOS
+          ```
+          brew install git-lfs
+          ```
+        - Ubuntu
+          ```
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install git-lfs
+          ```
+    2. Pull
+        ```
+        git lfs install
+        git lfs pull
+        ```
 
 Bash scripts that might be of help:
 * `format.sh` - Formats the entire repo

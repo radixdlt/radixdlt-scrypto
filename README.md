@@ -10,29 +10,6 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
 
 To set up your development environment, please following the instructions on https://docs.radixdlt.com/docs/getting-rust-scrypto.
 
-## LFS
-
-Assets under `assets-lfs` are stored in Git LFS.
-
-To fetch files from LFS, install `git-lfs` first:
-
-- MacOS
-  ```
-  brew install git-lfs
-  ```
-- Ubuntu
-  ```
-  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-  sudo apt-get install git-lfs
-  ```
-
-and then:
-
-```
-git lfs install
-git lfs pull
-```
-
 ## Contribute
 
 To learn more about how to contribute to this project, read the [Contributing Guide](./CONTRIBUTING.md).
