@@ -139,7 +139,7 @@ impl Build {
                 } else if v.len() == 2 {
                     compiler_builder.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
                 } else {
-                    return Err(Error::BuildError(BuildError::ProfileNameError).into());
+                    return Err(Error::BuildError(BuildError::EnvParsingError).into());
                 }
             }
         }
