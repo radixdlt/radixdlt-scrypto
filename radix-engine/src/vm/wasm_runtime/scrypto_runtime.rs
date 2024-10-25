@@ -83,6 +83,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         let max_number_of_buffers = match self.scrypto_vm_version {
             ScryptoVmVersion::V1_0 | ScryptoVmVersion::V1_1 => 32,
+            // Practically speaking, there is little gain of keeping multiple buffers open before
+            // [multi-value](https://github.com/WebAssembly/multi-value/blob/master/proposals/multi-value/Overview.md) is supported and used.
+            // We reduce it to `4` so that the amount of memory that a transaction can consume is reduced, which is beneficial for parallel execution.
             ScryptoVmVersion::V1_2 => 4,
         };
         if self.buffers.len() >= max_number_of_buffers {

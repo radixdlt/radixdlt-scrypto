@@ -2,7 +2,7 @@ use radix_engine_tests::common::PackageLoader;
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_crate_buffers_within_limits() {
+fn test_create_buffers_within_limits() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package = ledger.publish_package_simple(PackageLoader::get("wasm_limits"));
