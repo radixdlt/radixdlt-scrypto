@@ -10,7 +10,7 @@ use crate::blueprints::identity::IdentityV1MinorVersion;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
-use crate::blueprints::resource::ResourceNativePackage;
+use crate::blueprints::resource::{ResourceNativePackage, WorktopBlueprintCuttlefishExtension};
 use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::{
     TransactionProcessorNativePackage, TransactionProcessorV1MinorVersion,
@@ -139,6 +139,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ),
                     NativeCodeId::ResourceCode1 => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
+                    }
+                    NativeCodeId::ResourceCode2 => {
+                        WorktopBlueprintCuttlefishExtension::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::ConsensusManagerCode1 => {
                         ConsensusManagerNativePackage::invoke_export(export_name, input, api)

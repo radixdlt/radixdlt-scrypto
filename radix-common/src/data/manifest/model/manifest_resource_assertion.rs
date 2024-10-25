@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 // This file isn't part of the Manifest SBOR value model, but is included here
 // for consolidation of the manifest types
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, ManifestSbor, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct ManifestResourceConstraints {
     specified_resources: IndexMap<ResourceAddress, ManifestResourceConstraint>,
@@ -210,7 +210,7 @@ impl IntoIterator for ManifestResourceConstraints {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum ManifestResourceConstraint {
     NonZeroAmount,
     ExactAmount(Decimal),
@@ -428,7 +428,7 @@ pub enum ResourceConstraintError {
 /// * Detection of exact definition:
 ///   * If `required_ids.len() == upper_bound`, then `allowed_ids == AllowedIds::Allowlist(required_ids)`
 ///   * If `lower_bound == allowlist.len()`, then `required_ids == allowlist`
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub struct GeneralResourceConstraint {
     pub required_ids: IndexSet<NonFungibleLocalId>,
     pub lower_bound: LowerBound,
@@ -678,7 +678,7 @@ pub enum GeneralResourceConstraintError {
 ///
 /// ## Trait Implementations
 /// * [`Ord`], [`PartialOrd`] - Satisfies `AmountInclusive(Zero) < NonZero < AmountInclusive(AnyPositive)`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum LowerBound {
     NonZero,
     Inclusive(Decimal),
@@ -858,7 +858,7 @@ impl LowerBound {
 ///
 /// ## Trait Implementations
 /// * [`Ord`], [`PartialOrd`] - Satisfies `AmountInclusive(Any) < Unbounded`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum UpperBound {
     Inclusive(Decimal),
     Unbounded,
@@ -978,7 +978,7 @@ impl UpperBound {
 ///
 /// For fungible balances, you are permitted to use either [`AllowedIds::Any`]
 /// or [`AllowedIds::Allowlist`] with an empty allowlist.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum AllowedIds {
     Allowlist(IndexSet<NonFungibleLocalId>),
     Any,

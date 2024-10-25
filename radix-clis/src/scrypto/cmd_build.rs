@@ -34,6 +34,10 @@ pub struct Build {
     features: Option<String>,
 
     /// Environment variables to define. Specify as NAME=VALUE or NAME.
+    /// Scrypto compiler internally sets some compilation flags `TARGET_CFLAGS` for C libraries
+    /// to configure WASM with the same features as Radix Engine.
+    /// If you want to override it, then you can use this option.
+    /// If you want to remove TARGET_CFLAGS, then use `--unset-env` option
     #[clap(short, long)]
     env: Option<Vec<String>>,
 
@@ -68,6 +72,10 @@ pub struct Build {
     /// Pass any additional option to `cargo build` call.
     #[clap(long)]
     custom_option: Option<Vec<String>>,
+
+    /// Prints compilation steps.
+    #[clap(short, long)]
+    verbose: bool,
 }
 
 impl Build {
@@ -111,11 +119,19 @@ impl Build {
                 compiler_builder.package(p);
             });
         }
+        compiler_builder.debug(self.verbose);
 
         if let Some(env) = &self.env {
             let env_variables_decoded: Vec<Vec<&str>> = env
                 .iter()
-                .map(|e| e.split('=').collect::<Vec<&str>>())
+                .map(|e|
+                    // Split string on the first '=' occurence.
+                    // This is to cover cases like this:
+                    //   ENV_NAME=foo=bar
+                    match e.split_once('=') {
+                        Some((key, val)) => vec![key, val],
+                        None => vec![e.as_str()],
+                })
                 .collect();
             for v in env_variables_decoded {
                 if v.len() == 1 {
@@ -123,7 +139,7 @@ impl Build {
                 } else if v.len() == 2 {
                     compiler_builder.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
                 } else {
-                    return Err(Error::BuildError(BuildError::ProfileNameError).into());
+                    return Err(Error::BuildError(BuildError::EnvParsingError).into());
                 }
             }
         }

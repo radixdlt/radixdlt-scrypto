@@ -23,7 +23,7 @@ pub enum BuildError {
 
     WorkspaceNotSupported,
 
-    ProfileNameError,
+    EnvParsingError,
 }
 
 #[derive(Debug)]
