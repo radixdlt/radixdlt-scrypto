@@ -20,7 +20,7 @@ $scrypto new-package hello-world --path $test_pkg --local
 #
 # To test that the generated Cargo.lock is good, we run a build with the --locked command below.
 # This checks that the templated cargo lock is complete.
-# 
+#
 # If this line fails, run ./update-cargo-locks-minimally.sh from the repo root to
 # regenerate the Cargo.lock_template which is used.
 $scrypto build --path $test_pkg --locked
@@ -29,6 +29,9 @@ $scrypto build --path $test_pkg --locked
 $scrypto test --path $test_pkg --locked
 $scrypto test --path $test_pkg --locked -- test_hello --nocapture
 $scrypto test --path $test_pkg --locked -- --nocapture
+
+# Check envs parsing
+$scrypto build --path $test_pkg --locked --env ENV_NAME=foo=bar
 
 # Logging
 $scrypto build --path ../examples/everything --log-level ERROR --locked
