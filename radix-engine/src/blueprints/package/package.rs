@@ -1,7 +1,7 @@
 use super::substates::*;
 use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
-use crate::object_modules::metadata::MetadataNativePackage;
+use crate::object_modules::metadata::{validate_metadata_init, MetadataNativePackage};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::system::type_info::TypeInfoSubstate;
@@ -734,7 +734,11 @@ pub fn create_package_partition_substates(
             METADATA_BLUEPRINT,
             indexmap!(),
         );
-        let metadata_system_struct = MetadataNativePackage::init_system_struct(metadata).unwrap();
+        // Additional validation has been added as part of this commit.
+        // The logic is backward compatible, as it's used by protocol updates only.
+        let metadata_system_struct =
+            MetadataNativePackage::init_system_struct(validate_metadata_init(metadata).unwrap())
+                .unwrap();
         let metadata_substates = SystemMapper::system_struct_to_node_substates(
             &metadata_schema,
             metadata_system_struct,

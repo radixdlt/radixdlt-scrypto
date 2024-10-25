@@ -19,7 +19,8 @@ pub enum MetadataError {
     KeyStringExceedsMaxLength { max: usize, actual: usize },
     ValueSborExceedsMaxLength { max: usize, actual: usize },
     ValueDecodeError(DecodeError),
-    MetadataValidationError(MetadataValidationError),
+    MetadataValueValidationError(MetadataValueValidationError),
+    MetadataKeyValidationError(MetadataKeyValidationError),
 }
 
 declare_native_blueprint_state! {
@@ -262,8 +263,9 @@ impl MetadataNativePackage {
         Ok(Own(node_id))
     }
 
-    pub fn init_system_struct(
-        data: MetadataInit,
+    /// This method assumes that the data has been pre-checked.
+    pub(crate) fn init_system_struct(
+        data: IndexMap<Vec<u8>, (Option<Vec<u8>>, bool)>,
     ) -> Result<
         (
             IndexMap<u8, FieldValue>,
@@ -272,36 +274,10 @@ impl MetadataNativePackage {
         MetadataError,
     > {
         let mut init_kv_entries = index_map_new();
-        for (key, entry) in data.data {
-            if key.len() > MAX_METADATA_KEY_STRING_LEN {
-                return Err(MetadataError::KeyStringExceedsMaxLength {
-                    max: MAX_METADATA_KEY_STRING_LEN,
-                    actual: key.len(),
-                });
-            }
-
-            let key = scrypto_encode(&key).unwrap();
-
-            let value = match entry.value {
-                Some(metadata_value) => {
-                    let value = scrypto_encode(&MetadataEntryEntryPayload::from_content_source(
-                        metadata_value,
-                    ))
-                    .unwrap();
-                    if value.len() > MAX_METADATA_VALUE_SBOR_LEN {
-                        return Err(MetadataError::ValueSborExceedsMaxLength {
-                            max: MAX_METADATA_VALUE_SBOR_LEN,
-                            actual: value.len(),
-                        });
-                    }
-                    Some(value)
-                }
-                None => None,
-            };
-
+        for (key, entry) in data {
             let kv_entry = KVEntry {
-                value,
-                locked: entry.lock,
+                value: entry.0,
+                locked: entry.1,
             };
 
             init_kv_entries.insert(key, kv_entry);
@@ -317,17 +293,8 @@ impl MetadataNativePackage {
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<Own, RuntimeError> {
-        for value in metadata_init.data.values() {
-            if let Some(v) = &value.value {
-                validate_metadata_value(&v).map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                        MetadataError::MetadataValidationError(e),
-                    ))
-                })?;
-            }
-        }
-
-        let (fields, kv_entries) = Self::init_system_struct(metadata_init)
+        let metadata_validated = validate_metadata_init(metadata_init)?;
+        let (fields, kv_entries) = Self::init_system_struct(metadata_validated)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::MetadataError(e)))?;
 
         let node_id = api.new_object(
@@ -346,41 +313,25 @@ impl MetadataNativePackage {
         value: MetadataValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        validate_metadata_value(&value).map_err(|e| {
+        let key_sbor = validate_metadata_key(&key).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::MetadataValidationError(e),
+                MetadataError::MetadataKeyValidationError(e),
             ))
         })?;
 
-        if key.len() > MAX_METADATA_KEY_STRING_LEN {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::MetadataError(MetadataError::KeyStringExceedsMaxLength {
-                    max: MAX_METADATA_KEY_STRING_LEN,
-                    actual: key.len(),
-                }),
-            ));
-        }
-
-        let sbor_value = scrypto_encode(&MetadataEntryEntryPayload::from_content_source(
-            value.clone(),
-        ))
-        .unwrap();
-        if sbor_value.len() > MAX_METADATA_VALUE_SBOR_LEN {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::MetadataError(MetadataError::ValueSborExceedsMaxLength {
-                    max: MAX_METADATA_VALUE_SBOR_LEN,
-                    actual: sbor_value.len(),
-                }),
-            ));
-        }
+        let value_sbor = validate_metadata_value(&value).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataValueValidationError(e),
+            ))
+        })?;
 
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
-            &scrypto_encode(&key).unwrap(),
+            &key_sbor,
             LockFlags::MUTABLE,
         )?;
-        api.key_value_entry_set(handle, sbor_value)?;
+        api.key_value_entry_set(handle, value_sbor)?;
         api.key_value_entry_close(handle)?;
 
         Runtime::emit_event(api, SetMetadataEvent { key, value })?;
@@ -439,12 +390,69 @@ impl MetadataNativePackage {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MetadataValidationError {
-    InvalidURL(String),
-    InvalidOrigin(String),
+pub enum MetadataKeyValidationError {
+    InvalidValue,
+    InvalidLength { max: usize, actual: usize },
 }
 
-pub fn validate_metadata_value(value: &MetadataValue) -> Result<(), MetadataValidationError> {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MetadataValueValidationError {
+    InvalidURL(String),
+    InvalidOrigin(String),
+    InvalidValue,
+    InvalidLength { max: usize, actual: usize },
+}
+
+pub fn validate_metadata_init(
+    metadata_init: MetadataInit,
+) -> Result<IndexMap<Vec<u8>, (Option<Vec<u8>>, bool)>, RuntimeError> {
+    let mut checked_data = index_map_new();
+    for (key, value) in &metadata_init.data {
+        let key_sbor = validate_metadata_key(key).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataKeyValidationError(e),
+            ))
+        })?;
+
+        if let Some(v) = &value.value {
+            let value_sbor = validate_metadata_value(&v).map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                    MetadataError::MetadataValueValidationError(e),
+                ))
+            })?;
+            checked_data.insert(key_sbor, (Some(value_sbor), value.lock));
+        } else {
+            checked_data.insert(key_sbor, (None, value.lock));
+        }
+    }
+    Ok(checked_data)
+}
+
+pub fn validate_metadata_key(key: &str) -> Result<Vec<u8>, MetadataKeyValidationError> {
+    if key.len() > MAX_METADATA_KEY_STRING_LEN {
+        return Err(MetadataKeyValidationError::InvalidLength {
+            max: MAX_METADATA_KEY_STRING_LEN,
+            actual: key.len(),
+        });
+    }
+
+    scrypto_encode(&key).map_err(|_| MetadataKeyValidationError::InvalidValue)
+}
+
+pub fn validate_metadata_value(
+    value: &MetadataValue,
+) -> Result<Vec<u8>, MetadataValueValidationError> {
+    let sbor_value = scrypto_encode(&MetadataEntryEntryPayload::from_content_source(
+        value.clone(),
+    ))
+    .map_err(|_| MetadataValueValidationError::InvalidValue)?;
+    if sbor_value.len() > MAX_METADATA_VALUE_SBOR_LEN {
+        return Err(MetadataValueValidationError::InvalidLength {
+            max: MAX_METADATA_VALUE_SBOR_LEN,
+            actual: sbor_value.len(),
+        });
+    }
+
     match value {
         MetadataValue::String(_) => {}
         MetadataValue::Bool(_) => {}
@@ -460,13 +468,14 @@ pub fn validate_metadata_value(value: &MetadataValue) -> Result<(), MetadataVali
         MetadataValue::NonFungibleLocalId(_) => {}
         MetadataValue::Instant(_) => {}
         MetadataValue::Url(url) => {
-            CheckedUrl::of(url.as_str())
-                .ok_or(MetadataValidationError::InvalidURL(url.as_str().to_owned()))?;
+            CheckedUrl::of(url.as_str()).ok_or(MetadataValueValidationError::InvalidURL(
+                url.as_str().to_owned(),
+            ))?;
         }
         MetadataValue::Origin(origin) => {
-            CheckedOrigin::of(origin.as_str()).ok_or(MetadataValidationError::InvalidOrigin(
-                origin.as_str().to_owned(),
-            ))?;
+            CheckedOrigin::of(origin.as_str()).ok_or(
+                MetadataValueValidationError::InvalidOrigin(origin.as_str().to_owned()),
+            )?;
         }
         MetadataValue::PublicKeyHash(_) => {}
         MetadataValue::StringArray(_) => {}
@@ -484,19 +493,20 @@ pub fn validate_metadata_value(value: &MetadataValue) -> Result<(), MetadataVali
         MetadataValue::InstantArray(_) => {}
         MetadataValue::UrlArray(urls) => {
             for url in urls {
-                CheckedUrl::of(url.as_str())
-                    .ok_or(MetadataValidationError::InvalidURL(url.as_str().to_owned()))?;
+                CheckedUrl::of(url.as_str()).ok_or(MetadataValueValidationError::InvalidURL(
+                    url.as_str().to_owned(),
+                ))?;
             }
         }
         MetadataValue::OriginArray(origins) => {
             for origin in origins {
                 CheckedOrigin::of(origin.as_str()).ok_or(
-                    MetadataValidationError::InvalidOrigin(origin.as_str().to_owned()),
+                    MetadataValueValidationError::InvalidOrigin(origin.as_str().to_owned()),
                 )?;
             }
         }
         MetadataValue::PublicKeyHashArray(_) => {}
     }
 
-    Ok(())
+    Ok(sbor_value)
 }

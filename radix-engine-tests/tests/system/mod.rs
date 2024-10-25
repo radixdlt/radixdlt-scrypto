@@ -37,6 +37,8 @@ mod invalid_stored_values;
 mod kv_store;
 mod leaks;
 mod metadata;
+mod metadata2;
+mod metadata3;
 mod metadata_component;
 mod metadata_identity;
 mod metadata_package;
