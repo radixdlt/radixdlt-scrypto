@@ -4,18 +4,6 @@ use scrypto_test::prelude::*;
 
 #[test]
 fn test_many_vectors_of_urls_metadata() {
-    let mut urls: Vec<UncheckedUrl> = vec![];
-    for _ in 0..100 {
-        urls.push(UncheckedUrl::of(format!(
-            "https://www.example.com/test?q=x"
-        )));
-    }
-
-    let mut data = MetadataInit::default();
-    data.set_metadata("urls", urls.clone());
-    let args = scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap();
-    println!("{:?}", args);
-
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("metadata3"));
     let manifest = ManifestBuilder::new()
@@ -32,4 +20,12 @@ fn test_many_vectors_of_urls_metadata() {
     // ```
     println!("{:?}", receipt);
     println!("{} ms", end.duration_since(start).as_millis());
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. }),
+            ))
+        )
+    });
 }

@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_engine::object_modules::metadata::{MetadataError, MetadataValueValidationError};
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -20,4 +21,17 @@ fn test_large_vector_of_urls_metadata() {
     // ```
     println!("{:?}", receipt);
     println!("{} ms", end.duration_since(start).as_millis());
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidLength {
+                        actual: 330019,
+                        max: 4096
+                    }
+                ),
+            ))
+        )
+    });
 }
