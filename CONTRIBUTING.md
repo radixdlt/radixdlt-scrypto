@@ -112,6 +112,26 @@ Bash scripts that might be of help:
 * `test_extra.sh` - Runs the additional tests
 * `assets/update-assets.sh` - Updates `Account`/`Faucet` scrypto packages (needed when your change would affect the output WASM)
 
+## Project Layout
+
+- `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
+- `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
+- `radix-common-derive`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-common`: Common libraries used by Radix Engine and Scrypto.
+- `radix-engine`: The Radix Engine implementation.
+- `radix-native-sdk`: Library to assist native blueprint development.
+- `radix-sbor-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
+- `radix-substate-store-impls`: Various substate store implementations.
+- `radix-substate-store-interface`: The interface of any substate store.
+- `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
+- `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.
+- `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
+- `sbor-derive`: Macros for encoding and decoding SBOR data.
+- `sbor`: A generic binary data format, upon which Scrypto SBOR and Manifest SBOR are built.
+- `scrypto-derive`: Macros for defining blueprints.
+- `scrypto-test`: Library for testing Scrypto blueprints.
+- `scrypto`: Scrypto language abstraction.
+
 ## Branching strategy
 
 ### Branches
