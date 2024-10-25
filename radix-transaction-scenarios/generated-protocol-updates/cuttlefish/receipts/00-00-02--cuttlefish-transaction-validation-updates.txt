@@ -29,7 +29,7 @@ STATE UPDATES: 1 entity
              max_mime_type_length: 128u64,
              max_decryptors: 20u64,
            },
-           allow_notary_to_duplicate_signer: false,
+           v1_transactions_allow_notary_to_duplicate_signer: true,
            preparation_settings: PreparationSettingsV1 {
              v2_transactions_permitted: true,
              max_user_payload_length: 1048576u64,

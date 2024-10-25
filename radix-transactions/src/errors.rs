@@ -18,6 +18,7 @@ pub enum SignatureValidationError {
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
+    NotaryIsSignatorySoShouldNotAlsoBeASigner,
     SerializationError(EncodeError),
     IncorrectNumberOfSubintentSignatureBatches,
 }
