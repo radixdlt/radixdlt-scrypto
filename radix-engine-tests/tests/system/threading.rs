@@ -1,6 +1,8 @@
 use radix_engine_tests::common::PackageLoader;
 use scrypto_test::prelude::*;
 
+// Some of the tests in this file are to demonstrate the current behavior.
+
 #[test]
 fn can_transfer_locked_bucket_between_threads() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -265,4 +267,58 @@ fn can_pass_named_address() {
 
     let receipt = ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
     receipt.expect_commit_success();
+}
+
+#[should_panic(
+    expected = "Transaction should be convertible to executable: ManifestValidationError(ProofCannotBePassedToAnotherIntent)"
+)]
+#[test]
+fn can_not_pass_proof_between_threads() {
+    let mut ledger = LedgerSimulatorBuilder::new().with_kernel_trace().build();
+    let (pk1, sk1, account1) = ledger.new_allocated_account();
+
+    let start_epoch_inclusive = ledger.get_current_epoch();
+    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
+    let transaction = TransactionV2Builder::new()
+        .add_signed_child(
+            "child",
+            PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive,
+                    end_epoch_exclusive,
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 1,
+                })
+                .manifest_builder(|builder| builder.yield_to_parent(()))
+                .sign(&sk1)
+                .build(),
+        )
+        .intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive,
+            end_epoch_exclusive,
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 2,
+        })
+        .manifest_builder_no_validate(|builder| {
+            // Note that we have to disable validation
+            builder
+                .lock_fee(account1, 3)
+                .create_proof_from_account_of_amount(account1, XRD, 10)
+                .create_proof_from_auth_zone_of_amount(XRD, 10, "proof")
+                .yield_to_child_with_name_lookup("child", |lookup| (lookup.proof("proof"),))
+        })
+        .transaction_header(TransactionHeaderV2 {
+            notary_public_key: pk1.into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        })
+        .sign(&sk1)
+        .notarize(&sk1)
+        .build_no_validate();
+
+    ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
 }
