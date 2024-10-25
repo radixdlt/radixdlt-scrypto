@@ -76,6 +76,7 @@ mod system_lock_fee;
 mod system_module_methods;
 mod system_reference;
 mod system_role_assignment;
+mod threading;
 mod toolkit_receipt;
 mod track;
 mod transaction_limits;

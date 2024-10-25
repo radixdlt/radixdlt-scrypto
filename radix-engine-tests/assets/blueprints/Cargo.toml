@@ -57,6 +57,7 @@ members = [
     "royalty-auth",
     "scrypto_env",
     "system",
+    "threading",
     "transaction_limits",
     "transaction_runtime",
     "tx_processor_access",
