@@ -1644,6 +1644,80 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_demonstrate_behaviour_with_notary_duplicating_signer() {
+        // Arrange
+        let network = NetworkDefinition::simulator();
+        let notary = Secp256k1PrivateKey::from_u64(1).unwrap();
+
+        let babylon_validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::babylon(),
+            network.id,
+        );
+        let latest_validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::latest(),
+            network.id,
+        );
+
+        let transaction_v1 = TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: network.id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                nonce: 0,
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
+            .sign(&notary)
+            .notarize(&notary)
+            .build();
+
+        let transaction_v2 = TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: network.id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: 0,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: true,
+                tip_basis_points: 0,
+            })
+            .manifest(ManifestBuilder::new_v2().drop_auth_zone_proofs().build())
+            .sign(&notary)
+            .notarize(&notary)
+            .build_no_validate();
+
+        // Act & Assert - Transaction V1 permits using notary as signatory and also having it sign
+        // It was deemed that we didn't want to start failing V1 transactions for this at Cuttlefish
+        // as we didn't want existing integrations to break.
+        assert!(transaction_v1
+            .prepare_and_validate(&babylon_validator)
+            .is_ok());
+        assert!(transaction_v1
+            .prepare_and_validate(&latest_validator)
+            .is_ok());
+
+        // Act & Assert - Transaction V2 does not permit duplicating a notary is signatory as a signatory
+        assert_eq!(
+            transaction_v2.prepare_and_validate(&babylon_validator),
+            Err(TransactionValidationError::PrepareError(
+                PrepareError::TransactionTypeNotSupported
+            ))
+        );
+        assert_eq!(
+            transaction_v2.prepare_and_validate(&latest_validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner
+            ))
+        );
+    }
+
     fn validate_default_expecting_message_error(
         transaction: &NotarizedTransactionV1,
     ) -> InvalidMessageError {
