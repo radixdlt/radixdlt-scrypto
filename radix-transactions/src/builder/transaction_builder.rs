@@ -18,6 +18,23 @@ use crate::signing::Signer;
 //====================================
 pub type TransactionBuilder = TransactionV1Builder;
 
+impl TransactionBuilder {
+    // In symmetry with the ManifestBuilder, we add in some methods on the V1 builder
+    // to create the V2 builders.
+
+    pub fn new_v2() -> TransactionV2Builder {
+        TransactionV2Builder::new()
+    }
+
+    pub fn new_subintent_v2() -> PartialTransactionV2Builder {
+        PartialTransactionV2Builder::new()
+    }
+
+    pub fn new_partial_v2() -> PartialTransactionV2Builder {
+        PartialTransactionV2Builder::new()
+    }
+}
+
 pub struct TransactionV1Builder {
     manifest: Option<TransactionManifestV1>,
     header: Option<TransactionHeaderV1>,
@@ -139,6 +156,9 @@ impl TransactionV1Builder {
         }
     }
 }
+
+// We alow either to avoid confusion
+pub type SignedPartialTransactionV2Builder = PartialTransactionV2Builder;
 
 /// A builder for a [`SignedPartialTransactionV2`].
 ///
