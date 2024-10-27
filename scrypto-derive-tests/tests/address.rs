@@ -79,10 +79,10 @@ fn decode_truncated_checksum_address_fails() {
         .validate_and_decode(&encoded_resource_address[..encoded_resource_address.len() - 2]);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         decoded_resource_address,
         Err(AddressBech32DecodeError::Bech32mDecodingError(_))
-    ));
+    );
 }
 
 #[test]
@@ -102,10 +102,10 @@ fn decode_modified_checksum_address_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         decoded_resource_address,
         Err(AddressBech32DecodeError::Bech32mDecodingError(_))
-    ));
+    );
 }
 
 /// Tests if the decoding fails when the address is encoded in Bech32 and not Bech32m
@@ -130,10 +130,10 @@ fn decode_invalid_bech32_variant_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         decoded_resource_address,
         Err(AddressBech32DecodeError::InvalidVariant(Variant::Bech32))
-    ));
+    );
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn decode_matching_package_address_entity_id_succeeds() {
         address_bech32_decoder.validate_and_decode(&encoded_package_address);
 
     // Assert
-    assert!(matches!(decoded_package_address, Ok(_)));
+    assert_matches!(decoded_package_address, Ok(_));
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn decode_matching_account_address_entity_id_succeeds() {
         address_bech32_decoder.validate_and_decode(&encoded_account_address);
 
     // Assert
-    assert!(matches!(decoded_account_address, Ok(_)));
+    assert_matches!(decoded_account_address, Ok(_));
 }
 
 #[test]
@@ -202,7 +202,7 @@ fn decode_matching_component_address_entity_id_succeeds() {
         address_bech32_decoder.validate_and_decode(&encoded_component_address);
 
     // Assert
-    assert!(matches!(decoded_component_address, Ok(_)));
+    assert_matches!(decoded_component_address, Ok(_));
 }
 
 #[test]
@@ -225,10 +225,10 @@ fn decode_mismatched_package_address_entity_id_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_package_address);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         decoded_package_address,
         Err(AddressBech32DecodeError::InvalidHrp)
-    ));
+    );
 }
 
 #[test]
@@ -251,7 +251,7 @@ fn decode_matching_resource_address_entity_id_succeeds() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(decoded_resource_address, Ok(_)));
+    assert_matches!(decoded_resource_address, Ok(_));
 }
 
 #[test]
@@ -274,10 +274,10 @@ fn decode_mismatched_resource_address_entity_id_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         decoded_resource_address,
         Err(AddressBech32DecodeError::InvalidHrp)
-    ));
+    );
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn decode_invalid_entity_specifier_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(decoded_resource_address, Err(_)));
+    assert_matches!(decoded_resource_address, Err(_));
 }
 
 #[test]
@@ -323,5 +323,5 @@ fn decode_invalid_network_specifier_fails() {
         address_bech32_decoder.validate_and_decode(&encoded_resource_address);
 
     // Assert
-    assert!(matches!(decoded_resource_address, Err(_)));
+    assert_matches!(decoded_resource_address, Err(_));
 }

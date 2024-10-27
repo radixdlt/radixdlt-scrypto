@@ -86,12 +86,12 @@ fn run_flash_test_test_environment_crypto_utils_v1(enable_bls: bool, expect_succ
         let _package_address = result.unwrap();
     } else {
         let err = result.unwrap_err();
-        assert!(matches!(
+        assert_matches!(
             err,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(..)
             ))
-        ));
+        );
     }
 }
 
@@ -137,11 +137,11 @@ fn run_flash_test_test_environment_crypto_utils_v2(
         let _package_address = result.unwrap();
     } else {
         let err = result.unwrap_err();
-        assert!(matches!(
+        assert_matches!(
             err,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(..)
             ))
-        ));
+        );
     }
 }

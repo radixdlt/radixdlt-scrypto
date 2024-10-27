@@ -351,8 +351,7 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::cell::RefCell;
-    use crate::rust::rc::Rc;
+    use crate::internal_prelude::*;
 
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode
@@ -486,7 +485,7 @@ mod tests {
             basic_decode::<Vec<u16>>(&payload),
             Ok(input_with_duplicates)
         );
-        assert!(matches!(basic_decode::<BasicValue>(&payload), Ok(_)));
+        assert_matches!(basic_decode::<BasicValue>(&payload), Ok(_));
         // Decode doesn't work into any typed sets
         assert_eq!(
             basic_decode::<HashSet<u16>>(&payload),
@@ -524,7 +523,7 @@ mod tests {
         };
         let payload = basic_encode(&input_with_duplicates).unwrap();
         // Check decode works into BasicValue - which represent sets as arrays of (k, v) tuples
-        assert!(matches!(basic_decode::<BasicValue>(&payload), Ok(_)));
+        assert_matches!(basic_decode::<BasicValue>(&payload), Ok(_));
         // Decode doesn't work into any typed maps
         assert_eq!(
             basic_decode::<HashMap<u16, String>>(&payload),

@@ -69,10 +69,10 @@ pub fn test_open_substate_of_invisible_package_address() {
     );
 
     // Verify lock substate
-    assert!(matches!(
+    assert_matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::OpenSubstateError(OpenSubstateError::SubstateFault)
         )))
-    ));
+    );
 }

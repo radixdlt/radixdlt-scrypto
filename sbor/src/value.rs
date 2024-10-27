@@ -521,7 +521,7 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::prelude::*;
+    use crate::internal_prelude::*;
 
     #[derive(Categorize, Encode)]
     struct TestStruct {
@@ -697,10 +697,10 @@ mod tests {
             element_value_kind: ValueKind::U8,
             elements: vec![BasicValue::U8 { value: 1 }, BasicValue::U16 { value: 2 }],
         };
-        assert!(matches!(
+        assert_matches!(
             basic_encode(&invalid_value),
             Err(EncodeError::MismatchingArrayElementValueKind { .. })
-        ));
+        );
     }
 
     #[test]
@@ -710,20 +710,20 @@ mod tests {
             value_value_kind: ValueKind::I8,
             entries: vec![(BasicValue::U16 { value: 1 }, BasicValue::I8 { value: 1 })],
         };
-        assert!(matches!(
+        assert_matches!(
             basic_encode(&invalid_value),
             Err(EncodeError::MismatchingMapKeyValueKind { .. })
-        ));
+        );
 
         let invalid_value = BasicValue::Map {
             key_value_kind: ValueKind::U8,
             value_value_kind: ValueKind::I8,
             entries: vec![(BasicValue::U8 { value: 1 }, BasicValue::I16 { value: 1 })],
         };
-        assert!(matches!(
+        assert_matches!(
             basic_encode(&invalid_value),
             Err(EncodeError::MismatchingMapValueValueKind { .. })
-        ));
+        );
     }
 
     #[test]

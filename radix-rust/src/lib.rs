@@ -10,6 +10,7 @@ mod contextual_display;
 mod contextual_serialize;
 mod contextual_try_from_into;
 pub mod iterators;
+mod macros;
 pub mod rust;
 mod slice;
 
@@ -36,4 +37,6 @@ pub mod prelude {
     pub use crate::contextual_try_from_into::*;
     pub use crate::iterators::*;
     pub use crate::slice::*;
+
+    pub use crate::assert_matches;
 }

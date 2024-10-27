@@ -1661,6 +1661,8 @@ const PLACEHOLDER_PARENT: IntentHash =
 
 #[cfg(test)]
 mod tests {
+    use std::ops::AddAssign;
+
     use radix_common::network::NetworkDefinition;
 
     use super::*;
@@ -1669,12 +1671,12 @@ mod tests {
     macro_rules! assert_invalid_tx {
         ($result: pat, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let validator = TransactionValidator::new_for_latest_simulator();
-            assert!(matches!(
+            assert_matches!(
                 create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
                     .prepare_and_validate(&validator)
                     .expect_err("Should be an error"),
                 $result,
-            ));
+            );
         }};
     }
 
@@ -1720,7 +1722,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_signatures() {
+    fn test_too_many_signatures() {
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::RootTransactionIntent(_),
@@ -1731,6 +1733,10 @@ mod tests {
             ),
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
+    }
+
+    #[test]
+    fn test_duplicate_signers() {
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::RootTransactionIntent(_),
@@ -1817,7 +1823,7 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(error, InvalidMessageError::MimeTypeTooLong { .. }))
+            assert_matches!(error, InvalidMessageError::MimeTypeTooLong { .. })
         }
 
         // PlaintextMessageTooLong
@@ -1832,10 +1838,7 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(
-                error,
-                InvalidMessageError::PlaintextMessageTooLong { .. }
-            ))
+            assert_matches!(error, InvalidMessageError::PlaintextMessageTooLong { .. })
         }
 
         // EncryptedMessageTooLong
@@ -1858,10 +1861,7 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(
-                error,
-                InvalidMessageError::EncryptedMessageTooLong { .. }
-            ))
+            assert_matches!(error, InvalidMessageError::EncryptedMessageTooLong { .. })
         }
 
         // NoDecryptors
@@ -1872,7 +1872,7 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(error, InvalidMessageError::NoDecryptors))
+            assert_matches!(error, InvalidMessageError::NoDecryptors)
         }
 
         // NoDecryptorsForCurveType
@@ -1888,12 +1888,12 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(
+            assert_matches!(
                 error,
                 InvalidMessageError::NoDecryptorsForCurveType {
                     curve_type: CurveType::Ed25519
                 }
-            ))
+            )
         }
 
         // MismatchingDecryptorCurves
@@ -1911,13 +1911,13 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(
+            assert_matches!(
                 error,
                 InvalidMessageError::MismatchingDecryptorCurves {
                     actual: CurveType::Secp256k1,
                     expected: CurveType::Ed25519
                 }
-            ))
+            )
         }
 
         // TooManyDecryptors
@@ -1940,13 +1940,13 @@ mod tests {
             });
             let error =
                 validate_default_expecting_message_error(&create_transaction_with_message(message));
-            assert!(matches!(
+            assert_matches!(
                 error,
                 InvalidMessageError::TooManyDecryptors {
                     actual: 30,
                     permitted: 20
                 }
-            ))
+            )
         }
     }
 
@@ -2010,19 +2010,19 @@ mod tests {
             .is_ok());
 
         // Act & Assert - Transaction V2 does not permit duplicating a notary is signatory as a signatory
-        assert!(matches!(
+        assert_matches!(
             transaction_v2.prepare_and_validate(&babylon_validator),
             Err(TransactionValidationError::PrepareError(
                 PrepareError::TransactionTypeNotSupported
             ))
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             transaction_v2.prepare_and_validate(&latest_validator),
             Err(TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::RootTransactionIntent(_),
                 SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner
             )),
-        ));
+        );
     }
 
     fn validate_default_expecting_message_error(
@@ -2044,6 +2044,38 @@ mod tests {
     ) -> Result<(), TransactionValidationError> {
         let validator = TransactionValidator::new_for_latest_simulator();
         transaction.prepare_and_validate(&validator).map(|_| ())
+    }
+
+    fn unsigned_v1_builder(notary_public_key: PublicKey) -> TransactionV1Builder {
+        TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                nonce: 0,
+                notary_public_key,
+                notary_is_signatory: false,
+                tip_percentage: 5,
+            })
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
+    }
+
+    fn unsigned_v2_builder(notary_public_key: PublicKey) -> TransactionV2Builder {
+        TransactionBuilder::new_v2()
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key,
+                notary_is_signatory: false,
+                tip_basis_points: 5,
+            })
+            .intent_header(IntentHeaderV2 {
+                network_id: NetworkDefinition::simulator().id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: 0,
+            })
+            .manifest(ManifestBuilder::new_v2().drop_auth_zone_proofs().build())
     }
 
     fn create_transaction_with_message(message: MessageV1) -> NotarizedTransactionV1 {
@@ -2130,7 +2162,7 @@ mod tests {
                 .build_no_validate(),
         );
         let validator = TransactionValidator::new_for_latest_simulator();
-        assert!(matches!(
+        assert_matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IntentValidationError(
                 _,
@@ -2141,7 +2173,7 @@ mod tests {
                     )
                 )
             ))
-        ));
+        );
     }
 
     #[test]
@@ -2168,7 +2200,7 @@ mod tests {
                 .build_no_validate(),
         );
         let validator = TransactionValidator::new_for_latest_simulator();
-        assert!(matches!(
+        assert_matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IntentValidationError(
                 _,
@@ -2176,7 +2208,7 @@ mod tests {
                     ManifestValidationError::ProofAlreadyUsed(ManifestProof(0), _,)
                 )
             ))
-        ));
+        );
     }
 
     #[test]
@@ -2204,7 +2236,7 @@ mod tests {
                 .build_no_validate(),
         );
         let validator = TransactionValidator::new_for_latest_simulator();
-        assert!(matches!(
+        assert_matches!(
             transaction.prepare_and_validate(&validator),
             Err(TransactionValidationError::IntentValidationError(
                 _,
@@ -2212,7 +2244,7 @@ mod tests {
                     ManifestValidationError::BucketAlreadyUsed(ManifestBucket(0), _,)
                 )
             ))
-        ));
+        );
     }
 
     #[test]
@@ -2281,11 +2313,11 @@ mod tests {
         }
 
         let validator = TransactionValidator::new_for_latest_simulator();
-        assert!(matches!(
+        assert_matches!(
             create_transaction(vec![10]).prepare_and_validate(&validator),
             Ok(_)
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             create_transaction(vec![10, 20]).prepare_and_validate(&validator),
             Err(TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
@@ -2294,8 +2326,8 @@ mod tests {
                     limit: 16,
                 },
             ))
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             create_transaction(vec![10, 10, 10, 10, 10, 10, 10]).prepare_and_validate(&validator),
             Err(TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::AcrossTransaction,
@@ -2304,7 +2336,7 @@ mod tests {
                     limit: 64
                 },
             ))
-        ));
+        );
     }
 
     #[test]
@@ -2381,11 +2413,11 @@ mod tests {
         }
 
         let validator = TransactionValidator::new_for_latest_simulator();
-        assert!(matches!(
+        assert_matches!(
             create_transaction(vec![100]).prepare_and_validate(&validator),
             Ok(_)
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             create_transaction(vec![100, 600]).prepare_and_validate(&validator),
             Err(TransactionValidationError::IntentValidationError(
                 TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
@@ -2394,8 +2426,8 @@ mod tests {
                     limit: 512,
                 }
             ))
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             create_transaction(vec![500, 500]).prepare_and_validate(&validator),
             Err(TransactionValidationError::IntentValidationError(
                 TransactionValidationErrorLocation::AcrossTransaction,
@@ -2404,6 +2436,6 @@ mod tests {
                     limit: 512,
                 }
             ))
-        ));
+        );
     }
 }

@@ -85,19 +85,19 @@ fn transaction_with_invalid_timestamp_range_should_be_rejected() {
         create_v2_transaction(Some(Instant::new(proposer_timestamp_ms / 1000 + 1)), None),
         ExecutionConfig::for_test_transaction(),
     );
-    assert!(matches!(
+    assert_matches!(
         receipt.expect_rejection(),
         &RejectionReason::TransactionProposerTimestampNotYetValid { .. }
-    ));
+    );
 
     let receipt = ledger.execute_transaction(
         create_v2_transaction(None, Some(Instant::new(proposer_timestamp_ms / 1000))),
         ExecutionConfig::for_test_transaction(),
     );
-    assert!(matches!(
+    assert_matches!(
         receipt.expect_rejection(),
         &RejectionReason::TransactionProposerTimestampNoLongerValid { .. }
-    ));
+    );
 
     let receipt = ledger.execute_transaction(
         create_v2_transaction(

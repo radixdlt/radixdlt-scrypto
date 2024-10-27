@@ -1,10 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::borrow::Cow;
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::*;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use sbor::prelude::*;
 use sbor::*;
 
 #[derive(Sbor)]
@@ -64,14 +60,14 @@ pub enum IndirectRecursiveEnum3 {
 #[test]
 fn create_unit_struct_schema_works_correctly() {
     let (type_id, schema) = generate_full_schema_from_single_type::<UnitStruct, NoCustomSchema>(); // The original type should be the first type in the schema
-    assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+    assert_matches!(type_id, LocalTypeId::SchemaLocalIndex(0));
     assert_eq!(schema.v1().type_kinds.len(), 1);
     assert_eq!(schema.v1().type_metadata.len(), 1);
     assert_eq!(
         schema.v1().type_metadata[0].get_name().unwrap(),
         "UnitStruct"
     );
-    assert!(matches!(&schema.v1().type_metadata[0].child_names, None));
+    assert_matches!(&schema.v1().type_metadata[0].child_names, None);
     assert!(schema.v1().validate().is_ok());
 }
 
@@ -80,7 +76,7 @@ fn create_basic_sample_schema_works_correctly() {
     let (root_type_id, schema) =
         generate_full_schema_from_single_type::<BasicSample, NoCustomSchema>(); // The original type should be the first type in the schema
 
-    assert!(matches!(root_type_id, LocalTypeId::SchemaLocalIndex(0)));
+    assert_matches!(root_type_id, LocalTypeId::SchemaLocalIndex(0));
     assert_eq!(schema.v1().type_kinds.len(), 2);
     assert_eq!(schema.v1().type_metadata.len(), 2);
 
@@ -117,8 +113,8 @@ fn create_basic_sample_schema_works_correctly() {
         .resolve_type_metadata(LocalTypeId::SchemaLocalIndex(1))
         .unwrap();
     assert_eq!(metadata.get_name().unwrap(), "UnitStruct");
-    assert!(matches!(metadata.child_names, None));
-    assert!(matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], [])));
+    assert_matches!(metadata.child_names, None);
+    assert_matches!(kind, TypeKind::Tuple { field_types } if matches!(field_types[..], []));
     assert!(schema.v1().validate().is_ok());
 }
 
@@ -128,7 +124,7 @@ fn create_advanced_sample_schema_works_correctly() {
         generate_full_schema_from_single_type::<AdvancedSample<UnitStruct, u128>, NoCustomSchema>();
 
     // The original type should be the first type in the schema
-    assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+    assert_matches!(type_id, LocalTypeId::SchemaLocalIndex(0));
 
     // We then check each type in turn is what we expect
     let kind = schema
@@ -158,7 +154,7 @@ fn create_advanced_sample_schema_works_correctly() {
     let TypeKind::Tuple { field_types } = kind else {
         panic!("Type was not a Tuple");
     };
-    assert!(matches!(
+    assert_matches!(
         field_types[..],
         [
             LocalTypeId::WellKnown(basic_well_known_types::UNIT_TYPE),
@@ -173,7 +169,7 @@ fn create_advanced_sample_schema_works_correctly() {
             LocalTypeId::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
             LocalTypeId::SchemaLocalIndex(5), // HashMap<[u8; 3], BTreeMap<i64, BTreeSet<i32>>>
         ]
-    ));
+    );
     assert!(schema.v1().validate().is_ok());
 }
 
@@ -187,22 +183,13 @@ fn creating_schema_from_multiple_types_works_correctly() {
     let unit_struct_type_id_2 = aggregator.add_child_type_and_descendents::<UnitStruct>();
 
     // Check when adding a type that's already known, we return the existing index
-    assert!(matches!(
-        unit_struct_type_id,
-        LocalTypeId::SchemaLocalIndex(0)
-    ));
-    assert!(matches!(
-        advanced_sample_type_id,
-        LocalTypeId::SchemaLocalIndex(1)
-    ));
-    assert!(matches!(
+    assert_matches!(unit_struct_type_id, LocalTypeId::SchemaLocalIndex(0));
+    assert_matches!(advanced_sample_type_id, LocalTypeId::SchemaLocalIndex(1));
+    assert_matches!(
         i64_type_id,
         LocalTypeId::WellKnown(basic_well_known_types::I64_TYPE)
-    ));
-    assert!(matches!(
-        unit_struct_type_id_2,
-        LocalTypeId::SchemaLocalIndex(0)
-    )); // Repeats the first one
+    );
+    assert_matches!(unit_struct_type_id_2, LocalTypeId::SchemaLocalIndex(0)); // Repeats the first one
 
     let schema = generate_full_schema::<NoCustomSchema>(aggregator);
 
@@ -225,7 +212,7 @@ fn create_recursive_schema_works_correctly() {
         generate_full_schema_from_single_type::<IndirectRecursive1, NoCustomSchema>();
 
     // The original type should be the first type in the schema
-    assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+    assert_matches!(type_id, LocalTypeId::SchemaLocalIndex(0));
     let metadata = schema
         .v1()
         .resolve_type_metadata(LocalTypeId::SchemaLocalIndex(0))
@@ -241,7 +228,7 @@ fn test_type_name_works_correctly() {
         generate_full_schema_from_single_type::<UnitStructRenamed, NoCustomSchema>();
 
     // The original type should be the first type in the schema
-    assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+    assert_matches!(type_id, LocalTypeId::SchemaLocalIndex(0));
     let metadata = schema.v1().resolve_type_metadata(type_id).unwrap();
     assert_eq!(metadata.get_name().unwrap(), "UnitStructRenamed2");
     assert!(schema.v1().validate().is_ok());

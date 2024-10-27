@@ -168,7 +168,7 @@ mod tests {
         let node_id = NodeId::new(0, &[0; NodeId::RID_LENGTH]);
         let addr_input = ManifestAddress::Static(node_id);
         let addr_output = prepare_address(&addr_input);
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 
     #[test]
@@ -186,10 +186,7 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            addr_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(addr_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 
     #[test]
@@ -203,6 +200,6 @@ mod tests {
         let addr_output = decoder
             .decode_deeper_body_with_value_kind::<ManifestAddress>(ManifestAddress::value_kind());
 
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 }

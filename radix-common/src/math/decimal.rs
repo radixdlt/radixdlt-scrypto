@@ -963,6 +963,7 @@ impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
     use paste::paste;
 
     macro_rules! test_dec {
@@ -2010,10 +2011,10 @@ mod tests {
         let decimal = Decimal::from_str(string);
 
         // Assert
-        assert!(matches!(
+        assert_matches!(
             decimal,
             Err(ParseDecimalError::MoreThanEighteenDecimalPlaces)
-        ))
+        );
     }
 
     #[test]

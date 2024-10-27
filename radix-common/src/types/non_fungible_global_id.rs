@@ -298,20 +298,20 @@ mod tests {
             ))
         );
 
-        assert!(matches!(
+        assert_matches!(
             NonFungibleGlobalId::try_from_canonical_string(&address_bech32_decoder, ":",),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
-        ));
+        );
 
-        assert!(matches!(
+        assert_matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &address_bech32_decoder,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
-        ));
+        );
 
-        assert!(matches!(
+        assert_matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &address_bech32_decoder,
                 &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:#notnumber#"),
@@ -319,6 +319,6 @@ mod tests {
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::InvalidInteger
             ))
-        ));
+        );
     }
 }

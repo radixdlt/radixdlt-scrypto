@@ -72,6 +72,7 @@ scrypto_describe_for_manifest_type!(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_precise_decimal_parse_fail() {
@@ -85,10 +86,10 @@ mod tests {
         // malform encoded vector
         dec_vec.push(0);
         let dec_out = ManifestPreciseDecimal::try_from(dec_vec.as_slice());
-        assert!(matches!(
+        assert_matches!(
             dec_out,
             Err(ParseManifestPreciseDecimalError::InvalidLength)
-        ));
+        );
 
         #[cfg(not(feature = "alloc"))]
         println!("Manifest Precise Decimal error: {}", dec_out.unwrap_err());
@@ -107,9 +108,6 @@ mod tests {
         );
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            dec_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(dec_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 }

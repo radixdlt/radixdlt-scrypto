@@ -1,20 +1,7 @@
 // This test module fails to compile if we do not increase the recursion limit.
 #![recursion_limit = "256"]
 
-use radix_common::data::scrypto::model::NonFungibleLocalId;
-use radix_common::data::scrypto::*;
-use radix_common::*;
-use sbor::rust::boxed::Box;
-use sbor::rust::cell::RefCell;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::{hash_map_new, HashMap};
-use sbor::rust::collections::{hash_set_new, HashSet};
-use sbor::rust::hash::Hash;
-use sbor::rust::rc::Rc;
-use sbor::rust::string::String;
-use sbor::rust::vec;
-use sbor::*;
+use crate::internal_prelude::*;
 
 #[test]
 fn test_args() {
@@ -212,10 +199,10 @@ fn test_decode_deep_typed_codecs() {
     let invalid_payload = encode_ignore_depth(&vec![build_nested_struct_of_depth(
         SCRYPTO_SBOR_V1_MAX_DEPTH,
     )]); // 65 deep
-    assert!(matches!(
+    assert_matches!(
         scrypto_decode::<Vec<NestedType>>(&invalid_payload),
         Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
-    ));
+    );
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
         Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
@@ -230,10 +217,10 @@ fn test_decode_deep_typed_codecs() {
     let invalid_payload = encode_ignore_depth(&wrap_in_hashmap(wrap_in_hashmap(wrap_in_hashmap(
         build_nested_struct_of_depth(SCRYPTO_SBOR_V1_MAX_DEPTH - 2),
     ))));
-    assert!(matches!(
+    assert_matches!(
         scrypto_decode::<HashMap<u8, HashMap<u8, HashMap<u8, NestedType>>>>(&invalid_payload),
         Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))
-    ));
+    );
     assert_eq!(
         scrypto_decode::<ScryptoValue>(&invalid_payload),
         Err(DecodeError::MaxDepthExceeded(SCRYPTO_SBOR_V1_MAX_DEPTH))

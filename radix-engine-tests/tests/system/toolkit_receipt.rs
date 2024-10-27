@@ -165,10 +165,7 @@ fn commit_success_receipt_is_mapped_correctly() {
     let runtime = check_and_convert_receipt_to_runtime_receipt(receipt);
 
     // Assert
-    assert!(matches!(
-        runtime,
-        ToolkitTransactionReceipt::CommitSuccess { .. }
-    ));
+    assert_matches!(runtime, ToolkitTransactionReceipt::CommitSuccess { .. });
 }
 
 #[test]
@@ -195,10 +192,7 @@ fn commit_failure_receipt_is_mapped_correctly() {
     let runtime = check_and_convert_receipt_to_runtime_receipt(receipt);
 
     // Assert
-    assert!(matches!(
-        runtime,
-        ToolkitTransactionReceipt::CommitFailure { .. }
-    ));
+    assert_matches!(runtime, ToolkitTransactionReceipt::CommitFailure { .. });
 }
 
 #[test]
@@ -224,7 +218,7 @@ fn rejection_receipt_is_mapped_correctly() {
     let runtime = check_and_convert_receipt_to_runtime_receipt(receipt);
 
     // Assert
-    assert!(matches!(runtime, ToolkitTransactionReceipt::Reject { .. }));
+    assert_matches!(runtime, ToolkitTransactionReceipt::Reject { .. });
 }
 
 #[test]

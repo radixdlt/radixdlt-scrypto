@@ -340,10 +340,7 @@ mod tests {
             .compile();
 
         // Assert
-        assert!(matches!(
-            status,
-            Err(ScryptoCompilerError::NothingToCompile)
-        ));
+        assert_matches!(status, Err(ScryptoCompilerError::NothingToCompile));
     }
 
     #[test]
@@ -521,10 +518,10 @@ mod tests {
         // Assert
         // Error is expected here because Radix Engine expects WASM with reference-types disabled.
         // See `call_indirect.c` for more details.
-        assert!(matches!(
+        assert_matches!(
             status.unwrap_err(),
             ScryptoCompilerError::SchemaExtractionError(
                 ExtractSchemaError::InvalidWasm(PrepareError::ValidationError(msg))) if msg.contains("reference-types not enabled: zero byte expected")
-        ))
+        )
     }
 }

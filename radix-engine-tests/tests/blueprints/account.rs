@@ -325,12 +325,12 @@ fn cannot_lock_fee_if_not_enough_funds() {
 
     // Assert
     let reason = receipt.expect_rejection();
-    assert!(matches!(
+    assert_matches!(
         reason,
         RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::ApplicationError(
             ApplicationError::VaultError(VaultError::LockFeeInsufficientBalance { .. })
         ))
-    ));
+    );
 }
 
 #[test]
@@ -350,10 +350,10 @@ fn cannot_lock_contingent_fee_if_not_enough_funds() {
 
     // Assert
     let reason = receipt.expect_rejection();
-    assert!(matches!(
+    assert_matches!(
         reason,
         RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::ApplicationError(
             ApplicationError::VaultError(VaultError::LockFeeInsufficientBalance { .. })
         ))
-    ));
+    );
 }

@@ -61,6 +61,7 @@ scrypto_describe_for_manifest_type!(ManifestBucket, OWN_BUCKET_TYPE, own_bucket_
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_bucket_parse_fail() {
@@ -72,10 +73,7 @@ mod tests {
         // malform encoded vector
         bucket_vec.push(0);
         let bucket_out = ManifestBucket::try_from(bucket_vec.as_slice());
-        assert!(matches!(
-            bucket_out,
-            Err(ParseManifestBucketError::InvalidLength)
-        ));
+        assert_matches!(bucket_out, Err(ParseManifestBucketError::InvalidLength));
 
         #[cfg(not(feature = "alloc"))]
         println!("Manifest Bucket error: {}", bucket_out.unwrap_err());
@@ -93,9 +91,6 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ManifestBucket>(ManifestBucket::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            bucket_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(bucket_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 }

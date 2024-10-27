@@ -26,15 +26,12 @@ impl TransactionBuilder {
         TransactionV2Builder::new()
     }
 
-    pub fn new_subintent_v2() -> PartialTransactionV2Builder {
-        PartialTransactionV2Builder::new()
-    }
-
     pub fn new_partial_v2() -> PartialTransactionV2Builder {
         PartialTransactionV2Builder::new()
     }
 }
 
+#[derive(Clone)]
 pub struct TransactionV1Builder {
     manifest: Option<TransactionManifestV1>,
     header: Option<TransactionHeaderV1>,
@@ -179,7 +176,7 @@ pub type SignedPartialTransactionV2Builder = PartialTransactionV2Builder;
 ///
 /// The error messages aren't great if used out of order.
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PartialTransactionV2Builder {
     child_partial_transactions: IndexMap<
         String,
@@ -456,7 +453,7 @@ impl PartialTransactionV2Builder {
 ///
 /// The error messages aren't great if used out of order.
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TransactionV2Builder {
     // Note - these names are long, but agreed with Yulong that we would clarify
     // non_root_subintents from root_subintent / transaction_intent so this is

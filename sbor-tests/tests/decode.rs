@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::vec;
+use sbor::prelude::*;
 use sbor::*;
 
 #[derive(Categorize, Decode, Debug, PartialEq)]
@@ -95,5 +95,5 @@ fn test_decode_empty_enum() {
     let mut decoder = BasicDecoder::new(&bytes, 255);
     let result = decoder.decode::<EmptyEnum>();
 
-    assert!(matches!(result, Err(DecodeError::UnknownDiscriminator(_))));
+    assert_matches!(result, Err(DecodeError::UnknownDiscriminator(_)));
 }
