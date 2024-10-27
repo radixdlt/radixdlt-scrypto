@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-/// A [`SignedTransactionIntentV2`] is inner model for a [`NotarizedTransactionV2`].
+/// A [`SignedTransactionIntentV2`] is an inner model for a [`NotarizedTransactionV2`].
 ///
 /// It includes two parts:
 /// * The [`TransactionIntentV2`] which contains a representention of an intent tree

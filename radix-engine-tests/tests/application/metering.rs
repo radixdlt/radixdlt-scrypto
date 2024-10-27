@@ -630,7 +630,7 @@ fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionRece
         &secp256k1_msg_hash_signature
     ));
     assert_eq!(
-        recover_secp256k1(&msg_hash, &secp256k1_msg_hash_signature).unwrap(),
+        verify_and_recover_secp256k1(&msg_hash, &secp256k1_msg_hash_signature).unwrap(),
         secp256k1_pk
     );
     receipt.expect_commit_success();

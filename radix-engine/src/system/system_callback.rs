@@ -911,7 +911,7 @@ impl<V: SystemCallbackObject> System<V> {
                     ..
                 } => (intent_hash.into_hash(), expiry_epoch),
                 IntentHashNullification::SimulatedTransactionIntent { simulated } => {
-                    let intent_hash = simulated.intent_hash();
+                    let intent_hash = simulated.transaction_intent_hash();
                     let expiry_epoch =
                         simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
                     (intent_hash.into_hash(), expiry_epoch)
@@ -927,6 +927,15 @@ impl<V: SystemCallbackObject> System<V> {
                         continue;
                     }
                     (intent_hash.into_hash(), expiry_epoch)
+                }
+                IntentHashNullification::SimulatedSubintent { simulated } => {
+                    if !is_success {
+                        continue;
+                    }
+                    let subintent_hash = simulated.subintent_hash();
+                    let expiry_epoch =
+                        simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
+                    (subintent_hash.into_hash(), expiry_epoch)
                 }
             };
 
@@ -1576,6 +1585,10 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 } => {
                     Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
                 }
+                IntentHashNullification::SimulatedSubintent { .. } => {
+                    // No validation is done on a simulated subintent used during preview
+                    Ok(())
+                }
             }
             .and_then(|_| {
                 match hash_nullification {
@@ -1584,7 +1597,8 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                         // Transaction intent nullification is historically not costed.
                         // If this changes, it should be applied to both TransactionIntents and SimulatedTransactionIntents
                     }
-                    IntentHashNullification::Subintent { .. } => {
+                    IntentHashNullification::Subintent { .. }
+                    | IntentHashNullification::SimulatedSubintent { .. } => {
                         num_of_intent_statuses += 1;
 
                         if let Some(costing) = modules.costing_mut() {

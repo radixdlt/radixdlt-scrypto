@@ -30,6 +30,13 @@ impl TransactionValidationConfig {
             .map(|s| s.fully_update_and_into_latest_version())
             .unwrap_or_else(|| Self::babylon())
     }
+
+    fn allow_notary_to_duplicate_signer(&self, version: TransactionVersion) -> bool {
+        match version {
+            TransactionVersion::V1 => self.v1_transactions_allow_notary_to_duplicate_signer,
+            TransactionVersion::V2 => false,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -52,7 +59,7 @@ pub struct TransactionValidationConfigV1 {
     /// A setting of N here allows a total depth of N + 1 if you
     /// include the root transaction intent.
     pub max_subintent_depth: usize,
-    pub max_total_signer_signatures: usize,
+    pub max_total_signature_validations: usize,
     pub max_total_references: usize,
 }
 
@@ -79,7 +86,7 @@ impl TransactionValidationConfig {
             max_subintent_depth: 0,
             min_tip_basis_points: 0,
             max_tip_basis_points: 0,
-            max_total_signer_signatures: usize::MAX,
+            max_total_signature_validations: usize::MAX,
             max_total_references: usize::MAX,
         }
     }
@@ -97,7 +104,7 @@ impl TransactionValidationConfig {
             // Tip of 100 times the cost of a transaction
             max_tip_basis_points: 100 * 10000,
             preparation_settings: PreparationSettings::cuttlefish(),
-            max_total_signer_signatures: 64,
+            max_total_signature_validations: 64,
             max_total_references: 512,
             ..Self::babylon()
         }
@@ -203,23 +210,47 @@ impl TransactionValidator {
         &self,
         transaction: PreparedNotarizedTransactionV1,
     ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-        self.check_reference_limits(vec![
-            &transaction.signed_intent.intent.instructions.references,
-        ])?;
+        let transaction_intent = &transaction.signed_intent.intent;
 
-        self.check_signature_limits(
-            &transaction.signed_intent.intent_signatures.inner.signatures,
-            None,
+        let signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V1,
+            &self.config,
+            transaction_intent.transaction_intent_hash().into(),
+            PendingIntentSignatureValidations::TransactionIntent {
+                notary_is_signatory: transaction_intent.header.inner.notary_is_signatory,
+                notary_public_key: transaction_intent.header.inner.notary_public_key,
+                notary_signature: transaction.notary_signature.inner.0,
+                notarized_hash: transaction.signed_transaction_intent_hash(),
+                intent_signatures: transaction
+                    .signed_intent
+                    .intent_signatures
+                    .inner
+                    .signatures
+                    .clone(),
+                signed_hash: transaction_intent.transaction_intent_hash(),
+            },
         )?;
 
-        self.validate_intent_v1(&transaction.signed_intent.intent)?;
-
-        let (signer_keys, num_of_signature_validations) = self
-            .validate_signatures_v1(&transaction)
-            .map_err(TransactionValidationError::SignatureValidationError)?;
+        let aggregation = self
+            .validate_intent_v1(&transaction.signed_intent.intent)
+            .map_err(|err| {
+                TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(
+                        transaction_intent.transaction_intent_hash(),
+                    ),
+                    err,
+                )
+            })?;
+        let _ = aggregation.finalize(&self.config)?; // Don't use the overall validity range in V1
 
         let encoded_instructions =
             manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
+
+        let SignatureValidationSummary {
+            root_signer_keys: signer_keys,
+            non_root_signer_keys: _, // Not used in V1
+            total_signature_validations: num_of_signature_validations,
+        } = signatures.validate_all()?;
 
         Ok(ValidatedNotarizedTransactionV1 {
             prepared: transaction,
@@ -234,9 +265,16 @@ impl TransactionValidator {
         &self,
         preview_intent: PreviewIntentV1,
     ) -> Result<ValidatedPreviewIntent, TransactionValidationError> {
+        let fake_intent_hash = SimulatedTransactionIntentNullification.transaction_intent_hash();
         let intent = preview_intent.intent.prepare(self.preparation_settings())?;
 
-        self.validate_intent_v1(&intent)?;
+        let aggregation = self.validate_intent_v1(&intent).map_err(|err| {
+            TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(fake_intent_hash),
+                err,
+            )
+        })?;
+        aggregation.finalize(&self.config)?;
 
         let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
@@ -249,22 +287,24 @@ impl TransactionValidator {
     }
 
     #[allow(deprecated)]
-    pub fn validate_intent_v1(
+    fn validate_intent_v1(
         &self,
         intent: &PreparedIntentV1,
-    ) -> Result<(), TransactionValidationError> {
+    ) -> Result<AcrossIntentAggregation, IntentValidationError> {
+        let mut aggregation = AcrossIntentAggregation::start();
         self.validate_header_v1(&intent.header.inner)?;
         self.validate_message_v1(&intent.message.inner)?;
+        aggregation.record_reference_count(intent.instructions.references.len(), &self.config)?;
         self.validate_instructions_v1(&intent.instructions.inner.0, &intent.blobs.blobs_by_hash)?;
 
-        return Ok(());
+        Ok(aggregation)
     }
 
     pub fn validate_instructions_v1(
         &self,
         instructions: &[InstructionV1],
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<(), TransactionValidationError> {
+    ) -> Result<(), IntentValidationError> {
         if instructions.len() > self.config.max_instructions {
             return Err(ManifestValidationError::TooManyInstructions.into());
         }
@@ -387,82 +427,6 @@ impl TransactionValidator {
         Ok(())
     }
 
-    #[allow(deprecated)]
-    pub fn validate_signatures_v1(
-        &self,
-        transaction: &PreparedNotarizedTransactionV1,
-    ) -> Result<(Vec<PublicKey>, usize), SignatureValidationError> {
-        let intent_signatures = &transaction.signed_intent.intent_signatures.inner.signatures;
-        let header = &transaction.signed_intent.intent.header.inner;
-
-        self.validate_transaction_intent_and_notary_signatures_v1(
-            TransactionVersion::V1,
-            transaction.transaction_intent_hash(),
-            transaction.signed_transaction_intent_hash(),
-            intent_signatures,
-            header.notary_is_signatory,
-            &header.notary_public_key,
-            &transaction.notary_signature.inner.0,
-        )
-    }
-
-    fn validate_transaction_intent_and_notary_signatures_v1(
-        &self,
-        transaction_version: TransactionVersion,
-        transaction_intent_hash: TransactionIntentHash,
-        signed_transaction_intent_hash: SignedTransactionIntentHash,
-        transaction_intent_signatures: &[IntentSignatureV1],
-        notary_is_signatory: bool,
-        notary_public_key: &PublicKey,
-        notary_signature: &SignatureV1,
-    ) -> Result<(Vec<PublicKey>, usize), SignatureValidationError> {
-        let mut signers = index_set_with_capacity(transaction_intent_signatures.len() + 1);
-        for intent_signature in transaction_intent_signatures.iter() {
-            let public_key = recover(&transaction_intent_hash.0, &intent_signature.0)
-                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
-
-            if !verify(
-                &transaction_intent_hash.0,
-                &public_key,
-                &intent_signature.0.signature(),
-            ) {
-                return Err(SignatureValidationError::InvalidIntentSignature);
-            }
-
-            if !signers.insert(public_key) {
-                return Err(SignatureValidationError::DuplicateSigner);
-            }
-        }
-
-        if notary_is_signatory {
-            if !signers.insert(notary_public_key.clone()) {
-                let permit_notary_duplicating_signer = match transaction_version {
-                    TransactionVersion::V1 => {
-                        self.config.v1_transactions_allow_notary_to_duplicate_signer
-                    }
-                    TransactionVersion::V2 => false,
-                };
-                if !permit_notary_duplicating_signer {
-                    return Err(
-                        SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
-                    );
-                }
-            }
-        }
-
-        if !verify(
-            &signed_transaction_intent_hash.0,
-            notary_public_key,
-            notary_signature,
-        ) {
-            return Err(SignatureValidationError::InvalidNotarySignature);
-        }
-
-        let num_validations = transaction_intent_signatures.len() + 1; // + 1 for the notary signature
-
-        Ok((signers.into_iter().collect(), num_validations))
-    }
-
     pub fn validate_message_v1(&self, message: &MessageV1) -> Result<(), InvalidMessageError> {
         let validation = &self.config.message_validation;
         match message {
@@ -534,45 +498,130 @@ impl TransactionValidator {
         }
 
         let transaction_intent = &prepared.signed_intent.transaction_intent;
-        let transaction_intent_signatures = &prepared.signed_intent.transaction_intent_signatures;
         let non_root_subintents = &transaction_intent.non_root_subintents;
-        let non_root_subintent_signatures = &prepared.signed_intent.non_root_subintent_signatures;
 
-        self.check_reference_limits(
-            [&transaction_intent.root_intent_core.instructions.references]
-                .into_iter()
-                .chain(
-                    non_root_subintents
-                        .subintents
-                        .iter()
-                        .map(|x| &x.intent_core.instructions.references),
+        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)
+            .map_err(|err| {
+                TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(
+                        transaction_intent.transaction_intent_hash(),
+                    ),
+                    IntentValidationError::HeaderValidationError(err),
                 )
-                .collect(),
-        )?;
+            })?;
 
-        self.check_signature_limits(
-            &transaction_intent_signatures.inner.signatures,
-            Some(non_root_subintent_signatures),
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            transaction_intent.transaction_intent_hash().into(),
+            PendingIntentSignatureValidations::TransactionIntent {
+                notary_is_signatory: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_is_signatory,
+                notary_public_key: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_public_key,
+                notary_signature: prepared.notary_signature.inner.0,
+                notarized_hash: prepared.signed_transaction_intent_hash(),
+                intent_signatures: prepared
+                    .signed_intent
+                    .transaction_intent_signatures
+                    .inner
+                    .signatures
+                    .clone(),
+                signed_hash: transaction_intent.transaction_intent_hash(),
+            },
         )?;
-
-        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)?;
+        signatures.add_non_root_subintents_v2(
+            non_root_subintents,
+            &prepared.signed_intent.non_root_subintent_signatures,
+        )?;
 
         let ValidatedPartialTransactionTreeV2 {
             overall_validity_range,
+            total_signature_validations,
             root_intent_info,
             root_yield_to_parent_count: _, // Checked to be 0 in the manifest validator.
             non_root_subintents_info,
         } = self.validate_transaction_subtree_v2(
             &transaction_intent.root_intent_core,
             transaction_intent.transaction_intent_hash().into(),
-            self.validate_transaction_intent_and_notary_signatures_v2(&prepared)?,
             non_root_subintents,
-            non_root_subintent_signatures,
+            signatures,
         )?;
 
         Ok(ValidatedNotarizedTransactionV2 {
             prepared,
             overall_validity_range,
+            total_signature_validations,
+            transaction_intent_info: root_intent_info,
+            non_root_subintents_info,
+        })
+    }
+
+    pub fn validate_preview_transaction_intent_v2(
+        &self,
+        prepared: PreparedPreviewTransactionIntentV2,
+    ) -> Result<ValidatedPreviewTransactionIntentV2, TransactionValidationError> {
+        if !self.config.v2_transactions_allowed {
+            return Err(TransactionValidationError::TransactionVersionNotPermitted(
+                2,
+            ));
+        }
+
+        let transaction_intent = &prepared.transaction_intent;
+        let non_root_subintents = &transaction_intent.non_root_subintents;
+
+        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)
+            .map_err(|err| {
+                TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(
+                        transaction_intent.transaction_intent_hash(),
+                    ),
+                    IntentValidationError::HeaderValidationError(err),
+                )
+            })?;
+
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            transaction_intent.transaction_intent_hash().into(),
+            PendingIntentSignatureValidations::PreviewTransactionIntent {
+                notary_is_signatory: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_is_signatory,
+                notary_public_key: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_public_key,
+                intent_public_keys: prepared.root_subintent_signatures.inner.clone(),
+            },
+        )?;
+        signatures.add_non_root_preview_subintents_v2(
+            non_root_subintents,
+            &prepared.non_root_subintent_signatures.inner,
+        )?;
+
+        let ValidatedPartialTransactionTreeV2 {
+            overall_validity_range,
+            total_signature_validations: total_expected_signature_validations,
+            root_intent_info,
+            root_yield_to_parent_count: _, // Checked to be 0 in the manifest validator.
+            non_root_subintents_info,
+        } = self.validate_transaction_subtree_v2(
+            &transaction_intent.root_intent_core,
+            transaction_intent.transaction_intent_hash().into(),
+            non_root_subintents,
+            signatures,
+        )?;
+
+        Ok(ValidatedPreviewTransactionIntentV2 {
+            prepared,
+            overall_validity_range,
+            total_expected_signature_validations,
             transaction_intent_info: root_intent_info,
             non_root_subintents_info,
         })
@@ -602,25 +651,21 @@ impl TransactionValidator {
         }
 
         let root_subintent = &prepared.partial_transaction.root_subintent;
-        let root_subintent_signatures = &prepared.root_subintent_signatures;
+        let root_intent_hash: IntentHash = root_subintent.subintent_hash().into();
         let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
-        let non_root_subintent_signatures = &prepared.non_root_subintent_signatures;
 
-        self.check_reference_limits(
-            [&root_subintent.intent_core.instructions.references]
-                .into_iter()
-                .chain(
-                    non_root_subintents
-                        .subintents
-                        .iter()
-                        .map(|x| &x.intent_core.instructions.references),
-                )
-                .collect(),
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            root_intent_hash,
+            PendingIntentSignatureValidations::Subintent {
+                intent_signatures: prepared.root_subintent_signatures.inner.signatures.clone(),
+                signed_hash: root_subintent.subintent_hash(),
+            },
         )?;
-
-        self.check_signature_limits(
-            &root_subintent_signatures.inner.signatures,
-            Some(non_root_subintent_signatures),
+        signatures.add_non_root_subintents_v2(
+            non_root_subintents,
+            &prepared.non_root_subintent_signatures,
         )?;
 
         let ValidatedPartialTransactionTreeV2 {
@@ -628,16 +673,17 @@ impl TransactionValidator {
             root_intent_info,
             root_yield_to_parent_count,
             non_root_subintents_info,
+            total_signature_validations,
         } = self.validate_transaction_subtree_v2(
             &root_subintent.intent_core,
             root_subintent.subintent_hash().into(),
-            self.validate_subintent_signatures_v2(root_subintent, root_subintent_signatures)?,
             non_root_subintents,
-            non_root_subintent_signatures,
+            signatures,
         )?;
 
         Ok(ValidatedSignedPartialTransactionV2 {
             prepared,
+            total_signature_validations,
             overall_validity_range,
             root_subintent_info: root_intent_info,
             root_subintent_yield_to_parent_count: root_yield_to_parent_count,
@@ -645,84 +691,14 @@ impl TransactionValidator {
         })
     }
 
-    pub fn check_reference_limits(
-        &self,
-        intent_references: Vec<&IndexSet<Reference>>,
-    ) -> Result<(), TransactionValidationError> {
-        let mut total = 0;
-        for (index, refs) in intent_references.iter().enumerate() {
-            if refs.len() > self.config.max_references_per_intent {
-                return Err(TransactionValidationError::TooManyReferencesForIntent {
-                    index,
-                    total: refs.len(),
-                    limit: self.config.max_references_per_intent,
-                });
-            }
-            total += refs.len();
-        }
-
-        if total > self.config.max_total_references {
-            return Err(TransactionValidationError::TooManyReferences {
-                total,
-                limit: self.config.max_total_references,
-            });
-        }
-
-        Ok(())
-    }
-
-    pub fn check_signature_limits(
-        &self,
-        root_subintent_signatures: &[IntentSignatureV1],
-        non_root_subintent_signatures: Option<&PreparedNonRootSubintentSignaturesV2>,
-    ) -> Result<(), TransactionValidationError> {
-        if root_subintent_signatures.len() > self.config.max_signer_signatures_per_intent {
-            return Err(TransactionValidationError::TooManySignaturesForIntent {
-                index: 0,
-                total: root_subintent_signatures.len(),
-                limit: self.config.max_signer_signatures_per_intent,
-            });
-        }
-        let mut total = root_subintent_signatures.len();
-        if let Some(sigs) = non_root_subintent_signatures {
-            for (index, intent_sigs) in sigs.by_subintent.iter().enumerate() {
-                if intent_sigs.inner.signatures.len() > self.config.max_signer_signatures_per_intent
-                {
-                    return Err(TransactionValidationError::TooManySignaturesForIntent {
-                        index,
-                        total: intent_sigs.inner.signatures.len(),
-                        limit: self.config.max_signer_signatures_per_intent,
-                    });
-                }
-                total += intent_sigs.inner.signatures.len();
-            }
-        }
-
-        if total > self.config.max_total_signer_signatures {
-            return Err(TransactionValidationError::TooManySignatures {
-                total,
-                limit: self.config.max_total_signer_signatures,
-            });
-        }
-
-        Ok(())
-    }
-
     pub fn validate_transaction_subtree_v2(
         &self,
         root_intent_core: &PreparedIntentCoreV2,
         root_intent_hash: IntentHash,
-        root_signature_validations: SignatureValidations,
         non_root_subintents: &PreparedNonRootSubintentsV2,
-        non_root_subintent_signatures: &PreparedNonRootSubintentSignaturesV2,
+        signatures: AllPendingSignatureValidations,
     ) -> Result<ValidatedPartialTransactionTreeV2, TransactionValidationError> {
         let non_root_subintents = non_root_subintents.subintents.as_slice();
-        let non_root_subintent_signatures = non_root_subintent_signatures.by_subintent.as_slice();
-        if non_root_subintents.len() != non_root_subintent_signatures.len() {
-            return Err(
-                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches.into(),
-            );
-        }
 
         let intent_relationships = self.validate_intent_relationships_v2(
             root_intent_hash,
@@ -736,24 +712,30 @@ impl TransactionValidator {
                 non_root_subintents,
                 &intent_relationships.non_root_subintents,
             )?;
+
+        let SignatureValidationSummary {
+            root_signer_keys,
+            non_root_signer_keys,
+            total_signature_validations,
+        } = signatures.validate_all()?;
+
         let root_intent_info = ValidatedIntentInformationV2 {
             encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
             children_subintent_indices: intent_relationships.root_intent.children,
-            signature_validations: root_signature_validations,
+            signer_keys: root_signer_keys,
         };
         let non_root_subintents_info = non_root_subintents
             .iter()
-            .zip(non_root_subintent_signatures)
+            .zip(non_root_signer_keys)
             .zip(intent_relationships.non_root_subintents.into_values())
             .map(
-                |((subintent, signatures), info)| -> Result<_, TransactionValidationError> {
+                |((subintent, signer_keys), info)| -> Result<_, TransactionValidationError> {
                     Ok(ValidatedIntentInformationV2 {
                         encoded_instructions: manifest_encode(
                             &subintent.intent_core.instructions.inner.0,
                         )?
                         .into(),
-                        signature_validations: self
-                            .validate_subintent_signatures_v2(subintent, signatures)?,
+                        signer_keys,
                         children_subintent_indices: info.children,
                     })
                 },
@@ -765,6 +747,7 @@ impl TransactionValidator {
             root_intent_info,
             root_yield_to_parent_count: root_yield_summary.parent_yields,
             non_root_subintents_info,
+            total_signature_validations,
         })
     }
 
@@ -778,28 +761,44 @@ impl TransactionValidator {
         root_intent_hash: IntentHash,
         root_intent_core: &PreparedIntentCoreV2,
         non_root_subintents: &[PreparedSubintentV2],
-        non_root_subintent_details: &IndexMap<SubintentHash, SubIntentRelationshipDetails>,
+        non_root_subintent_details: &IndexMap<SubintentHash, SubintentRelationshipDetails>,
     ) -> Result<(OverallValidityRangeV2, ManifestYieldSummary), TransactionValidationError> {
-        let mut header_aggregation = HeaderAggregation::start();
+        let mut aggregation = AcrossIntentAggregation::start();
         let mut yield_summaries: IndexMap<IntentHash, ManifestYieldSummary> =
             index_map_with_capacity(non_root_subintents.len() + 1);
         let root_yield_summary = {
-            let yield_summary = self.validate_v2_intent_core(
-                root_intent_core,
-                &mut header_aggregation,
-                root_intent_hash.is_for_subintent(),
-            )?;
+            let yield_summary = self
+                .validate_v2_intent_core(
+                    root_intent_core,
+                    &mut aggregation,
+                    root_intent_hash.is_for_subintent(),
+                )
+                .map_err(|err| {
+                    TransactionValidationError::IntentValidationError(
+                        TransactionValidationErrorLocation::for_root(root_intent_hash),
+                        err,
+                    )
+                })?;
             yield_summaries.insert(root_intent_hash, yield_summary.clone());
             yield_summary
         };
-        for subintent in non_root_subintents.iter() {
-            let yield_summary = self.validate_v2_intent_core(
-                &subintent.intent_core,
-                &mut header_aggregation,
-                true,
-            )?;
-            yield_summaries.insert(subintent.subintent_hash().into(), yield_summary);
+        for (index, subintent) in non_root_subintents.iter().enumerate() {
+            let subintent_hash = subintent.subintent_hash();
+            let yield_summary = self
+                .validate_v2_intent_core(&subintent.intent_core, &mut aggregation, true)
+                .map_err(|err| {
+                    TransactionValidationError::IntentValidationError(
+                        TransactionValidationErrorLocation::NonRootSubintent(
+                            SubintentIndex(index),
+                            subintent_hash,
+                        ),
+                        err,
+                    )
+                })?;
+            yield_summaries.insert(subintent_hash.into(), yield_summary);
         }
+
+        let overall_validity_range = aggregation.finalize(&self.config)?;
 
         for (child_hash, child_details) in non_root_subintent_details {
             let child_intent_hash = IntentHash::Subintent(*child_hash);
@@ -811,21 +810,26 @@ impl TransactionValidator {
             let child_yield_summary = yield_summaries.get(&child_intent_hash).unwrap();
             let child_yield_parent_calls = child_yield_summary.parent_yields;
             if parent_yield_child_calls != child_yield_parent_calls {
-                return Err(SubintentValidationError::MismatchingYieldChildAndYieldParentCountsForSubintent(*child_hash).into());
+                return Err(
+                    SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent
+                        .for_subintent(child_details.index, *child_hash),
+                );
             }
         }
 
-        Ok((header_aggregation.into(), root_yield_summary))
+        Ok((overall_validity_range, root_yield_summary))
     }
 
     fn validate_v2_intent_core(
         &self,
         intent_core: &PreparedIntentCoreV2,
-        header_aggregation: &mut HeaderAggregation,
+        aggregation: &mut AcrossIntentAggregation,
         is_subintent: bool,
-    ) -> Result<ManifestYieldSummary, TransactionValidationError> {
-        self.validate_intent_header_v2(&intent_core.header.inner, header_aggregation)?;
+    ) -> Result<ManifestYieldSummary, IntentValidationError> {
+        self.validate_intent_header_v2(&intent_core.header.inner, aggregation)?;
         self.validate_message_v2(&intent_core.message.inner)?;
+        aggregation
+            .record_reference_count(intent_core.instructions.references.len(), &self.config)?;
         let yield_summary = self.validate_manifest_v2(
             &intent_core.instructions.inner.0,
             &intent_core.blobs.blobs_by_hash,
@@ -838,7 +842,7 @@ impl TransactionValidator {
     fn validate_intent_header_v2(
         &self,
         header: &IntentHeaderV2,
-        aggregation: &mut HeaderAggregation,
+        aggregation: &mut AcrossIntentAggregation,
     ) -> Result<(), HeaderValidationError> {
         // Network
         if let Some(required_network_id) = self.required_network_id {
@@ -871,7 +875,7 @@ impl TransactionValidator {
             _ => {}
         };
 
-        aggregation.update(
+        aggregation.update_headers(
             header.start_epoch_inclusive,
             header.end_epoch_exclusive,
             header.min_proposer_timestamp_inclusive.as_ref(),
@@ -1005,64 +1009,6 @@ impl TransactionValidator {
         Ok(yield_summary)
     }
 
-    fn validate_transaction_intent_and_notary_signatures_v2(
-        &self,
-        prepared: &PreparedNotarizedTransactionV2,
-    ) -> Result<SignatureValidations, SignatureValidationError> {
-        let transaction_intent_signatures = &prepared
-            .signed_intent
-            .transaction_intent_signatures
-            .inner
-            .signatures;
-        let transaction_header = &prepared
-            .signed_intent
-            .transaction_intent
-            .transaction_header
-            .inner;
-
-        let (signer_keys, num_validations) = self
-            .validate_transaction_intent_and_notary_signatures_v1(
-                TransactionVersion::V2,
-                prepared.transaction_intent_hash(),
-                prepared.signed_transaction_intent_hash(),
-                transaction_intent_signatures,
-                transaction_header.notary_is_signatory,
-                &transaction_header.notary_public_key,
-                &prepared.notary_signature.inner.0,
-            )?;
-
-        Ok(SignatureValidations {
-            num_validations,
-            signer_keys,
-        })
-    }
-
-    fn validate_subintent_signatures_v2(
-        &self,
-        prepared: &PreparedSubintentV2,
-        signatures: &PreparedIntentSignaturesV2,
-    ) -> Result<SignatureValidations, SignatureValidationError> {
-        let intent_signatures = &signatures.inner.signatures;
-        let intent_hash = prepared.subintent_hash();
-        let mut signers = index_set_with_capacity(intent_signatures.len());
-        for intent_signature in intent_signatures.iter() {
-            let public_key = recover(&intent_hash.0, &intent_signature.0)
-                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
-
-            if !verify(&intent_hash.0, &public_key, &intent_signature.0.signature()) {
-                return Err(SignatureValidationError::InvalidIntentSignature);
-            }
-
-            if !signers.insert(public_key) {
-                return Err(SignatureValidationError::DuplicateSigner);
-            }
-        }
-        Ok(SignatureValidations {
-            num_validations: intent_signatures.len(),
-            signer_keys: signers.into_iter().collect(),
-        })
-    }
-
     /// The root intent can be either:
     /// * If validating a full transaction: a transaction intent
     /// * If validating a partial transaction: a root subintent
@@ -1071,20 +1017,22 @@ impl TransactionValidator {
         root_intent_hash: IntentHash,
         root_intent_core: &PreparedIntentCoreV2,
         non_root_subintents: &[PreparedSubintentV2],
-    ) -> Result<IntentRelationships, SubintentValidationError> {
+    ) -> Result<IntentRelationships, TransactionValidationError> {
         let mut root_intent_details = RootIntentRelationshipDetails::default();
         let mut non_root_subintent_details =
-            IndexMap::<SubintentHash, SubIntentRelationshipDetails>::default();
+            IndexMap::<SubintentHash, SubintentRelationshipDetails>::default();
 
         // STEP 1
         // ------
         // * We establish that the subintents are unique
         // * We create an index from the SubintentHash to SubintentIndex
-        for subintent in non_root_subintents.iter() {
+        for (index, subintent) in non_root_subintents.iter().enumerate() {
             let subintent_hash = subintent.subintent_hash();
-            let details = SubIntentRelationshipDetails::default();
+            let index = SubintentIndex(index);
+            let details = SubintentRelationshipDetails::default_for(index);
             if let Some(_) = non_root_subintent_details.insert(subintent_hash, details) {
-                return Err(SubintentValidationError::DuplicateSubintent(subintent_hash));
+                return Err(SubintentStructureError::DuplicateSubintent
+                    .for_subintent(index, subintent_hash));
             }
         }
 
@@ -1104,21 +1052,19 @@ impl TransactionValidator {
             let intent_details = &mut root_intent_details;
             for child_subintent_hash in root_intent_core.children.children.iter() {
                 let child_hash = child_subintent_hash.hash;
-                let (subintent_index, _, subintent_details) = non_root_subintent_details
-                    .get_full_mut(&child_hash)
+                let child_subintent_details = non_root_subintent_details
+                    .get_mut(&child_hash)
                     .ok_or_else(|| {
-                        SubintentValidationError::ChildSubintentNotIncludedInTransaction(child_hash)
+                        SubintentStructureError::ChildSubintentNotIncludedInTransaction(child_hash)
+                            .for_unindexed()
                     })?;
-                if subintent_details.parent == PLACEHOLDER_PARENT {
-                    subintent_details.parent = parent_hash;
+                if child_subintent_details.parent == PLACEHOLDER_PARENT {
+                    child_subintent_details.parent = parent_hash;
                 } else {
-                    return Err(SubintentValidationError::SubintentHasMultipleParents(
-                        child_hash,
-                    ));
+                    return Err(SubintentStructureError::SubintentHasMultipleParents
+                        .for_subintent(child_subintent_details.index, child_hash));
                 }
-                intent_details
-                    .children
-                    .push(SubintentIndex(subintent_index));
+                intent_details.children.push(child_subintent_details.index);
             }
         }
 
@@ -1130,19 +1076,19 @@ impl TransactionValidator {
             let mut children_details = Vec::with_capacity(children.len());
             for child_subintent in children.iter() {
                 let child_hash = child_subintent.hash;
-                let (subintent_index, _, subintent_details) = non_root_subintent_details
-                    .get_full_mut(&child_hash)
+                let child_subintent_details = non_root_subintent_details
+                    .get_mut(&child_hash)
                     .ok_or_else(|| {
-                        SubintentValidationError::ChildSubintentNotIncludedInTransaction(child_hash)
+                        SubintentStructureError::ChildSubintentNotIncludedInTransaction(child_hash)
+                            .for_unindexed()
                     })?;
-                if subintent_details.parent == PLACEHOLDER_PARENT {
-                    subintent_details.parent = parent_hash;
+                if child_subintent_details.parent == PLACEHOLDER_PARENT {
+                    child_subintent_details.parent = parent_hash;
                 } else {
-                    return Err(SubintentValidationError::SubintentHasMultipleParents(
-                        child_hash,
-                    ));
+                    return Err(SubintentStructureError::SubintentHasMultipleParents
+                        .for_subintent(child_subintent_details.index, child_hash));
                 }
-                children_details.push(SubintentIndex(subintent_index));
+                children_details.push(child_subintent_details.index);
             }
             non_root_subintent_details
                 .get_mut(&subintent_hash)
@@ -1174,7 +1120,9 @@ impl TransactionValidator {
             };
             if depth > max_depth {
                 let (hash, _) = non_root_subintent_details.get_index(index.0).unwrap();
-                return Err(SubintentValidationError::SubintentExceedsMaxDepth(*hash));
+                return Err(
+                    SubintentStructureError::SubintentExceedsMaxDepth.for_subintent(index, *hash)
+                );
             }
             let (_, subintent_details) = non_root_subintent_details.get_index_mut(index.0).unwrap();
             subintent_details.depth = depth;
@@ -1196,9 +1144,8 @@ impl TransactionValidator {
         for (hash, details) in non_root_subintent_details.iter() {
             if details.depth == 0 {
                 return Err(
-                    SubintentValidationError::SubintentIsNotReachableFromTheTransactionIntent(
-                        *hash,
-                    ),
+                    SubintentStructureError::SubintentIsNotReachableFromTheTransactionIntent
+                        .for_subintent(details.index, *hash),
                 );
             }
         }
@@ -1210,36 +1157,25 @@ impl TransactionValidator {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TransactionVersion {
     V1,
     V2,
 }
 
-struct HeaderAggregation {
+#[must_use]
+struct AcrossIntentAggregation {
+    total_reference_count: usize,
     overall_start_epoch_inclusive: Epoch,
     overall_end_epoch_exclusive: Epoch,
     overall_start_timestamp_inclusive: Option<Instant>,
     overall_end_timestamp_exclusive: Option<Instant>,
 }
 
-impl From<HeaderAggregation> for OverallValidityRangeV2 {
-    fn from(value: HeaderAggregation) -> Self {
-        Self {
-            epoch_range: EpochRange {
-                start_epoch_inclusive: value.overall_start_epoch_inclusive,
-                end_epoch_exclusive: value.overall_end_epoch_exclusive,
-            },
-            proposer_timestamp_range: ProposerTimestampRange {
-                start_timestamp_inclusive: value.overall_start_timestamp_inclusive,
-                end_timestamp_exclusive: value.overall_end_timestamp_exclusive,
-            },
-        }
-    }
-}
-
-impl HeaderAggregation {
+impl AcrossIntentAggregation {
     fn start() -> Self {
         Self {
+            total_reference_count: 0,
             overall_start_epoch_inclusive: Epoch::zero(),
             overall_end_epoch_exclusive: Epoch::of(u64::MAX),
             overall_start_timestamp_inclusive: None,
@@ -1247,7 +1183,47 @@ impl HeaderAggregation {
         }
     }
 
-    fn update(
+    fn finalize(
+        self,
+        config: &TransactionValidationConfig,
+    ) -> Result<OverallValidityRangeV2, TransactionValidationError> {
+        if self.total_reference_count > config.max_total_references {
+            return Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                IntentValidationError::TooManyReferences {
+                    total: self.total_reference_count,
+                    limit: config.max_total_references,
+                },
+            ));
+        }
+        Ok(OverallValidityRangeV2 {
+            epoch_range: EpochRange {
+                start_epoch_inclusive: self.overall_start_epoch_inclusive,
+                end_epoch_exclusive: self.overall_end_epoch_exclusive,
+            },
+            proposer_timestamp_range: ProposerTimestampRange {
+                start_timestamp_inclusive: self.overall_start_timestamp_inclusive,
+                end_timestamp_exclusive: self.overall_end_timestamp_exclusive,
+            },
+        })
+    }
+
+    fn record_reference_count(
+        &mut self,
+        count: usize,
+        config: &TransactionValidationConfig,
+    ) -> Result<(), IntentValidationError> {
+        if count > config.max_references_per_intent {
+            return Err(IntentValidationError::TooManyReferences {
+                total: count,
+                limit: config.max_references_per_intent,
+            });
+        }
+        self.total_reference_count = self.total_reference_count.saturating_add(count);
+        Ok(())
+    }
+
+    fn update_headers(
         &mut self,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
@@ -1298,6 +1274,322 @@ impl HeaderAggregation {
     }
 }
 
+pub struct AllPendingSignatureValidations<'a> {
+    transaction_version: TransactionVersion,
+    config: &'a TransactionValidationConfig,
+    root: (
+        PendingIntentSignatureValidations,
+        TransactionValidationErrorLocation,
+    ),
+    non_roots: Vec<(
+        PendingIntentSignatureValidations,
+        TransactionValidationErrorLocation,
+    )>,
+    total_signature_validations: usize,
+}
+
+pub struct SignatureValidationSummary {
+    root_signer_keys: IndexSet<PublicKey>,
+    non_root_signer_keys: Vec<IndexSet<PublicKey>>,
+    total_signature_validations: usize,
+}
+
+impl<'a> AllPendingSignatureValidations<'a> {
+    fn new_with_root(
+        transaction_version: TransactionVersion,
+        config: &'a TransactionValidationConfig,
+        root_intent_hash: IntentHash,
+        signatures: PendingIntentSignatureValidations,
+    ) -> Result<Self, TransactionValidationError> {
+        let intent_signature_validations = signatures.intent_signature_validations();
+        let error_location = TransactionValidationErrorLocation::for_root(root_intent_hash);
+        if intent_signature_validations > config.max_signer_signatures_per_intent {
+            return Err(TransactionValidationError::SignatureValidationError(
+                error_location,
+                SignatureValidationError::TooManySignatures {
+                    total: intent_signature_validations,
+                    limit: config.max_signer_signatures_per_intent,
+                },
+            ));
+        }
+        let notary_signature_validations = signatures.notary_signature_validations();
+
+        Ok(Self {
+            transaction_version,
+            config,
+            root: (signatures, error_location),
+            non_roots: Default::default(),
+            total_signature_validations: intent_signature_validations
+                + notary_signature_validations,
+        })
+    }
+
+    pub fn add_non_root_subintents_v2(
+        &mut self,
+        non_root_subintents: &PreparedNonRootSubintentsV2,
+        signatures: &PreparedNonRootSubintentSignaturesV2,
+    ) -> Result<(), TransactionValidationError> {
+        let non_root_subintents = &non_root_subintents.subintents;
+        let non_root_subintent_signatures = &signatures.by_subintent;
+        if non_root_subintents.len() != non_root_subintent_signatures.len() {
+            return Err(
+                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
+                    .located(TransactionValidationErrorLocation::AcrossTransaction),
+            );
+        }
+        for (index, (subintent, signatures)) in non_root_subintents
+            .iter()
+            .zip(non_root_subintent_signatures)
+            .enumerate()
+        {
+            self.add_non_root(
+                SubintentIndex(index),
+                subintent.subintent_hash(),
+                PendingIntentSignatureValidations::Subintent {
+                    intent_signatures: signatures.inner.signatures.clone(),
+                    signed_hash: subintent.subintent_hash(),
+                },
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn add_non_root_preview_subintents_v2(
+        &mut self,
+        non_root_subintents: &PreparedNonRootSubintentsV2,
+        non_root_subintent_signers: &Vec<Vec<PublicKey>>,
+    ) -> Result<(), TransactionValidationError> {
+        let non_root_subintents = &non_root_subintents.subintents;
+        if non_root_subintents.len() != non_root_subintent_signers.len() {
+            return Err(
+                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
+                    .located(TransactionValidationErrorLocation::AcrossTransaction),
+            );
+        }
+        for (index, (subintent, signatures)) in non_root_subintents
+            .iter()
+            .zip(non_root_subintent_signers)
+            .enumerate()
+        {
+            self.add_non_root(
+                SubintentIndex(index),
+                subintent.subintent_hash(),
+                PendingIntentSignatureValidations::PreviewSubintent {
+                    intent_public_keys: signatures.clone(),
+                },
+            )?;
+        }
+        Ok(())
+    }
+
+    fn add_non_root(
+        &mut self,
+        subintent_index: SubintentIndex,
+        subintent_hash: SubintentHash,
+        signatures: PendingIntentSignatureValidations,
+    ) -> Result<(), TransactionValidationError> {
+        let intent_signature_validations = signatures.intent_signature_validations();
+        let error_location =
+            TransactionValidationErrorLocation::NonRootSubintent(subintent_index, subintent_hash);
+        if intent_signature_validations > self.config.max_signer_signatures_per_intent {
+            return Err(TransactionValidationError::SignatureValidationError(
+                error_location,
+                SignatureValidationError::TooManySignatures {
+                    total: intent_signature_validations,
+                    limit: self.config.max_signer_signatures_per_intent,
+                },
+            ));
+        }
+
+        self.non_roots.push((signatures, error_location));
+        self.total_signature_validations += intent_signature_validations;
+        Ok(())
+    }
+
+    pub fn validate_all(self) -> Result<SignatureValidationSummary, TransactionValidationError> {
+        if self.total_signature_validations > self.config.max_total_signature_validations {
+            return Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::TooManySignatures {
+                    total: self.total_signature_validations,
+                    limit: self.config.max_total_signature_validations,
+                },
+            ));
+        }
+        let config = self.config;
+        let transaction_version = self.transaction_version;
+        let root_signer_keys = Self::validate_signatures(self.root.0, config, transaction_version)
+            .map_err(|err| {
+                TransactionValidationError::SignatureValidationError(self.root.1, err)
+            })?;
+
+        let non_root_signer_keys = self
+            .non_roots
+            .into_iter()
+            .map(|non_root| {
+                Self::validate_signatures(non_root.0, config, transaction_version).map_err(|err| {
+                    TransactionValidationError::SignatureValidationError(non_root.1, err)
+                })
+            })
+            .collect::<Result<_, _>>()?;
+
+        Ok(SignatureValidationSummary {
+            root_signer_keys,
+            non_root_signer_keys,
+            total_signature_validations: self.total_signature_validations,
+        })
+    }
+
+    fn validate_signatures(
+        signatures: PendingIntentSignatureValidations,
+        config: &TransactionValidationConfig,
+        transaction_version: TransactionVersion,
+    ) -> Result<IndexSet<PublicKey>, SignatureValidationError> {
+        let public_keys = match signatures {
+            PendingIntentSignatureValidations::TransactionIntent {
+                notary_is_signatory,
+                notary_public_key,
+                notary_signature,
+                notarized_hash,
+                intent_signatures,
+                signed_hash,
+            } => {
+                let mut intent_public_keys: IndexSet<PublicKey> = Default::default();
+                for signature in intent_signatures {
+                    let public_key = verify_and_recover(signed_hash.as_hash(), &signature.0)
+                        .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+                    if !intent_public_keys.insert(public_key) {
+                        return Err(SignatureValidationError::DuplicateSigner);
+                    }
+                }
+
+                if !verify(
+                    notarized_hash.as_hash(),
+                    &notary_public_key,
+                    &notary_signature,
+                ) {
+                    return Err(SignatureValidationError::InvalidNotarySignature);
+                }
+
+                if notary_is_signatory {
+                    if !intent_public_keys.insert(notary_public_key)
+                        && !config.allow_notary_to_duplicate_signer(transaction_version)
+                    {
+                        return Err(
+                            SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
+                        );
+                    }
+                }
+
+                intent_public_keys
+            }
+            PendingIntentSignatureValidations::PreviewTransactionIntent {
+                notary_is_signatory,
+                notary_public_key,
+                intent_public_keys,
+            } => {
+                let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
+                for key in intent_public_keys {
+                    if !checked_intent_public_keys.insert(key) {
+                        return Err(SignatureValidationError::DuplicateSigner);
+                    }
+                }
+                if notary_is_signatory {
+                    if !checked_intent_public_keys.insert(notary_public_key)
+                        && !config.allow_notary_to_duplicate_signer(transaction_version)
+                    {
+                        return Err(
+                            SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
+                        );
+                    }
+                }
+                checked_intent_public_keys
+            }
+            PendingIntentSignatureValidations::Subintent {
+                intent_signatures,
+                signed_hash,
+            } => {
+                let mut intent_public_keys: IndexSet<PublicKey> = Default::default();
+                for signature in intent_signatures {
+                    let public_key = verify_and_recover(signed_hash.as_hash(), &signature.0)
+                        .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+                    if !intent_public_keys.insert(public_key) {
+                        return Err(SignatureValidationError::DuplicateSigner);
+                    }
+                }
+                intent_public_keys
+            }
+            PendingIntentSignatureValidations::PreviewSubintent { intent_public_keys } => {
+                let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
+                for key in intent_public_keys {
+                    if !checked_intent_public_keys.insert(key) {
+                        return Err(SignatureValidationError::DuplicateSigner);
+                    }
+                }
+                checked_intent_public_keys
+            }
+        };
+
+        Ok(public_keys)
+    }
+}
+
+/// This can assume that the signature counts are within checked limits,
+/// so calculations cannot overflow.
+enum PendingIntentSignatureValidations {
+    TransactionIntent {
+        notary_is_signatory: bool,
+        notary_public_key: PublicKey,
+        notary_signature: SignatureV1,
+        notarized_hash: SignedTransactionIntentHash,
+        intent_signatures: Vec<IntentSignatureV1>,
+        signed_hash: TransactionIntentHash,
+    },
+    PreviewTransactionIntent {
+        notary_is_signatory: bool,
+        notary_public_key: PublicKey,
+        intent_public_keys: Vec<PublicKey>,
+    },
+    Subintent {
+        intent_signatures: Vec<IntentSignatureV1>,
+        signed_hash: SubintentHash,
+    },
+    PreviewSubintent {
+        intent_public_keys: Vec<PublicKey>,
+    },
+}
+
+impl PendingIntentSignatureValidations {
+    fn intent_signature_validations(&self) -> usize {
+        match self {
+            PendingIntentSignatureValidations::TransactionIntent {
+                intent_signatures, ..
+            } => intent_signatures.len(),
+            PendingIntentSignatureValidations::PreviewTransactionIntent {
+                intent_public_keys,
+                ..
+            } => intent_public_keys.len(),
+            PendingIntentSignatureValidations::Subintent {
+                intent_signatures, ..
+            } => intent_signatures.len(),
+            PendingIntentSignatureValidations::PreviewSubintent { intent_public_keys } => {
+                intent_public_keys.len()
+            }
+        }
+    }
+
+    fn notary_signature_validations(&self) -> usize {
+        match self {
+            PendingIntentSignatureValidations::TransactionIntent { .. }
+            | PendingIntentSignatureValidations::PreviewTransactionIntent { .. } => 1,
+            PendingIntentSignatureValidations::Subintent { .. }
+            | PendingIntentSignatureValidations::PreviewSubintent { .. } => 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ManifestYieldSummary {
     parent_yields: usize,
@@ -1339,22 +1631,24 @@ impl ManifestInterpretationVisitor for ManifestYieldSummary {
 
 struct IntentRelationships {
     pub root_intent: RootIntentRelationshipDetails,
-    pub non_root_subintents: IndexMap<SubintentHash, SubIntentRelationshipDetails>,
+    pub non_root_subintents: IndexMap<SubintentHash, SubintentRelationshipDetails>,
 }
 #[derive(Default)]
 pub struct RootIntentRelationshipDetails {
     children: Vec<SubintentIndex>,
 }
 
-pub struct SubIntentRelationshipDetails {
+pub struct SubintentRelationshipDetails {
+    index: SubintentIndex,
     parent: IntentHash,
     depth: usize,
     children: Vec<SubintentIndex>,
 }
 
-impl Default for SubIntentRelationshipDetails {
-    fn default() -> Self {
+impl SubintentRelationshipDetails {
+    fn default_for(index: SubintentIndex) -> Self {
         Self {
+            index,
             parent: PLACEHOLDER_PARENT,
             depth: Default::default(),
             children: Default::default(),
@@ -1373,28 +1667,34 @@ mod tests {
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder};
 
     macro_rules! assert_invalid_tx {
-        ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
+        ($result: pat, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let validator = TransactionValidator::new_for_latest_simulator();
-            assert_eq!(
-                $result,
+            assert!(matches!(
                 create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
                     .prepare_and_validate(&validator)
-                    .expect_err("Should be an error")
-            );
+                    .expect_err("Should be an error"),
+                $result,
+            ));
         }};
     }
 
     #[test]
     fn test_invalid_header() {
         assert_invalid_tx!(
-            TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::InvalidEpochRange
+            TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                IntentValidationError::HeaderValidationError(
+                    HeaderValidationError::InvalidEpochRange
+                ),
             ),
             (Epoch::zero(), Epoch::zero(), 5, vec![1], 2)
         );
         assert_invalid_tx!(
-            TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::InvalidEpochRange
+            TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                IntentValidationError::HeaderValidationError(
+                    HeaderValidationError::InvalidEpochRange
+                ),
             ),
             (
                 Epoch::zero(),
@@ -1409,8 +1709,11 @@ mod tests {
     #[test]
     fn test_epoch_overflow() {
         assert_invalid_tx!(
-            TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::InvalidEpochRange
+            TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                IntentValidationError::HeaderValidationError(
+                    HeaderValidationError::InvalidEpochRange
+                ),
             ),
             (Epoch::of(u64::MAX - 5), Epoch::of(u64::MAX), 5, vec![1], 2)
         );
@@ -1419,15 +1722,18 @@ mod tests {
     #[test]
     fn test_invalid_signatures() {
         assert_invalid_tx!(
-            TransactionValidationError::TooManySignaturesForIntent {
-                index: 0,
-                total: 19,
-                limit: 16
-            },
+            TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                SignatureValidationError::TooManySignatures {
+                    total: 19,
+                    limit: 16,
+                }
+            ),
             (Epoch::zero(), Epoch::of(100), 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
                 SignatureValidationError::DuplicateSigner
             ),
             (Epoch::zero(), Epoch::of(100), 5, vec![1, 1], 2)
@@ -1704,25 +2010,29 @@ mod tests {
             .is_ok());
 
         // Act & Assert - Transaction V2 does not permit duplicating a notary is signatory as a signatory
-        assert_eq!(
+        assert!(matches!(
             transaction_v2.prepare_and_validate(&babylon_validator),
             Err(TransactionValidationError::PrepareError(
                 PrepareError::TransactionTypeNotSupported
             ))
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             transaction_v2.prepare_and_validate(&latest_validator),
             Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
                 SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner
-            ))
-        );
+            )),
+        ));
     }
 
     fn validate_default_expecting_message_error(
         transaction: &NotarizedTransactionV1,
     ) -> InvalidMessageError {
         match validate_default(transaction).expect_err("Expected validation error") {
-            TransactionValidationError::InvalidMessage(error) => error,
+            TransactionValidationError::IntentValidationError(
+                _,
+                IntentValidationError::InvalidMessage(error),
+            ) => error,
             error => {
                 panic!("Expected InvalidMessage error, got: {:?}", error)
             }
@@ -1822,8 +2132,14 @@ mod tests {
         let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
-            Err(TransactionValidationError::ManifestValidationError(
-                ManifestValidationError::BucketConsumedWhilstLockedByProof(ManifestBucket(0), _,)
+            Err(TransactionValidationError::IntentValidationError(
+                _,
+                IntentValidationError::ManifestValidationError(
+                    ManifestValidationError::BucketConsumedWhilstLockedByProof(
+                        ManifestBucket(0),
+                        _,
+                    )
+                )
             ))
         ));
     }
@@ -1854,8 +2170,11 @@ mod tests {
         let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
-            Err(TransactionValidationError::ManifestValidationError(
-                ManifestValidationError::ProofAlreadyUsed(ManifestProof(0), _,)
+            Err(TransactionValidationError::IntentValidationError(
+                _,
+                IntentValidationError::ManifestValidationError(
+                    ManifestValidationError::ProofAlreadyUsed(ManifestProof(0), _,)
+                )
             ))
         ));
     }
@@ -1887,8 +2206,11 @@ mod tests {
         let validator = TransactionValidator::new_for_latest_simulator();
         assert!(matches!(
             transaction.prepare_and_validate(&validator),
-            Err(TransactionValidationError::ManifestValidationError(
-                ManifestValidationError::BucketAlreadyUsed(ManifestBucket(0), _,)
+            Err(TransactionValidationError::IntentValidationError(
+                _,
+                IntentValidationError::ManifestValidationError(
+                    ManifestValidationError::BucketAlreadyUsed(ManifestBucket(0), _,)
+                )
             ))
         ));
     }
@@ -1963,21 +2285,26 @@ mod tests {
             create_transaction(vec![10]).prepare_and_validate(&validator),
             Ok(_)
         ));
-        assert_eq!(
+        assert!(matches!(
             create_transaction(vec![10, 20]).prepare_and_validate(&validator),
-            Err(TransactionValidationError::TooManySignaturesForIntent {
-                index: 1,
-                total: 20,
-                limit: 16
-            })
-        );
-        assert_eq!(
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
+                SignatureValidationError::TooManySignatures {
+                    total: 20,
+                    limit: 16,
+                },
+            ))
+        ));
+        assert!(matches!(
             create_transaction(vec![10, 10, 10, 10, 10, 10, 10]).prepare_and_validate(&validator),
-            Err(TransactionValidationError::TooManySignatures {
-                total: 71, // 70 from subintent, 1 from transaction intent
-                limit: 64
-            })
-        );
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::TooManySignatures {
+                    total: 72, // 70 from subintent, 1 from transaction intent, 1 from notarization
+                    limit: 64
+                },
+            ))
+        ));
     }
 
     #[test]
@@ -2058,20 +2385,25 @@ mod tests {
             create_transaction(vec![100]).prepare_and_validate(&validator),
             Ok(_)
         ));
-        assert_eq!(
+        assert!(matches!(
             create_transaction(vec![100, 600]).prepare_and_validate(&validator),
-            Err(TransactionValidationError::TooManyReferencesForIntent {
-                index: 2,
-                total: 600,
-                limit: 512
-            })
-        );
-        assert_eq!(
+            Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
+                IntentValidationError::TooManyReferences {
+                    total: 600,
+                    limit: 512,
+                }
+            ))
+        ));
+        assert!(matches!(
             create_transaction(vec![500, 500]).prepare_and_validate(&validator),
-            Err(TransactionValidationError::TooManyReferences {
-                total: 1001, // 1000 from subintent, 1 from transaction intent
-                limit: 512
-            })
-        );
+            Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                IntentValidationError::TooManyReferences {
+                    total: 1001, // 1000 from subintent, 1 from transaction intent
+                    limit: 512,
+                }
+            ))
+        ));
     }
 }

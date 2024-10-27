@@ -1,4 +1,4 @@
-use radix_transactions::errors::{SubintentValidationError, TransactionValidationError};
+use radix_transactions::errors::{SubintentStructureError, TransactionValidationError};
 use scrypto_test::prelude::*;
 
 #[test]
@@ -111,8 +111,9 @@ fn subintents_do_not_support_depth_of_five() {
 
     assert!(matches!(
         validation_error,
-        TransactionValidationError::SubintentError(
-            SubintentValidationError::SubintentExceedsMaxDepth(_)
+        TransactionValidationError::SubintentStructureError(
+            _,
+            SubintentStructureError::SubintentExceedsMaxDepth,
         ),
     ))
 }

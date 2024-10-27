@@ -5,7 +5,7 @@ use radix_common::constants::AuthAddresses;
 pub struct ValidatedNotarizedTransactionV1 {
     pub prepared: PreparedNotarizedTransactionV1,
     pub encoded_instructions: Vec<u8>,
-    pub signer_keys: Vec<PublicKey>,
+    pub signer_keys: IndexSet<PublicKey>,
     pub num_of_signature_validations: usize,
 }
 

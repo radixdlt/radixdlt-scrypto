@@ -15,12 +15,22 @@ pub enum HeaderValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
+    TooManySignatures { total: usize, limit: usize },
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
     NotaryIsSignatorySoShouldNotAlsoBeASigner,
     SerializationError(EncodeError),
     IncorrectNumberOfSubintentSignatureBatches,
+}
+
+impl SignatureValidationError {
+    pub fn located(
+        self,
+        location: TransactionValidationErrorLocation,
+    ) -> TransactionValidationError {
+        TransactionValidationError::SignatureValidationError(location, self)
+    }
 }
 
 impl From<EncodeError> for SignatureValidationError {
@@ -56,30 +66,33 @@ pub enum TransactionValidationError {
     TransactionTooLarge,
     EncodeError(EncodeError),
     PrepareError(PrepareError),
-    HeaderValidationError(HeaderValidationError),
-    SignatureValidationError(SignatureValidationError),
-    ManifestBasicValidatorError(ManifestBasicValidatorError),
-    ManifestValidationError(ManifestValidationError),
-    InvalidMessage(InvalidMessageError),
-    SubintentError(SubintentValidationError),
-    TooManySignatures {
-        total: usize,
-        limit: usize,
-    },
-    TooManySignaturesForIntent {
-        index: usize,
-        total: usize,
-        limit: usize,
-    },
-    TooManyReferences {
-        total: usize,
-        limit: usize,
-    },
-    TooManyReferencesForIntent {
-        index: usize,
-        total: usize,
-        limit: usize,
-    },
+    SubintentStructureError(TransactionValidationErrorLocation, SubintentStructureError),
+    IntentValidationError(TransactionValidationErrorLocation, IntentValidationError),
+    SignatureValidationError(TransactionValidationErrorLocation, SignatureValidationError),
+}
+
+pub enum IntentSpecifier {
+    RootTransactionIntent(TransactionIntentHash),
+    RootSubintent(SubintentHash),
+    NonRootSubintent(SubintentIndex, SubintentHash),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionValidationErrorLocation {
+    RootTransactionIntent(TransactionIntentHash),
+    RootSubintent(SubintentHash),
+    NonRootSubintent(SubintentIndex, SubintentHash),
+    AcrossTransaction,
+    Unlocatable,
+}
+
+impl TransactionValidationErrorLocation {
+    pub fn for_root(intent_hash: IntentHash) -> Self {
+        match intent_hash {
+            IntentHash::Transaction(hash) => Self::RootTransactionIntent(hash),
+            IntentHash::Subintent(hash) => Self::RootSubintent(hash),
+        }
+    }
 }
 
 impl From<PrepareError> for TransactionValidationError {
@@ -94,37 +107,34 @@ impl From<EncodeError> for TransactionValidationError {
     }
 }
 
-impl From<InvalidMessageError> for TransactionValidationError {
-    fn from(value: InvalidMessageError) -> Self {
-        Self::InvalidMessage(value)
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentValidationError {
+    ManifestBasicValidatorError(ManifestBasicValidatorError),
+    ManifestValidationError(ManifestValidationError),
+    InvalidMessage(InvalidMessageError),
+    HeaderValidationError(HeaderValidationError),
+    TooManyReferences { total: usize, limit: usize },
 }
 
-impl From<SubintentValidationError> for TransactionValidationError {
-    fn from(value: SubintentValidationError) -> Self {
-        Self::SubintentError(value)
-    }
-}
-
-impl From<SignatureValidationError> for TransactionValidationError {
-    fn from(value: SignatureValidationError) -> Self {
-        Self::SignatureValidationError(value)
-    }
-}
-
-impl From<HeaderValidationError> for TransactionValidationError {
+impl From<HeaderValidationError> for IntentValidationError {
     fn from(value: HeaderValidationError) -> Self {
         Self::HeaderValidationError(value)
     }
 }
 
-impl From<ManifestBasicValidatorError> for TransactionValidationError {
+impl From<InvalidMessageError> for IntentValidationError {
+    fn from(value: InvalidMessageError) -> Self {
+        Self::InvalidMessage(value)
+    }
+}
+
+impl From<ManifestBasicValidatorError> for IntentValidationError {
     fn from(value: ManifestBasicValidatorError) -> Self {
         Self::ManifestBasicValidatorError(value)
     }
 }
 
-impl From<ManifestValidationError> for TransactionValidationError {
+impl From<ManifestValidationError> for IntentValidationError {
     fn from(value: ManifestValidationError) -> Self {
         Self::ManifestValidationError(value)
     }
@@ -159,11 +169,31 @@ pub enum InvalidMessageError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SubintentValidationError {
-    DuplicateSubintent(SubintentHash),
-    SubintentHasMultipleParents(SubintentHash),
+pub enum SubintentStructureError {
+    DuplicateSubintent,
+    SubintentHasMultipleParents,
     ChildSubintentNotIncludedInTransaction(SubintentHash),
-    SubintentExceedsMaxDepth(SubintentHash),
-    SubintentIsNotReachableFromTheTransactionIntent(SubintentHash),
-    MismatchingYieldChildAndYieldParentCountsForSubintent(SubintentHash),
+    SubintentExceedsMaxDepth,
+    SubintentIsNotReachableFromTheTransactionIntent,
+    MismatchingYieldChildAndYieldParentCountsForSubintent,
+}
+
+impl SubintentStructureError {
+    pub fn for_unindexed(self) -> TransactionValidationError {
+        TransactionValidationError::SubintentStructureError(
+            TransactionValidationErrorLocation::Unlocatable,
+            self,
+        )
+    }
+
+    pub fn for_subintent(
+        self,
+        index: SubintentIndex,
+        hash: SubintentHash,
+    ) -> TransactionValidationError {
+        TransactionValidationError::SubintentStructureError(
+            TransactionValidationErrorLocation::NonRootSubintent(index, hash),
+            self,
+        )
+    }
 }

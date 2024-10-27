@@ -759,7 +759,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.api
             .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaKeyRecover)?;
 
-        let key = recover_secp256k1(&hash, &signature)
+        let key = verify_and_recover_secp256k1(&hash, &signature)
             .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
 
         self.allocate_buffer(key.to_vec())
