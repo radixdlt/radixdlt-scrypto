@@ -435,7 +435,6 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::internal_prelude::*;
 
     #[derive(ScryptoSbor)]
     pub struct SomeNonFungibleData {

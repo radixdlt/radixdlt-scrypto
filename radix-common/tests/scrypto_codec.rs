@@ -1,7 +1,7 @@
 // This test module fails to compile if we do not increase the recursion limit.
 #![recursion_limit = "256"]
 
-use crate::internal_prelude::*;
+use radix_common::prelude::*;
 
 #[test]
 fn test_args() {
@@ -378,7 +378,7 @@ fn wrap_in_hashmap<T>(inner: T) -> HashMap<u8, T> {
     value
 }
 
-fn wrap_in_hashset<T: Hash + Eq>(inner: T) -> HashSet<T> {
+fn wrap_in_hashset<T: core::hash::Hash + Eq>(inner: T) -> HashSet<T> {
     let mut value = hash_set_new();
     value.insert(inner);
     value
