@@ -45,7 +45,7 @@ STATE UPDATES: 1 entity
            min_tip_basis_points: 0u32,
            max_tip_basis_points: 1000000u32,
            max_subintent_depth: 3u64,
-           max_total_signer_signatures: 64u64,
+           max_total_signature_validations: 64u64,
            max_total_references: 512u64,
          },
        )
