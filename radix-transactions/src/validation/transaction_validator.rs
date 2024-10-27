@@ -2025,6 +2025,153 @@ mod tests {
         );
     }
 
+    struct FakeSigner<'a, S: Signer> {
+        signer: &'a S,
+    }
+
+    impl<'a, S: Signer> FakeSigner<'a, S> {
+        fn new(signer: &'a S) -> Self {
+            Self { signer }
+        }
+    }
+
+    impl<'a, S: Signer> Signer for FakeSigner<'a, S> {
+        fn public_key(&self) -> PublicKey {
+            self.signer.public_key().into()
+        }
+
+        fn sign_without_public_key(&self, message_hash: &impl IsHash) -> SignatureV1 {
+            let mut signature = self.signer.sign_without_public_key(message_hash);
+            match &mut signature {
+                SignatureV1::Secp256k1(inner_signature) => inner_signature.0[5].add_assign(1),
+                SignatureV1::Ed25519(inner_signature) => inner_signature.0[5].add_assign(1),
+            }
+            signature
+        }
+
+        fn sign_with_public_key(&self, message_hash: &impl IsHash) -> SignatureWithPublicKeyV1 {
+            let mut signature = self.signer.sign_with_public_key(message_hash);
+            match &mut signature {
+                SignatureWithPublicKeyV1::Secp256k1 { signature } => signature.0[5].add_assign(1),
+                SignatureWithPublicKeyV1::Ed25519 {
+                    signature,
+                    public_key: _,
+                } => signature.0[5].add_assign(1),
+            }
+            signature
+        }
+    }
+
+    #[test]
+    fn test_invalid_signatures() {
+        let network = NetworkDefinition::simulator();
+
+        let validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::latest(),
+            network.id,
+        );
+
+        let versions_to_test = [TransactionVersion::V1, TransactionVersion::V2];
+
+        fn validate_transaction(
+            validator: &TransactionValidator,
+            version: TransactionVersion,
+            signer: &impl Signer,
+            notary: &impl Signer,
+        ) -> Result<IndexSet<PublicKey>, TransactionValidationError> {
+            let signer_keys = match version {
+                TransactionVersion::V1 => {
+                    unsigned_v1_builder(notary.public_key().into())
+                        .sign(signer)
+                        .notarize(notary)
+                        .build()
+                        .prepare_and_validate(validator)?
+                        .signer_keys
+                }
+                TransactionVersion::V2 => {
+                    unsigned_v2_builder(notary.public_key().into())
+                        .sign(signer)
+                        .notarize(notary)
+                        .build_no_validate()
+                        .prepare_and_validate(validator)?
+                        .transaction_intent_info
+                        .signer_keys
+                }
+            };
+            Ok(signer_keys)
+        }
+
+        {
+            // Test Secp256k1
+            let notary = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let signer = Secp256k1PrivateKey::from_u64(13).unwrap();
+            for version in versions_to_test {
+                assert_matches!(
+                    validate_transaction(&validator, version, &signer, &notary),
+                    Ok(signer_keys) => {
+                        assert_eq!(signer_keys.len(), 1);
+                        assert_eq!(signer_keys[0], signer.public_key().into());
+                    }
+                );
+                match validate_transaction(&validator, version, &FakeSigner::new(&signer), &notary)
+                {
+                    // Coincidentally, between V1 and V2 we hit both cases below
+                    Ok(signer_keys) => {
+                        // NOTE: Because we recover our Secp256k1 public keys, by mutating the signature
+                        // we might have stumbled on a valid signature for a different key - but that's okay.
+                        // As long as we can't fake the signature of a particular key, that's okay.
+                        assert_eq!(signer_keys.len(), 1);
+                        assert_ne!(signer_keys[0], signer.public_key().into());
+                    }
+                    Err(TransactionValidationError::SignatureValidationError(
+                        TransactionValidationErrorLocation::RootTransactionIntent(_),
+                        SignatureValidationError::InvalidIntentSignature,
+                    )) => {}
+                    other_result => {
+                        panic!("Unexpected result: {other_result:?}");
+                    }
+                }
+                assert_eq!(1, 2, "Hello you");
+                assert_matches!(
+                    validate_transaction(&validator, version, &signer, &FakeSigner::new(&notary)),
+                    Err(TransactionValidationError::SignatureValidationError(
+                        TransactionValidationErrorLocation::RootTransactionIntent(_),
+                        SignatureValidationError::InvalidNotarySignature
+                    ))
+                );
+            }
+        }
+
+        {
+            // Test Ed25519
+            let notary = Ed25519PrivateKey::from_u64(1).unwrap();
+            let signer = Ed25519PrivateKey::from_u64(13).unwrap();
+            for version in versions_to_test {
+                assert_matches!(
+                    validate_transaction(&validator, version, &signer, &notary),
+                    Ok(signer_keys) => {
+                        assert_eq!(signer_keys.len(), 1);
+                        assert_eq!(signer_keys[0], signer.public_key().into());
+                    }
+                );
+                assert_matches!(
+                    validate_transaction(&validator, version, &FakeSigner::new(&signer), &notary),
+                    Err(TransactionValidationError::SignatureValidationError(
+                        TransactionValidationErrorLocation::RootTransactionIntent(_),
+                        SignatureValidationError::InvalidIntentSignature
+                    ))
+                );
+                assert_matches!(
+                    validate_transaction(&validator, version, &signer, &FakeSigner::new(&notary)),
+                    Err(TransactionValidationError::SignatureValidationError(
+                        TransactionValidationErrorLocation::RootTransactionIntent(_),
+                        SignatureValidationError::InvalidNotarySignature
+                    ))
+                );
+            }
+        }
+    }
+
     fn validate_default_expecting_message_error(
         transaction: &NotarizedTransactionV1,
     ) -> InvalidMessageError {
