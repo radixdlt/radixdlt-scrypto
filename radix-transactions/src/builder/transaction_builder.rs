@@ -514,6 +514,19 @@ impl TransactionV2Builder {
         self
     }
 
+    pub fn manifest_builder_no_validate(
+        mut self,
+        build_manifest: impl FnOnce(TransactionManifestV2Builder) -> TransactionManifestV2Builder,
+    ) -> Self {
+        let mut manifest_builder = TransactionManifestV2Builder::new_typed();
+        for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
+            manifest_builder = manifest_builder.use_child(child_name, *hash);
+        }
+        self.transaction_intent_manifest =
+            Some(build_manifest(manifest_builder).build_no_validate());
+        self
+    }
+
     /// ## Panics:
     /// * If called with a manifest which references different children to those provided by [`add_signed_child`][Self::add_signed_child].
     pub fn manifest(mut self, manifest: TransactionManifestV2) -> Self {

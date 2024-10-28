@@ -27,6 +27,8 @@ members = [
     "local_component",
     "local_recursion",
     "metadata_component",
+    "metadata2",
+    "metadata3",
     "module",
     "non_fungible",
     "package",
@@ -55,6 +57,7 @@ members = [
     "royalty-auth",
     "scrypto_env",
     "system",
+    "threading",
     "transaction_limits",
     "transaction_runtime",
     "tx_processor_access",
@@ -77,6 +80,7 @@ members = [
     "oracles/oracle_v3",
     "steal",
     "locker-factory",
+    "wasm_limits",
 ]
 resolver = "2"
 
