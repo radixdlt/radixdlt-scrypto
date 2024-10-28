@@ -50,8 +50,8 @@ pub struct LedgerSimulatorBuilder<E, D> {
     protocol_executor: ProtocolExecutor,
 
     // General options
-    with_kernel_trace: bool,
-    with_cost_breakdown: bool,
+    with_kernel_trace: Option<bool>,
+    with_cost_breakdown: Option<bool>,
     with_receipt_substate_check: bool,
 }
 
@@ -62,8 +62,8 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
                 .from_bootstrap_to_latest(),
-            with_kernel_trace: false,
-            with_cost_breakdown: false,
+            with_kernel_trace: None,
+            with_cost_breakdown: None,
             with_receipt_substate_check: true,
         }
     }
@@ -85,18 +85,27 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         }
     }
 
+    /// Overrides the kernel trace setting to `true` for all executed transactions.
     pub fn with_kernel_trace(mut self) -> Self {
-        self.with_kernel_trace = true;
+        self.with_kernel_trace = Some(true);
         self
     }
 
+    /// Overrides the kernel trace setting to `false` for all executed transactions.
     pub fn without_kernel_trace(mut self) -> Self {
-        self.with_kernel_trace = false;
+        self.with_kernel_trace = Some(false);
         self
     }
 
+    /// Overrides the cost breakdown setting to `true` for all executed transactions.
     pub fn with_cost_breakdown(mut self) -> Self {
-        self.with_cost_breakdown = true;
+        self.with_cost_breakdown = Some(true);
+        self
+    }
+
+    /// Overrides the cost breakdown setting to `false` for all executed transactions.
+    pub fn without_cost_breakdown(mut self) -> Self {
+        self.with_cost_breakdown = Some(false);
         self
     }
 
@@ -266,8 +275,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             next_transaction_nonce,
             collected_events: hooks.events,
             xrd_free_credits_used: false,
-            with_kernel_trace: with_kernel_trace,
-            with_cost_breakdown: with_cost_breakdown,
+            with_kernel_trace,
+            with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
@@ -292,10 +301,10 @@ pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
     /// Track whether any of the committed transaction has used free credit
     xrd_free_credits_used: bool,
 
-    /// Whether to enable kernel tracing
-    with_kernel_trace: bool,
-    /// Whether to enable the cost breakdown
-    with_cost_breakdown: bool,
+    /// Override whether to enable kernel tracing
+    with_kernel_trace: Option<bool>,
+    /// Override whether to enable the cost breakdown
+    with_cost_breakdown: Option<bool>,
     /// Whether to enable receipt substate type checking
     with_receipt_substate_check: bool,
 }
@@ -315,8 +324,8 @@ pub struct LedgerSimulatorSnapshot {
     next_transaction_nonce: u32,
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
-    with_kernel_trace: bool,
-    with_cost_breakdown: bool,
+    with_kernel_trace: Option<bool>,
+    with_cost_breakdown: Option<bool>,
     with_receipt_substate_check: bool,
 }
 
@@ -1173,7 +1182,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     fn resolve_suggested_config(&self, manifest: &impl BuildableManifest) -> ExecutionConfig {
-        match manifest.default_test_execution_config_type() {
+        let config = match manifest.default_test_execution_config_type() {
             DefaultTestExecutionConfigType::Notarized => {
                 ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             }
@@ -1181,8 +1190,21 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             }
             DefaultTestExecutionConfigType::Test => ExecutionConfig::for_test_transaction(),
+        };
+        self.override_configured_execution_config_properties(config)
+    }
+
+    fn override_configured_execution_config_properties(
+        &self,
+        mut config: ExecutionConfig,
+    ) -> ExecutionConfig {
+        if let Some(override_kernel_trace) = self.with_kernel_trace {
+            config = config.with_kernel_trace(override_kernel_trace);
         }
-        .with_kernel_trace(self.with_kernel_trace)
+        if let Some(override_cost_breakdown) = self.with_cost_breakdown {
+            config = config.with_cost_breakdown(override_cost_breakdown);
+        }
+        config
     }
 
     pub fn execute_manifest(
@@ -1235,7 +1257,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         initial_proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
         error_after_count: u64,
     ) -> TransactionReceipt {
-        let mut execution_config = self.resolve_suggested_config(&manifest);
+        let execution_config = self.resolve_suggested_config(&manifest);
 
         let executable = manifest
             .into_executable_with_proofs(
@@ -1249,9 +1271,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     err
                 )
             });
-
-        // Override the kernel trace config
-        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
         let vm_init = VmInit::load(&self.database, &self.vm_modules);
         let system_init = InjectCostingErrorInit {
@@ -1373,14 +1392,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction_no_commit(
         &mut self,
         executable_source: impl IntoExecutable,
-        mut execution_config: ExecutionConfig,
+        execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         let executable = executable_source
             .into_executable(&self.transaction_validator)
             .expect("Transaction should be convertible to executable");
 
-        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
-        execution_config = execution_config.with_cost_breakdown(self.with_cost_breakdown);
+        let execution_config =
+            self.override_configured_execution_config_properties(execution_config);
 
         execute_transaction(
             &mut self.database,
@@ -1393,15 +1412,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable_source: impl IntoExecutable,
-        mut execution_config: ExecutionConfig,
+        execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         let executable = executable_source
             .into_executable(&self.transaction_validator)
             .expect("Transaction should be convertible to executable");
 
-        // Override the kernel trace config
-        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
-        execution_config = execution_config.with_cost_breakdown(self.with_cost_breakdown);
+        let execution_config =
+            self.override_configured_execution_config_properties(execution_config);
 
         if executable
             .costing_parameters()
@@ -1441,7 +1459,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             &self.vm_modules,
             network,
             preview_intent,
-            self.with_kernel_trace,
+            self.with_kernel_trace.unwrap_or(false),
         )
     }
 
@@ -1477,7 +1495,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 signer_public_keys,
                 flags,
             },
-            self.with_kernel_trace,
+            self.with_kernel_trace.unwrap_or(false),
         )
         .unwrap()
     }
@@ -1495,6 +1513,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         } else {
             ExecutionConfig::for_preview(NetworkDefinition::simulator())
         };
+        let execution_config =
+            self.override_configured_execution_config_properties(execution_config);
         let executable = validated.create_executable(flags);
         self.execute_transaction_no_commit(executable, execution_config)
     }

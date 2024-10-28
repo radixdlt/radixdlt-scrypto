@@ -269,7 +269,6 @@ impl ExecutionConfig {
 
     pub fn for_test_transaction() -> Self {
         Self {
-            enable_kernel_trace: true,
             enable_cost_breakdown: true,
             ..Self::default_with_network(NetworkDefinition::simulator())
         }
