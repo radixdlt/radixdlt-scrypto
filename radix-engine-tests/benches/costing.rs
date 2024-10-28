@@ -220,6 +220,23 @@ fn bench_spin_loop_v2(c: &mut Criterion) {
     });
 }
 
+// Usage: cargo bench --bench costing -- sha256
+fn bench_sha256(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("sha256_in_scrypto"));
+
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+
+    c.bench_function("costing::sha256", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
 macro_rules! bench_instantiate {
     ($what:literal) => {
         paste! {
@@ -405,7 +422,6 @@ criterion_group!(
                 .sample_size(20)
                 .measurement_time(core::time::Duration::from_secs(20))
                 .warm_up_time(core::time::Duration::from_millis(3000));
-    targets = bench_spin_loop_v1,
-    bench_spin_loop_v2,
+    targets = bench_spin_loop_v1,bench_spin_loop_v2,bench_sha256
 );
 criterion_main!(costing, costing_long);
