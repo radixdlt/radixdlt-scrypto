@@ -5,7 +5,7 @@ pub fn format_cost_breakdown(
     fee_summary: &TransactionFeeSummary,
     fee_details: &TransactionFeeDetails,
 ) -> String {
-    use std::fmt::Write as _;
+    use core::fmt::Write;
     fn decimal_to_float(d: Decimal) -> f64 {
         f64::from_str(d.to_string().as_str()).unwrap()
     }
