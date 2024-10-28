@@ -191,6 +191,15 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 
+    // The transaction failed, consuming almost all execution cost units.
+    assert!(
+        ledger
+            .execute_manifest(manifest.clone(), [])
+            .fee_summary
+            .total_execution_cost_units_consumed
+            >= 99_000_000
+    );
+
     c.bench_function("costing::spin_loop_v1", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
@@ -215,6 +224,15 @@ fn bench_spin_loop_v2(c: &mut Criterion) {
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 
+    // The transaction failed, consuming almost all execution cost units.
+    assert!(
+        ledger
+            .execute_manifest(manifest.clone(), [])
+            .fee_summary
+            .total_execution_cost_units_consumed
+            >= 99_000_000
+    );
+
     c.bench_function("costing::spin_loop_v2", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
@@ -231,6 +249,15 @@ fn bench_sha256(c: &mut Criterion) {
         // Now spin-loop to wait for the fee loan to burn through
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
+
+    // The transaction failed, consuming almost all execution cost units.
+    assert!(
+        ledger
+            .execute_manifest(manifest.clone(), [])
+            .fee_summary
+            .total_execution_cost_units_consumed
+            >= 99_000_000
+    );
 
     c.bench_function("costing::sha256", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
