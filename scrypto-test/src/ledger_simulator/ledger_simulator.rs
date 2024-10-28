@@ -208,12 +208,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         #[cfg(not(feature = "resource_tracker"))]
         let with_kernel_trace = self.with_kernel_trace;
         #[cfg(feature = "resource_tracker")]
-        let with_kernel_trace = false;
+        let with_kernel_trace = Some(false);
 
         #[cfg(not(feature = "resource_tracker"))]
         let with_cost_breakdown = self.with_cost_breakdown;
         #[cfg(feature = "resource_tracker")]
-        let with_cost_breakdown = false;
+        let with_cost_breakdown = Some(false);
 
         //----------------------------------------------------------------
         struct ProtocolUpdateHooks {
