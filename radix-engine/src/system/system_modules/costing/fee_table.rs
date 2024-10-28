@@ -176,9 +176,25 @@ impl FeeTable {
         _export_name: &str,
         wasm_execution_units: u32,
     ) -> u32 {
-        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
-        // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
-
+        // W - WASM execution units
+        // C - cost units
+        // c - single cost unit
+        // T - execution time (1 µs = 100 c => 1 ms = 100,000 c)
+        //
+        // Cost units might be expressed as
+        //  C = T * c
+        //
+        // To convert W to C, we need a d.
+        //   C = W / divider
+        //   divider = W / C
+        //   divider = W / (T * c)
+        //
+        // From `costing::spin_loop_v2`, it takes T=960 ms to consume W=274,517,401,207 wasm execution
+        // units (measured at GH benchmark, git rev 1fd85c47ef, EC2 instance type c6a.4xlarge).
+        //   T = 960 ms = 960 * 100,000
+        //   W = 274,517,401,207
+        // Therefore
+        //   divider = 274,517,401,207 / (960 * 100,000) = 2859.556 ~= 3000
         wasm_execution_units / 3000
     }
 
