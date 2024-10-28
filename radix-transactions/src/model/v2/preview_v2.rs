@@ -5,6 +5,13 @@ use crate::internal_prelude::*;
 /// This model is similar to [`SignedTransactionIntentV2`], except it doesn't
 /// require signatures, and instead allows just using public keys.
 ///
+/// It can be currently constructed from a [`TransactionV2Builder`].
+/// In future we may also support a `PreviewSubintentV2Builder` and
+/// `PreviewTransactionV2Builder` which don't require the subintents
+/// to be signed properly, and instead just allow the public keys to
+/// be specified. For now, if you wish to support that paradigm, just
+/// add the public keys manually.
+///
 /// Unlike with V1 preview, the V2 preview API (at least at launch) will take
 /// a raw payload of this type, rather than a JSON model. This will be more
 /// consistent with the transaction submit API, and avoid UX issues with
