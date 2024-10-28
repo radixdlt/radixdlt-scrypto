@@ -81,6 +81,7 @@ members = [
     "steal",
     "locker-factory",
     "wasm_limits",
+    "sha256_in_scrypto",
 ]
 resolver = "2"
 
