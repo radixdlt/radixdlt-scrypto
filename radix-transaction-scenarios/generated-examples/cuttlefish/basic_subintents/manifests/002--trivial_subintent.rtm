@@ -1,9 +1,9 @@
 USE_CHILD
     NamedIntent("trivial_child")
-    Intent("subtxid_sim1achf7hzm72jwhu7vqhuauypjdfnrnnkxnfazn0ue94mkaet5uz3q5g6m2t")
+    Intent("subtxid_sim1q2d8nxlyc0yrw3uc5p7qtjzx64uf8wr68jlk6fgfurw5lyp5ceeslfak78")
 ;
 CALL_METHOD
-    Address("account_sim1c9efznpk7w0xwdav45jj944cj677hcqj9el3atswwfw4dt84z3pun5")
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
     "lock_fee"
     Decimal("5000")
 ;

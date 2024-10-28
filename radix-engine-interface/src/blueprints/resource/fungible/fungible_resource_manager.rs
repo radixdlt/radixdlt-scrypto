@@ -23,6 +23,20 @@ pub struct FungibleResourceRoles {
 }
 
 impl FungibleResourceRoles {
+    pub fn default_with_owner_mint_burn() -> Self {
+        Self {
+            mint_roles: mint_roles! {
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
+            },
+            burn_roles: burn_roles! {
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
+            },
+            ..Default::default()
+        }
+    }
+
     pub fn single_locked_rule(access_rule: AccessRule) -> Self {
         Self {
             mint_roles: mint_roles! {

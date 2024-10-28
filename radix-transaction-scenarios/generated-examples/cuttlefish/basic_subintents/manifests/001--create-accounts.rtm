@@ -38,6 +38,64 @@ CALL_METHOD
     "deposit"
     Bucket("free_xrd")
 ;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[d28b92b6e84499b83b0797ef5235553eeb7edaa0cea243c1128c2fe737]")
+                    )
+                )
+            )
+        )
+    )
+    true
+    18u8
+    Decimal("1000")
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<0u8>(),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<0u8>(),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Example Scenario Tokens"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")
+    "Account"
+    AddressReservation("child_account")
+    NamedAddress("child_account")
+;
 CREATE_ACCOUNT_ADVANCED
     Enum<1u8>(
         Enum<2u8>(
@@ -50,5 +108,13 @@ CREATE_ACCOUNT_ADVANCED
             )
         )
     )
+    Enum<1u8>(
+        AddressReservation("child_account")
+    )
+;
+CALL_METHOD
+    NamedAddress("child_account")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
     Enum<0u8>()
 ;

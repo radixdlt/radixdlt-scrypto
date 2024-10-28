@@ -23,18 +23,12 @@ impl NextTransaction {
 
 pub(crate) trait CompletableSubintentBuilder {
     type SignedPartialTransaction: Sized;
-    fn complete(
-        self,
-        core: &mut ScenarioCore,
-    ) -> (Self::SignedPartialTransaction, TransactionObjectNames);
+    fn complete(self, core: &mut ScenarioCore) -> Self::SignedPartialTransaction;
 }
 
 impl CompletableSubintentBuilder for PartialTransactionV2Builder {
-    type SignedPartialTransaction = SignedPartialTransactionV2;
-    fn complete(
-        self,
-        core: &mut ScenarioCore,
-    ) -> (Self::SignedPartialTransaction, TransactionObjectNames) {
+    type SignedPartialTransaction = DetailedSignedPartialTransactionV2;
+    fn complete(self, core: &mut ScenarioCore) -> Self::SignedPartialTransaction {
         core.complete_partial_transaction_v2(self)
     }
 }
@@ -251,11 +245,13 @@ impl ScenarioCore {
             .expect("Expected next transaction name to be set when the transaction was created");
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        let (transaction, object_names) = builder.build_with_names();
+        let DetailedNotarizedTransactionV2 {
+            transaction,
+            raw: raw_transaction,
+            object_names,
+            ..
+        } = builder.build();
 
-        let raw_transaction = transaction
-            .to_raw()
-            .expect("Transaction should be encodable");
         let (transaction_manifest, subintent_manifests) =
             transaction.extract_manifests_with_names(object_names);
         Ok(NextTransaction {
@@ -284,8 +280,8 @@ impl ScenarioCore {
     pub fn complete_partial_transaction_v2(
         &mut self,
         builder: PartialTransactionV2Builder,
-    ) -> (SignedPartialTransactionV2, TransactionObjectNames) {
-        builder.build_with_names()
+    ) -> DetailedSignedPartialTransactionV2 {
+        builder.build()
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {

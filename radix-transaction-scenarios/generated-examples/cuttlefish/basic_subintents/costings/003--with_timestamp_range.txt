@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.13271657378,    100.0%
-- Execution Cost (XRD)                                                     ,                0.0849319,     64.0%
-- Finalization Cost (XRD)                                                  ,                0.0052508,      4.0%
-- Storage Cost (XRD)                                                       ,            0.04253387378,     32.0%
+Total Cost (XRD)                                                           ,            0.13359288065,    100.0%
+- Execution Cost (XRD)                                                     ,                0.0849499,     63.6%
+- Finalization Cost (XRD)                                                  ,                0.0052508,      3.9%
+- Storage Cost (XRD)                                                       ,            0.04339218065,     32.5%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  1698638,    100.0%
+Execution Cost Breakdown                                                   ,                  1698998,    100.0%
 - AfterInvoke                                                              ,                       18,      0.0%
 - AllocateNodeId                                                           ,                      485,      0.0%
 - BeforeInvoke                                                             ,                      434,      0.0%
@@ -28,7 +28,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::lock_fee                                                  ,                   116047,      6.8%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.1%
-- ValidateTxPayload                                                        ,                    14840,      0.9%
+- ValidateTxPayload                                                        ,                    15200,      0.9%
 - VerifyTxSignatures                                                       ,                    14000,      0.8%
 - WriteSubstate                                                            ,                     2566,      0.2%
 Finalization Cost Breakdown                                                ,                   105016,    100.0%

@@ -1,0 +1,30 @@
+CALL_METHOD
+    Address("account_sim1c9dln9q5pr7f0kt6u7payyeka23jrstgcq6zk6fxsvh9r5zpdpa82s")
+    "withdraw"
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Decimal("10")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Bucket("sold_to_parent")
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>(
+        Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3") => Enum<2u8>(
+            Decimal("23.32")
+        )
+    )
+;
+YIELD_TO_PARENT
+    Bucket("sold_to_parent")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("bought_from_parent")
+;
+CALL_METHOD
+    Address("account_sim1c9dln9q5pr7f0kt6u7payyeka23jrstgcq6zk6fxsvh9r5zpdpa82s")
+    "deposit"
+    Bucket("bought_from_parent")
+;
+YIELD_TO_PARENT;
