@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.45502652974,    100.0%
-- Execution Cost (XRD)                                                     ,                 0.302614,     66.5%
+Total Cost (XRD)                                                           ,            0.45518907974,    100.0%
+- Execution Cost (XRD)                                                     ,               0.30277655,     66.5%
 - Finalization Cost (XRD)                                                  ,                 0.036255,      8.0%
 - Storage Cost (XRD)                                                       ,            0.11615752974,     25.5%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  6052280,    100.0%
+Execution Cost Breakdown                                                   ,                  6055531,    100.0%
 - AfterInvoke                                                              ,                      564,      0.0%
 - AllocateNodeId                                                           ,                     2134,      0.0%
 - BeforeInvoke                                                             ,                     3490,      0.1%
@@ -49,7 +49,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::recover_account_locker                                    ,                    56273,      0.9%
 - RunNativeCode::take_NonFungibleVault                                     ,                    64737,      1.1%
 - RunNativeCode::unlock_amount_FungibleVault                               ,                    23272,      0.4%
-- RunWasmCode::Faucet_lock_fee                                             ,                    24589,      0.4%
+- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.5%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                      151,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%

@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.56766152273,    100.0%
-- Execution Cost (XRD)                                                     ,               0.36172655,     63.7%
+Total Cost (XRD)                                                           ,            0.56840327273,    100.0%
+- Execution Cost (XRD)                                                     ,                0.3624683,     63.8%
 - Finalization Cost (XRD)                                                  ,                0.0427613,      7.5%
 - Storage Cost (XRD)                                                       ,            0.16317367273,     28.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  7234531,    100.0%
+Execution Cost Breakdown                                                   ,                  7249366,    100.0%
 - AfterInvoke                                                              ,                     1444,      0.0%
 - AllocateNodeId                                                           ,                     3395,      0.0%
 - BeforeInvoke                                                             ,                     3714,      0.1%
@@ -19,7 +19,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalAccount                                              ,                   656205,      9.1%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   425889,      5.9%
 - OpenSubstate::GlobalGenericComponent                                     ,                    44192,      0.6%
-- OpenSubstate::GlobalPackage                                              ,                  2430500,     33.6%
+- OpenSubstate::GlobalPackage                                              ,                  2430500,     33.5%
 - OpenSubstate::GlobalTwoResourcePool                                      ,                   657608,      9.1%
 - OpenSubstate::InternalFungibleVault                                      ,                   355473,      4.9%
 - OpenSubstate::InternalGenericComponent                                   ,                   126104,      1.7%
@@ -35,7 +35,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::get_amount_FungibleBucket                                 ,                    88128,      1.2%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    28902,      0.4%
 - RunNativeCode::get_resource_address_FungibleBucket                       ,                    17768,      0.2%
-- RunNativeCode::get_vault_amounts_two_resource_pool                       ,                    47047,      0.7%
+- RunNativeCode::get_vault_amounts_two_resource_pool                       ,                    47047,      0.6%
 - RunNativeCode::lock_fee                                                  ,                   116047,      1.6%
 - RunNativeCode::protected_deposit_two_resource_pool                       ,                    55718,      0.8%
 - RunNativeCode::protected_withdraw_two_resource_pool                      ,                    38847,      0.5%
@@ -44,7 +44,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::take_advanced_FungibleVault                               ,                    44567,      0.6%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      1.7%
 - RunNativeCode::withdraw                                                  ,                    57851,      0.8%
-- RunWasmCode::Radiswap_swap                                               ,                    95299,      1.3%
+- RunWasmCode::Radiswap_swap                                               ,                   110134,      1.5%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    13120,      0.2%
