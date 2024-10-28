@@ -191,7 +191,7 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 
-    c.bench_function("costing::spin_loop", |b| {
+    c.bench_function("costing::spin_loop_v1", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
 }
