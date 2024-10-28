@@ -172,7 +172,7 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 }
 
 // Usage: cargo bench --bench costing -- spin_loop_v1
-// Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpScryptoRuntime
+// Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpRuntime
 fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
     let code =
