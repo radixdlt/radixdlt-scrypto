@@ -39,6 +39,7 @@ fn run_all(mode: CostingTaskMode) {
         let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
                             file: &'static str| {
             let ledger = LedgerSimulatorBuilder::new()
+                .with_cost_breakdown()
                 .with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
                 .build();
             let receipt = run(ledger);
