@@ -98,7 +98,7 @@ pub enum VersionedTransactionPayload {
     #[sbor(discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
     SignedPartialTransactionV2(#[sbor(flatten)] SignedPartialTransactionV2),
     #[sbor(discriminator(V2_PREVIEW_TRANSACTION))]
-    PreviewTransactionIntentV2(#[sbor(flatten)] PreviewTransactionV2),
+    PreviewTransactionV2(#[sbor(flatten)] PreviewTransactionV2),
 }
 
 #[cfg(test)]

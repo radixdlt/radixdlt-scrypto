@@ -17,7 +17,11 @@ use crate::internal_prelude::*;
 /// consistent with the transaction submit API, and avoid UX issues with
 /// ensuring the subintent hashes in the `USE_CHILD` manifest instructions
 /// survive encoding to JSON.
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
+#[sbor_assert(
+    fixed("FILE:preview_transaction_v2_schema.bin"),
+    settings(allow_name_changes)
+)]
 pub struct PreviewTransactionV2 {
     pub transaction_intent: TransactionIntentV2,
     pub root_signer_public_keys: IndexSet<PublicKey>,
