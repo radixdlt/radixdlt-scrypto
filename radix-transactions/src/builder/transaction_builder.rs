@@ -175,8 +175,8 @@ pub type SignedPartialTransactionV2Builder = PartialTransactionV2Builder;
 /// * Sign the root subintent zero or more times:
 ///   * Use methods [`sign`][Self::sign] or [`multi_sign`][Self::multi_sign] [`add_signature`][Self::add_signature]
 /// * Build:
-///   * Use method [`build_and_validate`][Self::build_and_validate], [`build`][Self::build],
-///     [`build_with_names_and_validate`][Self::build_with_names_and_validate] or [`build_with_names`][Self::build_with_names]
+///   * Use method [`build`][Self::build], [`build_no_validate`][Self::build_no_validate],
+///     [`build_minimal`][Self::build_minimal] or [`build_minimal_no_validate`][Self::build_minimal_no_validate]
 ///
 /// The error messages aren't great if used out of order.
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
@@ -216,21 +216,22 @@ impl PartialTransactionV2Builder {
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
-        signed_partial_transaction: impl Into<(SignedPartialTransactionV2, TransactionObjectNames)>,
+        signed_partial_transaction: impl ResolvableSignedPartialTransaction,
     ) -> Self {
         if self.root_subintent_manifest.is_some() {
             panic!("Call add_signed_child before calling manifest or manifest_builder");
         }
-        let (signed_partial_transaction, object_names) = signed_partial_transaction.into();
+        let (signed_partial_transaction, object_names, root_subintent_hash) =
+            signed_partial_transaction.resolve();
 
-        let prepared = signed_partial_transaction
-            .prepare(PreparationSettings::latest_ref())
-            .expect("Child signed partial transation could not be prepared");
-        let hash = prepared.subintent_hash();
         let name = name.as_ref();
         let replaced = self.child_partial_transactions.insert(
             name.to_string(),
-            (hash, signed_partial_transaction, object_names),
+            (
+                root_subintent_hash,
+                signed_partial_transaction,
+                object_names,
+            ),
         );
         if replaced.is_some() {
             panic!("Child with name {name} already exists");
@@ -240,6 +241,8 @@ impl PartialTransactionV2Builder {
 
     /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
     /// These children will get added to the manifest for you, with the corresponding names.
+    ///
+    /// You may also want to try [`manifest_builder_with_lookup`][Self::manifest_builder_with_lookup].
     pub fn manifest_builder(
         mut self,
         build_manifest: impl FnOnce(SubintentManifestV2Builder) -> SubintentManifestV2Builder,
@@ -249,6 +252,24 @@ impl PartialTransactionV2Builder {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.root_subintent_manifest = Some(build_manifest(manifest_builder).build());
+        self
+    }
+
+    /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
+    /// These children will get added to the manifest for you, with the corresponding names.
+    pub fn manifest_builder_with_lookup(
+        mut self,
+        build_manifest: impl FnOnce(
+            SubintentManifestV2Builder,
+            ManifestNameLookup,
+        ) -> SubintentManifestV2Builder,
+    ) -> Self {
+        let mut manifest_builder = SubintentManifestV2Builder::new_typed();
+        let name_lookup = manifest_builder.name_lookup();
+        for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
+            manifest_builder = manifest_builder.use_child(child_name, *hash);
+        }
+        self.root_subintent_manifest = Some(build_manifest(manifest_builder, name_lookup).build());
         self
     }
 
@@ -340,13 +361,7 @@ impl PartialTransactionV2Builder {
         self
     }
 
-    /// Builds the [`SignedPartialTransactionV2`], and returns the names used for manifest variables in
-    /// the root and non-root subintents.
-    ///
-    /// Unlike [`TransactionV2Builder`], `build_with_names()` does not validate the partial transaction, to save
-    /// lots duplicate work when building a full transaction from layers of partial transaction. If you wish,
-    /// you can opt into validation with [`build_with_names_and_validate()`][Self::build_with_names_and_validate].
-    pub fn build_with_names(mut self) -> (SignedPartialTransactionV2, TransactionObjectNames) {
+    fn build_internal(mut self) -> (SignedPartialTransactionV2, TransactionObjectNames) {
         // Ensure subintent has been created
         self.create_subintent();
 
@@ -395,47 +410,144 @@ impl PartialTransactionV2Builder {
         (signed_partial_transaction, object_names)
     }
 
-    /// Builds and validates the [`SignedPartialTransactionV2`], and returns the names used for manifest variables in
-    /// the root and non-root subintents.
+    /// Builds a [`DetailedSignedPartialTransactionV2`], including the [`SignedPartialTransactionV2`]
+    /// and other useful data.
     ///
     /// # Panics
-    /// Panics if the built transaction does not pass validation with the latest validator.
-    ///
-    /// You can use [`build_with_names()`][Self::build_with_names] to skip this validation.
-    pub fn build_with_names_and_validate(
-        self,
-    ) -> (SignedPartialTransactionV2, TransactionObjectNames) {
-        let (transaction, names) = self.build_with_names();
-        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
-        transaction.prepare_and_validate(&validator)
-            .expect("Built partial transaction should be valid. Use `build()` to skip validation if needed.");
-        (transaction, names)
-    }
-
-    /// Builds the [`SignedPartialTransactionV2`].
-    ///
-    /// You may wish to use [`build_with_names()`][Self::build_with_names] to preserve the names
-    /// used for manifest variables in the root and non-root subintents.
+    /// * Panics if any required part of the partial transaction has not been provided.
+    /// * Panics if the built transaction cannot be prepared.
     ///
     /// Unlike [`TransactionV2Builder`], `build()` does not validate the partial transaction, to save
     /// lots duplicate work when building a full transaction from layers of partial transaction. If you wish,
     /// you can opt into validation with [`build_and_validate()`][Self::build_and_validate].
-    pub fn build(self) -> SignedPartialTransactionV2 {
-        self.build_with_names().0
+    pub fn build(self) -> DetailedSignedPartialTransactionV2 {
+        let (partial_transaction, object_names) = self.build_internal();
+        let prepared = partial_transaction
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Transaction must be preparable");
+        DetailedSignedPartialTransactionV2 {
+            partial_transaction,
+            object_names,
+            root_subintent_hash: prepared.subintent_hash(),
+            non_root_subintent_hashes: prepared.non_root_subintent_hashes().collect(),
+        }
+    }
+
+    /// Builds a [`DetailedSignedPartialTransactionV2`], including the [`SignedPartialTransactionV2`]
+    /// and other useful data.
+    ///
+    /// # Panics
+    /// * Panics if any required part of the partial transaction has not been provided.
+    /// * Panics if the built transaction does not pass validation with the latest validator.
+    ///
+    /// You can use [`build()`][Self::build] to skip this validation.
+    pub fn build_and_validate(self) -> DetailedSignedPartialTransactionV2 {
+        let (partial_transaction, object_names) = self.build_internal();
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
+        let validated = partial_transaction.prepare_and_validate(&validator)
+            .expect("Built partial transaction should be valid. Use `build()` to skip validation if needed.");
+        DetailedSignedPartialTransactionV2 {
+            partial_transaction,
+            object_names,
+            root_subintent_hash: validated.prepared.subintent_hash(),
+            non_root_subintent_hashes: validated.prepared.non_root_subintent_hashes().collect(),
+        }
+    }
+
+    /// Builds the [`SignedPartialTransactionV2`].
+    ///
+    /// You may wish to use [`build_detailed()`][Self::build_detailed] to get the hashes, or to
+    /// preserve the names used for manifest variables in the root and non-root subintents.
+    ///
+    /// Unlike [`TransactionV2Builder`], `build()` does not validate the partial transaction, to save
+    /// lots duplicate work when building a full transaction from layers of partial transaction. If you wish,
+    /// you can opt into validation with [`build_and_validate()`][Self::build_and_validate].
+    pub fn build_minimal(self) -> SignedPartialTransactionV2 {
+        self.build_internal().0
     }
 
     /// Builds and validates the [`SignedPartialTransactionV2`].
     ///
+    /// You may wish to use [`build()`][Self::build] to get the hashes, or to
+    /// preserve the names used for manifest variables in the root and non-root subintents.
+    ///
     /// # Panics
     /// Panics if the built transaction does not pass validation with the latest validator.
     ///
-    /// You can use [`build()`][Self::build] to skip this validation.
-    pub fn build_and_validate(self) -> SignedPartialTransactionV2 {
-        let transaction = self.build();
+    /// You can use [`build_minimal()`][Self::build_minimal] to skip this validation.
+    pub fn build_minimal_and_validate(self) -> SignedPartialTransactionV2 {
+        let transaction = self.build_minimal();
         let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built partial transaction should be valid. Use `build()` to skip validation if needed.");
         transaction
+    }
+}
+
+/// Includes:
+/// * A full [`SignedPartialTransactionV2`], which can be turned into a raw notarized transaction.
+/// * The [`TransactionObjectNames`], capturing the manifest names in the
+///   root subintent and non-root subintents (assuming `build_detailed` was used at all
+///   steps when building the transaction, else this detail can be lost).
+/// * The various subintenthashes of the partial transaction.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DetailedSignedPartialTransactionV2 {
+    pub partial_transaction: SignedPartialTransactionV2,
+    pub object_names: TransactionObjectNames,
+    pub root_subintent_hash: SubintentHash,
+    pub non_root_subintent_hashes: IndexSet<SubintentHash>,
+}
+
+impl DetailedSignedPartialTransactionV2 {
+    pub fn to_raw(&self) -> Result<RawSignedPartialTransaction, EncodeError> {
+        self.partial_transaction.to_raw()
+    }
+}
+
+pub trait ResolvableSignedPartialTransaction {
+    fn resolve(
+        self,
+    ) -> (
+        SignedPartialTransactionV2,
+        TransactionObjectNames,
+        SubintentHash,
+    );
+}
+
+impl ResolvableSignedPartialTransaction for DetailedSignedPartialTransactionV2 {
+    fn resolve(
+        self,
+    ) -> (
+        SignedPartialTransactionV2,
+        TransactionObjectNames,
+        SubintentHash,
+    ) {
+        (
+            self.partial_transaction,
+            self.object_names,
+            self.root_subintent_hash,
+        )
+    }
+}
+
+impl ResolvableSignedPartialTransaction for SignedPartialTransactionV2 {
+    fn resolve(
+        self,
+    ) -> (
+        SignedPartialTransactionV2,
+        TransactionObjectNames,
+        SubintentHash,
+    ) {
+        let object_names = TransactionObjectNames::unknown_with_subintent_count(
+            self.non_root_subintent_signatures.by_subintent.len(),
+        );
+
+        let subintent_hash = self
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Child signed partial transation could not be prepared")
+            .subintent_hash();
+
+        (self, object_names, subintent_hash)
     }
 }
 
@@ -457,7 +569,7 @@ impl PartialTransactionV2Builder {
 ///   * Use either [`notarize`][Self::notarize] or [`notary_signature`][Self::notary_signature].
 /// * Build:
 ///   * Use method [`build`][Self::build], [`build_no_validate`][Self::build_no_validate],
-///     [`build_with_names`][Self::build_with_names] or [`build_with_names_no_validate`][Self::build_with_names_no_validate]
+///     [`build_minimal`][Self::build_minimal] or [`build_minimal_no_validate`][Self::build_minimal_no_validate]
 ///
 /// The error messages aren't great if used out of order.
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
@@ -481,7 +593,7 @@ pub struct TransactionV2Builder {
     // Temporarily cached once created
     transaction_intent_and_non_root_subintent_signatures:
         Option<(TransactionIntentV2, NonRootSubintentSignaturesV2)>,
-    transaction_intent_object_names: Option<TransactionObjectNames>,
+    transaction_object_names: Option<TransactionObjectNames>,
     prepared_transaction_intent: Option<PreparedTransactionIntentV2>,
     transaction_intent_signatures: Vec<IntentSignatureV1>,
     signed_transaction_intent: Option<SignedTransactionIntentV2>,
@@ -506,22 +618,23 @@ impl TransactionV2Builder {
     pub fn add_signed_child(
         mut self,
         name: impl AsRef<str>,
-        signed_partial_transaction: impl Into<(SignedPartialTransactionV2, TransactionObjectNames)>,
+        signed_partial_transaction: impl ResolvableSignedPartialTransaction,
     ) -> Self {
         if self.transaction_intent_manifest.is_some() {
             panic!("Call add_signed_child before calling manifest or manifest_builder");
         }
 
-        let (signed_partial_transaction, object_names) = signed_partial_transaction.into();
+        let (signed_partial_transaction, object_names, root_subintent_hash) =
+            signed_partial_transaction.resolve();
 
-        let prepared = signed_partial_transaction
-            .prepare(PreparationSettings::latest_ref())
-            .expect("Child signed partial transation could not be prepared");
-        let hash = prepared.subintent_hash();
         let name = name.as_ref();
         let replaced = self.child_partial_transactions.insert(
             name.to_string(),
-            (hash, signed_partial_transaction, object_names),
+            (
+                root_subintent_hash,
+                signed_partial_transaction,
+                object_names,
+            ),
         );
         if replaced.is_some() {
             panic!("Child with name {name} already exists");
@@ -531,6 +644,8 @@ impl TransactionV2Builder {
 
     /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
     /// These children will get added to the manifest for you, with the corresponding names.
+    ///
+    /// You may also want to try [`manifest_builder_with_lookup`][Self::manifest_builder_with_lookup].
     pub fn manifest_builder(
         mut self,
         build_manifest: impl FnOnce(TransactionManifestV2Builder) -> TransactionManifestV2Builder,
@@ -540,6 +655,25 @@ impl TransactionV2Builder {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
         self.transaction_intent_manifest = Some(build_manifest(manifest_builder).build());
+        self
+    }
+
+    /// If the intent has any children, you should call [`add_signed_child`][Self::add_signed_child] first.
+    /// These children will get added to the manifest for you, with the corresponding names.
+    pub fn manifest_builder_with_lookup(
+        mut self,
+        build_manifest: impl FnOnce(
+            TransactionManifestV2Builder,
+            ManifestNameLookup,
+        ) -> TransactionManifestV2Builder,
+    ) -> Self {
+        let mut manifest_builder = TransactionManifestV2Builder::new_typed();
+        let name_lookup = manifest_builder.name_lookup();
+        for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
+            manifest_builder = manifest_builder.use_child(child_name, *hash);
+        }
+        self.transaction_intent_manifest =
+            Some(build_manifest(manifest_builder, name_lookup).build());
         self
     }
 
@@ -629,7 +763,7 @@ impl TransactionV2Builder {
             };
             self.transaction_intent_and_non_root_subintent_signatures =
                 Some((intent, subintent_signatures));
-            self.transaction_intent_object_names = Some(TransactionObjectNames {
+            self.transaction_object_names = Some(TransactionObjectNames {
                 root_intent: root_object_names,
                 subintents: aggregated_subintent_object_names,
             });
@@ -790,54 +924,117 @@ impl TransactionV2Builder {
         }
     }
 
-    /// Builds the [`NotarizedTransactionV2`], also returning the [`TransactionObjectNames`]
-    /// used for manifest variables in the root transaction intent and non-root subintents.
-    pub fn build_with_names_no_validate(self) -> (NotarizedTransactionV2, TransactionObjectNames) {
+    fn build_internal(self) -> (NotarizedTransactionV2, TransactionObjectNames) {
+        let notary_signature = self
+            .notary_signature
+            .expect("Expected notary signature to exist - ensure you call `notarize` first");
         let transaction = NotarizedTransactionV2 {
             signed_transaction_intent: self
                 .signed_transaction_intent
-                .expect("Expected signed intent to exist"),
-            notary_signature: self
-                .notary_signature
-                .expect("Expected notary signature to exist"),
+                .expect("If the notary signature exists, the signed intent should already have been populated"),
+            notary_signature,
         };
-        (transaction, self.transaction_intent_object_names.unwrap())
+        let object_names = self.transaction_object_names.expect(
+            "If the signed intent exists, the object names should have already been populated",
+        );
+        (transaction, object_names)
     }
 
-    /// Builds and validates the [`NotarizedTransactionV2`], also returning the [`TransactionObjectNames`]
-    /// used for manifest variables in the root transaction intent and non-root subintents.
+    /// Builds a [`DetailedNotarizedTransactionV2`], including the [`NotarizedTransactionV2`]
+    /// and other useful data.
     ///
     /// # Panics
-    /// Panics if the built transaction does not pass validation with the latest validator.
-    ///
-    /// You can use [`build_with_names_no_validate()`][Self::build_with_names_no_validate] to skip this validation.
-    pub fn build_with_names(self) -> (NotarizedTransactionV2, TransactionObjectNames) {
-        let (transaction, names) = self.build_with_names_no_validate();
-        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
-        transaction.prepare_and_validate(&validator)
-            .expect("Built transaction should be valid. Use `build_with_names_no_validate()` to skip validation if needed.");
-        (transaction, names)
+    /// * If the builder has not been notarized
+    /// * If the transaction is not preparable against latest settings (e.g. it is too big)
+    pub fn build_no_validate(self) -> DetailedNotarizedTransactionV2 {
+        let (transaction, object_names) = self.build_internal();
+        let raw = transaction.to_raw().expect("Transaction must be encodable");
+        let prepared = raw
+            .prepare(PreparationSettings::latest_ref())
+            .expect("Transaction must be preparable");
+        DetailedNotarizedTransactionV2 {
+            transaction,
+            raw,
+            object_names,
+            transaction_hashes: prepared.hashes(),
+            non_root_subintent_hashes: prepared.non_root_subintent_hashes().collect(),
+        }
     }
 
-    pub fn build_no_validate(self) -> NotarizedTransactionV2 {
-        self.build_with_names_no_validate().0
+    /// Builds and validates a [`DetailedNotarizedTransactionV2`], which includes
+    /// a [`NotarizedTransactionV2`] and other useful data.
+    ///
+    /// # Panics
+    /// * Panics if the built transaction does not pass validation with the latest validator.
+    ///
+    /// You can use [`build_no_validate()`][Self::build_no_validate] to skip this validation.
+    pub fn build(self) -> DetailedNotarizedTransactionV2 {
+        let (transaction, object_names) = self.build_internal();
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
+        let raw = transaction.to_raw().expect("Transaction must be encodable");
+        let validated = raw.validate_as_known_v2(&validator)
+            .expect("Built transaction should be valid. Use `build_no_validate()` to skip validation if needed.");
+        DetailedNotarizedTransactionV2 {
+            transaction,
+            raw,
+            object_names,
+            transaction_hashes: validated.prepared.hashes(),
+            non_root_subintent_hashes: validated.prepared.non_root_subintent_hashes().collect(),
+        }
+    }
+
+    /// Builds the [`NotarizedTransactionV2`], with no validation.
+    pub fn build_minimal_no_validate(self) -> NotarizedTransactionV2 {
+        self.build_internal().0
     }
 
     /// Builds and validates the [`NotarizedTransactionV2`].
     ///
-    /// If you wish to keep a record of the names used in the manifest variables of the transaction intent or any
-    /// non-root subintents, use [`build_with_names()`][Self::build_with_names] instead.
+    /// You may prefer [`build()`][Self::build] instead if you need the transaction hashes,
+    /// or wish to keep a record of the names used in the manifest variables.
     ///
     /// # Panics
     /// Panics if the built transaction does not pass validation with the latest validator.
     ///
-    /// You can use [`build_no_validate()`][Self::build_no_validate] to skip this validation.
-    pub fn build(self) -> NotarizedTransactionV2 {
-        let transaction = self.build_no_validate();
+    /// You can use [`build_minimal_no_validate()`][Self::build_minimal_no_validate] to skip this validation.
+    pub fn build_minimal(self) -> NotarizedTransactionV2 {
+        let transaction = self.build_minimal_no_validate();
         let validator = TransactionValidator::new_with_latest_config_network_agnostic();
         transaction.prepare_and_validate(&validator)
             .expect("Built transaction should be valid. Use `build_no_validate()` to skip validation if needed.");
         transaction
+    }
+}
+
+/// Includes:
+/// * A full [`NotarizedTransactionV2`], which can be turned into a raw notarized transaction.
+/// * The [`TransactionObjectNames`], capturing the manifest names in the
+///   root subintent and non-root subintents (assuming `build_detailed` was used at all
+///   steps when building the transaction, else this detail can be lost).
+/// * The various hashes of the transaction.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DetailedNotarizedTransactionV2 {
+    pub transaction: NotarizedTransactionV2,
+    pub raw: RawNotarizedTransaction,
+    pub object_names: TransactionObjectNames,
+    pub transaction_hashes: UserTransactionHashes,
+    pub non_root_subintent_hashes: IndexSet<SubintentHash>,
+}
+
+impl DetailedNotarizedTransactionV2 {
+    pub fn to_raw(&self) -> Result<RawNotarizedTransaction, EncodeError> {
+        self.transaction.to_raw()
+    }
+}
+
+impl IntoExecutable for DetailedNotarizedTransactionV2 {
+    type Error = TransactionValidationError;
+
+    fn into_executable(
+        self,
+        validator: &TransactionValidator,
+    ) -> Result<ExecutableTransaction, Self::Error> {
+        self.raw.into_executable(validator)
     }
 }
 

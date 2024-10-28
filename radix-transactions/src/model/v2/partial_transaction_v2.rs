@@ -28,6 +28,15 @@ define_transaction_payload!(
     TransactionDiscriminator::V2PartialTransaction,
 );
 
+impl PreparedPartialTransactionV2 {
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        self.non_root_subintents
+            .subintents
+            .iter()
+            .map(|s| s.subintent_hash())
+    }
+}
+
 impl HasSubintentHash for PreparedPartialTransactionV2 {
     fn subintent_hash(&self) -> SubintentHash {
         self.root_subintent.subintent_hash()

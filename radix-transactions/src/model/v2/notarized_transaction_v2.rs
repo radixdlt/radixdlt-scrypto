@@ -131,6 +131,14 @@ impl PreparedNotarizedTransactionV2 {
             .map(|s| s.subintent_hash())
     }
 
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+        }
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

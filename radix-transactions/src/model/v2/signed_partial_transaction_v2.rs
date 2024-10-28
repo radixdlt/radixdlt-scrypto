@@ -35,15 +35,6 @@ impl SignedPartialTransactionV2 {
     }
 }
 
-impl From<SignedPartialTransactionV2> for (SignedPartialTransactionV2, TransactionObjectNames) {
-    fn from(value: SignedPartialTransactionV2) -> Self {
-        let object_names = TransactionObjectNames::unknown_with_subintent_count(
-            value.non_root_subintent_signatures.by_subintent.len(),
-        );
-        (value, object_names)
-    }
-}
-
 define_transaction_payload!(
     SignedPartialTransactionV2,
     RawSignedPartialTransaction,
@@ -62,6 +53,10 @@ impl HasSubintentHash for PreparedSignedPartialTransactionV2 {
 }
 
 impl PreparedSignedPartialTransactionV2 {
+    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
+        self.partial_transaction.non_root_subintent_hashes()
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

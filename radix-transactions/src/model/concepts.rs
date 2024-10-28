@@ -45,6 +45,21 @@ impl RawNotarizedTransaction {
         self.prepare(validator.preparation_settings())?
             .validate(validator)
     }
+
+    pub fn prepare_as_known_v2(
+        &self,
+        settings: &PreparationSettings,
+    ) -> Result<PreparedNotarizedTransactionV2, PrepareError> {
+        PreparedNotarizedTransactionV2::prepare(self, settings)
+    }
+
+    pub fn validate_as_known_v2(
+        &self,
+        validator: &TransactionValidator,
+    ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+        self.prepare_as_known_v2(validator.preparation_settings())?
+            .validate(validator)
+    }
 }
 
 impl IntoExecutable for RawNotarizedTransaction {
@@ -115,6 +130,13 @@ impl IntentHash {
         match self {
             IntentHash::Transaction(hash) => hash.as_hash(),
             IntentHash::Subintent(hash) => hash.as_hash(),
+        }
+    }
+
+    pub fn into_hash(self) -> Hash {
+        match self {
+            IntentHash::Transaction(hash) => hash.into_hash(),
+            IntentHash::Subintent(hash) => hash.into_hash(),
         }
     }
 

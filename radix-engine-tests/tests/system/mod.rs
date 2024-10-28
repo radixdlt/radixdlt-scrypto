@@ -42,6 +42,7 @@ mod metadata_identity;
 mod metadata_package;
 mod metadata_validator;
 mod module;
+mod nullification;
 mod package;
 mod package_schema;
 mod proxy;

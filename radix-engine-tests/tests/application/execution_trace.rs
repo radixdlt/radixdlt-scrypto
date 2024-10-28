@@ -643,7 +643,7 @@ fn test_execution_trace_for_transaction_v2() {
                         .yield_to_parent_with_name_lookup(|lookup| (lookup.bucket("bucket2"),))
                 })
                 .sign(&private_key2)
-                .build(),
+                .build_minimal(),
         )
         .intent_header(IntentHeaderV2 {
             network_id: NetworkDefinition::simulator().id,
@@ -668,7 +668,7 @@ fn test_execution_trace_for_transaction_v2() {
         })
         .sign(&private_key1)
         .notarize(&private_key1)
-        .build()
+        .build_minimal()
         .to_raw()
         .unwrap();
 

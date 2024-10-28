@@ -418,7 +418,7 @@ mod tests {
             .intent_header(intent_header)
             .manifest_builder(|builder| builder)
             .notarize(&notary_private_key)
-            .build();
+            .build_minimal();
 
         let raw = notarized.to_raw().unwrap();
 

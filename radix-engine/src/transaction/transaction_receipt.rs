@@ -245,6 +245,9 @@ pub struct CommitResult {
     /// Transaction execution traces
     /// Available if `ExecutionTrace` module is enabled
     pub execution_trace: Option<TransactionExecutionTrace>,
+    /// The actually performed nullifications.
+    /// For example, a failed transaction won't include subintent nullifications.
+    pub performed_nullifications: Vec<Nullification>,
 }
 
 #[derive(Debug, Clone, Default, ScryptoSbor, PartialEq, Eq)]
@@ -278,6 +281,66 @@ pub struct TransactionExecutionTrace {
 pub struct FeeLocks {
     pub lock: Decimal,
     pub contingent_lock: Decimal,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum Nullification {
+    Intent {
+        expiry_epoch: Epoch,
+        intent_hash: IntentHash,
+    },
+}
+
+impl Nullification {
+    pub fn of_intent(
+        intent_hash_nullification: IntentHashNullification,
+        current_epoch: Epoch,
+        is_success: bool,
+    ) -> Option<Self> {
+        let (intent_hash, expiry_epoch) = match intent_hash_nullification {
+            IntentHashNullification::TransactionIntent {
+                intent_hash,
+                expiry_epoch,
+            } => (intent_hash.into(), expiry_epoch),
+            IntentHashNullification::SimulatedTransactionIntent { simulated } => {
+                let intent_hash = simulated.transaction_intent_hash();
+                let expiry_epoch = simulated.expiry_epoch(current_epoch);
+                (intent_hash.into(), expiry_epoch)
+            }
+            IntentHashNullification::Subintent {
+                intent_hash: subintent_hash,
+                expiry_epoch,
+            } => {
+                // Don't write subintent nullification on failure.
+                // Subintents can't pay fees, so this isn't abusable.
+                if !is_success {
+                    return None;
+                }
+                (subintent_hash.into(), expiry_epoch)
+            }
+            IntentHashNullification::SimulatedSubintent { simulated } => {
+                if !is_success {
+                    return None;
+                }
+                let subintent_hash = simulated.subintent_hash();
+                let expiry_epoch = simulated.expiry_epoch(current_epoch);
+                (subintent_hash.into(), expiry_epoch)
+            }
+        };
+        Some(Nullification::Intent {
+            expiry_epoch,
+            intent_hash,
+        })
+    }
+
+    pub fn transaction_tracker_keys(self) -> (Epoch, Hash) {
+        match self {
+            Nullification::Intent {
+                expiry_epoch,
+                intent_hash,
+            } => (expiry_epoch, intent_hash.into_hash()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -344,6 +407,7 @@ impl CommitResult {
             application_logs: Default::default(),
             system_structure: Default::default(),
             execution_trace: Default::default(),
+            performed_nullifications: Default::default(),
         }
     }
 

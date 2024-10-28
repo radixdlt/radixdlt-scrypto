@@ -886,7 +886,7 @@ impl<V: SystemCallbackObject> System<V> {
         next_epoch: Epoch,
         intent_hash_nullifications: Vec<IntentHashNullification>,
         is_success: bool,
-    ) {
+    ) -> Vec<Nullification> {
         // NOTE: In the case of system transactions, we could skip most of this...
         //       except for backwards compatibility, we can't!
 
@@ -903,41 +903,18 @@ impl<V: SystemCallbackObject> System<V> {
             .into_payload()
             .into_v1();
 
+        let mut performed_nullifications = vec![];
+
         for intent_hash_nullification in intent_hash_nullifications {
-            let (intent_hash, expiry_epoch) = match intent_hash_nullification {
-                IntentHashNullification::TransactionIntent {
-                    intent_hash,
-                    expiry_epoch,
-                    ..
-                } => (intent_hash.into_hash(), expiry_epoch),
-                IntentHashNullification::SimulatedTransactionIntent { simulated } => {
-                    let intent_hash = simulated.transaction_intent_hash();
-                    let expiry_epoch =
-                        simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
-                    (intent_hash.into_hash(), expiry_epoch)
-                }
-                IntentHashNullification::Subintent {
-                    intent_hash,
-                    expiry_epoch,
-                    ..
-                } => {
-                    // Don't write subintent nullification on failure.
-                    // Subintents can't pay fees, so this isn't abusable.
-                    if !is_success {
-                        continue;
-                    }
-                    (intent_hash.into_hash(), expiry_epoch)
-                }
-                IntentHashNullification::SimulatedSubintent { simulated } => {
-                    if !is_success {
-                        continue;
-                    }
-                    let subintent_hash = simulated.subintent_hash();
-                    let expiry_epoch =
-                        simulated.expiry_epoch(Epoch::of(transaction_tracker.start_epoch));
-                    (subintent_hash.into_hash(), expiry_epoch)
-                }
+            let Some(nullification) = Nullification::of_intent(
+                intent_hash_nullification,
+                Epoch::of(transaction_tracker.start_epoch),
+                is_success,
+            ) else {
+                continue;
             };
+            let (expiry_epoch, hash) = nullification.transaction_tracker_keys();
+            performed_nullifications.push(nullification);
 
             let partition_number = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
                 .expect("Validation of the max expiry epoch window combined with the current epoch check on launch should ensure that the expiry epoch is in range for the transaction tracker");
@@ -947,7 +924,7 @@ impl<V: SystemCallbackObject> System<V> {
                 .set_substate(
                     TRANSACTION_TRACKER.into_node_id(),
                     PartitionNumber(partition_number),
-                    SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
                         KeyValueEntrySubstateV1 {
                             value: Some(if is_success {
@@ -991,6 +968,8 @@ impl<V: SystemCallbackObject> System<V> {
                 &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap();
+
+        performed_nullifications
     }
 
     #[cfg(not(feature = "alloc"))]
@@ -1290,14 +1269,17 @@ impl<V: SystemCallbackObject> System<V> {
         };
 
         // Update intent hash status
-        if let Some(next_epoch) = Self::read_epoch_uncosted(&mut track) {
-            Self::update_transaction_tracker(
-                &mut track,
-                next_epoch,
-                system_finalization.intent_nullifications,
-                is_success,
-            );
-        }
+        let performed_nullifications =
+            if let Some(next_epoch) = Self::read_epoch_uncosted(&mut track) {
+                Self::update_transaction_tracker(
+                    &mut track,
+                    next_epoch,
+                    system_finalization.intent_nullifications,
+                    is_success,
+                )
+            } else {
+                vec![]
+            };
 
         // Finalize events and logs
         let (mut application_events, application_logs) = runtime_module.finalize(is_success);
@@ -1352,6 +1334,7 @@ impl<V: SystemCallbackObject> System<V> {
             application_logs,
             system_structure,
             execution_trace,
+            performed_nullifications,
         });
 
         Self::create_receipt_internal(

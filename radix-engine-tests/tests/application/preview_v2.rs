@@ -221,7 +221,7 @@ fn prepare_complex_matching_transaction_and_preview_transaction(
                 builder
             }
         })
-        .build_with_names();
+        .build();
 
     let mut builder = TransactionBuilder::new_v2()
         .transaction_header(TransactionHeaderV2 {
@@ -262,7 +262,7 @@ fn prepare_complex_matching_transaction_and_preview_transaction(
     let transaction = builder
         .sign(&transaction_account_key)
         .notarize(&notary_key)
-        .build();
+        .build_minimal();
 
     (transaction, preview_transaction)
 }

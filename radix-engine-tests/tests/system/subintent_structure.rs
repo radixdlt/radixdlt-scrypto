@@ -11,7 +11,7 @@ fn subintents_support_depth_of_four() {
     let depth_four_child = ledger
         .v2_partial_transaction_builder()
         .manifest_builder(|builder| builder.yield_to_parent(()))
-        .build_with_names();
+        .build();
 
     let depth_three_child = ledger
         .v2_partial_transaction_builder()
@@ -21,7 +21,7 @@ fn subintents_support_depth_of_four() {
                 .yield_to_child("depth_four_child", ())
                 .yield_to_parent(())
         })
-        .build_with_names();
+        .build();
 
     let depth_two_child = ledger
         .v2_partial_transaction_builder()
@@ -31,7 +31,7 @@ fn subintents_support_depth_of_four() {
                 .yield_to_child("depth_three_child", ())
                 .yield_to_parent(())
         })
-        .build_with_names();
+        .build();
 
     // Root transaction intent is depth 1
     let transaction = ledger
@@ -47,7 +47,7 @@ fn subintents_support_depth_of_four() {
         .build();
 
     ledger
-        .execute_notarized_transaction(&transaction.to_raw().unwrap())
+        .execute_notarized_transaction(&transaction.raw)
         .expect_commit_success();
 }
 
@@ -61,7 +61,7 @@ fn subintents_do_not_support_depth_of_five() {
     let depth_five_child = ledger
         .v2_partial_transaction_builder()
         .manifest_builder(|builder| builder.yield_to_parent(()))
-        .build_with_names();
+        .build();
 
     let depth_four_child = ledger
         .v2_partial_transaction_builder()
@@ -71,7 +71,7 @@ fn subintents_do_not_support_depth_of_five() {
                 .yield_to_child("depth_five_child", ())
                 .yield_to_parent(())
         })
-        .build_with_names();
+        .build();
 
     let depth_three_child = ledger
         .v2_partial_transaction_builder()
@@ -81,7 +81,7 @@ fn subintents_do_not_support_depth_of_five() {
                 .yield_to_child("depth_four_child", ())
                 .yield_to_parent(())
         })
-        .build_with_names();
+        .build();
 
     let depth_two_child = ledger
         .v2_partial_transaction_builder()
@@ -91,7 +91,7 @@ fn subintents_do_not_support_depth_of_five() {
                 .yield_to_child("depth_three_child", ())
                 .yield_to_parent(())
         })
-        .build_with_names();
+        .build();
 
     let transaction = ledger
         .v2_transaction_builder()
@@ -103,7 +103,7 @@ fn subintents_do_not_support_depth_of_five() {
         })
         .sign(&account_key)
         .notarize(&ledger.default_notary())
-        .build_no_validate();
+        .build_minimal_no_validate();
 
     let validation_error = transaction
         .prepare_and_validate(ledger.transaction_validator())
