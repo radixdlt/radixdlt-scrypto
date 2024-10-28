@@ -3,22 +3,15 @@ use paste::paste;
 use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
 use radix_common::prelude::*;
 use radix_engine::{
-    system::system_modules::costing::SystemLoanFeeReserve,
-    transaction::CostingParameters,
     utils::ExtractSchemaError,
     vm::{
-        wasm::{
-            DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmInstance, WasmModule,
-            WasmRuntime,
-        },
-        wasm_runtime::NoOpWasmRuntime,
+        wasm::{DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmModule},
         ScryptoVmVersion,
     },
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
-use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::iter;
 use scrypto_test::prelude::*;
 use wabt::wat2wasm;
@@ -178,49 +171,29 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
     });
 }
 
-fn bench_spin_loop(c: &mut Criterion) {
+// Usage: cargo bench --bench costing -- spin_loop_v1
+// Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpScryptoRuntime
+fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
-    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
+    let code =
+        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
+            .unwrap();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
+        code,
+        single_function_package_definition("Test", "f"),
+    ));
 
-    // Instrument
-    let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
-    let instrumented_code = validator
-        .validate(&code, iter::empty())
-        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
-        .unwrap()
-        .0;
+    let manifest = ManifestBuilder::new()
+        // First, lock the fee so that the loan will be repaid
+        .lock_fee_from_faucet()
+        // Now spin-loop to wait for the fee loan to burn through
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
 
-    // Note that wasm engine maintains an internal cache, which means costing
-    // isn't taking WASM parsing into consideration.
-    let wasm_engine = DefaultWasmEngine::default();
-    let mut wasm_execution_units_consumed = 0;
     c.bench_function("costing::spin_loop", |b| {
-        b.iter(|| {
-            let fee_reserve = SystemLoanFeeReserve::new(
-                CostingParameters::babylon_genesis(),
-                TransactionCostingParameters {
-                    free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
-                    tip: Default::default(),
-                },
-                false,
-            );
-            wasm_execution_units_consumed = 0;
-            let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
-                fee_reserve,
-                &mut wasm_execution_units_consumed,
-            ));
-            let mut instance =
-                wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &instrumented_code);
-            instance
-                .invoke_export("Test_f", vec![Buffer(0)], &mut runtime)
-                .unwrap();
-        })
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
-
-    println!(
-        "WASM execution units consumed: {}",
-        wasm_execution_units_consumed
-    );
 }
 
 // Usage: cargo bench --bench costing -- spin_loop_v2
@@ -240,46 +213,6 @@ fn bench_spin_loop_v2(c: &mut Criterion) {
         .build();
 
     c.bench_function("costing::spin_loop_v2", |b| {
-        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
-    });
-}
-
-// Usage: cargo bench --bench costing -- spin_loop_v3
-// This is an basically the same as 'spin_loop_should_end_in_reasonable_amount_of_time' test,
-// but it is benchmarked for more precise results.
-fn bench_spin_loop_v3(c: &mut Criterion) {
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (code, definition) = PackageLoader::get("fee");
-    let package_address =
-        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "bucket")
-        .with_name_lookup(|builder, lookup| {
-            builder.call_function(
-                package_address,
-                "Fee",
-                "new",
-                manifest_args!(lookup.bucket("bucket")),
-            )
-        })
-        .build();
-
-    let component_address = ledger
-        .execute_manifest(manifest.clone(), [])
-        .expect_commit_success()
-        .new_component_addresses()[0];
-
-    let manifest = ManifestBuilder::new()
-        // First, lock the fee so that the loan will be repaid
-        .lock_fee_from_faucet()
-        // Now spin-loop to wait for the fee loan to burn through
-        .call_method(component_address, "spin_loop", manifest_args!())
-        .build();
-
-    c.bench_function("costing::spin_loop_v3", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
 }
@@ -453,7 +386,6 @@ criterion_group!(
     bench_validate_sbor_payload,
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
-    bench_spin_loop,
     bench_instantiate_radiswap,
     bench_instantiate_flash_loan,
     bench_deserialize_wasm,
@@ -470,7 +402,7 @@ criterion_group!(
                 .sample_size(20)
                 .measurement_time(core::time::Duration::from_secs(20))
                 .warm_up_time(core::time::Duration::from_millis(3000));
-    targets = bench_spin_loop_v2,
-    bench_spin_loop_v3,
+    targets = bench_spin_loop_v1,
+    bench_spin_loop_v2,
 );
 criterion_main!(costing, costing_long);
