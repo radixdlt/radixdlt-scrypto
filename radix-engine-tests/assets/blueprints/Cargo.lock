@@ -31,6 +31,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.83"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "721cae7de5c34fbb2acd27e21e6d2cf7b886dce0c27388d46c4e6c47ea4318dd"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.76",
+]
+
+[[package]]
 name = "auth_scenarios"
 version = "1.0.0"
 dependencies = [
@@ -114,6 +125,12 @@ version = "1.0.0"
 dependencies = [
  "scrypto",
 ]
+
+[[package]]
+name = "bytes"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ac0150caa2ae65ca5bd83f25c7de183dea78d4d366469f148435e2acfbad0da"
 
 [[package]]
 name = "cast"
@@ -555,6 +572,20 @@ name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+
+[[package]]
+name = "metadata2"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
+name = "metadata3"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
 
 [[package]]
 name = "metadata_component"
@@ -1101,6 +1132,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha256"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18278f6a914fa3070aa316493f7d2ddfb9ac86ebc06fa3b83bffda487e9065b0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "sha2",
+]
+
+[[package]]
+name = "sha256_in_scrypto"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "sha256",
+]
+
+[[package]]
 name = "sha3"
 version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1243,6 +1294,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "threading"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "threadpool"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1309,6 +1367,13 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "wasm_limits"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
 
 [[package]]
 name = "wasm_non_mvp"

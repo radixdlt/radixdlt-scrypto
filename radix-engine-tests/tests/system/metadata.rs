@@ -1,6 +1,8 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::object_modules::metadata::MetadataError;
+use radix_engine::object_modules::metadata::{
+    MetadataError, MetadataKeyValidationError, MetadataValueValidationError,
+};
 use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
@@ -105,7 +107,9 @@ fn cannot_initialize_metadata_if_key_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::KeyStringExceedsMaxLength { .. }
+                MetadataError::MetadataKeyValidationError(
+                    MetadataKeyValidationError::InvalidLength { .. }
+                )
             ))
         )
     });
@@ -139,7 +143,9 @@ fn cannot_set_metadata_if_key_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::KeyStringExceedsMaxLength { .. }
+                MetadataError::MetadataKeyValidationError(
+                    MetadataKeyValidationError::InvalidLength { .. }
+                )
             ))
         )
     });
@@ -169,7 +175,9 @@ fn cannot_initialize_metadata_if_value_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::ValueSborExceedsMaxLength { .. }
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidLength { .. }
+                )
             ))
         )
     });
@@ -203,7 +211,9 @@ fn cannot_set_metadata_if_value_too_long() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::ValueSborExceedsMaxLength { .. }
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidLength { .. }
+                )
             ))
         )
     });

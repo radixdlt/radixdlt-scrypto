@@ -1,7 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::{
     errors::{ApplicationError, RuntimeError, SystemError},
-    object_modules::metadata::{MetadataError, MetadataValidationError},
+    object_modules::metadata::{MetadataError, MetadataValueValidationError},
 };
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
@@ -29,7 +29,9 @@ fn cannot_create_metadata_with_invalid_value() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::MetadataValidationError(MetadataValidationError::InvalidURL(_))
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidURL(_)
+                )
             ))
         )
     });
@@ -69,7 +71,9 @@ fn cannot_set_metadata_with_invalid_value() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::MetadataValidationError(MetadataValidationError::InvalidURL(_))
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidURL(_)
+                )
             ))
         )
     });
@@ -91,7 +95,9 @@ fn cannot_set_metadata_with_invalid_value() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
-                MetadataError::MetadataValidationError(MetadataValidationError::InvalidOrigin(_))
+                MetadataError::MetadataValueValidationError(
+                    MetadataValueValidationError::InvalidOrigin(_)
+                )
             ))
         )
     });

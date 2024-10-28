@@ -6,6 +6,8 @@ use paste::paste;
 use num_bigint::{BigInt, Sign};
 
 use radix_common::*;
+#[allow(unused_imports)] // It's needed by the `test_impl!` macro
+use sbor::rust::cmp::Ordering;
 
 test_impl! {I192, I256, I320, I384, I448, I512, I768}
 test_impl! {U192, U256, U320, U384, U448, U512, U768}

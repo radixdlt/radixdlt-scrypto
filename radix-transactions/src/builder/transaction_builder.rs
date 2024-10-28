@@ -251,7 +251,8 @@ impl PartialTransactionV2Builder {
         for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
-        self.root_subintent_manifest = Some(build_manifest(manifest_builder).build());
+        // The manifest will be validated as part of the transaction builder validation.
+        self.root_subintent_manifest = Some(build_manifest(manifest_builder).build_no_validate());
         self
     }
 
@@ -269,7 +270,9 @@ impl PartialTransactionV2Builder {
         for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
-        self.root_subintent_manifest = Some(build_manifest(manifest_builder, name_lookup).build());
+        // The manifest will be validated as part of the transaction builder validation.
+        self.root_subintent_manifest =
+            Some(build_manifest(manifest_builder, name_lookup).build_no_validate());
         self
     }
 
@@ -654,7 +657,9 @@ impl TransactionV2Builder {
         for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
-        self.transaction_intent_manifest = Some(build_manifest(manifest_builder).build());
+        // The manifest will be validated as part of the transaction builder validation.
+        self.transaction_intent_manifest =
+            Some(build_manifest(manifest_builder).build_no_validate());
         self
     }
 
@@ -672,8 +677,9 @@ impl TransactionV2Builder {
         for (child_name, (hash, _, _)) in self.child_partial_transactions.iter() {
             manifest_builder = manifest_builder.use_child(child_name, *hash);
         }
+        // The manifest will be validated as part of the transaction builder validation.
         self.transaction_intent_manifest =
-            Some(build_manifest(manifest_builder, name_lookup).build());
+            Some(build_manifest(manifest_builder, name_lookup).build_no_validate());
         self
     }
 
