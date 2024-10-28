@@ -197,6 +197,9 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
 }
 
 // Usage: cargo bench --bench costing -- spin_loop_v2
+// Different from spin_loop_v1, this is the smallest possible loop.
+// There is only one instruction `br` per iteration.
+// It's extremely helpful for stress testing the `consume_wasm_execution_units` host function.
 fn bench_spin_loop_v2(c: &mut Criterion) {
     let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
