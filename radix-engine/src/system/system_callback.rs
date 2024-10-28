@@ -1458,7 +1458,7 @@ impl<V: SystemCallbackObject> System<V> {
                 executable.costing_parameters().clone(),
                 abort_when_loan_repaid,
             ),
-            fee_table: FeeTable::new(),
+            fee_table: FeeTable::new(system_logic_version),
             tx_payload_len: executable.payload_size(),
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
             config: system_parameters.costing_module_config,

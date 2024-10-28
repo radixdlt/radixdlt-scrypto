@@ -221,10 +221,12 @@ where
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
+                let system_version = SystemVersion::latest();
+
                 let costing_module = CostingModule {
                     current_depth: 0,
                     fee_reserve: SystemLoanFeeReserve::default(),
-                    fee_table: FeeTable::new(),
+                    fee_table: FeeTable::new(system_version),
                     tx_payload_len: 0,
                     tx_num_of_signature_validations: 0,
                     config: CostingModuleConfig::babylon_genesis(),
@@ -234,7 +236,7 @@ where
                 };
 
                 System::new(
-                    SystemVersion::latest(),
+                    system_version,
                     Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
