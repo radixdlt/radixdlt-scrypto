@@ -42,7 +42,7 @@ pub struct TransactionValidationConfigV1 {
     pub max_epoch_range: u64,
     pub max_instructions: usize,
     pub message_validation: MessageValidationConfig,
-    pub allow_notary_to_duplicate_signer: bool,
+    pub v1_transactions_allow_notary_to_duplicate_signer: bool,
     pub preparation_settings: PreparationSettingsV1,
     pub manifest_validation: ManifestValidationRuleset,
     // V2 settings
@@ -70,7 +70,7 @@ impl TransactionValidationConfig {
             max_instructions: usize::MAX,
             // ~30 days given 5 minute epochs
             max_epoch_range: 12 * 24 * 30,
-            allow_notary_to_duplicate_signer: true,
+            v1_transactions_allow_notary_to_duplicate_signer: true,
             manifest_validation: ManifestValidationRuleset::BabylonBasicValidator,
             message_validation: MessageValidationConfig::babylon(),
             preparation_settings: PreparationSettings::babylon(),
@@ -91,7 +91,6 @@ impl TransactionValidationConfig {
             max_subintent_depth: 3,
             min_tip_basis_points: 0,
             max_instructions: 1000,
-            allow_notary_to_duplicate_signer: false,
             manifest_validation: ManifestValidationRuleset::Interpreter(
                 InterpreterValidationRulesetSpecifier::Cuttlefish,
             ),
@@ -397,6 +396,7 @@ impl TransactionValidator {
         let header = &transaction.signed_intent.intent.header.inner;
 
         self.validate_transaction_intent_and_notary_signatures_v1(
+            TransactionVersion::V1,
             transaction.transaction_intent_hash(),
             transaction.signed_transaction_intent_hash(),
             intent_signatures,
@@ -406,8 +406,9 @@ impl TransactionValidator {
         )
     }
 
-    pub fn validate_transaction_intent_and_notary_signatures_v1(
+    fn validate_transaction_intent_and_notary_signatures_v1(
         &self,
+        transaction_version: TransactionVersion,
         transaction_intent_hash: TransactionIntentHash,
         signed_transaction_intent_hash: SignedTransactionIntentHash,
         transaction_intent_signatures: &[IntentSignatureV1],
@@ -435,8 +436,16 @@ impl TransactionValidator {
 
         if notary_is_signatory {
             if !signers.insert(notary_public_key.clone()) {
-                if !self.config.allow_notary_to_duplicate_signer {
-                    return Err(SignatureValidationError::DuplicateSigner);
+                let permit_notary_duplicating_signer = match transaction_version {
+                    TransactionVersion::V1 => {
+                        self.config.v1_transactions_allow_notary_to_duplicate_signer
+                    }
+                    TransactionVersion::V2 => false,
+                };
+                if !permit_notary_duplicating_signer {
+                    return Err(
+                        SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
+                    );
                 }
             }
         }
@@ -1013,6 +1022,7 @@ impl TransactionValidator {
 
         let (signer_keys, num_validations) = self
             .validate_transaction_intent_and_notary_signatures_v1(
+                TransactionVersion::V2,
                 prepared.transaction_intent_hash(),
                 prepared.signed_transaction_intent_hash(),
                 transaction_intent_signatures,
@@ -1198,6 +1208,11 @@ impl TransactionValidator {
             non_root_subintents: non_root_subintent_details,
         })
     }
+}
+
+enum TransactionVersion {
+    V1,
+    V2,
 }
 
 struct HeaderAggregation {
@@ -1627,6 +1642,80 @@ mod tests {
                 }
             ))
         }
+    }
+
+    #[test]
+    fn test_demonstrate_behaviour_with_notary_duplicating_signer() {
+        // Arrange
+        let network = NetworkDefinition::simulator();
+        let notary = Secp256k1PrivateKey::from_u64(1).unwrap();
+
+        let babylon_validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::babylon(),
+            network.id,
+        );
+        let latest_validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::latest(),
+            network.id,
+        );
+
+        let transaction_v1 = TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: network.id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                nonce: 0,
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(ManifestBuilder::new().drop_auth_zone_proofs().build())
+            .sign(&notary)
+            .notarize(&notary)
+            .build();
+
+        let transaction_v2 = TransactionV2Builder::new()
+            .intent_header(IntentHeaderV2 {
+                network_id: network.id,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(10),
+                min_proposer_timestamp_inclusive: None,
+                max_proposer_timestamp_exclusive: None,
+                intent_discriminator: 0,
+            })
+            .transaction_header(TransactionHeaderV2 {
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: true,
+                tip_basis_points: 0,
+            })
+            .manifest(ManifestBuilder::new_v2().drop_auth_zone_proofs().build())
+            .sign(&notary)
+            .notarize(&notary)
+            .build_no_validate();
+
+        // Act & Assert - Transaction V1 permits using notary as signatory and also having it sign
+        // It was deemed that we didn't want to start failing V1 transactions for this at Cuttlefish
+        // as we didn't want existing integrations to break.
+        assert!(transaction_v1
+            .prepare_and_validate(&babylon_validator)
+            .is_ok());
+        assert!(transaction_v1
+            .prepare_and_validate(&latest_validator)
+            .is_ok());
+
+        // Act & Assert - Transaction V2 does not permit duplicating a notary is signatory as a signatory
+        assert_eq!(
+            transaction_v2.prepare_and_validate(&babylon_validator),
+            Err(TransactionValidationError::PrepareError(
+                PrepareError::TransactionTypeNotSupported
+            ))
+        );
+        assert_eq!(
+            transaction_v2.prepare_and_validate(&latest_validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner
+            ))
+        );
     }
 
     fn validate_default_expecting_message_error(
