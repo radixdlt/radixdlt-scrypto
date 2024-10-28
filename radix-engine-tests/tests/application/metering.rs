@@ -835,7 +835,7 @@ fn system_loan_should_cover_intended_use_case() {
 #[test]
 fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().with_cost_breakdown().build();
     let network = NetworkDefinition::simulator();
     let (_, private_key, account_address) = ledger.new_account(true);
 
@@ -898,15 +898,10 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
         true,
     );
 
-    let receipt = ledger.execute_transaction(
-        main_transaction,
-        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
-            .with_cost_breakdown(true),
-    );
+    let receipt = ledger.execute_notarized_transaction(&main_transaction.to_raw().unwrap());
 
     // Assert and print
     receipt.expect_commit_success();
-    #[cfg(feature = "std")]
     println!(
         "\n{}",
         format_cost_breakdown(&receipt.fee_summary, receipt.fee_details.as_ref().unwrap())
