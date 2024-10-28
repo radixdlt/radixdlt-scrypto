@@ -2131,7 +2131,6 @@ mod tests {
                         panic!("Unexpected result: {other_result:?}");
                     }
                 }
-                assert_eq!(1, 2, "Hello you");
                 assert_matches!(
                     validate_transaction(&validator, version, &signer, &FakeSigner::new(&notary)),
                     Err(TransactionValidationError::SignatureValidationError(
