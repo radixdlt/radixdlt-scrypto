@@ -465,48 +465,97 @@ fn cannot_trick_account_allow_existing_by_adding_empty_bucket_to_account() {
 
     let bad_resource_address = ledger.freely_mintable_resource();
 
-    // Act - Part 1
-    // The user interacts with a dApp which has an assertion that it only includes XRD...
-    // but unknown to the user, it also deposits a bucket of size 0 - which might
-    // attempt to trick the account into making the resource an "existing resource"
-    // despite the fact it didn't show up on the assertion.
-    let user_manifest = ManifestBuilder::new_v2()
-        .lock_fee_from_faucet()
-        .get_free_xrd_from_faucet()
-        .mint_fungible(bad_resource_address, 0)
-        .assert_worktop_resources_only(
-            ManifestResourceConstraints::new().with_at_least_amount(XRD, Decimal::ONE_ATTO),
-        )
-        .deposit_entire_worktop(account_address)
-        .build();
-    let receipt = ledger.execute_manifest(user_manifest, true);
-    receipt.expect_commit_success();
+    // The potential attack is against the `AllowExisting` deposit filter of the account,
+    // and happens in two parts:
+    //
+    // - Part 1:
+    //   - The user interacts with a dApp, and the dApp sneaks in an *empty* bucket of some
+    //     "bad resource" they want to eventually secretly deposit to the user.
+    //   - The manifest includes a worktop assertion that it only includes other resources,
+    //     so the user in their wallet doesn't ever see that this bad resource is present
+    //     in any of their reviews.
+    //   - The manifest then does a deposit batch to also deposit the empty bucket of the
+    //     bad resource. Because it is an owner-approved deposit, this is allowed despite
+    //     the fact that the resource is not existing in the account.
+    //   - The user, not knowing about this bad resource, signs the transaction and submits
+    //     it, and the transaction commits.
+    //
+    // - Part 2:
+    //   - After Part 1, the account now has a vault for this bad resource, so the bad
+    //     resource is allowed to be deposited under the `AllowExisting` configuration.
+    //   - The dApp uses `try_deposit_or_abort` to deposit a non-zero amount of the bad
+    //     resource into the account, without the user being present.
+    //
+    // In my (David's) mind, the correct fix for this potential attack would be for the account
+    // not to actually do a deposit of an empty bucket. Maybe it emits an event, but doesn't
+    // actually create a vault, and instead drops the bucket?
+    //
+    // However, the account doesn't yet do this BUT we are saved from this happening at the
+    // manifest layer because the worktop has an invariant that it never stores empty
+    // buckets. This is a little indirect for my liking... But it does solve the main issue.
+    //
+    // So this test serves to act as some regression tests to ensure this attack isn't
+    // accidentally enabled due to changes in the worktop behaviour. And in particular,
+    // this test tries to create empty worktop buckets via a couple of different means,
+    // to serve as a better regression test.
+    //
+    // SIDE NOTE:
+    // Whilst this could be attacked at the scrypto layer, this attack isn't really an issue:
+    // - It’s not common for scrypto to have an owned account, and it's even less common for that
+    //   owned account to use an AllowExisting deposit configuration
+    // - It’s not common for scrypto to encounter batches of unknown buckets
+    // - It's not common for scrypto code to use deposit or deposit_batch methods on an owned account
+    // - We don’t really expose any of this assertion logic at the scrypto layer, so the user would
+    //   be validating these buckets manually and likely discard any bucket resource addresses
+    //   not matching their filter.
 
-    // And now, the dApp tries to deposit the resource without the user being present...
-    let malicious_manifest = ManifestBuilder::new_v2()
-        .lock_fee_from_faucet()
-        .mint_fungible(bad_resource_address, dec!(666))
-        .try_deposit_entire_worktop_or_abort(account_address, None)
-        .build();
-    let receipt = ledger.execute_manifest(malicious_manifest, false);
+    let user_manifests = [
+        // Attempt 1 - just mint an empty bucket
+        ManifestBuilder::new_v2()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .mint_fungible(bad_resource_address, 0)
+            .assert_worktop_resources_only(
+                ManifestResourceConstraints::new().with_at_least_amount(XRD, Decimal::ONE_ATTO),
+            )
+            .deposit_entire_worktop(account_address)
+            .build(),
+        // Attempt 2 - create and drop the bucket
+        ManifestBuilder::new_v2()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .mint_fungible(bad_resource_address, 10)
+            .take_from_worktop(bad_resource_address, 10, "bucket_to_burn")
+            .burn_resource("bucket_to_burn")
+            .assert_worktop_resources_only(
+                ManifestResourceConstraints::new().with_at_least_amount(XRD, Decimal::ONE_ATTO),
+            )
+            .deposit_entire_worktop(account_address)
+            .build(),
+    ];
+    for user_manifest in user_manifests {
+        let receipt = ledger.execute_manifest(user_manifest, true);
+        receipt.expect_commit_success();
 
-    // Assert
-    let error = receipt.expect_commit_failure().outcome.expect_failure();
-    let matches_result = matches!(
-        error,
-        RuntimeError::ApplicationError(ApplicationError::AccountError(
-            AccountError::NotAllBucketsCouldBeDeposited
-        )),
-    );
-    if !matches_result {
-        panic!("Error is not DepositIsDisallowed {error:?}");
+        let malicious_manifest = ManifestBuilder::new_v2()
+            .lock_fee_from_faucet()
+            .mint_fungible(bad_resource_address, dec!(666))
+            .try_deposit_entire_worktop_or_abort(account_address, None)
+            .build();
+        let receipt = ledger.execute_manifest(malicious_manifest, false);
+
+        // Assert
+        let error = receipt.expect_commit_failure().outcome.expect_failure();
+        let matches_result = matches!(
+            error,
+            RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::NotAllBucketsCouldBeDeposited
+            )),
+        );
+        if !matches_result {
+            panic!("Error is not DepositIsDisallowed {error:?}");
+        }
     }
-
-    // This test currently passes because the **worktop** prevents this issue,
-    // by dropping empty buckets which are put on the worktop.
-    // This is a little indirect for my liking (it feels like the account should
-    // be maintaing its own invariant by not depositing empty buckets), but it's
-    // good enough for now as the worktop can't be tricked into depositing an empty bucket.
 }
 
 struct AccountDepositModesLedgerSimulator {
