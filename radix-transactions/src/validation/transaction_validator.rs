@@ -561,10 +561,10 @@ impl TransactionValidator {
         })
     }
 
-    pub fn validate_preview_transaction_intent_v2(
+    pub fn validate_preview_transaction_v2(
         &self,
-        prepared: PreparedPreviewTransactionIntentV2,
-    ) -> Result<ValidatedPreviewTransactionIntentV2, TransactionValidationError> {
+        prepared: PreparedPreviewTransactionV2,
+    ) -> Result<ValidatedPreviewTransactionV2, TransactionValidationError> {
         if !self.config.v2_transactions_allowed {
             return Err(TransactionValidationError::TransactionVersionNotPermitted(
                 2,
@@ -618,7 +618,7 @@ impl TransactionValidator {
             signatures,
         )?;
 
-        Ok(ValidatedPreviewTransactionIntentV2 {
+        Ok(ValidatedPreviewTransactionV2 {
             prepared,
             overall_validity_range,
             total_expected_signature_validations,

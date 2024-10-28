@@ -1,4 +1,4 @@
-#[cfg(all(not(feature = "alloc"), feature = "test_utils"))]
+#[cfg(feature = "test_utils")]
 mod costing_formatting;
 #[cfg(feature = "coverage")]
 mod coverage;
@@ -9,7 +9,7 @@ mod native_blueprint_call_validator;
 mod package_extractor;
 mod panics;
 
-#[cfg(all(not(feature = "alloc"), feature = "test_utils"))]
+#[cfg(feature = "test_utils")]
 pub use costing_formatting::*;
 #[cfg(feature = "coverage")]
 pub use coverage::*;

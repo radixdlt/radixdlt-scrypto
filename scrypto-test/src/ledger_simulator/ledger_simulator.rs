@@ -51,6 +51,7 @@ pub struct LedgerSimulatorBuilder<E, D> {
 
     // General options
     with_kernel_trace: bool,
+    with_cost_breakdown: bool,
     with_receipt_substate_check: bool,
 }
 
@@ -62,6 +63,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
                 .from_bootstrap_to_latest(),
             with_kernel_trace: false,
+            with_cost_breakdown: false,
             with_receipt_substate_check: true,
         }
     }
@@ -78,6 +80,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
+            with_cost_breakdown: self.with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
@@ -89,6 +92,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
     pub fn without_kernel_trace(mut self) -> Self {
         self.with_kernel_trace = false;
+        self
+    }
+
+    pub fn with_cost_breakdown(mut self) -> Self {
+        self.with_cost_breakdown = true;
         self
     }
 
@@ -111,6 +119,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_database: self.custom_database,
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
+            with_cost_breakdown: self.with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
@@ -124,6 +133,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_database: database,
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
+            with_cost_breakdown: self.with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
@@ -174,6 +184,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             collected_events: snapshot.collected_events,
             xrd_free_credits_used: snapshot.xrd_free_credits_used,
             with_kernel_trace: snapshot.with_kernel_trace,
+            with_cost_breakdown: snapshot.with_cost_breakdown,
             with_receipt_substate_check: snapshot.with_receipt_substate_check,
         }
     }
@@ -189,6 +200,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         let with_kernel_trace = self.with_kernel_trace;
         #[cfg(feature = "resource_tracker")]
         let with_kernel_trace = false;
+
+        #[cfg(not(feature = "resource_tracker"))]
+        let with_cost_breakdown = self.with_cost_breakdown;
+        #[cfg(feature = "resource_tracker")]
+        let with_cost_breakdown = false;
+
         //----------------------------------------------------------------
         struct ProtocolUpdateHooks {
             bootstrap_trace: bool,
@@ -250,6 +267,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             collected_events: hooks.events,
             xrd_free_credits_used: false,
             with_kernel_trace: with_kernel_trace,
+            with_cost_breakdown: with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
@@ -276,6 +294,8 @@ pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
 
     /// Whether to enable kernel tracing
     with_kernel_trace: bool,
+    /// Whether to enable the cost breakdown
+    with_cost_breakdown: bool,
     /// Whether to enable receipt substate type checking
     with_receipt_substate_check: bool,
 }
@@ -296,6 +316,7 @@ pub struct LedgerSimulatorSnapshot {
     collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
     xrd_free_credits_used: bool,
     with_kernel_trace: bool,
+    with_cost_breakdown: bool,
     with_receipt_substate_check: bool,
 }
 
@@ -309,19 +330,32 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
             collected_events: self.collected_events.clone(),
             xrd_free_credits_used: self.xrd_free_credits_used,
             with_kernel_trace: self.with_kernel_trace,
+            with_cost_breakdown: self.with_cost_breakdown,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
 
     pub fn restore_snapshot(&mut self, snapshot: LedgerSimulatorSnapshot) {
-        self.database = snapshot.database;
-        self.transaction_validator = snapshot.transaction_validator;
-        self.next_private_key = snapshot.next_private_key;
-        self.next_transaction_nonce = snapshot.next_transaction_nonce;
-        self.collected_events = snapshot.collected_events;
-        self.xrd_free_credits_used = snapshot.xrd_free_credits_used;
-        self.with_kernel_trace = snapshot.with_kernel_trace;
-        self.with_receipt_substate_check = snapshot.with_receipt_substate_check;
+        let LedgerSimulatorSnapshot {
+            database,
+            transaction_validator,
+            next_private_key,
+            next_transaction_nonce,
+            collected_events,
+            xrd_free_credits_used,
+            with_kernel_trace,
+            with_cost_breakdown,
+            with_receipt_substate_check,
+        } = snapshot;
+        self.database = database;
+        self.transaction_validator = transaction_validator;
+        self.next_private_key = next_private_key;
+        self.next_transaction_nonce = next_transaction_nonce;
+        self.collected_events = collected_events;
+        self.xrd_free_credits_used = xrd_free_credits_used;
+        self.with_kernel_trace = with_kernel_trace;
+        self.with_cost_breakdown = with_cost_breakdown;
+        self.with_receipt_substate_check = with_receipt_substate_check;
     }
 }
 
@@ -1267,6 +1301,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         Ed25519PrivateKey::from_u64(1337).unwrap()
     }
 
+    /// Includes default headers
     pub fn v2_transaction_builder(&mut self) -> TransactionV2Builder {
         let current_epoch = self.get_current_epoch();
         let nonce = self.next_transaction_nonce();
@@ -1286,6 +1321,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             })
     }
 
+    /// Includes default headers
     pub fn v2_partial_transaction_builder(&mut self) -> PartialTransactionV2Builder {
         let current_epoch = self.get_current_epoch();
         let nonce = self.next_transaction_nonce();
@@ -1299,7 +1335,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         })
     }
 
-    /// If you have a non-raw notarized tranasaction, you will need to do:
+    /// If you have a non-raw notarized transaction, you will need to do:
     /// ```ignore
     /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
     /// ```
@@ -1334,6 +1370,26 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         self.execute_transaction(test_transaction, ExecutionConfig::for_test_transaction())
     }
 
+    pub fn execute_transaction_no_commit(
+        &mut self,
+        executable_source: impl IntoExecutable,
+        mut execution_config: ExecutionConfig,
+    ) -> TransactionReceipt {
+        let executable = executable_source
+            .into_executable(&self.transaction_validator)
+            .expect("Transaction should be convertible to executable");
+
+        execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
+        execution_config = execution_config.with_cost_breakdown(self.with_cost_breakdown);
+
+        execute_transaction(
+            &mut self.database,
+            &self.vm_modules,
+            &execution_config,
+            executable,
+        )
+    }
+
     pub fn execute_transaction(
         &mut self,
         executable_source: impl IntoExecutable,
@@ -1345,6 +1401,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
+        execution_config = execution_config.with_cost_breakdown(self.with_cost_breakdown);
 
         if executable
             .costing_parameters()
@@ -1360,6 +1417,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             &execution_config,
             executable,
         );
+
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit.state_updates.create_database_updates();
             self.database.commit(&database_updates);
@@ -1422,6 +1480,23 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.with_kernel_trace,
         )
         .unwrap()
+    }
+
+    pub fn preview_v2(
+        &mut self,
+        preview_transaction: PreviewTransactionV2,
+        flags: PreviewFlags,
+    ) -> TransactionReceipt {
+        let validated = preview_transaction
+            .prepare_and_validate(&self.transaction_validator)
+            .expect("Preview transaction should be valid");
+        let execution_config = if flags.disable_auth {
+            ExecutionConfig::for_preview_no_auth(NetworkDefinition::simulator())
+        } else {
+            ExecutionConfig::for_preview(NetworkDefinition::simulator())
+        };
+        let executable = validated.create_executable(flags);
+        self.execute_transaction_no_commit(executable, execution_config)
     }
 
     /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.

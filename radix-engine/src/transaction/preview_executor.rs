@@ -12,6 +12,12 @@ pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
+impl From<TransactionValidationError> for PreviewError {
+    fn from(value: TransactionValidationError) -> Self {
+        Self::TransactionValidationError(value)
+    }
+}
+
 pub fn execute_preview(
     substate_db: &impl SubstateDatabase,
     vm_modules: &impl VmInitialize,
@@ -28,9 +34,7 @@ pub fn execute_preview(
     };
     execution_config = execution_config.with_kernel_trace(with_kernel_trace);
 
-    let validated = validator
-        .validate_preview_intent_v1(preview_intent)
-        .map_err(PreviewError::TransactionValidationError)?;
+    let validated = validator.validate_preview_intent_v1(preview_intent)?;
 
     Ok(execute_transaction(
         substate_db,

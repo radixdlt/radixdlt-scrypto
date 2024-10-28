@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 
-/// A [`PreviewTransactionIntentV2`] is the payload for V2 preview requests.
+/// A [`PreviewTransactionV2`] is the payload for V2 preview requests.
 ///
 /// This model is similar to [`SignedTransactionIntentV2`], except it doesn't
 /// require signatures, and instead allows just using public keys.
@@ -11,46 +11,45 @@ use crate::internal_prelude::*;
 /// ensuring the subintent hashes in the `USE_CHILD` manifest instructions
 /// survive encoding to JSON.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
-pub struct PreviewTransactionIntentV2 {
+pub struct PreviewTransactionV2 {
     pub transaction_intent: TransactionIntentV2,
-    pub root_signer_public_keys: Vec<PublicKey>,
+    pub root_signer_public_keys: IndexSet<PublicKey>,
     pub non_root_subintent_signer_public_keys: Vec<Vec<PublicKey>>,
 }
 
-impl PreviewTransactionIntentV2 {
+impl PreviewTransactionV2 {
     pub fn prepare_and_validate(
         &self,
         validator: &TransactionValidator,
-    ) -> Result<ValidatedPreviewTransactionIntentV2, TransactionValidationError> {
+    ) -> Result<ValidatedPreviewTransactionV2, TransactionValidationError> {
         self.prepare(validator.preparation_settings())?
             .validate(validator)
     }
 }
 
 define_transaction_payload!(
-    PreviewTransactionIntentV2,
-    RawPreviewTransactionIntent,
-    PreparedPreviewTransactionIntentV2 {
+    PreviewTransactionV2,
+    RawPreviewTransaction,
+    PreparedPreviewTransactionV2 {
         transaction_intent: PreparedTransactionIntentV2,
         root_subintent_signatures: SummarizedRawValueBody<Vec<PublicKey>>,
         non_root_subintent_signatures: SummarizedRawValueBody<Vec<Vec<PublicKey>>>,
-        flags: SummarizedRawValueBody<PreviewFlags>,
     },
-    TransactionDiscriminator::V2PreviewTransactionIntent,
+    TransactionDiscriminator::V2PreviewTransaction,
 );
 
-impl PreparedPreviewTransactionIntentV2 {
+impl PreparedPreviewTransactionV2 {
     pub fn validate(
         self,
         validator: &TransactionValidator,
-    ) -> Result<ValidatedPreviewTransactionIntentV2, TransactionValidationError> {
-        validator.validate_preview_transaction_intent_v2(self)
+    ) -> Result<ValidatedPreviewTransactionV2, TransactionValidationError> {
+        validator.validate_preview_transaction_v2(self)
     }
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct ValidatedPreviewTransactionIntentV2 {
-    pub prepared: PreparedPreviewTransactionIntentV2,
+pub struct ValidatedPreviewTransactionV2 {
+    pub prepared: PreparedPreviewTransactionV2,
     pub overall_validity_range: OverallValidityRangeV2,
     /// This would be the expected number of signature validations, if the
     /// given public keys (and the notary) signed the transaction
@@ -59,7 +58,7 @@ pub struct ValidatedPreviewTransactionIntentV2 {
     pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
 }
 
-impl ValidatedPreviewTransactionIntentV2 {
+impl ValidatedPreviewTransactionV2 {
     pub fn create_executable(self, flags: PreviewFlags) -> ExecutableTransaction {
         let transaction_intent = self.prepared.transaction_intent;
         let transaction_intent_hash = transaction_intent.transaction_intent_hash();

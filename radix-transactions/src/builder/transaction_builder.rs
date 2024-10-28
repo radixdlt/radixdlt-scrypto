@@ -51,6 +51,10 @@ impl TransactionV1Builder {
         }
     }
 
+    pub fn then(self, next: impl FnOnce(Self) -> Self) -> Self {
+        next(self)
+    }
+
     pub fn manifest(mut self, manifest: TransactionManifestV1) -> Self {
         self.manifest = Some(manifest);
         self
@@ -198,6 +202,10 @@ pub struct PartialTransactionV2Builder {
 impl PartialTransactionV2Builder {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn then(self, next: impl FnOnce(Self) -> Self) -> Self {
+        next(self)
     }
 
     /// When used with the [`manifest_builder`][Self::manifest_builder] method, the provided name and hash
@@ -486,6 +494,10 @@ impl TransactionV2Builder {
         Default::default()
     }
 
+    pub fn then(self, next: impl FnOnce(Self) -> Self) -> Self {
+        next(self)
+    }
+
     /// When used with the [`manifest_builder`][Self::manifest_builder] method, the provided name and hash
     /// are provided automatically via [`use_child`][ManifestBuilder::use_child] at the start of manifest creation.
     ///
@@ -710,6 +722,72 @@ impl TransactionV2Builder {
     pub fn notary_signature(mut self, signature: SignatureV1) -> Self {
         self.notary_signature = Some(NotarySignatureV2(signature));
         self
+    }
+
+    /// Creates a [`PreviewTransactionV2`]. For all non-root subintents, existing signatures
+    /// are converted into the corresponding public key.
+    ///
+    /// ## Panics
+    /// * Panics if any subintent signatures are not recoverable.
+    ///   Untrusted partial transactions should be validated before using in the transaction builder.
+    /// * If the resulting preview transaction could not be validated.
+    pub fn build_preview_transaction(
+        &mut self,
+        transaction_intent_signer_keys: impl IntoIterator<Item = PublicKey>,
+    ) -> PreviewTransactionV2 {
+        let preview_transaction =
+            self.build_preview_transaction_no_validate(transaction_intent_signer_keys);
+        let validator = TransactionValidator::new_with_latest_config_network_agnostic();
+        preview_transaction.prepare_and_validate(&validator)
+            .expect("Built preview transaction should be valid. Use `build_preview_transaction_no_validate()` to skip validation if needed.");
+        preview_transaction
+    }
+
+    /// Creates a [`PreviewTransactionV2`]. For all non-root subintents, existing signatures
+    /// are converted into the corresponding public key.
+    ///
+    /// ## Panics
+    /// * Panics if any subintent signatures are not recoverable.
+    ///   Untrusted partial transactions should be validated before using in the transaction builder.
+    pub fn build_preview_transaction_no_validate(
+        &mut self,
+        transaction_intent_signer_keys: impl IntoIterator<Item = PublicKey>,
+    ) -> PreviewTransactionV2 {
+        self.create_intent_and_subintent_info();
+        let (transaction_intent, subintent_signatures) = self
+            .transaction_intent_and_non_root_subintent_signatures
+            .clone()
+            .take()
+            .expect("Intent was created in create_intent_and_subintent_info()");
+
+        // Extract the public keys from the subintent signatures for preview purposes.
+        let non_root_subintent_signer_public_keys = subintent_signatures
+            .by_subintent
+            .into_iter()
+            .enumerate()
+            .map(|(subintent_index, sigs)| {
+                sigs.signatures
+                    .into_iter()
+                    .map(|signature| match signature.0 {
+                        SignatureWithPublicKeyV1::Secp256k1 { .. } => {
+                            let subintent = transaction_intent.non_root_subintents.0.get(subintent_index).unwrap();
+                            let subintent_hash = subintent.prepare(&PreparationSettings::latest())
+                                .expect("Untrusted partial transactions should be validated before using with the builder")
+                                .subintent_hash();
+                            verify_and_recover(subintent_hash.as_hash(), &signature.0)
+                                .expect("Signature was not valid")
+                        }
+                        SignatureWithPublicKeyV1::Ed25519 { public_key, .. } => public_key.into(),
+                    })
+                    .collect()
+            })
+            .collect();
+
+        PreviewTransactionV2 {
+            transaction_intent,
+            root_signer_public_keys: transaction_intent_signer_keys.into_iter().collect(),
+            non_root_subintent_signer_public_keys,
+        }
     }
 
     /// Builds the [`NotarizedTransactionV2`], also returning the [`TransactionObjectNames`]

@@ -24,7 +24,7 @@ pub enum TransactionDiscriminator {
     V2Notarized = V2_NOTARIZED_TRANSACTION,
     V2PartialTransaction = V2_PARTIAL_TRANSACTION,
     V2SignedPartialTransaction = V2_SIGNED_PARTIAL_TRANSACTION,
-    V2PreviewTransactionIntent = V2_PREVIEW_TRANSACTION_INTENT,
+    V2PreviewTransaction = V2_PREVIEW_TRANSACTION,
 }
 
 const V1_INTENT: u8 = 1;
@@ -45,7 +45,7 @@ const V2_SUBINTENT: u8 = 11;
 const V2_NOTARIZED_TRANSACTION: u8 = 12;
 const V2_PARTIAL_TRANSACTION: u8 = 13;
 const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
-const V2_PREVIEW_TRANSACTION_INTENT: u8 = 15;
+const V2_PREVIEW_TRANSACTION: u8 = 15;
 
 /// An enum of a variety of different transaction payload types.
 ///
@@ -97,8 +97,8 @@ pub enum VersionedTransactionPayload {
     PartialTransactionV2(#[sbor(flatten)] PartialTransactionV2),
     #[sbor(discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
     SignedPartialTransactionV2(#[sbor(flatten)] SignedPartialTransactionV2),
-    #[sbor(discriminator(V2_PREVIEW_TRANSACTION_INTENT))]
-    PreviewTransactionIntentV2(#[sbor(flatten)] PreviewTransactionIntentV2),
+    #[sbor(discriminator(V2_PREVIEW_TRANSACTION))]
+    PreviewTransactionIntentV2(#[sbor(flatten)] PreviewTransactionV2),
 }
 
 #[cfg(test)]
