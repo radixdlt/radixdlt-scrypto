@@ -1,6 +1,3 @@
-use crate::blueprints::transaction_processor::ResourceConstraintChecker;
-use crate::errors::ApplicationError;
-use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
@@ -8,7 +5,7 @@ use crate::system::system_substates::FieldSubstate;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
-use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
+use radix_native_sdk::resource::*;
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {
@@ -25,9 +22,12 @@ impl WorktopSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WorktopError {
-    AssertionFailed,
+    /// This is now unused, but kept in for backwards compatibility
+    /// of error models (at least whilst we need to do that for the node,
+    /// so that legacy errors can be serialized to string)
+    BasicAssertionFailed,
     InsufficientBalance,
-    ResourceConstraintsError(ManifestResourceConstraintsError),
+    AssertionFailed(ResourceConstraintsError),
 }
 
 pub struct WorktopBlueprint;
@@ -409,8 +409,13 @@ impl WorktopBlueprint {
             Decimal::zero()
         };
         if amount.is_zero() {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: input.resource_address,
+                    error: ResourceConstraintError::ExpectedNonZeroAmount,
+                });
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+                ApplicationError::WorktopError(worktop_error),
             ));
         }
         api.field_close(worktop_handle)?;
@@ -437,8 +442,16 @@ impl WorktopBlueprint {
             Decimal::zero()
         };
         if amount < input.amount {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: input.resource_address,
+                    error: ResourceConstraintError::ExpectedAtLeastAmount {
+                        expected_at_least_amount: input.amount,
+                        actual_amount: amount,
+                    },
+                });
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+                ApplicationError::WorktopError(worktop_error),
             ));
         }
         api.field_close(worktop_handle)?;
@@ -459,15 +472,22 @@ impl WorktopBlueprint {
             LockFlags::read_only(),
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
-        let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
+        let bucket_ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.clone());
             bucket.non_fungible_local_ids(api)?
         } else {
             index_set_new()
         };
-        if !ids.is_superset(&input.ids) {
+        if let Some(missing_id) = input.ids.difference(&bucket_ids).next() {
+            let worktop_error =
+                WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: input.resource_address,
+                    error: ResourceConstraintError::NonFungibleMissing {
+                        missing_id: missing_id.clone(),
+                    },
+                });
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+                ApplicationError::WorktopError(worktop_error),
             ));
         }
         api.field_close(worktop_handle)?;
@@ -547,7 +567,15 @@ impl WorktopBlueprintCuttlefishExtension {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        Self::assert_resources(input.constraints, false, api)
+        Self::aggregate_resources(api)?
+            .validate_includes(input.constraints)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                    WorktopError::AssertionFailed(e),
+                ))
+            })?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     pub(crate) fn assert_resources_only<Y: SystemApi<RuntimeError>>(
@@ -558,14 +586,20 @@ impl WorktopBlueprintCuttlefishExtension {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        Self::assert_resources(input.constraints, true, api)
+        Self::aggregate_resources(api)?
+            .validate_only(input.constraints)
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                    WorktopError::AssertionFailed(e),
+                ))
+            })?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn assert_resources<Y: SystemApi<RuntimeError>>(
-        constraints: ManifestResourceConstraints,
-        exact: bool,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    fn aggregate_resources(
+        api: &mut impl SystemApi<RuntimeError>,
+    ) -> Result<AggregateResourceBalances, RuntimeError> {
         let worktop_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             WorktopField::Worktop.into(),
@@ -573,28 +607,20 @@ impl WorktopBlueprintCuttlefishExtension {
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
 
-        let mut constraint_checker = ResourceConstraintChecker::new(constraints, exact);
+        let mut aggregated_balances = AggregateResourceBalances::new();
 
         for (resource, bucket) in worktop.resources {
             let bucket = Bucket(bucket.clone());
             if resource.is_fungible() {
                 let amount = bucket.amount(api)?;
-                constraint_checker.add_fungible(resource, amount);
+                aggregated_balances.add_fungible(resource, amount);
             } else {
                 let ids = bucket.non_fungible_local_ids(api)?;
-                constraint_checker.add_non_fungible(resource, ids);
+                aggregated_balances.add_non_fungible(resource, ids);
             }
         }
 
-        constraint_checker.validate().map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::WorktopError(
-                WorktopError::ResourceConstraintsError(e),
-            ))
-        })?;
-
-        api.field_close(worktop_handle)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(aggregated_balances)
     }
 
     pub fn invoke_export<Y: SystemApi<RuntimeError>>(

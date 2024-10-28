@@ -320,7 +320,7 @@ pub enum IntentError {
     VerifyParentFailed,
     InvalidIntentIndex(usize),
     NoParentToYieldTo,
-    AssertNextCallReturnsFailed(ManifestResourceConstraintsError),
+    AssertNextCallReturnsFailed(ResourceConstraintsError),
     AssertBucketContentsFailed(ResourceConstraintError),
 }
 
