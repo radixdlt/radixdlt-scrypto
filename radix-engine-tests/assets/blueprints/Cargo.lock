@@ -202,6 +202,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "costing_malloc"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "sha256",
+]
+
+[[package]]
 name = "costing_sbor_decode"
 version = "1.0.0"
 dependencies = [

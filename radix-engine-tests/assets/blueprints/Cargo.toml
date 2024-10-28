@@ -83,6 +83,7 @@ members = [
     "wasm_limits",
     "costing_sha256",
     "costing_sbor_decode",
+    "costing_malloc",
 ]
 resolver = "2"
 
