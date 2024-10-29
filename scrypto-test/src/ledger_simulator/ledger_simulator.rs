@@ -1354,15 +1354,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         })
     }
 
-    /// If you have a non-raw notarized transaction, you will need to do:
-    /// ```ignore
-    /// simulator.execute_notarized_transaction(&notarized_transaction.to_raw().unwrap());
-    /// ```
     pub fn execute_notarized_transaction(
         &mut self,
-        raw_transaction: &RawNotarizedTransaction,
+        transaction_source: impl ResolveAsRawNotarizedTransaction,
     ) -> TransactionReceipt {
+        let raw_transaction = transaction_source.resolve_raw_notarized_transaction();
         let executable = raw_transaction
+            .as_ref()
             .validate(&self.transaction_validator)
             .expect("Expected raw transaction to be valid")
             .create_executable();

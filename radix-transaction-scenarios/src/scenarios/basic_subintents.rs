@@ -22,6 +22,8 @@ impl Default for BasicSubintentsScenarioConfig {
 pub struct BasicSubintentsScenarioState {
     parent_account: State<ComponentAddress>,
     child_account: State<ComponentAddress>,
+    child_token: State<ResourceAddress>,
+    repeated_partial: State<DetailedSignedPartialTransactionV2>,
 }
 
 pub struct BasicSubintentsScenarioCreator;
@@ -49,6 +51,28 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                 let component_addresses = result.new_component_addresses();
                 state.parent_account.set(component_addresses[0]);
                 state.child_account.set(component_addresses[1]);
+                let resource_addresses = result.new_resource_addresses();
+                state.child_token.set(resource_addresses[0]);
+
+                // We prepare a partial at this point for later
+                let repeated_partial = core
+                    .v2_subintent()
+                    .manifest_builder_with_lookup(|builder, lookup| {
+                        builder
+                            .withdraw_from_account(
+                                state.child_account.unwrap(),
+                                state.child_token.unwrap(),
+                                50,
+                            )
+                            .take_all_from_worktop(
+                                state.child_token.unwrap(),
+                                "free-gift-single-use",
+                            )
+                            .yield_to_parent((lookup.bucket("free-gift-single-use"),))
+                    })
+                    .sign(&config.child_account_key)
+                    .complete(core);
+                state.repeated_partial.set(repeated_partial);
                 Ok(())
             })
             .successful_transaction(|core, config, state| {
@@ -71,12 +95,33 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                             .get_free_xrd_from_faucet()
                             .take_all_from_worktop(XRD, "free_xrd")
                             .deposit("parent_account", "free_xrd")
+                            .create_fungible_resource(
+                                OwnerRole::Fixed(rule!(require(
+                                    config.child_account_key.public_key().signature_proof()
+                                ))),
+                                true,
+                                18,
+                                FungibleResourceRoles::default_with_owner_mint_burn(),
+                                metadata!(
+                                    init {
+                                        "name" => "Example Scenario Tokens", locked;
+                                    }
+                                ),
+                                Some(dec!(1000)),
+                            )
+                            .allocate_global_address(
+                                ACCOUNT_PACKAGE,
+                                ACCOUNT_BLUEPRINT,
+                                "child_account",
+                                "child_account",
+                            )
                             .create_account_with_owner(
-                                None,
+                                "child_account",
                                 OwnerRole::Fixed(rule!(require(
                                     config.child_account_key.public_key().signature_proof()
                                 ))),
                             )
+                            .try_deposit_entire_worktop_or_abort("child_account", None)
                     })
                     .sign(&config.parent_account_key)
                     .complete(core)
@@ -99,7 +144,7 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.v2_transaction_with_timestamp_range(
                     "with_timestamp_range",
-                    None,
+                    Some(Instant::new(0)),
                     Some(Instant::new(i64::MAX)),
                 )
                 .manifest_builder(|builder| {
@@ -146,51 +191,109 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                     .sign(&config.parent_account_key)
                     .complete(core)
             })
-            .failed_transaction(|core, config, state| {
-                let trivial_child1 = core
+            .successful_transaction(|core, config, state| {
+                let trading_subintent = core
                     .v2_subintent()
-                    .manifest_builder(|builder| builder.yield_to_parent(()))
+                    .manifest_builder_with_lookup(|builder, lookup| {
+                        builder
+                            .withdraw_from_account(
+                                state.child_account.unwrap(),
+                                state.child_token.unwrap(),
+                                10,
+                            )
+                            .take_all_from_worktop(state.child_token.unwrap(), "sold_to_parent")
+                            .assert_next_call_returns_only(
+                                ManifestResourceConstraints::new()
+                                    .with_at_least_amount(XRD, dec!(23.32)),
+                            )
+                            .yield_to_parent((lookup.bucket("sold_to_parent"),))
+                            .take_all_from_worktop(XRD, "bought_from_parent")
+                            .deposit(state.child_account.unwrap(), "bought_from_parent")
+                            .yield_to_parent(())
+                    })
+                    .sign(&config.child_account_key)
                     .complete(core);
-                let trivial_child2 = core
+
+                core.v2_transaction("trading_with_subintent")
+                    .add_signed_child("trading_subintent", trading_subintent)
+                    .manifest_builder_with_lookup(|builder, lookup| {
+                        builder
+                            .lock_standard_test_fee(state.parent_account.unwrap())
+                            .yield_to_child("trading_subintent", ())
+                            .take_all_from_worktop(state.child_token.unwrap(), "bought")
+                            .deposit(state.parent_account.unwrap(), "bought")
+                            .withdraw_from_account(state.parent_account.unwrap(), XRD, dec!(23.5))
+                            .take_all_from_worktop(XRD, "sold")
+                            .yield_to_child("trading_subintent", (lookup.bucket("sold"),))
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
+            .successful_transaction(|core, config, state| {
+                let child_sending_resources: DetailedSignedPartialTransactionV2 = core
                     .v2_subintent()
-                    .manifest_builder(|builder| builder.yield_to_parent(()))
+                    .manifest_builder_with_lookup(|builder, lookup| {
+                        builder
+                            .verify_parent(rule!(require(
+                                config.parent_account_key.public_key().signature_proof()
+                            )))
+                            .withdraw_from_account(
+                                state.child_account.unwrap(),
+                                state.child_token.unwrap(),
+                                10,
+                            )
+                            .take_all_from_worktop(state.child_token.unwrap(), "given_to_parent")
+                            .assert_next_call_returns_no_resources()
+                            .yield_to_parent((lookup.bucket("given_to_parent"),))
+                    })
+                    .sign(&config.child_account_key)
+                    .complete(core);
+
+                let child_bouncing_resources = core
+                    .v2_subintent()
+                    .manifest_builder(|builder| {
+                        builder
+                            .yield_to_parent(())
+                            .yield_to_parent((ManifestExpression::EntireWorktop,))
+                    })
                     .complete(core);
 
                 let complex_subintent = core
                     .v2_subintent()
-                    .add_signed_child("trivial_child1", trivial_child1)
-                    .add_signed_child("trivial_child2", trivial_child2)
-                    .manifest_builder(|builder| {
+                    .add_signed_child(
+                        "child_sending_resources_to_verified_parent",
+                        child_sending_resources,
+                    )
+                    .add_signed_child("child_bouncing_resources", child_bouncing_resources)
+                    .manifest_builder_with_lookup(|builder, lookup| {
                         builder
-                            .assert_worktop_resources_only(
-                                ManifestResourceConstraints::new().with_at_least_non_fungibles(
-                                    GLOBAL_CALLER_RESOURCE,
-                                    [NonFungibleLocalId::integer(1)],
-                                ),
+                            .assert_worktop_is_empty()
+                            .assert_next_call_returns_include(
+                                ManifestResourceConstraints::new()
+                                    .with_at_least_amount(state.child_token.unwrap(), 5),
                             )
+                            .yield_to_child("child_sending_resources_to_verified_parent", ())
                             .assert_worktop_resources_include(
-                                ManifestResourceConstraints::new().with_exact_amount(XRD, 100),
+                                ManifestResourceConstraints::new()
+                                    .with_exact_amount(state.child_token.unwrap(), 10),
                             )
-                            .take_all_from_worktop(XRD, "xrd_bucket")
+                            .take_all_from_worktop(state.child_token.unwrap(), "bucket")
                             .assert_bucket_contents(
-                                "xrd_bucket",
+                                "bucket",
                                 ManifestResourceConstraint::NonZeroAmount,
                             )
-                            .assert_next_call_returns_include(
-                                ManifestResourceConstraints::new().with_exact_non_fungibles(
-                                    GLOBAL_CALLER_RESOURCE,
-                                    [NonFungibleLocalId::integer(1)],
+                            .assert_next_call_returns_no_resources()
+                            .yield_to_child("child_bouncing_resources", (lookup.bucket("bucket"),))
+                            .assert_next_call_returns_only(
+                                ManifestResourceConstraints::new().with_amount_range(
+                                    state.child_token.unwrap(),
+                                    5,
+                                    100,
                                 ),
                             )
-                            .yield_to_child_with_name_lookup("trivial_child1", |lookup| {
-                                (lookup.bucket("xrd_bucket"),)
-                            })
-                            .assert_next_call_returns_only(
-                                ManifestResourceConstraints::new().with_amount_range(XRD, 0, 100),
-                            )
-                            .yield_to_child("trivial_child2", ())
-                            .verify_parent(rule!(require(XRD)))
-                            .yield_to_parent(())
+                            .yield_to_child("child_bouncing_resources", ())
+                            .take_from_worktop(state.child_token.unwrap(), 10, "final_bucket")
+                            .yield_to_parent((lookup.bucket("final_bucket"),))
                     })
                     .complete(core);
                 core.v2_transaction("transaction_with_complex_subintent")
@@ -199,6 +302,39 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                         builder
                             .lock_standard_test_fee(state.parent_account.unwrap())
                             .yield_to_child("complex_subintent", ())
+                            .assert_worktop_resources_only(
+                                ManifestResourceConstraints::new()
+                                    .with_exact_amount(state.child_token.unwrap(), 10),
+                            )
+                            .deposit_entire_worktop(state.parent_account.unwrap())
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
+            .failed_transaction(|core, config, state| {
+                core.v2_transaction("first_transaction_with_subintent_which_fails")
+                    .add_signed_child("subintent-with-free-gift", state.repeated_partial.unwrap())
+                    .manifest_builder(|builder| {
+                        builder
+                            .lock_standard_test_fee(state.parent_account.unwrap())
+                            .yield_to_child("subintent-with-free-gift", ())
+                            .assert_worktop_contains(XRD, 1) // Fail the transaction
+                            .deposit_entire_worktop(state.parent_account.unwrap())
+                    })
+                    .sign(&config.parent_account_key)
+                    .complete(core)
+            })
+            .successful_transaction(|core, config, state| {
+                core.v2_transaction("second_transaction_with_subintent_can_succeed")
+                    .add_signed_child(
+                        "repeated-subintent-with-free-gift",
+                        state.repeated_partial.unwrap(),
+                    )
+                    .manifest_builder(|builder| {
+                        builder
+                            .lock_standard_test_fee(state.parent_account.unwrap())
+                            .yield_to_child("repeated-subintent-with-free-gift", ())
+                            .deposit_entire_worktop(state.parent_account.unwrap())
                     })
                     .sign(&config.parent_account_key)
                     .complete(core)
@@ -207,7 +343,8 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
                         .add("parent_account", state.parent_account.get()?)
-                        .add("child_account", state.child_account.get()?),
+                        .add("child_account", state.child_account.get()?)
+                        .add("child_token", state.child_token.get()?),
                 })
             })
     }

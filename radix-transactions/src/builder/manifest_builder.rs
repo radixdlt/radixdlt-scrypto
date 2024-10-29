@@ -2300,6 +2300,12 @@ where
         self.add_v2_instruction(AssertWorktopResourcesInclude { constraints })
     }
 
+    pub fn assert_next_call_returns_no_resources(self) -> Self {
+        self.add_v2_instruction(AssertNextCallReturnsOnly {
+            constraints: Default::default(),
+        })
+    }
+
     pub fn assert_next_call_returns_only(self, constraints: ManifestResourceConstraints) -> Self {
         self.add_v2_instruction(AssertNextCallReturnsOnly { constraints })
     }

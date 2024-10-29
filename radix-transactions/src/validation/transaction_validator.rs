@@ -2001,7 +2001,7 @@ mod tests {
             .manifest(ManifestBuilder::new_v2().drop_auth_zone_proofs().build())
             .sign(&notary)
             .notarize(&notary)
-            .build_no_validate();
+            .build_minimal_no_validate();
 
         // Act & Assert - Transaction V1 permits using notary as signatory and also having it sign
         // It was deemed that we didn't want to start failing V1 transactions for this at Cuttlefish
@@ -2096,7 +2096,7 @@ mod tests {
                     unsigned_v2_builder(notary.public_key().into())
                         .sign(signer)
                         .notarize(notary)
-                        .build_no_validate()
+                        .build_minimal_no_validate()
                         .prepare_and_validate(validator)?
                         .transaction_intent_info
                         .signer_keys
@@ -2421,7 +2421,7 @@ mod tests {
                 builder = builder.sign(&signer);
             }
 
-            builder.build()
+            builder.build_minimal()
         }
 
         fn create_transaction(
@@ -2465,7 +2465,7 @@ mod tests {
                 builder = builder.sign(&signer);
             }
 
-            builder.notarize(&notary).build_no_validate()
+            builder.notarize(&notary).build_minimal_no_validate()
         }
 
         let validator = TransactionValidator::new_for_latest_simulator();
@@ -2538,7 +2538,7 @@ mod tests {
                     builder.yield_to_parent(())
                 })
                 .sign(&Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
-                .build()
+                .build_minimal()
         }
 
         fn create_transaction(reference_counts: Vec<usize>) -> NotarizedTransactionV2 {
@@ -2576,7 +2576,7 @@ mod tests {
                 })
                 .sign(&signer)
                 .notarize(&notary)
-                .build_no_validate()
+                .build_minimal_no_validate()
         }
 
         let validator = TransactionValidator::new_for_latest_simulator();

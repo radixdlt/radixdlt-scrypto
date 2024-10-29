@@ -370,7 +370,7 @@ impl ManifestNamerCore {
         match self.named_intents.get(name.as_ref()) {
             Some(ManifestObjectState::Present(id)) => *id,
             Some(ManifestObjectState::Consumed) => unreachable!("Intent binding has already been consumed"),
-            _ => panic!("You cannot reference an intent with name \"{}\" before it has been created with a relevant instruction in the manifest builder, or parent transaction builder", name.as_ref()),
+            _ => panic!("\nAn intent with name \"{}\" has been referenced before it has been registered. To register:\n * If using a transaction builder, first use `add_signed_child(\"{}\", signed_partial_transaction)` to register the child, and then use `manifest_builder(|builder| builder...)` to build the manifest, which automatically adds the `use_child` lines at the start of the manifest.\n * If using the manifest builder by itself, use `manifest_builder.use_child(\"{}\", root_subintent_hash)` at the start to register the child subintent.\n", name.as_ref(), name.as_ref(), name.as_ref()),
         }
     }
 

@@ -1,40 +1,58 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 0.20478320049 XRD
-├─ Network execution: 0.1136744 XRD, 2273488 execution cost units
-├─ Network finalization: 0.0202508 XRD, 405016 finalization cost units
+TRANSACTION COST: 0.43939346471 XRD
+├─ Network execution: 0.22722755 XRD, 4544551 execution cost units
+├─ Network finalization: 0.0312539 XRD, 625078 finalization cost units
 ├─ Tip: 0 XRD
-├─ Network Storage: 0.07085800049 XRD
+├─ Network Storage: 0.18091201471 XRD
 └─ Royalties: 0 XRD
 
 LOGS: 0
 
-EVENTS: 4
+EVENTS: 8
 ├─ Emitter: Method { node: internal_vault_sim1tzla7q8crqdpm2mvj2v2c4gl9ffpce8krmjqjcex6sqepxxdpfsnkd, module_id: Main }
    Event: LockFeeEvent {
      amount: Decimal("5000"),
    }
+├─ Emitter: Method { node: internal_vault_sim1tz7udp8myqsz4j2252zflxahmecw0qnc8cvxv6e0tnp86vu3tw53r0, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("10"),
+   }
+├─ Emitter: Method { node: account_sim1c9dln9q5pr7f0kt6u7payyeka23jrstgcq6zk6fxsvh9r5zpdpa82s, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")),
+     Decimal("10"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("10"),
+   }
+├─ Emitter: Method { node: account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")),
+     Decimal("10"),
+   )
 ├─ Emitter: Method { node: internal_vault_sim1tzla7q8crqdpm2mvj2v2c4gl9ffpce8krmjqjcex6sqepxxdpfsnkd, module_id: Main }
    Event: PayFeeEvent {
-     amount: Decimal("0.20478320049"),
+     amount: Decimal("0.43939346471"),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
    Event: DepositEvent {
-     amount: Decimal("0.102391600245"),
+     amount: Decimal("0.219696732355"),
    }
 └─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: BurnFungibleResourceEvent {
-     amount: Decimal("0.102391600245"),
+     amount: Decimal("0.219696732355"),
    }
 
-STATE UPDATES: 4 entities
+STATE UPDATES: 6 entities
 ├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(2)
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("0.37775855527"),
+             0u8 => Decimal("0.6193878079125"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -52,19 +70,19 @@ STATE UPDATES: 4 entities
          },
        )
   └─ Partition(65): 4 changes
-    ├─ Set: Hash(hex("5d09f17cb8c92712d8981b18e68c8228eef87e3a54e40a7da2d48d7f4b874905"))
+    ├─ Set: Hash(hex("8254dcfbaa61b52e69df6e00d775d285fa145658889b59d8199c5381e026fc9c"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
-    ├─ Set: Hash(hex("3cbde7098cf2b609948674e86252a22c403329e5c2116091138bb38fffbc236b"))
+    ├─ Set: Hash(hex("fde9feeb52945aefe8a2562524bee1bf645793f4fd0d36fa07d98caf4576bb94"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
-    ├─ Set: Hash(hex("4bda1a6f0313113e49d18fd13910bc87f9dcdb596a6c06cad2a32fc024ebf742"))
+    ├─ Set: Hash(hex("9f3b85b3b4d5ced1b65444a2232904b4743ffd9c703e8c80f850a1da6aa93e60"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
-    └─ Set: Hash(hex("c145bea3ff117a461d1db1b95939bcb2776a68bfd837c97082f2f2d115bbed06"))
+    └─ Set: Hash(hex("b69cffe6976a5027cfa32ee28b25767296a22230b9df3ec880255018d4c6030d"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
@@ -72,25 +90,45 @@ STATE UPDATES: 4 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("9999.50680267409")),
+         LiquidFungibleResource(Decimal("9975.04028566352")),
+       )
+├─ internal_vault_sim1tz7udp8myqsz4j2252zflxahmecw0qnc8cvxv6e0tnp86vu3tw53r0 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("980")),
+       )
+├─ internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("20")),
        )
 └─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("0.75551711054")),
+         LiquidFungibleResource(Decimal("1.238775615825")),
        )
 
-OUTPUTS: 2
+OUTPUTS: 4
 ├─ Unit
-└─ None
+├─ None
+├─ None
+└─ Unit
 
-BALANCE CHANGES: 2
+BALANCE CHANGES: 4
 ├─ Vault: internal_vault_sim1tzla7q8crqdpm2mvj2v2c4gl9ffpce8krmjqjcex6sqepxxdpfsnkd
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: -0.20478320049
+   Change: -0.43939346471
+├─ Vault: internal_vault_sim1tz7udp8myqsz4j2252zflxahmecw0qnc8cvxv6e0tnp86vu3tw53r0
+   ResAddr: resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8
+   Change: -10
+├─ Vault: internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w
+   ResAddr: resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8
+   Change: 10
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: 0.102391600245
+   Change: 0.219696732355
 
 NEW ENTITIES: 0

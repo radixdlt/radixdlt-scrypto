@@ -66,7 +66,7 @@ fn can_transfer_locked_bucket_between_threads() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&transaction.to_raw().unwrap());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
@@ -100,7 +100,7 @@ fn can_pass_global_and_direct_access_references() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&transaction.to_raw().unwrap());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
@@ -136,7 +136,7 @@ fn can_not_pass_address_reservation() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&transaction.to_raw().unwrap());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_specific_failure(|e| {
         matches!(e, RuntimeError::SystemError(SystemError::NotAnObject))
     });
@@ -177,7 +177,7 @@ fn can_pass_named_address() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&transaction.to_raw().unwrap());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
@@ -196,7 +196,7 @@ fn can_not_pass_proof_between_threads() {
                 .manifest_builder(|builder| builder.yield_to_parent(()))
                 .build(),
         )
-        .manifest_builder_no_validate(|builder| {
+        .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
                 .create_proof_from_account_of_amount(account1, XRD, 10)
@@ -209,7 +209,9 @@ fn can_not_pass_proof_between_threads() {
 
     // Which fails with a validation error
     assert_matches!(
-        transaction.prepare_and_validate(ledger.transaction_validator()),
+        transaction
+            .transaction
+            .prepare_and_validate(ledger.transaction_validator()),
         Err(TransactionValidationError::IntentValidationError(
             _,
             IntentValidationError::ManifestValidationError(

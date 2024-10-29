@@ -69,7 +69,7 @@ fn create_v2_transaction(
         })
         .sign(&signer)
         .notarize(&notary)
-        .build()
+        .build_minimal()
 }
 
 #[test]
