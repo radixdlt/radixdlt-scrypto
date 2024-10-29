@@ -87,6 +87,12 @@ impl NewPackage {
             )
             .map_err(Error::IOError)?;
 
+            fs::write(
+                child_of(&path, "rust-toolchain.toml"),
+                include_str!("../../assets/template/rust-toolchain.toml_template"),
+            )
+            .map_err(Error::IOError)?;
+
             Ok(())
         }
     }

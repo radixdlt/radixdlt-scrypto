@@ -238,15 +238,13 @@ fn bench_spin_loop_v2(c: &mut Criterion) {
     });
 }
 
-// Usage: cargo bench --bench costing -- sha256
-fn bench_sha256(c: &mut Criterion) {
+// Usage: cargo bench --bench costing -- scrypto_sha256
+fn bench_scrypto_sha256(c: &mut Criterion) {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.publish_package_simple(PackageLoader::get("sha256_in_scrypto"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("costing_sha256"));
 
     let manifest = ManifestBuilder::new()
-        // First, lock the fee so that the loan will be repaid
         .lock_fee_from_faucet()
-        // Now spin-loop to wait for the fee loan to burn through
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 
@@ -259,7 +257,65 @@ fn bench_sha256(c: &mut Criterion) {
             >= 99_000_000
     );
 
-    c.bench_function("costing::sha256", |b| {
+    c.bench_function("costing::scrypto_sha256", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
+// Usage: cargo bench --bench costing -- scrypto_sbor_decode
+fn bench_scrypto_sbor_decode(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("costing_sbor_decode"));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+
+    // The transaction failed, consuming almost all execution cost units.
+    assert!(
+        ledger
+            .execute_manifest(manifest.clone(), [])
+            .fee_summary
+            .total_execution_cost_units_consumed
+            >= 99_000_000
+    );
+
+    c.bench_function("costing::scrypto_sbor_decode", |b| {
+        b.iter(|| ledger.execute_manifest(manifest.clone(), []))
+    });
+}
+
+// Usage: cargo bench --bench costing -- scrypto_malloc
+fn bench_scrypto_malloc(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("costing_malloc"));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .then(|mut builder| {
+            for _ in 0..100 {
+                builder = builder.call_function(
+                    package_address,
+                    "Test",
+                    "f",
+                    manifest_args!(100_000usize, 5usize),
+                );
+            }
+            builder
+        })
+        .build();
+
+    // The transaction failed, consuming almost all execution cost units.
+    assert!(
+        ledger
+            .execute_manifest(manifest.clone(), [])
+            .fee_summary
+            .total_execution_cost_units_consumed
+            >= 99_000_000
+    );
+
+    c.bench_function("costing::scrypto_malloc", |b| {
         b.iter(|| ledger.execute_manifest(manifest.clone(), []))
     });
 }
@@ -449,6 +505,6 @@ criterion_group!(
                 .sample_size(20)
                 .measurement_time(core::time::Duration::from_secs(20))
                 .warm_up_time(core::time::Duration::from_millis(3000));
-    targets = bench_spin_loop_v1,bench_spin_loop_v2,bench_sha256
+    targets = bench_spin_loop_v1,bench_spin_loop_v2,bench_scrypto_sha256,bench_scrypto_sbor_decode,bench_scrypto_malloc
 );
 criterion_main!(costing, costing_long);

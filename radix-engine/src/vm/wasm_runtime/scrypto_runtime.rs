@@ -1,3 +1,5 @@
+use core::u32;
+
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -21,6 +23,7 @@ pub struct ScryptoRuntime<'y, Y: SystemApi<RuntimeError>> {
     export_name: String,
     wasm_execution_units_buffer: u32,
     scrypto_vm_version: ScryptoVmVersion,
+    wasm_execution_units_base: u32,
 }
 
 impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
@@ -30,6 +33,16 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
         export_name: String,
         scrypto_vm_version: ScryptoVmVersion,
     ) -> Self {
+        let wasm_execution_units_base = if scrypto_vm_version < ScryptoVmVersion::cuttlefish() {
+            0
+        } else {
+            // Add 7,000 base units to make sure the we do not undercharge for WASM execution,
+            // which might lead to system exploitation.
+            // This is especially important in corner-cases such as `costing::spin_loop_v2` benchmark.
+            // less frequently.
+            7000
+        };
+
         ScryptoRuntime {
             api,
             buffers: index_map_new(),
@@ -38,9 +51,9 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
             export_name,
             wasm_execution_units_buffer: 0,
             scrypto_vm_version,
+            wasm_execution_units_base,
         }
     }
-
     pub fn parse_blueprint_id(
         package_address: Vec<u8>,
         blueprint_name: Vec<u8>,
@@ -59,9 +72,9 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         assert!(n > self.wasm_execution_units_buffer);
         let n_remaining_after_buffer_used = n - self.wasm_execution_units_buffer;
-        let amount_to_request = n_remaining_after_buffer_used
-            .checked_add(WASM_EXECUTION_COST_UNITS_BUFFER)
-            .unwrap_or(u32::MAX);
+        let amount_to_request =
+            n_remaining_after_buffer_used.saturating_add(WASM_EXECUTION_COST_UNITS_BUFFER);
+
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
@@ -401,6 +414,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         &mut self,
         n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let n = n.saturating_add(self.wasm_execution_units_base);
+
         if n <= self.wasm_execution_units_buffer {
             self.wasm_execution_units_buffer -= n;
             Ok(())

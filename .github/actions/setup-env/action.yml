@@ -16,6 +16,8 @@ runs:
         #    in the "radix-clis-scrypto-coverage" step, or update the comment explaining why a
         #    different version is used.
         # => [Dockerfile] Update "FROM rust:X.XX.X-slim-bookworm AS base-image" in the deterministic builder
+        # => [radix-clis/assets/template/rust-toolchain.toml_template] Update the rust version
+        # => [https://docs.radixdlt.com/docs/getting-rust-scrypto] Update the recommended rust version on docs
         toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown

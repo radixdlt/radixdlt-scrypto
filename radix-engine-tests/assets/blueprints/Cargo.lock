@@ -202,6 +202,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "costing_malloc"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "sha256",
+]
+
+[[package]]
+name = "costing_sbor_decode"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "sha256",
+]
+
+[[package]]
+name = "costing_sha256"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "sha256",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1141,14 +1165,6 @@ dependencies = [
  "bytes",
  "hex",
  "sha2",
-]
-
-[[package]]
-name = "sha256_in_scrypto"
-version = "1.0.0"
-dependencies = [
- "scrypto",
- "sha256",
 ]
 
 [[package]]
