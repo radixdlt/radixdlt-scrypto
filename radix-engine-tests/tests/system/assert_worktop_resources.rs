@@ -25,9 +25,11 @@ fn when_more_is_returned_assert_worktop_resources_only_should_fail() {
         },
         true,
         |_, resource2| {
-            Some(ManifestResourceConstraintsError::UnwantedResourcesExist(
-                resource2,
-            ))
+            Some(
+                ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                    resource_address: resource2,
+                },
+            )
         },
     );
 }
@@ -83,12 +85,13 @@ fn when_less_is_returned_assert_next_call_returns_include_should_fail() {
         },
         false,
         |_, _| {
-            Some(ManifestResourceConstraintsError::ResourceConstraint(
-                ResourceConstraintError::ExpectedAtLeastAmount {
+            Some(ResourceConstraintsError::ResourceConstraintFailed {
+                resource_address: XRD,
+                error: ResourceConstraintError::ExpectedAtLeastAmount {
                     expected_at_least_amount: dec!(1),
                     actual_amount: dec!(0),
                 },
-            ))
+            })
         },
     );
 }
@@ -105,13 +108,12 @@ fn when_less_is_returned_assert_next_call_returns_only_should_fail() {
                 .with(XRD, ManifestResourceConstraint::AtLeastAmount(dec!(1)))
         },
         true,
-        |_, _| {
-            Some(ManifestResourceConstraintsError::ResourceConstraint(
-                ResourceConstraintError::ExpectedAtLeastAmount {
-                    expected_at_least_amount: dec!(1),
-                    actual_amount: dec!(0),
+        |_, resource2| {
+            Some(
+                ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                    resource_address: resource2,
                 },
-            ))
+            )
         },
     );
 }
@@ -131,9 +133,11 @@ fn when_empty_constraints_on_assert_next_call_returns_only_should_fail() {
         |_resource1, _resource2| ManifestResourceConstraints::new(),
         true,
         |resource1, _resource2| {
-            Some(ManifestResourceConstraintsError::UnwantedResourcesExist(
-                resource1,
-            ))
+            Some(
+                ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                    resource_address: resource1,
+                },
+            )
         },
     );
 }
@@ -230,10 +234,7 @@ fn when_withdrawing_zero_non_fungibles_with_zero_constraints_on_assert_worktop_r
 fn run_worktop_two_resources_test(
     constraints: fn(ResourceAddress, ResourceAddress) -> ManifestResourceConstraints,
     exact: bool,
-    expected_result: fn(
-        ResourceAddress,
-        ResourceAddress,
-    ) -> Option<ManifestResourceConstraintsError>,
+    expected_result: fn(ResourceAddress, ResourceAddress) -> Option<ResourceConstraintsError>,
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -268,9 +269,7 @@ fn run_worktop_two_resources_test(
     if let Some(error) = expected_result(resource1, resource2) {
         receipt.expect_specific_failure(|e| {
             e.eq(&RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::ResourceConstraintsError(
-                    error.clone(),
-                )),
+                ApplicationError::WorktopError(WorktopError::AssertionFailed(error.clone())),
             ))
         });
     } else {

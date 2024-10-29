@@ -37,9 +37,11 @@ fn when_more_is_returned_assert_next_call_returns_only_should_fail() {
             true,
             next_call_type,
             |_, resource2| {
-                Some(ManifestResourceConstraintsError::UnwantedResourcesExist(
-                    resource2,
-                ))
+                Some(
+                    ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                        resource_address: resource2,
+                    },
+                )
             },
         );
     }
@@ -104,12 +106,13 @@ fn when_less_is_returned_assert_next_call_returns_include_should_fail() {
             false,
             next_call_type,
             |_, _| {
-                Some(ManifestResourceConstraintsError::ResourceConstraint(
-                    ResourceConstraintError::ExpectedAtLeastAmount {
+                Some(ResourceConstraintsError::ResourceConstraintFailed {
+                    resource_address: XRD,
+                    error: ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount: dec!(1),
                         actual_amount: dec!(0),
                     },
-                ))
+                })
             },
         );
     }
@@ -129,13 +132,12 @@ fn when_less_is_returned_assert_next_call_returns_only_should_fail() {
             },
             true,
             next_call_type,
-            |_, _| {
-                Some(ManifestResourceConstraintsError::ResourceConstraint(
-                    ResourceConstraintError::ExpectedAtLeastAmount {
-                        expected_at_least_amount: dec!(1),
-                        actual_amount: dec!(0),
+            |_, resource2| {
+                Some(
+                    ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                        resource_address: resource2,
                     },
-                ))
+                )
             },
         );
     }
@@ -161,9 +163,11 @@ fn when_empty_constraints_on_assert_next_call_returns_only_should_fail() {
             true,
             next_call_type,
             |resource1, _resource2| {
-                Some(ManifestResourceConstraintsError::UnwantedResourcesExist(
-                    resource1,
-                ))
+                Some(
+                    ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
+                        resource_address: resource1,
+                    },
+                )
             },
         );
     }
@@ -275,10 +279,7 @@ fn run_return_two_resources_test(
     constraints: fn(ResourceAddress, ResourceAddress) -> ManifestResourceConstraints,
     exact: bool,
     next_call_type: NextCallType,
-    expected_result: fn(
-        ResourceAddress,
-        ResourceAddress,
-    ) -> Option<ManifestResourceConstraintsError>,
+    expected_result: fn(ResourceAddress, ResourceAddress) -> Option<ResourceConstraintsError>,
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();

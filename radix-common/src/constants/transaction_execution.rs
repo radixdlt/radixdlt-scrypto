@@ -124,6 +124,3 @@ pub const USD_PRICE_IN_XRD: &str = "16.666666666666666666";
 
 /// The maximum that a package or component owner is allowed to set their method royalty to. 10 USD
 pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "166.666666666666666666";
-
-/// The maximum number of "live" buffers maintained by Scrypto runtime.
-pub const MAX_NUMBER_OF_BUFFERS: usize = 32;

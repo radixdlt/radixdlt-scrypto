@@ -14,6 +14,7 @@ mod scrypto_validation;
 mod scrypto_validator;
 mod stack_size;
 mod system_wasm_buffers;
+mod wasm_limits;
 mod wasm_memory;
 mod wasm_metering;
 mod wasm_non_mvp;
