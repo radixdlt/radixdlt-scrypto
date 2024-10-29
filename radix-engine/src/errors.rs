@@ -66,14 +66,17 @@ pub enum RejectionReason {
         valid_to_exclusive: Instant,
         current_time: Instant,
     },
-    IntentHashPreviouslyCommitted(IntentHash),
-    IntentHashPreviouslyCancelled(IntentHash),
+    DeprecatedIntentHashPreviouslyCommitted,
+    DeprecatedIntentHashPreviouslyCancelled,
 
     BootloadingError(BootloadingError),
 
     ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     SuccessButFeeLoanNotRepaid,
     SubintentsNotYetSupported,
+
+    IntentHashPreviouslyCommitted(IntentHash),
+    IntentHashPreviouslyCancelled(IntentHash),
 }
 
 impl From<BootloadingError> for RejectionReason {
