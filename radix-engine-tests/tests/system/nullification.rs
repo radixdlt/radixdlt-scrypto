@@ -29,7 +29,7 @@ fn v2_transaction_intent_gets_nullified_and_cannot_be_replayed() {
     // Assert
     assert_matches!(
         duplicate_receipt.expect_rejection(),
-        &RejectionReason::IntentHashPreviouslyCommitted
+        &RejectionReason::IntentHashPreviouslyCommitted(IntentHash::Transaction(_))
     );
 }
 
@@ -106,6 +106,6 @@ fn v2_subintent_only_gets_nullified_on_success() {
 
     assert_matches!(
         receipt.expect_rejection(),
-        &RejectionReason::IntentHashPreviouslyCommitted
+        &RejectionReason::IntentHashPreviouslyCommitted(IntentHash::Subintent(_))
     );
 }

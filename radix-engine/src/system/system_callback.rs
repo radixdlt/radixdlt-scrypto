@@ -540,7 +540,7 @@ impl<V: SystemCallbackObject> System<V> {
 
     fn validate_intent_hash_uncosted<S: CommitableSubstateStore>(
         store: &mut S,
-        intent_hash: &Hash,
+        intent_hash: IntentHash,
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionReason> {
         let substate: FieldSubstate<TransactionTrackerSubstate> = store
@@ -562,7 +562,7 @@ impl<V: SystemCallbackObject> System<V> {
         let substate = store.read_substate(
             TRANSACTION_TRACKER.as_node_id(),
             PartitionNumber(partition_number),
-            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+            &SubstateKey::Map(scrypto_encode(intent_hash.as_hash()).unwrap()),
         );
 
         match substate {
@@ -572,10 +572,14 @@ impl<V: SystemCallbackObject> System<V> {
                     Some(status) => match status.into_v1() {
                         TransactionStatusV1::CommittedSuccess
                         | TransactionStatusV1::CommittedFailure => {
-                            return Err(RejectionReason::IntentHashPreviouslyCommitted);
+                            return Err(RejectionReason::IntentHashPreviouslyCommitted(
+                                intent_hash,
+                            ));
                         }
                         TransactionStatusV1::Cancelled => {
-                            return Err(RejectionReason::IntentHashPreviouslyCancelled);
+                            return Err(RejectionReason::IntentHashPreviouslyCancelled(
+                                intent_hash,
+                            ));
                         }
                     },
                     None => {}
@@ -1555,9 +1559,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch,
-                } => {
-                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
-                }
+                } => Self::validate_intent_hash_uncosted(
+                    store,
+                    IntentHash::Transaction(*intent_hash),
+                    *expiry_epoch,
+                ),
                 IntentHashNullification::SimulatedTransactionIntent { .. } => {
                     // No validation is done on a simulated transaction intent used during preview
                     Ok(())
@@ -1565,9 +1571,11 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 IntentHashNullification::Subintent {
                     intent_hash,
                     expiry_epoch,
-                } => {
-                    Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch)
-                }
+                } => Self::validate_intent_hash_uncosted(
+                    store,
+                    IntentHash::Subintent(*intent_hash),
+                    *expiry_epoch,
+                ),
                 IntentHashNullification::SimulatedSubintent { .. } => {
                     // No validation is done on a simulated subintent used during preview
                     Ok(())
