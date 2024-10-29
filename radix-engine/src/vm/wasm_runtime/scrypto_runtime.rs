@@ -648,10 +648,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
         }
 
-        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
-            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
-        }
-
         self.api
             .consume_cost_units(ClientCostingEntry::Bls12381V1FastAggregateVerify {
                 size: message.len(),
@@ -678,10 +674,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         if signatures.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
-        }
-
-        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
-            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
         }
 
         self.api
