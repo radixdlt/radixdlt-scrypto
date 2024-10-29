@@ -899,7 +899,7 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
         true,
     );
 
-    let receipt = ledger.execute_notarized_transaction(&main_transaction.to_raw().unwrap());
+    let receipt = ledger.execute_notarized_transaction(main_transaction);
 
     // Assert and print
     receipt.expect_commit_success();

@@ -1,4 +1,8 @@
 use radix_engine_tests::common::PackageLoader;
+use radix_transactions::{
+    errors::*,
+    manifest::{BuildableManifest, ManifestValidationError},
+};
 use scrypto_test::prelude::*;
 
 // Some of the tests in this file are to demonstrate the current behavior.
@@ -6,7 +10,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn can_transfer_locked_bucket_between_threads() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (pk1, sk1, account1) = ledger.new_allocated_account();
+    let (_, sk1, account1) = ledger.new_allocated_account();
 
     // Prepares a component that can return a locked bucket (and a proof).
     //
@@ -35,36 +39,19 @@ fn can_transfer_locked_bucket_between_threads() {
     // 3. child returns the bucket
     // 4. root frees the bucket
     // 5. root deposit the bucket into an account
-    let start_epoch_inclusive = ledger.get_current_epoch();
-    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
-    let transaction = TransactionV2Builder::new()
+    let transaction = ledger
+        .v2_transaction_builder()
         .add_signed_child(
             "child",
-            PartialTransactionV2Builder::new()
-                .intent_header(IntentHeaderV2 {
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                    min_proposer_timestamp_inclusive: None,
-                    max_proposer_timestamp_exclusive: None,
-                    intent_discriminator: 1,
-                })
+            ledger
+                .v2_partial_transaction_builder()
                 .manifest_builder(|builder| {
                     builder
                         // EntireWorktop will ensure the buckets are passed as-is.
                         .yield_to_parent((ManifestExpression::EntireWorktop,))
                 })
-                .sign(&sk1)
                 .build(),
         )
-        .intent_header(IntentHeaderV2 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
-            min_proposer_timestamp_inclusive: None,
-            max_proposer_timestamp_exclusive: None,
-            intent_discriminator: 2,
-        })
         .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
@@ -75,16 +62,11 @@ fn can_transfer_locked_bucket_between_threads() {
                 .drop_all_proofs()
                 .try_deposit_entire_worktop_or_abort(account1, None)
         })
-        .transaction_header(TransactionHeaderV2 {
-            notary_public_key: pk1.into(),
-            notary_is_signatory: false,
-            tip_basis_points: 0,
-        })
         .sign(&sk1)
-        .notarize(&sk1)
+        .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
@@ -92,94 +74,51 @@ fn can_transfer_locked_bucket_between_threads() {
 #[test]
 fn can_pass_global_and_direct_access_references() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (pk1, sk1, account1) = ledger.new_allocated_account();
+    let (_, sk1, account1) = ledger.new_allocated_account();
     let (_, _, account) = ledger.new_allocated_account();
     let vault = ledger.get_component_vaults(account, XRD).pop().unwrap();
 
-    let start_epoch_inclusive = ledger.get_current_epoch();
-    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
-    let transaction = TransactionV2Builder::new()
+    let transaction = ledger
+        .v2_transaction_builder()
         .add_signed_child(
             "child",
-            PartialTransactionV2Builder::new()
-                .intent_header(IntentHeaderV2 {
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                    min_proposer_timestamp_inclusive: None,
-                    max_proposer_timestamp_exclusive: None,
-                    intent_discriminator: 1,
-                })
+            ledger
+                .v2_partial_transaction_builder()
                 .manifest_builder(|builder| {
                     builder
                         // Unfortunately, there is no way to grab the received references
                         .yield_to_parent(())
                 })
-                .sign(&sk1)
                 .build(),
         )
-        .intent_header(IntentHeaderV2 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
-            min_proposer_timestamp_inclusive: None,
-            max_proposer_timestamp_exclusive: None,
-            intent_discriminator: 2,
-        })
         .manifest_builder(|builder| {
-            builder.lock_fee(account1, 3).yield_to_child(
-                "child",
-                (
-                    ManifestAddress::Static(account.into_node_id()),
-                    ManifestAddress::Static(vault),
-                ),
-            )
-        })
-        .transaction_header(TransactionHeaderV2 {
-            notary_public_key: pk1.into(),
-            notary_is_signatory: false,
-            tip_basis_points: 0,
+            builder
+                .lock_fee(account1, 3)
+                .yield_to_child("child", (account, ManifestAddress::Static(vault)))
         })
         .sign(&sk1)
-        .notarize(&sk1)
+        .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
 #[test]
 fn can_not_pass_address_reservation() {
-    let mut ledger = LedgerSimulatorBuilder::new().with_kernel_trace().build();
-    let (pk1, sk1, account1) = ledger.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, sk1, account1) = ledger.new_allocated_account();
     let package_address = ledger.publish_package_simple(PackageLoader::get("threading"));
 
-    let start_epoch_inclusive = ledger.get_current_epoch();
-    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
-    let transaction = TransactionV2Builder::new()
+    let transaction = ledger
+        .v2_transaction_builder()
         .add_signed_child(
             "child",
-            PartialTransactionV2Builder::new()
-                .intent_header(IntentHeaderV2 {
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                    min_proposer_timestamp_inclusive: None,
-                    max_proposer_timestamp_exclusive: None,
-                    intent_discriminator: 1,
-                })
+            ledger
+                .v2_partial_transaction_builder()
                 .manifest_builder(|builder| builder.yield_to_parent(()))
-                .sign(&sk1)
                 .build(),
         )
-        .intent_header(IntentHeaderV2 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
-            min_proposer_timestamp_inclusive: None,
-            max_proposer_timestamp_exclusive: None,
-            intent_discriminator: 2,
-        })
         .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
@@ -193,16 +132,11 @@ fn can_not_pass_address_reservation() {
                     (lookup.address_reservation("address_reservation"),)
                 })
         })
-        .transaction_header(TransactionHeaderV2 {
-            notary_public_key: pk1.into(),
-            notary_is_signatory: false,
-            tip_basis_points: 0,
-        })
         .sign(&sk1)
-        .notarize(&sk1)
+        .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_specific_failure(|e| {
         matches!(e, RuntimeError::SystemError(SystemError::NotAnObject))
     });
@@ -210,36 +144,19 @@ fn can_not_pass_address_reservation() {
 
 #[test]
 fn can_pass_named_address() {
-    let mut ledger = LedgerSimulatorBuilder::new().with_kernel_trace().build();
-    let (pk1, sk1, account1) = ledger.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, sk1, account1) = ledger.new_allocated_account();
     let package_address = ledger.publish_package_simple(PackageLoader::get("threading"));
 
-    let start_epoch_inclusive = ledger.get_current_epoch();
-    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
-    let transaction = TransactionV2Builder::new()
+    let transaction = ledger
+        .v2_transaction_builder()
         .add_signed_child(
             "child",
-            PartialTransactionV2Builder::new()
-                .intent_header(IntentHeaderV2 {
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                    min_proposer_timestamp_inclusive: None,
-                    max_proposer_timestamp_exclusive: None,
-                    intent_discriminator: 1,
-                })
+            ledger
+                .v2_partial_transaction_builder()
                 .manifest_builder(|builder| builder.yield_to_parent(()))
-                .sign(&sk1)
                 .build(),
         )
-        .intent_header(IntentHeaderV2 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
-            min_proposer_timestamp_inclusive: None,
-            max_proposer_timestamp_exclusive: None,
-            intent_discriminator: 2,
-        })
         .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
@@ -256,69 +173,71 @@ fn can_pass_named_address() {
                     (lookup.address_reservation("address_reservation"),)
                 })
         })
-        .transaction_header(TransactionHeaderV2 {
-            notary_public_key: pk1.into(),
-            notary_is_signatory: false,
-            tip_basis_points: 0,
-        })
         .sign(&sk1)
-        .notarize(&sk1)
+        .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
+    let receipt = ledger.execute_notarized_transaction(transaction);
     receipt.expect_commit_success();
 }
 
-#[should_panic(
-    expected = "Transaction should be convertible to executable: ManifestValidationError(ProofCannotBePassedToAnotherIntent)"
-)]
 #[test]
 fn can_not_pass_proof_between_threads() {
-    let mut ledger = LedgerSimulatorBuilder::new().with_kernel_trace().build();
-    let (pk1, sk1, account1) = ledger.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, sk1, account1) = ledger.new_allocated_account();
 
-    let start_epoch_inclusive = ledger.get_current_epoch();
-    let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
-    let transaction = TransactionV2Builder::new()
+    // First, try constructing an actual transaction...
+    let transaction = ledger
+        .v2_transaction_builder()
         .add_signed_child(
             "child",
-            PartialTransactionV2Builder::new()
-                .intent_header(IntentHeaderV2 {
-                    network_id: NetworkDefinition::simulator().id,
-                    start_epoch_inclusive,
-                    end_epoch_exclusive,
-                    min_proposer_timestamp_inclusive: None,
-                    max_proposer_timestamp_exclusive: None,
-                    intent_discriminator: 1,
-                })
+            ledger
+                .v2_partial_transaction_builder()
                 .manifest_builder(|builder| builder.yield_to_parent(()))
-                .sign(&sk1)
                 .build(),
         )
-        .intent_header(IntentHeaderV2 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive,
-            end_epoch_exclusive,
-            min_proposer_timestamp_inclusive: None,
-            max_proposer_timestamp_exclusive: None,
-            intent_discriminator: 2,
-        })
         .manifest_builder(|builder| {
-            // Note that we have to disable validation
             builder
                 .lock_fee(account1, 3)
                 .create_proof_from_account_of_amount(account1, XRD, 10)
                 .create_proof_from_auth_zone_of_amount(XRD, 10, "proof")
                 .yield_to_child_with_name_lookup("child", |lookup| (lookup.proof("proof"),))
         })
-        .transaction_header(TransactionHeaderV2 {
-            notary_public_key: pk1.into(),
-            notary_is_signatory: false,
-            tip_basis_points: 0,
-        })
         .sign(&sk1)
-        .notarize(&sk1)
+        .notarize(&ledger.default_notary())
         .build_no_validate();
 
-    ledger.execute_transaction(&transaction, ExecutionConfig::for_test_transaction());
+    // Which fails with a validation error
+    assert_matches!(
+        transaction
+            .transaction
+            .prepare_and_validate(ledger.transaction_validator()),
+        Err(TransactionValidationError::IntentValidationError(
+            _,
+            IntentValidationError::ManifestValidationError(
+                ManifestValidationError::ProofCannotBePassedToAnotherIntent
+            )
+        ))
+    );
+
+    // Now we create a test transaction - which avoids validation, and lets us directly probe the engine...
+    // And we observe that this is also prevented at the engine layer (defense in depth!)
+    let mut test_builder = TestTransactionV2Builder::new(ledger.next_transaction_nonce());
+    let subintent_manifest = SubintentManifestV2::builder().yield_to_parent(()).build();
+    let subintent_hash = test_builder.add_subintent(subintent_manifest, []);
+    let transaction_manifest = TransactionManifestV2::builder()
+        .use_child("child", subintent_hash)
+        .lock_fee(account1, 3)
+        .create_proof_from_account_of_amount(account1, XRD, 10)
+        .create_proof_from_auth_zone_of_amount(XRD, 10, "proof")
+        .yield_to_child_with_name_lookup("child", |lookup| (lookup.proof("proof"),))
+        .build_no_validate();
+    let test_transaction = test_builder
+        .finish_with_root_intent(transaction_manifest, [sk1.public_key().signature_proof()]);
+    let receipt = ledger.execute_test_transaction(test_transaction);
+
+    assert_matches!(
+        receipt.expect_failure(),
+        RuntimeError::SystemError(SystemError::IntentError(IntentError::CannotYieldProof))
+    );
 }

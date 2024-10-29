@@ -14,7 +14,7 @@ fn v2_transaction_intent_gets_nullified_and_cannot_be_replayed() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&transaction.raw);
+    let receipt = ledger.execute_notarized_transaction(&transaction);
 
     let commit_result = receipt.expect_commit_success();
     assert_matches!(
@@ -24,7 +24,7 @@ fn v2_transaction_intent_gets_nullified_and_cannot_be_replayed() {
         }
     );
 
-    let duplicate_receipt = ledger.execute_notarized_transaction(&transaction.raw);
+    let duplicate_receipt = ledger.execute_notarized_transaction(&transaction);
 
     // Assert
     assert_matches!(
@@ -62,7 +62,7 @@ fn v2_subintent_only_gets_nullified_on_success() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&failing_transaction.raw);
+    let receipt = ledger.execute_notarized_transaction(&failing_transaction);
     let commit_result = receipt.expect_commit_failure();
     assert_matches!(
         &commit_result.performed_nullifications[..],
@@ -78,7 +78,7 @@ fn v2_subintent_only_gets_nullified_on_success() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&successful_transaction.raw);
+    let receipt = ledger.execute_notarized_transaction(&successful_transaction);
     let commit_result = receipt.expect_commit_success();
     assert_matches!(
         &commit_result.performed_nullifications[..],
@@ -102,7 +102,7 @@ fn v2_subintent_only_gets_nullified_on_success() {
         .notarize(&ledger.default_notary())
         .build();
 
-    let receipt = ledger.execute_notarized_transaction(&another_valid_transaction.raw);
+    let receipt = ledger.execute_notarized_transaction(another_valid_transaction);
 
     assert_matches!(
         receipt.expect_rejection(),

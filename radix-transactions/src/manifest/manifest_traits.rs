@@ -9,6 +9,10 @@ pub trait BuildableManifest:
     + Eq
     + Debug
 {
+    fn builder() -> ManifestBuilder<Self> {
+        ManifestBuilder::<Self>::new_typed()
+    }
+
     fn add_instruction(&mut self, instruction: Self::Instruction);
     fn add_blob(&mut self, hash: Hash, content: Vec<u8>);
     fn set_names(&mut self, names: KnownManifestObjectNames);

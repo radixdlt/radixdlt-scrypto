@@ -47,7 +47,7 @@ fn subintents_support_depth_of_four() {
         .build();
 
     ledger
-        .execute_notarized_transaction(&transaction.raw)
+        .execute_notarized_transaction(transaction)
         .expect_commit_success();
 }
 

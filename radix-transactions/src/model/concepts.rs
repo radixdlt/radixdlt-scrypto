@@ -62,6 +62,26 @@ impl RawNotarizedTransaction {
     }
 }
 
+pub trait ResolveAsRawNotarizedTransaction {
+    type Intermediate: AsRef<RawNotarizedTransaction>;
+
+    fn resolve_raw_notarized_transaction(self) -> Self::Intermediate;
+}
+
+impl AsRef<RawNotarizedTransaction> for RawNotarizedTransaction {
+    fn as_ref(&self) -> &RawNotarizedTransaction {
+        self
+    }
+}
+
+impl<T: AsRef<RawNotarizedTransaction>> ResolveAsRawNotarizedTransaction for T {
+    type Intermediate = Self;
+
+    fn resolve_raw_notarized_transaction(self) -> Self::Intermediate {
+        self
+    }
+}
+
 impl IntoExecutable for RawNotarizedTransaction {
     type Error = TransactionValidationError;
 

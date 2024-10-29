@@ -37,6 +37,22 @@ impl NotarizedTransactionV1 {
     }
 }
 
+impl ResolveAsRawNotarizedTransaction for NotarizedTransactionV1 {
+    type Intermediate = RawNotarizedTransaction;
+
+    fn resolve_raw_notarized_transaction(self) -> Self::Intermediate {
+        self.to_raw().expect("Transaction should be encodable")
+    }
+}
+
+impl<'a> ResolveAsRawNotarizedTransaction for &'a NotarizedTransactionV1 {
+    type Intermediate = RawNotarizedTransaction;
+
+    fn resolve_raw_notarized_transaction(self) -> Self::Intermediate {
+        self.to_raw().expect("Transaction should be encodable")
+    }
+}
+
 impl IntoExecutable for NotarizedTransactionV1 {
     type Error = TransactionValidationError;
 

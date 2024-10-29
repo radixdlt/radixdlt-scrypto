@@ -1027,12 +1027,6 @@ pub struct DetailedNotarizedTransactionV2 {
     pub non_root_subintent_hashes: IndexSet<SubintentHash>,
 }
 
-impl DetailedNotarizedTransactionV2 {
-    pub fn to_raw(&self) -> Result<RawNotarizedTransaction, EncodeError> {
-        self.transaction.to_raw()
-    }
-}
-
 impl IntoExecutable for DetailedNotarizedTransactionV2 {
     type Error = TransactionValidationError;
 
@@ -1041,6 +1035,12 @@ impl IntoExecutable for DetailedNotarizedTransactionV2 {
         validator: &TransactionValidator,
     ) -> Result<ExecutableTransaction, Self::Error> {
         self.raw.into_executable(validator)
+    }
+}
+
+impl AsRef<RawNotarizedTransaction> for DetailedNotarizedTransactionV2 {
+    fn as_ref(&self) -> &RawNotarizedTransaction {
+        &self.raw
     }
 }
 
