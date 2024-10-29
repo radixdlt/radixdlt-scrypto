@@ -1,76 +1,11 @@
 use crate::transaction::*;
 use radix_common::prelude::*;
-// This module is only included if std exists, so it's fine to import it
-use std::path::PathBuf;
-
-#[derive(Copy, Clone)]
-pub enum CostingTaskMode {
-    OutputCosting,
-    AssertCosting,
-}
-
-impl CostingTaskMode {
-    pub fn run(
-        &self,
-        base_path: impl Into<PathBuf>,
-        relative_file_path: &str,
-        fee_summary: &TransactionFeeSummary,
-        fee_details: &TransactionFeeDetails,
-    ) {
-        match self {
-            CostingTaskMode::OutputCosting => {
-                write_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path);
-            }
-            CostingTaskMode::AssertCosting => {
-                verify_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path)
-                    .unwrap();
-            }
-        }
-    }
-}
-
-fn verify_cost_breakdown(
-    fee_summary: &TransactionFeeSummary,
-    fee_details: &TransactionFeeDetails,
-    folder: impl Into<PathBuf>,
-    relative_file_path: &str,
-) -> Result<(), String> {
-    let path = folder.into().join(relative_file_path);
-    let content = std::fs::read_to_string(&path)
-        .map_err(|err| format!("Costing breakdown read error ({err:?}): {relative_file_path}"))?;
-    let expected = format_cost_breakdown(fee_summary, fee_details);
-    if content != expected {
-        // We don't use an assert_eq here so that it doesn't dump massive text on failure
-        return Err(format!(
-            "Costing breakdown needs updating: {relative_file_path}"
-        ));
-    }
-    Ok(())
-}
-
-pub fn write_cost_breakdown(
-    fee_summary: &TransactionFeeSummary,
-    fee_details: &TransactionFeeDetails,
-    folder: impl Into<PathBuf>,
-    file: &str,
-) {
-    use std::fs::File;
-    use std::io::Write;
-
-    let buffer = format_cost_breakdown(fee_summary, fee_details);
-
-    let folder = folder.into();
-    let file_path = folder.join(file);
-    let _ = std::fs::create_dir_all(&folder);
-    let mut f = File::create(&file_path).unwrap();
-    f.write_all(buffer.as_bytes()).unwrap();
-}
 
 pub fn format_cost_breakdown(
     fee_summary: &TransactionFeeSummary,
     fee_details: &TransactionFeeDetails,
 ) -> String {
-    use std::fmt::Write as _;
+    use core::fmt::Write;
     fn decimal_to_float(d: Decimal) -> f64 {
         f64::from_str(d.to_string().as_str()).unwrap()
     }
@@ -174,4 +109,79 @@ pub fn format_cost_breakdown(
         .unwrap();
     }
     buffer
+}
+
+#[cfg(not(feature = "alloc"))]
+pub use std_only::*;
+
+#[cfg(not(feature = "alloc"))]
+mod std_only {
+    use super::format_cost_breakdown;
+    use crate::transaction::*;
+    use radix_common::prelude::*;
+    use std::path::PathBuf;
+
+    #[derive(Copy, Clone)]
+    pub enum CostingTaskMode {
+        OutputCosting,
+        AssertCosting,
+    }
+
+    impl CostingTaskMode {
+        pub fn run(
+            &self,
+            base_path: impl Into<PathBuf>,
+            relative_file_path: &str,
+            fee_summary: &TransactionFeeSummary,
+            fee_details: &TransactionFeeDetails,
+        ) {
+            match self {
+                CostingTaskMode::OutputCosting => {
+                    write_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path);
+                }
+                CostingTaskMode::AssertCosting => {
+                    verify_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path)
+                        .unwrap();
+                }
+            }
+        }
+    }
+
+    fn verify_cost_breakdown(
+        fee_summary: &TransactionFeeSummary,
+        fee_details: &TransactionFeeDetails,
+        folder: impl Into<PathBuf>,
+        relative_file_path: &str,
+    ) -> Result<(), String> {
+        let path = folder.into().join(relative_file_path);
+        let content = std::fs::read_to_string(&path).map_err(|err| {
+            format!("Costing breakdown read error ({err:?}): {relative_file_path}")
+        })?;
+        let expected = format_cost_breakdown(fee_summary, fee_details);
+        if content != expected {
+            // We don't use an assert_eq here so that it doesn't dump massive text on failure
+            return Err(format!(
+                "Costing breakdown needs updating: {relative_file_path}"
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn write_cost_breakdown(
+        fee_summary: &TransactionFeeSummary,
+        fee_details: &TransactionFeeDetails,
+        folder: impl Into<PathBuf>,
+        file: &str,
+    ) {
+        use std::fs::File;
+        use std::io::Write;
+
+        let buffer = format_cost_breakdown(fee_summary, fee_details);
+
+        let folder = folder.into();
+        let file_path = folder.join(file);
+        let _ = std::fs::create_dir_all(&folder);
+        let mut f = File::create(&file_path).unwrap();
+        f.write_all(buffer.as_bytes()).unwrap();
+    }
 }

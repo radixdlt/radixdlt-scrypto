@@ -176,40 +176,41 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_non_fungible_local_id_from_string_fail() {
         let too_long_string = ['a' as u8; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
 
-        assert!(matches!(
+        assert_matches!(
             ManifestNonFungibleLocalId::string(String::new()).unwrap_err(),
             ManifestNonFungibleLocalIdValidationError::Empty
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             ManifestNonFungibleLocalId::string(
                 String::from_utf8(too_long_string.to_vec()).unwrap()
             )
             .unwrap_err(),
             ManifestNonFungibleLocalIdValidationError::TooLong
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             ManifestNonFungibleLocalId::string(String::from("$@!")).unwrap_err(),
             ManifestNonFungibleLocalIdValidationError::ContainsBadCharacter(..)
-        ));
+        );
     }
 
     #[test]
     fn manifest_non_fungible_local_id_from_bytes_fail() {
         let too_long_buffer = [0u8; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
 
-        assert!(matches!(
+        assert_matches!(
             ManifestNonFungibleLocalId::bytes(Vec::<u8>::new()).unwrap_err(),
             ManifestNonFungibleLocalIdValidationError::Empty
-        ));
-        assert!(matches!(
+        );
+        assert_matches!(
             ManifestNonFungibleLocalId::bytes(too_long_buffer.to_vec()).unwrap_err(),
             ManifestNonFungibleLocalIdValidationError::TooLong
-        ));
+        );
     }
 
     #[test]
@@ -224,6 +225,6 @@ mod tests {
             ManifestNonFungibleLocalId::value_kind(),
         );
 
-        assert!(matches!(id_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(id_output, Err(DecodeError::InvalidCustomValue));
     }
 }

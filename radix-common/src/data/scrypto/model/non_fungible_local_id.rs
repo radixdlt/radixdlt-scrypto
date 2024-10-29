@@ -642,12 +642,13 @@ impl fmt::Debug for NonFungibleLocalId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn test_non_fungible_length_validation() {
         // Bytes length
         let validation_result = NonFungibleLocalId::bytes([0; NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]);
-        assert!(matches!(validation_result, Ok(_)));
+        assert_matches!(validation_result, Ok(_));
         let validation_result =
             NonFungibleLocalId::bytes([0; 1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH]);
         assert_eq!(validation_result, Err(ContentValidationError::TooLong));
@@ -657,7 +658,7 @@ mod tests {
         // String length
         let validation_result =
             NonFungibleLocalId::string(string_of_length(NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH));
-        assert!(matches!(validation_result, Ok(_)));
+        assert_matches!(validation_result, Ok(_));
         let validation_result =
             NonFungibleLocalId::string(string_of_length(1 + NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH));
         assert_eq!(validation_result, Err(ContentValidationError::TooLong));

@@ -10,10 +10,7 @@ fn test_large_data() {
     let result = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
         .validate(&code, definition.blueprints.values());
 
-    assert!(matches!(
-        result,
-        Err(PrepareError::NotInstantiatable { .. })
-    ));
+    assert_matches!(result, Err(PrepareError::NotInstantiatable { .. }));
 }
 
 #[test]

@@ -8,12 +8,12 @@ pub struct ExecutableIntent {
     pub auth_zone_init: AuthZoneInit,
     pub references: IndexSet<Reference>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    /// An index of the subintent in the parent ExecutableTransaction
-    /// Validation ensures that each subintent has a unique parent
-    /// and a unique path from the transaction intent.
     pub children_subintent_indices: Vec<SubintentIndex>,
 }
 
+/// An index of the subintent in the parent ExecutableTransaction
+/// Validation ensures that each subintent has a unique parent
+/// and a unique path from the transaction intent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct SubintentIndex(pub usize);

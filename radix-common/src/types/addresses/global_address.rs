@@ -259,6 +259,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for GlobalAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn global_address_initialization() {
@@ -280,18 +281,12 @@ mod tests {
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
         let addr2 = GlobalAddress::try_from(v.as_slice());
-        assert!(matches!(
-            addr2,
-            Err(ParseGlobalAddressError::InvalidLength(..))
-        ));
+        assert_matches!(addr2, Err(ParseGlobalAddressError::InvalidLength(..)));
 
         // pass wrong node id (bad entity type) to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH]);
         let addr3 = GlobalAddress::try_from(v.as_slice());
-        assert!(matches!(
-            addr3,
-            Err(ParseGlobalAddressError::InvalidEntityTypeId(..))
-        ));
+        assert_matches!(addr3, Err(ParseGlobalAddressError::InvalidEntityTypeId(..)));
         #[cfg(not(feature = "alloc"))]
         println!("Decode error: {}", addr3.unwrap_err());
     }
@@ -307,6 +302,6 @@ mod tests {
         let addr_output = decoder
             .decode_deeper_body_with_value_kind::<GlobalAddress>(GlobalAddress::value_kind());
 
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 }

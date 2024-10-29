@@ -181,12 +181,12 @@ mod tests {
                 ],
             }],
         };
-        assert!(matches!(
+        assert_matches!(
             to_manifest_value(&invalid_value),
             Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingArrayElementValueKind { .. }
             ))
-        ));
+        );
 
         let invalid_value = ManifestValue::Map {
             key_value_kind: ValueKind::U8,
@@ -196,12 +196,12 @@ mod tests {
                 ManifestValue::I8 { value: 1 },
             )],
         };
-        assert!(matches!(
+        assert_matches!(
             to_manifest_value(&invalid_value),
             Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingMapKeyValueKind { .. }
             ))
-        ));
+        );
 
         let invalid_value = ManifestValue::Map {
             key_value_kind: ValueKind::U8,
@@ -211,20 +211,20 @@ mod tests {
                 ManifestValue::I16 { value: 1 },
             )],
         };
-        assert!(matches!(
+        assert_matches!(
             to_manifest_value(&invalid_value),
             Err(RustToManifestValueError::EncodeError(
                 EncodeError::MismatchingMapValueValueKind { .. }
             ))
-        ));
+        );
 
         let too_deep_tuple = get_tuple_of_depth(MANIFEST_SBOR_V1_MAX_DEPTH + 1).unwrap();
-        assert!(matches!(
+        assert_matches!(
             to_manifest_value(&too_deep_tuple),
             Err(RustToManifestValueError::EncodeError(
                 EncodeError::MaxDepthExceeded { .. }
             ))
-        ));
+        );
 
         let fine_tuple = get_tuple_of_depth(MANIFEST_SBOR_V1_MAX_DEPTH).unwrap();
         assert!(to_manifest_value(&fine_tuple).is_ok());

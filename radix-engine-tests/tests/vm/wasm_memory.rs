@@ -39,7 +39,7 @@ macro_rules! read_memory_err {
             vec![Buffer($offs), Buffer($len)],
             &mut $runtime,
         );
-        assert!(matches!(result.unwrap_err(), InvokeError::SelfError($err)));
+        assert_matches!(result.unwrap_err(), InvokeError::SelfError($err));
     };
 }
 macro_rules! write_memory_ok {
@@ -59,7 +59,7 @@ macro_rules! write_memory_err {
             vec![Buffer($offs), Buffer($len)],
             &mut $runtime,
         );
-        assert!(matches!(result.unwrap_err(), InvokeError::SelfError($err)));
+        assert_matches!(result.unwrap_err(), InvokeError::SelfError($err));
     };
 }
 

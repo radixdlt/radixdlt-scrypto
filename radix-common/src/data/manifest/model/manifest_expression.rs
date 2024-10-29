@@ -216,8 +216,6 @@ manifest_type!(ManifestExpression, ManifestCustomValueKind::Expression, 1);
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "alloc")]
-    use sbor::prelude::vec;
 
     #[test]
     fn manifest_expression_parse_fail() {
@@ -227,18 +225,12 @@ mod tests {
         let vec_err_2 = vec![10u8];
 
         let err1 = ManifestExpression::try_from(vec_err_1.as_slice());
-        assert!(matches!(
-            err1,
-            Err(ParseManifestExpressionError::InvalidLength)
-        ));
+        assert_matches!(err1, Err(ParseManifestExpressionError::InvalidLength));
         #[cfg(not(feature = "alloc"))]
         println!("Decoding manifest expression error: {}", err1.unwrap_err());
 
         let err2 = ManifestExpression::try_from(vec_err_2.as_slice());
-        assert!(matches!(
-            err2,
-            Err(ParseManifestExpressionError::UnknownExpression)
-        ));
+        assert_matches!(err2, Err(ParseManifestExpressionError::UnknownExpression));
         #[cfg(not(feature = "alloc"))]
         println!("Decoding manifest expression error: {}", err2.unwrap_err());
     }
@@ -255,6 +247,6 @@ mod tests {
             ManifestExpression::value_kind(),
         );
 
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 }

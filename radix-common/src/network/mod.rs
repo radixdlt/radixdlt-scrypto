@@ -108,13 +108,14 @@ pub enum ParseNetworkError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn network_from_string_fail() {
-        assert!(matches!(
+        assert_matches!(
             NetworkDefinition::from_str("non_existing_network").unwrap_err(),
             ParseNetworkError::InvalidNetworkString
-        ));
+        );
     }
 
     #[test]

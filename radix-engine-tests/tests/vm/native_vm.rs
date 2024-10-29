@@ -112,12 +112,12 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     );
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::VmError(VmError::Native(
             NativeRuntimeError::Trap { .. }
         )))
-    ))
+    )
 }
 
 #[test]
@@ -179,12 +179,12 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     );
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::VmError(VmError::Native(
             NativeRuntimeError::Trap { .. }
         )))
-    ))
+    )
 }
 
 #[derive(Clone)]

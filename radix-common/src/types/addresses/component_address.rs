@@ -309,7 +309,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::Ed25519PublicKey;
+    use crate::internal_prelude::*;
 
     #[test]
     fn component_address_initialization() {
@@ -335,18 +335,15 @@ mod tests {
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
         let addr2 = ComponentAddress::try_from(v.as_slice());
-        assert!(matches!(
-            addr2,
-            Err(ParseComponentAddressError::InvalidLength(..))
-        ));
+        assert_matches!(addr2, Err(ParseComponentAddressError::InvalidLength(..)));
 
         // pass wrong node id (bad entity type) to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH]);
         let addr3 = ComponentAddress::try_from(v.as_slice());
-        assert!(matches!(
+        assert_matches!(
             addr3,
             Err(ParseComponentAddressError::InvalidEntityTypeId(..))
-        ));
+        );
         #[cfg(not(feature = "alloc"))]
         println!("Decode error: {}", addr3.unwrap_err());
     }
@@ -363,7 +360,7 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 
     #[test]
@@ -377,7 +374,7 @@ mod tests {
         let addr_output = decoder
             .decode_deeper_body_with_value_kind::<ComponentAddress>(ComponentAddress::value_kind());
 
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 
     #[test]

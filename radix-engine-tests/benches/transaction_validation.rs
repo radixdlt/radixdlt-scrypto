@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_common::crypto::{verify_and_recover_secp256k1, verify_secp256k1};
 use radix_common::prelude::*;
 use radix_transactions::prelude::*;
 use radix_transactions::validation::*;
@@ -13,7 +13,7 @@ fn bench_secp256k1_validation(c: &mut Criterion) {
 
     c.bench_function("transaction_validation::verify_ecdsa", |b| {
         b.iter(|| {
-            let public_key = recover_secp256k1(&message_hash, &signature).unwrap();
+            let public_key = verify_and_recover_secp256k1(&message_hash, &signature).unwrap();
             verify_secp256k1(&message_hash, &public_key, &signature);
         })
     });

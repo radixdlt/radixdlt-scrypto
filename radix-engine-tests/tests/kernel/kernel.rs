@@ -328,52 +328,52 @@ fn kernel_move_node_via_create_with_opened_substate(
 #[test]
 fn test_kernel_move_node_via_create_with_opened_substate() {
     let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Create);
-    assert!(matches!(
+    assert_matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
                 ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
         )))
-    ));
+    );
 }
 
 #[test]
 fn test_kernel_move_node_via_write_with_opened_substate() {
     let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Write);
-    assert!(matches!(
+    assert_matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                 ProcessSubstateError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
         )))
-    ));
+    );
 }
 
 #[test]
 fn test_kernel_move_node_via_move_partition_with_opened_substate() {
     let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::CreateNodeFrom);
     println!("{:?}", result);
-    assert!(matches!(
+    assert_matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::MovePartitionError(MovePartitionError::SubstateBorrowed(..))
         )))
-    ));
+    );
 }
 
 #[test]
 fn test_kernel_move_node_via_invoke_with_opened_substate() {
     let result = kernel_move_node_via_create_with_opened_substate(MoveVariation::Invoke);
-    assert!(matches!(
+    assert_matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::CreateFrameError(CreateFrameError::PassMessageError(
                 PassMessageError::TakeNodeError(TakeNodeError::SubstateBorrowed(..))
             ))
         )))
-    ));
+    );
 }
 
 #[test]
@@ -423,10 +423,10 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     // Act
     let result = kernel.kernel_close_substate(handle1);
     let error = result.expect_err("Should be an error");
-    assert!(matches!(
+    assert_matches!(
         error,
         RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::CloseSubstateError(CloseSubstateError::SubstateBorrowed(..))
         ))
-    ));
+    );
 }

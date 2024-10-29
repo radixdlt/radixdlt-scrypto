@@ -982,6 +982,7 @@ try_from_integer!(U192, U256, U320, U384, U448, U512);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
     use crate::math::precise_decimal::RoundingMode;
     use paste::paste;
 
@@ -2186,10 +2187,10 @@ mod tests {
         let decimal = PreciseDecimal::from_str(string);
 
         // Assert
-        assert!(matches!(
+        assert_matches!(
             decimal,
             Err(ParsePreciseDecimalError::MoreThanThirtySixDecimalPlaces)
-        ))
+        );
     }
 
     #[test]

@@ -178,12 +178,7 @@ impl<'a, X: CustomValueKind> Encoder<X> for VecEncoder<'a, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::BasicEncoder;
+    use crate::internal_prelude::*;
 
     fn do_encoding(encoder: &mut BasicEncoder) -> Result<(), EncodeError> {
         encoder.encode(&())?;
@@ -262,13 +257,13 @@ mod tests {
         const TOO_LARGE_SIZE: usize = MAX_SIZE + 1;
 
         assert!(basic_encode(&vec![0u8; MAX_SIZE]).is_ok());
-        assert!(matches!(
+        assert_matches!(
             basic_encode(&vec![0u8; MAX_SIZE + 1]),
             Err(EncodeError::SizeTooLarge {
                 actual: TOO_LARGE_SIZE,
                 max_allowed: MAX_SIZE
             })
-        ));
+        );
     }
 
     #[test]

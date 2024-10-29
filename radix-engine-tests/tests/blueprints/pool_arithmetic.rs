@@ -83,12 +83,12 @@ fn one_resource_pool_redemption_returning_zero_fails_with_error() -> Result<(), 
     let rtn = pool.redeem(pool_units_to_redeem, env);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::ApplicationError(
             ApplicationError::OneResourcePoolError(OneResourcePoolError::RedeemedZeroTokens)
         ))
-    ));
+    );
     Ok(())
 }
 
@@ -140,12 +140,12 @@ fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
     let rtn = pool.contribute(contribution_bucket, env);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::ApplicationError(
             ApplicationError::OneResourcePoolError(OneResourcePoolError::ZeroPoolUnitsMinted)
         ))
-    ));
+    );
     Ok(())
 }
 
@@ -294,14 +294,14 @@ fn two_resource_pool_calculations_loading_to_zero_should_error() -> Result<(), R
     let rtn = pool.contribute((contribution_bucket1, contribution_bucket2), env);
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::ApplicationError(
             ApplicationError::TwoResourcePoolError(
                 TwoResourcePoolError::LargerContributionRequiredToMeetRatio
             )
         ))
-    ));
+    );
 
     Ok(())
 }
@@ -529,12 +529,12 @@ fn two_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
     };
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::ApplicationError(
             ApplicationError::TwoResourcePoolError(TwoResourcePoolError::ZeroPoolUnitsMinted)
         ))
-    ));
+    );
     Ok(())
 }
 
@@ -579,14 +579,14 @@ fn two_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Resul
     };
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         rtn,
         Err(RuntimeError::ApplicationError(
             ApplicationError::TwoResourcePoolError(
                 TwoResourcePoolError::NonZeroPoolUnitSupplyButZeroReserves
             )
         ))
-    ));
+    );
 
     Ok(())
 }
@@ -856,14 +856,14 @@ fn multi_resource_pool_rejects_contributions_if_all_liquidity_has_been_removed(
             );
 
             // Assert
-            assert!(matches!(
+            assert_matches!(
                 rtn,
                 Err(RuntimeError::ApplicationError(
                     ApplicationError::MultiResourcePoolError(
                         MultiResourcePoolError::NoMinimumRatio
                     )
                 ))
-            ));
+            );
             Ok(())
         },
     )
@@ -938,14 +938,14 @@ fn multi_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_
             );
 
             // Assert
-            assert!(matches!(
+            assert_matches!(
                 rtn,
                 Err(RuntimeError::ApplicationError(
                     ApplicationError::MultiResourcePoolError(
                         MultiResourcePoolError::ZeroPoolUnitsMinted
                     )
                 ))
-            ));
+            );
             Ok(())
         },
     )
@@ -1005,14 +1005,14 @@ fn multi_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Res
             };
 
             // Assert
-            assert!(matches!(
+            assert_matches!(
                 rtn,
                 Err(RuntimeError::ApplicationError(
                     ApplicationError::MultiResourcePoolError(
                         MultiResourcePoolError::NoMinimumRatio
                     )
                 ))
-            ));
+            );
 
             Ok(())
         },

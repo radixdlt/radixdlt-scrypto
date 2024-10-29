@@ -5,9 +5,11 @@ use sbor::rust::prelude::*;
 pub struct AuthAddresses;
 
 impl AuthAddresses {
-    pub fn signer_set(signer_public_keys: &[PublicKey]) -> BTreeSet<NonFungibleGlobalId> {
+    pub fn signer_set<'a>(
+        signer_public_keys: impl IntoIterator<Item = &'a PublicKey>,
+    ) -> BTreeSet<NonFungibleGlobalId> {
         signer_public_keys
-            .iter()
+            .into_iter()
             .map(NonFungibleGlobalId::from_public_key)
             .collect()
     }

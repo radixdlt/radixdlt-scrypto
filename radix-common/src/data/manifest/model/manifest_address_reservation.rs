@@ -69,6 +69,7 @@ scrypto_describe_for_manifest_type!(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_address_reservation_fail() {
@@ -80,10 +81,10 @@ mod tests {
         // malform encoded vector
         address_vec.push(0);
         let address_out = ManifestAddressReservation::try_from(address_vec.as_slice());
-        assert!(matches!(
+        assert_matches!(
             address_out,
             Err(ParseManifestAddressReservationError::InvalidLength)
-        ));
+        );
 
         #[cfg(not(feature = "alloc"))]
         println!(
@@ -105,9 +106,6 @@ mod tests {
         );
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            addr_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(addr_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 }

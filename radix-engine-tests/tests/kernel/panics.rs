@@ -23,10 +23,10 @@ fn panics_at_the_system_layer_or_below_can_be_caught() {
     let actor = system_service.actor_get_blueprint_id();
 
     // Assert
-    assert!(matches!(
+    assert_matches!(
         actor,
         Err(RuntimeError::SystemError(SystemError::SystemPanic(..)))
-    ))
+    )
 }
 
 macro_rules! panic1 {

@@ -3,6 +3,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ValidatedNotarizedTransactionV2 {
     pub prepared: PreparedNotarizedTransactionV2,
+    pub total_signature_validations: usize,
     pub overall_validity_range: OverallValidityRangeV2,
     pub transaction_intent_info: ValidatedIntentInformationV2,
     pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
@@ -11,6 +12,7 @@ pub struct ValidatedNotarizedTransactionV2 {
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ValidatedSignedPartialTransactionV2 {
     pub prepared: PreparedSignedPartialTransactionV2,
+    pub total_signature_validations: usize,
     pub overall_validity_range: OverallValidityRangeV2,
     pub root_subintent_info: ValidatedIntentInformationV2,
     pub root_subintent_yield_to_parent_count: usize,
@@ -19,6 +21,7 @@ pub struct ValidatedSignedPartialTransactionV2 {
 
 pub struct ValidatedPartialTransactionTreeV2 {
     pub overall_validity_range: OverallValidityRangeV2,
+    pub total_signature_validations: usize,
     pub root_intent_info: ValidatedIntentInformationV2,
     pub root_yield_to_parent_count: usize,
     pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
@@ -33,15 +36,8 @@ pub struct OverallValidityRangeV2 {
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ValidatedIntentInformationV2 {
     pub encoded_instructions: Vec<u8>,
-    pub signature_validations: SignatureValidations,
+    pub signer_keys: IndexSet<PublicKey>,
     pub children_subintent_indices: Vec<SubintentIndex>,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone)]
-pub struct SignatureValidations {
-    /// This could be one more than signer_keys due to notary not being a signer
-    pub num_validations: usize,
-    pub signer_keys: Vec<PublicKey>,
 }
 
 impl HasTransactionIntentHash for ValidatedNotarizedTransactionV2 {
@@ -78,7 +74,7 @@ impl ValidatedNotarizedTransactionV2 {
         let transaction_intent = self.prepared.signed_intent.transaction_intent;
         let transaction_intent_hash = transaction_intent.transaction_intent_hash();
         let transaction_header = transaction_intent.transaction_header.inner;
-        let summary = self.prepared.summary;
+        let payload_size = self.prepared.summary.effective_length;
         let subintents = transaction_intent.non_root_subintents.subintents;
 
         let mut intent_hash_nullifications =
@@ -98,15 +94,6 @@ impl ValidatedNotarizedTransactionV2 {
                     .to_nullification(subintent.intent_core.header.inner.end_epoch_exclusive),
             )
         }
-        let num_of_signature_validations = self
-            .transaction_intent_info
-            .signature_validations
-            .num_validations
-            + self
-                .non_root_subintents_info
-                .iter()
-                .map(|x| x.signature_validations.num_validations)
-                .sum::<usize>();
         let executable_transaction_intent = create_executable_intent(
             transaction_intent.root_intent_core,
             self.transaction_intent_info,
@@ -123,8 +110,8 @@ impl ValidatedNotarizedTransactionV2 {
             ExecutionContext {
                 unique_hash: transaction_intent_hash.0,
                 intent_hash_nullifications,
-                payload_size: summary.effective_length,
-                num_of_signature_validations,
+                payload_size,
+                num_of_signature_validations: self.total_signature_validations,
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::BasisPoints(transaction_header.tip_basis_points),
                     free_credit_in_xrd: Decimal::ZERO,
@@ -144,7 +131,7 @@ fn create_executable_intent(
     core: PreparedIntentCoreV2,
     validated_info: ValidatedIntentInformationV2,
 ) -> ExecutableIntent {
-    let signer_keys = validated_info.signature_validations.signer_keys;
+    let signer_keys = validated_info.signer_keys;
     let auth_zone_init = AuthZoneInit::proofs(AuthAddresses::signer_set(&signer_keys));
 
     ExecutableIntent {

@@ -122,6 +122,7 @@ where
 {
     let network_definition = NetworkDefinition::simulator();
     let mut ledger = LedgerSimulatorBuilder::new()
+        .with_cost_breakdown()
         .with_custom_protocol(|builder| {
             builder
                 .configure_babylon(|_| BabylonSettings::test_minimal())

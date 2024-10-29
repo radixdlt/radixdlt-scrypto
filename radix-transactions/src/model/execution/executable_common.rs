@@ -84,6 +84,11 @@ pub enum IntentHashNullification {
         intent_hash: SubintentHash,
         expiry_epoch: Epoch,
     },
+    /// Used in preview. For realistic preview, should be billed as if it were a real subintent nullification.
+    /// But it shouldn't error or prevent the preview from running.
+    SimulatedSubintent {
+        simulated: SimulatedSubintentNullification,
+    },
 }
 
 impl IntentHashNullification {
@@ -93,10 +98,13 @@ impl IntentHashNullification {
                 IntentHash::Transaction(*intent_hash)
             }
             IntentHashNullification::SimulatedTransactionIntent { simulated } => {
-                IntentHash::Transaction(simulated.intent_hash())
+                IntentHash::Transaction(simulated.transaction_intent_hash())
             }
             IntentHashNullification::Subintent { intent_hash, .. } => {
                 IntentHash::Subintent(*intent_hash)
+            }
+            IntentHashNullification::SimulatedSubintent { simulated } => {
+                IntentHash::Subintent(simulated.subintent_hash())
             }
         }
     }
@@ -106,8 +114,28 @@ impl IntentHashNullification {
 pub struct SimulatedTransactionIntentNullification;
 
 impl SimulatedTransactionIntentNullification {
-    pub fn intent_hash(&self) -> TransactionIntentHash {
+    pub fn transaction_intent_hash(&self) -> TransactionIntentHash {
         TransactionIntentHash::from_hash(Hash([0; Hash::LENGTH]))
+    }
+
+    pub fn expiry_epoch(&self, current_epoch: Epoch) -> Epoch {
+        current_epoch.next().unwrap_or(Epoch::of(u64::MAX))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimulatedSubintentNullification {
+    index: SubintentIndex,
+}
+
+impl SimulatedSubintentNullification {
+    pub fn subintent_hash(&self) -> SubintentHash {
+        let mut simulated_hash = [0u8; Hash::LENGTH];
+        simulated_hash[0] = 1; // To differentiate it from the simulated transaction intent hash
+        let index_bytes = self.index.0.to_be_bytes();
+        let target = &mut simulated_hash[1..(index_bytes.len() + 1)];
+        target.copy_from_slice(&index_bytes);
+        SubintentHash::from_hash(Hash(simulated_hash))
     }
 
     pub fn expiry_epoch(&self, current_epoch: Epoch) -> Epoch {
@@ -158,18 +186,6 @@ impl TipSpecifier {
         Decimal::ONE + self.proportion()
     }
 
-    #[deprecated = "Need to remove this function before releasing cuttlefish; once we can change the receipt"]
-    pub fn truncate_to_percentage_u16(&self) -> u16 {
-        match self {
-            TipSpecifier::None => 0,
-            TipSpecifier::Percentage(percentage) => *percentage,
-            TipSpecifier::BasisPoints(basis_points) => {
-                let truncated_percentage = *basis_points / 100;
-                truncated_percentage.try_into().unwrap_or(u16::MAX)
-            }
-        }
-    }
-
     pub fn truncate_to_percentage_u32(&self) -> u32 {
         match self {
             TipSpecifier::None => 0,
@@ -205,6 +221,85 @@ impl From<TransactionCostingParametersReceiptV1> for TransactionCostingParameter
         Self {
             tip_proportion: TipSpecifier::Percentage(value.tip_percentage).proportion(),
             free_credit_in_xrd: value.free_credit_in_xrd,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::internal_prelude::*;
+
+    #[test]
+    fn test_uniqueness_of_simulated_hashes_inside_single_transaction() {
+        let mut hashes: IndexSet<IntentHash> = Default::default();
+
+        let num_subintents = 10;
+
+        hashes.insert(
+            SimulatedTransactionIntentNullification
+                .transaction_intent_hash()
+                .into(),
+        );
+        for i in 0..num_subintents {
+            let nullification = SimulatedSubintentNullification {
+                index: SubintentIndex(i),
+            };
+            hashes.insert(nullification.subintent_hash().into());
+        }
+
+        assert_eq!(hashes.len(), num_subintents + 1);
+    }
+
+    #[test]
+    fn tip_specifier_conversion_tests() {
+        // Some simple conversions
+        {
+            let tip = TipSpecifier::BasisPoints(1500);
+            assert_eq!(tip.basis_points(), 1500);
+            assert_eq!(tip.proportion(), dec!(0.15));
+            assert_eq!(tip.fee_multiplier(), dec!(1.15));
+            assert_eq!(tip.truncate_to_percentage_u32(), 15);
+        }
+
+        {
+            let tip = TipSpecifier::Percentage(50);
+            assert_eq!(tip.basis_points(), 5000);
+            assert_eq!(tip.proportion(), dec!(0.5));
+            assert_eq!(tip.fee_multiplier(), dec!(1.5));
+            assert_eq!(tip.truncate_to_percentage_u32(), 50);
+        }
+
+        {
+            let tip = TipSpecifier::None;
+            assert_eq!(tip.basis_points(), 0);
+            assert_eq!(tip.proportion(), dec!(0));
+            assert_eq!(tip.fee_multiplier(), dec!(1));
+            assert_eq!(tip.truncate_to_percentage_u32(), 0);
+        }
+
+        // Edge-case conversions
+        {
+            let tip = TipSpecifier::BasisPoints(7);
+            assert_eq!(tip.basis_points(), 7);
+            assert_eq!(tip.proportion(), dec!(0.0007));
+            assert_eq!(tip.fee_multiplier(), dec!(1.0007));
+            assert_eq!(tip.truncate_to_percentage_u32(), 0); // Rounds down to 0
+        }
+
+        {
+            let tip = TipSpecifier::Percentage(u16::MAX);
+            assert_eq!(tip.basis_points(), 6553500);
+            assert_eq!(tip.proportion(), dec!(655.35));
+            assert_eq!(tip.fee_multiplier(), dec!(656.35));
+            assert_eq!(tip.truncate_to_percentage_u32(), 65535);
+        }
+
+        {
+            let tip = TipSpecifier::BasisPoints(u32::MAX);
+            assert_eq!(tip.basis_points(), 4294967295);
+            assert_eq!(tip.proportion(), dec!(429496.7295));
+            assert_eq!(tip.fee_multiplier(), dec!(429497.7295));
+            assert_eq!(tip.truncate_to_percentage_u32(), 42949672); // Rounds down
         }
     }
 }

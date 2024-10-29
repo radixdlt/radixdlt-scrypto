@@ -309,7 +309,8 @@ impl<E: CustomExtension> fmt::Display for PayloadValidationError<E> {
 #[cfg(test)]
 mod tests {
     use super::LocatedValidationError;
-    use crate::{rust::prelude::*, *};
+    use crate::internal_prelude::*;
+    use crate::*;
 
     #[derive(Sbor)]
     struct TestStructArray {
@@ -356,7 +357,7 @@ mod tests {
             &mut (),
             64,
         );
-        assert!(matches!(
+        assert_matches!(
             result,
             Err(LocatedValidationError {
                 error: PayloadValidationError::ValidationError(
@@ -370,7 +371,7 @@ mod tests {
                 ),
                 ..
             })
-        ))
+        )
     }
 
     #[derive(Debug, Clone, Sbor)]

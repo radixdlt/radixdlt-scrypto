@@ -78,6 +78,7 @@ pub trait HasSubintentHash {
 // A solver can work out their own passing strategy
 define_raw_transaction_payload!(RawPartialTransaction, TransactionPayloadKind::Other);
 define_raw_transaction_payload!(RawSignedPartialTransaction, TransactionPayloadKind::Other);
+define_raw_transaction_payload!(RawPreviewTransaction, TransactionPayloadKind::Other);
 
 /// Note - Because transaction hashes do _not_ have a reserved first byte,
 /// we can't encode them to bech32m unless we know their type.

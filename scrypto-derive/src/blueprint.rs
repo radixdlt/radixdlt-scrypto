@@ -1814,6 +1814,7 @@ mod tests {
     use super::*;
     use crate::utils::print_generated_code;
     use proc_macro2::TokenStream;
+    use radix_common::prelude::*;
     use std::str::FromStr;
 
     fn assert_code_eq(actual: TokenStream, expected: TokenStream) {
@@ -1824,7 +1825,7 @@ mod tests {
     #[test]
     fn test_inconsistent_names_should_fail() {
         let input = TokenStream::from_str("struct A {} impl B { }").unwrap();
-        assert!(matches!(handle_blueprint(input), Err(_)));
+        assert_matches!(handle_blueprint(input), Err(_));
     }
 
     #[test]

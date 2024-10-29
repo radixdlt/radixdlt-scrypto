@@ -61,7 +61,7 @@ fn access_controller_instantiated_before_protocol_update_has_v1_state() {
         .into_versions();
 
     // Assert
-    assert!(matches!(state, AccessControllerV2StateVersions::V1(..)))
+    assert_matches!(state, AccessControllerV2StateVersions::V1(..))
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn access_controller_instantiated_after_protocol_update_has_v2_state() {
         .into_versions();
 
     // Assert
-    assert!(matches!(state, AccessControllerV2StateVersions::V2(..)))
+    assert_matches!(state, AccessControllerV2StateVersions::V2(..))
 }
 
 #[test]

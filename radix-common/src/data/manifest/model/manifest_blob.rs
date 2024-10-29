@@ -60,6 +60,7 @@ manifest_type!(ManifestBlobRef, ManifestCustomValueKind::Blob, 32);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_blob_parse_fail() {
@@ -73,10 +74,7 @@ mod tests {
         // malform encoded vector
         blob_vec.push(0);
         let blob_out = ManifestBlobRef::try_from(blob_vec.as_slice());
-        assert!(matches!(
-            blob_out,
-            Err(ParseManifestBlobRefError::InvalidLength)
-        ));
+        assert_matches!(blob_out, Err(ParseManifestBlobRefError::InvalidLength));
 
         #[cfg(not(feature = "alloc"))]
         println!("Manifest Blob error: {}", blob_out.unwrap_err());
@@ -94,9 +92,6 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ManifestBlobRef>(ManifestBlobRef::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            blob_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(blob_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 }

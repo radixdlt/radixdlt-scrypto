@@ -39,6 +39,7 @@ fn run_all(mode: CostingTaskMode) {
         let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
                             file: &'static str| {
             let ledger = LedgerSimulatorBuilder::new()
+                .with_cost_breakdown()
                 .with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
                 .build();
             let receipt = run(ledger);
@@ -630,7 +631,7 @@ fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionRece
         &secp256k1_msg_hash_signature
     ));
     assert_eq!(
-        recover_secp256k1(&msg_hash, &secp256k1_msg_hash_signature).unwrap(),
+        verify_and_recover_secp256k1(&msg_hash, &secp256k1_msg_hash_signature).unwrap(),
         secp256k1_pk
     );
     receipt.expect_commit_success();
@@ -835,7 +836,7 @@ fn system_loan_should_cover_intended_use_case() {
 #[test]
 fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().with_cost_breakdown().build();
     let network = NetworkDefinition::simulator();
     let (_, private_key, account_address) = ledger.new_account(true);
 
@@ -898,15 +899,10 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
         true,
     );
 
-    let receipt = ledger.execute_transaction(
-        main_transaction,
-        ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
-            .with_cost_breakdown(true),
-    );
+    let receipt = ledger.execute_notarized_transaction(&main_transaction.to_raw().unwrap());
 
     // Assert and print
     receipt.expect_commit_success();
-    #[cfg(feature = "std")]
     println!(
         "\n{}",
         format_cost_breakdown(&receipt.fee_summary, receipt.fee_details.as_ref().unwrap())

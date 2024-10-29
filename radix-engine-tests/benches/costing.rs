@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use paste::paste;
-use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_common::crypto::{verify_and_recover_secp256k1, verify_secp256k1};
 use radix_common::prelude::*;
 use radix_engine::{
     utils::ExtractSchemaError,
@@ -165,7 +165,7 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
     c.bench_function("costing::validate_secp256k1", |b| {
         b.iter(|| {
-            let public_key = recover_secp256k1(&message_hash, &signature).unwrap();
+            let public_key = verify_and_recover_secp256k1(&message_hash, &signature).unwrap();
             verify_secp256k1(&message_hash, &public_key, &signature);
         })
     });

@@ -463,7 +463,7 @@ mod test {
             assert_eq!(s.type_kinds.len(), 1);
             assert_eq!(s.type_metadata.len(), 1);
             assert_eq!(s.type_validations.len(), 1);
-            assert!(matches!(type_id, LocalTypeId::SchemaLocalIndex(0)));
+            assert_matches!(type_id, LocalTypeId::SchemaLocalIndex(0));
             assert!(mutable_fields.is_empty());
         } else {
             panic!("Wrong Non Fungible Data Schema type")

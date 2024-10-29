@@ -61,6 +61,7 @@ scrypto_describe_for_manifest_type!(ManifestProof, OWN_PROOF_TYPE, own_proof_typ
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_proof_fail() {
@@ -72,10 +73,7 @@ mod tests {
         // malform encoded vector
         proof_vec.push(0);
         let proof_out = ManifestProof::try_from(proof_vec.as_slice());
-        assert!(matches!(
-            proof_out,
-            Err(ParseManifestProofError::InvalidLength)
-        ));
+        assert_matches!(proof_out, Err(ParseManifestProofError::InvalidLength));
 
         #[cfg(not(feature = "alloc"))]
         println!("Manifest Proof error: {}", proof_out.unwrap_err());
@@ -93,9 +91,6 @@ mod tests {
             .decode_deeper_body_with_value_kind::<ManifestProof>(ManifestProof::value_kind());
 
         // expecting 4 bytes, found only 1, so Buffer Underflow error should occur
-        assert!(matches!(
-            proof_output,
-            Err(DecodeError::BufferUnderflow { .. })
-        ));
+        assert_matches!(proof_output, Err(DecodeError::BufferUnderflow { .. }));
     }
 }

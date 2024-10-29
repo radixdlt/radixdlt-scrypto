@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
 #[cfg(feature = "secp256k1_sign_and_validate")]
-pub fn recover_secp256k1(
+pub fn verify_and_recover_secp256k1(
     signed_hash: &Hash,
     signature: &Secp256k1Signature,
 ) -> Option<Secp256k1PublicKey> {
@@ -13,6 +13,7 @@ pub fn recover_secp256k1(
             let msg = ::secp256k1::Message::from_digest_slice(&signed_hash.0)
                 .expect("Hash is always a valid message");
 
+            // The recover method also verifies the signature as part of the recovery process
             if let Ok(pk) = SECP256K1_CTX.recover_ecdsa(&msg, &sig) {
                 return Some(Secp256k1PublicKey(pk.serialize()));
             }
@@ -185,7 +186,7 @@ pub fn fast_aggregate_verify_bls12381_v1(
 /// Domain specifier tag: BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_
 /// This method does not validate provided input keys when aggregating,
 /// it is left here for backward compatibility.
-/// It is recommended to use `fast_aggregate_verify_bls12381_v1()` method instead.
+/// It is recommended to use [`fast_aggregate_verify_bls12381_v1()`] method instead.
 pub fn fast_aggregate_verify_bls12381_v1_anemone(
     message: &[u8],
     public_keys: &[Bls12381G1PublicKey],

@@ -467,11 +467,11 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
     let type_kind = schema.resolve_type_kind(local_type_index).unwrap();
     let type_validation = schema.resolve_type_validation(local_type_index).unwrap();
 
-    assert!(matches!(
+    assert_matches!(
         type_kind,
         ScryptoLocalTypeKind::Custom(ScryptoCustomTypeKind::Reference)
-    ));
-    assert!(matches!(
+    );
+    assert_matches!(
         type_validation,
         ScryptoTypeValidation::Custom(
             ScryptoCustomTypeValidation::Reference(ReferenceValidation::IsGlobalTyped(
@@ -479,5 +479,5 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
                 bp_name
             ))
         ) if bp_name == "Account"
-    ));
+    );
 }

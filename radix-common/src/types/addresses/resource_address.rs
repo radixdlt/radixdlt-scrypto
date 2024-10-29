@@ -266,6 +266,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::internal_prelude::*;
 
     #[test]
     fn resource_address_initialization() {
@@ -283,10 +284,7 @@ mod tests {
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);
         let addr2 = ResourceAddress::try_from(v.as_slice());
-        assert!(matches!(
-            addr2,
-            Err(ParseResourceAddressError::InvalidLength(..))
-        ));
+        assert_matches!(addr2, Err(ParseResourceAddressError::InvalidLength(..)));
 
         #[cfg(not(feature = "alloc"))]
         println!("Error: {}", addr2.unwrap_err());
@@ -303,6 +301,6 @@ mod tests {
         let addr_output = decoder
             .decode_deeper_body_with_value_kind::<ResourceAddress>(ResourceAddress::value_kind());
 
-        assert!(matches!(addr_output, Err(DecodeError::InvalidCustomValue)));
+        assert_matches!(addr_output, Err(DecodeError::InvalidCustomValue));
     }
 }
