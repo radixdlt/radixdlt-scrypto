@@ -152,7 +152,7 @@ pub enum ExecutionCostingEntry<'a> {
         size: usize,
     },
     Secp256k1EcdsaVerify,
-    Secp256k1EcdsaKeyRecover,
+    Secp256k1EcdsaVerifyAndKeyRecover,
 }
 
 #[derive(Debug, IntoStaticStr)]
@@ -242,8 +242,8 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::Blake2b256Hash { size } => ft.blake2b256_hash_cost(*size),
             ExecutionCostingEntry::Ed25519Verify { size } => ft.ed25519_verify_cost(*size),
             ExecutionCostingEntry::Secp256k1EcdsaVerify => ft.secp256k1_ecdsa_verify_cost(),
-            ExecutionCostingEntry::Secp256k1EcdsaKeyRecover => {
-                ft.secp256k1_ecdsa_key_recover_cost()
+            ExecutionCostingEntry::Secp256k1EcdsaVerifyAndKeyRecover => {
+                ft.secp256k1_ecdsa_verify_and_key_recover_cost()
             }
         }
     }
@@ -461,7 +461,7 @@ pub mod owned {
             size: usize,
         },
         Secp256k1EcdsaVerify,
-        Secp256k1EcdsaKeyRecover,
+        Secp256k1EcdsaVerifyAndKeyRecover,
     }
 
     /// An owned model equivalent of [`CreateNodeEvent`].
@@ -697,7 +697,9 @@ pub mod owned {
                 ExecutionCostingEntry::Blake2b256Hash { size } => Self::Blake2b256Hash { size },
                 ExecutionCostingEntry::Ed25519Verify { size } => Self::Ed25519Verify { size },
                 ExecutionCostingEntry::Secp256k1EcdsaVerify => Self::Secp256k1EcdsaVerify,
-                ExecutionCostingEntry::Secp256k1EcdsaKeyRecover => Self::Secp256k1EcdsaKeyRecover,
+                ExecutionCostingEntry::Secp256k1EcdsaVerifyAndKeyRecover => {
+                    Self::Secp256k1EcdsaVerifyAndKeyRecover
+                }
             }
         }
     }

@@ -767,7 +767,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
     }
 
     #[trace_resources]
-    fn crypto_utils_secp256k1_ecdsa_key_recover(
+    fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover(
         &mut self,
         message: Vec<u8>,
         signature: Vec<u8>,

@@ -2220,7 +2220,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
                     ExecutionCostingEntry::Secp256k1EcdsaVerify
                 }
                 ClientCostingEntry::Secp256k1EcdsaKeyRecover => {
-                    ExecutionCostingEntry::Secp256k1EcdsaKeyRecover
+                    ExecutionCostingEntry::Secp256k1EcdsaVerifyAndKeyRecover
                 }
             })
     }

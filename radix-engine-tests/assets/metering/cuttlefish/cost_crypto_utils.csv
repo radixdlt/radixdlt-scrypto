@@ -1,13 +1,13 @@
-Total Cost (XRD)                                                           ,            1.05047606606,    100.0%
-- Execution Cost (XRD)                                                     ,                0.6738227,     64.1%
+Total Cost (XRD)                                                           ,            1.04966855779,    100.0%
+- Execution Cost (XRD)                                                     ,               0.67196615,     64.0%
 - Finalization Cost (XRD)                                                  ,                0.0102517,      1.0%
-- Storage Cost (XRD)                                                       ,            0.36640166606,     34.9%
+- Storage Cost (XRD)                                                       ,            0.36745070779,     35.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 13476454,    100.0%
+Execution Cost Breakdown                                                   ,                 13439323,    100.0%
 - AfterInvoke                                                              ,                      518,      0.0%
 - AllocateNodeId                                                           ,                     1455,      0.0%
-- BeforeInvoke                                                             ,                     7778,      0.1%
+- BeforeInvoke                                                             ,                     7800,      0.1%
 - Blake2b256Hash                                                           ,                       91,      0.0%
 - Bls12381G2SignatureAggregate                                             ,                   243986,      1.8%
 - Bls12381V1AggregateVerify                                                ,                  2001824,     14.9%
@@ -25,32 +25,32 @@ Execution Cost Breakdown                                                   ,    
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   121872,      0.9%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      0.3%
-- OpenSubstate::GlobalPackage                                              ,                  3497709,     26.0%
+- OpenSubstate::GlobalPackage                                              ,                  3484661,     25.9%
 - OpenSubstate::InternalFungibleVault                                      ,                    90202,      0.7%
 - OpenSubstate::InternalGenericComponent                                   ,                    18682,      0.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.3%
 - PinNode                                                                  ,                      180,      0.0%
-- PrepareWasmCode                                                          ,                  2282710,     16.9%
+- PrepareWasmCode                                                          ,                  2269642,     16.9%
 - QueryActor                                                               ,                     1000,      0.0%
-- ReadSubstate                                                             ,                  2353589,     17.5%
+- ReadSubstate                                                             ,                  2340609,     17.4%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.1%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.1%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.3%
-- RunWasmCode::CryptoScrypto_blake2b_256_hash                              ,                    10811,      0.1%
-- RunWasmCode::CryptoScrypto_bls12381_g2_signature_aggregate               ,                   422162,      3.1%
-- RunWasmCode::CryptoScrypto_bls12381_v1_aggregate_verify                  ,                   295892,      2.2%
-- RunWasmCode::CryptoScrypto_bls12381_v1_fast_aggregate_verify             ,                   246322,      1.8%
-- RunWasmCode::CryptoScrypto_bls12381_v1_verify                            ,                    71202,      0.5%
-- RunWasmCode::CryptoScrypto_ed25519_verify                                ,                    50392,      0.4%
-- RunWasmCode::CryptoScrypto_keccak256_hash                                ,                    10801,      0.1%
-- RunWasmCode::CryptoScrypto_secp256k1_ecdsa_key_recover                   ,                    51211,      0.4%
-- RunWasmCode::CryptoScrypto_secp256k1_ecdsa_verify                        ,                    63252,      0.5%
+- RunWasmCode::CryptoScrypto_blake2b_256_hash                              ,                    10893,      0.1%
+- RunWasmCode::CryptoScrypto_bls12381_g2_signature_aggregate               ,                   422302,      3.1%
+- RunWasmCode::CryptoScrypto_bls12381_v1_aggregate_verify                  ,                   296509,      2.2%
+- RunWasmCode::CryptoScrypto_bls12381_v1_fast_aggregate_verify             ,                   246475,      1.8%
+- RunWasmCode::CryptoScrypto_bls12381_v1_verify                            ,                    71371,      0.5%
+- RunWasmCode::CryptoScrypto_ed25519_verify                                ,                    50533,      0.4%
+- RunWasmCode::CryptoScrypto_keccak256_hash                                ,                    10884,      0.1%
+- RunWasmCode::CryptoScrypto_secp256k1_ecdsa_verify                        ,                    63316,      0.5%
+- RunWasmCode::CryptoScrypto_secp256k1_ecdsa_verify_and_key_recover        ,                    51265,      0.4%
 - RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.2%
-- Secp256k1EcdsaKeyRecover                                                 ,                    14705,      0.1%
 - Secp256k1EcdsaVerify                                                     ,                    14705,      0.1%
+- Secp256k1EcdsaVerifyAndKeyRecover                                        ,                    14705,      0.1%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
-- ValidateTxPayload                                                        ,                   150680,      1.1%
+- ValidateTxPayload                                                        ,                   151120,      1.1%
 - VerifyTxSignatures                                                       ,                     7000,      0.1%
 - WriteSubstate                                                            ,                     8064,      0.1%
 Finalization Cost Breakdown                                                ,                   205034,    100.0%

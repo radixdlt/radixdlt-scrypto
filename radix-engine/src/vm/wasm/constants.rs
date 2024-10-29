@@ -92,8 +92,8 @@ pub const CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME: &str = "crypto_utils_blak
 pub const CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME: &str = "crypto_utils_ed25519_verify";
 pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME: &str =
     "crypto_utils_secp256k1_ecdsa_verify";
-pub const CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME: &str =
-    "crypto_utils_secp256k1_ecdsa_key_recover";
+pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME: &str =
+    "crypto_utils_secp256k1_ecdsa_verify_and_key_recover";
 
 //=================
 // WASM Shim

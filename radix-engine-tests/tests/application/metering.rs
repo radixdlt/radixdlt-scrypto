@@ -598,7 +598,7 @@ fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionRece
             .call_function(
                 package_address,
                 "CryptoScrypto",
-                "secp256k1_ecdsa_key_recover",
+                "secp256k1_ecdsa_verify_and_key_recover",
                 manifest_args!(&msg_hash, &secp256k1_msg_hash_signature),
             )
             .build(),
