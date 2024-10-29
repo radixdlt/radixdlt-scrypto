@@ -226,7 +226,7 @@ impl TransactionValidator {
                     .intent_signatures
                     .inner
                     .signatures
-                    .clone(),
+                    .as_slice(),
                 signed_hash: transaction_intent.transaction_intent_hash(),
             },
         )?;
@@ -530,7 +530,7 @@ impl TransactionValidator {
                     .transaction_intent_signatures
                     .inner
                     .signatures
-                    .clone(),
+                    .as_slice(),
                 signed_hash: transaction_intent.transaction_intent_hash(),
             },
         )?;
@@ -597,7 +597,7 @@ impl TransactionValidator {
                     .transaction_header
                     .inner
                     .notary_public_key,
-                intent_public_keys: prepared.root_subintent_signatures.inner.clone(),
+                intent_public_keys: prepared.root_subintent_signatures.inner.as_slice(),
             },
         )?;
         signatures.add_non_root_preview_subintents_v2(
@@ -659,7 +659,11 @@ impl TransactionValidator {
             &self.config,
             root_intent_hash,
             PendingIntentSignatureValidations::Subintent {
-                intent_signatures: prepared.root_subintent_signatures.inner.signatures.clone(),
+                intent_signatures: prepared
+                    .root_subintent_signatures
+                    .inner
+                    .signatures
+                    .as_slice(),
                 signed_hash: root_subintent.subintent_hash(),
             },
         )?;
@@ -1278,11 +1282,11 @@ pub struct AllPendingSignatureValidations<'a> {
     transaction_version: TransactionVersion,
     config: &'a TransactionValidationConfig,
     root: (
-        PendingIntentSignatureValidations,
+        PendingIntentSignatureValidations<'a>,
         TransactionValidationErrorLocation,
     ),
     non_roots: Vec<(
-        PendingIntentSignatureValidations,
+        PendingIntentSignatureValidations<'a>,
         TransactionValidationErrorLocation,
     )>,
     total_signature_validations: usize,
@@ -1299,7 +1303,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
         transaction_version: TransactionVersion,
         config: &'a TransactionValidationConfig,
         root_intent_hash: IntentHash,
-        signatures: PendingIntentSignatureValidations,
+        signatures: PendingIntentSignatureValidations<'a>,
     ) -> Result<Self, TransactionValidationError> {
         let intent_signature_validations = signatures.intent_signature_validations();
         let error_location = TransactionValidationErrorLocation::for_root(root_intent_hash);
@@ -1327,7 +1331,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
     pub fn add_non_root_subintents_v2(
         &mut self,
         non_root_subintents: &PreparedNonRootSubintentsV2,
-        signatures: &PreparedNonRootSubintentSignaturesV2,
+        signatures: &'a PreparedNonRootSubintentSignaturesV2,
     ) -> Result<(), TransactionValidationError> {
         let non_root_subintents = &non_root_subintents.subintents;
         let non_root_subintent_signatures = &signatures.by_subintent;
@@ -1346,7 +1350,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
                 SubintentIndex(index),
                 subintent.subintent_hash(),
                 PendingIntentSignatureValidations::Subintent {
-                    intent_signatures: signatures.inner.signatures.clone(),
+                    intent_signatures: &signatures.inner.signatures,
                     signed_hash: subintent.subintent_hash(),
                 },
             )?;
@@ -1357,7 +1361,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
     pub fn add_non_root_preview_subintents_v2(
         &mut self,
         non_root_subintents: &PreparedNonRootSubintentsV2,
-        non_root_subintent_signers: &Vec<Vec<PublicKey>>,
+        non_root_subintent_signers: &'a Vec<Vec<PublicKey>>,
     ) -> Result<(), TransactionValidationError> {
         let non_root_subintents = &non_root_subintents.subintents;
         if non_root_subintents.len() != non_root_subintent_signers.len() {
@@ -1366,7 +1370,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
                     .located(TransactionValidationErrorLocation::AcrossTransaction),
             );
         }
-        for (index, (subintent, signatures)) in non_root_subintents
+        for (index, (subintent, signers)) in non_root_subintents
             .iter()
             .zip(non_root_subintent_signers)
             .enumerate()
@@ -1375,7 +1379,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
                 SubintentIndex(index),
                 subintent.subintent_hash(),
                 PendingIntentSignatureValidations::PreviewSubintent {
-                    intent_public_keys: signatures.clone(),
+                    intent_public_keys: signers,
                 },
             )?;
         }
@@ -1386,7 +1390,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
         &mut self,
         subintent_index: SubintentIndex,
         subintent_hash: SubintentHash,
-        signatures: PendingIntentSignatureValidations,
+        signatures: PendingIntentSignatureValidations<'a>,
     ) -> Result<(), TransactionValidationError> {
         let intent_signature_validations = signatures.intent_signature_validations();
         let error_location =
@@ -1491,7 +1495,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
             } => {
                 let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
                 for key in intent_public_keys {
-                    if !checked_intent_public_keys.insert(key) {
+                    if !checked_intent_public_keys.insert(key.clone()) {
                         return Err(SignatureValidationError::DuplicateSigner);
                     }
                 }
@@ -1524,7 +1528,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
             PendingIntentSignatureValidations::PreviewSubintent { intent_public_keys } => {
                 let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
                 for key in intent_public_keys {
-                    if !checked_intent_public_keys.insert(key) {
+                    if !checked_intent_public_keys.insert(key.clone()) {
                         return Err(SignatureValidationError::DuplicateSigner);
                     }
                 }
@@ -1538,30 +1542,30 @@ impl<'a> AllPendingSignatureValidations<'a> {
 
 /// This can assume that the signature counts are within checked limits,
 /// so calculations cannot overflow.
-enum PendingIntentSignatureValidations {
+enum PendingIntentSignatureValidations<'a> {
     TransactionIntent {
         notary_is_signatory: bool,
         notary_public_key: PublicKey,
         notary_signature: SignatureV1,
         notarized_hash: SignedTransactionIntentHash,
-        intent_signatures: Vec<IntentSignatureV1>,
+        intent_signatures: &'a [IntentSignatureV1],
         signed_hash: TransactionIntentHash,
     },
     PreviewTransactionIntent {
         notary_is_signatory: bool,
         notary_public_key: PublicKey,
-        intent_public_keys: Vec<PublicKey>,
+        intent_public_keys: &'a [PublicKey],
     },
     Subintent {
-        intent_signatures: Vec<IntentSignatureV1>,
+        intent_signatures: &'a [IntentSignatureV1],
         signed_hash: SubintentHash,
     },
     PreviewSubintent {
-        intent_public_keys: Vec<PublicKey>,
+        intent_public_keys: &'a [PublicKey],
     },
 }
 
-impl PendingIntentSignatureValidations {
+impl<'a> PendingIntentSignatureValidations<'a> {
     fn intent_signature_validations(&self) -> usize {
         match self {
             PendingIntentSignatureValidations::TransactionIntent {
@@ -2420,8 +2424,10 @@ mod tests {
             builder.build_minimal()
         }
 
-        fn create_transaction(signature_counts: Vec<usize>) -> NotarizedTransactionV2 {
-            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+        fn create_transaction(
+            root_signature_count: usize,
+            signature_counts: Vec<usize>,
+        ) -> NotarizedTransactionV2 {
             let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
             let mut builder = TransactionV2Builder::new();
 
@@ -2432,7 +2438,7 @@ mod tests {
                 )
             }
 
-            builder
+            let mut builder = builder
                 .intent_header(IntentHeaderV2 {
                     network_id: NetworkDefinition::simulator().id,
                     start_epoch_inclusive: Epoch::of(0),
@@ -2452,19 +2458,23 @@ mod tests {
                     notary_public_key: notary.public_key().into(),
                     notary_is_signatory: false,
                     tip_basis_points: 0,
-                })
-                .sign(&signer)
-                .notarize(&notary)
-                .build_minimal_no_validate()
+                });
+
+            for i in 0..root_signature_count {
+                let signer = Secp256k1PrivateKey::from_u64((100 + i) as u64).unwrap();
+                builder = builder.sign(&signer);
+            }
+
+            builder.notarize(&notary).build_minimal_no_validate()
         }
 
         let validator = TransactionValidator::new_for_latest_simulator();
         assert_matches!(
-            create_transaction(vec![10]).prepare_and_validate(&validator),
+            create_transaction(1, vec![10]).prepare_and_validate(&validator),
             Ok(_)
         );
         assert_matches!(
-            create_transaction(vec![10, 20]).prepare_and_validate(&validator),
+            create_transaction(1, vec![10, 20]).prepare_and_validate(&validator),
             Err(TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
                 SignatureValidationError::TooManySignatures {
@@ -2474,7 +2484,18 @@ mod tests {
             ))
         );
         assert_matches!(
-            create_transaction(vec![10, 10, 10, 10, 10, 10, 10]).prepare_and_validate(&validator),
+            create_transaction(17, vec![0, 3]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                SignatureValidationError::TooManySignatures {
+                    total: 17,
+                    limit: 16,
+                },
+            ))
+        );
+        assert_matches!(
+            create_transaction(1, vec![10, 10, 10, 10, 10, 10, 10])
+                .prepare_and_validate(&validator),
             Err(TransactionValidationError::SignatureValidationError(
                 TransactionValidationErrorLocation::AcrossTransaction,
                 SignatureValidationError::TooManySignatures {
