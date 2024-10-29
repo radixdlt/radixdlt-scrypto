@@ -1,5 +1,5 @@
 [package]
-name = "sha256_in_scrypto"
+name = "costing_sha256"
 version = "1.0.0"
 edition = "2021"
 
