@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,   347.667634537889999992,    100.0%
-- Execution Cost (XRD)                                                     ,                0.5693587,      0.2%
+Total Cost (XRD)                                                           ,   347.667986987889999992,    100.0%
+- Execution Cost (XRD)                                                     ,               0.56971115,      0.2%
 - Finalization Cost (XRD)                                                  ,                0.0102517,      0.0%
 - Storage Cost (XRD)                                                       ,            0.08802413789,      0.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,   346.999999999999999992,     99.8%
-Execution Cost Breakdown                                                   ,                 11387174,    100.0%
+Execution Cost Breakdown                                                   ,                 11394223,    100.0%
 - AfterInvoke                                                              ,                      124,      0.0%
 - AllocateNodeId                                                           ,                     1455,      0.0%
 - BeforeInvoke                                                             ,                     1666,      0.0%
@@ -25,14 +25,14 @@ Execution Cost Breakdown                                                   ,    
 - PinNode                                                                  ,                      180,      0.0%
 - PrepareWasmCode                                                          ,                  2859142,     25.1%
 - QueryActor                                                               ,                     1000,      0.0%
-- ReadSubstate                                                             ,                  2955944,     26.0%
+- ReadSubstate                                                             ,                  2955944,     25.9%
 - RunNativeCode::Worktop_drop                                              ,                    17918,      0.2%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.1%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.4%
-- RunWasmCode::Faucet_lock_fee                                             ,                    24589,      0.2%
-- RunWasmCode::RoyaltiesBp_method_with_no_package_royalty                  ,                    23736,      0.2%
-- RunWasmCode::RoyaltiesBp_method_with_usd_package_royalty                 ,                    23736,      0.2%
-- RunWasmCode::RoyaltiesBp_method_with_xrd_package_royalty                 ,                    23736,      0.2%
+- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.2%
+- RunWasmCode::RoyaltiesBp_method_with_no_package_royalty                  ,                    25002,      0.2%
+- RunWasmCode::RoyaltiesBp_method_with_usd_package_royalty                 ,                    25002,      0.2%
+- RunWasmCode::RoyaltiesBp_method_with_xrd_package_royalty                 ,                    25002,      0.2%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    33920,      0.3%

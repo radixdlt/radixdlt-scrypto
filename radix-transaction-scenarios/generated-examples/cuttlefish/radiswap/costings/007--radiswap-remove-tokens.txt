@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,             0.6665682726,    100.0%
-- Execution Cost (XRD)                                                     ,               0.44498675,     66.8%
+Total Cost (XRD)                                                           ,             0.6671455226,    100.0%
+- Execution Cost (XRD)                                                     ,                 0.445564,     66.8%
 - Finalization Cost (XRD)                                                  ,                0.0480128,      7.2%
 - Storage Cost (XRD)                                                       ,             0.1735687226,     26.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  8899735,    100.0%
+Execution Cost Breakdown                                                   ,                  8911280,    100.0%
 - AfterInvoke                                                              ,                     1654,      0.0%
 - AllocateNodeId                                                           ,                     3977,      0.0%
 - BeforeInvoke                                                             ,                     4284,      0.0%
@@ -43,9 +43,9 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::redeem_two_resource_pool                                  ,                   135373,      1.5%
 - RunNativeCode::take_FungibleVault                                        ,                   127371,      1.4%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      1.4%
-- RunNativeCode::withdraw                                                  ,                    57851,      0.7%
-- RunWasmCode::Faucet_lock_fee                                             ,                    24589,      0.3%
-- RunWasmCode::Radiswap_remove_liquidity                                   ,                    53469,      0.6%
+- RunNativeCode::withdraw                                                  ,                    57851,      0.6%
+- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.3%
+- RunWasmCode::Radiswap_remove_liquidity                                   ,                    61763,      0.7%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    22680,      0.3%
