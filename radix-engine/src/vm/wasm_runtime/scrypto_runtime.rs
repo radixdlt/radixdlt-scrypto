@@ -586,6 +586,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
     }
 
+    /// This method is only available to packages uploaded after "Anemone"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=message.len())]
     fn crypto_utils_bls12381_v1_verify(
         &mut self,
@@ -606,6 +608,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
+    /// This method is only available to packages uploaded after "Anemone"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=pub_keys_and_msgs.len())]
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
@@ -632,6 +636,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         Ok(aggregate_verify_bls12381_v1(&pub_keys_and_msgs, &signature) as u32)
     }
 
+    /// This method is only available to packages uploaded after "Anemone"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=message.len(), log=public_keys.len())]
     fn crypto_utils_bls12381_v1_fast_aggregate_verify(
         &mut self,
@@ -646,10 +652,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         if public_keys.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
-        }
-
-        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
-            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
         }
 
         self.api
@@ -668,6 +670,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         }
     }
 
+    /// This method is only available to packages uploaded after "Anemone"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=signatures.len())]
     fn crypto_utils_bls12381_g2_signature_aggregate(
         &mut self,
@@ -678,10 +682,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         if signatures.is_empty() {
             return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
-        }
-
-        if self.scrypto_vm_version < ScryptoVmVersion::crypto_utils_v1() {
-            return Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented));
         }
 
         self.api
@@ -701,6 +701,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         )
     }
 
+    /// This method is only available to packages uploaded after "Anemone"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=data.len())]
     fn crypto_utils_keccak256_hash(
         &mut self,
@@ -714,6 +716,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.allocate_buffer(hash.to_vec())
     }
 
+    /// This method is only available to packages uploaded after "Cuttlefish"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=data.len())]
     fn crypto_utils_blake2b_256_hash(
         &mut self,
@@ -727,6 +731,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         self.allocate_buffer(hash.to_vec())
     }
 
+    /// This method is only available to packages uploaded after "Cuttlefish"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=message.len())]
     fn crypto_utils_ed25519_verify(
         &mut self,
@@ -747,6 +753,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         Ok(verify_ed25519(&message, &public_key, &signature) as u32)
     }
 
+    /// This method is only available to packages uploaded after "Cuttlefish"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources(log=message.len())]
     fn crypto_utils_secp256k1_ecdsa_verify(
         &mut self,
@@ -766,8 +774,10 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         Ok(verify_secp256k1(&hash, &public_key, &signature) as u32)
     }
 
+    /// This method is only available to packages uploaded after "Cuttlefish"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
     #[trace_resources]
-    fn crypto_utils_secp256k1_ecdsa_key_recover(
+    fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover(
         &mut self,
         message: Vec<u8>,
         signature: Vec<u8>,

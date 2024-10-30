@@ -618,7 +618,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn secp256k1_ecdsa_key_recover_cost(&self) -> u32 {
+    pub fn secp256k1_ecdsa_verify_and_key_recover_cost(&self) -> u32 {
         // Based on  `test_crypto_scrypto_key_recover_secp256k1_ecdsa`
         //   instructions_cnt = 464236 (input is always 32 bytes long)
         //   Lets round:

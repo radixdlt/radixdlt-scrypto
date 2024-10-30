@@ -123,7 +123,7 @@ impl CryptoUtils {
         }
     }
 
-    /// Performs ECDSA Secp256k1 verification.
+    /// Performs ECDSA Secp256k1 signature verification.
     pub fn secp256k1_ecdsa_verify(
         message_hash: impl AsRef<Hash>,
         public_key: impl AsRef<Secp256k1PublicKey>,
@@ -141,13 +141,13 @@ impl CryptoUtils {
         }
     }
 
-    /// Performs ECDSA Secp256k1 key recovery.
-    pub fn secp256k1_ecdsa_key_recover(
+    /// Performs ECDSA Secp256k1 signature verification and public key recovery.
+    pub fn secp256k1_ecdsa_verify_and_key_recover(
         message_hash: impl AsRef<Hash>,
         signature: impl AsRef<Secp256k1Signature>,
     ) -> Secp256k1PublicKey {
         let key = copy_buffer(unsafe {
-            crypto_utils::crypto_utils_secp256k1_ecdsa_key_recover(
+            crypto_utils::crypto_utils_secp256k1_ecdsa_verify_and_key_recover(
                 message_hash.as_ref().0.as_ptr(),
                 message_hash.as_ref().0.len(),
                 signature.as_ref().0.as_ptr(),

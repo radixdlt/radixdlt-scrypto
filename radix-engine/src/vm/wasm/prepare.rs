@@ -940,7 +940,7 @@ impl WasmModule {
                             ));
                         }
                     }
-                    CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME => {
+                    CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME => {
                         if version < ScryptoVmVersion::crypto_utils_v2() {
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::ProtocolVersionMismatch {
@@ -1555,7 +1555,7 @@ mod tests {
                     CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME,
                     CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME,
                     CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
-                    CRYPTO_UTILS_SECP256K1_ECDSA_KEY_RECOVER_FUNCTION_NAME,
+                    CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME,
                 ],
             ),
         ] {

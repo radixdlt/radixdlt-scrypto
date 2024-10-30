@@ -575,7 +575,7 @@ fn crypto_scrypto_secp256k1_ecdsa_verify(
     )
 }
 
-fn crypto_scrypto_secp256k1_ecdsa_key_recover(
+fn crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
     runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     package_address: PackageAddress,
     hash: Hash,
@@ -587,7 +587,7 @@ fn crypto_scrypto_secp256k1_ecdsa_key_recover(
             .call_function(
                 package_address,
                 "CryptoScrypto",
-                "secp256k1_ecdsa_key_recover",
+                "secp256k1_ecdsa_verify_and_key_recover",
                 manifest_args!(hash, signature),
             )
             .build(),
@@ -692,12 +692,13 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
     let hash1_signature = Secp256k1Signature::from_str(hash1_signature).unwrap();
 
     // Act
-    let pk_recovered: Secp256k1PublicKey = get_output!(crypto_scrypto_secp256k1_ecdsa_key_recover(
-        &mut ledger,
-        package_address,
-        hash1,
-        hash1_signature,
-    ));
+    let pk_recovered: Secp256k1PublicKey =
+        get_output!(crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
+            &mut ledger,
+            package_address,
+            hash1,
+            hash1_signature,
+        ));
 
     // Assert
     assert_eq!(pk, pk_recovered);
@@ -706,7 +707,7 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
     let invalid_signature = "01cd8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
     let invalid_signature = Secp256k1Signature::from_str(invalid_signature).unwrap();
 
-    let key_recovery_error = get_failure!(crypto_scrypto_secp256k1_ecdsa_key_recover(
+    let key_recovery_error = get_failure!(crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
         &mut ledger,
         package_address,
         hash1,

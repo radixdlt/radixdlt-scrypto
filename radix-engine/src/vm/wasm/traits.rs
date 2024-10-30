@@ -250,7 +250,7 @@ pub trait WasmRuntime {
         signature: Vec<u8>,
     ) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
-    fn crypto_utils_secp256k1_ecdsa_key_recover(
+    fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover(
         &mut self,
         message: Vec<u8>,
         signature: Vec<u8>,

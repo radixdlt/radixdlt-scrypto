@@ -371,7 +371,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn crypto_utils_secp256k1_ecdsa_key_recover(
+    fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover(
         &mut self,
         message: Vec<u8>,
         signature: Vec<u8>,
