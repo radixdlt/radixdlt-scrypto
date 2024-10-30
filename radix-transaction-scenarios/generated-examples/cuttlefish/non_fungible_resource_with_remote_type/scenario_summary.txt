@@ -2,8 +2,8 @@ Name: non_fungible_resource_with_remote_type
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 8beb46bfca7ae878 (allowed to change if not deployed to any network)
-Events       : a451bc9883b7eaa1 (allowed to change if not deployed to any network)
+State changes: 703039aaf310e827 (allowed to change if not deployed to any network)
+Events       : b9fbbc51d906fc29 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
 - package_with_registered_types: package_sim1p4lm0y29mmmv8vplavve8he4swd06mvvtux6z6t9phyj63hgejdt2t

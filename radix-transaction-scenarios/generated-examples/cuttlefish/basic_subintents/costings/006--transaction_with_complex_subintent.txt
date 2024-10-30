@@ -1,50 +1,50 @@
-Total Cost (XRD)                                                           ,            0.43939346471,    100.0%
-- Execution Cost (XRD)                                                     ,               0.22722755,     51.7%
-- Finalization Cost (XRD)                                                  ,                0.0312539,      7.1%
-- Storage Cost (XRD)                                                       ,            0.18091201471,     41.2%
+Total Cost (XRD)                                                           ,            0.45239346471,    100.0%
+- Execution Cost (XRD)                                                     ,               0.23522755,     52.0%
+- Finalization Cost (XRD)                                                  ,                0.0362539,      8.0%
+- Storage Cost (XRD)                                                       ,            0.18091201471,     40.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  4544551,    100.0%
+Execution Cost Breakdown                                                   ,                  4704551,    100.0%
 - AfterInvoke                                                              ,                     1228,      0.0%
 - AllocateNodeId                                                           ,                     4462,      0.1%
 - BeforeInvoke                                                             ,                     4746,      0.1%
-- CheckIntentValidity                                                      ,                   480000,     10.6%
-- CheckReference                                                           ,                   200070,      4.4%
+- CheckIntentValidity                                                      ,                   640000,     13.6%
+- CheckReference                                                           ,                   200070,      4.3%
 - CloseSubstate                                                            ,                    82947,      1.8%
 - CreateNode                                                               ,                    37650,      0.8%
 - DropNode                                                                 ,                    69252,      1.5%
 - EmitEvent                                                                ,                     2908,      0.1%
 - GetOwnedNodes                                                            ,                     4000,      0.1%
 - LockFee                                                                  ,                      500,      0.0%
-- OpenSubstate::GlobalAccount                                              ,                   534489,     11.8%
-- OpenSubstate::GlobalFungibleResourceManager                              ,                   255466,      5.6%
-- OpenSubstate::GlobalPackage                                              ,                  1243859,     27.4%
-- OpenSubstate::InternalFungibleVault                                      ,                   255083,      5.6%
-- OpenSubstate::InternalGenericComponent                                   ,                   191936,      4.2%
+- OpenSubstate::GlobalAccount                                              ,                   534489,     11.4%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   255466,      5.4%
+- OpenSubstate::GlobalPackage                                              ,                  1243859,     26.4%
+- OpenSubstate::InternalFungibleVault                                      ,                   255083,      5.4%
+- OpenSubstate::InternalGenericComponent                                   ,                   191936,      4.1%
 - PinNode                                                                  ,                      552,      0.0%
 - QueryActor                                                               ,                     2000,      0.0%
-- ReadSubstate                                                             ,                   218327,      4.8%
+- ReadSubstate                                                             ,                   218327,      4.6%
 - RunNativeCode::Worktop_assert_resources_include                          ,                    19117,      0.4%
 - RunNativeCode::Worktop_assert_resources_only                             ,                    38234,      0.8%
 - RunNativeCode::Worktop_drain                                             ,                    22448,      0.5%
-- RunNativeCode::Worktop_drop                                              ,                    71672,      1.6%
-- RunNativeCode::Worktop_put                                               ,                   145165,      3.2%
+- RunNativeCode::Worktop_drop                                              ,                    71672,      1.5%
+- RunNativeCode::Worktop_put                                               ,                   145165,      3.1%
 - RunNativeCode::Worktop_take                                              ,                    17966,      0.4%
 - RunNativeCode::Worktop_take_all                                          ,                    29204,      0.6%
 - RunNativeCode::deposit_batch                                             ,                   110731,      2.4%
-- RunNativeCode::get_amount_FungibleBucket                                 ,                   143208,      3.2%
-- RunNativeCode::lock_fee                                                  ,                   116047,      2.6%
+- RunNativeCode::get_amount_FungibleBucket                                 ,                   143208,      3.0%
+- RunNativeCode::lock_fee                                                  ,                   116047,      2.5%
 - RunNativeCode::put_FungibleVault                                         ,                    24554,      0.5%
 - RunNativeCode::take_FungibleVault                                        ,                    42457,      0.9%
-- RunNativeCode::withdraw                                                  ,                    57851,      1.3%
+- RunNativeCode::withdraw                                                  ,                    57851,      1.2%
 - SendToStack                                                              ,                     4300,      0.1%
 - SetCallFrameData                                                         ,                     2424,      0.1%
 - SwitchStack                                                              ,                     8000,      0.2%
-- ValidateTxPayload                                                        ,                    58240,      1.3%
-- VerifyTxSignatures                                                       ,                    21000,      0.5%
+- ValidateTxPayload                                                        ,                    58240,      1.2%
+- VerifyTxSignatures                                                       ,                    21000,      0.4%
 - WriteSubstate                                                            ,                    22458,      0.5%
-Finalization Cost Breakdown                                                ,                   625078,    100.0%
-- CommitEvents                                                             ,                    25051,      4.0%
-- CommitIntentStatus                                                       ,                   300000,     48.0%
+Finalization Cost Breakdown                                                ,                   725078,    100.0%
+- CommitEvents                                                             ,                    25051,      3.5%
+- CommitIntentStatus                                                       ,                   400000,     55.2%
 - CommitLogs                                                               ,                        0,      0.0%
-- CommitStateUpdates::InternalFungibleVault                                ,                   300027,     48.0%
+- CommitStateUpdates::InternalFungibleVault                                ,                   300027,     41.4%

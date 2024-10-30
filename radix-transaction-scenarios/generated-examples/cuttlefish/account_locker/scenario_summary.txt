@@ -2,8 +2,8 @@ Name: account_locker
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 785bf373e6fcc24a (allowed to change if not deployed to any network)
-Events       : 2ef2b3e2e73a100b (allowed to change if not deployed to any network)
+State changes: faae4a2c40ed343b (allowed to change if not deployed to any network)
+Events       : 0c9bbb6e9d0b65c5 (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
 - badge_holder_account: account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh
