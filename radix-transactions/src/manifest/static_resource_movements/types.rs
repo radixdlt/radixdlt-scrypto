@@ -1272,13 +1272,15 @@ impl StaticResourceMovementsOutput {
         &self,
     ) -> Result<
         (
-            IndexMap<ComponentAddress, NetDeposits>,
             IndexMap<ComponentAddress, NetWithdraws>,
+            IndexMap<ComponentAddress, NetDeposits>,
         ),
         StaticResourceMovementsError,
     > {
-        let mut balance_changes_by_account: IndexMap<ComponentAddress, AllBalanceChanges> =
-            Default::default();
+        let mut aggregated_balance_changes_by_account: IndexMap<
+            ComponentAddress,
+            AllBalanceChanges,
+        > = Default::default();
 
         for invocation in self.invocation_static_information.values() {
             let Some((account_address, method)) = invocation.as_account_method() else {
@@ -1292,7 +1294,7 @@ impl StaticResourceMovementsOutput {
                 | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
                 | ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
                 | ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
-                    balance_changes_by_account
+                    aggregated_balance_changes_by_account
                         .entry(account_address)
                         .or_default()
                         .mut_deposit(invocation.input.clone())?;
@@ -1301,7 +1303,7 @@ impl StaticResourceMovementsOutput {
                 | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT
                 | ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
                 | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                    balance_changes_by_account
+                    aggregated_balance_changes_by_account
                         .entry(account_address)
                         .or_default()
                         .mut_withdraw(invocation.output.clone())?;
@@ -1310,18 +1312,109 @@ impl StaticResourceMovementsOutput {
             }
         }
 
-        let mut account_withdraws = index_map_new();
-        let mut account_deposits = index_map_new();
-        for (account_address, balance_changes) in balance_changes_by_account {
+        let mut account_net_withdraws = index_map_new();
+        let mut account_net_deposits = index_map_new();
+        for (account_address, balance_changes) in aggregated_balance_changes_by_account {
             let (withdraws, deposits) = balance_changes.split()?;
             if let Some(withdraws) = withdraws {
-                account_withdraws.insert(account_address, withdraws);
+                account_net_withdraws.insert(account_address, withdraws);
             }
             if let Some(deposits) = deposits {
-                account_deposits.insert(account_address, deposits);
+                account_net_deposits.insert(account_address, deposits);
             }
         }
-        Ok((account_deposits, account_withdraws))
+        Ok((account_net_withdraws, account_net_deposits))
+    }
+
+    pub fn resolve_account_deposits(&self) -> IndexMap<ComponentAddress, Vec<AccountDeposit>> {
+        let mut account_deposits: IndexMap<ComponentAddress, Vec<AccountDeposit>> =
+            Default::default();
+
+        for invocation in self.invocation_static_information.values() {
+            let Some((account_address, method)) = invocation.as_account_method() else {
+                continue;
+            };
+
+            let account_deposit = match method {
+                ACCOUNT_DEPOSIT_IDENT
+                | ACCOUNT_DEPOSIT_BATCH_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                    let (specified_resources, unspecified_resources) =
+                        invocation.input.clone().normalize().deconstruct();
+
+                    let mut account_deposit = AccountDeposit::empty(unspecified_resources);
+                    for (resource_address, tracked_resource) in specified_resources {
+                        let (bounds, _history) = tracked_resource.deconstruct();
+                        account_deposit = account_deposit.set(resource_address, bounds);
+                    }
+
+                    account_deposit
+                }
+                _ => continue,
+            };
+
+            account_deposits
+                .entry(account_address)
+                .or_default()
+                .push(account_deposit);
+        }
+
+        account_deposits
+    }
+
+    pub fn resolve_account_withdraws(&self) -> IndexMap<ComponentAddress, Vec<AccountWithdraw>> {
+        let mut account_withdraws: IndexMap<ComponentAddress, Vec<AccountWithdraw>> =
+            Default::default();
+
+        for invocation in self.invocation_static_information.values() {
+            let Some((account_address, method)) = invocation.as_account_method() else {
+                continue;
+            };
+
+            // Filter to only withdraws
+            let is_non_fungible_withdraw = match method {
+                ACCOUNT_WITHDRAW_IDENT | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => false,
+                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
+                | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => true,
+                _ => continue,
+            };
+
+            if invocation.output.unspecified_resources().may_be_present() {
+                panic!("Account withdraw output should not have unspecified resources");
+            }
+            let resources = invocation.output.specified_resources();
+            if resources.len() != 1 {
+                panic!("Account withdraw output should have exactly one resource");
+            }
+            let (resource_address, specified_resource) = resources.first().unwrap();
+            let account_withdraw = if is_non_fungible_withdraw {
+                // Account withdraws are for an exact amount, so we can just use required_ids here
+                AccountWithdraw::Ids(
+                    *resource_address,
+                    specified_resource.bounds().required_ids().clone(),
+                )
+            } else {
+                // Account withdraws are for an exact amount, so the two numeric bounds are equivalent
+                AccountWithdraw::Amount(
+                    *resource_address,
+                    specified_resource
+                        .bounds
+                        .numeric_bounds()
+                        .0
+                        .equivalent_decimal(),
+                )
+            };
+
+            account_withdraws
+                .entry(account_address)
+                .or_default()
+                .push(account_withdraw);
+        }
+
+        account_withdraws
     }
 }
 
@@ -1636,6 +1729,54 @@ impl NetDeposits {
         match self.specified_resources.get(&resource_address) {
             Some(bounds) => bounds.clone(),
             None => self.unspecified_resources.resource_bounds(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AccountWithdraw {
+    Amount(ResourceAddress, Decimal),
+    Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AccountDeposit {
+    specified_resources: IndexMap<ResourceAddress, SimpleResourceBounds>,
+    unspecified_resources: UnspecifiedResources,
+}
+
+impl AccountDeposit {
+    pub fn empty(unspecified_resources: UnspecifiedResources) -> Self {
+        Self {
+            specified_resources: Default::default(),
+            unspecified_resources,
+        }
+    }
+
+    /// Should only be used if it doesn't already exist
+    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
+        self.specified_resources.insert(
+            resource_address,
+            SimpleResourceBounds::from_bound(resource_address, bounds),
+        );
+        self
+    }
+
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
+        &self.specified_resources
+    }
+
+    pub fn unspecified_resources(&self) -> UnspecifiedResources {
+        self.unspecified_resources.clone()
+    }
+
+    pub fn bounds_for(&self, resource_address: ResourceAddress) -> SimpleResourceBounds {
+        match self.specified_resources.get(&resource_address) {
+            Some(bounds) => bounds.clone(),
+            None => SimpleResourceBounds::from_bound(
+                resource_address,
+                self.unspecified_resources.resource_bounds(),
+            ),
         }
     }
 }
