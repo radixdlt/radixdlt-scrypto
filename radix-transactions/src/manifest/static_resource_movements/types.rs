@@ -869,7 +869,10 @@ impl ResourceBounds {
 
     /// Returns true if the bound is known to be zero
     pub fn is_zero(&self) -> bool {
-        self.eq(&Self::zero())
+        // We don't just compare to zero; we do an equivalent upper-bounds check.
+        // For more flexibility, this also works with unnormalized `ResourceBounds`
+        // (e.g. if the allowed bound has `AllowedIds::Any`, such as in the `AggregatedBalanceChange`)
+        self.upper_bound() == UpperBound::zero()
     }
 
     pub fn is_exact_ids(&self) -> bool {
