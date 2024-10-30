@@ -286,6 +286,7 @@ impl TransactionValidator {
         })
     }
 
+    // This method is public so it can be used by the toolkit.
     #[allow(deprecated)]
     pub fn validate_intent_v1(
         &self,
@@ -627,6 +628,7 @@ impl TransactionValidator {
         })
     }
 
+    // This method is public so it can be used by the toolkit.
     pub fn validate_transaction_header_v2(
         &self,
         header: &TransactionHeaderV2,
@@ -824,6 +826,7 @@ impl TransactionValidator {
         Ok((overall_validity_range, root_yield_summary))
     }
 
+    // This method is public so it can be used by the toolkit.
     pub fn validate_v2_intent_core(
         &self,
         intent_core: &PreparedIntentCoreV2,
@@ -843,6 +846,7 @@ impl TransactionValidator {
         Ok(yield_summary)
     }
 
+    // This method is public so it can be used by the toolkit.
     pub fn validate_intent_header_v2(
         &self,
         header: &IntentHeaderV2,
@@ -889,6 +893,7 @@ impl TransactionValidator {
         Ok(())
     }
 
+    // This method is public so it can be used by the toolkit.
     pub fn validate_message_v2(&self, message: &MessageV2) -> Result<(), InvalidMessageError> {
         let validation = &self.config.message_validation;
         match message {
@@ -949,6 +954,7 @@ impl TransactionValidator {
         Ok(())
     }
 
+    // This method is public so it can be used by the toolkit.
     /// The `is_subintent` property indicates whether it should be treated as a subintent.
     /// A subintent is able to `YIELD_TO_PARENT` and is required to end with a `YIELD_TO_PARENT`.
     pub fn validate_manifest_v2(
