@@ -22,14 +22,14 @@ fn simple_account_transfer_with_an_explicit_take_all_is_correctly_classified() {
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&NetWithdraws::empty().set_fungible(XRD, 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(
-            UnspecifiedResources::NonePresent
-        )
-        .set(XRD, ResourceBounds::exact_amount(10).unwrap())]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::NonePresent)
+                .set(XRD, ResourceBounds::exact_amount(10).unwrap())
+        ),
     );
 }
 
@@ -52,14 +52,14 @@ fn simple_account_transfer_with_an_explicit_take_exact_is_correctly_classified()
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&NetWithdraws::empty().set_fungible(XRD, 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(
-            UnspecifiedResources::NonePresent
-        )
-        .set(XRD, ResourceBounds::exact_amount(10).unwrap())]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::NonePresent)
+                .set(XRD, ResourceBounds::exact_amount(10).unwrap())
+        ),
     );
 }
 
@@ -84,16 +84,14 @@ fn simple_account_transfer_with_two_deposits_is_correctly_classified() {
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&NetWithdraws::empty().set_fungible(XRD, 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![
-            AccountDeposit::empty(UnspecifiedResources::NonePresent)
-                .set(XRD, ResourceBounds::exact_amount(8).unwrap()),
-            AccountDeposit::empty(UnspecifiedResources::NonePresent)
-                .set(XRD, ResourceBounds::exact_amount(2).unwrap()),
-        ]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::NonePresent)
+                .set(XRD, ResourceBounds::exact_amount(10).unwrap()),
+        ),
     );
 }
 
@@ -116,14 +114,14 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&NetWithdraws::empty().set_fungible(XRD, 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(
-            UnspecifiedResources::NonePresent
-        )
-        .set(XRD, ResourceBounds::exact_amount(10).unwrap()),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::NonePresent)
+                .set(XRD, ResourceBounds::exact_amount(10).unwrap()),
+        ),
     );
 }
 
@@ -146,14 +144,16 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&NetWithdraws::empty().set_fungible(XRD, 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::InitialYieldFromParent
-        ]))
-        .set(XRD, ResourceBounds::at_least_amount(10).unwrap()),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some([
+                ChangeSource::InitialYieldFromParent
+            ]))
+            .set(XRD, ResourceBounds::at_least_amount(10).unwrap()),
+        ),
     );
 }
 
@@ -177,20 +177,19 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(
-            non_fungible_address,
-            10.into()
-        )])
+        Some(&NetWithdraws::empty().set_non_fungible(non_fungible_address, [], 10))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::InitialYieldFromParent
-        ]))
-        .set(
-            non_fungible_address,
-            ResourceBounds::at_least_amount(10).unwrap()
-        ),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some([
+                ChangeSource::InitialYieldFromParent
+            ]))
+            .set(
+                non_fungible_address,
+                ResourceBounds::at_least_amount(10).unwrap()
+            )
+        ),
     );
 }
 
@@ -218,20 +217,18 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
     assert_eq!(deposits.len(), 1);
     assert_eq!(
         withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Ids(
+        Some(&NetWithdraws::empty().set_non_fungible(
             non_fungible_address,
-            [NonFungibleLocalId::integer(1)].into_iter().collect(),
-        )])
+            [NonFungibleLocalId::integer(1)],
+            0,
+        ))
     );
     assert_eq!(
         deposits.get(&account2),
-        Some(&vec![AccountDeposit::empty(
-            UnspecifiedResources::NonePresent
-        )
-        .set(
+        Some(&NetDeposits::empty(UnspecifiedResources::NonePresent).set(
             non_fungible_address,
             ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(1)]),
-        ),]),
+        )),
     );
 }
 
@@ -274,11 +271,13 @@ fn assertion_of_any_with_unknown_on_worktop_gives_context_to_visitor() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::invocation_at(0),
-            ChangeSource::invocation_at(1),
-        ]))
-        .set(XRD, ResourceBounds::non_zero()),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some([
+                ChangeSource::invocation_at(0),
+                ChangeSource::invocation_at(1),
+            ]))
+            .set(XRD, ResourceBounds::non_zero())
+        ),
     );
 }
 
@@ -305,13 +304,15 @@ fn assertion_of_ids_gives_context_to_visitor() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::invocation_at(0),
-        ]))
-        .set(
-            non_fungible_address,
-            ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1),]),
-        ),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some(
+                [ChangeSource::invocation_at(0),]
+            ))
+            .set(
+                non_fungible_address,
+                ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(1),]),
+            )
+        ),
     );
 }
 
@@ -342,12 +343,14 @@ fn assertion_of_next_call_returns_only_constrains_resources() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
-            .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
-            .set(
-                non_fungible_address,
-                ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
-            ),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::none())
+                .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
+                .set(
+                    non_fungible_address,
+                    ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
+                ),
+        ),
     );
 }
 
@@ -378,14 +381,14 @@ fn assertion_of_next_call_returns_include_constrains_resources() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::invocation_at(1)
-        ]))
-        .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
-        .set(
-            non_fungible_address,
-            ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
-        )]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some([ChangeSource::invocation_at(1)]))
+                .set(XRD, ResourceBounds::general_fungible(5, 10).unwrap())
+                .set(
+                    non_fungible_address,
+                    ResourceBounds::at_least_non_fungibles([NonFungibleLocalId::integer(3)])
+                )
+        ),
     );
 }
 
@@ -413,12 +416,14 @@ fn assertion_of_worktop_resources_only_constrains_resources() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
-            .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
-            .set(
-                non_fungible_address,
-                ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
-            ),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::none())
+                .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
+                .set(
+                    non_fungible_address,
+                    ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
+                ),
+        ),
     );
 }
 
@@ -446,14 +451,14 @@ fn assertion_of_worktop_resources_include_constrains_resources() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::some([
-            ChangeSource::invocation_at(0)
-        ]))
-        .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
-        .set(
-            non_fungible_address,
-            ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
-        ),]),
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::some([ChangeSource::invocation_at(0)]))
+                .set(XRD, ResourceBounds::exact_amount("9.452").unwrap())
+                .set(
+                    non_fungible_address,
+                    ResourceBounds::exact_non_fungibles([NonFungibleLocalId::integer(3)])
+                )
+        ),
     );
 }
 
@@ -493,8 +498,8 @@ fn assertion_of_bucket_constrains_resources() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
-            .set(
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::none()).set(
                 non_fungible_address,
                 ResourceBounds::general_non_fungible_with_allowlist(
                     [NonFungibleLocalId::string("hello").unwrap()],
@@ -508,7 +513,8 @@ fn assertion_of_bucket_constrains_resources() {
                     ]
                 )
                 .unwrap()
-            ),]),
+            ),
+        ),
     );
 }
 
@@ -541,12 +547,11 @@ fn complex_assertion_of_amount_gives_context_to_visitor() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![
-            AccountDeposit::empty(UnspecifiedResources::none())
-                .set(resource_address, ResourceBounds::exact_amount(10).unwrap()),
-            AccountDeposit::empty(UnspecifiedResources::none())
+        Some(
+            &NetDeposits::empty(UnspecifiedResources::none())
+                .set(resource_address, ResourceBounds::exact_amount(10).unwrap())
                 .set(resource_address2, ResourceBounds::exact_amount(7).unwrap()),
-        ]),
+        ),
     );
 }
 
@@ -578,12 +583,143 @@ fn two_buckets_with_separate_histories_are_combined() {
     assert_eq!(withdraws.get(&account), None);
     assert_eq!(
         deposits.get(&account),
-        Some(&vec![AccountDeposit::empty(UnspecifiedResources::none())
-            .set(
-                resource_address,
-                ResourceBounds::at_least_amount(5).unwrap()
-            ),]),
+        Some(&NetDeposits::empty(UnspecifiedResources::none()).set(
+            resource_address,
+            ResourceBounds::at_least_amount(5).unwrap()
+        )),
     );
+}
+
+#[test]
+fn aggregation_balance_change_test_cases() {
+    // Arrange
+    let account = account_address(1);
+    let nf_resource_address = non_fungible_resource_address(5);
+    let nf_local_id = NonFungibleLocalId::integer(5);
+    let nf_global_id = NonFungibleGlobalId::new(nf_resource_address, nf_local_id.clone());
+
+    {
+        // `Deposit {#5#}, Withdraw 1` => `Deposited 1, Withdrawn 1` (because we can't guarantee we deposited #5#)
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .take_non_fungibles_from_worktop(nf_resource_address, [nf_local_id.clone()], "bucket")
+            .deposit(account, "bucket")
+            .assert_worktop_is_empty()
+            .withdraw_from_account(account, nf_resource_address, 1)
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+        let expected_withdraws = NetWithdraws::empty().set_non_fungible(nf_resource_address, [], 1);
+        let expected_deposits = NetDeposits::empty(UnspecifiedResources::NonePresent).set(
+            nf_resource_address,
+            ResourceBounds::exact_amount(1).unwrap(),
+        );
+        assert_eq!(deposits.get(&account), Some(&expected_deposits));
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
+    {
+        // `Withdraw 1, Deposit {#5#}` => `Deposited {#5#}, Withdrawn 1` (order matters!)
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .withdraw_from_account(account, nf_resource_address, 1)
+            .take_non_fungibles_from_worktop(nf_resource_address, [nf_local_id.clone()], "bucket")
+            .deposit(account, "bucket")
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+        let expected_withdraws = NetWithdraws::empty().set_non_fungible(nf_resource_address, [], 1);
+        let expected_deposits = NetDeposits::empty(UnspecifiedResources::NonePresent).set(
+            nf_resource_address,
+            ResourceBounds::exact_non_fungibles([nf_local_id.clone()]),
+        );
+        assert_eq!(deposits.get(&account), Some(&expected_deposits));
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
+    {
+        // `Withdraw {#5#}, Deposit 1` => `Deposited 1, Withdrawn 1`
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .withdraw_non_fungibles_from_account(
+                account,
+                nf_resource_address,
+                [nf_local_id.clone()],
+            )
+            .take_from_worktop(nf_resource_address, 1, "bucket")
+            .deposit(account, "bucket")
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+        let expected_withdraws = NetWithdraws::empty().set_non_fungible(nf_resource_address, [], 1);
+        let expected_deposits = NetDeposits::empty(UnspecifiedResources::NonePresent).set(
+            nf_resource_address,
+            ResourceBounds::exact_amount(1).unwrap(),
+        );
+        assert_eq!(deposits.get(&account), Some(&expected_deposits));
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
+    {
+        // `Deposit 1, Withdraw {#5#}` => `Deposited 1, Withdrawn {#5#}`
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .take_from_worktop(nf_resource_address, 1, "bucket")
+            .deposit(account, "bucket")
+            .withdraw_non_fungibles_from_account(
+                account,
+                nf_resource_address,
+                [nf_local_id.clone()],
+            )
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+        let expected_withdraws =
+            NetWithdraws::empty().set_non_fungible(nf_resource_address, [nf_local_id.clone()], 0);
+        let expected_deposits = NetDeposits::empty(UnspecifiedResources::NonePresent).set(
+            nf_resource_address,
+            ResourceBounds::exact_amount(1).unwrap(),
+        );
+        assert_eq!(deposits.get(&account), Some(&expected_deposits));
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
+    {
+        // `Withdraw {#2}, Deposit {#2#}, Withdraw {#2}` => `Withdraw {#2}`
+        // Withdraw, Deposit, Withdraw of a single NF id flattens to a single withdraw
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .assert_worktop_is_empty()
+            .withdraw_non_fungible_from_account(account, nf_global_id.clone())
+            .deposit_entire_worktop(account)
+            .withdraw_non_fungible_from_account(account, nf_global_id)
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+        let expected_withdraws =
+            NetWithdraws::empty().set_non_fungible(nf_resource_address, [nf_local_id], 0);
+        assert_eq!(deposits.get(&account), None);
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
+
+    {
+        // `Withdraw 1, Deposit between 3 and 7, Withdraw 4` => `Deposited between 3 and 7, Withdrawn 5`
+        // Withdraw, Deposit, Withdraw of fungible resource does NOT flatten
+        let manifest = ManifestBuilder::new_subintent_v2()
+            .assert_worktop_resources_only(
+                ManifestResourceConstraints::new().with_amount_range(XRD, 2, 6),
+            )
+            .withdraw_from_account(account, XRD, 1)
+            .deposit_entire_worktop(account)
+            .withdraw_from_account(account, XRD, 4)
+            .yield_to_parent((ManifestExpression::EntireWorktop,))
+            .build();
+
+        let (deposits, withdraws) = statically_analyze(&manifest).unwrap();
+
+        let expected_deposits = NetDeposits::empty(UnspecifiedResources::none())
+            .set(XRD, ResourceBounds::general_fungible(3, 7).unwrap());
+        let expected_withdraws = NetWithdraws::empty().set_fungible(XRD, 5);
+        assert_eq!(deposits.get(&account), Some(&expected_deposits));
+        assert_eq!(withdraws.get(&account), Some(&expected_withdraws));
+    }
 }
 
 fn account_address(id: u64) -> ComponentAddress {
@@ -618,8 +754,8 @@ fn statically_analyze<M: ReadableManifest>(
     manifest: &M,
 ) -> Result<
     (
-        IndexMap<ComponentAddress, Vec<AccountDeposit>>,
-        IndexMap<ComponentAddress, Vec<AccountWithdraw>>,
+        IndexMap<ComponentAddress, NetDeposits>,
+        IndexMap<ComponentAddress, NetWithdraws>,
     ),
     StaticResourceMovementsError,
 > {
@@ -627,6 +763,5 @@ fn statically_analyze<M: ReadableManifest>(
     let mut visitor: StaticResourceMovementsVisitor =
         StaticResourceMovementsVisitor::new(manifest.is_subintent());
     interpreter.validate_and_apply_visitor(&mut visitor)?;
-    let output = visitor.output();
-    Ok((output.account_deposits(), output.account_withdraws()))
+    visitor.output().resolve_account_changes()
 }

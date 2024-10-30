@@ -116,7 +116,7 @@ impl StaticResourceMovementsVisitor {
         }
 
         // Add the returned resources to the worktop
-        self.worktop.add(invocation_output.clone())?;
+        self.worktop.mut_add(invocation_output.clone())?;
 
         Ok(InvocationStaticInformation {
             kind: invocation_kind.into(),
@@ -263,7 +263,7 @@ impl StaticResourceMovementsVisitor {
         };
         let (resource_address, resource_amount) = match state.source_amount {
             BucketSourceAmount::AllOnWorktop { resource_address } => {
-                let resource_amount = self.worktop.take_resource(
+                let resource_amount = self.worktop.mut_take_resource(
                     *resource_address,
                     ResourceTakeAmount::All,
                     source,
@@ -274,7 +274,7 @@ impl StaticResourceMovementsVisitor {
                 resource_address,
                 amount,
             } => {
-                let resource_amount = self.worktop.take_resource(
+                let resource_amount = self.worktop.mut_take_resource(
                     *resource_address,
                     ResourceTakeAmount::exact_amount(amount)?,
                     source,
@@ -285,7 +285,7 @@ impl StaticResourceMovementsVisitor {
                 resource_address,
                 ids,
             } => {
-                let resource_amount = self.worktop.take_resource(
+                let resource_amount = self.worktop.mut_take_resource(
                     *resource_address,
                     ResourceTakeAmount::exact_non_fungibles(ids.iter().cloned()),
                     source,
@@ -338,7 +338,7 @@ impl StaticResourceMovementsVisitor {
             (ManifestExpression::EntireWorktop, ExpressionDestination::Invocation(_)) => {
                 let entire_worktop = self.worktop.take_all();
                 self.current_instruction_sent_resources()
-                    .add(entire_worktop)?;
+                    .mut_add(entire_worktop)?;
             }
             (ManifestExpression::EntireAuthZone, _) => {}
         }

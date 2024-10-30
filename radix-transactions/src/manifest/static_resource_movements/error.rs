@@ -15,6 +15,8 @@ pub enum StaticResourceMovementsError {
     ManifestValidationError(ManifestValidationError),
     NotAResourceAddress(GlobalAddress),
     TypedManifestNativeInvocationError(TypedManifestNativeInvocationError),
+    AggregatedBalanceChangeWithdrawDoesNotSupportUnknownResources,
+    UnexpectedBoundsForNetWithdraw,
 }
 
 impl From<ManifestValidationError> for StaticResourceMovementsError {
