@@ -96,7 +96,7 @@ impl FeeTable {
             //   W = 274,517,401,207
             // Therefore
             //   divider = 274,517,401,207 / (960 * 100,000) = 2859.556 ~= 3000
-            SystemVersion::V2 => 5000,
+            SystemVersion::V2 => 4500,
         };
 
         Self {
