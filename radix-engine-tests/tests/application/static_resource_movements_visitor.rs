@@ -586,6 +586,26 @@ fn two_buckets_with_separate_histories_are_combined() {
     );
 }
 
+#[test]
+fn static_analysis_on_a_vault_direct_method_succeeds() {
+    // Arrange
+    let manifest = ManifestBuilder::new()
+        .call_direct_access_method(
+            vault_id(1),
+            VAULT_FREEZE_IDENT,
+            VaultFreezeManifestInput {
+                to_freeze: VaultFreezeFlags::all(),
+            },
+        )
+        .build();
+
+    // Act
+    let rtn = statically_analyze(&manifest);
+
+    // Act
+    assert!(rtn.is_ok());
+}
+
 fn account_address(id: u64) -> ComponentAddress {
     unsafe {
         ComponentAddress::new_unchecked(node_id(EntityType::GlobalPreallocatedEd25519Account, id).0)
@@ -594,6 +614,10 @@ fn account_address(id: u64) -> ComponentAddress {
 
 fn component_address(id: u64) -> ComponentAddress {
     unsafe { ComponentAddress::new_unchecked(node_id(EntityType::GlobalGenericComponent, id).0) }
+}
+
+fn vault_id(id: u64) -> InternalAddress {
+    unsafe { InternalAddress::new_unchecked(node_id(EntityType::InternalFungibleVault, id).0) }
 }
 
 fn fungible_resource_address(id: u64) -> ResourceAddress {

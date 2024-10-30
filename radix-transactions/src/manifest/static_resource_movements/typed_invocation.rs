@@ -291,6 +291,15 @@ macro_rules! define_manifest_typed_invocation {
                         $(
                             $(
                                 TypedManifestNativeInvocation::[<$blueprint_ident BlueprintInvocation>](
+                                    [<$blueprint_ident BlueprintInvocation>]::DirectMethod(
+                                        [<$blueprint_ident BlueprintDirectMethod>]::$direct_method_ident($input)
+                                    )
+                                ) => $action,
+                            )*
+                        )*
+                        $(
+                            $(
+                                TypedManifestNativeInvocation::[<$blueprint_ident BlueprintInvocation>](
                                     [<$blueprint_ident BlueprintInvocation>]::Function(
                                         [<$blueprint_ident BlueprintFunction>]::$function_ident($input)
                                     )
