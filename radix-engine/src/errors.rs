@@ -34,6 +34,7 @@ use crate::vm::ScryptoVmVersionError;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
+use radix_transactions::model::IntentHash;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -65,8 +66,8 @@ pub enum RejectionReason {
         valid_to_exclusive: Instant,
         current_time: Instant,
     },
-    IntentHashPreviouslyCommitted,
-    IntentHashPreviouslyCancelled,
+    IntentHashPreviouslyCommitted(IntentHash),
+    IntentHashPreviouslyCancelled(IntentHash),
 
     BootloadingError(BootloadingError),
 

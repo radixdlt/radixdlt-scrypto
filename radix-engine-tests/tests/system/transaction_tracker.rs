@@ -58,9 +58,11 @@ fn test_transaction_replay_protection() {
         executable.clone(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
-    receipt.expect_specific_rejection(|e| match e {
-        RejectionReason::IntentHashPreviouslyCommitted => true,
-        _ => false,
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RejectionReason::IntentHashPreviouslyCommitted(IntentHash::Transaction(_))
+        )
     });
 
     // 4. Advance to the max epoch (which triggers epoch update)
