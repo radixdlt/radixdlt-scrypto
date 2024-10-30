@@ -34,7 +34,7 @@ pub struct WasmiInstance {
     memory: Memory,
 }
 
-/// This is to construct a `Store<WasmiInstanceEnv>
+/// This is to construct a `Store<WasmiInstanceEnv>`
 pub struct WasmiInstanceEnv {
     runtime_ptr: MaybeUninit<*mut Box<dyn WasmRuntime>>,
 }
