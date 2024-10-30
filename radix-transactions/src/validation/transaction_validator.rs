@@ -1173,8 +1173,9 @@ enum TransactionVersion {
     V2,
 }
 
+// This type is public so it can be used by the toolkit.
 #[must_use]
-struct AcrossIntentAggregation {
+pub struct AcrossIntentAggregation {
     total_reference_count: usize,
     overall_start_epoch_inclusive: Epoch,
     overall_end_epoch_exclusive: Epoch,
@@ -1600,8 +1601,9 @@ impl<'a> PendingIntentSignatureValidations<'a> {
     }
 }
 
+// This type is public so it can be used by the toolkit.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ManifestYieldSummary {
+pub struct ManifestYieldSummary {
     parent_yields: usize,
     child_yields: IndexMap<SubintentHash, usize>,
 }
