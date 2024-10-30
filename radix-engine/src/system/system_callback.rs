@@ -240,6 +240,13 @@ impl SystemVersion {
 
         true
     }
+
+    pub fn should_charge_for_transaction_intent(&self) -> bool {
+        match self {
+            SystemVersion::V1 => false,
+            SystemVersion::V2 => true,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -1515,7 +1522,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         executable: &ExecutableTransaction,
         init_input: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Actor>>, usize), Self::Receipt> {
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.self_init.enable_kernel_trace {
@@ -1553,7 +1560,6 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             }
         }
 
-        let mut num_of_intent_statuses = 0;
         for hash_nullification in executable.intent_hash_nullifications() {
             let intent_hash_validation_result = match hash_nullification {
                 IntentHashNullification::TransactionIntent {
@@ -1582,27 +1588,24 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 }
             }
             .and_then(|_| {
-                match hash_nullification {
+                if match hash_nullification {
                     IntentHashNullification::TransactionIntent { .. }
                     | IntentHashNullification::SimulatedTransactionIntent { .. } => {
-                        // Transaction intent nullification is historically not costed.
-                        // If this changes, it should be applied to both TransactionIntents and SimulatedTransactionIntents
+                        logic_version.should_charge_for_transaction_intent()
                     }
                     IntentHashNullification::Subintent { .. }
-                    | IntentHashNullification::SimulatedSubintent { .. } => {
-                        num_of_intent_statuses += 1;
-
-                        if let Some(costing) = modules.costing_mut() {
-                            return costing
-                                .apply_deferred_execution_cost(
-                                    ExecutionCostingEntry::CheckIntentValidity,
+                    | IntentHashNullification::SimulatedSubintent { .. } => true,
+                } {
+                    if let Some(costing) = modules.costing_mut() {
+                        return costing
+                            .apply_deferred_execution_cost(
+                                ExecutionCostingEntry::CheckIntentValidity,
+                            )
+                            .map_err(|e| {
+                                RejectionReason::BootloadingError(
+                                    BootloadingError::FailedToApplyDeferredCosts(e),
                                 )
-                                .map_err(|e| {
-                                    RejectionReason::BootloadingError(
-                                        BootloadingError::FailedToApplyDeferredCosts(e),
-                                    )
-                                });
-                        }
+                            });
                     }
                 }
 
@@ -1696,7 +1699,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             },
         );
 
-        Ok((system, call_frame_inits, num_of_intent_statuses))
+        Ok((system, call_frame_inits))
     }
 
     fn execute<Y: SystemBasedKernelApi>(
@@ -1730,8 +1733,8 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
 
     fn finalize(
         &mut self,
+        executable: &ExecutableTransaction,
         info: StoreCommitInfo,
-        num_of_intent_statuses: usize,
     ) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
@@ -1754,6 +1757,25 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 logs: &self.modules.logs().clone(),
             })
             .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+        let num_of_intent_statuses = executable
+            .intent_hash_nullifications()
+            .iter()
+            .map(|n| match n {
+                IntentHashNullification::TransactionIntent { .. }
+                | IntentHashNullification::SimulatedTransactionIntent { .. } => {
+                    if self
+                        .versioned_system_logic
+                        .should_charge_for_transaction_intent()
+                    {
+                        1
+                    } else {
+                        0
+                    }
+                }
+                IntentHashNullification::Subintent { .. }
+                | IntentHashNullification::SimulatedSubintent { .. } => 1,
+            })
+            .sum();
         self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitIntentStatus {
                 num_of_intent_statuses,
