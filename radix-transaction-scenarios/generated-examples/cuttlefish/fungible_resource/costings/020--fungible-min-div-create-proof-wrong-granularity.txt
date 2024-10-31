@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.20058305317,    100.0%
-- Execution Cost (XRD)                                                     ,                0.1606241,     80.1%
+Total Cost (XRD)                                                           ,            0.20045555317,    100.0%
+- Execution Cost (XRD)                                                     ,                0.1604966,     80.1%
 - Finalization Cost (XRD)                                                  ,                        0,      0.0%
 - Storage Cost (XRD)                                                       ,            0.03995895317,     19.9%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3212482,    100.0%
+Execution Cost Breakdown                                                   ,                  3209932,    100.0%
 - AfterInvoke                                                              ,                       64,      0.0%
 - AllocateNodeId                                                           ,                      679,      0.0%
 - BeforeInvoke                                                             ,                      736,      0.0%
@@ -17,7 +17,7 @@ Execution Cost Breakdown                                                   ,    
 - MarkSubstateAsTransient                                                  ,                       55,      0.0%
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   164139,      5.1%
 - OpenSubstate::GlobalGenericComponent                                     ,                    43690,      1.4%
-- OpenSubstate::GlobalPackage                                              ,                  1431122,     44.5%
+- OpenSubstate::GlobalPackage                                              ,                  1431122,     44.6%
 - OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   284483,      8.9%
 - OpenSubstate::InternalFungibleVault                                      ,                   133423,      4.2%
 - OpenSubstate::InternalGenericComponent                                   ,                     6237,      0.2%
@@ -28,9 +28,9 @@ Execution Cost Breakdown                                                   ,    
 - ReadSubstate                                                             ,                   425123,     13.2%
 - RunNativeCode::create_proof_of_amount                                    ,                    62543,      1.9%
 - RunNativeCode::create_proof_of_amount_FungibleVault                      ,                    38091,      1.2%
-- RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.4%
+- RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.5%
 - RunNativeCode::lock_fee                                                  ,                    45243,      1.4%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.9%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.8%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    16760,      0.5%

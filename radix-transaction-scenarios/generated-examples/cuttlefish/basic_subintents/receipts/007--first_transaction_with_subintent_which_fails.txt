@@ -34,7 +34,7 @@ STATE UPDATES: 4 entities
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("0.6744889878375"),
+             0u8 => Decimal("0.6744207628375"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -66,7 +66,7 @@ STATE UPDATES: 4 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("1.348977975675")),
+         LiquidFungibleResource(Decimal("1.348841525675")),
        )
 
 BALANCE CHANGES: 2

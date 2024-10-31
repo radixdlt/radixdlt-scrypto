@@ -1,14 +1,14 @@
-Total Cost (XRD)                                                           ,            1.82124119961,    100.0%
-- Execution Cost (XRD)                                                     ,               0.65333295,     35.9%
+Total Cost (XRD)                                                           ,            1.82111369961,    100.0%
+- Execution Cost (XRD)                                                     ,               0.65320545,     35.9%
 - Finalization Cost (XRD)                                                  ,                0.1830488,     10.1%
 - Storage Cost (XRD)                                                       ,            0.98485944961,     54.1%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 13066659,    100.0%
+Execution Cost Breakdown                                                   ,                 13064109,    100.0%
 - AfterInvoke                                                              ,                     1212,      0.0%
 - AllocateNodeId                                                           ,                     7081,      0.1%
 - BeforeInvoke                                                             ,                    11868,      0.1%
-- CheckReference                                                           ,                   320115,      2.4%
+- CheckReference                                                           ,                   320115,      2.5%
 - CloseSubstate                                                            ,                   140481,      1.1%
 - CreateNode                                                               ,                    62852,      0.5%
 - DropNode                                                                 ,                   113003,      0.9%
@@ -42,7 +42,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::on_move_NonFungibleProof                                  ,                    17108,      0.1%
 - RunNativeCode::set                                                       ,                   647001,      5.0%
 - RunNativeCode::unlock_non_fungibles_NonFungibleVault                     ,                    34403,      0.3%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.2%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.2%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                      151,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
