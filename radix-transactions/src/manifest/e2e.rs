@@ -197,7 +197,7 @@ CALL_METHOD
 POP_FROM_AUTH_ZONE
     Proof("proof3")
 ;
-DROP_PROOF
+PUSH_TO_AUTH_ZONE
     Proof("proof3")
 ;
 CALL_METHOD
