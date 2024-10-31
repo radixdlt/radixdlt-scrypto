@@ -98,6 +98,13 @@ pub trait HasNotarizedTransactionHash {
     fn notarized_transaction_hash(&self) -> NotarizedTransactionHash;
 }
 
+pub trait HasNonRootSubintentHashes {
+    /// ## Validity Note
+    /// Preparable but invalid transactions may contain non-root subintents with duplicate [`SubintentHash`]es.
+    /// Therefore we return a `Vec` instead of an `IndexSet` here.
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash>;
+}
+
 define_raw_transaction_payload!(RawSubintent, TransactionPayloadKind::Other);
 define_wrapped_hash!(
     /// A hash of the subintent.
