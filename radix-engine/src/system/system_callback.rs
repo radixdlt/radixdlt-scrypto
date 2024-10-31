@@ -1588,14 +1588,16 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 }
             }
             .and_then(|_| {
-                if match hash_nullification {
+                let charge_for_nullification_check = match hash_nullification {
                     IntentHashNullification::TransactionIntent { .. }
                     | IntentHashNullification::SimulatedTransactionIntent { .. } => {
                         logic_version.should_charge_for_transaction_intent()
                     }
                     IntentHashNullification::Subintent { .. }
                     | IntentHashNullification::SimulatedSubintent { .. } => true,
-                } {
+                };
+                
+                if charge_for_nullification_check {
                     if let Some(costing) = modules.costing_mut() {
                         return costing
                             .apply_deferred_execution_cost(
