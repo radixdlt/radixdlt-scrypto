@@ -90,12 +90,15 @@ impl FeeTable {
             //   divider = W / C
             //   divider = W / (T * c)
             //
-            // From `costing::spin_loop_v2`, it takes T=960 ms to consume W=274,517,401,207 wasm execution
-            // units (measured at GH benchmark, git rev 1fd85c47ef, EC2 instance type c6a.4xlarge).
-            //   T = 960 ms = 960 * 100,000
-            //   W = 274,517,401,207
+            // From `costing::spin_loop_v2` it consumes W=438,729,340,586 wasm execution
+            // units and it should never take more than T = 1s.
+            //   T = 1s = 1000 ms = 1 * 100,000
+            //   W = 438,729,340,586
             // Therefore
-            //   divider = 274,517,401,207 / (960 * 100,000) = 2859.556 ~= 3000
+            //   divider = 438,729,340,586 / (1000 * 100,000) = 4387.293 ~= 4500
+            //
+            // With divider set to 4500 it takes 543 ms (measured at GH benchmark, git rev c591c4003a,
+            // EC2 instance type c6a.4xlarge) which is fine.
             SystemVersion::V2 => 4500,
         };
 

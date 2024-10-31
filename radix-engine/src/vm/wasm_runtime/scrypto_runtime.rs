@@ -36,7 +36,7 @@ impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
         let wasm_execution_units_base = if scrypto_vm_version < ScryptoVmVersion::cuttlefish() {
             0
         } else {
-            // Add 30,000 base units to make sure the we do not undercharge for WASM execution,
+            // Add 28,000 base units to make sure the we do not undercharge for WASM execution,
             // which might lead to system exploitation.
             // This is especially important in corner-cases such as `costing::spin_loop_v2` benchmark.
             // less frequently.
