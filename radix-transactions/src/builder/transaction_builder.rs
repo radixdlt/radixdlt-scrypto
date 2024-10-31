@@ -963,7 +963,6 @@ impl TransactionV2Builder {
             raw,
             object_names,
             transaction_hashes: prepared.hashes(),
-            non_root_subintent_hashes: prepared.non_root_subintent_hashes().collect(),
         }
     }
 
@@ -985,7 +984,6 @@ impl TransactionV2Builder {
             raw,
             object_names,
             transaction_hashes: validated.prepared.hashes(),
-            non_root_subintent_hashes: validated.prepared.non_root_subintent_hashes().collect(),
         }
     }
 
@@ -1024,7 +1022,6 @@ pub struct DetailedNotarizedTransactionV2 {
     pub raw: RawNotarizedTransaction,
     pub object_names: TransactionObjectNames,
     pub transaction_hashes: UserTransactionHashes,
-    pub non_root_subintent_hashes: IndexSet<SubintentHash>,
 }
 
 impl IntoExecutable for DetailedNotarizedTransactionV2 {

@@ -58,6 +58,12 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV2 {
     }
 }
 
+impl HasNonRootSubintentHashes for ValidatedNotarizedTransactionV2 {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        self.prepared.non_root_subintent_hashes()
+    }
+}
+
 impl IntoExecutable for ValidatedNotarizedTransactionV2 {
     type Error = core::convert::Infallible;
 
@@ -70,6 +76,10 @@ impl IntoExecutable for ValidatedNotarizedTransactionV2 {
 }
 
 impl ValidatedNotarizedTransactionV2 {
+    pub fn hashes(&self) -> UserTransactionHashes {
+        self.prepared.hashes()
+    }
+
     pub fn create_executable(self) -> ExecutableTransaction {
         let transaction_intent = self.prepared.signed_intent.transaction_intent;
         let transaction_intent_hash = transaction_intent.transaction_intent_hash();

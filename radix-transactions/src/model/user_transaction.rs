@@ -171,19 +171,10 @@ impl PreparedUserTransaction {
     }
 
     pub fn hashes(&self) -> UserTransactionHashes {
-        UserTransactionHashes {
-            transaction_intent_hash: self.transaction_intent_hash(),
-            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
-            notarized_transaction_hash: self.notarized_transaction_hash(),
+        match self {
+            PreparedUserTransaction::V1(t) => t.hashes(),
+            PreparedUserTransaction::V2(t) => t.hashes(),
         }
-    }
-
-    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
-        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
-            PreparedUserTransaction::V1(_) => Box::new(core::iter::empty()),
-            PreparedUserTransaction::V2(t) => Box::new(t.non_root_subintent_hashes()),
-        };
-        boxed_iterator
     }
 
     pub fn validate(
@@ -220,6 +211,15 @@ impl HasNotarizedTransactionHash for PreparedUserTransaction {
         match self {
             Self::V1(t) => t.notarized_transaction_hash(),
             Self::V2(t) => t.notarized_transaction_hash(),
+        }
+    }
+}
+
+impl HasNonRootSubintentHashes for PreparedUserTransaction {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        match self {
+            Self::V1(_) => Default::default(),
+            Self::V2(t) => t.non_root_subintent_hashes(),
         }
     }
 }
@@ -303,6 +303,15 @@ impl HasNotarizedTransactionHash for ValidatedUserTransaction {
     }
 }
 
+impl HasNonRootSubintentHashes for ValidatedUserTransaction {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        match self {
+            Self::V1(_) => Default::default(),
+            Self::V2(t) => t.non_root_subintent_hashes(),
+        }
+    }
+}
+
 impl IntoExecutable for ValidatedUserTransaction {
     type Error = core::convert::Infallible;
 
@@ -332,25 +341,29 @@ impl ValidatedUserTransaction {
     }
 
     pub fn hashes(&self) -> UserTransactionHashes {
-        UserTransactionHashes {
-            transaction_intent_hash: self.transaction_intent_hash(),
-            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
-            notarized_transaction_hash: self.notarized_transaction_hash(),
+        match self {
+            Self::V1(t) => t.hashes(),
+            Self::V2(t) => t.hashes(),
         }
-    }
-
-    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
-        let boxed_iterator: Box<dyn Iterator<Item = SubintentHash> + '_> = match self {
-            ValidatedUserTransaction::V1(_) => Box::new(core::iter::empty()),
-            ValidatedUserTransaction::V2(t) => Box::new(t.prepared.non_root_subintent_hashes()),
-        };
-        boxed_iterator
     }
 }
 
+pub type UserTransactionHashes = UserTransactionHashesV2;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
-pub struct UserTransactionHashes {
+pub struct UserTransactionHashesV1 {
     pub transaction_intent_hash: TransactionIntentHash,
+    pub signed_transaction_intent_hash: SignedTransactionIntentHash,
+    pub notarized_transaction_hash: NotarizedTransactionHash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct UserTransactionHashesV2 {
+    pub transaction_intent_hash: TransactionIntentHash,
+    /// ## Validity Note
+    /// Preparable but invalid transactions may contain non-root subintents with duplicate [`SubintentHash`]es.
+    /// Therefore we return a `Vec` instead of an `IndexSet` here.
+    pub non_root_subintent_hashes: Vec<SubintentHash>,
     pub signed_transaction_intent_hash: SignedTransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }

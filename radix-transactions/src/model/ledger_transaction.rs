@@ -576,7 +576,7 @@ pub struct LedgerTransactionHashes {
 }
 
 impl LedgerTransactionHashes {
-    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+    pub fn as_user(&self) -> Option<&UserTransactionHashes> {
         self.kinded.as_user()
     }
 }
@@ -596,9 +596,9 @@ pub enum KindedTransactionHashes {
 }
 
 impl KindedTransactionHashes {
-    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+    pub fn as_user(&self) -> Option<&UserTransactionHashes> {
         match self {
-            KindedTransactionHashes::User(user) => Some(*user),
+            KindedTransactionHashes::User(user) => Some(user),
             _ => None,
         }
     }
