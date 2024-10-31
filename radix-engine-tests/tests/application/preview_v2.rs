@@ -64,7 +64,7 @@ fn test_transaction_preview_cost_estimate() {
             .checked_add(
                 Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
                     .unwrap()
-                    .checked_mul(FeeTable::new().validate_tx_payload_cost(size_diff))
+                    .checked_mul(FeeTable::latest().validate_tx_payload_cost(size_diff))
                     .unwrap()
             )
             .unwrap()

@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.77026816021,    100.0%
-- Execution Cost (XRD)                                                     ,               0.27165885,     35.3%
+Total Cost (XRD)                                                           ,            0.77014066021,    100.0%
+- Execution Cost (XRD)                                                     ,               0.27153135,     35.3%
 - Finalization Cost (XRD)                                                  ,               0.14126755,     18.3%
 - Storage Cost (XRD)                                                       ,            0.35734176021,     46.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  5433177,    100.0%
+Execution Cost Breakdown                                                   ,                  5430627,    100.0%
 - AfterInvoke                                                              ,                      574,      0.0%
 - AllocateNodeId                                                           ,                     2231,      0.0%
 - BeforeInvoke                                                             ,                     3512,      0.1%
@@ -39,12 +39,12 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::create_with_data                                          ,                    27471,      0.5%
 - RunNativeCode::create_with_initial_supply_NonFungibleResourceManager     ,                   215780,      4.0%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.3%
-- RunNativeCode::get_amount_NonFungibleBucket                              ,                    13581,      0.2%
+- RunNativeCode::get_amount_NonFungibleBucket                              ,                    13581,      0.3%
 - RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket              ,                    11943,      0.2%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.8%
 - RunNativeCode::put_NonFungibleVault                                      ,                    35354,      0.7%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      2.2%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.5%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.5%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                      734,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%

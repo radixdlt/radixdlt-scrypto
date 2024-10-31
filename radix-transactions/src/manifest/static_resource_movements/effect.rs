@@ -430,7 +430,7 @@ fn handle_possible_refund(
         .cloned()
         .collect::<Vec<_>>();
     for known_resource in known_resources {
-        let attempted_deposit = sent_resources.take_resource(
+        let attempted_deposit = sent_resources.mut_take_resource(
             known_resource,
             ResourceTakeAmount::All,
             details.source,

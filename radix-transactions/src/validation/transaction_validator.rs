@@ -286,8 +286,9 @@ impl TransactionValidator {
         })
     }
 
+    // This method is public so it can be used by the toolkit.
     #[allow(deprecated)]
-    fn validate_intent_v1(
+    pub fn validate_intent_v1(
         &self,
         intent: &PreparedIntentV1,
     ) -> Result<AcrossIntentAggregation, IntentValidationError> {
@@ -627,7 +628,8 @@ impl TransactionValidator {
         })
     }
 
-    fn validate_transaction_header_v2(
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_transaction_header_v2(
         &self,
         header: &TransactionHeaderV2,
     ) -> Result<(), HeaderValidationError> {
@@ -824,7 +826,8 @@ impl TransactionValidator {
         Ok((overall_validity_range, root_yield_summary))
     }
 
-    fn validate_v2_intent_core(
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_v2_intent_core(
         &self,
         intent_core: &PreparedIntentCoreV2,
         aggregation: &mut AcrossIntentAggregation,
@@ -843,7 +846,8 @@ impl TransactionValidator {
         Ok(yield_summary)
     }
 
-    fn validate_intent_header_v2(
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_intent_header_v2(
         &self,
         header: &IntentHeaderV2,
         aggregation: &mut AcrossIntentAggregation,
@@ -889,7 +893,8 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_message_v2(&self, message: &MessageV2) -> Result<(), InvalidMessageError> {
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_message_v2(&self, message: &MessageV2) -> Result<(), InvalidMessageError> {
         let validation = &self.config.message_validation;
         match message {
             MessageV2::None => {}
@@ -949,9 +954,10 @@ impl TransactionValidator {
         Ok(())
     }
 
+    // This method is public so it can be used by the toolkit.
     /// The `is_subintent` property indicates whether it should be treated as a subintent.
     /// A subintent is able to `YIELD_TO_PARENT` and is required to end with a `YIELD_TO_PARENT`.
-    fn validate_manifest_v2(
+    pub fn validate_manifest_v2(
         &self,
         instructions: &[InstructionV2],
         blobs: &IndexMap<Hash, Vec<u8>>,
@@ -1167,8 +1173,9 @@ enum TransactionVersion {
     V2,
 }
 
+// This type is public so it can be used by the toolkit.
 #[must_use]
-struct AcrossIntentAggregation {
+pub struct AcrossIntentAggregation {
     total_reference_count: usize,
     overall_start_epoch_inclusive: Epoch,
     overall_end_epoch_exclusive: Epoch,
@@ -1594,8 +1601,9 @@ impl<'a> PendingIntentSignatureValidations<'a> {
     }
 }
 
+// This type is public so it can be used by the toolkit.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ManifestYieldSummary {
+pub struct ManifestYieldSummary {
     parent_yields: usize,
     child_yields: IndexMap<SubintentHash, usize>,
 }

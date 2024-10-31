@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,           59.04217113717,    100.0%
-- Execution Cost (XRD)                                                     ,                1.4323679,      2.4%
+Total Cost (XRD)                                                           ,           59.04144143717,    100.0%
+- Execution Cost (XRD)                                                     ,                1.4316382,      2.4%
 - Finalization Cost (XRD)                                                  ,                0.4638272,      0.8%
 - Storage Cost (XRD)                                                       ,           57.14597603717,     96.8%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 28647358,    100.0%
+Execution Cost Breakdown                                                   ,                 28632764,    100.0%
 - AfterInvoke                                                              ,                     2492,      0.0%
 - AllocateNodeId                                                           ,                     9409,      0.0%
 - BeforeInvoke                                                             ,                   347642,      1.2%
@@ -48,13 +48,13 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::get_resource_type_FungibleResourceManager                 ,                    82048,      0.3%
 - RunNativeCode::instantiate_two_resource_pool                             ,                   225278,      0.8%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.2%
-- RunNativeCode::publish_wasm_advanced                                     ,                  7777254,     27.1%
+- RunNativeCode::publish_wasm_advanced                                     ,                  7777254,     27.2%
 - RunNativeCode::put_FungibleVault                                         ,                    24554,      0.1%
 - RunNativeCode::take_FungibleVault                                        ,                    42457,      0.1%
 - RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      0.4%
-- RunWasmCode::Faucet_free                                                 ,                    39767,      0.1%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.1%
-- RunWasmCode::Radiswap_new                                                ,                   269944,      0.9%
+- RunWasmCode::Faucet_free                                                 ,                    36859,      0.1%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.1%
+- RunWasmCode::Radiswap_new                                                ,                   260808,      0.9%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                     2917,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%

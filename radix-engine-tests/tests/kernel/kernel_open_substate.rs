@@ -41,7 +41,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             CostingModule {
                 current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
-                fee_table: FeeTable::new(),
+                fee_table: FeeTable::latest(),
                 tx_payload_len: executable.payload_size(),
                 tx_num_of_signature_validations: executable.num_of_signature_validations(),
                 config: CostingModuleConfig::babylon_genesis(),

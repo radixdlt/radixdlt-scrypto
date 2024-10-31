@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,             0.2155271449,    100.0%
-- Execution Cost (XRD)                                                     ,               0.15426725,     71.6%
+Total Cost (XRD)                                                           ,             0.2153996449,    100.0%
+- Execution Cost (XRD)                                                     ,               0.15413975,     71.6%
 - Finalization Cost (XRD)                                                  ,                0.0202519,      9.4%
 - Storage Cost (XRD)                                                       ,             0.0410079949,     19.0%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3085345,    100.0%
+Execution Cost Breakdown                                                   ,                  3082795,    100.0%
 - AfterInvoke                                                              ,                       76,      0.0%
 - AllocateNodeId                                                           ,                      679,      0.0%
 - BeforeInvoke                                                             ,                      616,      0.0%
@@ -33,7 +33,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.5%
 - RunNativeCode::lock_fee                                                  ,                    45243,      1.5%
 - RunNativeCode::unfreeze_NonFungibleVault                                 ,                    33877,      1.1%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.9%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.8%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    14200,      0.5%

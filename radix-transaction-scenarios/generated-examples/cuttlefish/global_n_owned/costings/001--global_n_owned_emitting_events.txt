@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,           31.13240278773,    100.0%
-- Execution Cost (XRD)                                                     ,               0.74694425,      2.4%
+Total Cost (XRD)                                                           ,           31.13191653773,    100.0%
+- Execution Cost (XRD)                                                     ,                 0.746458,      2.4%
 - Finalization Cost (XRD)                                                  ,                0.1338607,      0.4%
 - Storage Cost (XRD)                                                       ,           30.25159783773,     97.2%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                 14938885,    100.0%
+Execution Cost Breakdown                                                   ,                 14929160,    100.0%
 - AfterInvoke                                                              ,                      530,      0.0%
 - AllocateNodeId                                                           ,                     2619,      0.0%
 - BeforeInvoke                                                             ,                   174964,      1.2%
@@ -35,10 +35,10 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.1%
 - RunNativeCode::lock_fee                                                  ,                    45243,      0.3%
 - RunNativeCode::publish_wasm_advanced                                     ,                  4176881,     28.0%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.2%
-- RunWasmCode::GlobalBp_emit_event                                         ,                    15145,      0.1%
-- RunWasmCode::GlobalBp_new                                                ,                    55165,      0.4%
-- RunWasmCode::OwnedBp_emit_event                                          ,                    11063,      0.1%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.2%
+- RunWasmCode::GlobalBp_emit_event                                         ,                    13102,      0.1%
+- RunWasmCode::GlobalBp_new                                                ,                    51655,      0.3%
+- RunWasmCode::OwnedBp_emit_event                                          ,                     9441,      0.1%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SetSubstate                                                              ,                      776,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%

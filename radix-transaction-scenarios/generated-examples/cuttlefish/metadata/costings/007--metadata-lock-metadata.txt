@@ -1,10 +1,10 @@
-Total Cost (XRD)                                                           ,            0.22451329719,    100.0%
-- Execution Cost (XRD)                                                     ,               0.16296725,     72.6%
+Total Cost (XRD)                                                           ,            0.22438579719,    100.0%
+- Execution Cost (XRD)                                                     ,               0.16283975,     72.6%
 - Finalization Cost (XRD)                                                  ,               0.02025195,      9.0%
 - Storage Cost (XRD)                                                       ,            0.04129409719,     18.4%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  3259345,    100.0%
+Execution Cost Breakdown                                                   ,                  3256795,    100.0%
 - AfterInvoke                                                              ,                       76,      0.0%
 - AllocateNodeId                                                           ,                      679,      0.0%
 - BeforeInvoke                                                             ,                      622,      0.0%
@@ -27,11 +27,11 @@ Execution Cost Breakdown                                                   ,    
 - PrepareWasmCode                                                          ,                   353866,     10.9%
 - QueryActor                                                               ,                     1000,      0.0%
 - ReadSubstate                                                             ,                   414251,     12.7%
-- RunNativeCode::Worktop_drop                                              ,                    17918,      0.5%
+- RunNativeCode::Worktop_drop                                              ,                    17918,      0.6%
 - RunNativeCode::get_amount_FungibleVault                                  ,                    14451,      0.4%
 - RunNativeCode::lock                                                      ,                    25245,      0.8%
 - RunNativeCode::lock_fee                                                  ,                    45243,      1.4%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.9%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.8%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    14320,      0.4%
