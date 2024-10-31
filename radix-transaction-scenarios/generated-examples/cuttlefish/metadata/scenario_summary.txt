@@ -2,8 +2,8 @@ Name: metadata
 
 == SUMMARY HASHES ==
 These Cuttlefish hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 5c8dfa46096e1a53 (allowed to change if not deployed to any network)
-Events       : b38d0852d892d126 (allowed to change if not deployed to any network)
+State changes: 7cf46a45076c1d9d (allowed to change if not deployed to any network)
+Events       : 01f4af692848a13e (allowed to change if not deployed to any network)
 
 == INTERESTING ADDRESSES ==
 - user_account_1: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
