@@ -368,6 +368,22 @@ pub struct UserTransactionHashesV2 {
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
+impl From<UserTransactionHashesV1> for UserTransactionHashesV2 {
+    fn from(value: UserTransactionHashesV1) -> Self {
+        let UserTransactionHashesV1 {
+            transaction_intent_hash,
+            signed_transaction_intent_hash,
+            notarized_transaction_hash,
+        } = value;
+        UserTransactionHashesV2 {
+            transaction_intent_hash,
+            non_root_subintent_hashes: vec![],
+            signed_transaction_intent_hash,
+            notarized_transaction_hash,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
