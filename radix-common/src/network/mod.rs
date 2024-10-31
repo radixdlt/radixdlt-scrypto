@@ -12,11 +12,21 @@ pub struct NetworkDefinition {
 // NOTE: Most Network Definitions live in the node codebase
 // Some are duplicated here so that they can be easily used by scrypto and resim
 impl NetworkDefinition {
+    /// Used when running resim, and for engine/scrypto tests
     pub const fn simulator() -> NetworkDefinition {
         NetworkDefinition {
             id: 242,
             logical_name: Cow::Borrowed("simulator"),
             hrp_suffix: Cow::Borrowed("sim"),
+        }
+    }
+
+    /// Used for running a local node
+    pub const fn localnet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 240,
+            logical_name: Cow::Borrowed("localnet"),
+            hrp_suffix: Cow::Borrowed("loc"),
         }
     }
 

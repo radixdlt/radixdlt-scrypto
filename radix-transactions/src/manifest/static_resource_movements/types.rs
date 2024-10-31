@@ -102,13 +102,13 @@ impl TrackedResources {
         }
     }
 
-    /// If the unspecified bound is exactly zero, we removes any specific resources which are also zero.
+    /// If the unspecified bound is exactly zero, we remove any specific resources which are also zero.
     pub fn normalize(mut self) -> Self {
         self.mut_normalize();
         self
     }
 
-    /// If the unspecified bound is exactly zero, we removes any specific resources which are also zero.
+    /// If the unspecified bound is exactly zero, we remove any specific resources which are also zero.
     pub fn mut_normalize(&mut self) {
         let unspecified_resource_details = self.unspecified_resources.resource_status();
         if !unspecified_resource_details.is_zero() {
@@ -150,7 +150,7 @@ impl TrackedResources {
             ));
     }
 
-    pub fn add(&mut self, other: TrackedResources) -> Result<(), StaticResourceMovementsError> {
+    pub fn mut_add(&mut self, other: TrackedResources) -> Result<(), StaticResourceMovementsError> {
         // For efficiency, we first handle unspecified resources in other.
         // This if statement isn't necessary for correct logic, but offers a small optimization.
         if other.unspecified_resources.may_be_present() {
@@ -195,7 +195,7 @@ impl TrackedResources {
         self.resource_status_mut(resource).add_from(amount)
     }
 
-    pub fn take_resource(
+    pub fn mut_take_resource(
         &mut self,
         resource: ResourceAddress,
         amount: ResourceTakeAmount,
@@ -839,6 +839,14 @@ impl ResourceBounds {
         &self.constraints.required_ids
     }
 
+    pub fn lower_bound(&self) -> LowerBound {
+        self.constraints.lower_bound
+    }
+
+    pub fn upper_bound(&self) -> UpperBound {
+        self.constraints.upper_bound
+    }
+
     pub fn allowed_ids(&self) -> &AllowedIds {
         &self.constraints.allowed_ids
     }
@@ -861,7 +869,45 @@ impl ResourceBounds {
 
     /// Returns true if the bound is known to be zero
     pub fn is_zero(&self) -> bool {
-        self.eq(&Self::zero())
+        // We don't just compare to zero; we do an equivalent upper-bounds check.
+        // For more flexibility, this also works with unnormalized `ResourceBounds`
+        // (e.g. if the allowed bound has `AllowedIds::Any`, such as in the `AggregatedBalanceChange`)
+        self.upper_bound() == UpperBound::zero()
+    }
+
+    pub fn is_exact_ids(&self) -> bool {
+        self.get_exact_ids().is_some()
+    }
+
+    pub fn get_exact_ids(&self) -> Option<&IndexSet<NonFungibleLocalId>> {
+        let required_ids_count = Decimal::from(self.constraints.required_ids.len());
+        match self.constraints.upper_bound {
+            UpperBound::Inclusive(count) if count == required_ids_count => {
+                Some(&self.constraints.required_ids)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn is_exact_amount(&self) -> bool {
+        self.get_exact_amount().is_some()
+    }
+
+    pub fn get_exact_amount(&self) -> Option<Decimal> {
+        match self.numeric_bounds() {
+            (LowerBound::Inclusive(lower), UpperBound::Inclusive(upper)) if lower == upper => {
+                Some(lower)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn mut_clear_required_ids(&mut self) {
+        self.constraints.required_ids.clear();
+    }
+
+    pub fn mut_clear_allowed_ids(&mut self) {
+        self.constraints.allowed_ids = AllowedIds::Any;
     }
 
     pub fn add(mut self, other: Self) -> Result<Self, StaticResourceMovementsError> {
@@ -1222,99 +1268,516 @@ pub struct StaticResourceMovementsOutput {
 }
 
 impl StaticResourceMovementsOutput {
-    pub fn account_withdraws(&self) -> IndexMap<ComponentAddress, Vec<AccountWithdraw>> {
-        let mut withdrawals: IndexMap<ComponentAddress, Vec<AccountWithdraw>> = Default::default();
+    pub fn resolve_account_changes(
+        &self,
+    ) -> Result<
+        (
+            IndexMap<ComponentAddress, NetWithdraws>,
+            IndexMap<ComponentAddress, NetDeposits>,
+        ),
+        StaticResourceMovementsError,
+    > {
+        let mut aggregated_balance_changes_by_account: IndexMap<
+            ComponentAddress,
+            AllBalanceChanges,
+        > = Default::default();
 
         for invocation in self.invocation_static_information.values() {
             let Some((account_address, method)) = invocation.as_account_method() else {
                 continue;
             };
-            let is_fungible_withdraw = matches!(
-                method,
-                ACCOUNT_WITHDRAW_IDENT | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT
-            );
-            let is_non_fungible_withdraw = matches!(
-                method,
-                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
-                    | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT
-            );
-            if !(is_fungible_withdraw || is_non_fungible_withdraw) {
-                continue;
+
+            match method {
+                ACCOUNT_DEPOSIT_IDENT
+                | ACCOUNT_DEPOSIT_BATCH_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                    aggregated_balance_changes_by_account
+                        .entry(account_address)
+                        .or_default()
+                        .mut_deposit(invocation.input.clone())?;
+                }
+                ACCOUNT_WITHDRAW_IDENT
+                | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT
+                | ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
+                | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
+                    aggregated_balance_changes_by_account
+                        .entry(account_address)
+                        .or_default()
+                        .mut_withdraw(invocation.output.clone())?;
+                }
+                _ => {}
             }
-            let account_withdrawal = {
-                if invocation.output.unspecified_resources().may_be_present() {
-                    panic!("Account withdraw output should not have unspecified resources");
-                }
-                let resources = invocation.output.specified_resources();
-                if resources.len() != 1 {
-                    panic!("Account withdraw output should have exactly one resource");
-                }
-                let (resource_address, specified_resource) = resources.first().unwrap();
-                if is_non_fungible_withdraw {
-                    // Account withdraws are for an exact amount, so we can just use required_ids here
-                    AccountWithdraw::Ids(
-                        *resource_address,
-                        specified_resource.bounds().required_ids().clone(),
-                    )
-                } else {
-                    // Account withdraws are for an exact amount, so the two numeric bounds are equivalent
-                    AccountWithdraw::Amount(
-                        *resource_address,
-                        specified_resource
-                            .bounds
-                            .numeric_bounds()
-                            .0
-                            .equivalent_decimal(),
-                    )
-                }
-            };
-            withdrawals
-                .entry(account_address)
-                .or_default()
-                .push(account_withdrawal);
         }
 
-        withdrawals
+        let mut account_net_withdraws = index_map_new();
+        let mut account_net_deposits = index_map_new();
+        for (account_address, balance_changes) in aggregated_balance_changes_by_account {
+            let (withdraws, deposits) = balance_changes.split()?;
+            if let Some(withdraws) = withdraws {
+                account_net_withdraws.insert(account_address, withdraws);
+            }
+            if let Some(deposits) = deposits {
+                account_net_deposits.insert(account_address, deposits);
+            }
+        }
+        Ok((account_net_withdraws, account_net_deposits))
     }
 
-    pub fn account_deposits(&self) -> IndexMap<ComponentAddress, Vec<AccountDeposit>> {
-        let mut deposits: IndexMap<ComponentAddress, Vec<AccountDeposit>> = Default::default();
+    pub fn resolve_account_deposits(&self) -> IndexMap<ComponentAddress, Vec<AccountDeposit>> {
+        let mut account_deposits: IndexMap<ComponentAddress, Vec<AccountDeposit>> =
+            Default::default();
 
         for invocation in self.invocation_static_information.values() {
             let Some((account_address, method)) = invocation.as_account_method() else {
                 continue;
             };
 
-            let is_deposit = matches!(
-                method,
+            let account_deposit = match method {
                 ACCOUNT_DEPOSIT_IDENT
-                    | ACCOUNT_DEPOSIT_BATCH_IDENT
-                    | ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
-                    | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
-                    | ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
-                    | ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
-            );
+                | ACCOUNT_DEPOSIT_BATCH_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT
+                | ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
+                | ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                    let (specified_resources, unspecified_resources) =
+                        invocation.input.clone().normalize().deconstruct();
 
-            if !is_deposit {
-                continue;
-            }
+                    let mut account_deposit = AccountDeposit::empty(unspecified_resources);
+                    for (resource_address, tracked_resource) in specified_resources {
+                        let (bounds, _history) = tracked_resource.deconstruct();
+                        account_deposit = account_deposit.set(resource_address, bounds);
+                    }
 
-            let (specified_resources, unspecified_resources) =
-                invocation.input.clone().normalize().deconstruct();
+                    account_deposit
+                }
+                _ => continue,
+            };
 
-            let mut account_deposit = AccountDeposit::empty(unspecified_resources);
-            for (resource_address, tracked_resource) in specified_resources {
-                let (bounds, _history) = tracked_resource.deconstruct();
-                account_deposit = account_deposit.set(resource_address, bounds);
-            }
-
-            deposits
+            account_deposits
                 .entry(account_address)
                 .or_default()
                 .push(account_deposit);
         }
 
-        deposits
+        account_deposits
+    }
+
+    pub fn resolve_account_withdraws(&self) -> IndexMap<ComponentAddress, Vec<AccountWithdraw>> {
+        let mut account_withdraws: IndexMap<ComponentAddress, Vec<AccountWithdraw>> =
+            Default::default();
+
+        for invocation in self.invocation_static_information.values() {
+            let Some((account_address, method)) = invocation.as_account_method() else {
+                continue;
+            };
+
+            // Filter to only withdraws
+            let is_non_fungible_withdraw = match method {
+                ACCOUNT_WITHDRAW_IDENT | ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => false,
+                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT
+                | ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => true,
+                _ => continue,
+            };
+
+            if invocation.output.unspecified_resources().may_be_present() {
+                panic!("Account withdraw output should not have unspecified resources");
+            }
+            let resources = invocation.output.specified_resources();
+            if resources.len() != 1 {
+                panic!("Account withdraw output should have exactly one resource");
+            }
+            let (resource_address, specified_resource) = resources.first().unwrap();
+            let account_withdraw = if is_non_fungible_withdraw {
+                // Account withdraws are for an exact amount, so we can just use required_ids here
+                AccountWithdraw::Ids(
+                    *resource_address,
+                    specified_resource.bounds().required_ids().clone(),
+                )
+            } else {
+                // Account withdraws are for an exact amount, so the two numeric bounds are equivalent
+                AccountWithdraw::Amount(
+                    *resource_address,
+                    specified_resource
+                        .bounds
+                        .numeric_bounds()
+                        .0
+                        .equivalent_decimal(),
+                )
+            };
+
+            account_withdraws
+                .entry(account_address)
+                .or_default()
+                .push(account_withdraw);
+        }
+
+        account_withdraws
+    }
+}
+
+/// Similar to [`TrackedResources`], but can represent a balance change instead
+/// of a tracked bound.
+///
+/// In the general case, `unspecified_resource_deposits` should support unbounded
+/// withdrawal, but we don't need this for resolving account balances.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct AllBalanceChanges {
+    pub specified_resources: IndexMap<ResourceAddress, AggregatedBalanceChange>,
+    pub unspecified_resource_deposits: UnspecifiedResources,
+}
+
+impl AllBalanceChanges {
+    // Copies [`TrackedResources::mut_add`] - see that method for comments.
+    pub fn mut_deposit(
+        &mut self,
+        deposit: TrackedResources,
+    ) -> Result<(), StaticResourceMovementsError> {
+        if deposit.unspecified_resources.may_be_present() {
+            for (resource, resource_bound) in &mut self.specified_resources {
+                if !deposit.specified_resources.contains_key(resource) {
+                    resource_bound.mut_deposit(deposit.unspecified_resources.resource_bounds())?;
+                }
+            }
+        }
+
+        for (other_resource, other_resource_bound) in deposit.specified_resources {
+            self.aggregated_balance_change_mut(other_resource)
+                .mut_deposit(other_resource_bound.bounds)?;
+        }
+
+        // Order is important here - we have to handle unspecified after we've handled any specified resources,
+        // else the `resource_status_mut` will incorrectly pick up the other's unspecified resources.
+        self.unspecified_resource_deposits
+            .mut_add(deposit.unspecified_resources);
+
+        Ok(())
+    }
+
+    pub fn mut_withdraw(
+        &mut self,
+        withdrawal: TrackedResources,
+    ) -> Result<(), StaticResourceMovementsError> {
+        if withdrawal.unspecified_resources.may_be_present() {
+            return Err(StaticResourceMovementsError::AggregatedBalanceChangeWithdrawDoesNotSupportUnknownResources);
+        }
+        for (other_resource, other_resource_bound) in withdrawal.specified_resources {
+            self.aggregated_balance_change_mut(other_resource)
+                .mut_withdraw(other_resource_bound.bounds)?;
+        }
+        Ok(())
+    }
+
+    pub fn split(
+        self,
+    ) -> Result<(Option<NetWithdraws>, Option<NetDeposits>), StaticResourceMovementsError> {
+        let mut withdraws = index_map_new();
+        let mut deposits = index_map_new();
+
+        for (
+            address,
+            AggregatedBalanceChange {
+                deposited,
+                withdrawn,
+            },
+        ) in self.specified_resources
+        {
+            if !withdrawn.is_zero() {
+                withdraws.insert(address, NetWithdraw::from_bounds(address, withdrawn)?);
+            }
+            if !deposited.is_zero() {
+                deposits.insert(address, deposited);
+            }
+        }
+
+        let net_withdraws = if withdraws.len() > 0 {
+            Some(NetWithdraws {
+                resources: withdraws,
+            })
+        } else {
+            None
+        };
+
+        let new_deposits =
+            if deposits.len() > 0 || self.unspecified_resource_deposits.may_be_present() {
+                Some(NetDeposits {
+                    specified_resources: deposits,
+                    unspecified_resources: self.unspecified_resource_deposits,
+                })
+            } else {
+                None
+            };
+
+        Ok((net_withdraws, new_deposits))
+    }
+
+    /// Works for any resource, specified and unspecified.
+    /// If the resource is unspecified, it makes it specified, then returns a reference to the entry.
+    fn aggregated_balance_change_mut(
+        &mut self,
+        resource: ResourceAddress,
+    ) -> &mut AggregatedBalanceChange {
+        match self.specified_resources.entry(resource) {
+            indexmap::map::Entry::Occupied(occupied_entry) => occupied_entry.into_mut(),
+            indexmap::map::Entry::Vacant(vacant_entry) => {
+                vacant_entry.insert(AggregatedBalanceChange {
+                    deposited: self.unspecified_resource_deposits.resource_bounds(),
+                    withdrawn: Default::default(),
+                })
+            }
+        }
+    }
+}
+
+/// Tracks the total amount of a resource deposited and withdrawn from some container,
+/// whilst ensuring that the `required_ids` property of the [`ResourceBounds`] is properly
+/// maintained to ensure that any guarantees we have about definite non-fungibles are
+/// correct.
+///
+/// Essentially this means:
+/// - Tracking the withdrawn and deposited balances separately
+/// - Removing `required_ids` if it can't be ensured
+/// - Cancelling definite non-fungible ids
+/// - Not cancelling arbitrary numerical bounds, because:
+///   - For non-fungibles, these may not refer to the same non-fungibles, so a withdrawal of 1
+///     and deposit of 1 might result in swapping a non-fungible for a different one
+///   - For fungibles, users may want to see the total deposited and total withdrawn
+///
+/// Some test cases (note - order matters!):
+/// - `Deposit {#5#}, Withdraw 1` => `Deposited 1, Withdrawn 1`
+/// - `Withdraw 1, Deposit {#5#}` => `Deposited {#5#}, Withdrawn 1`
+/// - `Withdraw {#5#}, Deposit 1` => `Deposited 1, Withdrawn 1`
+/// - `Deposit 1, Withdraw {#5#}` => `Deposited 1, Withdrawn {#5#}`
+/// - `Withdraw 5, Deposit between 3 and 7` => `Deposited between 3 and 7, Withdrawn 5`
+/// - `Withdraw {#2}, Deposit {#2#}, Withdraw {#2}` => `Withdraw {#2}`
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct AggregatedBalanceChange {
+    deposited: ResourceBounds,
+    withdrawn: ResourceBounds,
+}
+
+impl AggregatedBalanceChange {
+    pub fn mut_deposit(
+        &mut self,
+        mut deposit: ResourceBounds,
+    ) -> Result<(), StaticResourceMovementsError> {
+        Self::revise(&mut self.withdrawn, &mut deposit)?;
+        self.deposited.mut_add(deposit)
+    }
+
+    pub fn mut_withdraw(
+        &mut self,
+        mut withdrawal: ResourceBounds,
+    ) -> Result<(), StaticResourceMovementsError> {
+        Self::revise(&mut self.deposited, &mut withdrawal)?;
+        self.withdrawn.mut_add(withdrawal)
+    }
+
+    /// Conceptually, the partial balance is some delta on top of an underlying balance, e.g.:
+    /// * For deposits, the partial balance is the net deposits from the manifest, and the underlying
+    ///   balance is the pre-existing balance of the account, or other indirect deposits
+    /// * For withdraws, the partial balance is the net withdraws from the account in the manifest,
+    ///   and the underlying balance is remaining liquidity in the world that could potentially be deposited
+    fn revise(
+        partial_balance: &mut ResourceBounds,
+        debited: &mut ResourceBounds,
+    ) -> Result<(), StaticResourceMovementsError> {
+        // First, we cancel any shared known ids
+        let shared_ids = partial_balance
+            .required_ids()
+            .intersection(debited.required_ids())
+            .cloned()
+            .collect::<IndexSet<_>>();
+        if shared_ids.len() > 0 {
+            partial_balance.mut_take(ResourceTakeAmount::NonFungibles(shared_ids.clone()))?;
+            debited.mut_take(ResourceTakeAmount::NonFungibles(shared_ids))?;
+        }
+        // After this:
+        // - Any debited known ids can't be in the partial balance, and have to be in the underlying balance,
+        //   so don't affect the partial balance's known ids
+        // - If there are any _unknown_ ids in the debit, then these could match ids in the balance, so we have
+        //   to wipe it
+        //
+        // We also clear allowed ids because they don't make sense in this model, and so we don't break normalization.
+        if !debited.is_exact_ids() {
+            partial_balance.mut_clear_required_ids();
+            partial_balance.mut_clear_allowed_ids();
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct NetWithdraws {
+    resources: IndexMap<ResourceAddress, NetWithdraw>,
+}
+
+impl NetWithdraws {
+    pub fn empty() -> Self {
+        Default::default()
+    }
+
+    pub fn set_fungible(
+        mut self,
+        resource_address: ResourceAddress,
+        total_amount: impl ResolvableDecimal,
+    ) -> Self {
+        self.resources.insert(
+            resource_address,
+            NetWithdraw::Fungible {
+                total_amount: total_amount.resolve(),
+            },
+        );
+        self
+    }
+
+    pub fn set_non_fungible(
+        mut self,
+        resource_address: ResourceAddress,
+        known_ids: impl IntoIterator<Item = NonFungibleLocalId>,
+        additional_unknown_ids: usize,
+    ) -> Self {
+        self.resources.insert(
+            resource_address,
+            NetWithdraw::NonFungible {
+                known_ids: known_ids.into_iter().collect(),
+                additional_unknown_ids,
+            },
+        );
+        self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NetWithdraw {
+    Fungible {
+        total_amount: Decimal,
+    },
+    NonFungible {
+        known_ids: IndexSet<NonFungibleLocalId>,
+        additional_unknown_ids: usize,
+    },
+}
+
+impl NetWithdraw {
+    pub fn from_bounds(
+        resource_address: ResourceAddress,
+        bounds: ResourceBounds,
+    ) -> Result<Self, StaticResourceMovementsError> {
+        let Some(total_amount) = bounds.get_exact_amount() else {
+            return Err(StaticResourceMovementsError::UnexpectedBoundsForNetWithdraw);
+        };
+        if resource_address.is_fungible() {
+            Ok(Self::Fungible { total_amount })
+        } else {
+            let total_ids: usize = total_amount
+                .try_into()
+                .map_err(|_| StaticResourceMovementsError::UnexpectedBoundsForNetWithdraw)?;
+            let (known_ids, _, _, _) = bounds.deconstruct();
+            // Guaranteed to be safe due to the invariant on ResourceBounds
+            let additional_unknown_ids = total_ids - known_ids.len();
+            Ok(Self::NonFungible {
+                known_ids,
+                additional_unknown_ids,
+            })
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct NetDeposits {
+    pub specified_resources: IndexMap<ResourceAddress, ResourceBounds>,
+    pub unspecified_resources: UnspecifiedResources,
+}
+
+impl NetDeposits {
+    pub fn empty(unspecified_resources: UnspecifiedResources) -> Self {
+        Self {
+            specified_resources: Default::default(),
+            unspecified_resources,
+        }
+    }
+
+    /// Should only be used if it doesn't already exist
+    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
+        self.specified_resources.insert(resource_address, bounds);
+        self
+    }
+
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ResourceBounds> {
+        &self.specified_resources
+    }
+
+    pub fn simple_specified_resources(&self) -> IndexMap<ResourceAddress, SimpleResourceBounds> {
+        self.specified_resources
+            .iter()
+            .map(|(resource_address, resource_bounds)| {
+                let simple_bounds =
+                    SimpleResourceBounds::from_bound(*resource_address, resource_bounds.clone());
+                (*resource_address, simple_bounds)
+            })
+            .collect()
+    }
+
+    pub fn unspecified_resources(&self) -> UnspecifiedResources {
+        self.unspecified_resources.clone()
+    }
+
+    pub fn bounds_for(&self, resource_address: ResourceAddress) -> ResourceBounds {
+        match self.specified_resources.get(&resource_address) {
+            Some(bounds) => bounds.clone(),
+            None => self.unspecified_resources.resource_bounds(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AccountWithdraw {
+    Amount(ResourceAddress, Decimal),
+    Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AccountDeposit {
+    specified_resources: IndexMap<ResourceAddress, SimpleResourceBounds>,
+    unspecified_resources: UnspecifiedResources,
+}
+
+impl AccountDeposit {
+    pub fn empty(unspecified_resources: UnspecifiedResources) -> Self {
+        Self {
+            specified_resources: Default::default(),
+            unspecified_resources,
+        }
+    }
+
+    /// Should only be used if it doesn't already exist
+    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
+        self.specified_resources.insert(
+            resource_address,
+            SimpleResourceBounds::from_bound(resource_address, bounds),
+        );
+        self
+    }
+
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
+        &self.specified_resources
+    }
+
+    pub fn unspecified_resources(&self) -> UnspecifiedResources {
+        self.unspecified_resources.clone()
+    }
+
+    pub fn bounds_for(&self, resource_address: ResourceAddress) -> SimpleResourceBounds {
+        match self.specified_resources.get(&resource_address) {
+            Some(bounds) => bounds.clone(),
+            None => SimpleResourceBounds::from_bound(
+                resource_address,
+                self.unspecified_resources.resource_bounds(),
+            ),
+        }
     }
 }
 
@@ -1441,18 +1904,6 @@ impl<'a> From<InvocationKind<'a>> for OwnedInvocationKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AccountWithdraw {
-    Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct AccountDeposit {
-    specified_resources: IndexMap<ResourceAddress, SimpleResourceBounds>,
-    unspecified_resources: UnspecifiedResources,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SimpleResourceBounds {
     Fungible(SimpleFungibleResourceBounds),
     NonFungible(SimpleNonFungibleResourceBounds),
@@ -1538,42 +1989,6 @@ impl From<ResourceBounds> for SimpleNonFungibleResourceBounds {
                 upper_bound,
                 allowed_ids,
             }
-        }
-    }
-}
-
-impl AccountDeposit {
-    pub fn empty(unspecified_resources: UnspecifiedResources) -> Self {
-        Self {
-            specified_resources: Default::default(),
-            unspecified_resources,
-        }
-    }
-
-    /// Should only be used if it doesn't already exist
-    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
-        self.specified_resources.insert(
-            resource_address,
-            SimpleResourceBounds::from_bound(resource_address, bounds),
-        );
-        self
-    }
-
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
-        &self.specified_resources
-    }
-
-    pub fn unspecified_resources(&self) -> UnspecifiedResources {
-        self.unspecified_resources.clone()
-    }
-
-    pub fn bounds_for(&self, resource_address: ResourceAddress) -> SimpleResourceBounds {
-        match self.specified_resources.get(&resource_address) {
-            Some(bounds) => bounds.clone(),
-            None => SimpleResourceBounds::from_bound(
-                resource_address,
-                self.unspecified_resources.resource_bounds(),
-            ),
         }
     }
 }
