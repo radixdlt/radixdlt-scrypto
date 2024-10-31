@@ -974,91 +974,23 @@ pub struct NamedManifestAddress {
     name: String,
 }
 
-pub trait ResolvableComponentAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
-}
+impl NamedAddressResolver for ManifestNameRegistrar {
+    fn assert_named_address_exists(&self, named_address: ManifestNamedAddress) {
+        self.check_address_exists(DynamicGlobalAddress::Named(named_address));
+    }
 
-impl<A, E> ResolvableComponentAddress for A
-where
-    A: TryInto<DynamicComponentAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ComponentAddress");
-        registrar.check_address_exists(address);
-        address
+    fn resolve_named_address(&self, address_name: &str) -> ManifestNamedAddress {
+        self.name_lookup().named_address_id(address_name)
     }
 }
 
-pub trait ResolvableResourceAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress;
-
-    /// Note - this can be removed when all the static resource addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> ResourceAddress {
-        match self.resolve(registrar) {
-            DynamicResourceAddress::Static(address) => address,
-            DynamicResourceAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResourceAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ResourceAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvablePackageAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
-
-    /// Note - this can be removed when all the static package addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> PackageAddress {
-        match self.resolve(registrar) {
-            DynamicPackageAddress::Static(address) => address,
-            DynamicPackageAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid PackageAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvableGlobalAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
-}
-
-impl<A, E> ResolvableGlobalAddress for A
-where
-    A: TryInto<DynamicGlobalAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid GlobalAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
+// This has been moved to live alongside the dynamic addresses in radix-common to avoid
+// foreign trait impl errors.
+// But we still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::{
+    ResolvableComponentAddress, ResolvableGlobalAddress, ResolvablePackageAddress,
+    ResolvableResourceAddress,
+};
 
 //=====================
 // DECIMAL

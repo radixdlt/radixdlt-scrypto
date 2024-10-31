@@ -214,6 +214,44 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
     }
 }
 
+pub trait ResolvableGlobalAddress: Sized {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress;
+}
+
+impl<A, E> ResolvableGlobalAddress for A
+where
+    A: TryInto<DynamicGlobalAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid DynamicGlobalAddress");
+        if let DynamicGlobalAddress::Named(named_address) = address {
+            resolver.assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+impl<'a> ResolvableGlobalAddress for &'a str {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
+        resolver.resolve_named_address(self).into()
+    }
+}
+
+impl<'a> ResolvableGlobalAddress for &'a String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
+impl ResolvableGlobalAddress for String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
@@ -339,6 +377,55 @@ impl TryFrom<ManifestAddress> for DynamicPackageAddress {
     }
 }
 
+pub trait ResolvablePackageAddress: Sized {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress;
+
+    /// Note - this can be removed when all the static package addresses in the
+    /// manifest instructions are gone
+    fn resolve_static(self, resolver: &impl NamedAddressResolver) -> PackageAddress {
+        match self.resolve(resolver) {
+            DynamicPackageAddress::Static(address) => address,
+            DynamicPackageAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
+            }
+        }
+    }
+}
+
+impl<A, E> ResolvablePackageAddress for A
+where
+    A: TryInto<DynamicPackageAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid DynamicPackageAddress");
+        if let DynamicPackageAddress::Named(named_address) = address {
+            resolver.assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+impl<'a> ResolvablePackageAddress for &'a str {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
+        resolver.resolve_named_address(self).into()
+    }
+}
+
+impl<'a> ResolvablePackageAddress for &'a String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
+impl ResolvablePackageAddress for String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicComponentAddress {
     Static(ComponentAddress),
@@ -441,6 +528,44 @@ impl TryFrom<ManifestAddress> for DynamicComponentAddress {
     }
 }
 
+pub trait ResolvableComponentAddress {
+    fn resolve(self, registrar: &impl NamedAddressResolver) -> DynamicComponentAddress;
+}
+
+impl<A, E> ResolvableComponentAddress for A
+where
+    A: TryInto<DynamicComponentAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid DynamicComponentAddress");
+        if let DynamicComponentAddress::Named(named_address) = address {
+            resolver.assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+impl<'a> ResolvableComponentAddress for &'a str {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
+        resolver.resolve_named_address(self).into()
+    }
+}
+
+impl<'a> ResolvableComponentAddress for &'a String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
+impl ResolvableComponentAddress for String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicResourceAddress {
     Static(ResourceAddress),
@@ -540,5 +665,54 @@ impl TryFrom<ManifestAddress> for DynamicResourceAddress {
             ManifestAddress::Static(value) => Self::Static(value.try_into()?),
             ManifestAddress::Named(value) => Self::Named(value),
         })
+    }
+}
+
+pub trait ResolvableResourceAddress: Sized {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress;
+
+    /// Note - this can be removed when all the static resource addresses in the
+    /// manifest instructions are gone
+    fn resolve_static(self, resolver: &impl NamedAddressResolver) -> ResourceAddress {
+        match self.resolve(resolver) {
+            DynamicResourceAddress::Static(address) => address,
+            DynamicResourceAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
+            }
+        }
+    }
+}
+
+impl<A, E> ResolvableResourceAddress for A
+where
+    A: TryInto<DynamicResourceAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid DynamicResourceAddress");
+        if let DynamicResourceAddress::Named(named_address) = address {
+            resolver.assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+impl<'a> ResolvableResourceAddress for &'a str {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
+        resolver.resolve_named_address(self).into()
+    }
+}
+
+impl<'a> ResolvableResourceAddress for &'a String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
+        resolver.resolve_named_address(self.as_str()).into()
+    }
+}
+
+impl ResolvableResourceAddress for String {
+    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
+        resolver.resolve_named_address(self.as_str()).into()
     }
 }
