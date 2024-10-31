@@ -1,15 +1,15 @@
-Total Cost (XRD)                                                           ,            0.42116546511,    100.0%
-- Execution Cost (XRD)                                                     ,               0.26216325,     62.2%
+Total Cost (XRD)                                                           ,            0.42103796511,    100.0%
+- Execution Cost (XRD)                                                     ,               0.26203575,     62.2%
 - Finalization Cost (XRD)                                                  ,               0.04675475,     11.1%
 - Storage Cost (XRD)                                                       ,            0.11224746511,     26.7%
 - Tipping Cost (XRD)                                                       ,                        0,      0.0%
 - Royalty Cost (XRD)                                                       ,                        0,      0.0%
-Execution Cost Breakdown                                                   ,                  5243265,    100.0%
+Execution Cost Breakdown                                                   ,                  5240715,    100.0%
 - AfterInvoke                                                              ,                      678,      0.0%
 - AllocateNodeId                                                           ,                     2231,      0.0%
 - BeforeInvoke                                                             ,                     2622,      0.1%
 - CheckReference                                                           ,                    80033,      1.5%
-- CloseSubstate                                                            ,                    49794,      0.9%
+- CloseSubstate                                                            ,                    49794,      1.0%
 - CreateNode                                                               ,                    19982,      0.4%
 - DrainSubstates                                                           ,                   120818,      2.3%
 - DropNode                                                                 ,                    35783,      0.7%
@@ -27,7 +27,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.8%
 - OpenSubstate::InternalNonFungibleVault                                   ,                   132271,      2.5%
 - PinNode                                                                  ,                      276,      0.0%
-- PrepareWasmCode                                                          ,                   353866,      6.7%
+- PrepareWasmCode                                                          ,                   353866,      6.8%
 - QueryActor                                                               ,                     4000,      0.1%
 - ReadSubstate                                                             ,                   571028,     10.9%
 - RemoveSubstate                                                           ,                    40717,      0.8%
@@ -44,7 +44,7 @@ Execution Cost Breakdown                                                   ,    
 - RunNativeCode::take_non_fungibles                                        ,                    64562,      1.2%
 - RunNativeCode::withdraw                                                  ,                    57851,      1.1%
 - RunNativeCode::withdraw_non_fungibles                                    ,                    81584,      1.6%
-- RunWasmCode::Faucet_lock_fee                                             ,                    27840,      0.5%
+- RunWasmCode::Faucet_lock_fee                                             ,                    25290,      0.5%
 - SetCallFrameData                                                         ,                      606,      0.0%
 - SwitchStack                                                              ,                     1000,      0.0%
 - ValidateTxPayload                                                        ,                    24120,      0.5%
