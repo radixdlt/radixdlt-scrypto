@@ -36,8 +36,8 @@ packages+="$(find examples -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \
 
 for package in $packages; do
     folder=$(dirname $package)
-    (cd $folder; cargo check $quiet_flag) || { echo "$lf>> Code compile check FAILED for $package$lf"; failed=1; }
+    (cd $folder; cargo fmt --check $quiet_flag) || { echo "$lf>> Code format check FAILED for $package$lf"; failed=1; }
 done
 
-[ $failed -eq 0 ] && echo "Code compile check passed!"
+[ $failed -eq 0 ] && echo "Code format check passed!"
 exit $failed

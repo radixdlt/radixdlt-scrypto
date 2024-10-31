@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-# This should align with check.sh, build.sh, test.sh, clean.sh, update-cargo-locks-minimally.sh
+# This should align with format-check.sh, check.sh, build.sh, test.sh, clean.sh, update-cargo-locks-minimally.sh
 
 (set -x; cd .; cargo fmt)
 (set -x; cd radix-engine-tests/assets/blueprints; cargo fmt)

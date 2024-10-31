@@ -8,7 +8,7 @@ set -e
 # > the lock file [PATH]/Cargo.lock needs to be updated but --locked was passed to prevent this
 # > If you want to try to generate the lock file without accessing the network, remove the --locked flag and use --offline instead.
 
-# This should align with format.sh, check.sh, build.sh, test.sh
+# This should align with format.sh, format-check.sh, check.sh, build.sh, test.sh
 
 (set -x; cd .; cargo update --workspace)
 
