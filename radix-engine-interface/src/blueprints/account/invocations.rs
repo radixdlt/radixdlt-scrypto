@@ -160,7 +160,11 @@ pub struct AccountWithdrawInput {
     pub amount: Decimal,
 }
 
-pub type AccountWithdrawManifestInput = AccountWithdrawInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountWithdrawManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub amount: Decimal,
+}
 
 pub type AccountWithdrawOutput = Bucket;
 
@@ -176,7 +180,11 @@ pub struct AccountWithdrawNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-pub type AccountWithdrawNonFungiblesManifestInput = AccountWithdrawNonFungiblesInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountWithdrawNonFungiblesManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub ids: IndexSet<NonFungibleLocalId>,
+}
 
 pub type AccountWithdrawNonFungiblesOutput = Bucket;
 
@@ -193,7 +201,12 @@ pub struct AccountLockFeeAndWithdrawInput {
     pub amount: Decimal,
 }
 
-pub type AccountLockFeeAndWithdrawManifestInput = AccountLockFeeAndWithdrawInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountLockFeeAndWithdrawManifestInput {
+    pub amount_to_lock: Decimal,
+    pub resource_address: DynamicResourceAddress,
+    pub amount: Decimal,
+}
 
 pub type AccountLockFeeAndWithdrawOutput = Bucket;
 
@@ -211,8 +224,12 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-pub type AccountLockFeeAndWithdrawNonFungiblesManifestInput =
-    AccountLockFeeAndWithdrawNonFungiblesInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountLockFeeAndWithdrawNonFungiblesManifestInput {
+    pub amount_to_lock: Decimal,
+    pub resource_address: DynamicResourceAddress,
+    pub ids: IndexSet<NonFungibleLocalId>,
+}
 
 pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
 
@@ -228,7 +245,11 @@ pub struct AccountCreateProofOfAmountInput {
     pub amount: Decimal,
 }
 
-pub type AccountCreateProofOfAmountManifestInput = AccountCreateProofOfAmountInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountCreateProofOfAmountManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub amount: Decimal,
+}
 
 pub type AccountCreateProofOfAmountOutput = Proof;
 
@@ -244,7 +265,11 @@ pub struct AccountCreateProofOfNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-pub type AccountCreateProofOfNonFungiblesManifestInput = AccountCreateProofOfNonFungiblesInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountCreateProofOfNonFungiblesManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub ids: IndexSet<NonFungibleLocalId>,
+}
 
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 
@@ -275,7 +300,11 @@ pub struct AccountSetResourcePreferenceInput {
     pub resource_preference: ResourcePreference,
 }
 
-pub type AccountSetResourcePreferenceManifestInput = AccountSetResourcePreferenceInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountSetResourcePreferenceManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub resource_preference: ResourcePreference,
+}
 
 pub type AccountSetResourcePreferenceOutput = ();
 
@@ -290,7 +319,10 @@ pub struct AccountRemoveResourcePreferenceInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountRemoveResourcePreferenceManifestInput = AccountRemoveResourcePreferenceInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountRemoveResourcePreferenceManifestInput {
+    pub resource_address: DynamicResourceAddress,
+}
 
 pub type AccountRemoveResourcePreferenceOutput = ();
 
@@ -309,7 +341,7 @@ pub struct AccountTryDepositOrRefundInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositOrRefundManifestInput {
     pub bucket: ManifestBucket,
-    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositOrRefundOutput = Option<Bucket>;
@@ -329,7 +361,7 @@ pub struct AccountTryDepositBatchOrRefundInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrRefundManifestInput {
     pub buckets: BucketBatch,
-    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositBatchOrRefundOutput = Option<Vec<Bucket>>;
@@ -349,7 +381,7 @@ pub struct AccountTryDepositOrAbortInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositOrAbortManifestInput {
     pub bucket: ManifestBucket,
-    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositOrAbortOutput = ();
@@ -369,7 +401,7 @@ pub struct AccountTryDepositBatchOrAbortInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrAbortManifestInput {
     pub buckets: BucketBatch,
-    pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
+    pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
 pub type AccountTryDepositBatchOrAbortOutput = ();
@@ -386,7 +418,11 @@ pub struct AccountBurnInput {
     pub amount: Decimal,
 }
 
-pub type AccountBurnManifestInput = AccountBurnInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountBurnManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub amount: Decimal,
+}
 
 pub type AccountBurnOutput = ();
 
@@ -402,7 +438,11 @@ pub struct AccountBurnNonFungiblesInput {
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-pub type AccountBurnNonFungiblesManifestInput = AccountBurnNonFungiblesInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountBurnNonFungiblesManifestInput {
+    pub resource_address: DynamicResourceAddress,
+    pub ids: IndexSet<NonFungibleLocalId>,
+}
 
 pub type AccountBurnNonFungiblesOutput = ();
 
@@ -417,7 +457,10 @@ pub struct AccountAddAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
 
-pub type AccountAddAuthorizedDepositorManifestInput = AccountAddAuthorizedDepositorInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountAddAuthorizedDepositorManifestInput {
+    pub badge: ManifestResourceOrNonFungible,
+}
 
 pub type AccountAddAuthorizedDepositorOutput = ();
 
@@ -432,7 +475,10 @@ pub struct AccountRemoveAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
 
-pub type AccountRemoveAuthorizedDepositorManifestInput = AccountRemoveAuthorizedDepositorInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountRemoveAuthorizedDepositorManifestInput {
+    pub badge: ManifestResourceOrNonFungible,
+}
 
 pub type AccountRemoveAuthorizedDepositorOutput = ();
 
@@ -447,7 +493,10 @@ pub struct AccountBalanceInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountBalanceManifestInput = AccountBalanceInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct AccountBalanceDynamicInput {
+    pub resource_address: DynamicResourceAddress,
+}
 
 pub type AccountBalanceOutput = Decimal;
 

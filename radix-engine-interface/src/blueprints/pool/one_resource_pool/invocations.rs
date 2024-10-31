@@ -22,7 +22,7 @@ define_invocation! {
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_address: ResourceAddress,
+        resource_address: DynamicResourceAddress,
         address_reservation: Option<ManifestAddressReservation>
     }
 }

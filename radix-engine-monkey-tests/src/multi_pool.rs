@@ -87,7 +87,7 @@ impl MultiPoolFuzzAction {
                     multi_pool_meta.pool_address,
                     MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     MultiResourcePoolProtectedWithdrawManifestInput {
-                        resource_address,
+                        resource_address: resource_address.into(),
                         amount,
                         withdraw_strategy,
                     },

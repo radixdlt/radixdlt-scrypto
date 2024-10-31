@@ -61,7 +61,7 @@ define_invocation! {
     },
     output: type (),
     manifest_input: struct {
-        claimant: ComponentAddress,
+        claimant: DynamicComponentAddress,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -77,7 +77,7 @@ define_invocation! {
     },
     output: type Option<Bucket>,
     manifest_input: struct {
-        claimants: IndexMap<ComponentAddress, ResourceSpecifier>,
+        claimants: IndexMap<DynamicComponentAddress, ResourceSpecifier>,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -97,8 +97,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
         amount: Decimal
     }
 }
@@ -113,8 +113,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
 }
@@ -133,8 +133,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
         amount: Decimal
     }
 }
@@ -149,8 +149,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
 }
@@ -183,8 +183,8 @@ define_invocation! {
     },
     output: type IndexSet<NonFungibleLocalId>,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
         limit: u32
     }
 }

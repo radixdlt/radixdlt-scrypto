@@ -39,7 +39,7 @@ TAKE_FROM_WORKTOP
 ```
 */
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
     Named(ManifestNamedAddress),
@@ -214,7 +214,7 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
     Named(ManifestNamedAddress),
@@ -339,7 +339,7 @@ impl TryFrom<ManifestAddress> for DynamicPackageAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicComponentAddress {
     Static(ComponentAddress),
     Named(ManifestNamedAddress),
@@ -441,7 +441,7 @@ impl TryFrom<ManifestAddress> for DynamicComponentAddress {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicResourceAddress {
     Static(ResourceAddress),
     Named(ManifestNamedAddress),

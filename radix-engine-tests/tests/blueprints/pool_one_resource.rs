@@ -450,7 +450,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
             ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
             OneResourcePoolInstantiateManifestInput {
-                resource_address: non_fungible_resource,
+                resource_address: non_fungible_resource.into(),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
                 address_reservation: None,
@@ -731,7 +731,7 @@ impl TestEnvironment {
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
                     OneResourcePoolInstantiateManifestInput {
-                        resource_address,
+                        resource_address: resource_address.into(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
                         address_reservation: None,

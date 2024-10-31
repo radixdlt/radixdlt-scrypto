@@ -25,6 +25,25 @@ pub enum ResourceOrNonFungible {
     Resource(ResourceAddress),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ManifestSbor)]
+pub enum ManifestResourceOrNonFungible {
+    NonFungible(NonFungibleGlobalId),
+    Resource(DynamicResourceAddress),
+}
+
+impl From<ResourceOrNonFungible> for ManifestResourceOrNonFungible {
+    fn from(value: ResourceOrNonFungible) -> Self {
+        match value {
+            ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
+                Self::NonFungible(non_fungible_global_id)
+            }
+            ResourceOrNonFungible::Resource(resource_address) => {
+                Self::Resource(DynamicResourceAddress::Static(resource_address))
+            }
+        }
+    }
+}
+
 impl Describe<ScryptoCustomTypeKind> for ResourceOrNonFungible {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::RESOURCE_OR_NON_FUNGIBLE_TYPE);

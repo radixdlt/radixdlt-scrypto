@@ -97,7 +97,7 @@ impl TwoPoolFuzzAction {
                     two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: two_pool_meta.resource_address1,
+                        resource_address: two_pool_meta.resource_address1.into(),
                         amount: amount.into(),
                         withdraw_strategy,
                     },
@@ -112,7 +112,7 @@ impl TwoPoolFuzzAction {
                     two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: two_pool_meta.resource_address2,
+                        resource_address: two_pool_meta.resource_address2.into(),
                         amount,
                         withdraw_strategy,
                     },
@@ -149,7 +149,7 @@ impl TwoPoolFuzzAction {
                     two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: two_pool_meta.resource_address1,
+                        resource_address: two_pool_meta.resource_address1.into(),
                         amount,
                         withdraw_strategy,
                     },
@@ -165,7 +165,7 @@ impl TwoPoolFuzzAction {
                     two_pool_meta.pool_address,
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
-                        resource_address: two_pool_meta.resource_address2,
+                        resource_address: two_pool_meta.resource_address2.into(),
                         amount,
                         withdraw_strategy,
                     },

@@ -30,7 +30,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     OneResourcePoolInstantiateManifestInput {
                         owner_role: OwnerRole::None,
                         pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                        resource_address: fungible1,
+                        resource_address: fungible1.into(),
                         address_reservation: None,
                     },
                 )
@@ -41,7 +41,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     TwoResourcePoolInstantiateManifestInput {
                         owner_role: OwnerRole::None,
                         pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                        resource_addresses: (fungible1, fungible2),
+                        resource_addresses: (fungible1.into(), fungible2.into()),
                         address_reservation: None,
                     },
                 )
@@ -52,7 +52,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     MultiResourcePoolInstantiateManifestInput {
                         owner_role: OwnerRole::None,
                         pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                        resource_addresses: indexset! {fungible1, fungible2},
+                        resource_addresses: indexset! {fungible1.into(), fungible2.into()},
                         address_reservation: None,
                     },
                 )
@@ -117,7 +117,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
                         TwoResourcePoolInstantiateManifestInput {
                             owner_role: OwnerRole::None,
                             pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                            resource_addresses: (fungible1, fungible2),
+                            resource_addresses: (fungible1.into(), fungible2.into()),
                             address_reservation: Some(reservation),
                         },
                     )
@@ -132,7 +132,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
                         named_address,
                         TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                         TwoResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: fungible1,
+                            resource_address: fungible1.into(),
                             amount: dec!(100),
                             withdraw_strategy: WithdrawStrategy::Exact,
                         },
@@ -271,7 +271,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                         MultiResourcePoolInstantiateManifestInput {
                             owner_role: OwnerRole::None,
                             pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                            resource_addresses: indexset![fungible1, fungible2],
+                            resource_addresses: indexset![fungible1.into(), fungible2.into()],
                             address_reservation: Some(reservation),
                         },
                     )
@@ -286,7 +286,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                         named_address,
                         MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                         MultiResourcePoolProtectedWithdrawManifestInput {
-                            resource_address: fungible1,
+                            resource_address: fungible1.into(),
                             amount: dec!(100),
                             withdraw_strategy: WithdrawStrategy::Exact,
                         },

@@ -419,7 +419,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
             MultiResourcePoolInstantiateManifestInput {
-                resource_addresses: indexset!(non_fungible_resource),
+                resource_addresses: indexset!(non_fungible_resource.into()),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
                 address_reservation: None,
@@ -843,7 +843,10 @@ impl<const N: usize> TestEnvironment<N> {
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                     MultiResourcePoolInstantiateManifestInput {
-                        resource_addresses: resource_addresses.into_iter().collect(),
+                        resource_addresses: resource_addresses
+                            .into_iter()
+                            .map(Into::into)
+                            .collect(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
                         owner_role,
                         address_reservation: None,
@@ -947,7 +950,7 @@ impl<const N: usize> TestEnvironment<N> {
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                 MultiResourcePoolProtectedWithdrawManifestInput {
-                    resource_address,
+                    resource_address: resource_address.into(),
                     amount: amount.into(),
                     withdraw_strategy,
                 },

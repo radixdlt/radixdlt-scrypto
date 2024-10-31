@@ -196,7 +196,7 @@ fn store_can_only_be_called_by_storer_role() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: account,
+                            claimant: account.into(),
                             try_direct_send: false,
                         },
                     )
@@ -349,8 +349,8 @@ fn recover_can_only_be_called_by_recoverer_role() {
                     account_locker,
                     ACCOUNT_LOCKER_RECOVER_IDENT,
                     AccountLockerRecoverManifestInput {
-                        claimant: account,
-                        resource_address: XRD,
+                        claimant: account.into(),
+                        resource_address: XRD.into(),
                         amount: dec!(0),
                     },
                 )
@@ -424,8 +424,8 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
                     account_locker,
                     ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT,
                     AccountLockerRecoverNonFungiblesManifestInput {
-                        claimant: account,
-                        resource_address: ACCOUNT_OWNER_BADGE,
+                        claimant: account.into(),
+                        resource_address: ACCOUNT_OWNER_BADGE.into(),
                         ids: indexset! {},
                     },
                 )
@@ -500,7 +500,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD,
+                        resource_address: XRD.into(),
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
@@ -527,7 +527,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                     account_locker,
                     ACCOUNT_LOCKER_STORE_IDENT,
                     AccountLockerStoreManifestInput {
-                        claimant: user_account,
+                        claimant: user_account.into(),
                         bucket,
                         try_direct_send: true,
                     },
@@ -596,7 +596,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD,
+                        resource_address: XRD.into(),
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
@@ -630,7 +630,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                     account_locker,
                     ACCOUNT_LOCKER_STORE_IDENT,
                     AccountLockerStoreManifestInput {
-                        claimant: user_account,
+                        claimant: user_account.into(),
                         bucket,
                         try_direct_send: true,
                     },
@@ -699,8 +699,8 @@ fn claim_is_public_and_callable_by_all() {
                     account_locker,
                     ACCOUNT_LOCKER_CLAIM_IDENT,
                     AccountLockerClaimManifestInput {
-                        claimant: account,
-                        resource_address: XRD,
+                        claimant: account.into(),
+                        resource_address: XRD.into(),
                         amount: dec!(0),
                     },
                 )
@@ -774,8 +774,8 @@ fn claim_non_fungibles_is_public_and_callable_by_all() {
                     account_locker,
                     ACCOUNT_LOCKER_CLAIM_NON_FUNGIBLES_IDENT,
                     AccountLockerClaimNonFungiblesManifestInput {
-                        claimant: account,
-                        resource_address: ACCOUNT_OWNER_BADGE,
+                        claimant: account.into(),
+                        resource_address: ACCOUNT_OWNER_BADGE.into(),
                         ids: indexset! {},
                     },
                 )
@@ -858,7 +858,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -878,8 +878,8 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                 account_locker,
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
-                    claimant: user_account1,
-                    resource_address: XRD,
+                    claimant: user_account1.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -957,7 +957,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -977,8 +977,8 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                 account_locker,
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
-                    claimant: user_account1,
-                    resource_address: XRD,
+                    claimant: user_account1.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1056,7 +1056,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -1077,8 +1077,8 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                 account_locker,
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
-                    claimant: user_account1,
-                    resource_address: XRD,
+                    claimant: user_account1.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1155,7 +1155,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -1176,8 +1176,8 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                 account_locker,
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
-                    claimant: user_account1,
-                    resource_address: XRD,
+                    claimant: user_account1.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1257,7 +1257,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -1277,8 +1277,8 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                 account_locker,
                 ACCOUNT_LOCKER_GET_AMOUNT_IDENT,
                 AccountLockerGetAmountManifestInput {
-                    claimant: user_account1,
-                    resource_address: XRD,
+                    claimant: user_account1.into(),
+                    resource_address: XRD.into(),
                 },
             )
             .build(),
@@ -1351,7 +1351,7 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
                         ACCOUNT_LOCKER_STORE_IDENT,
                         AccountLockerStoreManifestInput {
                             bucket,
-                            claimant: user_account1,
+                            claimant: user_account1.into(),
                             try_direct_send: false,
                         },
                     )
@@ -1371,8 +1371,8 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
                 account_locker,
                 ACCOUNT_LOCKER_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 AccountLockerGetNonFungibleLocalIdsManifestInput {
-                    claimant: user_account1,
-                    resource_address: non_fungible_resource,
+                    claimant: user_account1.into(),
+                    resource_address: non_fungible_resource.into(),
                     limit: 100,
                 },
             )
@@ -1435,7 +1435,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 account,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
-                    resource_address: resource,
+                    resource_address: resource.into(),
                     resource_preference: ResourcePreference::Disallowed,
                 },
             )
@@ -1498,7 +1498,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Store {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1510,7 +1510,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Store {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1554,7 +1554,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //===============
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1576,7 +1576,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1596,7 +1596,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1616,7 +1616,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1636,7 +1636,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1658,7 +1658,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1678,7 +1678,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1698,7 +1698,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1718,7 +1718,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1825,7 +1825,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=========
         Item {
             action: LockerAction::Recover {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_recover: fungible_resource1,
                 items_to_recover: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1849,7 +1849,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Claim {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_claim: fungible_resource2,
                 items_to_claim: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1873,7 +1873,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Store {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -1905,7 +1905,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //===============
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -1934,7 +1934,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -1963,7 +1963,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(7),
@@ -1999,7 +1999,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -2033,7 +2033,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -2074,7 +2074,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -2113,7 +2113,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1,
+                claimant: user_account1.into(),
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -2159,7 +2159,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2,
+                claimant: user_account2.into(),
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -2203,7 +2203,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -2388,7 +2388,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=========
         Item {
             action: LockerAction::Recover {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_recover: non_fungible_resource1,
                 items_to_recover: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(7),
@@ -2441,7 +2441,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Recover {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_recover: non_fungible_resource1,
                 items_to_recover: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -2493,7 +2493,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Claim {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_claim: non_fungible_resource1,
                 items_to_claim: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(20)
@@ -2543,7 +2543,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Claim {
-                claimant: user_account3,
+                claimant: user_account3.into(),
                 resource_to_claim: non_fungible_resource1,
                 items_to_claim: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -2620,7 +2620,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_STORE_IDENT,
                             AccountLockerStoreManifestInput {
                                 bucket,
-                                claimant,
+                                claimant: claimant.into(),
                                 try_direct_send: false,
                             },
                         )
@@ -2650,7 +2650,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_STORE_IDENT,
                             AccountLockerStoreManifestInput {
                                 bucket,
-                                claimant,
+                                claimant: claimant.into(),
                                 try_direct_send: false,
                             },
                         )
@@ -2680,7 +2680,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_STORE_IDENT,
                             AccountLockerStoreManifestInput {
                                 bucket,
-                                claimant,
+                                claimant: claimant.into(),
                                 try_direct_send: true,
                             },
                         )
@@ -2710,7 +2710,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_STORE_IDENT,
                             AccountLockerStoreManifestInput {
                                 bucket,
-                                claimant,
+                                claimant: claimant.into(),
                                 try_direct_send: true,
                             },
                         )
@@ -2749,7 +2749,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_AIRDROP_IDENT,
                             AccountLockerAirdropManifestInput {
                                 bucket,
-                                claimants: claimants.into_iter().collect(),
+                                claimants: claimants
+                                    .into_iter()
+                                    .map(|(k, v)| (k.into(), v))
+                                    .collect(),
                                 try_direct_send: false,
                             },
                         )
@@ -2788,7 +2791,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ACCOUNT_LOCKER_AIRDROP_IDENT,
                             AccountLockerAirdropManifestInput {
                                 bucket,
-                                claimants: claimants.into_iter().collect(),
+                                claimants: claimants
+                                    .into_iter()
+                                    .map(|(k, v)| (k.into(), v))
+                                    .collect(),
                                 try_direct_send: true,
                             },
                         )
@@ -2814,8 +2820,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         account_locker,
                         ACCOUNT_LOCKER_RECOVER_IDENT,
                         AccountLockerRecoverManifestInput {
-                            claimant,
-                            resource_address: resource_to_recover,
+                            claimant: claimant.into(),
+                            resource_address: resource_to_recover.into(),
                             amount,
                         },
                     )
@@ -2841,8 +2847,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         account_locker,
                         ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT,
                         AccountLockerRecoverNonFungiblesManifestInput {
-                            claimant,
-                            resource_address: resource_to_recover,
+                            claimant: claimant.into(),
+                            resource_address: resource_to_recover.into(),
                             ids,
                         },
                     )
@@ -2863,8 +2869,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         account_locker,
                         ACCOUNT_LOCKER_CLAIM_IDENT,
                         AccountLockerClaimManifestInput {
-                            claimant,
-                            resource_address: resource_to_claim,
+                            claimant: claimant.into(),
+                            resource_address: resource_to_claim.into(),
                             amount,
                         },
                     )
@@ -2888,8 +2894,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         account_locker,
                         ACCOUNT_LOCKER_CLAIM_NON_FUNGIBLES_IDENT,
                         AccountLockerClaimNonFungiblesManifestInput {
-                            claimant,
-                            resource_address: resource_to_claim,
+                            claimant: claimant.into(),
+                            resource_address: resource_to_claim.into(),
                             ids,
                         },
                     )
@@ -3122,7 +3128,7 @@ fn send_does_not_accept_an_address_that_is_not_an_account() {
                     ACCOUNT_LOCKER_STORE_IDENT,
                     AccountLockerStoreManifestInput {
                         bucket,
-                        claimant: FAUCET,
+                        claimant: FAUCET.into(),
                         try_direct_send: false,
                     },
                 )
@@ -3206,7 +3212,7 @@ fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
                     AccountLockerAirdropManifestInput {
                         bucket,
                         claimants: indexmap! {
-                            FAUCET => ResourceSpecifier::Fungible(dec!(1))
+                            FAUCET.into() => ResourceSpecifier::Fungible(dec!(1))
                         },
                         try_direct_send: false,
                     },
@@ -3286,8 +3292,8 @@ fn claim_does_not_accept_an_address_that_is_not_an_account() {
                 account_locker,
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
-                    claimant: FAUCET,
-                    resource_address: XRD,
+                    claimant: FAUCET.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(1),
                 },
             )
@@ -3365,8 +3371,8 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
                 account_locker,
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
-                    claimant: FAUCET,
-                    resource_address: XRD,
+                    claimant: FAUCET.into(),
+                    resource_address: XRD.into(),
                     amount: dec!(1),
                 },
             )
@@ -3474,7 +3480,7 @@ fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
                     AccountLockerAirdropManifestInput {
                         claimants: keys_and_accounts
                             .iter()
-                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
+                            .map(|entry| (entry.1.into(), ResourceSpecifier::Fungible(dec!(1))))
                             .collect(),
                         bucket,
                         try_direct_send: true,

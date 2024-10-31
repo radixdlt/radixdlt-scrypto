@@ -94,7 +94,10 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                             )
                             .get_free_xrd_from_faucet()
                             .take_all_from_worktop(XRD, "free_xrd")
-                            .deposit("parent_account", "free_xrd")
+                            .then(|builder| {
+                                let parent_account = builder.named_address("parent_account");
+                                builder.deposit(parent_account, "free_xrd")
+                            })
                             .create_fungible_resource(
                                 OwnerRole::Fixed(rule!(require(
                                     config.child_account_key.public_key().signature_proof()
@@ -121,7 +124,10 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                                     config.child_account_key.public_key().signature_proof()
                                 ))),
                             )
-                            .try_deposit_entire_worktop_or_abort("child_account", None)
+                            .then(|builder| {
+                                let child_account = builder.named_address("child_account");
+                                builder.try_deposit_entire_worktop_or_abort(child_account, None)
+                            })
                     })
                     .sign(&config.parent_account_key)
                     .complete(core)

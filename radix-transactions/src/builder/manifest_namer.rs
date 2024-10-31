@@ -978,25 +978,11 @@ pub trait ResolvableComponentAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
 }
 
-impl<'a> ResolvableComponentAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableComponentAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableComponentAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
+impl<A, E> ResolvableComponentAddress for A
+where
+    A: TryInto<DynamicComponentAddress, Error = E>,
+    E: Debug,
+{
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
         let address = self
             .try_into()
@@ -1031,24 +1017,6 @@ impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResource
     }
 }
 
-impl<'a> ResolvableResourceAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableResourceAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableResourceAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
 pub trait ResolvablePackageAddress: Sized {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
 
@@ -1074,53 +1042,21 @@ impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAd
     }
 }
 
-impl<'a> ResolvablePackageAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvablePackageAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvablePackageAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
 pub trait ResolvableGlobalAddress {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
 }
 
-impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddress for A {
+impl<A, E> ResolvableGlobalAddress for A
+where
+    A: TryInto<DynamicGlobalAddress, Error = E>,
+    E: Debug,
+{
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
         let address = self
             .try_into()
             .expect("Address was not valid GlobalAddress");
         registrar.check_address_exists(address);
         address
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
     }
 }
 
