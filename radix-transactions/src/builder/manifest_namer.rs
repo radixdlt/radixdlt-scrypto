@@ -326,8 +326,8 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn check_address_exists(&self, address: impl Into<DynamicGlobalAddress>) {
-        if let DynamicGlobalAddress::Named(address_id) = address.into() {
+    pub fn check_address_exists(&self, address: impl Into<ManifestGlobalAddress>) {
+        if let ManifestGlobalAddress::Named(address_id) = address.into() {
             self.object_names
                 .address_names
                 .get(&address_id)
@@ -540,7 +540,7 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().register_named_address(new)
     }
 
-    pub fn check_address_exists(&self, address: impl Into<DynamicGlobalAddress>) {
+    pub fn check_address_exists(&self, address: impl Into<ManifestGlobalAddress>) {
         self.core.borrow().check_address_exists(address)
     }
 
@@ -976,7 +976,7 @@ pub struct NamedManifestAddress {
 
 impl NamedAddressResolver for ManifestNameRegistrar {
     fn assert_named_address_exists(&self, named_address: ManifestNamedAddress) {
-        self.check_address_exists(DynamicGlobalAddress::Named(named_address));
+        self.check_address_exists(ManifestGlobalAddress::Named(named_address));
     }
 
     fn resolve_named_address(&self, address_name: &str) -> ManifestNamedAddress {
@@ -988,8 +988,8 @@ impl NamedAddressResolver for ManifestNameRegistrar {
 // foreign trait impl errors.
 // But we still re-export it here to avoid breaking any imports.
 pub use radix_common::prelude::{
-    ResolvableComponentAddress, ResolvableGlobalAddress, ResolvablePackageAddress,
-    ResolvableResourceAddress,
+    ResolvableManifestComponentAddress, ResolvableManifestGlobalAddress,
+    ResolvableManifestPackageAddress, ResolvableStaticManifestResourceAddress,
 };
 
 //=====================

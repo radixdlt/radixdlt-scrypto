@@ -28,7 +28,7 @@ pub enum ResourceOrNonFungible {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ManifestSbor)]
 pub enum ManifestResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
-    Resource(DynamicResourceAddress),
+    Resource(ManifestResourceAddress),
 }
 
 impl From<ResourceOrNonFungible> for ManifestResourceOrNonFungible {
@@ -38,7 +38,7 @@ impl From<ResourceOrNonFungible> for ManifestResourceOrNonFungible {
                 Self::NonFungible(non_fungible_global_id)
             }
             ResourceOrNonFungible::Resource(resource_address) => {
-                Self::Resource(DynamicResourceAddress::Static(resource_address))
+                Self::Resource(ManifestResourceAddress::Static(resource_address))
             }
         }
     }

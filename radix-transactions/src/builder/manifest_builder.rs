@@ -475,10 +475,10 @@ where
     /// Takes resource from worktop.
     pub fn take_all_from_worktop(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         new_bucket.register(&self.registrar);
         self.add_v1_instruction(TakeAllFromWorktop { resource_address })
     }
@@ -486,11 +486,11 @@ where
     /// Takes resource from worktop, by amount.
     pub fn take_from_worktop(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         new_bucket.register(&self.registrar);
         self.add_v1_instruction(TakeFromWorktop {
@@ -502,11 +502,11 @@ where
     /// Takes resource from worktop, by non-fungible ids.
     pub fn take_non_fungibles_from_worktop(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         new_bucket.register(&self.registrar);
         self.add_v1_instruction(TakeNonFungiblesFromWorktop {
             ids: ids.into_iter().collect(),
@@ -523,10 +523,10 @@ where
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         self.add_v1_instruction(AssertWorktopContains {
             amount,
@@ -537,19 +537,19 @@ where
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_any(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         self.add_v1_instruction(AssertWorktopContainsAny { resource_address })
     }
 
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_non_fungibles(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         self.add_v1_instruction(AssertWorktopContainsNonFungibles {
             ids: ids.into_iter().collect(),
             resource_address,
@@ -571,11 +571,11 @@ where
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromAuthZoneOfAmount {
@@ -587,11 +587,11 @@ where
     /// Creates proof from the auth zone by non-fungible ids.
     pub fn create_proof_from_auth_zone_of_non_fungibles(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromAuthZoneOfNonFungibles {
             ids: ids.into_iter().collect(),
@@ -602,10 +602,10 @@ where
     /// Creates proof from the auth zone
     pub fn create_proof_from_auth_zone_of_all(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromAuthZoneOfAll { resource_address })
     }
@@ -665,12 +665,12 @@ where
 
     pub fn allocate_global_address(
         self,
-        package_address: impl ResolvablePackageAddress,
+        package_address: impl ResolvableStaticManifestPackageAddress,
         blueprint_name: impl Into<String>,
         new_address_reservation: impl NewManifestAddressReservation,
         new_address_name: impl Into<String>,
     ) -> Self {
-        let package_address = package_address.resolve_static(&self.registrar);
+        let package_address = package_address.resolve_static();
         let blueprint_name = blueprint_name.into();
         let new_named_address = self.registrar.new_named_address(new_address_name);
 
@@ -885,7 +885,7 @@ where
 
     pub fn update_non_fungible_data(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableManifestResourceAddress,
         id: NonFungibleLocalId,
         field_name: impl Into<String>,
         data: impl ManifestEncode,
@@ -936,19 +936,25 @@ where
         )
     }
 
-    pub fn register_validator(self, validator_address: impl ResolvableComponentAddress) -> Self {
+    pub fn register_validator(
+        self,
+        validator_address: impl ResolvableManifestComponentAddress,
+    ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         self.call_method(address, VALIDATOR_REGISTER_IDENT, ())
     }
 
-    pub fn unregister_validator(self, validator_address: impl ResolvableComponentAddress) -> Self {
+    pub fn unregister_validator(
+        self,
+        validator_address: impl ResolvableManifestComponentAddress,
+    ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         self.call_method(address, VALIDATOR_UNREGISTER_IDENT, ())
     }
 
     pub fn signal_protocol_update_readiness(
         self,
-        validator_address: impl ResolvableComponentAddress,
+        validator_address: impl ResolvableManifestComponentAddress,
         protocol_version_name: &str,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
@@ -961,7 +967,7 @@ where
 
     pub fn stake_validator_as_owner(
         self,
-        validator_address: impl ResolvableComponentAddress,
+        validator_address: impl ResolvableManifestComponentAddress,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
@@ -971,7 +977,7 @@ where
 
     pub fn stake_validator(
         self,
-        validator_address: impl ResolvableComponentAddress,
+        validator_address: impl ResolvableManifestComponentAddress,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
@@ -981,7 +987,7 @@ where
 
     pub fn unstake_validator(
         self,
-        validator_address: impl ResolvableComponentAddress,
+        validator_address: impl ResolvableManifestComponentAddress,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
@@ -991,7 +997,7 @@ where
 
     pub fn claim_xrd(
         self,
-        validator_address: impl ResolvableComponentAddress,
+        validator_address: impl ResolvableManifestComponentAddress,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
@@ -1011,7 +1017,7 @@ where
     /// instead.
     pub fn call_function(
         self,
-        package_address: impl ResolvablePackageAddress,
+        package_address: impl ResolvableManifestPackageAddress,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
         arguments: impl ResolvableArguments,
@@ -1031,7 +1037,7 @@ where
     /// You should prefer `call_function` or `call_function_with_name_lookup` instead.
     pub fn call_function_raw(
         self,
-        package_address: impl ResolvablePackageAddress,
+        package_address: impl ResolvableManifestPackageAddress,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
         arguments: ManifestValue,
@@ -1102,7 +1108,7 @@ where
     /// ```
     pub fn call_function_with_name_lookup<T: ResolvableArguments>(
         self,
-        package_address: impl ResolvablePackageAddress,
+        package_address: impl ResolvableManifestPackageAddress,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
         arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
@@ -1130,7 +1136,7 @@ where
     /// instead.
     pub fn call_method(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
@@ -1139,7 +1145,7 @@ where
 
     pub fn call_metadata_method(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
@@ -1148,7 +1154,7 @@ where
 
     pub fn call_royalty_method(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
@@ -1170,7 +1176,7 @@ where
 
     pub fn set_owner_role(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         rule: impl Into<AccessRule>,
     ) -> Self {
         self.call_module_method(
@@ -1181,7 +1187,7 @@ where
         )
     }
 
-    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
+    pub fn lock_owner_role(self, address: impl ResolvableManifestGlobalAddress) -> Self {
         self.call_module_method(
             address,
             ModuleId::RoleAssignment,
@@ -1192,7 +1198,7 @@ where
 
     pub fn set_main_role(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         role_key: impl Into<RoleKey>,
         rule: impl Into<AccessRule>,
     ) -> Self {
@@ -1201,7 +1207,7 @@ where
 
     pub fn set_role(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         role_module: ModuleId,
         role_key: impl Into<RoleKey>,
         rule: impl Into<AccessRule>,
@@ -1220,7 +1226,7 @@ where
 
     pub fn get_role(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         role_module: ModuleId,
         role_key: RoleKey,
     ) -> Self {
@@ -1237,7 +1243,7 @@ where
 
     pub fn call_role_assignment_method(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
     ) -> Self {
@@ -1246,7 +1252,7 @@ where
 
     pub fn call_module_method(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         module_id: ModuleId,
         method_name: impl Into<String>,
         arguments: impl ResolvableArguments,
@@ -1282,7 +1288,7 @@ where
     /// You should prefer `call_function` or `call_function_with_name_lookup` instead.
     pub fn call_method_raw(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments: ManifestValue,
     ) -> Self {
@@ -1347,7 +1353,7 @@ where
     /// ```
     pub fn call_method_with_name_lookup<T: ResolvableArguments>(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         method_name: impl Into<String>,
         arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
     ) -> Self {
@@ -1361,7 +1367,10 @@ where
         })
     }
 
-    pub fn claim_package_royalties(self, package_address: impl ResolvablePackageAddress) -> Self {
+    pub fn claim_package_royalties(
+        self,
+        package_address: impl ResolvableManifestPackageAddress,
+    ) -> Self {
         let address = package_address.resolve(&self.registrar);
         self.add_v1_instruction(CallMethod {
             address: address.into(),
@@ -1372,7 +1381,7 @@ where
 
     pub fn set_component_royalty(
         self,
-        component_address: impl ResolvableComponentAddress,
+        component_address: impl ResolvableManifestComponentAddress,
         method: impl Into<String>,
         amount: RoyaltyAmount,
     ) -> Self {
@@ -1389,7 +1398,7 @@ where
 
     pub fn lock_component_royalty(
         self,
-        component_address: impl ResolvableComponentAddress,
+        component_address: impl ResolvableManifestComponentAddress,
         method: impl Into<String>,
     ) -> Self {
         let address = component_address.resolve(&self.registrar);
@@ -1404,7 +1413,7 @@ where
 
     pub fn claim_component_royalties(
         self,
-        component_address: impl ResolvableComponentAddress,
+        component_address: impl ResolvableManifestComponentAddress,
     ) -> Self {
         let address = component_address.resolve(&self.registrar);
         self.add_v1_instruction(CallRoyaltyMethod {
@@ -1416,7 +1425,7 @@ where
 
     pub fn set_metadata(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         key: impl Into<String>,
         value: impl ToMetadataEntry,
     ) -> Self {
@@ -1440,7 +1449,7 @@ where
 
     pub fn lock_metadata(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         key: impl Into<String>,
     ) -> Self {
         let address = address.resolve(&self.registrar);
@@ -1454,7 +1463,7 @@ where
 
     pub fn freeze_metadata(
         self,
-        address: impl ResolvableGlobalAddress,
+        address: impl ResolvableManifestGlobalAddress,
         key: impl Into<String>,
     ) -> Self {
         let address = address.resolve(&self.registrar);
@@ -1626,7 +1635,7 @@ where
     pub fn burn_from_worktop(
         self,
         amount: impl ResolvableDecimal,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableManifestResourceAddress,
     ) -> Self {
         let amount = amount.resolve();
         let resource_address = resource_address.resolve(&self.registrar);
@@ -1636,8 +1645,11 @@ where
             .burn_resource(bucket)
     }
 
-    pub fn burn_all_from_worktop(self, resource_address: impl ResolvableResourceAddress) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
+    pub fn burn_all_from_worktop(
+        self,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
+    ) -> Self {
+        let resource_address = resource_address.resolve_static();
 
         let bucket = self.generate_bucket_name("to_burn");
         self.take_all_from_worktop(resource_address, &bucket)
@@ -1657,7 +1669,7 @@ where
 
     pub fn mint_fungible(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = resource_address.resolve(&self.registrar);
@@ -1671,7 +1683,7 @@ where
 
     pub fn mint_non_fungible<T: IntoIterator<Item = (NonFungibleLocalId, V)>, V: ManifestEncode>(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableManifestResourceAddress,
         entries: T,
     ) -> Self {
         let address = resource_address.resolve(&self.registrar);
@@ -1692,7 +1704,7 @@ where
 
     pub fn mint_ruid_non_fungible<T: IntoIterator<Item = V>, V: ManifestEncode>(
         self,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableManifestResourceAddress,
         entries: T,
     ) -> Self {
         let address = resource_address.resolve(&self.registrar);
@@ -1826,14 +1838,14 @@ where
 
     pub fn lock_fee_and_withdraw(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         amount_to_lock: impl ResolvableDecimal,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let amount_to_lock = amount_to_lock.resolve();
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
 
         let args = to_manifest_value_and_unwrap!(&AccountLockFeeAndWithdrawInput {
@@ -1851,14 +1863,14 @@ where
 
     pub fn lock_fee_and_withdraw_non_fungibles(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         amount_to_lock: impl ResolvableDecimal,
-        resource_address: impl ResolvableResourceAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let amount_to_lock = amount_to_lock.resolve();
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
 
         let args = to_manifest_value_and_unwrap!(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
@@ -1879,14 +1891,17 @@ where
     }
 
     /// Locks a large fee from the XRD vault of an account.
-    pub fn lock_standard_test_fee(self, account_address: impl ResolvableComponentAddress) -> Self {
+    pub fn lock_standard_test_fee(
+        self,
+        account_address: impl ResolvableManifestComponentAddress,
+    ) -> Self {
         self.lock_fee(account_address, 5000)
     }
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1903,7 +1918,7 @@ where
 
     pub fn lock_contingent_fee(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -1925,12 +1940,12 @@ where
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         let args = to_manifest_value_and_unwrap!(&AccountWithdrawInput {
             resource_address,
@@ -1947,7 +1962,7 @@ where
     /// Withdraws a single non-fungible from an account.
     pub fn withdraw_non_fungible_from_account(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Self {
         let (resource_address, local_id) = non_fungible_global_id.into_parts();
@@ -1957,12 +1972,12 @@ where
     /// Withdraws non-fungibles from an account.
     pub fn withdraw_non_fungibles_from_account(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
 
         let args = to_manifest_value_and_unwrap!(&AccountWithdrawNonFungiblesInput {
             ids: ids.into_iter().collect(),
@@ -1979,12 +1994,12 @@ where
     /// Withdraws resource from an account.
     pub fn burn_in_account(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         let args = to_manifest_value_and_unwrap!(&AccountBurnInput {
             resource_address,
@@ -2001,7 +2016,7 @@ where
     /// Burns a single non-fungible from an account.
     pub fn burn_non_fungible_in_account(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Self {
         let (resource_address, local_id) = non_fungible_global_id.into_parts();
@@ -2011,12 +2026,12 @@ where
     /// Burns non-fungibles from an account.
     pub fn burn_non_fungibles_in_account(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let account_address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
 
         self.call_method(
             account_address,
@@ -2031,12 +2046,12 @@ where
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_amount(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         amount: impl ResolvableDecimal,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
         let amount = amount.resolve();
         let args = to_manifest_value_and_unwrap!(&AccountCreateProofOfAmountInput {
             resource_address,
@@ -2053,7 +2068,7 @@ where
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_non_fungible(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         non_fungible_global_id: NonFungibleGlobalId,
     ) -> Self {
         let (resource_address, local_id) = non_fungible_global_id.into_parts();
@@ -2067,12 +2082,12 @@ where
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_non_fungibles(
         self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
+        account_address: impl ResolvableManifestComponentAddress,
+        resource_address: impl ResolvableStaticManifestResourceAddress,
         local_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
+        let resource_address = resource_address.resolve_static();
 
         let args = to_manifest_value_and_unwrap!(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
@@ -2088,7 +2103,7 @@ where
 
     pub fn deposit(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -2104,7 +2119,7 @@ where
     /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn deposit_batch(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         batch: impl ResolvableBucketBatch,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
@@ -2117,13 +2132,16 @@ where
         )
     }
 
-    pub fn deposit_entire_worktop(self, account_address: impl ResolvableComponentAddress) -> Self {
+    pub fn deposit_entire_worktop(
+        self,
+        account_address: impl ResolvableManifestComponentAddress,
+    ) -> Self {
         self.deposit_batch(account_address, ManifestExpression::EntireWorktop)
     }
 
     pub fn try_deposit_or_abort(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
@@ -2144,7 +2162,7 @@ where
     /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_abort(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         batch: impl ResolvableBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
@@ -2163,7 +2181,7 @@ where
 
     pub fn try_deposit_entire_worktop_or_abort(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         self.try_deposit_batch_or_abort(
@@ -2175,7 +2193,7 @@ where
 
     pub fn try_deposit_or_refund(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         bucket: impl ExistingManifestBucket,
     ) -> Self {
@@ -2196,7 +2214,7 @@ where
     /// * An empty, explicitly typed array of strings, eg `Vec::<String>::new()`
     pub fn try_deposit_batch_or_refund(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         batch: impl ResolvableBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
@@ -2215,7 +2233,7 @@ where
 
     pub fn try_deposit_entire_worktop_or_refund(
         self,
-        account_address: impl ResolvableComponentAddress,
+        account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         self.try_deposit_batch_or_refund(

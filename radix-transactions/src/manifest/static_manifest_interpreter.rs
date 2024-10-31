@@ -325,8 +325,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     .validate_dynamic_address_in_command_part
                 {
                     match address {
-                        DynamicGlobalAddress::Static(_) => {}
-                        DynamicGlobalAddress::Named(named_address) => {
+                        ManifestGlobalAddress::Static(_) => {}
+                        ManifestGlobalAddress::Named(named_address) => {
                             // Check it exists
                             self.get_existing_named_address::<V>(*named_address)?;
                         }
@@ -340,8 +340,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     .validate_dynamic_address_in_command_part
                 {
                     match address {
-                        DynamicPackageAddress::Static(_) => {}
-                        DynamicPackageAddress::Named(named_address) => {
+                        ManifestPackageAddress::Static(_) => {}
+                        ManifestPackageAddress::Named(named_address) => {
                             // Check it exists
                             self.get_existing_named_address::<V>(*named_address)?;
                         }

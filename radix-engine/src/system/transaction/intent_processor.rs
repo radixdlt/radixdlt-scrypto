@@ -340,11 +340,11 @@ impl<'a> IntentProcessorObjects<'a> {
 
     pub fn resolve_package_address(
         &mut self,
-        address: DynamicPackageAddress,
+        address: ManifestPackageAddress,
     ) -> Result<PackageAddress, RuntimeError> {
         match address {
-            DynamicPackageAddress::Static(address) => Ok(address),
-            DynamicPackageAddress::Named(name) => {
+            ManifestPackageAddress::Static(address) => Ok(address),
+            ManifestPackageAddress::Named(name) => {
                 let node_id = self.get_address(&name)?;
                 PackageAddress::try_from(node_id.0).map_err(|_| {
                     RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
@@ -357,11 +357,11 @@ impl<'a> IntentProcessorObjects<'a> {
 
     pub fn resolve_global_address(
         &mut self,
-        address: DynamicGlobalAddress,
+        address: ManifestGlobalAddress,
     ) -> Result<GlobalAddress, RuntimeError> {
         match address {
-            DynamicGlobalAddress::Static(address) => Ok(address),
-            DynamicGlobalAddress::Named(name) => {
+            ManifestGlobalAddress::Static(address) => Ok(address),
+            ManifestGlobalAddress::Named(name) => {
                 let node_id = self.get_address(&name)?;
                 GlobalAddress::try_from(node_id.0).map_err(|_| {
                     RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(

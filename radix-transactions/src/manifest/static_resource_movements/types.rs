@@ -1330,7 +1330,7 @@ impl InvocationStaticInformation {
         let InvocationStaticInformation {
             kind:
                 OwnedInvocationKind::Method {
-                    address: DynamicGlobalAddress::Static(global_address),
+                    address: ManifestGlobalAddress::Static(global_address),
                     module_id: ModuleId::Main,
                     method,
                 },
@@ -1390,12 +1390,12 @@ impl<'a> From<NextCallAssertion<'a>> for OwnedNextCallAssertion {
 #[derive(Clone, Debug)]
 pub enum OwnedInvocationKind {
     Method {
-        address: DynamicGlobalAddress,
+        address: ManifestGlobalAddress,
         module_id: ModuleId,
         method: String,
     },
     Function {
-        address: DynamicPackageAddress,
+        address: ManifestPackageAddress,
         blueprint: String,
         function: String,
     },
