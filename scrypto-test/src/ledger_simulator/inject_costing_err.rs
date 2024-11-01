@@ -72,8 +72,8 @@ impl<
         executable: &ExecutableTransaction,
         init_input: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>, usize), Self::Receipt> {
-        let (mut system, call_frame_inits, num_of_intent_statuses) = E::init(
+    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt> {
+        let (mut system, call_frame_inits) = E::init(
             store,
             executable,
             init_input.system_input,
@@ -91,7 +91,6 @@ impl<
                 wrapped: system,
             },
             call_frame_inits,
-            num_of_intent_statuses,
         ))
     }
 
@@ -105,12 +104,11 @@ impl<
 
     fn finalize(
         &mut self,
+        executable: &ExecutableTransaction,
         store_commit_info: StoreCommitInfo,
-        num_of_intent_statuses: usize,
     ) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.wrapped
-            .finalize(store_commit_info, num_of_intent_statuses)
+        self.wrapped.finalize(executable, store_commit_info)
     }
 
     fn create_receipt<S: SubstateDatabase>(

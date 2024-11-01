@@ -50,3 +50,9 @@ impl HasSignedTransactionIntentHash for PreparedSignedTransactionIntentV2 {
         SignedTransactionIntentHash::from_hash(self.summary.hash)
     }
 }
+
+impl HasNonRootSubintentHashes for PreparedSignedTransactionIntentV2 {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        self.transaction_intent.non_root_subintent_hashes()
+    }
+}

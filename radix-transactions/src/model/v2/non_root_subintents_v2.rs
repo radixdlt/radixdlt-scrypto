@@ -22,6 +22,14 @@ pub struct PreparedNonRootSubintentsV2 {
 
 impl_has_summary!(PreparedNonRootSubintentsV2);
 
+impl HasNonRootSubintentHashes for PreparedNonRootSubintentsV2 {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        // This can be shorter than `self.subintents` if the transaction is invalid,
+        // but this is OK as per the definition on the trait.
+        self.subintents.iter().map(|s| s.subintent_hash()).collect()
+    }
+}
+
 impl TransactionPreparableFromValueBody for PreparedNonRootSubintentsV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let max_subintents_per_transaction = decoder.settings().max_subintents_per_transaction;

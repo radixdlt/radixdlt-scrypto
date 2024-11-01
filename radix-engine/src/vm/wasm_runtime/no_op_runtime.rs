@@ -20,7 +20,7 @@ impl<'a> NoOpWasmRuntime<'a> {
         Self {
             fee_reserve,
             wasm_execution_units_consumed,
-            fee_table: FeeTable::new(),
+            fee_table: FeeTable::latest(),
         }
     }
 }

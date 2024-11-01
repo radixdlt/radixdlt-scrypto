@@ -1011,7 +1011,7 @@ fn test_execution_trace_for_transaction_v2() {
                         "58d39b18c2cb0885ab8e1da7b25b973ed5489f64e0765696956941aa1cf5",
                     ),
                     resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6),
-                    amount: -0.33513389042,
+                    amount: -0.34813389042,
                 },
             ],
             1: [
