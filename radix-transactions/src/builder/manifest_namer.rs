@@ -706,6 +706,10 @@ impl<B: ResolvableBucketBatch> ConsumedBucketBatch for B {
     }
 }
 
+// This has been moved to live `ManifestBucket`.
+// But we still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::ResolvableManifestBucket;
+
 //=====================
 // PROOFS
 //=====================
@@ -788,6 +792,10 @@ impl<T: ResolvableManifestProof> ConsumedManifestProof for T {
     }
 }
 
+// This has been moved to live `ManifestProof`.
+// But we still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::ResolvableManifestProof;
+
 //=====================
 // INTENTS
 //=====================
@@ -850,6 +858,10 @@ impl<T: ResolvableManifestNamedIntent> ReferencedManifestIntent for T {
         self.resolve(registrar)
     }
 }
+
+// This has been moved to live `ManifestNamedIntent`.
+// But we still re-export it here to avoid breaking any imports.
+pub use crate::prelude::ResolvableManifestNamedIntent;
 
 //=====================
 // ADDRESS RESERVATIONS
@@ -951,6 +963,10 @@ impl<T: ResolvableOptionalManifestAddressReservation> ConsumedOptionalManifestAd
         reservation
     }
 }
+
+// This has been moved to live `ManifestAddressReservation` in radix-common
+// But we still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::ResolvableManifestAddressReservation;
 
 //=====================
 // NAMED ADDRESSES
