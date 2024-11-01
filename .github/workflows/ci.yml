@@ -55,7 +55,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Check format
-        run: bash ./check.sh
+        run: bash ./format-check.sh
 
   sbor-unit-tests:
     name: Run SBOR unit tests

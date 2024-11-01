@@ -356,13 +356,12 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         fuzzer.add_resource(XRD);
 
         let validator_meta = {
-            let validator_address = validator_set
+            let validator_address = *validator_set
                 .validators_by_stake_desc
                 .iter()
                 .next()
                 .unwrap()
-                .0
-                .clone();
+                .0;
             let validator_substate = ledger.get_validator_info(validator_address);
             let stake_unit_resource = validator_substate.stake_unit_resource;
             let claim_resource = validator_substate.claim_nft;
@@ -417,7 +416,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                         TwoResourcePoolInstantiateManifestInput {
-                            resource_addresses: (pool_resource1, pool_resource2),
+                            resource_addresses: (pool_resource1.into(), pool_resource2.into()),
                             pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
                             owner_role: OwnerRole::None,
                             address_reservation: None,
@@ -467,7 +466,11 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                         MultiResourcePoolInstantiateManifestInput {
-                            resource_addresses: pool_resources.clone().into_iter().collect(),
+                            resource_addresses: pool_resources
+                                .clone()
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
                             pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
                             owner_role: OwnerRole::None,
                             address_reservation: None,

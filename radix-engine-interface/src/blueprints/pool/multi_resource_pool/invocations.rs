@@ -22,7 +22,7 @@ define_invocation! {
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_addresses: IndexSet<ResourceAddress>,
+        resource_addresses: IndexSet<DynamicResourceAddress>,
         address_reservation: Option<ManifestAddressReservation>
     }
 }
@@ -73,7 +73,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        resource_address: ResourceAddress,
+        resource_address: DynamicResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy
     }

@@ -1016,6 +1016,79 @@ fn static_analysis_on_a_vault_direct_method_succeeds() {
     assert!(rtn.is_ok());
 }
 
+#[test]
+fn static_analysis_on_account_add_authorized_depositor_with_named_address_succeeds() {
+    // Arrange
+    let manifest_string = r#"
+    CALL_METHOD
+        Address("component_tdx_2_1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxyulkzl")
+        "lock_fee"
+        Decimal("5000")
+    ;
+    CALL_METHOD
+        Address("account_tdx_2_16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7ll92cg")
+        "set_default_deposit_rule"
+        Enum<1u8>()
+    ;
+    CALL_METHOD
+        Address("account_tdx_2_168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88x4wqmf")
+        "set_default_deposit_rule"
+        Enum<1u8>()
+    ;
+    ALLOCATE_GLOBAL_ADDRESS
+        Address("package_tdx_2_1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxmn4mes")
+        "FungibleResourceManager"
+        AddressReservation("reservation1")
+        NamedAddress("address1")
+    ;
+    CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+        Enum<0u8>()
+        true
+        18u8
+        Decimal("1")
+        Tuple(
+            Enum<0u8>(),
+            Enum<0u8>(),
+            Enum<0u8>(),
+            Enum<0u8>(),
+            Enum<0u8>(),
+            Enum<0u8>()
+        )
+        Tuple(
+            Map<String, Tuple>(),
+            Map<String, Enum>()
+        )
+        Enum<1u8>(
+            AddressReservation("reservation1")
+        )
+    ;
+    CALL_METHOD
+        Address("account_tdx_2_168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88x4wqmf")
+        "add_authorized_depositor"
+        Enum<1u8>(
+            NamedAddress("address1")
+        )
+    ;
+    CALL_METHOD
+        Address("account_tdx_2_16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7ll92cg")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP")
+    ;
+    "#;
+    let manifest = compile(
+        manifest_string,
+        &NetworkDefinition::stokenet(),
+        MockBlobProvider::new(),
+    )
+    .unwrap();
+
+    // Act
+    let rtn = statically_analyze(&manifest);
+
+    // Assert
+    assert!(rtn.is_ok());
+}
+
 fn account_address(id: u64) -> ComponentAddress {
     unsafe {
         ComponentAddress::new_unchecked(node_id(EntityType::GlobalPreallocatedEd25519Account, id).0)

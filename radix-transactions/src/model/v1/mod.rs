@@ -1,7 +1,6 @@
 use super::*;
 
 mod blobs;
-mod dynamic_addresses;
 mod flash_transaction;
 mod header;
 mod instruction_v1;
@@ -20,7 +19,6 @@ mod system_transaction;
 mod validated_notarized_transaction;
 
 pub use blobs::*;
-pub use dynamic_addresses::*;
 pub use flash_transaction::*;
 pub use header::*;
 pub use instruction_v1::*;

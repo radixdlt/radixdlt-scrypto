@@ -15,7 +15,6 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, Worktop};
 use radix_native_sdk::runtime::LocalAuthZone;
 use radix_transactions::data::TransformHandler;
-use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
 

@@ -207,7 +207,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_rejecting_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.fungible_resource.unwrap(),
+                                    resource_address: state.fungible_resource.unwrap().into(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
@@ -215,7 +215,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_rejecting_non_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.non_fungible_resource.unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap().into(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
@@ -259,7 +259,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.account_accepting_all_resources.unwrap(),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -288,7 +291,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         bucket,
                                         claimant: state
                                             .account_rejecting_fungible_resource
-                                            .unwrap(),
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -315,7 +319,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.account_accepting_all_resources.unwrap(),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: false,
                                     },
                                 )
@@ -351,7 +358,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|account| {
                                             (
-                                                account.unwrap(),
+                                                account.unwrap().into(),
                                                 ResourceSpecifier::Fungible(dec!(100)),
                                             )
                                         })
@@ -390,7 +397,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|account| {
                                             (
-                                                account.unwrap(),
+                                                account.unwrap().into(),
                                                 ResourceSpecifier::Fungible(dec!(100)),
                                             )
                                         })
@@ -423,7 +430,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.account_accepting_all_resources.unwrap(),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -455,7 +465,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         bucket,
                                         claimant: state
                                             .account_rejecting_fungible_resource
-                                            .unwrap(),
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -485,7 +496,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.account_accepting_all_resources.unwrap(),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .unwrap()
+                                            .into(),
                                         try_direct_send: false,
                                     },
                                 )
@@ -527,7 +541,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         ]
                                         .into_iter()
                                         .map(|account| {
-                                            (account.unwrap(), ResourceSpecifier::Fungible(dec!(1)))
+                                            (
+                                                account.unwrap().into(),
+                                                ResourceSpecifier::Fungible(dec!(1)),
+                                            )
                                         })
                                         .collect(),
                                     },
@@ -570,7 +587,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         ]
                                         .into_iter()
                                         .map(|account| {
-                                            (account.unwrap(), ResourceSpecifier::Fungible(dec!(1)))
+                                            (
+                                                account.unwrap().into(),
+                                                ResourceSpecifier::Fungible(dec!(1)),
+                                            )
                                         })
                                         .collect(),
                                     },
@@ -614,7 +634,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|(account, id)| {
                                             (
-                                                account.unwrap(),
+                                                account.unwrap().into(),
                                                 ResourceSpecifier::NonFungible(indexset![
                                                     NonFungibleLocalId::integer(id)
                                                 ]),
@@ -662,7 +682,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|(account, id)| {
                                             (
-                                                account.unwrap(),
+                                                account.unwrap().into(),
                                                 ResourceSpecifier::NonFungible(indexset![
                                                     NonFungibleLocalId::integer(id)
                                                 ]),
@@ -695,7 +715,10 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         ACCOUNT_LOCKER_STORE_IDENT,
                                         AccountLockerStoreManifestInput {
                                             bucket,
-                                            claimant: state.account_rejecting_all_deposits.unwrap(),
+                                            claimant: state
+                                                .account_rejecting_all_deposits
+                                                .unwrap()
+                                                .into(),
                                             try_direct_send: true,
                                         },
                                     )
@@ -739,9 +762,12 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .unwrap()
+                                        .into(),
                                     amount: dec!(1),
-                                    resource_address: state.fungible_resource.unwrap(),
+                                    resource_address: state.fungible_resource.unwrap().into(),
                                 },
                             )
                             .deposit_entire_worktop(
@@ -760,9 +786,12 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .unwrap()
+                                        .into(),
                                     amount: dec!(1),
-                                    resource_address: state.non_fungible_resource.unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap().into(),
                                 },
                             )
                             .deposit_entire_worktop(
@@ -781,8 +810,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_NON_FUNGIBLES_IDENT,
                                 AccountLockerClaimNonFungiblesManifestInput {
-                                    claimant: state.account_accepting_all_resources.unwrap(),
-                                    resource_address: state.non_fungible_resource.unwrap(),
+                                    claimant: state.account_accepting_all_resources.unwrap().into(),
+                                    resource_address: state.non_fungible_resource.unwrap().into(),
                                     ids: indexset![NonFungibleLocalId::integer(3)],
                                 },
                             )
@@ -805,9 +834,12 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .unwrap()
+                                        .into(),
                                     amount: dec!(1),
-                                    resource_address: state.fungible_resource.unwrap(),
+                                    resource_address: state.fungible_resource.unwrap().into(),
                                 },
                             )
                             .deposit_entire_worktop(
@@ -834,9 +866,12 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .unwrap()
+                                        .into(),
                                     amount: dec!(1),
-                                    resource_address: state.non_fungible_resource.unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap().into(),
                                 },
                             )
                             .deposit_entire_worktop(
@@ -865,8 +900,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 AccountLockerRecoverNonFungiblesManifestInput {
                                     claimant: state
                                         .account_rejecting_non_fungible_resource
-                                        .unwrap(),
-                                    resource_address: state.non_fungible_resource.unwrap(),
+                                        .unwrap()
+                                        .into(),
+                                    resource_address: state.non_fungible_resource.unwrap().into(),
                                     ids: indexset![NonFungibleLocalId::integer(15)],
                                 },
                             )

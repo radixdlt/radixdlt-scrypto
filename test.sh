@@ -15,7 +15,7 @@ if cargo help nextest 2>/dev/null >&2 ; then
     doc_test_separately=1
 fi
 
-# This should align with check.sh, build.sh, format.sh, clean.sh, update-cargo-locks-minimally.sh
+# This should align with format-check.sh, check.sh, build.sh, format.sh, clean.sh, update-cargo-locks-minimally.sh
 
 echo "Running tests..."
 (set -x; cd .; cargo $cargo_test_runner)

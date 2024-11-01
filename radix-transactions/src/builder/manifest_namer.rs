@@ -974,155 +974,23 @@ pub struct NamedManifestAddress {
     name: String,
 }
 
-pub trait ResolvableComponentAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress;
-}
+impl NamedAddressResolver for ManifestNameRegistrar {
+    fn assert_named_address_exists(&self, named_address: ManifestNamedAddress) {
+        self.check_address_exists(DynamicGlobalAddress::Named(named_address));
+    }
 
-impl<'a> ResolvableComponentAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
+    fn resolve_named_address(&self, address_name: &str) -> ManifestNamedAddress {
+        self.name_lookup().named_address_id(address_name)
     }
 }
 
-impl<'a> ResolvableComponentAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableComponentAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ComponentAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-pub trait ResolvableResourceAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress;
-
-    /// Note - this can be removed when all the static resource addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> ResourceAddress {
-        match self.resolve(registrar) {
-            DynamicResourceAddress::Static(address) => address,
-            DynamicResourceAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResourceAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid ResourceAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-impl<'a> ResolvableResourceAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableResourceAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableResourceAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-pub trait ResolvablePackageAddress: Sized {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress;
-
-    /// Note - this can be removed when all the static package addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, registrar: &ManifestNameRegistrar) -> PackageAddress {
-        match self.resolve(registrar) {
-            DynamicPackageAddress::Static(address) => address,
-            DynamicPackageAddress::Named(_) => {
-                panic!("This address needs to be a static/fixed address")
-            }
-        }
-    }
-}
-
-impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid PackageAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-impl<'a> ResolvablePackageAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvablePackageAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvablePackageAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-pub trait ResolvableGlobalAddress {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress;
-}
-
-impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddress for A {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not valid GlobalAddress");
-        registrar.check_address_exists(address);
-        address
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a str {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for String {
-    fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        registrar.name_lookup().named_address_id(self).into()
-    }
-}
+// This has been moved to live alongside the dynamic addresses in radix-common to avoid
+// foreign trait impl errors.
+// But we still re-export it here to avoid breaking any imports.
+pub use radix_common::prelude::{
+    ResolvableComponentAddress, ResolvableGlobalAddress, ResolvablePackageAddress,
+    ResolvableResourceAddress,
+};
 
 //=====================
 // DECIMAL

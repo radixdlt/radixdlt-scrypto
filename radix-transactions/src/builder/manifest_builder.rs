@@ -2156,7 +2156,7 @@ where
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             AccountTryDepositBatchOrAbortManifestInput {
                 buckets,
-                authorized_depositor_badge,
+                authorized_depositor_badge: authorized_depositor_badge.map(Into::into),
             },
         )
     }
@@ -2208,7 +2208,7 @@ where
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
             AccountTryDepositBatchOrAbortManifestInput {
                 buckets,
-                authorized_depositor_badge,
+                authorized_depositor_badge: authorized_depositor_badge.map(Into::into),
             },
         )
     }

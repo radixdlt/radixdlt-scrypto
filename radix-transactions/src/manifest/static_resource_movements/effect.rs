@@ -356,8 +356,15 @@ impl StaticInvocationResourcesOutput for AccountWithdrawManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -368,8 +375,15 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesManifestInpu
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
@@ -380,8 +394,15 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawManifestInput 
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -392,8 +413,15 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesMa
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
@@ -540,8 +568,15 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -552,8 +587,15 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifes
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
@@ -564,8 +606,15 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -576,8 +625,15 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_non_fungibles(self.ids.clone(), [details.source]),
         )
     }
@@ -614,8 +670,15 @@ impl StaticInvocationResourcesOutput for TwoResourcePoolProtectedWithdrawManifes
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -628,8 +691,15 @@ impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManif
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let DynamicResourceAddress::Static(resource_address) = self.resource_address else {
+            return Ok(
+                TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                    details.source
+                ]),
+            );
+        };
         TrackedResources::new_empty().add_resource(
-            self.resource_address,
+            resource_address,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }

@@ -130,7 +130,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                     config.destination_account.address,
                                     ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                                     AccountTryDepositOrRefundManifestInput {
-                                        authorized_depositor_badge: Some(badge),
+                                        authorized_depositor_badge: Some(badge.into()),
                                         bucket
                                     }
                                 )
@@ -156,7 +156,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                         config.destination_account.address,
                                         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                                         AccountTryDepositOrRefundManifestInput {
-                                            authorized_depositor_badge: Some(badge),
+                                            authorized_depositor_badge: Some(badge.into()),
                                             bucket
                                         }
                                     )
@@ -182,7 +182,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                         config.destination_account.address,
                                         ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                                         AccountTryDepositOrRefundManifestInput {
-                                            authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(ACCOUNT_OWNER_BADGE)),
+                                            authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(ACCOUNT_OWNER_BADGE).into()),
                                             bucket
                                         }
                                     )

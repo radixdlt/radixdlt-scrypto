@@ -96,9 +96,9 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
-                        VALIDATOR_OWNER_BADGE,
-                    )),
+                    authorized_depositor_badge: Some(
+                        ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE).into(),
+                    ),
                 },
             )
         })
@@ -155,7 +155,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge),
+                    authorized_depositor_badge: Some(badge.into()),
                 },
             )
         })
@@ -211,7 +211,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge),
+                    authorized_depositor_badge: Some(badge.into()),
                 },
             )
         })
@@ -266,7 +266,7 @@ fn authorized_depositor_can_be_removed_later() {
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge.clone()),
+                    authorized_depositor_badge: Some(badge.clone().into()),
                 },
             )
         })
@@ -303,7 +303,7 @@ fn authorized_depositor_can_be_removed_later() {
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 AccountTryDepositOrRefundManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge),
+                    authorized_depositor_badge: Some(badge.into()),
                 },
             )
         })
@@ -404,7 +404,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
         })
         .build();
     let receipt =
@@ -453,7 +453,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
         })
         .build();
     let receipt =
@@ -503,9 +503,9 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
                 ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
                 AccountTryDepositOrAbortManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(ResourceOrNonFungible::Resource(
-                        VALIDATOR_OWNER_BADGE,
-                    )),
+                    authorized_depositor_badge: Some(
+                        ResourceOrNonFungible::Resource(VALIDATOR_OWNER_BADGE).into(),
+                    ),
                 },
             )
         })
@@ -560,7 +560,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
                 ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
                 AccountTryDepositOrAbortManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge),
+                    authorized_depositor_badge: Some(badge.into()),
                 },
             )
         })
@@ -616,7 +616,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
                 ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
                 AccountTryDepositOrAbortManifestInput {
                     bucket,
-                    authorized_depositor_badge: Some(badge),
+                    authorized_depositor_badge: Some(badge.into()),
                 },
             )
         })
@@ -715,7 +715,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
         })
         .build();
     let receipt =
@@ -764,7 +764,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
         })
         .build();
     let receipt =

@@ -457,7 +457,7 @@ fn create_pool(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                 TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                 TwoResourcePoolInstantiateManifestInput {
-                    resource_addresses: (pool_resource1, pool_resource2),
+                    resource_addresses: (pool_resource1.into(), pool_resource2.into()),
                     pool_manager_rule: AccessRule::AllowAll,
                     owner_role: OwnerRole::None,
                     address_reservation: None,

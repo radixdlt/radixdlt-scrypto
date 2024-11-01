@@ -15,7 +15,6 @@ use radix_engine_interface::object_modules::metadata::*;
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::manifest::*;
-use radix_transactions::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(
     manifest: &impl ReadableManifest,
