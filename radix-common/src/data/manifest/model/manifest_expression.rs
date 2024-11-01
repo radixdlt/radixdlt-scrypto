@@ -20,25 +20,72 @@ pub enum ManifestExpression {
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BucketBatch {
+pub enum ManifestBucketBatch {
     ManifestBuckets(Vec<ManifestBucket>),
     EntireWorktop,
 }
 
-impl BucketBatch {
+pub trait ResolvableBucketBatch {
+    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch;
+}
+
+impl<B: ResolvableManifestBucket> ResolvableBucketBatch for Vec<B> {
+    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
+        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestBucketBatch::ManifestBuckets(buckets)
+    }
+}
+
+impl<B: ResolvableManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
+    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
+        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestBucketBatch::ManifestBuckets(buckets)
+    }
+}
+
+impl<B: ResolvableManifestBucket> ResolvableBucketBatch for IndexSet<B> {
+    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
+        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestBucketBatch::ManifestBuckets(buckets)
+    }
+}
+
+impl<B: ResolvableManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
+    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
+        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestBucketBatch::ManifestBuckets(buckets)
+    }
+}
+
+impl ResolvableBucketBatch for ManifestExpression {
+    fn resolve(self, _: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
+        match &self {
+            ManifestExpression::EntireWorktop => {
+                // No named buckets are consumed - instead EntireWorktop refers only to the
+                // unnamed buckets on the worktop part of the transaction processor
+                ManifestBucketBatch::EntireWorktop
+            }
+            ManifestExpression::EntireAuthZone => {
+                panic!("Not an allowed expression for a batch of buckets")
+            }
+        }
+    }
+}
+
+impl ManifestBucketBatch {
     pub fn from_buckets(buckets: impl IntoIterator<Item = ManifestBucket>) -> Self {
         Self::ManifestBuckets(buckets.into_iter().collect())
     }
 }
 
 impl<E: sbor::Encoder<ManifestCustomValueKind>> sbor::Encode<ManifestCustomValueKind, E>
-    for BucketBatch
+    for ManifestBucketBatch
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
         match self {
-            BucketBatch::ManifestBuckets(buckets) => buckets.encode_value_kind(encoder),
-            BucketBatch::EntireWorktop => {
+            ManifestBucketBatch::ManifestBuckets(buckets) => buckets.encode_value_kind(encoder),
+            ManifestBucketBatch::EntireWorktop => {
                 ManifestExpression::EntireWorktop.encode_value_kind(encoder)
             }
         }
@@ -47,14 +94,16 @@ impl<E: sbor::Encoder<ManifestCustomValueKind>> sbor::Encode<ManifestCustomValue
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
         match self {
-            BucketBatch::ManifestBuckets(buckets) => buckets.encode_body(encoder),
-            BucketBatch::EntireWorktop => ManifestExpression::EntireWorktop.encode_body(encoder),
+            ManifestBucketBatch::ManifestBuckets(buckets) => buckets.encode_body(encoder),
+            ManifestBucketBatch::EntireWorktop => {
+                ManifestExpression::EntireWorktop.encode_body(encoder)
+            }
         }
     }
 }
 
 impl<D: sbor::Decoder<ManifestCustomValueKind>> sbor::Decode<ManifestCustomValueKind, D>
-    for BucketBatch
+    for ManifestBucketBatch
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -82,7 +131,7 @@ impl<D: sbor::Decoder<ManifestCustomValueKind>> sbor::Decode<ManifestCustomValue
     }
 }
 
-impl sbor::Describe<ScryptoCustomTypeKind> for BucketBatch {
+impl sbor::Describe<ScryptoCustomTypeKind> for ManifestBucketBatch {
     const TYPE_ID: sbor::RustTypeId = Vec::<ManifestBucket>::TYPE_ID;
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, sbor::RustTypeId> {
@@ -92,19 +141,68 @@ impl sbor::Describe<ScryptoCustomTypeKind> for BucketBatch {
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ProofBatch {
+pub enum ManifestProofBatch {
     ManifestProofs(Vec<ManifestProof>),
     EntireAuthZone,
 }
 
+/// This trait is intended to be used as an `impl` argument in helper methods
+/// operating on manifests, to resolve a [`ProofBatch`] from a collection of proofs,
+/// proof names, or a [`ManifestExpression::EntireAuthZone`].
+///
+/// The resolution process relies on a [`NamedManifestBucketResolver`] which can
+/// provide a lookup to/from names.
+pub trait ResolvableProofBatch {
+    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch;
+}
+
+impl<P: ResolvableManifestProof> ResolvableProofBatch for Vec<P> {
+    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
+        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestProofBatch::ManifestProofs(proofs)
+    }
+}
+
+impl<P: ResolvableManifestProof> ResolvableProofBatch for BTreeSet<P> {
+    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
+        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestProofBatch::ManifestProofs(proofs)
+    }
+}
+
+impl<P: ResolvableManifestProof> ResolvableProofBatch for IndexSet<P> {
+    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
+        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestProofBatch::ManifestProofs(proofs)
+    }
+}
+
+impl<P: ResolvableManifestProof, const N: usize> ResolvableProofBatch for [P; N] {
+    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
+        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
+        ManifestProofBatch::ManifestProofs(proofs)
+    }
+}
+
+impl ResolvableProofBatch for ManifestExpression {
+    fn resolve(self, _: &impl NamedManifestProofResolver) -> ManifestProofBatch {
+        match &self {
+            ManifestExpression::EntireWorktop => {
+                panic!("Not an allowed expression for a batch of proofs");
+            }
+            ManifestExpression::EntireAuthZone => ManifestProofBatch::EntireAuthZone,
+        }
+    }
+}
+
 impl<E: sbor::Encoder<ManifestCustomValueKind>> sbor::Encode<ManifestCustomValueKind, E>
-    for ProofBatch
+    for ManifestProofBatch
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
         match self {
-            ProofBatch::ManifestProofs(proofs) => proofs.encode_value_kind(encoder),
-            ProofBatch::EntireAuthZone => {
+            ManifestProofBatch::ManifestProofs(proofs) => proofs.encode_value_kind(encoder),
+            ManifestProofBatch::EntireAuthZone => {
                 ManifestExpression::EntireAuthZone.encode_value_kind(encoder)
             }
         }
@@ -113,14 +211,16 @@ impl<E: sbor::Encoder<ManifestCustomValueKind>> sbor::Encode<ManifestCustomValue
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
         match self {
-            ProofBatch::ManifestProofs(proofs) => proofs.encode_body(encoder),
-            ProofBatch::EntireAuthZone => ManifestExpression::EntireAuthZone.encode_body(encoder),
+            ManifestProofBatch::ManifestProofs(proofs) => proofs.encode_body(encoder),
+            ManifestProofBatch::EntireAuthZone => {
+                ManifestExpression::EntireAuthZone.encode_body(encoder)
+            }
         }
     }
 }
 
 impl<D: sbor::Decoder<ManifestCustomValueKind>> sbor::Decode<ManifestCustomValueKind, D>
-    for ProofBatch
+    for ManifestProofBatch
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -148,7 +248,7 @@ impl<D: sbor::Decoder<ManifestCustomValueKind>> sbor::Decode<ManifestCustomValue
     }
 }
 
-impl sbor::Describe<ScryptoCustomTypeKind> for ProofBatch {
+impl sbor::Describe<ScryptoCustomTypeKind> for ManifestProofBatch {
     const TYPE_ID: sbor::RustTypeId = Vec::<ManifestProof>::TYPE_ID;
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, sbor::RustTypeId> {

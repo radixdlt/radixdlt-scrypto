@@ -244,7 +244,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
 
     pub fn with_bucket(
         self,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ResolvableManifestBucket,
         next: impl FnOnce(Self, ManifestBucket) -> Self,
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
@@ -515,7 +515,7 @@ where
     }
 
     /// Adds a bucket of resource to worktop.
-    pub fn return_to_worktop(self, bucket: impl ExistingManifestBucket) -> Self {
+    pub fn return_to_worktop(self, bucket: impl ConsumedManifestBucket) -> Self {
         let bucket = bucket.mark_consumed(&self.registrar);
         self.add_v1_instruction(ReturnToWorktop { bucket_id: bucket })
     }
@@ -563,7 +563,7 @@ where
     }
 
     /// Pushes a proof onto the auth zone
-    pub fn push_to_auth_zone(self, proof: impl ExistingManifestProof) -> Self {
+    pub fn push_to_auth_zone(self, proof: impl ConsumedManifestProof) -> Self {
         let proof = proof.mark_consumed(&self.registrar);
         self.add_v1_instruction(PushToAuthZone { proof_id: proof })
     }
@@ -613,11 +613,11 @@ where
     /// Creates proof from a bucket. The bucket is not consumed by this process.
     pub fn create_proof_from_bucket_of_amount(
         self,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ReferencedManifestBucket,
         amount: impl ResolvableDecimal,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let bucket = bucket.resolve(&self.registrar);
+        let bucket = bucket.resolve_referenced(&self.registrar);
         let amount = amount.resolve();
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromBucketOfAmount {
@@ -629,11 +629,11 @@ where
     /// Creates proof from a bucket. The bucket is not consumed by this process.
     pub fn create_proof_from_bucket_of_non_fungibles(
         self,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ReferencedManifestBucket,
         ids: impl IntoIterator<Item = NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let bucket = bucket.resolve(&self.registrar);
+        let bucket = bucket.resolve_referenced(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromBucketOfNonFungibles {
             bucket_id: bucket,
@@ -644,10 +644,10 @@ where
     /// Creates proof from a bucket. The bucket is not consumed by this process.
     pub fn create_proof_from_bucket_of_all(
         self,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ReferencedManifestBucket,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let bucket = bucket.resolve(&self.registrar);
+        let bucket = bucket.resolve_referenced(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CreateProofFromBucketOfAll { bucket_id: bucket })
     }
@@ -655,10 +655,10 @@ where
     /// Clones a proof.
     pub fn clone_proof(
         self,
-        proof: impl ExistingManifestProof,
+        proof: impl ReferencedManifestProof,
         new_proof: impl NewManifestProof,
     ) -> Self {
-        let proof = proof.resolve(&self.registrar);
+        let proof = proof.resolve_referenced(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_v1_instruction(CloneProof { proof_id: proof })
     }
@@ -683,7 +683,7 @@ where
     }
 
     /// Drops a proof.
-    pub fn drop_proof(self, proof: impl ExistingManifestProof) -> Self {
+    pub fn drop_proof(self, proof: impl ConsumedManifestProof) -> Self {
         let proof = proof.mark_consumed(&self.registrar);
         self.add_v1_instruction(DropProof { proof_id: proof })
     }
@@ -925,7 +925,7 @@ where
         self,
         key: Secp256k1PublicKey,
         fee_factor: impl ResolvableDecimal,
-        xrd_payment: impl ExistingManifestBucket,
+        xrd_payment: impl ConsumedManifestBucket,
     ) -> Self {
         let fee_factor = fee_factor.resolve();
         let xrd_payment = xrd_payment.mark_consumed(&self.registrar);
@@ -968,7 +968,7 @@ where
     pub fn stake_validator_as_owner(
         self,
         validator_address: impl ResolvableManifestComponentAddress,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket: ManifestBucket = bucket.mark_consumed(&self.registrar);
@@ -978,7 +978,7 @@ where
     pub fn stake_validator(
         self,
         validator_address: impl ResolvableManifestComponentAddress,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
@@ -988,7 +988,7 @@ where
     pub fn unstake_validator(
         self,
         validator_address: impl ResolvableManifestComponentAddress,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
@@ -998,7 +998,7 @@ where
     pub fn claim_xrd(
         self,
         validator_address: impl ResolvableManifestComponentAddress,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
@@ -1477,7 +1477,7 @@ where
     /// Publishes a package.
     pub fn publish_package_advanced(
         mut self,
-        address_reservation: impl OptionalExistingManifestAddressReservation,
+        address_reservation: impl ConsumedOptionalManifestAddressReservation,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: impl Into<MetadataInit>,
@@ -1627,7 +1627,7 @@ where
         )
     }
 
-    pub fn burn_resource(self, bucket: impl ExistingManifestBucket) -> Self {
+    pub fn burn_resource(self, bucket: impl ConsumedManifestBucket) -> Self {
         let bucket = bucket.mark_consumed(&self.registrar);
         self.add_v1_instruction(BurnResource { bucket_id: bucket })
     }
@@ -1812,7 +1812,7 @@ where
     pub fn new_account_advanced(
         self,
         owner_role: OwnerRole,
-        address_reservation: impl OptionalExistingManifestAddressReservation,
+        address_reservation: impl ConsumedOptionalManifestAddressReservation,
     ) -> Self {
         let address_reservation = address_reservation.mark_consumed(&self.registrar);
 
@@ -2104,7 +2104,7 @@ where
     pub fn deposit(
         self,
         account_address: impl ResolvableManifestComponentAddress,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -2120,10 +2120,10 @@ where
     pub fn deposit_batch(
         self,
         account_address: impl ResolvableManifestComponentAddress,
-        batch: impl ResolvableBucketBatch,
+        batch: impl ConsumedBucketBatch,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let buckets = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.resolve_and_consume(&self.registrar);
 
         self.call_method(
             address,
@@ -2143,7 +2143,7 @@ where
         self,
         account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -2163,11 +2163,11 @@ where
     pub fn try_deposit_batch_or_abort(
         self,
         account_address: impl ResolvableManifestComponentAddress,
-        batch: impl ResolvableBucketBatch,
+        batch: impl ConsumedBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let buckets = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.resolve_and_consume(&self.registrar);
 
         self.call_method(
             address,
@@ -2195,7 +2195,7 @@ where
         self,
         account_address: impl ResolvableManifestComponentAddress,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ConsumedManifestBucket,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
 
@@ -2215,11 +2215,11 @@ where
     pub fn try_deposit_batch_or_refund(
         self,
         account_address: impl ResolvableManifestComponentAddress,
-        batch: impl ResolvableBucketBatch,
+        batch: impl ConsumedBucketBatch,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
-        let buckets = batch.consume_and_resolve(&self.registrar);
+        let buckets = batch.resolve_and_consume(&self.registrar);
 
         self.call_method(
             address,
@@ -2245,10 +2245,10 @@ where
 
     pub fn create_account_with_owner(
         self,
-        address_reservation: impl OptionalExistingManifestAddressReservation,
+        address_reservation: impl ConsumedOptionalManifestAddressReservation,
         owner_role: OwnerRole,
     ) -> Self {
-        let address_reservation = address_reservation.resolve(&self.registrar);
+        let address_reservation = address_reservation.mark_consumed(&self.registrar);
         self.call_function(
             ACCOUNT_PACKAGE,
             ACCOUNT_BLUEPRINT,
@@ -2262,7 +2262,7 @@ where
 
     pub fn create_access_controller(
         self,
-        controlled_asset: impl ExistingManifestBucket,
+        controlled_asset: impl ConsumedManifestBucket,
         primary_role: AccessRule,
         recovery_role: AccessRule,
         confirmation_role: AccessRule,
@@ -2337,10 +2337,10 @@ where
 
     pub fn assert_bucket_contents(
         self,
-        bucket: impl ExistingManifestBucket,
+        bucket: impl ReferencedManifestBucket,
         constraint: ManifestResourceConstraint,
     ) -> Self {
-        let bucket_id = bucket.resolve(&self.registrar);
+        let bucket_id = bucket.resolve_referenced(&self.registrar);
         self.add_v2_instruction(AssertBucketContents {
             bucket_id,
             constraint,
@@ -2366,10 +2366,10 @@ where
 
     pub fn yield_to_child(
         self,
-        child_manifest_intent: impl ExistingManifestIntent,
+        child_manifest_intent: impl ReferencedManifestIntent,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        let intent = child_manifest_intent.resolve(&self.registrar);
+        let intent = child_manifest_intent.resolve_referenced(&self.registrar);
         self.add_v2_instruction(YieldToChild {
             child_index: ManifestNamedIntentIndex(intent.0),
             args: arguments.resolve(),
@@ -2378,10 +2378,10 @@ where
 
     pub fn yield_to_child_with_name_lookup<T: ResolvableArguments>(
         self,
-        child_manifest_intent: impl ExistingManifestIntent,
+        child_manifest_intent: impl ReferencedManifestIntent,
         arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
     ) -> Self {
-        let intent = child_manifest_intent.resolve(&self.registrar);
+        let intent = child_manifest_intent.resolve_referenced(&self.registrar);
         let args = arguments_creator(&self.name_lookup()).resolve();
 
         self.add_v2_instruction(YieldToChild {

@@ -1,10 +1,6 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::data::manifest::*;
 use crate::*;
@@ -13,6 +9,109 @@ use crate::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct ManifestAddressReservation(pub u32);
+
+//========
+// resolution
+//========
+
+/// This is for use with the [`ResolvableManifestAddressReservation`] trait.
+/// Implementers should panic if a proof cannot be found.
+pub trait NamedManifestAddressReservationResolver {
+    fn assert_address_reservation_exists(&self, address_reservation: ManifestAddressReservation);
+    fn resolve_address_reservation(&self, name: &str) -> ManifestAddressReservation;
+}
+
+/// This trait is intended to be used as an `impl` argument in helper methods
+/// operating on manifests, to resolve a [`ManifestAddressReservation`] from a name, an id,
+/// or from itself.
+///
+/// The resolution process relies on a [`NamedManifestAddressReservationResolver`] which can
+/// provide a lookup to/from names.
+pub trait ResolvableManifestAddressReservation {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> ManifestAddressReservation;
+}
+
+impl<A, E> ResolvableManifestAddressReservation for A
+where
+    A: TryInto<ManifestAddressReservation, Error = E>,
+    E: Debug,
+{
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> ManifestAddressReservation {
+        let address_reservation = self
+            .try_into()
+            .expect("Value was not a valid ManifestProof");
+        resolver.assert_address_reservation_exists(address_reservation);
+        address_reservation
+    }
+}
+
+impl<'a> ResolvableManifestAddressReservation for &'a str {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> ManifestAddressReservation {
+        resolver.resolve_address_reservation(self).into()
+    }
+}
+
+impl<'a> ResolvableManifestAddressReservation for &'a String {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> ManifestAddressReservation {
+        resolver.resolve_address_reservation(self.as_str()).into()
+    }
+}
+
+impl ResolvableManifestAddressReservation for String {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> ManifestAddressReservation {
+        resolver.resolve_address_reservation(self.as_str()).into()
+    }
+}
+
+/// This trait is intended to be used as an `impl` argument in helper methods
+/// operating on manifests, to resolve an [`Option<ManifestAddressReservation>`] from a name, an id,
+/// a [`ManifestAddressReservation`], or `None`.
+///
+/// The resolution process relies on a [`NamedManifestAddressReservationResolver`] which can
+/// provide a lookup to/from names.
+pub trait ResolvableOptionalManifestAddressReservation {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> Option<ManifestAddressReservation>;
+}
+
+impl<T: ResolvableManifestAddressReservation> ResolvableOptionalManifestAddressReservation for T {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> Option<ManifestAddressReservation> {
+        Some(<Self as ResolvableManifestAddressReservation>::resolve(
+            self, resolver,
+        ))
+    }
+}
+
+// We only implement it for one Option, so that `None` has a unique implementation
+// We choose Option<String> for backwards compatibility
+impl ResolvableOptionalManifestAddressReservation for Option<String> {
+    fn resolve(
+        self,
+        resolver: &impl NamedManifestAddressReservationResolver,
+    ) -> Option<ManifestAddressReservation> {
+        self.map(|r| <String as ResolvableManifestAddressReservation>::resolve(r, resolver))
+    }
+}
 
 //========
 // error
@@ -69,7 +168,6 @@ scrypto_describe_for_manifest_type!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_address_reservation_fail() {

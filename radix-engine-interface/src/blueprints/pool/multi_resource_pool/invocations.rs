@@ -35,7 +35,7 @@ define_invocation! {
     },
     output: type (Bucket, Vec<Bucket>),
     manifest_input: struct {
-        buckets: BucketBatch
+        buckets: ManifestBucketBatch
     }
 }
 
