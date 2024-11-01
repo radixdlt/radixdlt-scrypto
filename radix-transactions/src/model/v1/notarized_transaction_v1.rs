@@ -81,6 +81,15 @@ impl PreparedNotarizedTransactionV1 {
         self.signed_intent.intent.header.inner.end_epoch_exclusive
     }
 
+    pub fn hashes(&self) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash: self.transaction_intent_hash(),
+            signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
+            notarized_transaction_hash: self.notarized_transaction_hash(),
+            non_root_subintent_hashes: Default::default(),
+        }
+    }
+
     pub fn validate(
         self,
         validator: &TransactionValidator,

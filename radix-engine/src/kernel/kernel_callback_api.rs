@@ -166,7 +166,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
         executable: &Self::Executable,
         init: Self::Init,
         always_visible_global_nodes: &'static IndexSet<NodeId>,
-    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>, usize), Self::Receipt>;
+    ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
 
     /// Start execution
     fn execute<Y: KernelApi<CallbackObject = Self>>(
@@ -177,8 +177,8 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
     /// Finish execution
     fn finalize(
         &mut self,
+        executable: &Self::Executable,
         store_commit_info: StoreCommitInfo,
-        num_of_intent_statuses: usize,
     ) -> Result<(), RuntimeError>;
 
     /// Create final receipt

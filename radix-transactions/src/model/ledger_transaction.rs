@@ -569,24 +569,104 @@ impl IntoExecutable for ValidatedLedgerTransaction {
     }
 }
 
+define_versioned! {
+    // `LedgerTransactionHashes` is used in the node's `VersionedCommittedTransactionIdentifiers`,
+    // so we add this here tp catch possible backwards compatibility with the node integrations,
+    // and ensure we have versioned models here ready to go for the node integration.
+    #[derive(Debug, Clone, ScryptoSbor)]
+    pub VersionedLedgerTransactionHashes(LedgerTransactionHashesVersions) {
+        previous_versions: [
+            1 => LedgerTransactionHashesV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => LedgerTransactionHashes = LedgerTransactionHashesV2,
+        },
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            bottlenose = "FILE:ledger_transaction_hashes_bottlenose.bin",
+            cuttlefish = "FILE:ledger_transaction_hashes_cuttlefish.bin"
+        ))]
+    ]
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct LedgerTransactionHashes {
+pub struct LedgerTransactionHashesV2 {
     pub ledger_transaction_hash: LedgerTransactionHash,
-    pub kinded: KindedTransactionHashes,
+    pub kinded: KindedTransactionHashesV2,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct LedgerTransactionHashesV1 {
+    pub ledger_transaction_hash: LedgerTransactionHash,
+    pub kinded: KindedTransactionHashesV1,
+}
+
+impl From<LedgerTransactionHashesV1> for LedgerTransactionHashesV2 {
+    fn from(value: LedgerTransactionHashesV1) -> Self {
+        let LedgerTransactionHashesV1 {
+            ledger_transaction_hash,
+            kinded,
+        } = value;
+        LedgerTransactionHashesV2 {
+            ledger_transaction_hash,
+            kinded: kinded.into(),
+        }
+    }
 }
 
 impl LedgerTransactionHashes {
-    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+    pub fn as_user(&self) -> Option<&UserTransactionHashes> {
         self.kinded.as_user()
     }
 }
 
+pub type KindedTransactionHashes = KindedTransactionHashesV2;
+
+impl From<KindedTransactionHashesV1> for KindedTransactionHashesV2 {
+    fn from(value: KindedTransactionHashesV1) -> Self {
+        match value {
+            KindedTransactionHashesV1::Genesis {
+                system_transaction_hash,
+            } => KindedTransactionHashesV2::Genesis {
+                system_transaction_hash,
+            },
+            KindedTransactionHashesV1::User(user_transaction_hashes_v1) => {
+                KindedTransactionHashesV2::User(user_transaction_hashes_v1.into())
+            }
+            KindedTransactionHashesV1::RoundUpdateV1 { round_update_hash } => {
+                KindedTransactionHashesV2::RoundUpdateV1 { round_update_hash }
+            }
+            KindedTransactionHashesV1::FlashV1 {
+                flash_transaction_hash,
+            } => KindedTransactionHashesV2::FlashV1 {
+                flash_transaction_hash,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum KindedTransactionHashes {
+pub enum KindedTransactionHashesV1 {
     Genesis {
         system_transaction_hash: SystemTransactionHash,
     },
-    User(#[sbor(flatten)] UserTransactionHashes),
+    User(#[sbor(flatten)] UserTransactionHashesV1),
+    RoundUpdateV1 {
+        round_update_hash: RoundUpdateTransactionHash,
+    },
+    FlashV1 {
+        flash_transaction_hash: FlashTransactionHash,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum KindedTransactionHashesV2 {
+    Genesis {
+        system_transaction_hash: SystemTransactionHash,
+    },
+    User(#[sbor(flatten)] UserTransactionHashesV2),
     RoundUpdateV1 {
         round_update_hash: RoundUpdateTransactionHash,
     },
@@ -596,9 +676,9 @@ pub enum KindedTransactionHashes {
 }
 
 impl KindedTransactionHashes {
-    pub fn as_user(&self) -> Option<UserTransactionHashes> {
+    pub fn as_user(&self) -> Option<&UserTransactionHashes> {
         match self {
-            KindedTransactionHashes::User(user) => Some(*user),
+            KindedTransactionHashes::User(user) => Some(user),
             _ => None,
         }
     }

@@ -122,20 +122,13 @@ impl PreparedNotarizedTransactionV2 {
             .unwrap()
     }
 
-    pub fn non_root_subintent_hashes(&self) -> impl Iterator<Item = SubintentHash> + '_ {
-        self.signed_intent
-            .transaction_intent
-            .non_root_subintents
-            .subintents
-            .iter()
-            .map(|s| s.subintent_hash())
-    }
-
     pub fn hashes(&self) -> UserTransactionHashes {
         UserTransactionHashes {
             transaction_intent_hash: self.transaction_intent_hash(),
             signed_transaction_intent_hash: self.signed_transaction_intent_hash(),
             notarized_transaction_hash: self.notarized_transaction_hash(),
+            // NOTE: If the NotarizedTransactionV2 is invalid, there might be duplicate hashes
+            non_root_subintent_hashes: self.non_root_subintent_hashes(),
         }
     }
 
@@ -190,5 +183,11 @@ impl HasSignedTransactionIntentHash for PreparedNotarizedTransactionV2 {
 impl HasNotarizedTransactionHash for PreparedNotarizedTransactionV2 {
     fn notarized_transaction_hash(&self) -> NotarizedTransactionHash {
         NotarizedTransactionHash::from_hash(self.summary.hash)
+    }
+}
+
+impl HasNonRootSubintentHashes for PreparedNotarizedTransactionV2 {
+    fn non_root_subintent_hashes(&self) -> Vec<SubintentHash> {
+        self.signed_intent.non_root_subintent_hashes()
     }
 }
