@@ -10,58 +10,7 @@ use crate::*;
 #[must_use]
 pub struct ManifestProof(pub u32);
 
-//========
-// resolution
-//========
-
-/// This is for use with the [`ResolvableManifestProof`] trait.
-/// Implementers should panic if a proof cannot be found.
-pub trait NamedManifestProofResolver {
-    fn assert_proof_exists(&self, proof: ManifestProof);
-    fn resolve_named_proof(&self, name: &str) -> ManifestProof;
-}
-
-/// This trait is intended to be used as an `impl` argument in helper methods
-/// operating on manifests, to resolve a [`ManifestProof`] from a name, an id,
-/// or from itself.
-///
-/// The resolution process relies on a [`NamedManifestProofResolver`] which can
-/// provide a lookup to/from names.
-pub trait ResolvableManifestProof {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProof;
-}
-
-impl<A, E> ResolvableManifestProof for A
-where
-    A: TryInto<ManifestProof, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProof {
-        let proof = self
-            .try_into()
-            .expect("Value was not a valid ManifestProof");
-        resolver.assert_proof_exists(proof);
-        proof
-    }
-}
-
-impl<'a> ResolvableManifestProof for &'a str {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProof {
-        resolver.resolve_named_proof(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestProof for &'a String {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProof {
-        resolver.resolve_named_proof(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestProof for String {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProof {
-        resolver.resolve_named_proof(self.as_str()).into()
-    }
-}
+labelled_resolvable_with_self_impl!(ManifestProof, resolver_output: Self);
 
 //========
 // error

@@ -226,7 +226,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                             )
                             .get_free_xrd_from_faucet()
                             .publish_package_advanced(
-                                Some("radiswap_package_reservation".to_string()),
+                                "radiswap_package_reservation",
                                 code.to_vec(),
                                 schema,
                                 metadata_init! {

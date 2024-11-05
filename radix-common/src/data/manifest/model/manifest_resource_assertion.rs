@@ -42,7 +42,7 @@ impl ManifestResourceConstraints {
     pub fn with_exact_amount(
         self,
         resource_address: ResourceAddress,
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
     ) -> Self {
         self.with(
             resource_address,
@@ -56,7 +56,7 @@ impl ManifestResourceConstraints {
     pub fn with_at_least_amount(
         self,
         resource_address: ResourceAddress,
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
     ) -> Self {
         self.with(
             resource_address,
@@ -70,8 +70,8 @@ impl ManifestResourceConstraints {
     pub fn with_amount_range(
         self,
         resource_address: ResourceAddress,
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
     ) -> Self {
         self.with_general_constraint(
             resource_address,
@@ -521,8 +521,8 @@ pub struct GeneralResourceConstraint {
 
 impl GeneralResourceConstraint {
     pub fn fungible(
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
     ) -> Self {
         let constraint = Self {
             required_ids: Default::default(),
@@ -540,8 +540,8 @@ impl GeneralResourceConstraint {
 
     pub fn non_fungible_no_allow_list(
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
     ) -> Self {
         let constraint = Self {
             required_ids: required_ids.into_iter().collect(),
@@ -559,8 +559,8 @@ impl GeneralResourceConstraint {
 
     pub fn non_fungible_with_allow_list(
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
         allowed_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         let constraint = Self {
@@ -757,7 +757,7 @@ impl LowerBound {
         Self::Inclusive(decimal)
     }
 
-    pub fn of(lower_bound: impl ResolvableLowerBound) -> Self {
+    pub fn of(lower_bound: impl Resolve<LowerBound>) -> Self {
         lower_bound.resolve()
     }
 
@@ -944,7 +944,7 @@ impl UpperBound {
         Self::Inclusive(decimal)
     }
 
-    pub fn of(upper_bound: impl ResolvableUpperBound) -> Self {
+    pub fn of(upper_bound: impl Resolve<UpperBound>) -> Self {
         upper_bound.resolve()
     }
 
@@ -1103,34 +1103,18 @@ pub enum BoundAdjustmentError {
     TakeCannotBeSatisfied,
 }
 
-pub trait ResolvableLowerBound {
-    fn resolve(self) -> LowerBound;
-}
+resolvable_with_self_impl!(LowerBound);
 
-impl ResolvableLowerBound for LowerBound {
-    fn resolve(self) -> LowerBound {
-        self
+impl<T: Resolve<Decimal>> ResolveFrom<T> for LowerBound {
+    fn resolve_from(value: T) -> Self {
+        LowerBound::Inclusive(value.resolve())
     }
 }
 
-impl<T: ResolvableDecimal> ResolvableLowerBound for T {
-    fn resolve(self) -> LowerBound {
-        LowerBound::Inclusive(self.resolve())
-    }
-}
+resolvable_with_self_impl!(UpperBound);
 
-pub trait ResolvableUpperBound {
-    fn resolve(self) -> UpperBound;
-}
-
-impl ResolvableUpperBound for UpperBound {
-    fn resolve(self) -> UpperBound {
-        self
-    }
-}
-
-impl<T: ResolvableDecimal> ResolvableUpperBound for T {
-    fn resolve(self) -> UpperBound {
-        UpperBound::Inclusive(self.resolve())
+impl<T: Resolve<Decimal>> ResolveFrom<T> for UpperBound {
+    fn resolve_from(value: T) -> Self {
+        UpperBound::Inclusive(value.resolve())
     }
 }

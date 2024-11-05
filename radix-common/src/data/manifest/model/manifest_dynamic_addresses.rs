@@ -39,6 +39,31 @@ TAKE_FROM_WORKTOP
 ```
 */
 
+macro_rules! labelled_resolvable_address {
+    ($ty:ty$(,)?) => {
+        resolvable_with_try_into_impls!($ty);
+        labelled_resolvable_using_resolvable_impl!($ty, resolver_output: ManifestNamedAddress);
+
+        impl<'a> LabelledResolveFrom<&'a str> for $ty {
+            fn labelled_resolve_from(value: &'a str, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value).into()
+            }
+        }
+
+        impl<'a> LabelledResolveFrom<&'a String> for $ty {
+            fn labelled_resolve_from(value: &'a String, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value.as_str()).into()
+            }
+        }
+
+        impl<'a> LabelledResolveFrom<String> for $ty {
+            fn labelled_resolve_from(value: String, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value.as_str()).into()
+            }
+        }
+    };
+}
+
 // Alias for backwards-compatibility
 pub type DynamicGlobalAddress = ManifestGlobalAddress;
 
@@ -53,6 +78,8 @@ scrypto_describe_for_manifest_type!(
     GLOBAL_ADDRESS_TYPE,
     global_address_type_data,
 );
+
+labelled_resolvable_address!(ManifestGlobalAddress);
 
 impl Categorize<ManifestCustomValueKind> for ManifestGlobalAddress {
     #[inline]
@@ -217,44 +244,6 @@ impl TryFrom<ManifestAddress> for ManifestGlobalAddress {
     }
 }
 
-pub trait ResolvableManifestGlobalAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestGlobalAddress;
-}
-
-impl<A, E> ResolvableManifestGlobalAddress for A
-where
-    A: TryInto<ManifestGlobalAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestGlobalAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid ManifestGlobalAddress");
-        if let ManifestGlobalAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableManifestGlobalAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestGlobalAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestGlobalAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestGlobalAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestGlobalAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestGlobalAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
 // Alias for backwards-compatibility
 pub type DynamicPackageAddress = ManifestPackageAddress;
 
@@ -269,6 +258,8 @@ scrypto_describe_for_manifest_type!(
     PACKAGE_ADDRESS_TYPE,
     package_address_type_data,
 );
+
+labelled_resolvable_address!(ManifestPackageAddress);
 
 impl Categorize<ManifestCustomValueKind> for ManifestPackageAddress {
     #[inline]
@@ -410,44 +401,6 @@ where
     }
 }
 
-pub trait ResolvableManifestPackageAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestPackageAddress;
-}
-
-impl<A, E> ResolvableManifestPackageAddress for A
-where
-    A: TryInto<ManifestPackageAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestPackageAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid ManifestPackageAddress");
-        if let ManifestPackageAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableManifestPackageAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestPackageAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestPackageAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestPackageAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestPackageAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestPackageAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
 // Alias for backwards-compatibility
 pub type DynamicComponentAddress = ManifestComponentAddress;
 
@@ -462,6 +415,8 @@ scrypto_describe_for_manifest_type!(
     COMPONENT_ADDRESS_TYPE,
     component_address_type_data,
 );
+
+labelled_resolvable_address!(ManifestComponentAddress);
 
 impl Categorize<ManifestCustomValueKind> for ManifestComponentAddress {
     #[inline]
@@ -553,44 +508,6 @@ impl TryFrom<ManifestAddress> for ManifestComponentAddress {
     }
 }
 
-pub trait ResolvableManifestComponentAddress {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestComponentAddress;
-}
-
-impl<A, E> ResolvableManifestComponentAddress for A
-where
-    A: TryInto<ManifestComponentAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestComponentAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid ManifestComponentAddress");
-        if let ManifestComponentAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableManifestComponentAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestComponentAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestComponentAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestComponentAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestComponentAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestComponentAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
 // Alias for backwards compatibility
 pub type DynamicResourceAddress = ManifestResourceAddress;
 
@@ -605,6 +522,8 @@ scrypto_describe_for_manifest_type!(
     RESOURCE_ADDRESS_TYPE,
     resource_address_type_data,
 );
+
+labelled_resolvable_address!(ManifestResourceAddress);
 
 impl Categorize<ManifestCustomValueKind> for ManifestResourceAddress {
     #[inline]
@@ -720,43 +639,5 @@ where
                 panic!("This address needs to be a static/fixed address")
             }
         }
-    }
-}
-
-pub trait ResolvableManifestResourceAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestResourceAddress;
-}
-
-impl<A, E> ResolvableManifestResourceAddress for A
-where
-    A: TryInto<ManifestResourceAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestResourceAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid ManifestResourceAddress");
-        if let ManifestResourceAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableManifestResourceAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestResourceAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestResourceAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestResourceAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestResourceAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> ManifestResourceAddress {
-        resolver.resolve_named_address(self.as_str()).into()
     }
 }

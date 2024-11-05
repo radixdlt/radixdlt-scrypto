@@ -38,7 +38,7 @@ struct ManifestNamerCore {
     id_allocator: ManifestIdAllocator,
     named_buckets: IndexMap<String, ManifestObjectState<ManifestBucket>>,
     named_proofs: IndexMap<String, ManifestObjectState<ManifestProof>>,
-    named_addresses: NonIterMap<String, ManifestObjectState<ManifestAddress>>,
+    named_addresses: NonIterMap<String, ManifestObjectState<ManifestNamedAddress>>,
     named_address_reservations: NonIterMap<String, ManifestObjectState<ManifestAddressReservation>>,
     named_intents: NonIterMap<String, ManifestObjectState<ManifestNamedIntent>>,
     object_names: KnownManifestObjectNames,
@@ -323,7 +323,7 @@ impl ManifestNamerCore {
         panic!("Did not resolve a name");
     }
 
-    pub fn resolve_named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
+    pub fn resolve_named_address(&self, name: impl AsRef<str>) -> ManifestNamedAddress {
         match self.named_addresses.get(name.as_ref()) {
             Some(ManifestObjectState::Present(address)) => address.clone(),
             Some(ManifestObjectState::Consumed) => unreachable!("Address not consumable"),
@@ -338,10 +338,9 @@ impl ManifestNamerCore {
             panic!("NewManifestNamedAddress cannot be registered against a different ManifestNamer")
         }
         let address_id = self.id_allocator.new_address_id();
-        let new_address = ManifestAddress::Named(address_id);
         match self.named_addresses.get_mut(&new.name) {
             Some(allocated @ ManifestObjectState::Unregistered) => {
-                *allocated = ManifestObjectState::Present(new_address);
+                *allocated = ManifestObjectState::Present(address_id);
                 self
                 .object_names.address_names.insert(address_id, new.name);
             },
@@ -435,15 +434,8 @@ impl ManifestNameLookup {
         self.core.borrow().resolve_named_address_reservation(name)
     }
 
-    pub fn named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
+    pub fn named_address(&self, name: impl AsRef<str>) -> ManifestNamedAddress {
         self.core.borrow().resolve_named_address(name)
-    }
-
-    pub fn named_address_id(&self, name: impl AsRef<str>) -> ManifestNamedAddress {
-        match self.core.borrow().resolve_named_address(name) {
-            ManifestAddress::Static(_) => panic!("Named manifest address can't be static"),
-            ManifestAddress::Named(id) => id,
-        }
     }
 
     pub fn intent(&self, name: impl AsRef<str>) -> ManifestNamedIntent {
@@ -599,23 +591,28 @@ pub enum ManifestObjectState<T> {
 // BUCKET
 //=====================
 
+impl LabelResolver<ManifestBucket> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> ManifestBucket {
+        self.name_lookup().bucket(name)
+    }
+}
+
+/// Represents a new [`ManifestBucket`] which needs registering.
 #[must_use]
 pub struct NamedManifestBucket {
     namer_id: ManifestNamerId,
     name: String,
 }
 
-impl NamedManifestBucketResolver for ManifestNameRegistrar {
-    fn assert_bucket_exists(&self, bucket: ManifestBucket) {
-        self.core.borrow().assert_bucket_exists(bucket);
-    }
+labelled_resolvable_with_self_impl!(NamedManifestBucket, resolver_output: Self);
 
-    fn resolve_named_bucket(&self, name: &str) -> ManifestBucket {
-        self.name_lookup().bucket(name)
+impl LabelResolver<NamedManifestBucket> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> NamedManifestBucket {
+        self.new_bucket(name)
     }
 }
 
-/// Creates a new bucket. Its handle will NOT be consumed by this instruction.
+/// Binds a name for a new [`ManifestBucket`].
 ///
 /// Accepts a string representing the name to use for the bucket,
 /// or a newly created bucket from a [`ManifestNameRegistrar`].
@@ -623,27 +620,9 @@ pub trait NewManifestBucket {
     fn register(self, registrar: &ManifestNameRegistrar);
 }
 
-impl<'a> NewManifestBucket for &'a str {
+impl<T: LabelledResolve<NamedManifestBucket>> NewManifestBucket for T {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(registrar.new_bucket(self));
-    }
-}
-
-impl<'a> NewManifestBucket for &'a String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(registrar.new_bucket(self));
-    }
-}
-
-impl NewManifestBucket for String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(registrar.new_bucket(self));
-    }
-}
-
-impl NewManifestBucket for NamedManifestBucket {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(self);
+        registrar.register_bucket(self.labelled_resolve(registrar));
     }
 }
 
@@ -655,9 +634,11 @@ pub trait ReferencedManifestBucket {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestBucket;
 }
 
-impl<T: ResolvableManifestBucket> ReferencedManifestBucket for T {
+impl<T: LabelledResolve<ManifestBucket>> ReferencedManifestBucket for T {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestBucket {
-        self.resolve(registrar)
+        let bucket = self.labelled_resolve(registrar);
+        registrar.core.borrow().assert_bucket_exists(bucket);
+        bucket
     }
 }
 
@@ -672,9 +653,9 @@ pub trait ConsumedManifestBucket {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestBucket;
 }
 
-impl<T: ResolvableManifestBucket> ConsumedManifestBucket for T {
+impl<T: LabelledResolve<ManifestBucket>> ConsumedManifestBucket for T {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestBucket {
-        let bucket = self.resolve(registrar);
+        let bucket = self.labelled_resolve(registrar);
         registrar.consume_bucket(bucket);
         bucket
     }
@@ -688,9 +669,9 @@ pub trait ConsumedBucketBatch {
     fn resolve_and_consume(self, registrar: &ManifestNameRegistrar) -> ManifestBucketBatch;
 }
 
-impl<B: ResolvableBucketBatch> ConsumedBucketBatch for B {
+impl<B: LabelledResolve<ManifestBucketBatch>> ConsumedBucketBatch for B {
     fn resolve_and_consume(self, registrar: &ManifestNameRegistrar) -> ManifestBucketBatch {
-        let bucket_batch = self.resolve(registrar);
+        let bucket_batch = self.labelled_resolve(registrar);
         match &bucket_batch {
             ManifestBucketBatch::ManifestBuckets(owned_buckets) => {
                 for owned_bucket in owned_buckets {
@@ -706,56 +687,39 @@ impl<B: ResolvableBucketBatch> ConsumedBucketBatch for B {
     }
 }
 
-// This has been moved to live `ManifestBucket`.
-// But we still re-export it here to avoid breaking any imports.
-pub use radix_common::prelude::ResolvableManifestBucket;
-
 //=====================
 // PROOFS
 //=====================
 
+impl LabelResolver<ManifestProof> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> ManifestProof {
+        self.name_lookup().proof(name)
+    }
+}
+
+/// Represents a new [`ManifestProof`] which needs registering.
 #[must_use]
 pub struct NamedManifestProof {
     namer_id: ManifestNamerId,
     name: String,
 }
 
-impl NamedManifestProofResolver for ManifestNameRegistrar {
-    fn assert_proof_exists(&self, proof: ManifestProof) {
-        self.core.borrow().assert_proof_exists(proof);
-    }
+labelled_resolvable_with_self_impl!(NamedManifestProof, resolver_output: Self);
 
-    fn resolve_named_proof(&self, name: &str) -> ManifestProof {
-        self.name_lookup().proof(name)
+impl LabelResolver<NamedManifestProof> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> NamedManifestProof {
+        self.new_proof(name)
     }
 }
 
-/// Either a string, or a new proof from a namer.
+/// Binds a name for a new [`ManifestProof`].
 pub trait NewManifestProof {
     fn register(self, registrar: &ManifestNameRegistrar);
 }
 
-impl<'a> NewManifestProof for &'a str {
+impl<T: LabelledResolve<NamedManifestProof>> NewManifestProof for T {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(registrar.new_proof(self));
-    }
-}
-
-impl<'a> NewManifestProof for &'a String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(registrar.new_proof(self));
-    }
-}
-
-impl NewManifestProof for String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(registrar.new_proof(self));
-    }
-}
-
-impl NewManifestProof for NamedManifestProof {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(self);
+        registrar.register_proof(self.labelled_resolve(registrar));
     }
 }
 
@@ -767,9 +731,11 @@ pub trait ReferencedManifestProof {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestProof;
 }
 
-impl<T: ResolvableManifestProof> ReferencedManifestProof for T {
+impl<T: LabelledResolve<ManifestProof>> ReferencedManifestProof for T {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestProof {
-        self.resolve(registrar)
+        let resolved = self.labelled_resolve(registrar);
+        registrar.core.borrow().assert_proof_exists(resolved);
+        resolved
     }
 }
 
@@ -784,64 +750,47 @@ pub trait ConsumedManifestProof {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestProof;
 }
 
-impl<T: ResolvableManifestProof> ConsumedManifestProof for T {
+impl<T: LabelledResolve<ManifestProof>> ConsumedManifestProof for T {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestProof {
-        let proof = self.resolve(registrar);
+        let proof = self.labelled_resolve(registrar);
         registrar.consume_proof(proof);
         proof
     }
 }
 
-// This has been moved to live `ManifestProof`.
-// But we still re-export it here to avoid breaking any imports.
-pub use radix_common::prelude::ResolvableManifestProof;
-
 //=====================
 // INTENTS
 //=====================
 
+impl LabelResolver<ManifestNamedIntent> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> ManifestNamedIntent {
+        self.name_lookup().intent(name)
+    }
+}
+
+/// Represents a new [`ManifestNamedIntent`] which needs registering.
 #[must_use]
 pub struct NamedManifestIntent {
     namer_id: ManifestNamerId,
     name: String,
 }
 
-impl NamedManifestIntentResolver for ManifestNameRegistrar {
-    fn assert_named_intent_exists(&self, named_intent: ManifestNamedIntent) {
-        self.core.borrow().assert_intent_exists(named_intent);
-    }
+labelled_resolvable_with_self_impl!(NamedManifestIntent, resolver_output: Self);
 
-    fn resolve_named_intent(&self, name: &str) -> ManifestNamedIntent {
-        self.name_lookup().intent(name)
+impl LabelResolver<NamedManifestIntent> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> NamedManifestIntent {
+        self.new_intent(name)
     }
 }
 
-/// Either a string, or a new intent from a namer.
+/// Binds a name for a new manifest intent.
 pub trait NewManifestIntent {
     fn register(self, registrar: &ManifestNameRegistrar);
 }
 
-impl<'a> NewManifestIntent for &'a str {
+impl<T: LabelledResolve<NamedManifestIntent>> NewManifestIntent for T {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_intent(registrar.new_intent(self));
-    }
-}
-
-impl<'a> NewManifestIntent for &'a String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_intent(registrar.new_intent(self));
-    }
-}
-
-impl NewManifestIntent for String {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_intent(registrar.new_intent(self));
-    }
-}
-
-impl NewManifestIntent for NamedManifestIntent {
-    fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_intent(self);
+        registrar.register_intent(self.labelled_resolve(registrar));
     }
 }
 
@@ -853,39 +802,43 @@ pub trait ReferencedManifestIntent {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent;
 }
 
-impl<T: ResolvableManifestNamedIntent> ReferencedManifestIntent for T {
+impl<T: LabelledResolve<ManifestNamedIntent>> ReferencedManifestIntent for T {
     fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestNamedIntent {
-        self.resolve(registrar)
+        let resolved = self.labelled_resolve(registrar);
+        registrar.core.borrow().assert_intent_exists(resolved);
+        resolved
     }
 }
-
-// This has been moved to live `ManifestNamedIntent`.
-// But we still re-export it here to avoid breaking any imports.
-pub use crate::prelude::ResolvableManifestNamedIntent;
 
 //=====================
 // ADDRESS RESERVATIONS
 //=====================
 
+impl LabelResolver<ManifestAddressReservation> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> ManifestAddressReservation {
+        self.name_lookup().address_reservation(name)
+    }
+}
+
+/// Represents a new [`ManifestAddressReservation`] which needs registering.
 #[must_use]
 pub struct NamedManifestAddressReservation {
     namer_id: ManifestNamerId,
     name: String,
 }
 
-impl NamedManifestAddressReservationResolver for ManifestNameRegistrar {
-    fn assert_address_reservation_exists(&self, address_reservation: ManifestAddressReservation) {
-        self.core
-            .borrow()
-            .assert_address_reservation_exists(address_reservation);
-    }
+labelled_resolvable_with_self_impl!(NamedManifestAddressReservation, resolver_output: Self);
 
-    fn resolve_address_reservation(&self, name: &str) -> ManifestAddressReservation {
-        self.name_lookup().address_reservation(name)
+impl LabelResolver<NamedManifestAddressReservation> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> NamedManifestAddressReservation {
+        self.new_address_reservation(name)
     }
 }
 
-/// Either a string, or a new manifest address reservation from a namer.
+/// Binds a name for a new [`ManifestAddressReservation`].
+///
+/// Accepts a string representing the name to use for the address reservation,
+/// or a newly created address reservation from a [`ManifestNameRegistrar`].
 pub trait NewManifestAddressReservation: Sized {
     fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation;
 
@@ -901,44 +854,39 @@ pub trait NewManifestAddressReservation: Sized {
     }
 }
 
-impl<'a> NewManifestAddressReservation for &'a str {
+impl<T: LabelledResolve<NamedManifestAddressReservation>> NewManifestAddressReservation for T {
     fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
-        registrar.new_address_reservation(self)
+        self.labelled_resolve(registrar)
     }
 }
 
-impl<'a> NewManifestAddressReservation for &'a String {
-    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
-        registrar.new_address_reservation(self)
+/// An address reservation handle will NOT be consumed by this instruction.
+pub trait ReferencedManifestAddressReservation {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation;
+}
+
+impl<T: LabelledResolve<ManifestAddressReservation>> ReferencedManifestAddressReservation for T {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        let address_reservation = self.labelled_resolve(registrar);
+        registrar
+            .core
+            .borrow()
+            .assert_address_reservation_exists(address_reservation);
+        address_reservation
     }
 }
 
-impl NewManifestAddressReservation for String {
-    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
-        registrar.new_address_reservation(self)
-    }
-}
-
-impl NewManifestAddressReservation for NamedManifestAddressReservation {
-    fn into_named(self, _registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
-        self
-    }
-}
-
-/// A proof which whose name/handle will be marked as used by this action.
+/// An address reservation whose name/handle will be marked as used by this action.
 ///
-/// This doesn't necessarily mean that the underlying proof will be dropped,
-/// but if its name/handle in the manifest can no longer be used.
-///
-/// Accepts a string referencing the name of an existing created proof,
-/// or an existing proof from a [`ManifestNameLookup`].
+/// Accepts a string referencing the name of an existing created address reservation,
+/// or an existing address reservation from a [`ManifestNameLookup`].
 pub trait ConsumedManifestAddressReservation {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation;
 }
 
-impl<T: ResolvableManifestAddressReservation> ConsumedManifestAddressReservation for T {
+impl<T: LabelledResolve<ManifestAddressReservation>> ConsumedManifestAddressReservation for T {
     fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
-        let address_reservation = self.resolve(registrar);
+        let address_reservation = self.labelled_resolve(registrar);
         registrar.consume_address_reservation(address_reservation);
         address_reservation
     }
@@ -949,14 +897,14 @@ pub trait ConsumedOptionalManifestAddressReservation {
         -> Option<ManifestAddressReservation>;
 }
 
-impl<T: ResolvableOptionalManifestAddressReservation> ConsumedOptionalManifestAddressReservation
-    for T
+impl<T: LabelledResolve<Option<ManifestAddressReservation>>>
+    ConsumedOptionalManifestAddressReservation for T
 {
     fn mark_consumed(
         self,
         registrar: &ManifestNameRegistrar,
     ) -> Option<ManifestAddressReservation> {
-        let reservation = self.resolve(registrar);
+        let reservation = self.labelled_resolve(registrar);
         if let Some(reservation) = reservation {
             registrar.consume_address_reservation(reservation);
         }
@@ -964,51 +912,115 @@ impl<T: ResolvableOptionalManifestAddressReservation> ConsumedOptionalManifestAd
     }
 }
 
-// This has been moved to live `ManifestAddressReservation` in radix-common
-// But we still re-export it here to avoid breaking any imports.
-pub use radix_common::prelude::ResolvableManifestAddressReservation;
-
 //=====================
 // NAMED ADDRESSES
 //=====================
 
-// Unlike the above, addresses are a bit more complicated -- so we have traits
-// like ResolvablePackageAddress which can be used instead of an
-// ExistingNamedManifestAddress trait.
-
+impl LabelResolver<ManifestNamedAddress> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> ManifestNamedAddress {
+        self.name_lookup().named_address(name)
+    }
+}
+/// Represents a new [`ManifestNamedAddress`] which needs registering.
 #[must_use]
 pub struct NamedManifestAddress {
     namer_id: ManifestNamerId,
     name: String,
 }
 
-impl NamedAddressResolver for ManifestNameRegistrar {
-    fn assert_named_address_exists(&self, named_address: ManifestNamedAddress) {
-        self.core
-            .borrow()
-            .assert_named_address_exists(named_address)
-    }
+labelled_resolvable_with_self_impl!(NamedManifestAddress, resolver_output: Self);
 
-    fn resolve_named_address(&self, address_name: &str) -> ManifestNamedAddress {
-        self.name_lookup().named_address_id(address_name)
+impl LabelResolver<NamedManifestAddress> for ManifestNameRegistrar {
+    fn resolve_label_into(&self, name: &str) -> NamedManifestAddress {
+        self.new_named_address(name)
     }
 }
 
-// This has been moved to live alongside the dynamic addresses in radix-common to avoid
-// foreign trait impl errors.
-// But we still re-export it here to avoid breaking any imports.
-pub use radix_common::prelude::{
-    ResolvableManifestComponentAddress, ResolvableManifestGlobalAddress,
-    ResolvableManifestPackageAddress, ResolvableStaticManifestResourceAddress,
-};
+/// Binds a name for a new [`ManifestAddressReservation`].
+///
+/// Accepts a string representing the name to use for the address,
+/// or a newly created address from a [`ManifestNameRegistrar`].
+pub trait NewNamedManifestAddress {
+    fn register(self, registrar: &ManifestNameRegistrar);
+}
 
-//=====================
-// DECIMAL
-//=====================
+impl<T: LabelledResolve<NamedManifestAddress>> NewNamedManifestAddress for T {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_named_address(self.labelled_resolve(registrar));
+    }
+}
 
-// This has been moved to live alongside Decimal.
-// But I still re-export it here to avoid breaking any imports.
-pub use radix_common::prelude::ResolvableDecimal;
+/// An address handle will NOT be consumed by this instruction.
+pub trait ReferencedManifestGlobalAddress {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestGlobalAddress;
+}
+
+impl<T: LabelledResolve<ManifestGlobalAddress>> ReferencedManifestGlobalAddress for T {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestGlobalAddress {
+        let address = self.labelled_resolve(registrar);
+        if let ManifestGlobalAddress::Named(named_address) = address {
+            registrar
+                .core
+                .borrow()
+                .assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+/// An address handle will NOT be consumed by this instruction.
+pub trait ReferencedManifestComponentAddress {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestComponentAddress;
+}
+
+impl<T: LabelledResolve<ManifestComponentAddress>> ReferencedManifestComponentAddress for T {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestComponentAddress {
+        let address = self.labelled_resolve(registrar);
+        if let ManifestComponentAddress::Named(named_address) = address {
+            registrar
+                .core
+                .borrow()
+                .assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+/// An address handle will NOT be consumed by this instruction.
+pub trait ReferencedManifestResourceAddress {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestResourceAddress;
+}
+
+impl<T: LabelledResolve<ManifestResourceAddress>> ReferencedManifestResourceAddress for T {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestResourceAddress {
+        let address = self.labelled_resolve(registrar);
+        if let ManifestResourceAddress::Named(named_address) = address {
+            registrar
+                .core
+                .borrow()
+                .assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
+
+/// An address handle will NOT be consumed by this instruction.
+pub trait ReferencedManifestPackageAddress {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestPackageAddress;
+}
+
+impl<T: LabelledResolve<ManifestPackageAddress>> ReferencedManifestPackageAddress for T {
+    fn resolve_referenced(self, registrar: &ManifestNameRegistrar) -> ManifestPackageAddress {
+        let address = self.labelled_resolve(registrar);
+        if let ManifestPackageAddress::Named(named_address) = address {
+            registrar
+                .core
+                .borrow()
+                .assert_named_address_exists(named_address);
+        }
+        address
+    }
+}
 
 //=====================
 // ARGUMENTS

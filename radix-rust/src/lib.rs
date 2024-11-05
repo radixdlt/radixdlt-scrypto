@@ -11,6 +11,7 @@ mod contextual_serialize;
 mod contextual_try_from_into;
 pub mod iterators;
 mod macros;
+mod resolve;
 pub mod rust;
 mod slice;
 
@@ -18,6 +19,7 @@ pub use contextual_display::*;
 #[cfg(feature = "serde")]
 pub use contextual_serialize::*;
 pub use contextual_try_from_into::*;
+pub use resolve::*;
 pub use slice::*;
 
 /// Each module should have its own prelude, which:
@@ -35,6 +37,13 @@ pub mod prelude {
     #[cfg(feature = "serde")]
     pub use crate::contextual_serialize::*;
     pub use crate::contextual_try_from_into::*;
+    pub use crate::resolve::*;
+    pub use crate::{
+        labelled_resolvable_using_resolvable_impl, labelled_resolvable_with_self_impl,
+        labelled_resolvable_with_try_into_impls, resolvable_with_self_impl,
+        resolvable_with_try_into_impls,
+    };
+
     pub use crate::iterators::*;
     pub use crate::slice::*;
 

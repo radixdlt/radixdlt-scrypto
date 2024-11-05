@@ -25,41 +25,23 @@ pub enum ManifestBucketBatch {
     EntireWorktop,
 }
 
-pub trait ResolvableBucketBatch {
-    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch;
-}
+labelled_resolvable_with_self_impl!(ManifestBucketBatch, resolver_output: ManifestBucket);
 
-impl<B: ResolvableManifestBucket> ResolvableBucketBatch for Vec<B> {
-    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
-        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestBucketBatch::ManifestBuckets(buckets)
+impl<T: LabelledResolve<Vec<ManifestBucket>>> LabelledResolveFrom<T> for ManifestBucketBatch {
+    fn labelled_resolve_from(
+        value: T,
+        resolver: &impl LabelResolver<ManifestBucket>,
+    ) -> ManifestBucketBatch {
+        ManifestBucketBatch::ManifestBuckets(value.labelled_resolve(resolver))
     }
 }
 
-impl<B: ResolvableManifestBucket> ResolvableBucketBatch for BTreeSet<B> {
-    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
-        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestBucketBatch::ManifestBuckets(buckets)
-    }
-}
-
-impl<B: ResolvableManifestBucket> ResolvableBucketBatch for IndexSet<B> {
-    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
-        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestBucketBatch::ManifestBuckets(buckets)
-    }
-}
-
-impl<B: ResolvableManifestBucket, const N: usize> ResolvableBucketBatch for [B; N] {
-    fn resolve(self, resolver: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
-        let buckets = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestBucketBatch::ManifestBuckets(buckets)
-    }
-}
-
-impl ResolvableBucketBatch for ManifestExpression {
-    fn resolve(self, _: &impl NamedManifestBucketResolver) -> ManifestBucketBatch {
-        match &self {
+impl LabelledResolveFrom<ManifestExpression> for ManifestBucketBatch {
+    fn labelled_resolve_from(
+        value: ManifestExpression,
+        _: &impl LabelResolver<ManifestBucket>,
+    ) -> ManifestBucketBatch {
+        match value {
             ManifestExpression::EntireWorktop => {
                 // No named buckets are consumed - instead EntireWorktop refers only to the
                 // unnamed buckets on the worktop part of the transaction processor
@@ -146,47 +128,23 @@ pub enum ManifestProofBatch {
     EntireAuthZone,
 }
 
-/// This trait is intended to be used as an `impl` argument in helper methods
-/// operating on manifests, to resolve a [`ProofBatch`] from a collection of proofs,
-/// proof names, or a [`ManifestExpression::EntireAuthZone`].
-///
-/// The resolution process relies on a [`NamedManifestBucketResolver`] which can
-/// provide a lookup to/from names.
-pub trait ResolvableProofBatch {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch;
-}
+labelled_resolvable_with_self_impl!(ManifestProofBatch, resolver_output: ManifestProof);
 
-impl<P: ResolvableManifestProof> ResolvableProofBatch for Vec<P> {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
-        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestProofBatch::ManifestProofs(proofs)
+impl<T: LabelledResolve<Vec<ManifestProof>>> LabelledResolveFrom<T> for ManifestProofBatch {
+    fn labelled_resolve_from(
+        value: T,
+        resolver: &impl LabelResolver<ManifestProof>,
+    ) -> ManifestProofBatch {
+        ManifestProofBatch::ManifestProofs(value.labelled_resolve(resolver))
     }
 }
 
-impl<P: ResolvableManifestProof> ResolvableProofBatch for BTreeSet<P> {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
-        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestProofBatch::ManifestProofs(proofs)
-    }
-}
-
-impl<P: ResolvableManifestProof> ResolvableProofBatch for IndexSet<P> {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
-        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestProofBatch::ManifestProofs(proofs)
-    }
-}
-
-impl<P: ResolvableManifestProof, const N: usize> ResolvableProofBatch for [P; N] {
-    fn resolve(self, resolver: &impl NamedManifestProofResolver) -> ManifestProofBatch {
-        let proofs = self.into_iter().map(|b| b.resolve(resolver)).collect();
-        ManifestProofBatch::ManifestProofs(proofs)
-    }
-}
-
-impl ResolvableProofBatch for ManifestExpression {
-    fn resolve(self, _: &impl NamedManifestProofResolver) -> ManifestProofBatch {
-        match &self {
+impl LabelledResolveFrom<ManifestExpression> for ManifestProofBatch {
+    fn labelled_resolve_from(
+        value: ManifestExpression,
+        _: &impl LabelResolver<ManifestProof>,
+    ) -> ManifestProofBatch {
+        match value {
             ManifestExpression::EntireWorktop => {
                 panic!("Not an allowed expression for a batch of proofs");
             }

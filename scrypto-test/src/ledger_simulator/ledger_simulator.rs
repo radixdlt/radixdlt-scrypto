@@ -1532,7 +1532,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_function(
         &mut self,
-        package_address: impl ResolvableManifestPackageAddress,
+        package_address: impl Resolve<ManifestPackageAddress>,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
         arguments: impl ResolvableArguments,
@@ -1561,7 +1561,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
     pub fn construct_new(
         &mut self,
-        package_address: impl ResolvableManifestPackageAddress,
+        package_address: impl Resolve<ManifestPackageAddress>,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
         arguments: impl ResolvableArguments,
@@ -1586,7 +1586,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_method(
         &mut self,
-        address: impl ResolvableManifestGlobalAddress,
+        address: impl Resolve<ManifestGlobalAddress>,
         method_name: impl Into<String>,
         args: impl ResolvableArguments,
     ) -> TransactionReceipt {

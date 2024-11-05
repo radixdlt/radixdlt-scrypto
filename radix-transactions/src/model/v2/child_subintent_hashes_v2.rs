@@ -47,6 +47,8 @@ impl ChildSubintentSpecifier {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct ManifestNamedIntent(pub u32);
 
+labelled_resolvable_with_self_impl!(ManifestNamedIntent, resolver_output: Self);
+
 /// This exists as an unideal serialization target for [`ManifestNamedIntent`],
 /// due to our inability to add a new ManifestCustomValue for the Cuttlefish update.
 /// Instead, we just serialize it directly as a `u32` in the `YIELD_TO_CHILD` instruction.
@@ -63,59 +65,6 @@ impl From<ManifestNamedIntentIndex> for ManifestNamedIntent {
 impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
     fn from(value: ManifestNamedIntent) -> Self {
         Self(value.0)
-    }
-}
-
-//========
-// resolution
-//========
-
-/// This is for use with the [`ResolvableManifestNamedIntent`] trait.
-/// Implementers should panic if a bucket cannot be found.
-pub trait NamedManifestIntentResolver {
-    fn assert_named_intent_exists(&self, named_intent: ManifestNamedIntent);
-    fn resolve_named_intent(&self, name: &str) -> ManifestNamedIntent;
-}
-
-/// This trait is intended to be used as an `impl` argument in helper methods
-/// operating on manifests, to resolve a [`ManifestNamedIntent`] from a name, an id,
-/// or from itself.
-///
-/// The resolution process relies on a [`NamedManifestBucketResolver`] which can
-/// provide a lookup to/from names.
-pub trait ResolvableManifestNamedIntent {
-    fn resolve(self, resolver: &impl NamedManifestIntentResolver) -> ManifestNamedIntent;
-}
-
-impl<A, E> ResolvableManifestNamedIntent for A
-where
-    A: TryInto<ManifestNamedIntent, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedManifestIntentResolver) -> ManifestNamedIntent {
-        let named_intent = self
-            .try_into()
-            .expect("Value was not a valid ManifestNamedIntent");
-        resolver.assert_named_intent_exists(named_intent);
-        named_intent
-    }
-}
-
-impl<'a> ResolvableManifestNamedIntent for &'a str {
-    fn resolve(self, resolver: &impl NamedManifestIntentResolver) -> ManifestNamedIntent {
-        resolver.resolve_named_intent(self).into()
-    }
-}
-
-impl<'a> ResolvableManifestNamedIntent for &'a String {
-    fn resolve(self, resolver: &impl NamedManifestIntentResolver) -> ManifestNamedIntent {
-        resolver.resolve_named_intent(self.as_str()).into()
-    }
-}
-
-impl ResolvableManifestNamedIntent for String {
-    fn resolve(self, resolver: &impl NamedManifestIntentResolver) -> ManifestNamedIntent {
-        resolver.resolve_named_intent(self.as_str()).into()
     }
 }
 
