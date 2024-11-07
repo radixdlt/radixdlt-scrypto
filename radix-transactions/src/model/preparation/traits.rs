@@ -7,7 +7,7 @@ pub trait TransactionPayload:
     + ManifestDecode
     + ManifestCategorize
     + for<'a> ManifestSborEnumVariantFor<
-        VersionedTransactionPayload,
+        AnyTransaction,
         OwnedVariant: ManifestDecode,
         BorrowedVariant<'a>: ManifestEncode,
     >
