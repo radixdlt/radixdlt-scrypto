@@ -1,3 +1,4 @@
+mod any_transaction;
 mod concepts;
 mod execution;
 mod hash;
@@ -9,6 +10,7 @@ mod v1;
 mod v2;
 mod versioned;
 
+pub use any_transaction::*;
 pub use concepts::*;
 pub use execution::*;
 pub use hash::*;
@@ -18,7 +20,6 @@ pub use test_transaction::*;
 pub use user_transaction::*;
 pub use v1::*;
 pub use v2::*;
-pub use versioned::*;
 
 #[cfg(test)]
 mod tests {
