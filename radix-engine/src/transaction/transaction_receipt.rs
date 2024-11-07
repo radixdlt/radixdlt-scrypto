@@ -13,9 +13,11 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_transactions::prelude::*;
 use sbor::representations::*;
 
-/// This type is not intended to be encoded or have a consistent scrypto encoding.
+/// This type is not intended to be encoded or have a consistent scrypto encoding. If you decide to
+/// encode and decode this receipt then do it **your own risk** as its structure is not guaranteed
+/// to remain the same between releases.
 /// Some of the parts of it are encoded in the node, but not the receipt itself.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct TransactionReceipt {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
@@ -33,6 +35,7 @@ pub struct TransactionReceipt {
     pub resources_usage: Option<ResourcesUsage>,
     /// This field contains debug information about the transaction which is extracted during the
     /// transaction execution.
+    #[sbor(skip)]
     pub debug_information: Option<TransactionDebugInformation>,
 }
 
