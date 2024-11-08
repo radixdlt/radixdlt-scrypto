@@ -17,21 +17,21 @@ pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomExtension> {
 #[derive(Debug, Clone, Copy)]
 pub struct RustLikeOptions {
     pub include_enum_type_names: bool,
-    pub include_custom_value_kinds: bool,
+    pub include_full_value_information: bool,
 }
 
 impl RustLikeOptions {
     pub fn full() -> Self {
         Self {
             include_enum_type_names: true,
-            include_custom_value_kinds: true,
+            include_full_value_information: true,
         }
     }
 
     pub fn debug_like() -> Self {
         Self {
             include_enum_type_names: false,
-            include_custom_value_kinds: false,
+            include_full_value_information: false,
         }
     }
 }
@@ -517,29 +517,46 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
         write!(f, "{}(", type_name)?;
     }
 
-    match value_ref {
-        TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
-        TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
-        TerminalValueRef::I16(value) => write!(f, "{}i16", value)?,
-        TerminalValueRef::I32(value) => write!(f, "{}i32", value)?,
-        TerminalValueRef::I64(value) => write!(f, "{}i64", value)?,
-        TerminalValueRef::I128(value) => write!(f, "{}i128", value)?,
-        TerminalValueRef::U8(value) => write!(f, "{}u8", value)?,
-        TerminalValueRef::U16(value) => write!(f, "{}u16", value)?,
-        TerminalValueRef::U32(value) => write!(f, "{}u32", value)?,
-        TerminalValueRef::U64(value) => write!(f, "{}u64", value)?,
-        TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
-        TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
-        TerminalValueRef::Custom(ref value) => {
-            if context.options.include_custom_value_kinds {
+    if context.options.include_full_value_information {
+        match value_ref {
+            TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
+            TerminalValueRef::I16(value) => write!(f, "{}i16", value)?,
+            TerminalValueRef::I32(value) => write!(f, "{}i32", value)?,
+            TerminalValueRef::I64(value) => write!(f, "{}i64", value)?,
+            TerminalValueRef::I128(value) => write!(f, "{}i128", value)?,
+            TerminalValueRef::U8(value) => write!(f, "{}u8", value)?,
+            TerminalValueRef::U16(value) => write!(f, "{}u16", value)?,
+            TerminalValueRef::U32(value) => write!(f, "{}u32", value)?,
+            TerminalValueRef::U64(value) => write!(f, "{}u64", value)?,
+            TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
+            TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
+            TerminalValueRef::Custom(ref value) => {
                 write!(f, "{}(", value_ref.value_kind())?;
                 E::display_string_content(f, &context.custom_context, value)?;
                 write!(f, ")")?;
-            } else {
-                E::display_string_content(f, &context.custom_context, value)?;
+            }
+        }
+    } else {
+        match value_ref {
+            TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I8(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I16(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I32(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I64(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I128(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U8(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U16(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U32(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U64(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U128(value) => write!(f, "{}", value)?,
+            TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
+            TerminalValueRef::Custom(ref value) => {
+                E::debug_string_content(f, &context.custom_context, value)?;
             }
         }
     }
+
     if type_name.is_some() {
         write!(f, ")")?;
     }

@@ -1,4 +1,4 @@
-TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(VaultError(InvalidAmount("0.0001")))
+TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(VaultError(InvalidAmount(0.0001)))
 
 TRANSACTION COST: 0.21810206182 XRD
 ├─ Network execution: 0.1728979 XRD, 3457958 execution cost units

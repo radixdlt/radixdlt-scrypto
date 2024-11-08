@@ -18,11 +18,16 @@ pub enum PrintMode {
 /// The display mode chooses how the value is displayed
 #[derive(Debug, Clone, Copy)]
 pub enum DisplayMode {
-    /// RustLike - takes inspiration from Rust and other programming languages, eg:
+    /// RustLike - takes inspiration from Rust and other programming languages.
+    ///
+    /// With `RustLikeOptions::full()` we get:
     ///   - Struct: `TypeName { field1: X, }`
     ///   - Array: `[value1, value2]`
     ///   - Map: `{ key1 => value1 }`
     ///   - Enum: `Name::Variant`, `Name::Variant(value1)`, `Name::Variant { field1: value1 }`
+    ///
+    /// With `RustLikeOptions::debug()` we don't get the Enum type names, and values are
+    /// formatted more like their Debug representation.
     RustLike(RustLikeOptions),
     /// ==RustLike is recommended over NestedString. This may be deprecated soon==
     /// NestedString - is somewhat like the Manifest format, eg:
