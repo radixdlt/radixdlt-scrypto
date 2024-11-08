@@ -45,6 +45,56 @@ pub trait CanBeAbortion {
     fn abortion(&self) -> Option<&AbortReason>;
 }
 
+pub mod error_models {
+    use radix_common::prelude::*;
+
+    /// This is a special NodeId which gets encoded as a reference in SBOR...
+    /// This means that it can be rendered as a string in the output.
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+    #[sbor(
+        as_type = "Reference",
+        as_ref = "&Reference(self.0)",
+        from_value = "Self(value.0)",
+        transparent_name
+    )]
+    pub struct ReferencedNodeId(pub radix_common::prelude::NodeId);
+
+    impl Debug for ReferencedNodeId {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    impl From<radix_common::prelude::NodeId> for ReferencedNodeId {
+        fn from(value: radix_common::prelude::NodeId) -> Self {
+            Self(value)
+        }
+    }
+
+    /// This is a special NodeId which gets encoded as a reference in SBOR...
+    /// This means that it can be rendered as a string in the output.
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+    #[sbor(
+        as_type = "Own",
+        as_ref = "&Own(self.0)",
+        from_value = "Self(value.0)",
+        transparent_name
+    )]
+    pub struct OwnedNodeId(pub radix_common::prelude::NodeId);
+
+    impl Debug for OwnedNodeId {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    impl From<radix_common::prelude::NodeId> for OwnedNodeId {
+        fn from(value: radix_common::prelude::NodeId) -> Self {
+            Self(value)
+        }
+    }
+}
+
 /// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
@@ -99,15 +149,64 @@ pub enum TransactionExecutionError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BootloadingError {
-    ReferencedNodeDoesNotExist(NodeId),
-    ReferencedNodeIsNotAnObject(NodeId),
-    ReferencedNodeDoesNotAllowDirectAccess(NodeId),
+    ReferencedNodeDoesNotExist(error_models::ReferencedNodeId),
+    ReferencedNodeIsNotAnObject(error_models::ReferencedNodeId),
+    ReferencedNodeDoesNotAllowDirectAccess(error_models::ReferencedNodeId),
 
     FailedToApplyDeferredCosts(CostingError),
 }
 
+lazy_static::lazy_static! {
+    /// This list is used to render string messages from historically stored
+    /// [`SerializableRuntimeError`]s in the LocalTransactionExecution index in the node.
+    ///
+    /// In particular, each [`SerializableRuntimeError`] stores the index of the current schema
+    /// in this array at the time it was created.
+    ///
+    /// But of course, when the error is read (e.g. in the Core API stream 10 months later),
+    /// we may be a few protocol versions down the line, and the `RuntimeError` schema may have changed.
+    ///
+    /// To get around this, we simply use the stored schema index to look up the correct schema here.
+    /// And we use this historic schema to render the error message.
+    ///
+    /// This allows us the following benefits:
+    /// * We can use a condensed error encoding (rather than just storing it as a string)
+    /// * We can change the `RuntimeError` schema freely, as long as we ensure old schemas are kept here.
+    ///   Tests will ensure we don't break this.
+    ///
+    /// We MUST NOT change/remove/reorder existing schemas in this list, if they have been released
+    /// in a node version. This is to ensure that we can always decode old errors.
+    ///
+    /// New schemas can be generated with `#[sbor_assert(fixed("FILE:xxx"))]` generator above.
+    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
+        [
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_pre_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_cuttlefish_schema.bin")),
+        ]
+    };
+}
+
 /// Represents an error when executing a transaction.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+// You are welcome to update the RuntimeError structure, but the tests will make you ensure
+// that the current schema is the last in HISTORIC_RUNTIME_ERROR_SCHEMAS above, and that
+// any schema used in a released node version never gets removed.
+//
+// What this means is:
+// - You may regenerate the schema for the current version, if it's never been released.
+// - Otherwise, you will want to generate a new schema for the new version.
+//
+// So:
+// - Temporarily uncomment the derive, and one of the sbor_assert lines below
+// - Rename the file in the line
+// - Run the test to (re)generate the schema
+// - Revert the changes to these few lines
+// - If it's a new schema, add it to the HISTORIC_RUNTIME_ERROR_SCHEMAS list above.
+// - Check the `the_current_runtime_schema_is_last_on_historic_runtime_list` test passes.
+//
+// #[derive(ScryptoSborAssertion)]
+// #[sbor_assert(fixed("FILE:runtime_error_[NEW-VERSION-NAME]_schema.bin"), generate)]
+// #[sbor_assert(fixed("FILE:runtime_error_cuttlefish_schema.bin"), regenerate)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -130,6 +229,88 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 
     FinalizationCostingError(CostingError),
+}
+
+impl RuntimeError {
+    pub fn create_serializable(&self) -> SerializableRuntimeError {
+        SerializableRuntimeError {
+            schema_index: HISTORIC_RUNTIME_ERROR_SCHEMAS.len() as u32 - 1,
+            encoded_error: scrypto_decode(&scrypto_encode(self).unwrap()).unwrap(),
+        }
+    }
+
+    pub fn render(&self, address_encoder: &AddressBech32Encoder) -> String {
+        self.create_serializable()
+            .render_with_fallback(address_encoder)
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct SerializableRuntimeError {
+    pub schema_index: u32,
+    // RawValue and RawPayload will change in https://github.com/radixdlt/radixdlt-scrypto/pull/1860
+    // It's important we stick with `RawValue` here (so it encodes/decode as SBOR itself),
+    // but ideally it would be a full payload underneath. This can be the case from #1860.
+    pub encoded_error: ScryptoOwnedRawValue,
+}
+
+impl SerializableRuntimeError {
+    /// This is used to render the error message, with a fallback if an invalid schema
+    /// is associated with the error.
+    ///
+    /// This fallback is necessary due to historic breakages of backwards compatibility
+    /// in the `RuntimeError` type structure.
+    ///
+    /// Specifically, at anemone / bottlenose, there were very minor changes, which affected
+    /// a tiny minority of errors. If we could find the historic schemas, we could actually
+    /// render them properly here. Unfortunately, the historic schemas are not easy to find out
+    /// (it would require backporting the schema generation logic), so instead we just have
+    /// a fallback for these cases.
+    ///
+    /// This fallback will only be applied on nodes, when returning occasional errors for
+    /// old transactions that haven't resynced since Bottlenose.
+    pub fn render_with_fallback(&self, address_encoder: &AddressBech32Encoder) -> String {
+        self.render(address_encoder).unwrap_or_else(|| {
+            format!(
+                "UnknownError({})",
+                hex::encode(scrypto_encode(&self.encoded_error).unwrap())
+            )
+        })
+    }
+
+    pub fn render(&self, address_encoder: &AddressBech32Encoder) -> Option<String> {
+        use sbor::representations::*;
+        let schema = HISTORIC_RUNTIME_ERROR_SCHEMAS.get(self.schema_index as usize)?;
+        let type_id = schema.type_id;
+        let schema = schema.schema.as_unique_version();
+        let depth_limit = SCRYPTO_SBOR_V1_MAX_DEPTH;
+
+        // Sanity check this is the correct schema...
+        validate_partial_payload_against_schema::<ScryptoCustomExtension, _>(
+            self.encoded_error.value_body_bytes(),
+            traversal::ExpectedStart::ValueBody(self.encoded_error.value_kind()),
+            true,
+            0,
+            schema,
+            type_id,
+            &(),
+            depth_limit,
+        )
+        .ok()?;
+
+        // Then encode it...
+        let custom_context =
+            ScryptoValueDisplayContext::with_optional_bech32(Some(address_encoder));
+        let display_parameters = ValueDisplayParameters::Annotated {
+            display_mode: DisplayMode::RustLike,
+            print_mode: PrintMode::SingleLine,
+            custom_context,
+            schema,
+            type_id,
+            depth_limit,
+        };
+        Some(self.encoded_error.to_string(display_parameters))
+    }
 }
 
 impl SystemApiError for RuntimeError {}
@@ -183,14 +364,14 @@ pub enum KernelError {
     // Substate lock/read/write/unlock
     SubstateHandleDoesNotExist(SubstateHandle),
 
-    OrphanedNodes(Vec<NodeId>),
+    OrphanedNodes(Vec<error_models::OwnedNodeId>),
 
     StackError(StackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropAccess {
-    pub node_id: NodeId,
+    pub node_id: error_models::ReferencedNodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub actor_package: Option<PackageAddress>,
@@ -691,5 +872,69 @@ where
 {
     fn from(value: T) -> Self {
         Self::KernelError(KernelError::CallFrameError(value.into()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_current_runtime_schema_is_last_on_historic_runtime_list() {
+        let latest = HISTORIC_RUNTIME_ERROR_SCHEMAS.last().unwrap();
+        let current = generate_single_type_schema::<RuntimeError, ScryptoCustomSchema>();
+
+        // If this test fails, see the comment above `RuntimeError` for instructions.
+        compare_single_type_schemas(
+            &SchemaComparisonSettings::require_equality(),
+            latest,
+            &current,
+        )
+        .assert_valid("latest", "current");
+    }
+
+    #[test]
+    fn runtime_error_string() {
+        let network = NetworkDefinition::mainnet();
+        let address_encoder = AddressBech32Encoder::new(&network);
+
+        // Example one - Account withdraw/lock fee/create proof error
+        {
+            let runtime_error = RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::VaultDoesNotExist {
+                    resource_address: XRD,
+                },
+            ));
+
+            // Old error
+            let debugged = format!("{:?}", runtime_error);
+            assert_eq!(debugged, "ApplicationError(AccountError(VaultDoesNotExist { resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6) }))");
+
+            // New error
+            let rendered = runtime_error.render(&address_encoder);
+            assert_eq!(rendered, "RuntimeError::ApplicationError(ApplicationError::AccountError(AccountError::VaultDoesNotExist { resource_address: ResourceAddress(Reference(\"resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd\")) }))");
+        }
+
+        // Example two - dangling bucket error
+        {
+            let mut id_allocator = crate::kernel::id_allocator::IdAllocator::new(hash("seed-data"));
+
+            // Unfortunately buckets didn't get their own entity type...
+            let bucket_entity_type = EntityType::InternalGenericComponent;
+            let example_bucket_1 = id_allocator.allocate_node_id(bucket_entity_type).unwrap();
+            let example_bucket_2 = id_allocator.allocate_node_id(bucket_entity_type).unwrap();
+            let runtime_error = RuntimeError::KernelError(KernelError::OrphanedNodes(vec![
+                example_bucket_1.into(),
+                example_bucket_2.into(),
+            ]));
+
+            // Old error
+            let debugged = format!("{:?}", runtime_error);
+            assert_eq!(debugged, "KernelError(OrphanedNodes([NodeId(\"f82ee60dbc11caa1594fccdbb8031c41af8084344bcbe7a4c784491a7d4c\"), NodeId(\"f8abce267317b7bdd859951840ccd25f1ea7e83c538d507e0f82da7b9aed\")]))");
+
+            // New error
+            let rendered = runtime_error.render(&address_encoder);
+            assert_eq!(rendered, "RuntimeError::KernelError(KernelError::OrphanedNodes([Own(\"internal_component_rdx1lqhwvrduz892zk20endmsqcugxhcppp5f0970fx8s3y35l2vv5mzfn\"), Own(\"internal_component_rdx1lz4uufnnz7mmmkzej5vypnxjtu0206pu2wx4qls0std8hxhd3v84yv\")]))");
+        }
     }
 }

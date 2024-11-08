@@ -1537,7 +1537,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
                         Box::new(InvalidDropAccess {
-                            node_id: node_id.clone(),
+                            node_id: (*node_id).into(),
                             package_address: info.blueprint_info.blueprint_id.package_address,
                             blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
                             actor_package: actor.package_address(),
@@ -1550,7 +1550,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
             if Some(info.blueprint_info.blueprint_id.clone()) != actor.blueprint_id() {
                 return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
                     Box::new(InvalidDropAccess {
-                        node_id: node_id.clone(),
+                        node_id: (*node_id).into(),
                         package_address: info.blueprint_info.blueprint_id.package_address,
                         blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
                         actor_package: actor.package_address(),

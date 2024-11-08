@@ -1722,7 +1722,7 @@ mod tests {
 
     #[derive(ScryptoSbor)]
     struct LocalTransactionExecutionV1 {
-        outcome: Result<(), RuntimeError>,
+        outcome: Result<(), ScryptoOwnedRawValue>,
         fee_summary: TransactionFeeSummary,
         fee_source: FeeSource,
         fee_destination: FeeDestination,
@@ -1738,7 +1738,7 @@ mod tests {
 
     #[derive(ScryptoSbor)]
     struct LocalTransactionExecutionV2 {
-        outcome: Result<(), RuntimeError>,
+        outcome: Result<(), SerializableRuntimeError>,
         fee_summary: TransactionFeeSummary,
         fee_source: FeeSource,
         fee_destination: FeeDestination,
@@ -1755,7 +1755,10 @@ mod tests {
     impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
         fn from(value: LocalTransactionExecutionV1) -> Self {
             Self {
-                outcome: value.outcome,
+                outcome: value.outcome.map_err(|err| SerializableRuntimeError {
+                    schema_index: 0,
+                    encoded_error: err,
+                }),
                 fee_summary: value.fee_summary,
                 fee_source: value.fee_source,
                 fee_destination: value.fee_destination,
