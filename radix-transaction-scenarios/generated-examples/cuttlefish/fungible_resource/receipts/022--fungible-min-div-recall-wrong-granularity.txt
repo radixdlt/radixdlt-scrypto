@@ -1,4 +1,4 @@
-TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(VaultError(InvalidAmount(123.12321)))
+TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(VaultError(InvalidAmount("123.12321")))
 
 TRANSACTION COST: 0.1764015192 XRD
 ├─ Network execution: 0.13443985 XRD, 2688797 execution cost units

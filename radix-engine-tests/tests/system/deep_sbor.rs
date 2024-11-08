@@ -36,7 +36,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|f| f.to_string().contains("MaxDepthExceeded"));
+    receipt.expect_commit_failure_containing_error("MaxDepthExceeded");
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
     //         It's an error when it's put in the substate
@@ -74,7 +74,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|f| f.to_string().contains("MaxDepthExceeded"));
+    receipt.expect_commit_failure_containing_error("MaxDepthExceeded");
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
     //         It's an error when it's put in the substate

@@ -1,25 +1,14 @@
-use std::fmt;
-use std::io;
-use std::path::PathBuf;
-
-use radix_common::network::ParseNetworkError;
-use radix_common::prelude::{ComponentAddress, NodeId, PackageAddress};
-use radix_engine::errors::{RejectionReason, RuntimeError};
+use crate::prelude::*;
+use crate::resim::EntityDumpError;
+use radix_engine::errors::*;
 use radix_engine::transaction::AbortReason;
-use radix_engine::utils::ExtractSchemaError;
-use radix_engine::vm::wasm::PrepareError;
-use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
-use radix_engine_interface::types::SchemaHash;
+use radix_engine::vm::wasm::PrepareError as WasmPrepareError;
 use radix_transactions::errors::*;
 use radix_transactions::manifest::DecompileError;
 use radix_transactions::model::PrepareError as TransactionPrepareError;
-use sbor::*;
-
-use crate::resim::EntityDumpError;
-use crate::utils::*;
+use std::io;
 
 /// Represents a resim error.
-#[derive(Debug)]
 pub enum Error {
     NoDefaultAccount,
     NoDefaultPrivateKey,
@@ -45,7 +34,7 @@ pub enum Error {
 
     ExtractSchemaError(ExtractSchemaError),
 
-    InvalidPackage(PrepareError),
+    InvalidPackage(WasmPrepareError),
 
     TransactionConstructionError(BuildCallInstructionError),
 
@@ -95,5 +84,63 @@ impl fmt::Display for Error {
 impl From<Error> for String {
     fn from(err: Error) -> String {
         err.to_string()
+    }
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let address_encoder = AddressBech32Encoder::for_simulator();
+        match self {
+            Error::PackageNotFound(package_address) => {
+                write!(
+                    f,
+                    "PackageNotFound({})",
+                    package_address.display(&address_encoder)
+                )
+            }
+            Error::SchemaNotFound(node_id, schema_hash) => {
+                write!(
+                    f,
+                    "SchemaNotFound({}, {schema_hash:?})",
+                    node_id.display(&address_encoder)
+                )
+            }
+            Error::BlueprintNotFound(package_address, message) => {
+                write!(
+                    f,
+                    "BlueprintNotFound({}, {message})",
+                    package_address.display(&address_encoder)
+                )
+            }
+            Error::ComponentNotFound(component_address) => {
+                write!(
+                    f,
+                    "ComponentNotFound({})",
+                    component_address.display(&address_encoder)
+                )
+            }
+            Error::InstanceSchemaNot(component_address, index) => {
+                write!(
+                    f,
+                    "InstanceSchemaNot({}, {index})",
+                    component_address.display(&address_encoder)
+                )
+            }
+            Error::TransactionFailed(runtime_error) => {
+                write!(
+                    f,
+                    "TransactionFailed({})",
+                    runtime_error.display(&address_encoder)
+                )
+            }
+            Error::TransactionRejected(rejection_reason) => {
+                write!(
+                    f,
+                    "TransactionRejected({})",
+                    rejection_reason.display(&address_encoder)
+                )
+            }
+            other => write!(f, "{:?}", other),
+        }
     }
 }

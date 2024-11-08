@@ -20,7 +20,7 @@ macro_rules! get_failure {
             .expect_commit_failure()
             .outcome
             .expect_failure()
-            .to_string()
+            .to_string(NO_NETWORK)
     };
 }
 
@@ -243,15 +243,11 @@ fn test_crypto_scrypto_bls12381_g2_signature_aggregate() {
     assert_eq!(agg_sig_multiple_msgs, agg_sig_from_scrypto);
 
     // Attempt to aggregate signature from empty input
-    let error_message =
-        crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, vec![])
-            .expect_commit_failure()
-            .outcome
-            .expect_failure()
-            .to_string();
+    let receipt =
+        crypto_scrypto_bls12381_g2_signature_aggregate(&mut ledger, package_address, vec![]);
 
     // Assert
-    assert!(error_message.contains("InputDataEmpty"));
+    receipt.expect_commit_failure_containing_error("InputDataEmpty");
 }
 
 #[test]

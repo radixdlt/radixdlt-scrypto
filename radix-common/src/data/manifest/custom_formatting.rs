@@ -130,13 +130,13 @@ mod tests {
         let payload = ManifestRawPayload::new_from_valid_owned(payload);
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,

@@ -19,6 +19,12 @@ impl<'a> ScryptoValueDisplayContext<'a> {
     }
 }
 
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for AddressDisplayContext<'a> {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_optional_bech32(self.encoder)
+    }
+}
+
 impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a AddressBech32Encoder {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
         ScryptoValueDisplayContext::with_optional_bech32(Some(self))
@@ -120,13 +126,13 @@ mod tests {
         let payload = ScryptoRawPayload::new_from_valid_owned(scrypto_encode(&value).unwrap());
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,

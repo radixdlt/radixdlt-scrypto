@@ -12,7 +12,7 @@ pub trait FormattableCustomExtension: CustomExtension + Copy {
     /// The gives the inner formatted representation of the value.
     /// This function should write the value content to the formatter.
     ///
-    /// * The rust-like representaiton is as a newtytpe: CustomValueKind(<value_content>)
+    /// * The rust-like representation is as a newtype: CustomValueKind(<value_content>)
     /// * The nested string representation is identical: CustomValueKind(<value_content>)
     fn display_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
         f: &mut F,

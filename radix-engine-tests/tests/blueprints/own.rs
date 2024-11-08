@@ -27,10 +27,5 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
     );
 
     // Assert
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("ValidationError"))
+    receipt.expect_commit_failure_containing_error("ValidationError");
 }

@@ -77,12 +77,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("InvalidImport"));
+    receipt.expect_commit_failure_containing_error("InvalidImport");
 }
 
 #[test]
