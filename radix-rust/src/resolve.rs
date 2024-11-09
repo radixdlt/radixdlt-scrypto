@@ -39,12 +39,12 @@ impl<X, Y: ResolveFrom<X>> Resolve<Y> for X {
 /// `Resolvable` is a marker trait, mainly to make resolution opt-in and to avoid
 /// polluting every type with a resolve method.
 ///
-/// You might want to use [`resolvable_with_self_impl`] or [`resolvable_with_try_into_impls`]
+/// You might want to use [`resolvable_with_identity_impl`] or [`resolvable_with_try_into_impls`]
 /// to implement this trait and a reflexive or blanket impl.
 pub trait Resolvable {}
 
 #[macro_export]
-macro_rules! resolvable_with_self_impl {
+macro_rules! resolvable_with_identity_impl {
     ($ty:ty$(,)?) => {
         impl Resolvable for $ty {}
 
@@ -132,7 +132,7 @@ impl<X, Y: LabelledResolveFrom<X>> LabelledResolve<Y> for X {
 ///   which don't have that bound).
 ///
 /// If implementing this with [`ResolverOutput`] = `Self`, you will likely want to
-/// use [`labelled_resolvable_with_self_impl`] or [`labelled_resolvable_with_try_into_impls`]
+/// use [`labelled_resolvable_with_identity_impl`] or [`labelled_resolvable_with_try_into_impls`]
 /// to implement this trait and a reflexive or blanket impl using `try_into`.
 ///
 /// [`ResolverOutput`]: LabelledResolvable::ResolverOutput
@@ -145,6 +145,27 @@ pub trait LabelledResolvable {
 
 pub trait LabelResolver<X> {
     fn resolve_label_into(&self, label: &str) -> X;
+}
+
+#[macro_export]
+macro_rules! labelled_resolvable_with_identity_impl {
+    ($ty:ty, resolver_output: $resolver_output:ty$(,)?) => {
+        impl LabelledResolvable for $ty {
+            type ResolverOutput = $resolver_output;
+        }
+
+        impl LabelledResolveFrom<$ty> for $ty {
+            fn labelled_resolve_from(
+                value: Self,
+                _resolver: &impl LabelResolver<$resolver_output>,
+            ) -> Self {
+                value
+            }
+        }
+
+        // In future, could likely add an implementation from &$ty if $ty is Clone;
+        // if we can get around the "trivially true/false" bound.
+    };
 }
 
 #[macro_export]
@@ -165,54 +186,20 @@ macro_rules! labelled_resolvable_using_resolvable_impl {
     };
 }
 
-#[macro_export]
-macro_rules! labelled_resolvable_with_self_impl {
-    ($ty:ty, resolver_output: $resolver_output:ty$(,)?) => {
-        impl LabelledResolvable for $ty {
-            type ResolverOutput = $resolver_output;
-        }
-
-        impl LabelledResolveFrom<$ty> for $ty {
-            fn labelled_resolve_from(
-                value: Self,
-                _resolver: &impl LabelResolver<$resolver_output>,
-            ) -> Self {
-                value
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! labelled_resolvable_with_try_into_impls {
-    ($ty:ty, resolver_output: $resolver_output:ty$(,)?) => {
-        impl LabelledResolvable for $ty {
-            type ResolverOutput = $resolver_output;
-        }
-
-        impl<T: TryInto<$ty, Error = E>, E: Debug> LabelledResolveFrom<T> for $ty {
-            fn labelled_resolve_from(
-                value: T,
-                _resolver: &impl LabelResolver<$resolver_output>,
-            ) -> Self {
-                value.try_into().unwrap_or_else(|err| {
-                    panic!(
-                        "The provided argument could not be resolved into a {}: {err:?}",
-                        core::any::type_name::<$ty>()
-                    )
-                })
-            }
-        }
-    };
-}
-
 //==============================================================
 // If a type `X` has `ResolverOutput = Self` then it's a "leaf" - i.e. the thing
 // that's ultimately being resolved.
-// * We leave an identity resolver or try_into resolver for the macros `labelled_resolvable_with_self_impl`
+// * We leave an identity resolver or try_into resolver for the macros `labelled_resolvable_with_identity_impl`
 //   or `labelled_resolvable_with_try_into_impls` or `labelled_resolvable_using_resolvable_impl`
 // * Implement resolves form string-based labels
 //==============================================================
+
+// Ideally we'd be able to allow `ResolverOutput = TryInfo<X>`, but the
+// compiler disallows this, due to clashes with other blanket implementations.
+// For example, it might be possible in future for e.g. &'a str to implement
+// `IntoIterator<Item = A>` (e.g. A = &'a char) and for `A` to implement
+// `Resolve<X>` and so give clashing implementations of
+// LabelledResolveFrom<&'a str> for Vec<char>.
 
 impl<'a, X: LabelledResolvable<ResolverOutput = X>> LabelledResolveFrom<&'a str> for X {
     fn labelled_resolve_from(value: &'a str, resolver: &impl LabelResolver<X>) -> X {

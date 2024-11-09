@@ -25,7 +25,7 @@ pub enum ManifestBucketBatch {
     EntireWorktop,
 }
 
-labelled_resolvable_with_self_impl!(ManifestBucketBatch, resolver_output: ManifestBucket);
+labelled_resolvable_with_identity_impl!(ManifestBucketBatch, resolver_output: ManifestBucket);
 
 impl<T: LabelledResolve<Vec<ManifestBucket>>> LabelledResolveFrom<T> for ManifestBucketBatch {
     fn labelled_resolve_from(
@@ -128,7 +128,7 @@ pub enum ManifestProofBatch {
     EntireAuthZone,
 }
 
-labelled_resolvable_with_self_impl!(ManifestProofBatch, resolver_output: ManifestProof);
+labelled_resolvable_with_identity_impl!(ManifestProofBatch, resolver_output: ManifestProof);
 
 impl<T: LabelledResolve<Vec<ManifestProof>>> LabelledResolveFrom<T> for ManifestProofBatch {
     fn labelled_resolve_from(

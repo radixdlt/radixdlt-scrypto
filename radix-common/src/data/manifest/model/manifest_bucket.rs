@@ -10,7 +10,7 @@ use crate::*;
 #[must_use]
 pub struct ManifestBucket(pub u32);
 
-labelled_resolvable_with_self_impl!(ManifestBucket, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(ManifestBucket, resolver_output: Self);
 
 //========
 // error

@@ -1622,7 +1622,7 @@ impl NetWithdraws {
     pub fn set_fungible(
         mut self,
         resource_address: ResourceAddress,
-        total_amount: impl ResolvableDecimal,
+        total_amount: impl Resolve<Decimal>,
     ) -> Self {
         self.resources.insert(
             resource_address,

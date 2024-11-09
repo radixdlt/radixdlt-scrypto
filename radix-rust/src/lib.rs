@@ -39,9 +39,8 @@ pub mod prelude {
     pub use crate::contextual_try_from_into::*;
     pub use crate::resolve::*;
     pub use crate::{
-        labelled_resolvable_using_resolvable_impl, labelled_resolvable_with_self_impl,
-        labelled_resolvable_with_try_into_impls, resolvable_with_self_impl,
-        resolvable_with_try_into_impls,
+        labelled_resolvable_using_resolvable_impl, labelled_resolvable_with_identity_impl,
+        resolvable_with_identity_impl, resolvable_with_try_into_impls,
     };
 
     pub use crate::iterators::*;

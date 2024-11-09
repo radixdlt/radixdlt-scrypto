@@ -604,7 +604,7 @@ pub struct NamedManifestBucket {
     name: String,
 }
 
-labelled_resolvable_with_self_impl!(NamedManifestBucket, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(NamedManifestBucket, resolver_output: Self);
 
 impl LabelResolver<NamedManifestBucket> for ManifestNameRegistrar {
     fn resolve_label_into(&self, name: &str) -> NamedManifestBucket {
@@ -704,7 +704,7 @@ pub struct NamedManifestProof {
     name: String,
 }
 
-labelled_resolvable_with_self_impl!(NamedManifestProof, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(NamedManifestProof, resolver_output: Self);
 
 impl LabelResolver<NamedManifestProof> for ManifestNameRegistrar {
     fn resolve_label_into(&self, name: &str) -> NamedManifestProof {
@@ -775,7 +775,7 @@ pub struct NamedManifestIntent {
     name: String,
 }
 
-labelled_resolvable_with_self_impl!(NamedManifestIntent, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(NamedManifestIntent, resolver_output: Self);
 
 impl LabelResolver<NamedManifestIntent> for ManifestNameRegistrar {
     fn resolve_label_into(&self, name: &str) -> NamedManifestIntent {
@@ -827,7 +827,7 @@ pub struct NamedManifestAddressReservation {
     name: String,
 }
 
-labelled_resolvable_with_self_impl!(NamedManifestAddressReservation, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(NamedManifestAddressReservation, resolver_output: Self);
 
 impl LabelResolver<NamedManifestAddressReservation> for ManifestNameRegistrar {
     fn resolve_label_into(&self, name: &str) -> NamedManifestAddressReservation {
@@ -928,7 +928,7 @@ pub struct NamedManifestAddress {
     name: String,
 }
 
-labelled_resolvable_with_self_impl!(NamedManifestAddress, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(NamedManifestAddress, resolver_output: Self);
 
 impl LabelResolver<NamedManifestAddress> for ManifestNameRegistrar {
     fn resolve_label_into(&self, name: &str) -> NamedManifestAddress {

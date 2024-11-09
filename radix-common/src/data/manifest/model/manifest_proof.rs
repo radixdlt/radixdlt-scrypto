@@ -10,7 +10,7 @@ use crate::*;
 #[must_use]
 pub struct ManifestProof(pub u32);
 
-labelled_resolvable_with_self_impl!(ManifestProof, resolver_output: Self);
+labelled_resolvable_with_identity_impl!(ManifestProof, resolver_output: Self);
 
 //========
 // error

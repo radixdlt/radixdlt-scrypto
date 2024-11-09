@@ -1103,7 +1103,7 @@ pub enum BoundAdjustmentError {
     TakeCannotBeSatisfied,
 }
 
-resolvable_with_self_impl!(LowerBound);
+resolvable_with_identity_impl!(LowerBound);
 
 impl<T: Resolve<Decimal>> ResolveFrom<T> for LowerBound {
     fn resolve_from(value: T) -> Self {
@@ -1111,7 +1111,7 @@ impl<T: Resolve<Decimal>> ResolveFrom<T> for LowerBound {
     }
 }
 
-resolvable_with_self_impl!(UpperBound);
+resolvable_with_identity_impl!(UpperBound);
 
 impl<T: Resolve<Decimal>> ResolveFrom<T> for UpperBound {
     fn resolve_from(value: T) -> Self {
