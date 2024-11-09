@@ -14,10 +14,10 @@ DROP_PROOF Proof("proof1d");
 DROP_PROOF Proof("proof1c");
 DROP_AUTH_ZONE_PROOFS;
 
-# Create a proof from account and drop it
+# Create a proof from account, pop it and push it back
 CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");
 POP_FROM_AUTH_ZONE Proof("proof3");
-DROP_PROOF Proof("proof3");
+PUSH_TO_AUTH_ZONE Proof("proof3");
 
 # Compose proofs
 CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");

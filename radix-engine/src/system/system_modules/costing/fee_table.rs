@@ -6,6 +6,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::kernel::substate_io::SubstateDevice;
 use crate::system::actor::Actor;
+use crate::system::system_callback::SystemVersion;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::{
     blueprints::package::*,
@@ -64,11 +65,66 @@ lazy_static! {
 /// - Baseline: 1 microsecond = 100 cost units
 ///
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct FeeTable;
+pub struct FeeTable {
+    wasm_execution_units_divider: u32,
+}
 
 impl FeeTable {
-    pub fn new() -> Self {
-        Self
+    pub fn new(version: SystemVersion) -> Self {
+        let wasm_execution_units_divider = match version {
+            // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
+            // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
+            // 1 / 0.00028877714 = 3462 rounded down gives 3000
+            SystemVersion::V1 => 3000,
+
+            // W - WASM execution units
+            // C - cost units
+            // c - single cost unit
+            // T - execution time (1 µs = 100 c => 1 ms = 100,000 c)
+            //
+            // Cost units might be expressed as
+            //  C = T * c
+            //
+            // To convert W to C, we need a d.
+            //   C = W / divider
+            //   divider = W / C
+            //   divider = W / (T * c)
+            //
+            // From `costing::spin_loop_v2` it consumes W=438,729,340,586 wasm execution
+            // units and it should never take more than T = 1s.
+            //   T = 1s = 1000 ms = 1 * 100,000
+            //   W = 438,729,340,586
+            // Therefore
+            //   divider = 438,729,340,586 / (1000 * 100,000) = 4387.293 ~= 4500
+            //
+            // With divider set to 4500 it takes 543 ms (measured at GH benchmark, git rev c591c4003a,
+            // EC2 instance type c6a.4xlarge) which is fine.
+            SystemVersion::V2 => 4500,
+        };
+
+        Self {
+            wasm_execution_units_divider,
+        }
+    }
+
+    pub fn latest() -> Self {
+        Self::cuttlefish()
+    }
+
+    pub fn cuttlefish() -> Self {
+        Self::new(SystemVersion::V2)
+    }
+
+    pub fn bottlenose() -> Self {
+        Self::new(SystemVersion::V1)
+    }
+
+    pub fn anemone() -> Self {
+        Self::new(SystemVersion::V1)
+    }
+
+    pub fn babylon() -> Self {
+        Self::new(SystemVersion::V1)
     }
 
     //======================
@@ -176,26 +232,7 @@ impl FeeTable {
         _export_name: &str,
         wasm_execution_units: u32,
     ) -> u32 {
-        // W - WASM execution units
-        // C - cost units
-        // c - single cost unit
-        // T - execution time (1 µs = 100 c => 1 ms = 100,000 c)
-        //
-        // Cost units might be expressed as
-        //  C = T * c
-        //
-        // To convert W to C, we need a d.
-        //   C = W / divider
-        //   divider = W / C
-        //   divider = W / (T * c)
-        //
-        // From `costing::spin_loop_v2`, it takes T=960 ms to consume W=274,517,401,207 wasm execution
-        // units (measured at GH benchmark, git rev 1fd85c47ef, EC2 instance type c6a.4xlarge).
-        //   T = 960 ms = 960 * 100,000
-        //   W = 274,517,401,207
-        // Therefore
-        //   divider = 274,517,401,207 / (960 * 100,000) = 2859.556 ~= 3000
-        wasm_execution_units / 3000
+        wasm_execution_units / self.wasm_execution_units_divider
     }
 
     #[inline]

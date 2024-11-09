@@ -709,7 +709,7 @@ pub struct PushToAuthZone {
 }
 
 impl ManifestInstruction for PushToAuthZone {
-    const IDENT: &'static str = "PUSH_TO_AUTHZONE";
+    const IDENT: &'static str = "PUSH_TO_AUTH_ZONE";
     const ID: u8 = INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR;
 
     fn decompile(

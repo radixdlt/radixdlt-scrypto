@@ -168,8 +168,8 @@ define_invocation! {
     },
     output: type Decimal,
     manifest_input: struct {
-        claimant: ComponentAddress,
-        resource_address: ResourceAddress,
+        claimant: DynamicComponentAddress,
+        resource_address: DynamicResourceAddress,
     }
 }
 
