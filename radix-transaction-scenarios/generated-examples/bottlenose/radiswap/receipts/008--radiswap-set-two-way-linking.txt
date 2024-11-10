@@ -85,7 +85,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] A Radiswap component between test tokens "XRD" and "BTC"",
+       "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8, module_id: Metadata }
@@ -118,7 +118,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The underyling pool between test tokens "XRD" and "BTC"",
+       "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772, module_id: Metadata }
@@ -151,7 +151,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The pool units resource for the underlying pool between test tokens "XRD" and "BTC"",
+       "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5, module_id: Metadata }
@@ -184,7 +184,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] A Radiswap dApp between test tokens "ETH" and "ETC"",
+       "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
      ),
    }
 ├─ Emitter: Method { node: component_sim1crm3jwwepvqj9vypzvkgmw3cqkuvulhjtq05mge5d38y6ceh9wl529, module_id: Metadata }
@@ -217,7 +217,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The underyling pool between test tokens "ETH" and "ETC"",
+       "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
      ),
    }
 ├─ Emitter: Method { node: pool_sim1c52wwf0qk9q3m4jr6xps7jrwqp86s7wmmhsfnx7x774rnw6lq3y6hj, module_id: Metadata }
@@ -250,7 +250,7 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The pool units resource for the underlying pool between test tokens "ETH" and "ETC"",
+       "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\"",
      ),
    }
 ├─ Emitter: Method { node: resource_sim1t4rssme0nruj85nax6wyfwl5v64ys5daqth40mwm0ghzvvz0ndtlv9, module_id: Metadata }
@@ -344,7 +344,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] A Radiswap component between test tokens "XRD" and "BTC"",
+           "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"
@@ -381,7 +381,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The underyling pool between test tokens "XRD" and "BTC"",
+           "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"
@@ -420,7 +420,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The pool units resource for the underlying pool between test tokens "XRD" and "BTC"",
+           "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"
@@ -457,7 +457,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] A Radiswap dApp between test tokens "ETH" and "ETC"",
+           "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
          ),
        )
     └─ Set: "tags"
@@ -494,7 +494,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The underyling pool between test tokens "ETH" and "ETC"",
+           "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
          ),
        )
     └─ Set: "tags"
@@ -533,7 +533,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The pool units resource for the underlying pool between test tokens "ETH" and "ETC"",
+           "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\"",
          ),
        )
     └─ Set: "tags"
