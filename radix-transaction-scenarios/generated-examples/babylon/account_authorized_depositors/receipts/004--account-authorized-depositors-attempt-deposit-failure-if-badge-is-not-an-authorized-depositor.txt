@@ -1,4 +1,4 @@
-TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(AccountError(NotAnAuthorizedDepositor { depositor: Resource(ResourceAddress(9a4c6318c6318c6ee30e98cc6318c6318cf7eb5aabd4a7e946318c6318c6)) }))
+TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(AccountError(NotAnAuthorizedDepositor { depositor: Resource(ResourceAddress("resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl")) }))
 
 TRANSACTION COST: 0.3300786664 XRD
 ├─ Network execution: 0.2843023 XRD, 5686046 execution cost units

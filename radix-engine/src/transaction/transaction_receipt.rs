@@ -556,7 +556,7 @@ impl TransactionOutcome {
     pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
-            TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
+            TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {error:?}"),
         }
     }
 
@@ -663,12 +663,32 @@ impl TransactionReceipt {
         self.expect_commit(false)
     }
 
+    pub fn expect_commit_failure_containing_error(&self, error_needle: &str) {
+        let error_message = self
+            .expect_commit_failure()
+            .outcome
+            .expect_failure()
+            .to_string(NO_NETWORK);
+        assert!(
+            error_message.contains(error_needle),
+            "{error_needle:?} was not contained in RuntimeError"
+        );
+    }
+
     pub fn expect_rejection(&self) -> &RejectionReason {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.reason,
             TransactionResult::Abort(..) => panic!("Expected rejection but was abort"),
         }
+    }
+
+    pub fn expect_rejection_containing_error(&self, error_needle: &str) {
+        let error_message = self.expect_rejection().to_string(NO_NETWORK);
+        assert!(
+            error_message.contains(error_needle),
+            "{error_needle:?} was not contained in RejectionReason"
+        );
     }
 
     pub fn expect_abortion(&self) -> &AbortReason {
@@ -887,11 +907,15 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
         let (string, format): (String, fn(String) -> ColoredString) = match result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => ("COMMITTED SUCCESS".to_string(), |x| x.green()),
-                TransactionOutcome::Failure(e) => {
-                    (format!("COMMITTED FAILURE: {}", e), |x| x.red())
-                }
+                TransactionOutcome::Failure(e) => (
+                    format!("COMMITTED FAILURE: {}", e.display(self.display_context())),
+                    |x| x.red(),
+                ),
             },
-            TransactionResult::Reject(r) => (format!("REJECTED: {}", r.reason), |x| x.red()),
+            TransactionResult::Reject(r) => (
+                format!("REJECTED: {}", r.reason.display(self.display_context())),
+                |x| x.red(),
+            ),
             TransactionResult::Abort(a) => (format!("ABORTED: {}", a.reason), |x| x.bright_red()),
         };
         if self.use_ansi_colors {
@@ -1090,7 +1114,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                             InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
                                 .expect("Impossible case! Instruction output can't be decoded")
                                 .to_string(ValueDisplayParameters::Schemaless {
-                                    display_mode: DisplayMode::RustLike,
+                                    display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
                                     print_mode: PrintMode::MultiLine {
                                         indent_size: 2,
                                         base_indent: 3,
@@ -1555,7 +1579,7 @@ fn format_scrypto_value_with_full_type_id<'a, F: fmt::Write, T: AsRef<NodeId>>(
         None => {
             let display_parameters: ValueDisplayParameters<'_, '_, ScryptoCustomExtension> =
                 ValueDisplayParameters::Schemaless {
-                    display_mode: DisplayMode::RustLike,
+                    display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
                     print_mode,
                     custom_context: receipt_context.display_context(),
                     depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
@@ -1574,7 +1598,7 @@ fn format_scrypto_value_with_schema<'a, F: fmt::Write>(
     local_type_id: LocalTypeId,
 ) -> Result<(), fmt::Error> {
     let display_parameters = ValueDisplayParameters::Annotated {
-        display_mode: DisplayMode::RustLike,
+        display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
         print_mode,
         custom_context: receipt_context.display_context(),
         schema: schema.v1(),
@@ -1722,7 +1746,7 @@ mod tests {
 
     #[derive(ScryptoSbor)]
     struct LocalTransactionExecutionV1 {
-        outcome: Result<(), RuntimeError>,
+        outcome: Result<(), ScryptoOwnedRawValue>,
         fee_summary: TransactionFeeSummary,
         fee_source: FeeSource,
         fee_destination: FeeDestination,
@@ -1738,7 +1762,7 @@ mod tests {
 
     #[derive(ScryptoSbor)]
     struct LocalTransactionExecutionV2 {
-        outcome: Result<(), RuntimeError>,
+        outcome: Result<(), PersistableRuntimeError>,
         fee_summary: TransactionFeeSummary,
         fee_source: FeeSource,
         fee_destination: FeeDestination,
@@ -1755,7 +1779,10 @@ mod tests {
     impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
         fn from(value: LocalTransactionExecutionV1) -> Self {
             Self {
-                outcome: value.outcome,
+                outcome: value.outcome.map_err(|err| PersistableRuntimeError {
+                    schema_index: 0,
+                    encoded_error: err,
+                }),
                 fee_summary: value.fee_summary,
                 fee_source: value.fee_source,
                 fee_destination: value.fee_destination,

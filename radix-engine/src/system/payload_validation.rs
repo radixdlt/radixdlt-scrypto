@@ -154,7 +154,7 @@ impl TypeInfoForValidation {
 
 type Lookup<'a, E> = Box<dyn ValidationContext<Error = E> + 'a>;
 
-impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomExtension {
+impl<'a, E: Debug> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
@@ -207,7 +207,7 @@ impl<'a, E: ToString> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCusto
     }
 }
 
-fn apply_custom_validation_to_custom_value<E: ToString>(
+fn apply_custom_validation_to_custom_value<E: Debug>(
     custom_validation: &ScryptoCustomTypeValidation,
     custom_value: &ScryptoCustomValue,
     lookup: &Lookup<E>,
@@ -294,11 +294,11 @@ fn apply_custom_validation_to_custom_value<E: ToString>(
     Ok(())
 }
 
-fn resolve_type_info<E: ToString>(
+fn resolve_type_info<E: Debug>(
     node_id: &NodeId,
     lookup: &Lookup<E>,
 ) -> Result<TypeInfoForValidation, PayloadValidationError<ScryptoCustomExtension>> {
     lookup.get_node_type_info(node_id).map_err(|e| {
-        PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string()))
+        PayloadValidationError::ValidationError(ValidationError::CustomError(format!("{:?}", e)))
     })
 }

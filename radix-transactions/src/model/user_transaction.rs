@@ -72,7 +72,7 @@ impl UserSubintentManifest {
 const V1_DISCRIMINATOR: u8 = TransactionDiscriminator::V1Notarized as u8;
 const V2_DISCRIMINATOR: u8 = TransactionDiscriminator::V2Notarized as u8;
 
-/// This can be used like [`VersionedTransactionPayload`], but just for notarized transactions.
+/// This can be used like [`AnyTransaction`], but just for notarized transactions.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub enum UserTransaction {
     #[sbor(discriminator(V1_DISCRIMINATOR))]

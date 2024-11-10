@@ -113,31 +113,31 @@ impl AnyManifest {
             return Ok(Self::V1(legacy_v1_manifest.into()));
         }
 
-        // Finally, try as VersionedTransactionPayload
-        if let Ok(any_transaction) = manifest_decode::<VersionedTransactionPayload>(bytes) {
+        // Finally, try as AnyTransaction
+        if let Ok(any_transaction) = manifest_decode::<AnyTransaction>(bytes) {
             return Ok(match any_transaction {
-                VersionedTransactionPayload::TransactionIntentV1(intent) => {
+                AnyTransaction::TransactionIntentV1(intent) => {
                     TransactionManifestV1::from_intent(&intent).into()
                 }
-                VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent) => {
+                AnyTransaction::SignedTransactionIntentV1(signed_intent) => {
                     TransactionManifestV1::from_intent(&signed_intent.intent).into()
                 }
-                VersionedTransactionPayload::NotarizedTransactionV1(notarized) => {
+                AnyTransaction::NotarizedTransactionV1(notarized) => {
                     TransactionManifestV1::from_intent(&notarized.signed_intent.intent).into()
                 }
-                VersionedTransactionPayload::SystemTransactionV1(system_transaction) => {
+                AnyTransaction::SystemTransactionV1(system_transaction) => {
                     SystemTransactionManifestV1::from_transaction(&system_transaction).into()
                 }
-                VersionedTransactionPayload::TransactionIntentV2(intent) => {
+                AnyTransaction::TransactionIntentV2(intent) => {
                     TransactionManifestV2::from_intent_core(&intent.root_intent_core).into()
                 }
-                VersionedTransactionPayload::SignedTransactionIntentV2(signed_intent) => {
+                AnyTransaction::SignedTransactionIntentV2(signed_intent) => {
                     TransactionManifestV2::from_intent_core(
                         &signed_intent.transaction_intent.root_intent_core,
                     )
                     .into()
                 }
-                VersionedTransactionPayload::NotarizedTransactionV2(notarized) => {
+                AnyTransaction::NotarizedTransactionV2(notarized) => {
                     TransactionManifestV2::from_intent_core(
                         &notarized
                             .signed_transaction_intent
@@ -146,7 +146,7 @@ impl AnyManifest {
                     )
                     .into()
                 }
-                VersionedTransactionPayload::SubintentV2(subintent) => {
+                AnyTransaction::SubintentV2(subintent) => {
                     SubintentManifestV2::from_intent_core(&subintent.intent_core).into()
                 }
                 other_type => {

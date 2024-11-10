@@ -92,7 +92,7 @@ fn test_invalid_remote_types_for_non_fungible_data() {
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| e.to_string().contains("BlueprintTypeNotFound"));
+    receipt.expect_commit_failure_containing_error("BlueprintTypeNotFound");
 }
 
 #[test]
@@ -111,5 +111,5 @@ fn test_invalid_remote_types_for_key_value_store() {
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| e.to_string().contains("BlueprintPayloadDoesNotExist"));
+    receipt.expect_commit_failure_containing_error("BlueprintPayloadDoesNotExist");
 }

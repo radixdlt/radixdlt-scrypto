@@ -1,15 +1,4 @@
-use radix_common::prelude::{
-    AddressBech32Decoder, AddressBech32Encoder, ComponentAddress, NonFungibleGlobalId,
-    PackageAddress, ResourceAddress,
-};
-use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
-use radix_engine_interface::{
-    blueprints::resource::{require, AccessRule},
-    rule,
-};
-use radix_rust::ContextualDisplay;
-use sbor::rust::fmt;
-use std::str::FromStr;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressError {
@@ -253,8 +242,10 @@ impl FromStr for SimulatorResourceOrNonFungibleGlobalId {
 impl fmt::Display for SimulatorResourceOrNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NonFungibleGlobalId(non_fungible_global_id) => non_fungible_global_id.fmt(f),
-            Self::ResourceAddress(resource_address) => resource_address.fmt(f),
+            Self::NonFungibleGlobalId(non_fungible_global_id) => {
+                Display::fmt(non_fungible_global_id, f)
+            }
+            Self::ResourceAddress(resource_address) => Display::fmt(resource_address, f),
         }
     }
 }
@@ -262,8 +253,10 @@ impl fmt::Display for SimulatorResourceOrNonFungibleGlobalId {
 impl fmt::Debug for SimulatorResourceOrNonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NonFungibleGlobalId(non_fungible_global_id) => non_fungible_global_id.fmt(f),
-            Self::ResourceAddress(resource_address) => resource_address.fmt(f),
+            Self::NonFungibleGlobalId(non_fungible_global_id) => {
+                Debug::fmt(non_fungible_global_id, f)
+            }
+            Self::ResourceAddress(resource_address) => Debug::fmt(resource_address, f),
         }
     }
 }

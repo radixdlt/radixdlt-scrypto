@@ -1103,7 +1103,7 @@ impl<V: SystemCallbackObject> System<V> {
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                 )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist((*node_id).into()))?;
 
             match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
                 StableReferenceType::Global => {
@@ -1186,12 +1186,12 @@ impl<V: SystemCallbackObject> System<V> {
                     Ok(StableReferenceType::DirectAccess)
                 } else {
                     Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                        node_id.clone(),
+                        (*node_id).into(),
                     ))
                 }
             }
             _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                node_id.clone(),
+                (*node_id).into(),
             )),
         };
     }

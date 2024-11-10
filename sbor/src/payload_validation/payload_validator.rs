@@ -111,7 +111,37 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     context: &T,
     depth_limit: usize,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, id, depth_limit);
+    let traverser = traverse_payload_with_types::<E>(payload, &schema, id, depth_limit);
+    run_validation(traverser, schema, context)
+}
+
+pub fn validate_partial_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
+    partial_payload: &[u8],
+    expected_start: ExpectedStart<E::CustomValueKind>,
+    check_exact_end: bool,
+    current_depth: usize,
+    schema: &'s Schema<E::CustomSchema>,
+    type_id: LocalTypeId,
+    context: &T,
+    depth_limit: usize,
+) -> Result<(), LocatedValidationError<'s, E>> {
+    let traverser = traverse_partial_payload_with_types::<E>(
+        partial_payload,
+        expected_start,
+        check_exact_end,
+        current_depth,
+        &schema,
+        type_id,
+        depth_limit,
+    );
+    run_validation(traverser, schema, context)
+}
+
+fn run_validation<'s, E: ValidatableCustomExtension<T>, T>(
+    mut traverser: TypedTraverser<'_, 's, E>,
+    schema: &'s Schema<E::CustomSchema>,
+    context: &T,
+) -> Result<(), LocatedValidationError<'s, E>> {
     loop {
         let typed_event = traverser.next_event();
         if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(

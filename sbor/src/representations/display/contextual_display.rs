@@ -18,12 +18,17 @@ pub enum PrintMode {
 /// The display mode chooses how the value is displayed
 #[derive(Debug, Clone, Copy)]
 pub enum DisplayMode {
-    /// RustLike - takes inspiration from Rust and other programming languages, eg:
+    /// RustLike - takes inspiration from Rust and other programming languages.
+    ///
+    /// With `RustLikeOptions::full()` we get:
     ///   - Struct: `TypeName { field1: X, }`
     ///   - Array: `[value1, value2]`
     ///   - Map: `{ key1 => value1 }`
     ///   - Enum: `Name::Variant`, `Name::Variant(value1)`, `Name::Variant { field1: value1 }`
-    RustLike,
+    ///
+    /// With `RustLikeOptions::debug()` we don't get the Enum type names, and values are
+    /// formatted more like their Debug representation.
+    RustLike(RustLikeOptions),
     /// ==RustLike is recommended over NestedString. This may be deprecated soon==
     /// NestedString - is somewhat like the Manifest format, eg:
     ///   - Struct: `Tuple:TypeName(field1 = X)`
@@ -90,7 +95,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                 *depth_limit,
             ),
             Self::Schemaless {
-                display_mode: DisplayMode::RustLike,
+                display_mode: DisplayMode::RustLike(options),
                 print_mode,
                 custom_context,
                 depth_limit,
@@ -99,12 +104,13 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     schema: E::CustomSchema::empty_schema(),
                     print_mode: *print_mode,
                     custom_context: *custom_context,
+                    options: *options,
                 },
                 LocalTypeId::any(),
                 *depth_limit,
             ),
             Self::Annotated {
-                display_mode: DisplayMode::RustLike,
+                display_mode: DisplayMode::RustLike(options),
                 print_mode,
                 custom_context,
                 schema,
@@ -115,6 +121,7 @@ impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
                     schema: *schema,
                     print_mode: *print_mode,
                     custom_context: *custom_context,
+                    options: *options,
                 },
                 *type_id,
                 *depth_limit,

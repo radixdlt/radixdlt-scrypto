@@ -22,12 +22,7 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
     // Assert
     if let Some(expected) = error {
-        let error_message = receipt
-            .expect_commit_failure()
-            .outcome
-            .expect_failure()
-            .to_string();
-        assert!(error_message.contains(expected))
+        receipt.expect_commit_failure_containing_error(expected);
     } else {
         receipt.expect_commit_success();
     }
