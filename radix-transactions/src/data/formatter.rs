@@ -2,6 +2,7 @@ use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use crate::internal_prelude::*;
 use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::types::ResourceAddress;
+use radix_rust::unicode::{CustomCharEscaper, EscapeBehaviour};
 use sbor::rust::fmt;
 use sbor::*;
 
@@ -141,14 +142,16 @@ pub fn format_manifest_value<F: fmt::Write>(
         Value::U128 { value } => {
             write_with_indent!(f, context, indent_start, depth, "{}u128", value)?
         }
-        Value::String { value } => write_with_indent!(
-            f,
-            context,
-            indent_start,
-            depth,
-            "\"{}\"",
-            escape_manifest_str(value)
-        )?,
+        Value::String { value } => {
+            write_with_indent!(
+                f,
+                context,
+                indent_start,
+                depth,
+                "{}",
+                ManifestCustomCharEscaper::escaped(value.as_str())
+            )?;
+        }
         Value::Tuple { fields } => {
             if fields.len() == 2 {
                 if let (
@@ -521,28 +524,29 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
     }
 }
 
-fn escape_manifest_str(input: &str) -> String {
-    radix_rust::unicode::custom_string_escape(input, resolve_escape_behaviour, format_escaped_utf16)
-}
+pub struct ManifestCustomCharEscaper;
 
-// We could use some stack-based string library for efficiency,
-// but the decompiler isn't super performance-sensitive
-fn resolve_escape_behaviour(char: char) -> radix_rust::unicode::EscapeBehaviour {
-    use radix_rust::unicode::EscapeBehaviour;
-    match char {
-        '\\' => EscapeBehaviour::Replace(r#"\\"#),
-        '\n' => EscapeBehaviour::Replace(r#"\n"#),
-        '\r' => EscapeBehaviour::Replace(r#"\r"#),
-        '\t' => EscapeBehaviour::Replace(r#"\t"#),
-        '\x08' => EscapeBehaviour::Replace(r#"\b"#),
-        '\x0c' => EscapeBehaviour::Replace(r#"\f"#),
-        '"' => EscapeBehaviour::Replace(r#"\""#),
-        _ if should_escape_unicode_char(char) => EscapeBehaviour::UnicodeEscape,
-        _ => EscapeBehaviour::None,
+impl CustomCharEscaper for ManifestCustomCharEscaper {
+    fn resolve_escape_behaviour(c: char) -> EscapeBehaviour {
+        match c {
+            '\\' => EscapeBehaviour::Replace(r#"\\"#),
+            '\n' => EscapeBehaviour::Replace(r#"\n"#),
+            '\r' => EscapeBehaviour::Replace(r#"\r"#),
+            '\t' => EscapeBehaviour::Replace(r#"\t"#),
+            '\x08' => EscapeBehaviour::Replace(r#"\b"#),
+            '\x0c' => EscapeBehaviour::Replace(r#"\f"#),
+            '"' => EscapeBehaviour::Replace(r#"\""#),
+            _ if should_escape_unicode_char(c) => EscapeBehaviour::UnicodeEscape,
+            _ => EscapeBehaviour::None,
+        }
+    }
+
+    fn format_unicode_escaped_char(f: &mut impl fmt::Write, c: char) -> fmt::Result {
+        radix_rust::unicode::format_json_utf16_escaped_char(f, c)
     }
 }
 
-pub fn should_escape_unicode_char(char: char) -> bool {
+fn should_escape_unicode_char(c: char) -> bool {
     // Per the JSON spec, we need to encode as least control characters.
     //
     // Some JSON encoders default to encoding everything that is non-ASCII.
@@ -552,7 +556,7 @@ pub fn should_escape_unicode_char(char: char) -> bool {
     //
     // If we try to be minimal, and just encode control characters
     // (e.g. given by `char.is_control()`), this only covers the
-    // `Cc` category  which misses things like the RTL override which
+    // `Cc` category which misses things like the RTL override which
     // is in the `Cf` category. Such characters could mess up the display
     // of manifests, so we should exclude them.
     //
@@ -564,30 +568,5 @@ pub fn should_escape_unicode_char(char: char) -> bool {
     // such as grapheme extenders, and other characters it views as
     // "non-printable". We view this as a sensible default behaviour,
     // so we follow this whne choosing to display manifest strings.
-    radix_rust::unicode::rust_1_81_should_unicode_escape_in_debug_str(char)
-}
-
-// As per the JSON spec, we escape unicode in terms of its UTF-16 encoding,
-// in one or two `\uXXXX` characters.
-fn format_escaped_utf16(f: &mut impl core::fmt::Write, c: char) -> core::fmt::Result {
-    match c.len_utf16() {
-        1 => {
-            let mut encoded = [0u16; 1];
-            c.encode_utf16(&mut encoded);
-            encode_single_utf16(f, encoded[0])?;
-        }
-        2 => {
-            let mut encoded = [0u16; 2];
-            c.encode_utf16(&mut encoded);
-            encode_single_utf16(f, encoded[0])?;
-            encode_single_utf16(f, encoded[1])?;
-        }
-        _ => unsafe { core::hint::unreachable_unchecked() },
-    }
-    Ok(())
-}
-
-// This could be optimized quite a lot, but the decompiler isn't super performance-sensitive
-fn encode_single_utf16(f: &mut impl core::fmt::Write, value: u16) -> core::fmt::Result {
-    write!(f, "\\u{}", hex::encode(value.to_be_bytes()))
+    radix_rust::unicode::rust_1_81_should_unicode_escape_in_debug_str(c)
 }

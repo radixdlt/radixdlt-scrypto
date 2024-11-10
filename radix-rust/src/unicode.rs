@@ -22,26 +22,47 @@ use crate::prelude::*;
 // to align with their Debug intepretation, and to avoid introducing a large
 // dependency which might slow down compilation or allow an attack.
 
-/// Efficiently escapes a unicode string, using the given escape behaviour
+/// Efficiently escapes a string, using the given escape behaviour
 /// and escape formatting.
-///
-/// For efficiency, all ASCII characters in the range `0x20 <= b <= 0x7E`
-/// except `"` and `\` are considered as not-needing escaping, and the
-/// `escape_behaviour` function is not called for them.
-pub fn custom_string_escape(
-    input: &str,
-    resolve_escape_behaviour: impl Fn(char) -> EscapeBehaviour,
-    format_escaped_utf16: impl Fn(&mut String, char) -> fmt::Result,
-) -> String {
-    let mut buffer = String::new();
-    escape_inner(
-        &mut buffer,
-        input,
-        resolve_escape_behaviour,
-        format_escaped_utf16,
-    )
-    .expect("There should be sufficient memory for string to be written to");
-    buffer
+pub trait CustomCharEscaper: Sized {
+    /// For efficiency, all ASCII characters in the range `0x20 <= b <= 0x7E`
+    /// except `"` and `\` are considered as not-needing escaping, and the
+    /// `resolve_escape_behaviour` function is not called for them.
+    fn resolve_escape_behaviour(c: char) -> EscapeBehaviour;
+
+    fn format_unicode_escaped_char(f: &mut impl fmt::Write, c: char) -> fmt::Result;
+
+    fn format_string_start(f: &mut impl fmt::Write) -> fmt::Result {
+        f.write_str("\"")
+    }
+
+    fn format_string_end(f: &mut impl fmt::Write) -> fmt::Result {
+        f.write_str("\"")
+    }
+
+    fn escaped<'a>(input: &'a str) -> CustomEscaped<'a, Self> {
+        CustomEscaped::new(input)
+    }
+}
+
+pub struct CustomEscaped<'a, E: CustomCharEscaper> {
+    input: &'a str,
+    escaper: PhantomData<E>,
+}
+
+impl<'a, E: CustomCharEscaper> CustomEscaped<'a, E> {
+    pub fn new(input: &'a str) -> Self {
+        Self {
+            input,
+            escaper: PhantomData,
+        }
+    }
+}
+
+impl<E: CustomCharEscaper> fmt::Display for CustomEscaped<'_, E> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        format_custom_escaped::<E>(f, self.input)
+    }
 }
 
 pub enum EscapeBehaviour {
@@ -52,23 +73,22 @@ pub enum EscapeBehaviour {
 
 // SOURCE: https://github.com/rust-lang/rust/blob/1.81.0/library/core/src/fmt/mod.rs
 // INITIAL-MODIFICATION:
-// - Removed the wrapping in `"` quotes
-// - Added hooks for `resolve_escape_behaviour` and `format_escaped_utf16`
+// - Moved the wrapping quotes, and inner escaping logic to a
+//   `CustomCharEscaper` trait
 
 /// Inspired by `impl Debug for str` in std, which tries to efficiently copy
 /// ranges of safe-to-encode characters.
-fn escape_inner(
-    f: &mut String,
+pub fn format_custom_escaped<E: CustomCharEscaper>(
+    f: &mut impl fmt::Write,
     input: &str,
-    resolve_escape_behaviour: impl Fn(char) -> EscapeBehaviour,
-    format_escaped_utf16: impl Fn(&mut String, char) -> fmt::Result,
 ) -> core::fmt::Result {
-    use core::fmt::Write;
     let mut printable_range = 0..0;
 
     fn could_need_escaping(b: u8) -> bool {
         b > 0x7E || b < 0x20 || b == b'\\' || b == b'"'
     }
+
+    E::format_string_start(f)?;
 
     // the loop here first skips over runs of printable ASCII as a fast path.
     // other chars (unicode, or ASCII that needs escaping) are then handled per-`char`.
@@ -87,7 +107,7 @@ fn escape_inner(
 
         let mut chars = rest.chars();
         if let Some(c) = chars.next() {
-            match resolve_escape_behaviour(c) {
+            match E::resolve_escape_behaviour(c) {
                 EscapeBehaviour::None => {}
                 EscapeBehaviour::Replace(replacement) => {
                     f.write_str(&input[printable_range.clone()])?;
@@ -96,7 +116,7 @@ fn escape_inner(
                 }
                 EscapeBehaviour::UnicodeEscape => {
                     f.write_str(&input[printable_range.clone()])?;
-                    format_escaped_utf16(f, c)?;
+                    E::format_unicode_escaped_char(f, c)?;
                     printable_range.start = printable_range.end + c.len_utf8();
                 }
             }
@@ -106,6 +126,7 @@ fn escape_inner(
     }
 
     f.write_str(&input[printable_range])?;
+    E::format_string_end(f)?;
     Ok(())
 }
 
@@ -113,6 +134,45 @@ fn escape_inner(
 // https://github.com/rust-lang/rust/blob/1.81.0/library/core/src/char/methods.rs
 pub fn rust_1_81_should_unicode_escape_in_debug_str(char: char) -> bool {
     rust_core_1_81_grapheme_extend::lookup(char) || !rust_core_1_81_is_printable::is_printable(char)
+}
+
+/// As per the JSON spec, we escape unicode in terms of its UTF-16 encoding,
+/// in one or two `\uXXXX` characters.
+pub fn format_json_utf16_escaped_char(f: &mut impl fmt::Write, c: char) -> fmt::Result {
+    match c.len_utf16() {
+        1 => {
+            let mut encoded = [0u16; 1];
+            c.encode_utf16(&mut encoded);
+            encode_single_utf16(f, encoded[0])?;
+        }
+        2 => {
+            let mut encoded = [0u16; 2];
+            c.encode_utf16(&mut encoded);
+            encode_single_utf16(f, encoded[0])?;
+            encode_single_utf16(f, encoded[1])?;
+        }
+        // SAFETY: char::len_utf16() is guaranteed to return 1 or 2
+        _ => unsafe { core::hint::unreachable_unchecked() },
+    }
+    Ok(())
+}
+
+const LOWER_CASE_HEX_CARS: &[u8; 16] = b"0123456789abcdef";
+
+fn encode_single_utf16(f: &mut impl core::fmt::Write, value: u16) -> core::fmt::Result {
+    let [upper_byte, lower_byte] = value.to_be_bytes();
+    let output = [
+        LOWER_CASE_HEX_CARS[((upper_byte & 0xf0) >> 4) as usize],
+        LOWER_CASE_HEX_CARS[(upper_byte & 0x0f) as usize],
+        LOWER_CASE_HEX_CARS[((lower_byte & 0xf0) >> 4) as usize],
+        LOWER_CASE_HEX_CARS[(lower_byte & 0x0f) as usize],
+    ];
+    write!(
+        f,
+        "\\u{}",
+        // SAFETY: all chars are ASCII
+        unsafe { core::str::from_utf8_unchecked(&output) }
+    )
 }
 
 // SOURCE: https://github.com/rust-lang/rust/blob/1.81.0/library/core/src/unicode/printable.rs
