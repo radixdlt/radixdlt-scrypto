@@ -141,9 +141,14 @@ pub fn format_manifest_value<F: fmt::Write>(
         Value::U128 { value } => {
             write_with_indent!(f, context, indent_start, depth, "{}u128", value)?
         }
-        Value::String { value } => {
-            write_with_indent!(f, context, indent_start, depth, "\"{}\"", escape(value))?
-        }
+        Value::String { value } => write_with_indent!(
+            f,
+            context,
+            indent_start,
+            depth,
+            "\"{}\"",
+            escape_manifest_str(value)
+        )?,
         Value::Tuple { fields } => {
             if fields.len() == 2 {
                 if let (
@@ -516,20 +521,73 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
     }
 }
 
-const ESCAPE_SEQUENCES: [(&str, &str); 7] = [
-    ("\\", r#"\\"#),
-    ("\n", r#"\n"#),
-    ("\r", r#"\r"#),
-    ("\t", r#"\t"#),
-    ("\x08", r#"\b"#),
-    ("\x0c", r#"\f"#),
-    (r#"""#, r#"\""#),
-];
+fn escape_manifest_str(input: &str) -> String {
+    radix_rust::unicode::custom_string_escape(input, resolve_escape_behaviour, format_escaped_utf16)
+}
 
-fn escape(string: &str) -> String {
-    let mut string = string.to_owned();
-    for (find, replace) in ESCAPE_SEQUENCES {
-        string = string.replace(find, replace)
+// We could use some stack-based string library for efficiency,
+// but the decompiler isn't super performance-sensitive
+fn resolve_escape_behaviour(char: char) -> radix_rust::unicode::EscapeBehaviour {
+    use radix_rust::unicode::EscapeBehaviour;
+    match char {
+        '\\' => EscapeBehaviour::Replace(r#"\\"#),
+        '\n' => EscapeBehaviour::Replace(r#"\n"#),
+        '\r' => EscapeBehaviour::Replace(r#"\r"#),
+        '\t' => EscapeBehaviour::Replace(r#"\t"#),
+        '\x08' => EscapeBehaviour::Replace(r#"\b"#),
+        '\x0c' => EscapeBehaviour::Replace(r#"\f"#),
+        '"' => EscapeBehaviour::Replace(r#"\""#),
+        _ if should_escape_unicode_char(char) => EscapeBehaviour::UnicodeEscape,
+        _ => EscapeBehaviour::None,
     }
-    string
+}
+
+pub fn should_escape_unicode_char(char: char) -> bool {
+    // Per the JSON spec, we need to encode as least control characters.
+    //
+    // Some JSON encoders default to encoding everything that is non-ASCII.
+    // But this is a bit too restrictive, as it's common for people to
+    // want to use emoji or non-ASCII in metadata, and it would be nice
+    // for the manifest canonical encoding to display this.
+    //
+    // If we try to be minimal, and just encode control characters
+    // (e.g. given by `char.is_control()`), this only covers the
+    // `Cc` category  which misses things like the RTL override which
+    // is in the `Cf` category. Such characters could mess up the display
+    // of manifests, so we should exclude them.
+    //
+    // There are also other characters which may cause confusion in
+    // text, such as grapheme extenders which can be used to add arbitrary
+    // accents to characters.
+    //
+    // So when Rust formats debug strings, it also escapes characters
+    // such as grapheme extenders, and other characters it views as
+    // "non-printable". We view this as a sensible default behaviour,
+    // so we follow this whne choosing to display manifest strings.
+    radix_rust::unicode::rust_1_81_should_unicode_escape_in_debug_str(char)
+}
+
+// As per the JSON spec, we escape unicode in terms of its UTF-16 encoding,
+// in one or two `\uXXXX` characters.
+fn format_escaped_utf16(f: &mut impl core::fmt::Write, c: char) -> core::fmt::Result {
+    match c.len_utf16() {
+        1 => {
+            let mut encoded = [0u16; 1];
+            c.encode_utf16(&mut encoded);
+            encode_single_utf16(f, encoded[0])?;
+        }
+        2 => {
+            let mut encoded = [0u16; 2];
+            c.encode_utf16(&mut encoded);
+            encode_single_utf16(f, encoded[0])?;
+            encode_single_utf16(f, encoded[1])?;
+        }
+        _ => unsafe { core::hint::unreachable_unchecked() },
+    }
+    Ok(())
+}
+
+// This could be optimized quite a lot, but the decompiler isn't super performance-sensitive
+fn encode_single_utf16(f: &mut impl core::fmt::Write, value: u16) -> core::fmt::Result {
+    write!(f, "\\u{}", hex::encode(value.to_be_bytes()))
 }

@@ -1606,6 +1606,29 @@ YIELD_TO_PARENT;
         );
     }
 
+    #[test]
+    fn test_decompilation_of_unicode_characters() {
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "hello! CRLF: \r\n, backslash: \\, tab: \t, \b, \f, double quote: \", control character:\u202e, emoji: 🌍"
+;
+CALL_METHOD
+    Address("${account_address}")
+    "\t\"goodbye\"\u202c"
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test_v1(
+            "unicode_weird_encodings",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test_v1(
         name: &str,
         manifest: impl AsRef<str>,

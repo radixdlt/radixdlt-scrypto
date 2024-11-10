@@ -13,6 +13,8 @@ pub mod iterators;
 mod macros;
 pub mod rust;
 mod slice;
+#[cfg(feature = "unicode")]
+pub mod unicode;
 
 pub use contextual_display::*;
 #[cfg(feature = "serde")]
