@@ -471,18 +471,22 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
         .resolve_type_metadata(type_id)
         .and_then(|m| m.get_name());
     match value_ref {
-        TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
-        TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
-        TerminalValueRef::I16(value) => write!(f, "{}i16", value)?,
-        TerminalValueRef::I32(value) => write!(f, "{}i32", value)?,
-        TerminalValueRef::I64(value) => write!(f, "{}i64", value)?,
-        TerminalValueRef::I128(value) => write!(f, "{}i128", value)?,
-        TerminalValueRef::U8(value) => write!(f, "{}u8", value)?,
-        TerminalValueRef::U16(value) => write!(f, "{}u16", value)?,
-        TerminalValueRef::U32(value) => write!(f, "{}u32", value)?,
-        TerminalValueRef::U64(value) => write!(f, "{}u64", value)?,
-        TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
-        TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
+        TerminalValueRef::Bool(value) => write!(f, "{value}")?,
+        TerminalValueRef::I8(value) => write!(f, "{value}i8")?,
+        TerminalValueRef::I16(value) => write!(f, "{value}i16")?,
+        TerminalValueRef::I32(value) => write!(f, "{value}i32")?,
+        TerminalValueRef::I64(value) => write!(f, "{value}i64")?,
+        TerminalValueRef::I128(value) => write!(f, "{value}i128")?,
+        TerminalValueRef::U8(value) => write!(f, "{value}u8")?,
+        TerminalValueRef::U16(value) => write!(f, "{value}u16")?,
+        TerminalValueRef::U32(value) => write!(f, "{value}u32")?,
+        TerminalValueRef::U64(value) => write!(f, "{value}u64")?,
+        TerminalValueRef::U128(value) => write!(f, "{value}u128")?,
+        // Debug encode strings to use default debug rust escaping, and
+        // avoid control characters affecting the string representation.
+        // This makes the encoding tied to the Rust version; but this is
+        // OK - we don't guarantee nested string encoding is deterministic.
+        TerminalValueRef::String(value) => write!(f, "{value:?}")?,
         TerminalValueRef::Custom(ref value) => {
             match type_name {
                 Some(type_name) => {
