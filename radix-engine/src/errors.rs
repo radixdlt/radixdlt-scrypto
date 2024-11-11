@@ -35,6 +35,7 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
 use radix_transactions::model::IntentHash;
+use sbor::representations::PrintMode;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -110,7 +111,7 @@ lazy_static::lazy_static! {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 // #[derive(ScryptoSborAssertion)]
 // #[sbor_assert(fixed("FILE:rejection_reason_[NEW-VERSION-NAME]_schema.bin"), generate)]
-// #[sbor_assert(fixed("FILE:rejection_reason_[NEW-VERSION-NAME]_schema.bin"), regenerate)]
+// #[sbor_assert(fixed("FILE:rejection_reason_[UNDEPLOYED-CURRENT-VERSION-NAME]_schema.bin"), regenerate)]
 pub enum RejectionReason {
     TransactionEpochNotYetValid {
         /// `start_epoch_inclusive`
@@ -179,7 +180,15 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableReject
         let value = &self.encoded_rejection_reason;
         let formatted_optional = HISTORIC_REJECTION_REASON_SCHEMAS
             .get(self.schema_index as usize)
-            .and_then(|schema| format_debug_like_value(f, schema, value, *context));
+            .and_then(|schema| {
+                format_debug_like_value(
+                    f,
+                    schema,
+                    value,
+                    sbor::representations::PrintMode::SingleLine,
+                    *context,
+                )
+            });
         match formatted_optional {
             Some(result) => result,
             None => match scrypto_encode(&value) {
@@ -194,6 +203,7 @@ fn format_debug_like_value(
     f: &mut impl fmt::Write,
     schema: &SingleTypeSchema<ScryptoCustomSchema>,
     value: &ScryptoRawValue,
+    print_mode: PrintMode,
     custom_context: ScryptoValueDisplayContext,
 ) -> Option<fmt::Result> {
     use sbor::representations::*;
@@ -217,7 +227,7 @@ fn format_debug_like_value(
     // Then encode it...
     let display_parameters = ValueDisplayParameters::Annotated {
         display_mode: DisplayMode::RustLike(RustLikeOptions::debug_like()),
-        print_mode: PrintMode::SingleLine,
+        print_mode,
         custom_context,
         schema,
         type_id,
@@ -301,7 +311,7 @@ lazy_static::lazy_static! {
 //
 // #[derive(ScryptoSborAssertion)]
 // #[sbor_assert(fixed("FILE:runtime_error_[NEW-VERSION-NAME]_schema.bin"), generate)]
-// #[sbor_assert(fixed("FILE:runtime_error_[NEW-VERSION-NAME]_schema.bin"), regenerate)]
+// #[sbor_assert(fixed("FILE:runtime_error_[UNDEPLOYED-CURRENT-VERSION-NAME]_schema.bin"), regenerate)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -381,7 +391,9 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableRuntim
         let value = &self.encoded_error;
         let formatted_optional = HISTORIC_RUNTIME_ERROR_SCHEMAS
             .get(self.schema_index as usize)
-            .and_then(|schema| format_debug_like_value(f, schema, value, *context));
+            .and_then(|schema| {
+                format_debug_like_value(f, schema, value, PrintMode::SingleLine, *context)
+            });
         match formatted_optional {
             Some(result) => result,
             None => match scrypto_encode(&value) {
@@ -967,6 +979,12 @@ mod tests {
     }
 
     #[test]
+    fn the_current_runtime_error_schema_has_no_raw_node_ids() {
+        let current = generate_single_type_schema::<RuntimeError, ScryptoCustomSchema>();
+        assert_no_raw_node_ids(&current);
+    }
+
+    #[test]
     fn the_current_rejection_reason_schema_is_last_on_historic_list() {
         let latest = HISTORIC_REJECTION_REASON_SCHEMAS.last().unwrap();
         let current = generate_single_type_schema::<RejectionReason, ScryptoCustomSchema>();
@@ -978,6 +996,47 @@ mod tests {
             &current,
         )
         .assert_valid("latest", "current");
+    }
+
+    #[test]
+    fn the_current_rejection_reason_schema_has_no_raw_node_ids() {
+        let current = generate_single_type_schema::<RejectionReason, ScryptoCustomSchema>();
+        assert_no_raw_node_ids(&current);
+    }
+
+    fn assert_no_raw_node_ids(schema: &SingleTypeSchema<ScryptoCustomSchema>) {
+        let schema = schema.schema.as_unique_version();
+        for (type_kind, type_metadata) in schema.type_kinds.iter().zip(schema.type_metadata.iter())
+        {
+            if type_metadata.type_name.as_deref() == Some("NodeId") {
+                match type_kind {
+                    TypeKind::Custom(ScryptoCustomTypeKind::Own)
+                    | TypeKind::Custom(ScryptoCustomTypeKind::Reference) => {}
+                    _ => {
+                        let mut formatted_schema = String::new();
+                        format_debug_like_value(
+                            &mut formatted_schema,
+                            &generate_single_type_schema::<
+                                SchemaV1<ScryptoCustomSchema>,
+                                ScryptoCustomSchema,
+                            >(),
+                            &scrypto_decode(&scrypto_encode(schema).unwrap()).unwrap(),
+                            PrintMode::MultiLine {
+                                indent_size: 4,
+                                base_indent: 4,
+                                first_line_indent: 4,
+                            },
+                            ScryptoValueDisplayContext::default(),
+                        );
+                        // If this is too much for the console, use:
+                        // cargo test --package radix-engine --lib -- errors::tests::the_current_rejection_reason_schema_has_no_raw_node_ids --exact --show-output > output.txt
+                        // And then check for some of the type definitions of the type names preceeding the last mention of "NodeId"
+                        // One of these types will directly mention `NodeId` instead of `error_models::ReferencedNodeId` or `error_models::OwnedNodeId`.
+                        panic!("A raw NodeId was detected somewhere in the error schema. Use `error_models::ReferencedNodeId` or `error_models::OwnedNodeId` instead.\n\nSchema:\n{}", formatted_schema);
+                    }
+                }
+            }
+        }
     }
 
     #[test]
