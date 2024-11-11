@@ -284,10 +284,11 @@ impl<X: LabelledResolvable> LabelledResolvable for Vec<X> {
     type ResolverOutput = X;
 }
 
-impl<'a, T: IntoIterator, X: LabelledResolvable<ResolverOutput = X>> LabelledResolveFrom<T>
-    for Vec<X>
+impl<T, X> LabelledResolveFrom<T> for Vec<X>
 where
+    T: IntoIterator,
     T::Item: LabelledResolve<X>,
+    X: LabelledResolvable<ResolverOutput = X>,
 {
     fn labelled_resolve_from(value: T, resolver: &impl LabelResolver<X>) -> Vec<X> {
         value
@@ -301,13 +302,11 @@ impl<X: LabelledResolvable> LabelledResolvable for IndexSet<X> {
     type ResolverOutput = X;
 }
 
-impl<
-        'a,
-        T: IntoIterator,
-        X: LabelledResolvable<ResolverOutput = X> + core::hash::Hash + core::cmp::Eq,
-    > LabelledResolveFrom<T> for IndexSet<X>
+impl<T, X> LabelledResolveFrom<T> for IndexSet<X>
 where
+    T: IntoIterator,
     T::Item: LabelledResolve<X>,
+    X: LabelledResolvable<ResolverOutput = X> + core::hash::Hash + core::cmp::Eq,
 {
     fn labelled_resolve_from(value: T, resolver: &impl LabelResolver<X>) -> IndexSet<X> {
         value
