@@ -47,6 +47,8 @@ impl ChildSubintentSpecifier {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct ManifestNamedIntent(pub u32);
 
+labelled_resolvable_with_identity_impl!(ManifestNamedIntent, resolver_output: Self);
+
 /// This exists as an unideal serialization target for [`ManifestNamedIntent`],
 /// due to our inability to add a new ManifestCustomValue for the Cuttlefish update.
 /// Instead, we just serialize it directly as a `u32` in the `YIELD_TO_CHILD` instruction.
@@ -65,6 +67,10 @@ impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
         Self(value.0)
     }
 }
+
+//========
+// prepared
+//========
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedChildSubintentSpecifiersV2V2 {

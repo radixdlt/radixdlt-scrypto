@@ -576,10 +576,10 @@ fn test_pass_static_global_addresses() {
             "ManifestGlobalAddresses",
             "accept_global_addresses",
             manifest_args!(
-                DynamicGlobalAddress::Static(FAUCET_COMPONENT.into()),
-                DynamicPackageAddress::Static(RESOURCE_PACKAGE),
-                DynamicComponentAddress::Static(CONSENSUS_MANAGER),
-                DynamicResourceAddress::Static(XRD)
+                ManifestGlobalAddress::Static(FAUCET_COMPONENT.into()),
+                ManifestPackageAddress::Static(RESOURCE_PACKAGE),
+                ManifestComponentAddress::Static(CONSENSUS_MANAGER),
+                ManifestResourceAddress::Static(XRD)
             ),
         )
         .build();

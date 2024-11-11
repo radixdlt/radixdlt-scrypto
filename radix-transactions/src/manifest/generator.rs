@@ -1314,13 +1314,13 @@ fn generate_dynamic_global_address(
     value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
-) -> Result<DynamicGlobalAddress, GeneratorError> {
+) -> Result<ManifestGlobalAddress, GeneratorError> {
     match &value.value {
         ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
-                        return Ok(DynamicGlobalAddress::Static(address));
+                        return Ok(ManifestGlobalAddress::Static(address));
                     }
                 }
                 return Err(GeneratorError {
@@ -1332,7 +1332,7 @@ fn generate_dynamic_global_address(
         },
         ast::Value::NamedAddress(inner) => {
             match &inner.value {
-                ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(ManifestNamedAddress(*n))),
+                ast::Value::U32(n) => Ok(ManifestGlobalAddress::Named(ManifestNamedAddress(*n))),
                 ast::Value::String(s) => resolver
                     .resolve_named_address(&s)
                     .map(Into::into)
@@ -1379,13 +1379,13 @@ fn generate_dynamic_package_address(
     value: &ast::ValueWithSpan,
     address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
-) -> Result<DynamicPackageAddress, GeneratorError> {
+) -> Result<ManifestPackageAddress, GeneratorError> {
     match &value.value {
         ast::Value::Address(inner) => match &inner.value {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
-                        return Ok(DynamicPackageAddress::Static(address));
+                        return Ok(ManifestPackageAddress::Static(address));
                     }
                 }
                 return Err(GeneratorError {
@@ -1397,7 +1397,7 @@ fn generate_dynamic_package_address(
         },
         ast::Value::NamedAddress(inner) => {
             match &inner.value {
-                ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(ManifestNamedAddress(*n))),
+                ast::Value::U32(n) => Ok(ManifestPackageAddress::Named(ManifestNamedAddress(*n))),
                 ast::Value::String(s) => resolver
                     .resolve_named_address(&s)
                     .map(Into::into)

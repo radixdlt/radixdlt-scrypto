@@ -890,7 +890,7 @@ impl ManifestInstruction for DropAllProofs {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CallFunction {
-    pub package_address: DynamicPackageAddress,
+    pub package_address: ManifestPackageAddress,
     pub blueprint_name: String,
     pub function_name: String,
     pub args: ManifestValue,
@@ -898,7 +898,7 @@ pub struct CallFunction {
 
 impl CallFunction {
     fn decompile_header(&self) -> DecompiledInstruction {
-        if let DynamicPackageAddress::Static(package_address) = &self.package_address {
+        if let ManifestPackageAddress::Static(package_address) = &self.package_address {
             match (
                 package_address,
                 self.blueprint_name.as_str(),
@@ -997,14 +997,14 @@ impl ManifestInstruction for CallFunction {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CallMethod {
-    pub address: DynamicGlobalAddress,
+    pub address: ManifestGlobalAddress,
     pub method_name: String,
     pub args: ManifestValue,
 }
 
 impl CallMethod {
     fn decompile_header(&self) -> DecompiledInstruction {
-        if let DynamicGlobalAddress::Static(global_address) = &self.address {
+        if let ManifestGlobalAddress::Static(global_address) = &self.address {
             match (global_address.as_node_id(), self.method_name.as_str()) {
                 (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_global_package() => {
                     return DecompiledInstruction::new("CLAIM_PACKAGE_ROYALTIES")
@@ -1068,7 +1068,7 @@ impl ManifestInstruction for CallMethod {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CallRoyaltyMethod {
-    pub address: DynamicGlobalAddress,
+    pub address: ManifestGlobalAddress,
     pub method_name: String,
     pub args: ManifestValue,
 }
@@ -1122,7 +1122,7 @@ impl ManifestInstruction for CallRoyaltyMethod {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CallMetadataMethod {
-    pub address: DynamicGlobalAddress,
+    pub address: ManifestGlobalAddress,
     pub method_name: String,
     pub args: ManifestValue,
 }
@@ -1173,7 +1173,7 @@ impl ManifestInstruction for CallMetadataMethod {
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct CallRoleAssignmentMethod {
-    pub address: DynamicGlobalAddress,
+    pub address: ManifestGlobalAddress,
     pub method_name: String,
     pub args: ManifestValue,
 }

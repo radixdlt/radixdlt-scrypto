@@ -61,7 +61,7 @@ define_invocation! {
     },
     output: type (),
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
+        claimant: ManifestComponentAddress,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -77,7 +77,7 @@ define_invocation! {
     },
     output: type Option<Bucket>,
     manifest_input: struct {
-        claimants: IndexMap<DynamicComponentAddress, ResourceSpecifier>,
+        claimants: IndexMap<ManifestComponentAddress, ResourceSpecifier>,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -97,8 +97,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
-        resource_address: DynamicResourceAddress,
+        claimant: ManifestComponentAddress,
+        resource_address: ManifestResourceAddress,
         amount: Decimal
     }
 }
@@ -113,8 +113,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
-        resource_address: DynamicResourceAddress,
+        claimant: ManifestComponentAddress,
+        resource_address: ManifestResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
 }
@@ -133,8 +133,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
-        resource_address: DynamicResourceAddress,
+        claimant: ManifestComponentAddress,
+        resource_address: ManifestResourceAddress,
         amount: Decimal
     }
 }
@@ -149,8 +149,8 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
-        resource_address: DynamicResourceAddress,
+        claimant: ManifestComponentAddress,
+        resource_address: ManifestResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
 }
@@ -183,8 +183,8 @@ define_invocation! {
     },
     output: type IndexSet<NonFungibleLocalId>,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
-        resource_address: DynamicResourceAddress,
+        claimant: ManifestComponentAddress,
+        resource_address: ManifestResourceAddress,
         limit: u32
     }
 }

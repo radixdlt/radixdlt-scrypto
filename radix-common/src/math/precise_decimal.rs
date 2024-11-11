@@ -1,17 +1,10 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::cmp::Ordering;
+use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
-use sbor::rust::convert::{TryFrom, TryInto};
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::ops::*;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
@@ -359,6 +352,8 @@ macro_rules! to_primitive_type {
 }
 from_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 to_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+
+resolvable_with_try_into_impls!(PreciseDecimal);
 
 // from_str() should be enough, but we want to have try_from() to simplify pdec! macro
 impl TryFrom<&str> for PreciseDecimal {
@@ -982,7 +977,6 @@ try_from_integer!(U192, U256, U320, U384, U448, U512);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::*;
     use crate::math::precise_decimal::RoundingMode;
     use paste::paste;
 

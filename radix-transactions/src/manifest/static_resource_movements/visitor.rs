@@ -160,10 +160,10 @@ impl StaticResourceMovementsVisitor {
                 method,
             } => {
                 let resolved_dynamic_address = match address {
-                    DynamicGlobalAddress::Static(global_address) => {
+                    ManifestGlobalAddress::Static(global_address) => {
                         ResolvedDynamicAddress::StaticAddress(*global_address)
                     }
-                    DynamicGlobalAddress::Named(named_address) => {
+                    ManifestGlobalAddress::Named(named_address) => {
                         let blueprint_id = self.tracked_named_addresses.get(named_address)
                             .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
                         ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
@@ -185,7 +185,7 @@ impl StaticResourceMovementsVisitor {
                 Ok(Some((typed_invocation, invocation_receiver)))
             }
             InvocationKind::Function {
-                address: DynamicPackageAddress::Static(package_address),
+                address: ManifestPackageAddress::Static(package_address),
                 blueprint,
                 function,
             } => {
@@ -205,7 +205,7 @@ impl StaticResourceMovementsVisitor {
             InvocationKind::YieldToParent
             | InvocationKind::YieldToChild { .. }
             | InvocationKind::Function {
-                address: DynamicPackageAddress::Named(_),
+                address: ManifestPackageAddress::Named(_),
                 ..
             } => Ok(None),
         }

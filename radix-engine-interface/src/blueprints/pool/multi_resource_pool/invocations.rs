@@ -22,7 +22,7 @@ define_invocation! {
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
-        resource_addresses: IndexSet<DynamicResourceAddress>,
+        resource_addresses: IndexSet<ManifestResourceAddress>,
         address_reservation: Option<ManifestAddressReservation>
     }
 }
@@ -35,7 +35,7 @@ define_invocation! {
     },
     output: type (Bucket, Vec<Bucket>),
     manifest_input: struct {
-        buckets: BucketBatch
+        buckets: ManifestBucketBatch
     }
 }
 
@@ -73,7 +73,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        resource_address: DynamicResourceAddress,
+        resource_address: ManifestResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy
     }

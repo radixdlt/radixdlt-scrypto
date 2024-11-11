@@ -45,13 +45,6 @@ pub struct ManifestNamedAddress(pub u32);
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_STATIC: u8 = 0u8;
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_NAMED: u8 = 1u8;
 
-/// This is for use with the `ResolvableXAddress` traits, and is allowed to panic if the
-/// parameters aren't valid.
-pub trait NamedAddressResolver {
-    fn assert_named_address_exists(&self, named_address: ManifestNamedAddress);
-    fn resolve_named_address(&self, address_name: &str) -> ManifestNamedAddress;
-}
-
 //========
 // binary
 //========

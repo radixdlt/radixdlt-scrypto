@@ -37,7 +37,7 @@ fn validate_instruction_call_arguments_to_native_components(
         ManifestInstructionEffect::Invocation {
             kind:
                 InvocationKind::Function {
-                    address: DynamicPackageAddress::Static(address),
+                    address: ManifestPackageAddress::Static(address),
                     blueprint,
                     function,
                 },
@@ -49,7 +49,7 @@ fn validate_instruction_call_arguments_to_native_components(
         ManifestInstructionEffect::Invocation {
             kind:
                 InvocationKind::Method {
-                    address: DynamicGlobalAddress::Static(address),
+                    address: ManifestGlobalAddress::Static(address),
                     module_id,
                     method,
                 },

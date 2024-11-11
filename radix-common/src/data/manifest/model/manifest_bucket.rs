@@ -1,10 +1,6 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::data::manifest::*;
 use crate::*;
@@ -13,6 +9,8 @@ use crate::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct ManifestBucket(pub u32);
+
+labelled_resolvable_with_identity_impl!(ManifestBucket, resolver_output: Self);
 
 //========
 // error
@@ -61,7 +59,6 @@ scrypto_describe_for_manifest_type!(ManifestBucket, OWN_BUCKET_TYPE, own_bucket_
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_bucket_parse_fail() {

@@ -143,7 +143,7 @@ pub struct AccountDepositBatchInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountDepositBatchManifestInput {
-    pub buckets: BucketBatch,
+    pub buckets: ManifestBucketBatch,
 }
 
 pub type AccountDepositBatchOutput = ();
@@ -162,7 +162,7 @@ pub struct AccountWithdrawInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountWithdrawManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
 }
 
@@ -182,7 +182,7 @@ pub struct AccountWithdrawNonFungiblesInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountWithdrawNonFungiblesManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
@@ -204,7 +204,7 @@ pub struct AccountLockFeeAndWithdrawInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountLockFeeAndWithdrawManifestInput {
     pub amount_to_lock: Decimal,
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
 }
 
@@ -227,7 +227,7 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesManifestInput {
     pub amount_to_lock: Decimal,
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
@@ -247,7 +247,7 @@ pub struct AccountCreateProofOfAmountInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountCreateProofOfAmountManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
 }
 
@@ -267,7 +267,7 @@ pub struct AccountCreateProofOfNonFungiblesInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountCreateProofOfNonFungiblesManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
@@ -302,7 +302,7 @@ pub struct AccountSetResourcePreferenceInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountSetResourcePreferenceManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub resource_preference: ResourcePreference,
 }
 
@@ -321,7 +321,7 @@ pub struct AccountRemoveResourcePreferenceInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountRemoveResourcePreferenceManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
 }
 
 pub type AccountRemoveResourcePreferenceOutput = ();
@@ -360,7 +360,7 @@ pub struct AccountTryDepositBatchOrRefundInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrRefundManifestInput {
-    pub buckets: BucketBatch,
+    pub buckets: ManifestBucketBatch,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
@@ -400,7 +400,7 @@ pub struct AccountTryDepositBatchOrAbortInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountTryDepositBatchOrAbortManifestInput {
-    pub buckets: BucketBatch,
+    pub buckets: ManifestBucketBatch,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
 }
 
@@ -420,7 +420,7 @@ pub struct AccountBurnInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountBurnManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
 }
 
@@ -440,7 +440,7 @@ pub struct AccountBurnNonFungiblesInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountBurnNonFungiblesManifestInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
@@ -495,7 +495,7 @@ pub struct AccountBalanceInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct AccountBalanceDynamicInput {
-    pub resource_address: DynamicResourceAddress,
+    pub resource_address: ManifestResourceAddress,
 }
 
 pub type AccountBalanceOutput = Decimal;

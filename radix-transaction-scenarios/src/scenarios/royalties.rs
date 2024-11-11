@@ -53,7 +53,7 @@ impl ScenarioCreator for RoyaltiesScenarioCreator {
                                 .with_name_lookup(|builder, namer| {
                                     let package_address = namer.named_address("package_address");
                                     builder.publish_package_advanced(
-                                        Some("package_address_reservation".to_owned()),
+                                        "package_address_reservation",
                                         code.to_vec(),
                                         schema,
                                         MetadataInit::default(),

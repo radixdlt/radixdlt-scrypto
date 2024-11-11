@@ -92,13 +92,13 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                         },
                                     )
                                 })
-                                .then(|builder| {
-                                    let named_address = builder.named_address("address");
-                                    let badge = ManifestValue::Enum { discriminator: 1, fields: vec![ManifestValue::Custom { value: ManifestCustomValue::Address(named_address) }] };
+                                .with_name_lookup(|builder, lookup| {
                                     builder.call_method(
                                         destination_account.address,
                                         ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                                        (badge,),
+                                        AccountAddAuthorizedDepositorManifestInput {
+                                            badge: ManifestResourceOrNonFungible::Resource(lookup.named_address("address").into()),
+                                        },
                                     )
                                 })
                                 .deposit_entire_worktop(source_account.address)

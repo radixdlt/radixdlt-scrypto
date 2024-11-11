@@ -110,7 +110,7 @@ impl ScenarioInstance for MetadataScenario {
                             )
                             .get_free_xrd_from_faucet()
                             .publish_package_advanced(
-                                Some("metadata_package_address_reservation".to_string()),
+                                "metadata_package_address_reservation",
                                 code.to_vec(),
                                 schema,
                                 create_metadata(),

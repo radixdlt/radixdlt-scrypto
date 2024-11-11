@@ -39,19 +39,49 @@ TAKE_FROM_WORKTOP
 ```
 */
 
+macro_rules! labelled_resolvable_address {
+    ($ty:ty$(,)?) => {
+        resolvable_with_try_into_impls!($ty);
+        labelled_resolvable_using_resolvable_impl!($ty, resolver_output: ManifestNamedAddress);
+
+        impl<'a> LabelledResolveFrom<&'a str> for $ty {
+            fn labelled_resolve_from(value: &'a str, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value).into()
+            }
+        }
+
+        impl<'a> LabelledResolveFrom<&'a String> for $ty {
+            fn labelled_resolve_from(value: &'a String, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value.as_str()).into()
+            }
+        }
+
+        impl<'a> LabelledResolveFrom<String> for $ty {
+            fn labelled_resolve_from(value: String, resolver: &impl LabelResolver<ManifestNamedAddress>) -> Self {
+                resolver.resolve_label_into(value.as_str()).into()
+            }
+        }
+    };
+}
+
+// Alias for backwards-compatibility
+pub type DynamicGlobalAddress = ManifestGlobalAddress;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum DynamicGlobalAddress {
+pub enum ManifestGlobalAddress {
     Static(GlobalAddress),
     Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
-    DynamicGlobalAddress,
+    ManifestGlobalAddress,
     GLOBAL_ADDRESS_TYPE,
     global_address_type_data,
 );
 
-impl Categorize<ManifestCustomValueKind> for DynamicGlobalAddress {
+labelled_resolvable_address!(ManifestGlobalAddress);
+
+impl Categorize<ManifestCustomValueKind> for ManifestGlobalAddress {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
         ValueKind::Custom(ManifestCustomValueKind::Address)
@@ -59,7 +89,7 @@ impl Categorize<ManifestCustomValueKind> for DynamicGlobalAddress {
 }
 
 impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
-    for DynamicGlobalAddress
+    for ManifestGlobalAddress
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -83,7 +113,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
 }
 
 impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
-    for DynamicGlobalAddress
+    for ManifestGlobalAddress
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -107,7 +137,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     }
 }
 
-impl DynamicGlobalAddress {
+impl ManifestGlobalAddress {
     /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
     /// instead of `Enum<0u8>(Address("static_address"))`.
     pub fn to_instruction_argument(&self) -> ManifestValue {
@@ -146,64 +176,64 @@ impl DynamicGlobalAddress {
     }
 }
 
-impl From<GlobalAddress> for DynamicGlobalAddress {
+impl From<GlobalAddress> for ManifestGlobalAddress {
     fn from(value: GlobalAddress) -> Self {
         Self::Static(value)
     }
 }
 
-impl From<PackageAddress> for DynamicGlobalAddress {
+impl From<PackageAddress> for ManifestGlobalAddress {
     fn from(value: PackageAddress) -> Self {
         Self::Static(value.into())
     }
 }
 
-impl From<DynamicPackageAddress> for DynamicGlobalAddress {
-    fn from(value: DynamicPackageAddress) -> Self {
+impl From<ManifestPackageAddress> for ManifestGlobalAddress {
+    fn from(value: ManifestPackageAddress) -> Self {
         match value {
-            DynamicPackageAddress::Static(value) => Self::Static(value.into()),
-            DynamicPackageAddress::Named(value) => Self::Named(value),
+            ManifestPackageAddress::Static(value) => Self::Static(value.into()),
+            ManifestPackageAddress::Named(value) => Self::Named(value),
         }
     }
 }
 
-impl From<ResourceAddress> for DynamicGlobalAddress {
+impl From<ResourceAddress> for ManifestGlobalAddress {
     fn from(value: ResourceAddress) -> Self {
         Self::Static(value.into())
     }
 }
 
-impl From<DynamicResourceAddress> for DynamicGlobalAddress {
-    fn from(value: DynamicResourceAddress) -> Self {
+impl From<ManifestResourceAddress> for ManifestGlobalAddress {
+    fn from(value: ManifestResourceAddress) -> Self {
         match value {
-            DynamicResourceAddress::Static(value) => Self::Static(value.into()),
-            DynamicResourceAddress::Named(value) => Self::Named(value),
+            ManifestResourceAddress::Static(value) => Self::Static(value.into()),
+            ManifestResourceAddress::Named(value) => Self::Named(value),
         }
     }
 }
 
-impl From<ComponentAddress> for DynamicGlobalAddress {
+impl From<ComponentAddress> for ManifestGlobalAddress {
     fn from(value: ComponentAddress) -> Self {
         Self::Static(value.into())
     }
 }
 
-impl From<DynamicComponentAddress> for DynamicGlobalAddress {
-    fn from(value: DynamicComponentAddress) -> Self {
+impl From<ManifestComponentAddress> for ManifestGlobalAddress {
+    fn from(value: ManifestComponentAddress) -> Self {
         match value {
-            DynamicComponentAddress::Static(value) => Self::Static(value.into()),
-            DynamicComponentAddress::Named(value) => Self::Named(value),
+            ManifestComponentAddress::Static(value) => Self::Static(value.into()),
+            ManifestComponentAddress::Named(value) => Self::Named(value),
         }
     }
 }
 
-impl From<ManifestNamedAddress> for DynamicGlobalAddress {
+impl From<ManifestNamedAddress> for ManifestGlobalAddress {
     fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
 
-impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
+impl TryFrom<ManifestAddress> for ManifestGlobalAddress {
     type Error = ParseGlobalAddressError;
 
     fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
@@ -214,57 +244,24 @@ impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
     }
 }
 
-pub trait ResolvableGlobalAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress;
-}
-
-impl<A, E> ResolvableGlobalAddress for A
-where
-    A: TryInto<DynamicGlobalAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid DynamicGlobalAddress");
-        if let DynamicGlobalAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableGlobalAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableGlobalAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicGlobalAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
+// Alias for backwards-compatibility
+pub type DynamicPackageAddress = ManifestPackageAddress;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum DynamicPackageAddress {
+pub enum ManifestPackageAddress {
     Static(PackageAddress),
     Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
-    DynamicPackageAddress,
+    ManifestPackageAddress,
     PACKAGE_ADDRESS_TYPE,
     package_address_type_data,
 );
 
-impl Categorize<ManifestCustomValueKind> for DynamicPackageAddress {
+labelled_resolvable_address!(ManifestPackageAddress);
+
+impl Categorize<ManifestCustomValueKind> for ManifestPackageAddress {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
         ValueKind::Custom(ManifestCustomValueKind::Address)
@@ -272,7 +269,7 @@ impl Categorize<ManifestCustomValueKind> for DynamicPackageAddress {
 }
 
 impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
-    for DynamicPackageAddress
+    for ManifestPackageAddress
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -296,7 +293,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
 }
 
 impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
-    for DynamicPackageAddress
+    for ManifestPackageAddress
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -320,7 +317,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     }
 }
 
-impl DynamicPackageAddress {
+impl ManifestPackageAddress {
     /// This is to support either `Address("static_address")` or `NamedAddress("abc")` in manifest instruction,
     /// instead of `Enum<0u8>(Address("static_address"))`.
     pub fn to_instruction_argument(&self) -> ManifestValue {
@@ -344,19 +341,19 @@ impl DynamicPackageAddress {
     }
 }
 
-impl From<PackageAddress> for DynamicPackageAddress {
+impl From<PackageAddress> for ManifestPackageAddress {
     fn from(value: PackageAddress) -> Self {
         Self::Static(value.into())
     }
 }
 
-impl From<ManifestNamedAddress> for DynamicPackageAddress {
+impl From<ManifestNamedAddress> for ManifestPackageAddress {
     fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
 
-impl TryFrom<GlobalAddress> for DynamicPackageAddress {
+impl TryFrom<GlobalAddress> for ManifestPackageAddress {
     type Error = ParsePackageAddressError;
 
     fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
@@ -366,7 +363,7 @@ impl TryFrom<GlobalAddress> for DynamicPackageAddress {
     }
 }
 
-impl TryFrom<ManifestAddress> for DynamicPackageAddress {
+impl TryFrom<ManifestAddress> for ManifestPackageAddress {
     type Error = ParsePackageAddressError;
 
     fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
@@ -377,68 +374,51 @@ impl TryFrom<ManifestAddress> for DynamicPackageAddress {
     }
 }
 
-pub trait ResolvablePackageAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress;
+/// This trait resolves a static resource address for manifest instructions which
+/// (as of Cuttlefish) only support a fixed address.
+///
+/// We hope to remove this restriction and enable these instructions to take a
+/// dynamic package address at a protocol update soon.
+pub trait ResolvableStaticManifestPackageAddress: Sized {
+    fn resolve_static(self) -> PackageAddress;
+}
 
-    /// Note - this can be removed when all the static package addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, resolver: &impl NamedAddressResolver) -> PackageAddress {
-        match self.resolve(resolver) {
-            DynamicPackageAddress::Static(address) => address,
-            DynamicPackageAddress::Named(_) => {
+impl<A, E> ResolvableStaticManifestPackageAddress for A
+where
+    A: TryInto<ManifestPackageAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve_static(self) -> PackageAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid ManifestPackageAddress");
+        match address {
+            ManifestPackageAddress::Static(address) => address,
+            ManifestPackageAddress::Named(_) => {
                 panic!("This address needs to be a static/fixed address")
             }
         }
     }
 }
 
-impl<A, E> ResolvablePackageAddress for A
-where
-    A: TryInto<DynamicPackageAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid DynamicPackageAddress");
-        if let DynamicPackageAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvablePackageAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvablePackageAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvablePackageAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicPackageAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
+// Alias for backwards-compatibility
+pub type DynamicComponentAddress = ManifestComponentAddress;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum DynamicComponentAddress {
+pub enum ManifestComponentAddress {
     Static(ComponentAddress),
     Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
-    DynamicComponentAddress,
+    ManifestComponentAddress,
     COMPONENT_ADDRESS_TYPE,
     component_address_type_data,
 );
 
-impl Categorize<ManifestCustomValueKind> for DynamicComponentAddress {
+labelled_resolvable_address!(ManifestComponentAddress);
+
+impl Categorize<ManifestCustomValueKind> for ManifestComponentAddress {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
         ValueKind::Custom(ManifestCustomValueKind::Address)
@@ -446,7 +426,7 @@ impl Categorize<ManifestCustomValueKind> for DynamicComponentAddress {
 }
 
 impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
-    for DynamicComponentAddress
+    for ManifestComponentAddress
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -470,7 +450,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
 }
 
 impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
-    for DynamicComponentAddress
+    for ManifestComponentAddress
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -495,19 +475,19 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     }
 }
 
-impl From<ComponentAddress> for DynamicComponentAddress {
+impl From<ComponentAddress> for ManifestComponentAddress {
     fn from(value: ComponentAddress) -> Self {
         Self::Static(value)
     }
 }
 
-impl From<ManifestNamedAddress> for DynamicComponentAddress {
+impl From<ManifestNamedAddress> for ManifestComponentAddress {
     fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
 
-impl TryFrom<GlobalAddress> for DynamicComponentAddress {
+impl TryFrom<GlobalAddress> for ManifestComponentAddress {
     type Error = ParseComponentAddressError;
 
     fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
@@ -517,7 +497,7 @@ impl TryFrom<GlobalAddress> for DynamicComponentAddress {
     }
 }
 
-impl TryFrom<ManifestAddress> for DynamicComponentAddress {
+impl TryFrom<ManifestAddress> for ManifestComponentAddress {
     type Error = ParseComponentAddressError;
 
     fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
@@ -528,57 +508,24 @@ impl TryFrom<ManifestAddress> for DynamicComponentAddress {
     }
 }
 
-pub trait ResolvableComponentAddress {
-    fn resolve(self, registrar: &impl NamedAddressResolver) -> DynamicComponentAddress;
-}
-
-impl<A, E> ResolvableComponentAddress for A
-where
-    A: TryInto<DynamicComponentAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid DynamicComponentAddress");
-        if let DynamicComponentAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableComponentAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableComponentAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableComponentAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicComponentAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
+// Alias for backwards compatibility
+pub type DynamicResourceAddress = ManifestResourceAddress;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum DynamicResourceAddress {
+pub enum ManifestResourceAddress {
     Static(ResourceAddress),
     Named(ManifestNamedAddress),
 }
 
 scrypto_describe_for_manifest_type!(
-    DynamicResourceAddress,
+    ManifestResourceAddress,
     RESOURCE_ADDRESS_TYPE,
     resource_address_type_data,
 );
 
-impl Categorize<ManifestCustomValueKind> for DynamicResourceAddress {
+labelled_resolvable_address!(ManifestResourceAddress);
+
+impl Categorize<ManifestCustomValueKind> for ManifestResourceAddress {
     #[inline]
     fn value_kind() -> ValueKind<ManifestCustomValueKind> {
         ValueKind::Custom(ManifestCustomValueKind::Address)
@@ -586,7 +533,7 @@ impl Categorize<ManifestCustomValueKind> for DynamicResourceAddress {
 }
 
 impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
-    for DynamicResourceAddress
+    for ManifestResourceAddress
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -610,7 +557,7 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
 }
 
 impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
-    for DynamicResourceAddress
+    for ManifestResourceAddress
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -635,19 +582,19 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
     }
 }
 
-impl From<ResourceAddress> for DynamicResourceAddress {
+impl From<ResourceAddress> for ManifestResourceAddress {
     fn from(value: ResourceAddress) -> Self {
         Self::Static(value)
     }
 }
 
-impl From<ManifestNamedAddress> for DynamicResourceAddress {
+impl From<ManifestNamedAddress> for ManifestResourceAddress {
     fn from(value: ManifestNamedAddress) -> Self {
         Self::Named(value)
     }
 }
 
-impl TryFrom<GlobalAddress> for DynamicResourceAddress {
+impl TryFrom<GlobalAddress> for ManifestResourceAddress {
     type Error = ParseResourceAddressError;
 
     fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
@@ -657,7 +604,7 @@ impl TryFrom<GlobalAddress> for DynamicResourceAddress {
     }
 }
 
-impl TryFrom<ManifestAddress> for DynamicResourceAddress {
+impl TryFrom<ManifestAddress> for ManifestResourceAddress {
     type Error = ParseResourceAddressError;
 
     fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
@@ -668,51 +615,29 @@ impl TryFrom<ManifestAddress> for DynamicResourceAddress {
     }
 }
 
-pub trait ResolvableResourceAddress: Sized {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress;
+/// This trait resolves a static resource address for manifest instructions which
+/// (as of Cuttlefish) only support a fixed address.
+///
+/// We hope to remove this restriction and enable these instructions to take a
+/// dynamic package address at a protocol update soon.
+pub trait ResolvableStaticManifestResourceAddress: Sized {
+    fn resolve_static(self) -> ResourceAddress;
+}
 
-    /// Note - this can be removed when all the static resource addresses in the
-    /// manifest instructions are gone
-    fn resolve_static(self, resolver: &impl NamedAddressResolver) -> ResourceAddress {
-        match self.resolve(resolver) {
-            DynamicResourceAddress::Static(address) => address,
-            DynamicResourceAddress::Named(_) => {
+impl<A, E> ResolvableStaticManifestResourceAddress for A
+where
+    A: TryInto<ManifestResourceAddress, Error = E>,
+    E: Debug,
+{
+    fn resolve_static(self) -> ResourceAddress {
+        let address = self
+            .try_into()
+            .expect("Address was not a valid ManifestResourceAddress");
+        match address {
+            ManifestResourceAddress::Static(address) => address,
+            ManifestResourceAddress::Named(_) => {
                 panic!("This address needs to be a static/fixed address")
             }
         }
-    }
-}
-
-impl<A, E> ResolvableResourceAddress for A
-where
-    A: TryInto<DynamicResourceAddress, Error = E>,
-    E: Debug,
-{
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
-        let address = self
-            .try_into()
-            .expect("Address was not a valid DynamicResourceAddress");
-        if let DynamicResourceAddress::Named(named_address) = address {
-            resolver.assert_named_address_exists(named_address);
-        }
-        address
-    }
-}
-
-impl<'a> ResolvableResourceAddress for &'a str {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
-        resolver.resolve_named_address(self).into()
-    }
-}
-
-impl<'a> ResolvableResourceAddress for &'a String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
-        resolver.resolve_named_address(self.as_str()).into()
-    }
-}
-
-impl ResolvableResourceAddress for String {
-    fn resolve(self, resolver: &impl NamedAddressResolver) -> DynamicResourceAddress {
-        resolver.resolve_named_address(self.as_str()).into()
     }
 }

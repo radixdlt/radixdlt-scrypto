@@ -1,10 +1,6 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::data::manifest::*;
 use crate::*;
@@ -13,6 +9,8 @@ use crate::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[must_use]
 pub struct ManifestProof(pub u32);
+
+labelled_resolvable_with_identity_impl!(ManifestProof, resolver_output: Self);
 
 //========
 // error
@@ -61,7 +59,6 @@ scrypto_describe_for_manifest_type!(ManifestProof, OWN_PROOF_TYPE, own_proof_typ
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_proof_fail() {

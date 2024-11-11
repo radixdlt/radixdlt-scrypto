@@ -179,7 +179,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 "maya_router_package"
                             )
                             .publish_package_advanced(
-                                Some("maya_router_package_reservation".to_string()),
+                                "maya_router_package_reservation",
                                 code.to_vec(),
                                 schema,
                                 metadata_init! {

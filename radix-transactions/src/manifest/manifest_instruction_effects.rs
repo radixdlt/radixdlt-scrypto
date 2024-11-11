@@ -45,12 +45,12 @@ pub enum ManifestInstructionEffect<'a> {
 #[derive(Debug, Clone, Copy)]
 pub enum InvocationKind<'a> {
     Method {
-        address: &'a DynamicGlobalAddress,
+        address: &'a ManifestGlobalAddress,
         module_id: ModuleId,
         method: &'a str,
     },
     Function {
-        address: &'a DynamicPackageAddress,
+        address: &'a ManifestPackageAddress,
         blueprint: &'a str,
         function: &'a str,
     },

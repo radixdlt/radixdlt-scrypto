@@ -389,7 +389,7 @@ impl ResourceTakeAmount {
     }
 
     pub fn exact_amount(
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let amount = amount.resolve();
         if amount.is_negative() {
@@ -435,7 +435,7 @@ impl TrackedResource {
     }
 
     pub fn exact_amount(
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
         sources: impl IntoIterator<Item = ChangeSource>,
     ) -> Result<Self, StaticResourceMovementsError> {
         Ok(Self::general(
@@ -445,7 +445,7 @@ impl TrackedResource {
     }
 
     pub fn at_least_amount(
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
         sources: impl IntoIterator<Item = ChangeSource>,
     ) -> Result<Self, StaticResourceMovementsError> {
         Ok(Self::general(
@@ -666,7 +666,7 @@ impl ResourceBounds {
     }
 
     pub fn exact_amount(
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let amount = amount.resolve();
         if amount.is_negative() {
@@ -681,7 +681,7 @@ impl ResourceBounds {
     }
 
     pub fn at_least_amount(
-        amount: impl ResolvableDecimal,
+        amount: impl Resolve<Decimal>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let amount = amount.resolve();
         if amount.is_negative() {
@@ -723,8 +723,8 @@ impl ResourceBounds {
     }
 
     pub fn general_fungible(
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let mut constraints = GeneralResourceConstraint {
             required_ids: Default::default(),
@@ -744,8 +744,8 @@ impl ResourceBounds {
 
     pub fn general_non_fungible_no_allowlist(
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let mut constraints = GeneralResourceConstraint {
             required_ids: required_ids.into_iter().collect::<IndexSet<_>>(),
@@ -765,8 +765,8 @@ impl ResourceBounds {
 
     pub fn general_non_fungible_with_allowlist(
         required_ids: impl IntoIterator<Item = NonFungibleLocalId>,
-        lower_bound: impl ResolvableLowerBound,
-        upper_bound: impl ResolvableUpperBound,
+        lower_bound: impl Resolve<LowerBound>,
+        upper_bound: impl Resolve<UpperBound>,
         id_allowlist: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Result<Self, StaticResourceMovementsError> {
         let mut constraints = GeneralResourceConstraint {
@@ -1622,7 +1622,7 @@ impl NetWithdraws {
     pub fn set_fungible(
         mut self,
         resource_address: ResourceAddress,
-        total_amount: impl ResolvableDecimal,
+        total_amount: impl Resolve<Decimal>,
     ) -> Self {
         self.resources.insert(
             resource_address,
@@ -1793,7 +1793,7 @@ impl InvocationStaticInformation {
         let InvocationStaticInformation {
             kind:
                 OwnedInvocationKind::Method {
-                    address: DynamicGlobalAddress::Static(global_address),
+                    address: ManifestGlobalAddress::Static(global_address),
                     module_id: ModuleId::Main,
                     method,
                 },
@@ -1853,12 +1853,12 @@ impl<'a> From<NextCallAssertion<'a>> for OwnedNextCallAssertion {
 #[derive(Clone, Debug)]
 pub enum OwnedInvocationKind {
     Method {
-        address: DynamicGlobalAddress,
+        address: ManifestGlobalAddress,
         module_id: ModuleId,
         method: String,
     },
     Function {
-        address: DynamicPackageAddress,
+        address: ManifestPackageAddress,
         blueprint: String,
         function: String,
     },

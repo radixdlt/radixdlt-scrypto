@@ -1,14 +1,10 @@
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::cmp::Ordering;
+use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
-use sbor::rust::convert::TryFrom;
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::ops::*;
-use sbor::rust::prelude::*;
-use sbor::*;
 #[cfg(feature = "fuzzing")]
 use serde::{Deserialize, Serialize};
 
@@ -345,6 +341,8 @@ macro_rules! to_primitive_type {
 
 from_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 to_primitive_type!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+
+resolvable_with_try_into_impls!(Decimal);
 
 // from_str() should be enough, but we want to have try_from() to simplify dec! macro
 impl TryFrom<&str> for Decimal {
@@ -943,22 +941,6 @@ macro_rules! try_from_integer {
     };
 }
 try_from_integer!(I192, I256, I320, I448, I512, U192, U256, U320, U448, U512);
-
-//========
-// Resolution
-//========
-
-/// For use in arguments for tests/builders, where you want to accept anything
-/// which can be turned into a decimal.
-pub trait ResolvableDecimal {
-    fn resolve(self) -> Decimal;
-}
-
-impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
-    fn resolve(self) -> Decimal {
-        self.try_into().expect("Decimal was not valid")
-    }
-}
 
 #[cfg(test)]
 mod tests {
