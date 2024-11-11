@@ -283,16 +283,31 @@ impl AuthModule {
             let (global_caller, parent_lock_handle) = match direct_caller {
                 Actor::Root | Actor::BlueprintHook(..) => (None, None),
                 Actor::Method(direct_caller_method_actor) => {
-                    let direct_caller_reference_origin = system
+                    let direct_caller_ancestor_visibility_origin = system
                         .kernel_get_node_visibility_uncosted(&direct_caller_method_actor.node_id)
                         .reference_origin(direct_caller_method_actor.node_id)
                         .unwrap();
                     let direct_caller_auth_zone = direct_caller_method_actor.auth_zone;
 
-                    match (direct_caller_reference_origin, is_global_context_change) {
-                        // The direct caller is global AND this call is a global context change
-                        (ReferenceOrigin::Global(direct_caller_global_address), true) => {
-                            let global_caller_address = direct_caller_global_address.into();
+                    // The `direct_caller_ancestor_visibility_origin` is rather indirect, but it is intended to
+                    // capture the concept:  "Who is the direct caller's ancestor for the purpose of auth?"
+                    //
+                    // In particular:
+                    // * If the direct caller is a global object, then it has ReferenceOrigin::Global
+                    // * If the direct caller was loaded from a substate belonging to a global object,
+                    //   then it gets a Borrowed visibility, which transforms into a ReferenceOrigin::Global.
+                    //   This also works transitively.
+                    // * If the direct caller was made visible by being passed to the call frame, (i.e. it didn't
+                    //   arise from track), then it is `ReferenceOrigin::FrameOwned`
+                    //
+                    // At some point we should refactor this to make this all much more explicit.
+                    match (
+                        direct_caller_ancestor_visibility_origin,
+                        is_global_context_change,
+                    ) {
+                        // Direct caller's ancestor is global AND this call is a global context change
+                        (ReferenceOrigin::Global(global_root_address), true) => {
+                            let global_caller_address = global_root_address.into();
                             let global_caller_leaf_auth_zone_reference =
                                 Reference(direct_caller_auth_zone);
                             (
@@ -303,16 +318,15 @@ impl AuthModule {
                                 None,
                             )
                         }
-                        // The direct caller is global AND this call is NOT a global context change
-                        // e.g. the receiver is internal
+                        // Direct caller's ancestor is global AND this call is NOT a global context change
                         (ReferenceOrigin::Global(..), false) => {
                             Self::copy_global_caller(system, &direct_caller_auth_zone)?
                         }
-                        // The direct caller is a direct access reference
+                        // Direct caller's ancestor was directly accessed
                         (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
-                        // The direct caller is a borrowed non-global reference
+                        // Direct caller's ancestor was borrowed from an internal referance in a substate
                         (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
-                        // The direct caller is a frame-owned object
+                        // Direct caller's ancestor was passed into the call frame
                         (ReferenceOrigin::FrameOwned, _) => {
                             // In the past, all frame-owned direct callers copied their global caller to their callee.
                             // This was a mistake, as it could allow frame-owned objects to use proofs from e.g.
@@ -334,6 +348,8 @@ impl AuthModule {
                             let global_caller = match caller {
                                 Some(_) => {
                                     let global_caller_address = FRAME_OWNED_GLOBAL_MARKER.into();
+                                    // NOTE: This results in both the global caller stack and the parent stack being the same.
+                                    // This won't cause any critical issues, but should be reworked at some point.
                                     let global_caller_leaf_auth_zone_reference =
                                         Reference(direct_caller_auth_zone);
                                     Some((
