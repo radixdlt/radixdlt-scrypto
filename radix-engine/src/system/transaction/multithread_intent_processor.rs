@@ -44,6 +44,9 @@ impl<'e> MultiThreadIntentProcessor<'e> {
         for (thread_id, intent) in executable.all_intents().enumerate() {
             api.kernel_switch_stack(thread_id)?;
 
+            // We create the auth zone for the transaction processor.
+            // This needs a `SystemService` to resolve the current actor (Root) to get the global caller (None),
+            // and also to create the node and substates.
             let mut system_service = SystemService::new(api);
             let simulate_every_proof_under_resources = intent
                 .auth_zone_init

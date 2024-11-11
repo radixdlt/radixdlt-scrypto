@@ -241,6 +241,13 @@ impl SystemVersion {
         true
     }
 
+    pub fn should_inject_transaction_processor_proofs_in_call_function(&self) -> bool {
+        match self {
+            SystemVersion::V1 => true,
+            SystemVersion::V2 => false,
+        }
+    }
+
     pub fn should_charge_for_transaction_intent(&self) -> bool {
         match self {
             SystemVersion::V1 => false,

@@ -110,9 +110,13 @@ impl From<BlueprintId> for GlobalCaller {
 }
 
 impl GlobalCaller {
-    // Check if actor is a frame-owned object.
-    // See auth_module.rs for details.
-    pub fn is_frame_owned(&self) -> bool {
+    /// Due to a workaround in SystemV1, frame-owned objects were inadvertently assigned a `GlobalCaller`,
+    /// and for backwards compatibility had it replaced by `FRAME_OWNED_GLOBAL_MARKER`.
+    ///
+    /// This function checks for that marker, to verify if the `GlobalCaller` is valid.
+    ///
+    /// See auth_module.rs for more details.
+    pub fn is_actually_frame_owned(&self) -> bool {
         match self {
             GlobalCaller::GlobalObject(x) => x.eq(&FRAME_OWNED_GLOBAL_MARKER),
             GlobalCaller::PackageBlueprint(_) => false,
