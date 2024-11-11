@@ -25,7 +25,6 @@ use radix_transactions::model::AuthZoneInit;
 pub enum AuthError {
     NoFunction(FnIdentifier),
     NoMethodMapping(FnIdentifier),
-    VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
     InvalidOuterObjectMapping,

@@ -40,7 +40,7 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
     receipt.expect_specific_rejection(|error| {
         error
             == &RejectionReason::BootloadingError(BootloadingError::ReferencedNodeDoesNotExist(
-                LOCKER_PACKAGE.into_node_id(),
+                LOCKER_PACKAGE.into_node_id().into(),
             ))
     });
 }

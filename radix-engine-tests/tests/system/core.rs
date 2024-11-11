@@ -244,7 +244,7 @@ fn call_function_and_assert_error(blueprint: &str, function: &str, expected_erro
         .call_function(package_address, blueprint, function, manifest_args![])
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| e.to_string().contains(expected_error));
+    receipt.expect_specific_failure(|e| e.to_string(NO_NETWORK).contains(expected_error));
 }
 
 #[test]

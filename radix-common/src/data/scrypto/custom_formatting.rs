@@ -19,6 +19,12 @@ impl<'a> ScryptoValueDisplayContext<'a> {
     }
 }
 
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for AddressDisplayContext<'a> {
+    fn into(self) -> ScryptoValueDisplayContext<'a> {
+        ScryptoValueDisplayContext::with_optional_bech32(self.encoder)
+    }
+}
+
 impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a AddressBech32Encoder {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
         ScryptoValueDisplayContext::with_optional_bech32(Some(self))
@@ -58,6 +64,75 @@ impl FormattableCustomExtension for ScryptoCustomExtension {
             }
             ScryptoCustomValue::NonFungibleLocalId(value) => {
                 write!(f, "\"{}\"", value)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn debug_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        f: &mut F,
+        context: &Self::CustomDisplayContext<'a>,
+        value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        match &value.0 {
+            ScryptoCustomValue::Reference(value) => {
+                write!(f, "\"{}\"", value.0.display(context.address_bech32_encoder))?;
+            }
+            ScryptoCustomValue::Own(value) => {
+                write!(f, "\"{}\"", value.0.display(context.address_bech32_encoder))?;
+            }
+            ScryptoCustomValue::Decimal(value) => {
+                write!(f, "{value:?}")?;
+            }
+            ScryptoCustomValue::PreciseDecimal(value) => {
+                write!(f, "{value:?}")?;
+            }
+            ScryptoCustomValue::NonFungibleLocalId(value) => {
+                write!(f, "{value:?}")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn code_generation_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        f: &mut F,
+        context: &Self::CustomDisplayContext<'a>,
+        value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        match &value.0 {
+            ScryptoCustomValue::Reference(value) => {
+                let address_type = match value
+                    .as_node_id()
+                    .entity_type()
+                    .unwrap_or(EntityType::GlobalGenericComponent)
+                {
+                    entity_type if entity_type.is_internal() => "InternalAddress",
+                    entity_type if entity_type.is_global_package() => "PackageAddress",
+                    entity_type if entity_type.is_global_resource_manager() => "ResourceAddress",
+                    _ => "ComponentAddress",
+                };
+                write!(
+                    f,
+                    "{}::from_str(\"{}\").unwrap()",
+                    address_type,
+                    value.0.display(context.address_bech32_encoder)
+                )?;
+            }
+            ScryptoCustomValue::Own(value) => {
+                write!(
+                    f,
+                    "Own::from_str(\"{}\").unwrap()",
+                    value.0.display(context.address_bech32_encoder)
+                )?;
+            }
+            ScryptoCustomValue::Decimal(value) => {
+                write!(f, "dec!(\"{}\")", value)?;
+            }
+            ScryptoCustomValue::PreciseDecimal(value) => {
+                write!(f, "pdec!(\"{}\")", value)?;
+            }
+            ScryptoCustomValue::NonFungibleLocalId(value) => {
+                write!(f, "NonFungibleLocalId::from_str(\"{}\").unwrap()", value)?;
             }
         }
         Ok(())
@@ -120,13 +195,13 @@ mod tests {
         let payload = ScryptoRawPayload::new_from_valid_owned(scrypto_encode(&value).unwrap());
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH,

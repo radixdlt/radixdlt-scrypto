@@ -35,6 +35,7 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
 use radix_transactions::model::IntentHash;
+use sbor::representations::PrintMode;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum IdAllocationError {
@@ -45,8 +46,72 @@ pub trait CanBeAbortion {
     fn abortion(&self) -> Option<&AbortReason>;
 }
 
+pub mod error_models {
+    use radix_common::prelude::*;
+
+    /// This is a special NodeId which gets encoded as a reference in SBOR...
+    /// This means that it can be rendered as a string in the output.
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+    #[sbor(
+        as_type = "Reference",
+        as_ref = "&Reference(self.0)",
+        from_value = "Self(value.0)",
+        type_name = "NodeId"
+    )]
+    pub struct ReferencedNodeId(pub radix_common::prelude::NodeId);
+
+    impl Debug for ReferencedNodeId {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    impl From<radix_common::prelude::NodeId> for ReferencedNodeId {
+        fn from(value: radix_common::prelude::NodeId) -> Self {
+            Self(value)
+        }
+    }
+
+    /// This is a special NodeId which gets encoded as a reference in SBOR...
+    /// This means that it can be rendered as a string in the output.
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+    #[sbor(
+        as_type = "Own",
+        as_ref = "&Own(self.0)",
+        from_value = "Self(value.0)",
+        type_name = "NodeId"
+    )]
+    pub struct OwnedNodeId(pub radix_common::prelude::NodeId);
+
+    impl Debug for OwnedNodeId {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    impl From<radix_common::prelude::NodeId> for OwnedNodeId {
+        fn from(value: radix_common::prelude::NodeId) -> Self {
+            Self(value)
+        }
+    }
+}
+
+lazy_static::lazy_static! {
+    /// See [`HISTORIC_RUNTIME_ERROR_SCHEMAS`] for more information.
+    ///
+    /// Although the RejectionReason isn't used on the node, we do a similar thing anyway.
+    static ref HISTORIC_REJECTION_REASON_SCHEMAS: [ScryptoSingleTypeSchema; 1] = {
+        [
+            ScryptoSingleTypeSchema::from(include_bytes!("rejection_reason_cuttlefish_schema.bin")),
+        ]
+    };
+}
+
 /// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+// #[derive(ScryptoSborAssertion)]
+// #[sbor_assert(fixed("FILE:rejection_reason_[NEW-VERSION-NAME]_schema.bin"), generate)]
+// #[sbor_assert(fixed("FILE:rejection_reason_[UNDEPLOYED-CURRENT-VERSION-NAME]_schema.bin"), regenerate)]
 pub enum RejectionReason {
     TransactionEpochNotYetValid {
         /// `start_epoch_inclusive`
@@ -76,15 +141,105 @@ pub enum RejectionReason {
     SubintentsNotYetSupported,
 }
 
-impl From<BootloadingError> for RejectionReason {
-    fn from(value: BootloadingError) -> Self {
-        RejectionReason::BootloadingError(value)
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for RejectionReason {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext,
+    ) -> Result<(), Self::Error> {
+        self.create_persistable().contextual_format(f, context)
     }
 }
 
-impl fmt::Display for RejectionReason {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl RejectionReason {
+    pub fn create_persistable(&self) -> PersistableRejectionReason {
+        PersistableRejectionReason {
+            schema_index: HISTORIC_REJECTION_REASON_SCHEMAS.len() as u32 - 1,
+            encoded_rejection_reason: scrypto_decode(&scrypto_encode(self).unwrap()).unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct PersistableRejectionReason {
+    pub schema_index: u32,
+    pub encoded_rejection_reason: ScryptoOwnedRawValue,
+}
+
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableRejectionReason {
+    type Error = fmt::Error;
+
+    /// See [`SerializableRuntimeError::contextual_format`] for more information.
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext,
+    ) -> Result<(), Self::Error> {
+        let value = &self.encoded_rejection_reason;
+        let formatted_optional = HISTORIC_REJECTION_REASON_SCHEMAS
+            .get(self.schema_index as usize)
+            .and_then(|schema| {
+                format_debug_like_value(
+                    f,
+                    schema,
+                    value,
+                    sbor::representations::PrintMode::SingleLine,
+                    *context,
+                )
+            });
+        match formatted_optional {
+            Some(result) => result,
+            None => match scrypto_encode(&value) {
+                Ok(encoded) => write!(f, "UnknownRejectionReason({})", hex::encode(encoded)),
+                Err(error) => write!(f, "CannotDisplayRejectionReason({error:?})"),
+            },
+        }
+    }
+}
+
+fn format_debug_like_value(
+    f: &mut impl fmt::Write,
+    schema: &SingleTypeSchema<ScryptoCustomSchema>,
+    value: &ScryptoRawValue,
+    print_mode: PrintMode,
+    custom_context: ScryptoValueDisplayContext,
+) -> Option<fmt::Result> {
+    use sbor::representations::*;
+    let type_id = schema.type_id;
+    let schema = schema.schema.as_unique_version();
+    let depth_limit = SCRYPTO_SBOR_V1_MAX_DEPTH;
+
+    // Sanity check this is the correct schema...
+    validate_partial_payload_against_schema::<ScryptoCustomExtension, _>(
+        value.value_body_bytes(),
+        traversal::ExpectedStart::ValueBody(value.value_kind()),
+        true,
+        0,
+        schema,
+        type_id,
+        &(),
+        depth_limit,
+    )
+    .ok()?;
+
+    // Then encode it...
+    let display_parameters = ValueDisplayParameters::Annotated {
+        display_mode: DisplayMode::RustLike(RustLikeOptions::debug_like()),
+        print_mode,
+        custom_context,
+        schema,
+        type_id,
+        depth_limit,
+    };
+
+    Some(write!(f, "{}", value.display(display_parameters)))
+}
+
+impl From<BootloadingError> for RejectionReason {
+    fn from(value: BootloadingError) -> Self {
+        RejectionReason::BootloadingError(value)
     }
 }
 
@@ -99,15 +254,64 @@ pub enum TransactionExecutionError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BootloadingError {
-    ReferencedNodeDoesNotExist(NodeId),
-    ReferencedNodeIsNotAnObject(NodeId),
-    ReferencedNodeDoesNotAllowDirectAccess(NodeId),
+    ReferencedNodeDoesNotExist(error_models::ReferencedNodeId),
+    ReferencedNodeIsNotAnObject(error_models::ReferencedNodeId),
+    ReferencedNodeDoesNotAllowDirectAccess(error_models::ReferencedNodeId),
 
     FailedToApplyDeferredCosts(CostingError),
 }
 
+lazy_static::lazy_static! {
+    /// This list is used to render string messages from historically stored
+    /// [`SerializableRuntimeError`]s in the LocalTransactionExecution index in the node.
+    ///
+    /// In particular, each [`SerializableRuntimeError`] stores the index of the current schema
+    /// in this array at the time it was created.
+    ///
+    /// But of course, when the error is read (e.g. in the Core API stream 10 months later),
+    /// we may be a few protocol versions down the line, and the `RuntimeError` schema may have changed.
+    ///
+    /// To get around this, we simply use the stored schema index to look up the correct schema here.
+    /// And we use this historic schema to render the error message.
+    ///
+    /// This allows us the following benefits:
+    /// * We can use a condensed error encoding (rather than just storing it as a string)
+    /// * We can change the `RuntimeError` schema freely, as long as we ensure old schemas are kept here.
+    ///   Tests will ensure we don't break this.
+    ///
+    /// We MUST NOT change/remove/reorder existing schemas in this list, if they have been released
+    /// in a node version. This is to ensure that we can always decode old errors.
+    ///
+    /// New schemas can be generated with `#[sbor_assert(fixed("FILE:xxx"))]` generator above.
+    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
+        [
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_pre_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_cuttlefish_schema.bin")),
+        ]
+    };
+}
+
 /// Represents an error when executing a transaction.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Clone, PartialEq, Eq, ScryptoSbor, Debug)]
+// You are welcome to update the RuntimeError structure, but the tests will make you ensure
+// that the current schema is the last in HISTORIC_RUNTIME_ERROR_SCHEMAS above, and that
+// any schema used in a released node version never gets removed.
+//
+// What this means is:
+// - You may regenerate the schema for the current version, if it's never been released.
+// - Otherwise, you will want to generate a new schema for the new version.
+//
+// So:
+// - Temporarily uncomment the derive, and one of the sbor_assert lines below
+// - Rename the file in the line
+// - Run the test to (re)generate the schema
+// - Revert the changes to these few lines
+// - If it's a new schema, add it to the HISTORIC_RUNTIME_ERROR_SCHEMAS list above.
+// - Check the `the_current_runtime_schema_is_last_on_historic_runtime_list` test passes.
+//
+// #[derive(ScryptoSborAssertion)]
+// #[sbor_assert(fixed("FILE:runtime_error_[NEW-VERSION-NAME]_schema.bin"), generate)]
+// #[sbor_assert(fixed("FILE:runtime_error_[UNDEPLOYED-CURRENT-VERSION-NAME]_schema.bin"), regenerate)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -130,6 +334,74 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 
     FinalizationCostingError(CostingError),
+}
+
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for RuntimeError {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext,
+    ) -> Result<(), Self::Error> {
+        self.create_persistable().contextual_format(f, context)
+    }
+}
+
+impl RuntimeError {
+    pub fn create_persistable(&self) -> PersistableRuntimeError {
+        PersistableRuntimeError {
+            schema_index: HISTORIC_RUNTIME_ERROR_SCHEMAS.len() as u32 - 1,
+            encoded_error: scrypto_decode(&scrypto_encode(self).unwrap()).unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct PersistableRuntimeError {
+    pub schema_index: u32,
+    // RawValue and RawPayload will change in https://github.com/radixdlt/radixdlt-scrypto/pull/1860
+    // It's important we stick with `RawValue` here (so it encodes/decode as SBOR itself),
+    // but ideally it would be a full payload underneath. This can be the case from #1860.
+    pub encoded_error: ScryptoOwnedRawValue,
+}
+
+/// This is used to render the error message, with a fallback if an invalid schema
+/// is associated with the error.
+///
+/// This fallback is necessary due to historic breakages of backwards compatibility
+/// in the `RuntimeError` type structure.
+///
+/// Specifically, at anemone / bottlenose, there were very minor changes, which affected
+/// a tiny minority of errors. If we could find the historic schemas, we could actually
+/// render them properly here. Unfortunately, the historic schemas are not easy to find out
+/// (it would require backporting the schema generation logic), so instead we just have
+/// a fallback for these cases.
+///
+/// This fallback will only be applied on nodes, when returning occasional errors for
+/// old transactions that haven't resynced since Bottlenose.
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableRuntimeError {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext,
+    ) -> Result<(), Self::Error> {
+        let value = &self.encoded_error;
+        let formatted_optional = HISTORIC_RUNTIME_ERROR_SCHEMAS
+            .get(self.schema_index as usize)
+            .and_then(|schema| {
+                format_debug_like_value(f, schema, value, PrintMode::SingleLine, *context)
+            });
+        match formatted_optional {
+            Some(result) => result,
+            None => match scrypto_encode(&value) {
+                Ok(encoded) => write!(f, "UnknownError({})", hex::encode(encoded)),
+                Err(error) => write!(f, "CannotDisplayError({error:?})"),
+            },
+        }
+    }
 }
 
 impl SystemApiError for RuntimeError {}
@@ -183,14 +455,14 @@ pub enum KernelError {
     // Substate lock/read/write/unlock
     SubstateHandleDoesNotExist(SubstateHandle),
 
-    OrphanedNodes(Vec<NodeId>),
+    OrphanedNodes(Vec<error_models::OwnedNodeId>),
 
     StackError(StackError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropAccess {
-    pub node_id: NodeId,
+    pub node_id: error_models::ReferencedNodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub actor_package: Option<PackageAddress>,
@@ -595,12 +867,6 @@ impl From<AuthZoneError> for ApplicationError {
     }
 }
 
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 impl From<OpenSubstateError> for CallFrameError {
     fn from(value: OpenSubstateError) -> Self {
         Self::OpenSubstateError(value)
@@ -691,5 +957,131 @@ where
 {
     fn from(value: T) -> Self {
         Self::KernelError(KernelError::CallFrameError(value.into()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_current_runtime_error_schema_is_last_on_historic_list() {
+        let latest = HISTORIC_RUNTIME_ERROR_SCHEMAS.last().unwrap();
+        let current = generate_single_type_schema::<RuntimeError, ScryptoCustomSchema>();
+
+        // If this test fails, see the comment above `RuntimeError` for instructions.
+        compare_single_type_schemas(
+            &SchemaComparisonSettings::require_equality(),
+            latest,
+            &current,
+        )
+        .assert_valid("latest", "current");
+    }
+
+    #[test]
+    fn the_current_runtime_error_schema_has_no_raw_node_ids() {
+        let current = generate_single_type_schema::<RuntimeError, ScryptoCustomSchema>();
+        assert_no_raw_node_ids(&current);
+    }
+
+    #[test]
+    fn the_current_rejection_reason_schema_is_last_on_historic_list() {
+        let latest = HISTORIC_REJECTION_REASON_SCHEMAS.last().unwrap();
+        let current = generate_single_type_schema::<RejectionReason, ScryptoCustomSchema>();
+
+        // If this test fails, see the comment above `RejectionReason` for instructions.
+        compare_single_type_schemas(
+            &SchemaComparisonSettings::require_equality(),
+            latest,
+            &current,
+        )
+        .assert_valid("latest", "current");
+    }
+
+    #[test]
+    fn the_current_rejection_reason_schema_has_no_raw_node_ids() {
+        let current = generate_single_type_schema::<RejectionReason, ScryptoCustomSchema>();
+        assert_no_raw_node_ids(&current);
+    }
+
+    fn assert_no_raw_node_ids(schema: &SingleTypeSchema<ScryptoCustomSchema>) {
+        let schema = schema.schema.as_unique_version();
+        for (type_kind, type_metadata) in schema.type_kinds.iter().zip(schema.type_metadata.iter())
+        {
+            if type_metadata.type_name.as_deref() == Some("NodeId") {
+                match type_kind {
+                    TypeKind::Custom(ScryptoCustomTypeKind::Own)
+                    | TypeKind::Custom(ScryptoCustomTypeKind::Reference) => {}
+                    _ => {
+                        let mut formatted_schema = String::new();
+                        format_debug_like_value(
+                            &mut formatted_schema,
+                            &generate_single_type_schema::<
+                                SchemaV1<ScryptoCustomSchema>,
+                                ScryptoCustomSchema,
+                            >(),
+                            &scrypto_decode(&scrypto_encode(schema).unwrap()).unwrap(),
+                            PrintMode::MultiLine {
+                                indent_size: 4,
+                                base_indent: 4,
+                                first_line_indent: 4,
+                            },
+                            ScryptoValueDisplayContext::default(),
+                        );
+                        // If this is too much for the console, use:
+                        // cargo test --package radix-engine --lib -- errors::tests::the_current_rejection_reason_schema_has_no_raw_node_ids --exact --show-output > output.txt
+                        // And then check for some of the type definitions of the type names preceeding the last mention of "NodeId"
+                        // One of these types will directly mention `NodeId` instead of `error_models::ReferencedNodeId` or `error_models::OwnedNodeId`.
+                        panic!("A raw NodeId was detected somewhere in the error schema. Use `error_models::ReferencedNodeId` or `error_models::OwnedNodeId` instead.\n\nSchema:\n{}", formatted_schema);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn runtime_error_string() {
+        let network = NetworkDefinition::mainnet();
+        let address_encoder = AddressBech32Encoder::new(&network);
+        let address_encoder = Some(&address_encoder);
+
+        // Example one - Account withdraw/lock fee/create proof error
+        {
+            let runtime_error = RuntimeError::ApplicationError(ApplicationError::AccountError(
+                AccountError::VaultDoesNotExist {
+                    resource_address: XRD,
+                },
+            ));
+
+            // Old error
+            let debugged = format!("{:?}", runtime_error);
+            assert_eq!(debugged, "ApplicationError(AccountError(VaultDoesNotExist { resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6) }))");
+
+            // New error
+            let rendered = runtime_error.to_string(address_encoder);
+            assert_eq!(rendered, "ApplicationError(AccountError(VaultDoesNotExist { resource_address: ResourceAddress(\"resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd\") }))");
+        }
+
+        // Example two - dangling bucket error
+        {
+            let mut id_allocator = crate::kernel::id_allocator::IdAllocator::new(hash("seed-data"));
+
+            // Unfortunately buckets didn't get their own entity type...
+            let bucket_entity_type = EntityType::InternalGenericComponent;
+            let example_bucket_1 = id_allocator.allocate_node_id(bucket_entity_type).unwrap();
+            let example_bucket_2 = id_allocator.allocate_node_id(bucket_entity_type).unwrap();
+            let runtime_error = RuntimeError::KernelError(KernelError::OrphanedNodes(vec![
+                example_bucket_1.into(),
+                example_bucket_2.into(),
+            ]));
+
+            // Old error
+            let debugged = format!("{:?}", runtime_error);
+            assert_eq!(debugged, "KernelError(OrphanedNodes([NodeId(\"f82ee60dbc11caa1594fccdbb8031c41af8084344bcbe7a4c784491a7d4c\"), NodeId(\"f8abce267317b7bdd859951840ccd25f1ea7e83c538d507e0f82da7b9aed\")]))");
+
+            // New error
+            let rendered = runtime_error.to_string(address_encoder);
+            assert_eq!(rendered, "KernelError(OrphanedNodes([NodeId(\"internal_component_rdx1lqhwvrduz892zk20endmsqcugxhcppp5f0970fx8s3y35l2vv5mzfn\"), NodeId(\"internal_component_rdx1lz4uufnnz7mmmkzej5vypnxjtu0206pu2wx4qls0std8hxhd3v84yv\")]))");
+        }
     }
 }

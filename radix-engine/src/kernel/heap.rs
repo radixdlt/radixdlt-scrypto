@@ -8,13 +8,13 @@ pub struct Heap {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemovePartitionError {
-    NodeNotFound(NodeId),
+    NodeNotFound(error_models::ReferencedNodeId),
     ModuleNotFound(PartitionNumber),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveNodeError {
-    NodeNotFound(NodeId),
+    NodeNotFound(error_models::ReferencedNodeId),
 }
 
 impl Heap {
@@ -63,7 +63,7 @@ impl Heap {
             Ok(partition)
         } else {
             Err(CallbackError::Error(
-                HeapRemovePartitionError::NodeNotFound(node_id.clone()),
+                HeapRemovePartitionError::NodeNotFound(node_id.clone().into()),
             ))
         }
     }
@@ -278,7 +278,7 @@ impl Heap {
         let node_substates = match self.nodes.remove(node_id) {
             Some(node_substates) => node_substates,
             None => Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(
-                node_id.clone(),
+                node_id.clone().into(),
             )))?,
         };
 

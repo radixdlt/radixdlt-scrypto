@@ -73,6 +73,28 @@ impl FormattableCustomExtension for ManifestCustomExtension {
         }
         Ok(())
     }
+
+    fn code_generation_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        f: &mut F,
+        context: &Self::CustomDisplayContext<'a>,
+        value: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        let wrapper = match &value.0 {
+            ManifestCustomValue::Address(ManifestAddress::Static(_)) => "Address",
+            ManifestCustomValue::Address(ManifestAddress::Named(_)) => "NamedAddress",
+            ManifestCustomValue::Bucket(_) => "Bucket",
+            ManifestCustomValue::Proof(_) => "Proof",
+            ManifestCustomValue::Expression(_) => "Expression",
+            ManifestCustomValue::Blob(_) => "Blob",
+            ManifestCustomValue::Decimal(_) => "Decimal",
+            ManifestCustomValue::PreciseDecimal(_) => "PreciseDecimal",
+            ManifestCustomValue::NonFungibleLocalId(_) => "NonFungibleLocalId",
+            ManifestCustomValue::AddressReservation(_) => "AddressReservation",
+        };
+        write!(f, "{wrapper}(")?;
+        Self::display_string_content(f, context, value)?;
+        write!(f, ")")
+    }
 }
 
 #[cfg(test)]
@@ -130,13 +152,13 @@ mod tests {
         let payload = ManifestRawPayload::new_from_valid_owned(payload);
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,
         });
         let actual_nested = payload.to_string(ValueDisplayParameters::Schemaless {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             custom_context: context,
             depth_limit: MANIFEST_SBOR_V1_MAX_DEPTH,

@@ -20,8 +20,9 @@ fn lock_fee_on_empty_faucet_should_give_nice_error() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rejection = receipt.expect_rejection();
-    assert!(rejection.to_string().contains("The faucet doesn't have funds on this environment. Consider locking fee from an account instead."));
+    receipt.expect_rejection_containing_error(
+        "The faucet doesn't have funds on this environment. Consider locking fee from an account instead."
+    );
 }
 
 #[test]
@@ -42,6 +43,7 @@ fn fee_xrd_on_empty_faucet_should_give_nice_error() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rejection = receipt.expect_rejection();
-    assert!(rejection.to_string().contains("The faucet doesn't have funds on this environment. You will need to source XRD another way."));
+    receipt.expect_rejection_containing_error(
+        "The faucet doesn't have funds on this environment. You will need to source XRD another way."
+    );
 }

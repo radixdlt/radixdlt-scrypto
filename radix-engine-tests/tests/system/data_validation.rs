@@ -125,12 +125,7 @@ fn cannot_pass_bucket_for_proof_argument() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("DataValidation"))
+    receipt.expect_commit_failure_containing_error("DataValidation");
 }
 
 #[test]
@@ -156,12 +151,7 @@ fn cannot_pass_proof_for_bucket_argument() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("DataValidation"))
+    receipt.expect_commit_failure_containing_error("DataValidation");
 }
 
 #[test]
@@ -182,12 +172,7 @@ fn cannot_return_proof_for_bucket() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("PayloadValidationError"))
+    receipt.expect_commit_failure_containing_error("PayloadValidationError");
 }
 
 #[test]
@@ -208,12 +193,7 @@ fn cannot_return_bucket_for_proof() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("PayloadValidationError"))
+    receipt.expect_commit_failure_containing_error("PayloadValidationError");
 }
 
 #[test]
@@ -235,12 +215,7 @@ fn cannot_create_object_with_mismatching_data() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("DataValidation"))
+    receipt.expect_commit_failure_containing_error("DataValidation");
 }
 
 #[test]
@@ -261,12 +236,7 @@ fn cannot_update_substate_with_mismatching_data() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("DataValidation"))
+    receipt.expect_commit_failure_containing_error("DataValidation");
 }
 
 /// Note that payload validation after pushing call frame.
@@ -337,12 +307,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
 
     // Assert
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    let error_message = receipt
-        .expect_commit_failure()
-        .outcome
-        .expect_failure()
-        .to_string();
-    assert!(error_message.contains("DataValidation"))
+    receipt.expect_commit_failure_containing_error("DataValidation");
 }
 
 #[test]

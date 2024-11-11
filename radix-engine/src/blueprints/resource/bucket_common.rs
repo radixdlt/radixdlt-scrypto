@@ -42,7 +42,7 @@ impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
 pub enum BucketError {
     ResourceError(ResourceError),
     ProofError(ProofError),
-    Locked(NodeId),
+    Locked(error_models::OwnedNodeId),
     InvalidAmount(Decimal),
     DecimalOverflow,
 }
@@ -61,7 +61,7 @@ pub fn drop_fungible_bucket<Y: SystemApi<RuntimeError>>(
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone())),
+            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone().into())),
         ));
     }
 
@@ -76,7 +76,7 @@ pub fn drop_non_fungible_bucket<Y: SystemApi<RuntimeError>>(
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone())),
+            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone().into())),
         ));
     }
 

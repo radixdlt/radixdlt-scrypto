@@ -27,8 +27,8 @@ pub enum TransactionProcessorError {
     BlobNotFound(Hash),
     InvalidCallData(DecodeError),
     InvalidPackageSchema(DecodeError),
-    NotPackageAddress(NodeId),
-    NotGlobalAddress(NodeId),
+    NotPackageAddress(error_models::ReferencedNodeId),
+    NotGlobalAddress(error_models::ReferencedNodeId),
     AuthZoneIsEmpty,
     InvocationOutputDecodeError(DecodeError),
     ArgsEncodeError(EncodeError),
@@ -348,7 +348,7 @@ impl<'a> IntentProcessorObjects<'a> {
                 let node_id = self.get_address(&name)?;
                 PackageAddress::try_from(node_id.0).map_err(|_| {
                     RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::NotPackageAddress(node_id),
+                        TransactionProcessorError::NotPackageAddress(node_id.into()),
                     ))
                 })
             }
@@ -365,7 +365,7 @@ impl<'a> IntentProcessorObjects<'a> {
                 let node_id = self.get_address(&name)?;
                 GlobalAddress::try_from(node_id.0).map_err(|_| {
                     RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::NotGlobalAddress(node_id),
+                        TransactionProcessorError::NotGlobalAddress(node_id.into()),
                     ))
                 })
             }

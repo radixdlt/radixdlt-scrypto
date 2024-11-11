@@ -1,4 +1,4 @@
-TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(WorktopError(AssertionFailed(ResourceConstraintFailed { resource_address: ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), error: ExpectedAtLeastAmount { expected_at_least_amount: 1, actual_amount: 0 } })))
+TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(WorktopError(AssertionFailed(ResourceConstraintFailed { resource_address: ResourceAddress("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"), error: ExpectedAtLeastAmount { expected_at_least_amount: 1, actual_amount: 0 } })))
 
 TRANSACTION COST: 0.2284047197 XRD
 ├─ Network execution: 0.15306445 XRD, 3061289 execution cost units

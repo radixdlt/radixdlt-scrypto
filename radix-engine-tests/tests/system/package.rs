@@ -642,10 +642,7 @@ fn publishing_of_package_with_transient_blueprints_fails() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|error| {
-        let error_message = format!("{error:?}");
-        return error_message.contains("Transient blueprints not supported");
-    })
+    receipt.expect_commit_failure_containing_error("Transient blueprints not supported");
 }
 
 #[test]

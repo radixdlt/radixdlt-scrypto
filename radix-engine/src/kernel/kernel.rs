@@ -17,10 +17,10 @@ use sbor::rust::mem;
 
 macro_rules! as_read_only {
     ($kernel:expr) => {{
-        let (current_frame, prev_frame) = $kernel.stacks.cur_and_prev();
+        let (current_frame, previous_frame) = $kernel.stacks.current_frame_and_previous_frame();
         KernelReadOnly {
             current_frame,
-            prev_frame,
+            previous_frame,
             heap: &$kernel.substate_io.heap,
             callback: $kernel.callback,
         }
@@ -212,7 +212,7 @@ impl<M: KernelCallbackObject> KernelStack<M> {
 /// The kernel manages multiple call frame stacks. There will always be a single
 /// "current" stack (and call frame) in context.
 pub struct KernelStacks<M: KernelCallbackObject> {
-    current_stack: usize,
+    current_stack_index: usize,
     stacks: Vec<KernelStack<M>>,
 }
 
@@ -223,38 +223,46 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
             .map(|call_frame| KernelStack::new(call_frame))
             .collect();
         Self {
-            current_stack: 0usize,
+            current_stack_index: 0usize,
             stacks,
         }
     }
 
+    fn current_stack_mut(&mut self) -> &mut KernelStack<M> {
+        self.stacks.get_mut(self.current_stack_index).unwrap()
+    }
+
+    fn current_stack(&self) -> &KernelStack<M> {
+        self.stacks.get(self.current_stack_index).unwrap()
+    }
+
     /// Pushes a new call frame on the current stack
-    pub fn push(&mut self, frame: CallFrame<M::CallFrameData, M::LockData>) {
-        let stack = self.stacks.get_mut(self.current_stack).unwrap();
+    pub fn push_frame(&mut self, frame: CallFrame<M::CallFrameData, M::LockData>) {
+        let stack = self.current_stack_mut();
         let parent = mem::replace(&mut stack.current_frame, frame);
         stack.prev_frames.push(parent);
     }
 
     /// Pushes a call frame from the current stack
-    pub fn pop(&mut self) {
-        let stack = self.stacks.get_mut(self.current_stack).unwrap();
+    pub fn pop_frame(&mut self) {
+        let stack = self.current_stack_mut();
         let parent = stack.prev_frames.pop().unwrap();
         let _ = core::mem::replace(&mut stack.current_frame, parent);
     }
 
     /// Switches the current stack
-    pub fn switch(&mut self, id: usize) -> Result<(), RuntimeError> {
-        if id >= self.stacks.len() {
+    pub fn switch_stack(&mut self, stack_index: usize) -> Result<(), RuntimeError> {
+        if stack_index >= self.stacks.len() {
             return Err(RuntimeError::KernelError(KernelError::StackError(
                 StackError::InvalidStackId,
             )));
         }
-        self.current_stack = id;
+        self.current_stack_index = stack_index;
 
         Ok(())
     }
 
-    pub fn cur_mut_and_other_mut(
+    pub fn current_frame_mut_in_this_and_other_stack(
         &mut self,
         other_stack: usize,
     ) -> (
@@ -265,65 +273,60 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
             .stacks
             .iter_mut()
             .enumerate()
-            .filter(|(id, _)| (*id).eq(&self.current_stack) || (*id).eq(&other_stack))
+            .filter(|(id, _)| (*id).eq(&self.current_stack_index) || (*id).eq(&other_stack))
             .map(|stack| Some(stack))
             .collect();
 
         let (id0, stack0) = mut_stacks[0].take().unwrap();
         let (_id1, stack1) = mut_stacks[1].take().unwrap();
-        if id0.eq(&self.current_stack) {
+        if id0.eq(&self.current_stack_index) {
             (&mut stack0.current_frame, &mut stack1.current_frame)
         } else {
             (&mut stack1.current_frame, &mut stack0.current_frame)
         }
     }
 
-    pub fn cur_and_prev(
+    pub fn current_frame_and_previous_frame(
         &self,
     ) -> (
         &CallFrame<M::CallFrameData, M::LockData>,
         Option<&CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get(self.current_stack).unwrap();
+        let stack = self.current_stack();
         (&stack.current_frame, stack.prev_frames.last())
     }
 
-    pub fn cur_mut_and_prev(
+    pub fn mut_current_frame_and_previous_frame(
         &mut self,
     ) -> (
         &mut CallFrame<M::CallFrameData, M::LockData>,
         Option<&CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get_mut(self.current_stack).unwrap();
+        let stack = self.current_stack_mut();
         (&mut stack.current_frame, stack.prev_frames.last())
     }
 
-    pub fn cur_mut_and_prev_mut(
+    pub fn mut_current_frame_and_mut_previous_frame(
         &mut self,
     ) -> (
         &mut CallFrame<M::CallFrameData, M::LockData>,
         Option<&mut CallFrame<M::CallFrameData, M::LockData>>,
     ) {
-        let stack = self.stacks.get_mut(self.current_stack).unwrap();
+        let stack = self.current_stack_mut();
         (&mut stack.current_frame, stack.prev_frames.last_mut())
     }
 
-    pub fn cur(&self) -> &CallFrame<M::CallFrameData, M::LockData> {
-        &self.stacks.get(self.current_stack).unwrap().current_frame
+    pub fn current_frame(&self) -> &CallFrame<M::CallFrameData, M::LockData> {
+        &self.current_stack().current_frame
     }
 
-    pub fn cur_mut(&mut self) -> &mut CallFrame<M::CallFrameData, M::LockData> {
-        &mut self
-            .stacks
-            .get_mut(self.current_stack)
-            .unwrap()
-            .current_frame
+    pub fn current_frame_mut(&mut self) -> &mut CallFrame<M::CallFrameData, M::LockData> {
+        &mut self.current_stack_mut().current_frame
     }
 
     #[cfg(feature = "radix_engine_tests")]
-    pub fn prev_frames_mut(&mut self) -> &mut Vec<CallFrame<M::CallFrameData, M::LockData>> {
-        let stack = self.stacks.get_mut(self.current_stack).unwrap();
-        &mut stack.prev_frames
+    pub fn previous_frames_mut(&mut self) -> &mut Vec<CallFrame<M::CallFrameData, M::LockData>> {
+        &mut self.current_stack_mut().prev_frames
     }
 }
 
@@ -419,7 +422,7 @@ impl<
     ) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
             current_frame,
-            prev_frame: self.prev_frame,
+            previous_frame: self.prev_frame,
             heap,
             callback: self.callback,
         };
@@ -444,7 +447,7 @@ impl<
     ) -> Result<(), Self::Error> {
         let mut read_only = KernelReadOnly {
             current_frame,
-            prev_frame: self.prev_frame,
+            previous_frame: self.prev_frame,
             heap,
             callback: self.callback,
         };
@@ -470,7 +473,7 @@ where
         M::on_pin_node(&node_id, &mut as_read_only!(self))?;
 
         self.stacks
-            .cur_mut()
+            .current_frame_mut()
             .pin_node(&mut self.substate_io, node_id)
             .map_err(|e| {
                 RuntimeError::KernelError(KernelError::CallFrameError(
@@ -498,7 +501,7 @@ where
             &mut read_only,
         )?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -537,7 +540,7 @@ where
                 &mut read_only,
             )?;
 
-            let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+            let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
             let mut handler = KernelHandler {
                 callback: self.callback,
@@ -566,7 +569,7 @@ where
         }
 
         {
-            let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+            let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
             let mut handler = KernelHandler {
                 callback: self.callback,
@@ -605,7 +608,7 @@ where
 
         M::on_drop_node_mut(node_id, self)?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -640,19 +643,19 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
     type System = M;
 
     fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility {
-        self.stacks.cur().get_node_visibility(node_id)
+        self.stacks.current_frame().get_node_visibility(node_id)
     }
 
     fn kernel_get_current_stack_depth_uncosted(&self) -> usize {
-        self.stacks.cur().depth()
+        self.stacks.current_frame().depth()
     }
 
     fn kernel_get_current_stack_id_uncosted(&self) -> usize {
-        self.stacks.current_stack
+        self.stacks.current_stack_index
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let (cur, prev) = self.stacks.cur_and_prev();
+        let (cur, prev) = self.stacks.current_frame_and_previous_frame();
         let caller_actor = match prev {
             Some(call_frame) => call_frame.data(),
             None => {
@@ -684,7 +687,7 @@ where
     M: KernelCallbackObject,
 {
     current_frame: &'g CallFrame<M::CallFrameData, M::LockData>,
-    prev_frame: Option<&'g CallFrame<M::CallFrameData, M::LockData>>,
+    previous_frame: Option<&'g CallFrame<M::CallFrameData, M::LockData>>,
     heap: &'g Heap,
     callback: &'g mut M,
 }
@@ -705,7 +708,7 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller_call_frame = match self.prev_frame {
+        let caller_call_frame = match self.previous_frame {
             Some(call_frame) => call_frame.data(),
             None => {
                 // This will only occur on initialization
@@ -744,7 +747,7 @@ where
         M::on_mark_substate_as_transient(&node_id, &partition_num, &key, &mut as_read_only!(self))?;
 
         self.stacks
-            .cur_mut()
+            .current_frame_mut()
             .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
             .map_err(|e| {
                 RuntimeError::KernelError(KernelError::CallFrameError(
@@ -773,7 +776,7 @@ where
             &mut as_read_only!(self),
         )?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -802,7 +805,8 @@ where
                     M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
                 if retry {
-                    let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+                    let (cur_frame, prev_frame) =
+                        self.stacks.mut_current_frame_and_previous_frame();
 
                     let mut handler = KernelHandler {
                         callback: self.callback,
@@ -870,7 +874,7 @@ where
         lock_handle: SubstateHandle,
     ) -> Result<M::LockData, RuntimeError> {
         self.stacks
-            .cur()
+            .current_frame()
             .get_handle_info(lock_handle)
             .ok_or(RuntimeError::KernelError(
                 KernelError::SubstateHandleDoesNotExist(lock_handle),
@@ -882,7 +886,7 @@ where
         &mut self,
         lock_handle: SubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame,
@@ -918,7 +922,7 @@ where
             &mut read_only,
         )?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -950,7 +954,7 @@ where
         M::on_close_substate(CloseSubstateEvent::Start(lock_handle), &mut read_only)?;
 
         self.stacks
-            .cur_mut()
+            .current_frame_mut()
             .close_substate(&mut self.substate_io, lock_handle)
             .map_err(|e| {
                 RuntimeError::KernelError(KernelError::CallFrameError(
@@ -974,7 +978,7 @@ where
             &mut as_read_only!(self),
         )?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -1015,7 +1019,7 @@ where
             &mut as_read_only!(self),
         )?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -1052,7 +1056,7 @@ where
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         M::on_scan_keys(ScanKeysEvent::Start, &mut as_read_only!(self))?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -1089,7 +1093,7 @@ where
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         M::on_drain_substates(DrainSubstatesEvent::Start(limit), &mut as_read_only!(self))?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -1126,7 +1130,7 @@ where
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
         M::on_scan_sorted_substates(ScanSortedSubstatesEvent::Start, &mut as_read_only!(self))?;
 
-        let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev();
+        let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_previous_frame();
 
         let mut handler = KernelHandler {
             callback: self.callback,
@@ -1176,14 +1180,14 @@ where
         {
             let frame = CallFrame::new_child_from_parent(
                 &self.substate_io,
-                self.stacks.cur_mut(),
+                self.stacks.current_frame_mut(),
                 callee,
                 message,
             )
             .map_err(CallFrameError::CreateFrameError)
             .map_err(KernelError::CallFrameError)?;
 
-            self.stacks.push(frame);
+            self.stacks.push_frame(frame);
         }
 
         // Execute
@@ -1192,11 +1196,11 @@ where
             M::on_execution_start(self)?;
 
             // Auto drop locks
-            for handle in self.stacks.cur().open_substates() {
+            for handle in self.stacks.current_frame().open_substates() {
                 M::on_close_substate(CloseSubstateEvent::Start(handle), self)?;
             }
             self.stacks
-                .cur_mut()
+                .current_frame_mut()
                 .close_all_substates(&mut self.substate_io);
 
             // Run
@@ -1204,11 +1208,11 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
-            for handle in self.stacks.cur().open_substates() {
+            for handle in self.stacks.current_frame().open_substates() {
                 M::on_close_substate(CloseSubstateEvent::Start(handle), self)?;
             }
             self.stacks
-                .cur_mut()
+                .current_frame_mut()
                 .close_all_substates(&mut self.substate_io);
 
             // Handle execution finish
@@ -1219,7 +1223,7 @@ where
 
         // Move
         {
-            let (cur_frame, prev_frame) = self.stacks.cur_mut_and_prev_mut();
+            let (cur_frame, prev_frame) = self.stacks.mut_current_frame_and_mut_previous_frame();
 
             // Move resource
             CallFrame::pass_message(
@@ -1236,16 +1240,16 @@ where
             M::auto_drop(owned_nodes, self)?;
 
             // Now, check if any own has been left!
-            let owned_nodes = self.stacks.cur().owned_nodes();
+            let owned_nodes = self.stacks.current_frame().owned_nodes();
             if !owned_nodes.is_empty() {
                 return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
-                    owned_nodes,
+                    owned_nodes.into_iter().map(|n| n.into()).collect(),
                 )));
             }
         }
 
         // Pop call frame
-        self.stacks.pop();
+        self.stacks.pop_frame();
 
         M::after_invoke(&output, self)?;
 
@@ -1259,26 +1263,28 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     fn kernel_get_stack_id(&mut self) -> Result<usize, RuntimeError> {
         M::on_get_stack_id(&mut as_read_only!(self))?;
 
-        Ok(self.stacks.current_stack)
+        Ok(self.stacks.current_stack_index)
     }
 
-    fn kernel_switch_stack(&mut self, id: usize) -> Result<(), RuntimeError> {
+    fn kernel_switch_stack(&mut self, other_stack_index: usize) -> Result<(), RuntimeError> {
         M::on_switch_stack(&mut as_read_only!(self))?;
 
-        self.stacks.switch(id)?;
+        self.stacks.switch_stack(other_stack_index)?;
         Ok(())
     }
 
     fn kernel_send_to_stack(
         &mut self,
-        id: usize,
+        other_stack_index: usize,
         value: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         M::on_send_to_stack(value, &mut as_read_only!(self))?;
 
         let message = CallFrameMessage::from_output(value);
 
-        let (cur, other) = self.stacks.cur_mut_and_other_mut(id);
+        let (cur, other) = self
+            .stacks
+            .current_frame_mut_in_this_and_other_stack(other_stack_index);
 
         CallFrame::pass_message(&self.substate_io, cur, other, message)
             .map_err(CallFrameError::PassMessageError)
@@ -1290,14 +1296,14 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelStackApi for
     fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
         M::on_set_call_frame_data(&data, &mut as_read_only!(self))?;
 
-        *self.stacks.cur_mut().data_mut() = data;
+        *self.stacks.current_frame_mut().data_mut() = data;
         Ok(())
     }
 
     fn kernel_get_owned_nodes(&mut self) -> Result<Vec<NodeId>, RuntimeError> {
         M::on_get_owned_nodes(&mut as_read_only!(self))?;
 
-        Ok(self.stacks.cur().owned_nodes())
+        Ok(self.stacks.current_frame().owned_nodes())
     }
 }
 
@@ -1338,7 +1344,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
         &self,
     ) -> &CallFrame<<M as KernelCallbackObject>::CallFrameData, <M as KernelCallbackObject>::LockData>
     {
-        self.stacks.cur()
+        self.stacks.current_frame()
     }
 
     pub fn kernel_current_frame_mut(
@@ -1350,7 +1356,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
             <M as KernelCallbackObject>::LockData,
         >,
     ) {
-        (&self.substate_io, self.stacks.cur_mut())
+        (&self.substate_io, self.stacks.current_frame_mut())
     }
 
     pub fn kernel_prev_frame_stack_mut(
@@ -1361,7 +1367,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
             <M as KernelCallbackObject>::LockData,
         >,
     > {
-        self.stacks.prev_frames_mut()
+        self.stacks.previous_frames_mut()
     }
 
     pub fn kernel_substate_io(&self) -> &SubstateIO<'g, S> {

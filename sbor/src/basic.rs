@@ -353,6 +353,14 @@ impl FormattableCustomExtension for NoCustomExtension {
     ) -> Result<(), fmt::Error> {
         unreachable!("No custom values exist")
     }
+
+    fn code_generation_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        _: &mut F,
+        _: &Self::CustomDisplayContext<'a>,
+        _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        unreachable!("No custom values exist")
+    }
 }
 
 impl ValidatableCustomExtension<()> for NoCustomExtension {

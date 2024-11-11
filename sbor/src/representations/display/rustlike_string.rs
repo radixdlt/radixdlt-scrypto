@@ -11,6 +11,35 @@ pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomExtension> {
     pub schema: &'s Schema<E::CustomSchema>,
     pub custom_context: E::CustomDisplayContext<'a>,
     pub print_mode: PrintMode,
+    pub options: RustLikeOptions,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RustLikeOptions {
+    pub include_enum_type_names: bool,
+    pub include_full_value_information: bool,
+}
+
+impl RustLikeOptions {
+    pub fn full() -> Self {
+        Self {
+            include_enum_type_names: true,
+            include_full_value_information: true,
+        }
+    }
+
+    pub fn debug_like() -> Self {
+        Self {
+            include_enum_type_names: false,
+            include_full_value_information: false,
+        }
+    }
+}
+
+impl Default for RustLikeOptions {
+    fn default() -> Self {
+        Self::full()
+    }
 }
 
 pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomExtension>(
@@ -233,34 +262,36 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomExtension>(
     );
 
     let enum_name = enum_data.enum_name.unwrap_or("Enum");
+    match (
+        context.options.include_enum_type_names,
+        enum_data.variant_name,
+    ) {
+        (true, Some(variant_name)) => {
+            write!(f, "{}::{}", enum_name, variant_name)?;
+        }
+        (false, Some(variant_name)) => {
+            write!(f, "{}", variant_name)?;
+        }
+        // If we don't have an enum variant name, to avoid confusion, we print
+        // the fact it's an enum regardless of the option.
+        (_, None) => {
+            write!(f, "{}::[{}]", enum_name, variant_header.variant)?;
+        }
+    }
 
     let field_length = variant_header.length;
 
-    let closing_bracket = match (enum_data.variant_name, enum_data.field_names, field_length) {
-        (None, None, 0) => {
-            write!(f, "{}::[{}]", enum_name, variant_header.variant)?;
+    let closing_bracket = match (enum_data.field_names, field_length) {
+        (None, 0) => {
             consume_container_end(traverser)?;
             return Ok(());
         }
-        (None, None, _) => {
-            write!(f, "{}::[{}](", enum_name, variant_header.variant)?;
+        (None, _) => {
+            write!(f, "(")?;
             ')'
         }
-        (None, Some(_), _) => {
-            write!(f, "{}::[{}] {{", enum_name, variant_header.variant)?;
-            '}'
-        }
-        (Some(variant_name), None, 0) => {
-            write!(f, "{}::{}", enum_name, variant_name)?;
-            consume_container_end(traverser)?;
-            return Ok(());
-        }
-        (Some(variant_name), None, _) => {
-            write!(f, "{}::{}(", enum_name, variant_name)?;
-            ')'
-        }
-        (Some(variant_name), Some(_), _) => {
-            write!(f, "{}::{} {{", enum_name, variant_name)?;
+        (Some(_), _) => {
+            write!(f, " {{")?;
             '}'
         }
     };
@@ -486,25 +517,46 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
         write!(f, "{}(", type_name)?;
     }
 
-    match value_ref {
-        TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
-        TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
-        TerminalValueRef::I16(value) => write!(f, "{}i16", value)?,
-        TerminalValueRef::I32(value) => write!(f, "{}i32", value)?,
-        TerminalValueRef::I64(value) => write!(f, "{}i64", value)?,
-        TerminalValueRef::I128(value) => write!(f, "{}i128", value)?,
-        TerminalValueRef::U8(value) => write!(f, "{}u8", value)?,
-        TerminalValueRef::U16(value) => write!(f, "{}u16", value)?,
-        TerminalValueRef::U32(value) => write!(f, "{}u32", value)?,
-        TerminalValueRef::U64(value) => write!(f, "{}u64", value)?,
-        TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
-        TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
-        TerminalValueRef::Custom(ref value) => {
-            write!(f, "{}(", value_ref.value_kind())?;
-            E::display_string_content(f, &context.custom_context, value)?;
-            write!(f, ")")?;
+    if context.options.include_full_value_information {
+        match value_ref {
+            TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
+            TerminalValueRef::I16(value) => write!(f, "{}i16", value)?,
+            TerminalValueRef::I32(value) => write!(f, "{}i32", value)?,
+            TerminalValueRef::I64(value) => write!(f, "{}i64", value)?,
+            TerminalValueRef::I128(value) => write!(f, "{}i128", value)?,
+            TerminalValueRef::U8(value) => write!(f, "{}u8", value)?,
+            TerminalValueRef::U16(value) => write!(f, "{}u16", value)?,
+            TerminalValueRef::U32(value) => write!(f, "{}u32", value)?,
+            TerminalValueRef::U64(value) => write!(f, "{}u64", value)?,
+            TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
+            TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
+            TerminalValueRef::Custom(ref value) => {
+                write!(f, "{}(", value_ref.value_kind())?;
+                E::display_string_content(f, &context.custom_context, value)?;
+                write!(f, ")")?;
+            }
+        }
+    } else {
+        match value_ref {
+            TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I8(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I16(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I32(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I64(value) => write!(f, "{}", value)?,
+            TerminalValueRef::I128(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U8(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U16(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U32(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U64(value) => write!(f, "{}", value)?,
+            TerminalValueRef::U128(value) => write!(f, "{}", value)?,
+            TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
+            TerminalValueRef::Custom(ref value) => {
+                E::debug_string_content(f, &context.custom_context, value)?;
+            }
         }
     }
+
     if type_name.is_some() {
         write!(f, ")")?;
     }
@@ -594,7 +646,7 @@ mod tests {
 
         let expected_annotated_single_line = r###"MyComplexTupleStruct([1u16, 2u16, 3u16], [], hex(""), hex("010203"), { TestEnum::UnitVariant => MyFieldStruct { field1: 1u64, field2: ["hello"] }, TestEnum::SingleFieldVariant { field: 1u8 } => MyFieldStruct { field1: 2u64, field2: ["world"] }, TestEnum::DoubleStructVariant { field1: 1u8, field2: 2u8 } => MyFieldStruct { field1: 3u64, field2: ["!"] } }, { "hello" => MyUnitStruct, "world" => MyUnitStruct }, TestEnum::UnitVariant, TestEnum::SingleFieldVariant { field: 1u8 }, TestEnum::DoubleStructVariant { field1: 3u8, field2: 5u8 }, MyFieldStruct { field1: 21u64, field2: ["hello", "world!"] }, [MyUnitStruct, MyUnitStruct], Tuple(Enum::[32], Enum::[21](-3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::SingleLine,
             schema: schema.v1(),
             custom_context: Default::default(),
@@ -673,7 +725,7 @@ mod tests {
             ),
         )"###;
         let display_context = ValueDisplayParameters::Annotated {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
             print_mode: PrintMode::MultiLine {
                 indent_size: 4,
                 base_indent: 8,

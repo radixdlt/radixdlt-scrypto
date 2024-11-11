@@ -283,7 +283,10 @@ impl<'e> MultiThreadIntentProcessor<'e> {
         let owned_nodes = api.kernel_get_owned_nodes()?;
         if !owned_nodes.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
-                owned_nodes,
+                owned_nodes
+                    .into_iter()
+                    .map(|node_id| node_id.into())
+                    .collect(),
             )));
         }
 

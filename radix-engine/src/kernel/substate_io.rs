@@ -103,12 +103,14 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         if self.substate_locks.node_is_locked(node_id) {
             return Err(CallbackError::Error(DropNodeError::SubstateBorrowed(
-                *node_id,
+                node_id.clone().into(),
             )));
         }
 
         if self.non_global_node_refs.node_is_referenced(node_id) {
-            return Err(CallbackError::Error(DropNodeError::NodeBorrowed(*node_id)));
+            return Err(CallbackError::Error(DropNodeError::NodeBorrowed(
+                node_id.clone().into(),
+            )));
         }
 
         let node_substates = match device {
@@ -148,13 +150,13 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         while let Some(node_id) = queue.pop_front() {
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                    node_id,
+                    node_id.clone().into(),
                 )));
             }
 
             if self.pinned_to_heap.contains(&node_id) {
                 return Err(CallbackError::Error(
-                    PersistNodeError::CannotPersistPinnedNode(node_id),
+                    PersistNodeError::CannotPersistPinnedNode(node_id.clone().into()),
                 ));
             }
 
@@ -175,7 +177,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                PersistNodeError::ContainsNonGlobalRef(*reference),
+                                PersistNodeError::ContainsNonGlobalRef(reference.clone().into()),
                             ));
                         }
                     }
@@ -220,12 +222,12 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
             return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
-                *src_node_id,
+                src_node_id.clone().into(),
             )));
         }
         if self.substate_locks.node_is_locked(dest_node_id) {
             return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
-                *dest_node_id,
+                dest_node_id.clone().into(),
             )));
         }
 
@@ -288,7 +290,9 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                MovePartitionError::NonGlobalRefNotAllowed(reference.clone()),
+                                MovePartitionError::NonGlobalRefNotAllowed(
+                                    reference.clone().into(),
+                                ),
                             ));
                         }
                     }
@@ -337,7 +341,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                         TrackedSubstateInfo::New => {
                             return Err(CallbackError::Error(
                                 OpenSubstateError::LockUnmodifiedBaseOnNewSubstate(
-                                    node_id.clone(),
+                                    node_id.clone().into(),
                                     partition_num,
                                     substate_key.clone(),
                                 ),
@@ -346,7 +350,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                         TrackedSubstateInfo::Updated => {
                             return Err(CallbackError::Error(
                                 OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                                    node_id.clone(),
+                                    node_id.clone().into(),
                                     partition_num,
                                     substate_key.clone(),
                                 ),
@@ -405,7 +409,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             Some(handle) => handle,
             None => {
                 return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(
-                    *node_id,
+                    node_id.clone().into(),
                     partition_num,
                     substate_key.clone(),
                 )));
@@ -521,7 +525,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         {
             return Err(CallbackError::Error(
                 CallFrameSetSubstateError::SubstateLocked(
-                    node_id.clone(),
+                    node_id.clone().into(),
                     partition_num,
                     substate_key,
                 ),
@@ -560,7 +564,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
                 CallFrameRemoveSubstateError::SubstateLocked(
-                    node_id.clone(),
+                    node_id.clone().into(),
                     partition_num,
                     key.clone(),
                 ),

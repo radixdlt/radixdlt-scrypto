@@ -413,9 +413,9 @@ pub enum CreateFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
-    GlobalRefNotFound(NodeId),
-    DirectRefNotFound(NodeId),
-    TransientRefNotFound(NodeId),
+    GlobalRefNotFound(error_models::ReferencedNodeId),
+    DirectRefNotFound(error_models::ReferencedNodeId),
+    TransientRefNotFound(error_models::ReferencedNodeId),
 }
 
 /// Represents an error when creating a node.
@@ -430,58 +430,58 @@ pub enum CreateNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DropNodeError {
     TakeNodeError(TakeNodeError),
-    NodeBorrowed(NodeId),
-    SubstateBorrowed(NodeId),
+    NodeBorrowed(error_models::ReferencedNodeId),
+    SubstateBorrowed(error_models::ReferencedNodeId),
     ProcessSubstateError(ProcessSubstateError),
 }
 
 /// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
-    ContainsNonGlobalRef(NodeId),
-    NodeBorrowed(NodeId),
-    CannotPersistPinnedNode(NodeId),
+    ContainsNonGlobalRef(error_models::ReferencedNodeId),
+    NodeBorrowed(error_models::ReferencedNodeId),
+    CannotPersistPinnedNode(error_models::OwnedNodeId),
 }
 
 /// Represents an error when taking a node from current frame.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeNodeError {
-    OwnNotFound(NodeId),
-    SubstateBorrowed(NodeId),
+    OwnNotFound(error_models::OwnedNodeId),
+    SubstateBorrowed(error_models::ReferencedNodeId),
 }
 
 /// Represents an error when moving modules from one node to another.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MovePartitionError {
-    NodeNotAvailable(NodeId),
+    NodeNotAvailable(error_models::ReferencedNodeId),
     HeapRemovePartitionError(HeapRemovePartitionError),
-    NonGlobalRefNotAllowed(NodeId),
+    NonGlobalRefNotAllowed(error_models::ReferencedNodeId),
     PersistNodeError(PersistNodeError),
-    SubstateBorrowed(NodeId),
+    SubstateBorrowed(error_models::ReferencedNodeId),
     MoveFromStoreNotPermitted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PinNodeError {
-    NodeNotVisible(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MarkTransientSubstateError {
-    NodeNotVisible(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OpenSubstateError {
-    NodeNotVisible(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
     SubstateFault,
     InvalidDefaultValue,
     ProcessSubstateKeyError(ProcessSubstateKeyError),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    SubstateLocked(error_models::OwnedNodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,
-    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnNewSubstate(error_models::OwnedNodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(error_models::OwnedNodeId, PartitionNumber, SubstateKey),
 }
 
 /// Represents an error when reading substates.
@@ -503,46 +503,46 @@ pub enum WriteSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
     HandleNotFound(SubstateHandle),
-    SubstateBorrowed(NodeId),
+    SubstateBorrowed(error_models::ReferencedNodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameSetSubstateError {
-    NodeNotVisible(NodeId),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    NodeNotVisible(error_models::ReferencedNodeId),
+    SubstateLocked(error_models::OwnedNodeId, PartitionNumber, SubstateKey),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
-    NodeNotVisible(NodeId),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    NodeNotVisible(error_models::ReferencedNodeId),
+    SubstateLocked(error_models::OwnedNodeId, PartitionNumber, SubstateKey),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanKeysError {
-    NodeNotVisible(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameDrainSubstatesError {
-    NodeNotVisible(NodeId),
-    NonGlobalRefNotSupported(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
+    NonGlobalRefNotSupported(error_models::ReferencedNodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
-    NodeNotVisible(NodeId),
-    OwnedNodeNotSupported(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
+    OwnedNodeNotSupported(error_models::OwnedNodeId),
     ProcessSubstateKeyError(ProcessSubstateKeyError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateKeyError {
-    NodeNotVisible(NodeId),
+    NodeNotVisible(error_models::ReferencedNodeId),
     DecodeError(DecodeError),
     OwnedNodeNotSupported,
     NonGlobalRefNotSupported,
@@ -551,10 +551,10 @@ pub enum ProcessSubstateKeyError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ProcessSubstateError {
     TakeNodeError(TakeNodeError),
-    CantDropNodeInStore(NodeId),
-    RefNotFound(NodeId),
-    RefCantBeAddedToSubstate(NodeId),
-    NonGlobalRefNotAllowed(NodeId),
+    CantDropNodeInStore(error_models::ReferencedNodeId),
+    RefNotFound(error_models::ReferencedNodeId),
+    RefCantBeAddedToSubstate(error_models::ReferencedNodeId),
+    NonGlobalRefNotAllowed(error_models::ReferencedNodeId),
     PersistNodeError(PersistNodeError),
 }
 
@@ -643,7 +643,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 to.stable_references
                     .insert(node_id, StableReferenceType::Global);
             } else {
-                return Err(PassMessageError::GlobalRefNotFound(node_id));
+                return Err(PassMessageError::GlobalRefNotFound(node_id.into()));
             }
         }
 
@@ -652,7 +652,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 to.stable_references
                     .insert(node_id, StableReferenceType::DirectAccess);
             } else {
-                return Err(PassMessageError::DirectRefNotFound(node_id));
+                return Err(PassMessageError::DirectRefNotFound(node_id.into()));
             }
         }
 
@@ -672,7 +672,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                         .insert(global_address.into_node_id(), StableReferenceType::Global);
                 }
             } else {
-                return Err(PassMessageError::TransientRefNotFound(node_id));
+                return Err(PassMessageError::TransientRefNotFound(node_id.into()));
             }
         }
 
@@ -703,7 +703,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Get device
         let (_ref_origin, device) = self
             .get_node_ref(&node_id)
-            .ok_or_else(|| PinNodeError::NodeNotVisible(node_id))?;
+            .ok_or_else(|| PinNodeError::NodeNotVisible(node_id.into()))?;
 
         match device {
             SubstateDevice::Heap => {
@@ -727,7 +727,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Get device
         let (_ref_origin, device) = self
             .get_node_ref(&node_id)
-            .ok_or_else(|| MarkTransientSubstateError::NodeNotVisible(node_id))?;
+            .ok_or_else(|| MarkTransientSubstateError::NodeNotVisible(node_id.into()))?;
 
         match device {
             SubstateDevice::Heap => {
@@ -858,12 +858,16 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<(), CallbackError<MovePartitionError, E>> {
         // Check src visibility
         let (_ref_origin, src_device) = self.get_node_ref(src_node_id).ok_or_else(|| {
-            CallbackError::Error(MovePartitionError::NodeNotAvailable(src_node_id.clone()))
+            CallbackError::Error(MovePartitionError::NodeNotAvailable(
+                src_node_id.clone().into(),
+            ))
         })?;
 
         // Check dest visibility
         let (_ref_origin, dest_device) = self.get_node_ref(dest_node_id).ok_or_else(|| {
-            CallbackError::Error(MovePartitionError::NodeNotAvailable(dest_node_id.clone()))
+            CallbackError::Error(MovePartitionError::NodeNotAvailable(
+                dest_node_id.clone().into(),
+            ))
         })?;
 
         let mut adapter = CallFrameToIOAccessAdapter {
@@ -905,7 +909,9 @@ impl<C, L: Clone> CallFrame<C, L> {
                     }
 
                     if !self.get_node_visibility(reference).is_visible() {
-                        return Err(ProcessSubstateKeyError::NodeNotVisible(*reference));
+                        return Err(ProcessSubstateKeyError::NodeNotVisible(
+                            reference.clone().into(),
+                        ));
                     }
                 }
             }
@@ -956,7 +962,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<(SubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
         let (ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
-            CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone()))
+            CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone().into()))
         })?;
 
         self.process_input_substate_key(substate_key)
@@ -1110,7 +1116,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             // be from a visible node. Thus, we cannot close a substate if there is a
             // child opened substate.
             if substate_io.substate_locks.node_is_locked(node_id) {
-                return Err(CloseSubstateError::SubstateBorrowed(*node_id));
+                return Err(CloseSubstateError::SubstateBorrowed(node_id.clone().into()));
             }
         }
 
@@ -1181,7 +1187,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
-            CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()))
+            CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(
+                node_id.clone().into(),
+            ))
         })?;
 
         self.process_input_substate_key(&key).map_err(|e| {
@@ -1212,7 +1220,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
-                node_id.clone(),
+                node_id.clone().into(),
             ))
         })?;
 
@@ -1242,7 +1250,9 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
-            CallbackError::Error(CallFrameScanKeysError::NodeNotVisible(node_id.clone()))
+            CallbackError::Error(CallFrameScanKeysError::NodeNotVisible(
+                node_id.clone().into(),
+            ))
         })?;
 
         let mut adapter = CallFrameToIOAccessAdapter {
@@ -1277,7 +1287,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Check node visibility
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameDrainSubstatesError::NodeNotVisible(
-                node_id.clone(),
+                node_id.clone().into(),
             ))
         })?;
 
@@ -1333,7 +1343,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         // Check node visibility
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameScanSortedSubstatesError::NodeNotVisible(
-                node_id.clone(),
+                node_id.clone().into(),
             ))
         })?;
 
@@ -1377,7 +1387,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     fn get_node_ref(&self, node_id: &NodeId) -> Option<(ReferenceOrigin, SubstateDevice)> {
         let node_visibility = self.get_node_visibility(node_id);
-        let ref_origin = node_visibility.reference_origin(node_id.clone())?;
+        let ref_origin = node_visibility.reference_origin(node_id.clone().into())?;
         let device = match ref_origin {
             ReferenceOrigin::FrameOwned => SubstateDevice::Heap,
             ReferenceOrigin::Global(..) | ReferenceOrigin::DirectlyAccessed => {
@@ -1438,12 +1448,12 @@ impl<C, L: Clone> CallFrame<C, L> {
                 let node_visibility = self.get_node_visibility(added_ref);
                 if !node_visibility.is_visible() {
                     return Err(CallbackError::Error(ProcessSubstateError::RefNotFound(
-                        added_ref.clone(),
+                        added_ref.clone().into(),
                     )));
                 }
                 if !node_visibility.can_be_referenced_in_substate() {
                     return Err(CallbackError::Error(
-                        ProcessSubstateError::RefCantBeAddedToSubstate(added_ref.clone()),
+                        ProcessSubstateError::RefCantBeAddedToSubstate(added_ref.clone().into()),
                     ));
                 }
             }
@@ -1490,7 +1500,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
                 if let Some(removed_own) = diff.removed_owns.iter().next() {
                     return Err(CallbackError::Error(
-                        ProcessSubstateError::CantDropNodeInStore(*removed_own),
+                        ProcessSubstateError::CantDropNodeInStore(removed_own.clone().into()),
                     ));
                 }
 
@@ -1498,7 +1508,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                     diff.added_refs.iter().filter(|r| !r.is_global()).next()
                 {
                     return Err(CallbackError::Error(
-                        ProcessSubstateError::NonGlobalRefNotAllowed(*non_global_ref),
+                        ProcessSubstateError::NonGlobalRefNotAllowed(non_global_ref.clone().into()),
                     ));
                 }
 
@@ -1583,13 +1593,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         // We do not need to check children of the node as a node must be
         // substate locked in order to access any of it's children.
         if substate_io.substate_locks.node_is_locked(node_id) {
-            return Err(TakeNodeError::SubstateBorrowed(*node_id));
+            return Err(TakeNodeError::SubstateBorrowed(node_id.clone().into()));
         }
 
         if self.owned_root_nodes.swap_remove(node_id) {
             Ok(())
         } else {
-            Err(TakeNodeError::OwnNotFound(node_id.clone()))
+            Err(TakeNodeError::OwnNotFound(node_id.clone().into()))
         }
     }
 

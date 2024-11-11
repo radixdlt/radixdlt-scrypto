@@ -53,10 +53,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -106,10 +103,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -159,10 +153,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -220,10 +211,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -281,10 +269,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -342,10 +327,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        e.to_string()
-            .contains("Non Global Reference is not allowed")
-    });
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -499,11 +481,8 @@ fn test_send_and_receive_reference_wrapped_in_non_transient_wrapper() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        let error_message = format!("{e:?}");
-        return error_message.contains("BlueprintPayloadValidationError")
-            && error_message.contains("Non Global Reference is not allowed");
-    });
+    receipt.expect_commit_failure_containing_error("BlueprintPayloadValidationError");
+    receipt.expect_commit_failure_containing_error("Non Global Reference is not allowed");
 }
 
 #[test]
@@ -530,10 +509,8 @@ fn test_send_and_receive_reference_wrapped_in_transient_wrapper() {
 
     let upload_package_receipt = ledger.execute_manifest(upload_package_manifest, vec![]);
 
-    upload_package_receipt.expect_specific_failure(|e| {
-        let error_message = format!("{e:?}");
-        return error_message.contains("Transient blueprints not supported");
-    });
+    upload_package_receipt
+        .expect_commit_failure_containing_error("Transient blueprints not supported");
 }
 
 fn manifest_to_publish_package_with_transient_blueprints<P: Into<PackagePublishingSource>>(
