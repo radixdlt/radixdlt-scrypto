@@ -2,6 +2,7 @@ use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use crate::internal_prelude::*;
 use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::types::ResourceAddress;
+use radix_rust::unicode::{CustomCharEscaper, EscapeBehaviour};
 use sbor::rust::fmt;
 use sbor::*;
 
@@ -142,7 +143,14 @@ pub fn format_manifest_value<F: fmt::Write>(
             write_with_indent!(f, context, indent_start, depth, "{}u128", value)?
         }
         Value::String { value } => {
-            write_with_indent!(f, context, indent_start, depth, "\"{}\"", escape(value))?
+            write_with_indent!(
+                f,
+                context,
+                indent_start,
+                depth,
+                "{}",
+                ManifestCustomCharEscaper::escaped(value.as_str())
+            )?;
         }
         Value::Tuple { fields } => {
             if fields.len() == 2 {
@@ -516,20 +524,49 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
     }
 }
 
-const ESCAPE_SEQUENCES: [(&str, &str); 7] = [
-    ("\\", r#"\\"#),
-    ("\n", r#"\n"#),
-    ("\r", r#"\r"#),
-    ("\t", r#"\t"#),
-    ("\x08", r#"\b"#),
-    ("\x0c", r#"\f"#),
-    (r#"""#, r#"\""#),
-];
+pub struct ManifestCustomCharEscaper;
 
-fn escape(string: &str) -> String {
-    let mut string = string.to_owned();
-    for (find, replace) in ESCAPE_SEQUENCES {
-        string = string.replace(find, replace)
+impl CustomCharEscaper for ManifestCustomCharEscaper {
+    fn resolve_escape_behaviour(c: char) -> EscapeBehaviour {
+        match c {
+            '\\' => EscapeBehaviour::Replace(r#"\\"#),
+            '\n' => EscapeBehaviour::Replace(r#"\n"#),
+            '\r' => EscapeBehaviour::Replace(r#"\r"#),
+            '\t' => EscapeBehaviour::Replace(r#"\t"#),
+            '\x08' => EscapeBehaviour::Replace(r#"\b"#),
+            '\x0c' => EscapeBehaviour::Replace(r#"\f"#),
+            '"' => EscapeBehaviour::Replace(r#"\""#),
+            _ if should_escape_unicode_char(c) => EscapeBehaviour::UnicodeEscape,
+            _ => EscapeBehaviour::None,
+        }
     }
-    string
+
+    fn format_unicode_escaped_char(f: &mut impl fmt::Write, c: char) -> fmt::Result {
+        radix_rust::unicode::format_json_utf16_escaped_char(f, c)
+    }
+}
+
+fn should_escape_unicode_char(c: char) -> bool {
+    // Per the JSON spec, we need to encode as least control characters.
+    //
+    // Some JSON encoders default to encoding everything that is non-ASCII.
+    // But this is a bit too restrictive, as it's common for people to
+    // want to use emoji or non-ASCII in metadata, and it would be nice
+    // for the manifest canonical encoding to display this.
+    //
+    // If we try to be minimal, and just encode control characters
+    // (e.g. given by `char.is_control()`), this only covers the
+    // `Cc` category which misses things like the RTL override which
+    // is in the `Cf` category. Such characters could mess up the display
+    // of manifests, so we should exclude them.
+    //
+    // There are also other characters which may cause confusion in
+    // text, such as grapheme extenders which can be used to add arbitrary
+    // accents to characters.
+    //
+    // So when Rust formats debug strings, it also escapes characters
+    // such as grapheme extenders, and other characters it views as
+    // "non-printable". We view this as a sensible default behaviour,
+    // so we follow this whne choosing to display manifest strings.
+    radix_rust::unicode::rust_1_81_should_unicode_escape_in_debug_str(c)
 }

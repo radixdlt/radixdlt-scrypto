@@ -277,31 +277,21 @@ STATE UPDATES: 8 entities
     ├─ Set: NonFungibleLocalId("#3#")
        Value: UNLOCKED MetadataStandardNonFungibleData {
          name: "Lending",
-         description: "In lending, borrowers pledge their crypto assets as collateral and avail loans in stablecoins or other crypto assets as a means of financing.
-
-However, unlike TradFi, DeFi lending uses algorithmic systems where lending and borrowing rates are determined automatically based on each asset's real-time supply and demand.
-
-This automated approach means more flexibility and access for anyone looking for financing.",
+         description: "In lending, borrowers pledge their crypto assets as collateral and avail loans in stablecoins or other crypto assets as a means of financing.\n\nHowever, unlike TradFi, DeFi lending uses algorithmic systems where lending and borrowing rates are determined automatically based on each asset's real-time supply and demand.\n\nThis automated approach means more flexibility and access for anyone looking for financing.",
          key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414979a8b045995bf75_ICON-LENDING.svg"),
          arbitrary_coolness_rating: 30u64,
        }
     ├─ Set: NonFungibleLocalId("#2#")
        Value: UNLOCKED MetadataStandardNonFungibleData {
          name: "Stablecoins",
-         description: "A stablecoin is a class of cryptocurrencies that attempt to offer price stability and are backed by a reserve asset. Stablecoins have become popular as they provide the instant processing and security or privacy of cryptocurrencies' payments along with the volatility-free stable valuations of fiat currencies.
-
-Stablecoins base their market value on an external reference. This could be a currency like the U.S. dollar or a commodity's price such as gold. Stablecoins achieve price stability via collateralization or algorithmic buying and selling of the reference asset or its derivatives.",
+         description: "A stablecoin is a class of cryptocurrencies that attempt to offer price stability and are backed by a reserve asset. Stablecoins have become popular as they provide the instant processing and security or privacy of cryptocurrencies' payments along with the volatility-free stable valuations of fiat currencies.\n\nStablecoins base their market value on an external reference. This could be a currency like the U.S. dollar or a commodity's price such as gold. Stablecoins achieve price stability via collateralization or algorithmic buying and selling of the reference asset or its derivatives.",
          key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f419f77f05b9086565e6_icon-stablecoin.svg"),
          arbitrary_coolness_rating: 5u64,
        }
     ├─ Set: NonFungibleLocalId("#5#")
        Value: UNLOCKED MetadataStandardNonFungibleData {
          name: "Futures, Options, & Derivatives",
-         description: "A futures contract is an arrangement between two users on an exchange to buy and sell an underlying crypto asset at an agreed-upon price on a certain date in the future.
-
-Options give the holder the right to buy (call) or sell (put) an underlying crypto asset at a set date without being obligated.
-
-Synthetic assets, also known as synths, are an asset class formed by combining cryptocurrencies and traditional derivative assets, making them tokenized derivatives.",
+         description: "A futures contract is an arrangement between two users on an exchange to buy and sell an underlying crypto asset at an agreed-upon price on a certain date in the future.\n\nOptions give the holder the right to buy (call) or sell (put) an underlying crypto asset at a set date without being obligated.\n\nSynthetic assets, also known as synths, are an asset class formed by combining cryptocurrencies and traditional derivative assets, making them tokenized derivatives.",
          key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414e8f31b971debfabe_ICON-FUTURES.svg"),
          arbitrary_coolness_rating: 10u64,
        }
@@ -322,9 +312,7 @@ Synthetic assets, also known as synths, are an asset class formed by combining c
     └─ Set: NonFungibleLocalId("#1#")
        Value: UNLOCKED MetadataStandardNonFungibleData {
          name: "Decentralized Exchanges",
-         description: "Decentralized Exchanges, also known as DEXes, allow users to exchange two or more tokens in a single transaction, at a certain price, without the need for another party to facilitate the transaction.
-
-DEXes allow users to trade assets without the need for a trusted third party. They are the first ever examples of a censorship resistant, non-custodial, and permissionless way of exchanging assets electronically.",
+         description: "Decentralized Exchanges, also known as DEXes, allow users to exchange two or more tokens in a single transaction, at a certain price, without the need for another party to facilitate the transaction.\n\nDEXes allow users to trade assets without the need for a trusted third party. They are the first ever examples of a censorship resistant, non-custodial, and permissionless way of exchanging assets electronically.",
          key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414d213fd7349b654b9_icon-DEX.svg"),
          arbitrary_coolness_rating: 45u64,
        }

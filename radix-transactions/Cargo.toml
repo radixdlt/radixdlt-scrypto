@@ -9,7 +9,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 sbor = { workspace = true }
-radix-rust = { workspace = true }
+radix-rust = { workspace = true, features = ["unicode"] }
 radix-engine-interface = { workspace = true }
 radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
 radix-substate-store-interface = { workspace = true }
