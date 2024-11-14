@@ -1,3 +1,5 @@
+extern crate radix_wasmi as wasmi;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use radix_common::math::{traits::*, Decimal, PreciseDecimal};
 use std::process::Command;
@@ -66,7 +68,7 @@ macro_rules! wasmi_native {
                 mut caller: wasmi::Caller<'_, HostState>,
                 a_ptr: u32,
                 b_ptr: u32,
-                c_ptr: u32) -> Result<i64, wasmi::Error> {
+                c_ptr: u32) -> Result<i64, wasmi::core::Trap> {
                 let memory = match caller.get_export("memory") {
                     Some(wasmi::Extern::Memory(memory)) => memory,
                     _ => panic!("Failed to find memory export"),
@@ -115,7 +117,7 @@ fn wasmi_get_instance(
     code: &[u8],
 ) -> wasmi::Instance {
     let module = wasmi::Module::new(&engine, code).unwrap();
-    let mut linker = <wasmi::Linker<HostState>>::new(engine);
+    let mut linker = <wasmi::Linker<HostState>>::new();
 
     macro_rules! linker_define {
         ($name:tt) => {
