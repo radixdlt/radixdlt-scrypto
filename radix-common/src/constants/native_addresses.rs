@@ -210,6 +210,16 @@ pub const CONSENSUS_MANAGER: ComponentAddress = ComponentAddress::new_or_panic([
     181, 74, 106, 134, 49, 140, 99, 24, 198,
 ]);
 
+/// The intent hash store component
+pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic([
+    130, 204, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 232, 245,
+    174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
+]);
+
+// Use TRANSACTION_TRACKER's NodeId as frame-owned object marker
+pub const FRAME_OWNED_GLOBAL_MARKER: GlobalAddress =
+    GlobalAddress::new_or_panic(TRANSACTION_TRACKER.into_node_id().0);
+
 //=========================================================================
 // SYSTEM SINGLETON COMPONENTS - SCRYPTO
 //=========================================================================
@@ -227,16 +237,6 @@ pub const FAUCET: ComponentAddress = ComponentAddress::new_or_panic([
 ]);
 // Export an alias for backwards compatibility of dApp developer tests
 pub use FAUCET as FAUCET_COMPONENT;
-
-/// The intent hash store component
-pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic([
-    130, 204, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 232, 245,
-    174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
-]);
-
-// Use TRANSACTION_TRACKER's NodeId as frame-owned object marker
-pub const FRAME_OWNED_GLOBAL_MARKER: GlobalAddress =
-    GlobalAddress::new_or_panic(TRANSACTION_TRACKER.into_node_id().0);
 
 //=========================================================================
 //=========================================================================
