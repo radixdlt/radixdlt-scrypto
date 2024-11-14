@@ -1850,17 +1850,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
-name = "num-derive"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.76",
-]
-
-[[package]]
 name = "num-format"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3756,42 +3745,46 @@ dependencies = [
 
 [[package]]
 name = "wasmi"
-version = "0.36.5"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "446ddc18185880ff32de907a809864283d18f9de568c23d46464b6231973d595"
+checksum = "fc7a1acc721dd73e4fff2dc3796cc3efda6e008369e859a20fdbe058bddeebc3"
 dependencies = [
  "arrayvec",
  "multi-stash",
- "num-derive",
- "num-traits",
  "smallvec",
  "spin 0.9.8",
  "wasmi_collections",
  "wasmi_core",
+ "wasmi_ir",
  "wasmparser-nostd",
 ]
 
 [[package]]
 name = "wasmi_collections"
-version = "0.36.5"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eddc10bfb0069e913399ebd66c5a72c7d9aceabddcaa0296f062a55ab61d404"
+checksum = "142fda775f9cda587681ff0ec63c7a7e5679dc95da75f3f9b7e3979ce3506a5b"
 dependencies = [
- "ahash 0.8.11",
- "hashbrown 0.14.3",
  "string-interner",
 ]
 
 [[package]]
 name = "wasmi_core"
-version = "0.36.5"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f08b12621457c17cfd5349cce25029eeac3769b63b1b02bd850d595a00f375ff"
+checksum = "281a49ca3c12c8efa052cb67758454fc861d80ab5a03def352e04eb08c20beb2"
 dependencies = [
  "downcast-rs",
  "libm",
- "num-traits",
- "paste",
+]
+
+[[package]]
+name = "wasmi_ir"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bbadcf529808086a74bacd3ce8aedece444a847292198a56dcde920d1fb213c"
+dependencies = [
+ "wasmi_core",
 ]
 
 [[package]]

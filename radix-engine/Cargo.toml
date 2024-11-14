@@ -45,7 +45,7 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
-wasmi = {  workspace = true, features = ["no-hash-maps"] }
+wasmi = {  workspace = true, features = ["prefer-btree-collections"] }
 lazy_static = { workspace = true }
 
 [dev-dependencies]
