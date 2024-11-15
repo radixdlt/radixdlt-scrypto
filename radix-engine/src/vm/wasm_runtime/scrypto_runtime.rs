@@ -794,4 +794,25 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
 
         self.allocate_buffer(key.to_vec())
     }
+
+    /// This method is only available to packages uploaded after "Cuttlefish"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
+    #[trace_resources]
+    fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+        &mut self,
+        message: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let hash = Hash::try_from(message.as_slice()).map_err(WasmRuntimeError::InvalidHash)?;
+        let signature = Secp256k1Signature::try_from(signature.as_ref())
+            .map_err(WasmRuntimeError::InvalidSecp256k1Signature)?;
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Secp256k1EcdsaKeyRecover)?;
+
+        let key = verify_and_recover_secp256k1_uncompressed(&hash, &signature)
+            .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
+
+        self.allocate_buffer(key.0.to_vec())
+    }
 }

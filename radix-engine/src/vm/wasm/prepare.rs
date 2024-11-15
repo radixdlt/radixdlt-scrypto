@@ -965,6 +965,32 @@ impl WasmModule {
                             ));
                         }
                     }
+                    CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_UNCOMPRESSED_FUNCTION_NAME =>
+                    {
+                        if version < ScryptoVmVersion::crypto_utils_v2() {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_v2().into(),
+                                },
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
                     // Crypto Utils v2 end
                     _ => {}
                 };
@@ -1556,6 +1582,7 @@ mod tests {
                     CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME,
                     CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME,
                     CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME,
+                    CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_UNCOMPRESSED_FUNCTION_NAME,
                 ],
             ),
         ] {

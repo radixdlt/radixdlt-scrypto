@@ -346,6 +346,12 @@ pub mod crypto_utils {
             message_len: usize,
             signature_ptr: *const u8,
             signature_len: usize) -> Buffer;
+
+        pub fn crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+            message_ptr: *const u8,
+            message_len: usize,
+            signature_ptr: *const u8,
+            signature_len: usize) -> Buffer;
     }
 }
 

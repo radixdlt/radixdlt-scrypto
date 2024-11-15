@@ -2425,6 +2425,7 @@ dependencies = [
  "sbor",
  "scrypto",
  "scrypto-test",
+ "secp256k1",
  "serde",
  "serde_json",
  "trybuild",
