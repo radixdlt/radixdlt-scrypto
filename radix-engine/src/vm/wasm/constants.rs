@@ -94,6 +94,8 @@ pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_FUNCTION_NAME: &str =
     "crypto_utils_secp256k1_ecdsa_verify";
 pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME: &str =
     "crypto_utils_secp256k1_ecdsa_verify_and_key_recover";
+pub const CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_UNCOMPRESSED_FUNCTION_NAME: &str =
+    "crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed";
 
 //=================
 // WASM Shim

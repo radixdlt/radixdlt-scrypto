@@ -2,7 +2,19 @@ use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
-/// Represents an ECDSA Secp256k1 public key.
+/// Represents an uncompressed ECDSA Secp256k1 public key.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[sbor(transparent)]
+pub struct Secp256k1UncompressedPublicKey(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
+
+impl Secp256k1UncompressedPublicKey {
+    pub const LENGTH: usize = 65;
+}
+
+/// Represents a compressed ECDSA Secp256k1 public key, which is the default format used in the Radix stack.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(

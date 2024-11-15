@@ -576,6 +576,7 @@ fn crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
     package_address: PackageAddress,
     hash: Hash,
     signature: Secp256k1Signature,
+    compressed: bool,
 ) -> TransactionReceipt {
     runner.execute_manifest(
         ManifestBuilder::new()
@@ -583,7 +584,11 @@ fn crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
             .call_function(
                 package_address,
                 "CryptoScrypto",
-                "secp256k1_ecdsa_verify_and_key_recover",
+                if compressed {
+                    "secp256k1_ecdsa_verify_and_key_recover"
+                } else {
+                    "secp256k1_ecdsa_verify_and_key_recover_uncompressed"
+                },
                 manifest_args!(hash, signature),
             )
             .build(),
@@ -688,16 +693,31 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
     let hash1_signature = Secp256k1Signature::from_str(hash1_signature).unwrap();
 
     // Act
-    let pk_recovered: Secp256k1PublicKey =
+    let pk_recovered1: Secp256k1PublicKey =
         get_output!(crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
             &mut ledger,
             package_address,
             hash1,
             hash1_signature,
+            true
+        ));
+    let pk_recovered2: [u8; 65] =
+        get_output!(crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
+            &mut ledger,
+            package_address,
+            hash1,
+            hash1_signature,
+            false
         ));
 
     // Assert
-    assert_eq!(pk, pk_recovered);
+    assert_eq!(pk, pk_recovered1);
+    assert_eq!(
+        secp256k1::PublicKey::from_slice(pk.as_ref())
+            .unwrap()
+            .serialize_uncompressed(),
+        pk_recovered2
+    );
 
     // Test for key recovery error
     let invalid_signature = "01cd8dcd5bb841430dd0a6f45565a1b8bdb4a204eb868832cd006f963a89a662813ab844a542fcdbfda4086a83fbbde516214113051b9c8e42a206c98d564d7122";
@@ -708,6 +728,7 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
         package_address,
         hash1,
         invalid_signature,
+        true
     ));
 
     // Assert

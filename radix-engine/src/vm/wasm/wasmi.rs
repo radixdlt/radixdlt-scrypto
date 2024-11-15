@@ -910,6 +910,29 @@ fn secp256k1_ecdsa_verify_and_key_recover(
         .map(|buffer| buffer.0)
 }
 
+fn secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+    mut caller: Caller<'_, HostState>,
+    message_ptr: u32,
+    message_len: u32,
+    signature_ptr: u32,
+    signature_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let runtime = grab_runtime!(caller);
+    let memory = grab_memory!(caller);
+
+    let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
+    let signature = read_memory(
+        caller.as_context_mut(),
+        memory,
+        signature_ptr,
+        signature_len,
+    )?;
+
+    runtime
+        .crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed(message, signature)
+        .map(|buffer| buffer.0)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1623,6 +1646,24 @@ impl WasmiModule {
                 .map_err(|e| e.into())
             },
         );
+        let host_secp2561k1_ecdsa_verify_and_key_recover_uncompressed = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             message_ptr: u32,
+             message_len: u32,
+             signature_ptr: u32,
+             signature_len: u32|
+             -> Result<u64, Trap> {
+                secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+                    caller,
+                    message_ptr,
+                    message_len,
+                    signature_ptr,
+                    signature_len,
+                )
+                .map_err(|e| e.into())
+            },
+        );
 
         let mut linker = <Linker<HostState>>::new();
 
@@ -1825,6 +1866,11 @@ impl WasmiModule {
             linker,
             CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME,
             host_secp2561k1_ecdsa_verify_and_key_recover
+        );
+        linker_define!(
+            linker,
+            CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_UNCOMPRESSED_FUNCTION_NAME,
+            host_secp2561k1_ecdsa_verify_and_key_recover_uncompressed
         );
 
         #[cfg(feature = "radix_engine_tests")]
