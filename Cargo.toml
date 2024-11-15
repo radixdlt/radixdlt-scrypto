@@ -127,7 +127,7 @@ temp-env = { version = "0.2.0" } # Used in radix-clis
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
-radix-wasmi = { version = "1.0.0" }
+wasmi = { version = "=0.39.1" }
 wasm-opt = { version = "0.114.1" }
 wasmparser = { version = "0.107.0", default-features = false }
 extend = { version = "1.2.0" }
