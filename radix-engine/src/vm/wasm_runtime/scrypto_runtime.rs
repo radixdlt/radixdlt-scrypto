@@ -813,6 +813,6 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         let key = verify_and_recover_secp256k1_uncompressed(&hash, &signature)
             .ok_or(WasmRuntimeError::Secp256k1KeyRecoveryError)?;
 
-        self.allocate_buffer(key.to_vec())
+        self.allocate_buffer(key.0.to_vec())
     }
 }

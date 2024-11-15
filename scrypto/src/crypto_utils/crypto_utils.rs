@@ -1,6 +1,9 @@
 use crate::engine::wasm_api::{copy_buffer, crypto_utils};
 use radix_common::{
-    crypto::{Ed25519PublicKey, Ed25519Signature, Secp256k1PublicKey, Secp256k1Signature},
+    crypto::{
+        Ed25519PublicKey, Ed25519Signature, Secp256k1PublicKey, Secp256k1Signature,
+        Secp256k1UncompressedPublicKey,
+    },
     prelude::{scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G2Signature, Hash},
 };
 use sbor::prelude::Vec;
@@ -160,7 +163,7 @@ impl CryptoUtils {
     pub fn secp256k1_ecdsa_verify_and_key_recover_uncompressed(
         message_hash: impl AsRef<Hash>,
         signature: impl AsRef<Secp256k1Signature>,
-    ) -> [u8; 65] {
+    ) -> Secp256k1UncompressedPublicKey {
         let key = copy_buffer(unsafe {
             crypto_utils::crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed(
                 message_hash.as_ref().0.as_ptr(),
@@ -169,6 +172,6 @@ impl CryptoUtils {
                 signature.as_ref().0.len(),
             )
         });
-        key.try_into().unwrap()
+        Secp256k1UncompressedPublicKey(key.try_into().unwrap())
     }
 }

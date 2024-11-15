@@ -26,7 +26,7 @@ pub fn verify_and_recover_secp256k1(
 pub fn verify_and_recover_secp256k1_uncompressed(
     signed_hash: &Hash,
     signature: &Secp256k1Signature,
-) -> Option<[u8; secp256k1::constants::UNCOMPRESSED_PUBLIC_KEY_SIZE]> {
+) -> Option<Secp256k1UncompressedPublicKey> {
     let recovery_id = signature.0[0];
     let signature_data = &signature.0[1..];
     if let Ok(id) = ::secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()) {
@@ -37,7 +37,7 @@ pub fn verify_and_recover_secp256k1_uncompressed(
 
             // The recover method also verifies the signature as part of the recovery process
             if let Ok(pk) = SECP256K1_CTX.recover_ecdsa(&msg, &sig) {
-                return Some(pk.serialize_uncompressed());
+                return Some(Secp256k1UncompressedPublicKey(pk.serialize_uncompressed()));
             }
         }
     }

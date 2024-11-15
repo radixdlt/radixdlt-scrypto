@@ -701,7 +701,7 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
             hash1_signature,
             true
         ));
-    let pk_recovered2: Vec<u8> =
+    let pk_recovered2: [u8; 65] =
         get_output!(crypto_scrypto_secp256k1_ecdsa_verify_and_key_recover(
             &mut ledger,
             package_address,
@@ -715,8 +715,7 @@ fn test_crypto_scrypto_key_recover_secp256k1_ecdsa() {
     assert_eq!(
         secp256k1::PublicKey::from_slice(pk.as_ref())
             .unwrap()
-            .serialize_uncompressed()
-            .to_vec(),
+            .serialize_uncompressed(),
         pk_recovered2
     );
 

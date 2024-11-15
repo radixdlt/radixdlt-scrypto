@@ -72,7 +72,7 @@ mod component_module {
         pub fn secp256k1_ecdsa_verify_and_key_recover_uncompressed(
             hash: Hash,
             signature: Secp256k1Signature,
-        ) -> [u8; 65] {
+        ) -> Secp256k1UncompressedPublicKey {
             CryptoUtils::secp256k1_ecdsa_verify_and_key_recover_uncompressed(&hash, &signature)
         }
     }
