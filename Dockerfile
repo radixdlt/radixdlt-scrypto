@@ -50,6 +50,13 @@ WORKDIR /app
 
 RUN cargo install --path ./radix-clis
 
+FROM base-image as dev-container
+RUN apt install -y bash-completion powerline
+RUN echo 'powerline-daemon -q; POWERLINE_BASH_CONTINUATION=1; POWERLINE_BASH_SELECT=1; . /usr/share/powerline/bindings/bash/powerline.sh; . /etc/bash_completion' >> ~/.bashrc
+COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
+COPY --from=builder /app/target/release/resim /usr/local/bin/resim
+RUN rustup target add wasm32-unknown-unknown
+
 FROM base-image
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
