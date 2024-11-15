@@ -1623,7 +1623,7 @@ impl WasmiModule {
              message_len: u32,
              signature_ptr: u32,
              signature_len: u32|
-             -> Result<u64, Trap> {
+             -> Result<u64, Error> {
                 secp256k1_ecdsa_verify_and_key_recover_uncompressed(
                     caller,
                     message_ptr,
@@ -1631,7 +1631,7 @@ impl WasmiModule {
                     signature_ptr,
                     signature_len,
                 )
-                .map_err(|e| e.into())
+                .map_err(|e| Error::host(e))
             },
         );
 
