@@ -45,7 +45,7 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
-radix-wasmi = {  workspace = true }
+wasmi = {  workspace = true, features = ["no-hash-maps"] }
 lazy_static = { workspace = true }
 
 [dev-dependencies]
@@ -60,7 +60,7 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "radix-native-sdk/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "radix-wasm-instrument/std", "radix-wasmi/std" ]
+std = ["sbor/std", "radix-native-sdk/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "radix-wasm-instrument/std", "wasmi/std" ]
 alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-common-derive/alloc", "radix-rust/alloc", "lru?/hashbrown"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
