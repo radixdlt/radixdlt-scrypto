@@ -41,6 +41,7 @@ paste = { workspace = true }
 hex = { workspace = true }
 trybuild = { workspace = true }
 extend = { workspace = true }
+secp256k1 = { workspace = true }
 
 [build-dependencies]
 walkdir = { workspace = true, optional = true }

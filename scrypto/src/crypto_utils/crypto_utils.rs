@@ -156,4 +156,19 @@ impl CryptoUtils {
         });
         Secp256k1PublicKey(key.try_into().unwrap())
     }
+
+    pub fn secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+        message_hash: impl AsRef<Hash>,
+        signature: impl AsRef<Secp256k1Signature>,
+    ) -> [u8; 65] {
+        let key = copy_buffer(unsafe {
+            crypto_utils::crypto_utils_secp256k1_ecdsa_verify_and_key_recover_uncompressed(
+                message_hash.as_ref().0.as_ptr(),
+                message_hash.as_ref().0.len(),
+                signature.as_ref().0.as_ptr(),
+                signature.as_ref().0.len(),
+            )
+        });
+        key.try_into().unwrap()
+    }
 }
