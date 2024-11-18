@@ -108,7 +108,7 @@ const OTHER_MODULE_TYPES_START: u8 = 0xf0;
 //    This means that semantic information can be interpreted for these values outside of the ledger - for example,
 //    it can be used to (eg display URL / Instants in certain ways in the dashboard or wallet).
 // 3. In future, if/when we allow attaching extra data such as translations or docs against global types,
-//    these types will be defined in a place where we can attach this data across everyones' schemas, instead of
+//    these types will be defined in a place where we can attach this data across everyone's schemas, instead of
 //    being owned by the owner of each schema.
 //    In other words, the type's GlobalTypeAddress is well known, instead of being into a schema under a node.
 //
