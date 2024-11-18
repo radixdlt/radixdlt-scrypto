@@ -3,7 +3,7 @@
 
 # Script configuration
 $ErrorActionPreference = "Stop"
-$ProgressPreference = "SilentlyContinue"  # Speeds up downloads
+$ProgressPreference = "Continue"
 
 # Colors for output
 function Write-ColorOutput($ForegroundColor) {
@@ -13,6 +13,11 @@ function Write-ColorOutput($ForegroundColor) {
         Write-Output $args
     }
     $host.UI.RawUI.ForegroundColor = $fc
+}
+
+function Refresh-EnvironmentVariables {
+    # Refresh the PATH variable
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
 function Install-IfNotPresent {
@@ -31,6 +36,7 @@ function Install-IfNotPresent {
             exit 1
         }
         Write-ColorOutput Green "$Name installed successfully"
+        Refresh-EnvironmentVariables
     } else {
         Write-ColorOutput Green "$Name is already installed"
     }
@@ -46,45 +52,62 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 Install-IfNotPresent "Git" "git" {
     # Using winget for Git installation
     winget install --id Git.Git -e --source winget
+    Refresh-EnvironmentVariables
     # Enable long paths
     git config --system core.longpaths true
 }
 
 # 2. Install Visual Studio Build Tools
 $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$Name = "Visual Studio Build Tools 2022"
+Write-ColorOutput Yellow "Checking for $Name..."
 if (!(Test-Path $vsInstallerPath)) {
-    Write-ColorOutput Cyan "Downloading Visual Studio Build Tools 2022..."
+    Write-ColorOutput Cyan "Downloading $Name..."
     $vsUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
     $vsInstaller = "$env:TEMP\vs_buildtools.exe"
-    Invoke-WebRequest -Uri $vsUrl -OutFile $vsInstaller
-    
-    Write-ColorOutput Cyan "Installing Visual Studio Build Tools with C++ support..."
-    Start-Process -Wait -FilePath $vsInstaller -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
-        "--installPath", "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools", `
-        "--add", "Microsoft.VisualStudio.Workload.VCTools", `
+    Start-BitsTransfer -Source $vsUrl -Destination $vsInstaller
+
+    Write-ColorOutput Cyan "Installing $Name with C++ support - This may take a long time..."
+    Start-Process -Wait -FilePath $vsInstaller  -ArgumentList @(
+        "--passive",
+        "--wait",
+        "--norestart",
+        "--nocache",
+        "--installPath", "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
+        "--add", "Microsoft.VisualStudio.Workload.VCTools"
         "--includeRecommended"
+    )
     
     Remove-Item $vsInstaller
+    Refresh-EnvironmentVariables
+} else {
+    Write-ColorOutput Green "Visual Studio Build Tools are already installed"
 }
 
 # 3. Install LLVM
 $llvmVersion = "17.0.6"
 Install-IfNotPresent "LLVM" "clang" {
     Write-ColorOutput Cyan "Downloading LLVM..."
+
     $llvmUrl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$llvmVersion/LLVM-$llvmVersion-win64.exe"
     $llvmInstaller = "$env:TEMP\LLVM-$llvmVersion-win64.exe"
-    Invoke-WebRequest -Uri $llvmUrl -OutFile $llvmInstaller
+    Start-BitsTransfer -Source $llvmUrl -Destination $llvmInstaller
     
-    Write-ColorOutput Cyan "Installing LLVM..."
+    Write-ColorOutput Cyan "Installing LLVM - This may take a long time too..."
     Start-Process -Wait -FilePath $llvmInstaller -ArgumentList "/S", "/D=C:\Program Files\LLVM"
     Remove-Item $llvmInstaller
+
+    # Add LLVM bin directory to the system PATH
+    $llvmBinPath = "C:\Program Files\LLVM\bin"
+    [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$llvmBinPath", [EnvironmentVariableTarget]::Machine)
+    $env:Path += ";$llvmBinPath"
 }
 
 # 4. Install Rust
 Install-IfNotPresent "Rust" "rustc" {
     Write-ColorOutput Cyan "Downloading and installing Rust..."
     $rustupInit = "$env:TEMP\rustup-init.exe"
-    Invoke-WebRequest -Uri "https://win.rustup.rs" -OutFile $rustupInit
+    Start-BitsTransfer -Source "https://win.rustup.rs" -Destination $rustupInit
     Start-Process -Wait -FilePath $rustupInit -ArgumentList "-y", "--default-toolchain", "1.77.2"
     Remove-Item $rustupInit
 }
@@ -100,12 +123,19 @@ rustup target add wasm32-unknown-unknown
 # 7. Install Radix Engine Simulator and CLI tools
 Write-ColorOutput Cyan "Installing Radix Engine Simulator and CLI tools..."
 cargo install --force radix-clis@1.2.0
+Refresh-EnvironmentVariables
 
 # Final success message
 Write-ColorOutput Green "`nInstallation complete! Please restart your terminal to ensure all changes take effect."
-Write-ColorOutput Yellow "`nTo verify the installation, you can run:"
-Write-ColorOutput White "git --version"
-Write-ColorOutput White "cl"
-Write-ColorOutput White "clang --version"
-Write-ColorOutput White "rustc --version"
-Write-ColorOutput White "cargo --version"
+Write-ColorOutput Yellow "`nVerifying instillations..."
+Write-ColorOutput White "Versions installed:"
+Write-ColorOutput White "git"
+git --version
+Write-ColorOutput White "`nclang"
+clang --version
+Write-ColorOutput White "`nrustc"
+rustc --version
+Write-ColorOutput White "`ncargo"
+cargo --version
+Write-ColorOutput White "`nscrypto"
+scrypto --version
