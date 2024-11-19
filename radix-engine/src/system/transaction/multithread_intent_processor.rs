@@ -154,7 +154,7 @@ impl<'e> MultiThreadIntentProcessor<'e> {
                     let parent =
                         parent_stack
                             .iter()
-                            .next()
+                            .last()
                             .cloned()
                             .ok_or(RuntimeError::SystemError(SystemError::IntentError(
                                 IntentError::CannotVerifyParentOnRoot,
