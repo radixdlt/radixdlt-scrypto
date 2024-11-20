@@ -1,0 +1,11 @@
+Name: kv_store_with_remote_type
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: b852880ffe7d6ce9 (allowed to change if not deployed to any network)
+Events       : f9f27e1f2e69a5e7 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- kv_store_with_remote_type_package_address: package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt
+- kv_store_with_remote_type_component_address: component_sim1cr4l0atdgwxm65p3m6xexg0vaar75nfhzv8kcxrqwhh7600d6fjdhd
+

@@ -12,7 +12,8 @@ pub struct ProtocolSettings {
     pub babylon: BabylonSettings,
     pub anemone: AnemoneSettings,
     pub bottlenose: BottlenoseSettings,
-    pub cuttlefish: CuttlefishSettings,
+    pub cuttlefish_part1: CuttlefishPart1Settings,
+    pub cuttlefish_part2: CuttlefishPart2Settings,
 }
 
 impl ProtocolSettings {
@@ -25,7 +26,8 @@ impl ProtocolSettings {
             ProtocolVersion::Babylon => Box::new(self.babylon.create_generator()),
             ProtocolVersion::Anemone => Box::new(self.anemone.create_generator()),
             ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_generator()),
-            ProtocolVersion::Cuttlefish => Box::new(self.cuttlefish.create_generator()),
+            ProtocolVersion::CuttlefishPart1 => Box::new(self.cuttlefish_part1.create_generator()),
+            ProtocolVersion::CuttlefishPart2 => Box::new(self.cuttlefish_part2.create_generator()),
         }
     }
 }
@@ -44,7 +46,10 @@ impl ProtocolBuilder {
                 bottlenose: BottlenoseSettings::all_enabled_as_default_for_network(
                     network_definition,
                 ),
-                cuttlefish: CuttlefishSettings::all_enabled_as_default_for_network(
+                cuttlefish_part1: CuttlefishPart1Settings::all_enabled_as_default_for_network(
+                    network_definition,
+                ),
+                cuttlefish_part2: CuttlefishPart2Settings::all_enabled_as_default_for_network(
                     network_definition,
                 ),
             },
@@ -77,9 +82,9 @@ impl ProtocolBuilder {
 
     pub fn configure_cuttlefish(
         mut self,
-        creator: impl FnOnce(CuttlefishSettings) -> CuttlefishSettings,
+        creator: impl FnOnce(CuttlefishPart1Settings) -> CuttlefishPart1Settings,
     ) -> Self {
-        self.settings.cuttlefish = creator(self.settings.cuttlefish);
+        self.settings.cuttlefish_part1 = creator(self.settings.cuttlefish_part1);
         self
     }
 

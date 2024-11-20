@@ -17,7 +17,7 @@ STATE UPDATES: 1 entity
     └─ Set: ProtocolUpdateStatusSummary
        Value: ProtocolUpdateStatusSummarySubstate::V1(
          ProtocolUpdateStatusSummaryV1 {
-           protocol_version: ProtocolVersion::Cuttlefish,
+           protocol_version: ProtocolVersion::CuttlefishPart1,
            update_status: ProtocolUpdateStatus::Complete,
          },
        )

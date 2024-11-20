@@ -15,6 +15,7 @@ impl ScenarioCreator for MaxTransactionScenarioCreator {
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "max_transaction",
         protocol_min_requirement: ProtocolVersion::Babylon,
+        protocol_max_requirement: ProtocolVersion::LATEST,
         testnet_run_at: Some(ProtocolVersion::Babylon),
         safe_to_run_on_used_ledger: false,
     };

@@ -70,7 +70,7 @@ fn run_all(mode: CostingTaskMode) {
         );
 
         // Run cost tests for crypto_utils test from Cuttlefish onward
-        if protocol_version >= ProtocolVersion::Cuttlefish {
+        if protocol_version >= ProtocolVersion::CuttlefishPart1 {
             execute(&run_crypto_utils_tests, "cost_crypto_utils.csv");
         }
     }

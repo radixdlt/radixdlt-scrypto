@@ -35,6 +35,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "non_fungible_resource_with_remote_type",
         protocol_min_requirement: ProtocolVersion::Babylon,
+        protocol_max_requirement: ProtocolVersion::LATEST,
         testnet_run_at: Some(ProtocolVersion::Babylon),
         safe_to_run_on_used_ledger: false,
     };

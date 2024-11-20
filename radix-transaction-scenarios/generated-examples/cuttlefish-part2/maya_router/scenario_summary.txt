@@ -1,0 +1,16 @@
+Name: maya_router
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: a4cc424b8478a3af (allowed to change if not deployed to any network)
+Events       : c64fb6ff0145cd49 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- owner_account: account_sim1cy2m8fzpwz7uyvkdlrleay34k94yz63skerrshcrl0d3fpm2cnmlqy
+- swapper_account: account_sim1cyc3r8ntawdamyhh6u0sttq22r036rzjcdpnakzl2c3n4tul2ua5ud
+- maya_router_package: package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3
+- maya_router_address: component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr
+- XRD: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+- resource_1: resource_sim1tkl8f4ev0djxy2jjy4fpnaexhw0t0t39seqs26u0mfqjzn3e4m80zf
+- resource_2: resource_sim1t5ulpyse43vcfndkelufmzzap46aprkxtkc8hsdydpgfpxytdwq7dj
+

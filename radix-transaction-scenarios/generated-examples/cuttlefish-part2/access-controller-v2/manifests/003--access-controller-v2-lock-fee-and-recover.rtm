@@ -1,0 +1,73 @@
+CALL_METHOD
+    Address("accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh")
+    "lock_recovery_fee"
+    Decimal("10")
+;
+CALL_METHOD
+    Address("accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh")
+    "initiate_recovery_as_primary"
+    Tuple(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]")
+                    )
+                )
+            )
+        ),
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]")
+                    )
+                )
+            )
+        ),
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh")
+    "quick_confirm_primary_role_recovery_proposal"
+    Tuple(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]")
+                    )
+                )
+            )
+        ),
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]")
+                    )
+                )
+            )
+        ),
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;

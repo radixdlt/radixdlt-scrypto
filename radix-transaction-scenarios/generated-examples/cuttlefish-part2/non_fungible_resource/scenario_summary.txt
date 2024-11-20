@@ -1,0 +1,19 @@
+Name: non_fungible_resource
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 6ef13462fe13583a (allowed to change if not deployed to any network)
+Events       : d8aea2350b8b2463 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- main_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
+- occasional_recipient_account: account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0
+- integer_non_fungible_resource: resource_sim1ntpe4zxy537sl7dduxwpxd3h548wf4dq6z2s6uks94pwzeeapq579l
+- string_non_fungible_resource: resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2
+- bytes_non_fungible_resource: resource_sim1nf89a30xn7gc79cytvgjca028gehd3ha3ydt0z0pp3rzlcuqv8d9fs
+- ruid_non_fungible_resource: resource_sim1ngvvctr9hl04wrlyfudzyx3t3aam07ffk3f04z9lxd5ec2p87gftk7
+- non_fungible_vault: internal_vault_sim1nzupesg6es369wqjguu7umf92886ph6w3qj98uxq7tkavev439ut2q
+- integer_non_fungible_resource_with_empty_data: resource_sim1nfacl5anpn7rthz3czyh282v0p9qr22trqwql96vh38cz6mafqfvnx
+- integer_non_fungible_resource_with_metadata_standard_data: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn
+- integer_non_fungible_resource_with_complex_data: resource_sim1ngcvdpjg2dg5gjx4sqp9zh88hhvuafu7vw92dfyfrga9u3lnd5vatm
+

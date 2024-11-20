@@ -5,6 +5,7 @@ mod access_controller_v2;
 mod account_authorized_depositors;
 mod account_locker;
 mod basic_subintents;
+mod basic_subintents_part2;
 mod fungible_resource;
 mod global_n_owned;
 mod kv_store_with_remote_type;
@@ -67,9 +68,12 @@ lazy_static::lazy_static! {
         add(&mut map, maya_router::MayaRouterScenarioCreator);
         add(&mut map, access_controller_v2::AccessControllerV2ScenarioCreator);
 
-        // testnet_run_at: CUTTLEFISH
+        // testnet_run_at: CUTTLEFISH (Part 1)
         add(&mut map, royalties::RoyaltiesScenarioCreator);
         add(&mut map, basic_subintents::BasicSubintentsScenarioCreator);
+
+        // testnet_run_at: CUTTLEFISH (Part 2)
+        add(&mut map, basic_subintents_part2::BasicSubintentsPart2ScenarioCreator);
 
         map
     };

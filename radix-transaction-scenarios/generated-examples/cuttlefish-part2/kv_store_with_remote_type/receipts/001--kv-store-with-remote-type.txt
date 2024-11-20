@@ -1,0 +1,449 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 37.0920007514 XRD
+├─ Network execution: 0.7453436 XRD, 14906872 execution cost units
+├─ Network finalization: 0.1089411 XRD, 2178822 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 36.2377160514 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 5
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58c988c29108b93f94c46f61eb214f40c031e4c2c05b368f24dfee36d854")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("37.0920007514"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("18.5460003757"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("18.5460003757"),
+   }
+
+STATE UPDATES: 9 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("9.27300018785"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("eb2666f2a2b42ce4fee5642d247cf1b3ba63da75c76d9518e68c58ec9c17957e"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999962.9079992486")),
+       )
+├─ package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt across 11 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(8bbdee9f3dbcb56dc55fbd7d06feb8f550e94f6560d5058824aed79db2eade36)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(160u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(131u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "KVStore",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "kv_store",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "KVStore_create_key_value_store_with_remote_type_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "package_address",
+                           "blueprint_name",
+                           "type_name",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "TestType",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "b",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED PackageRoyaltyAccumulatorFieldPayload::V1(
+         PackageRoyaltyAccumulatorV1 {
+           royalty_vault: Vault(Own("internal_vault_sim1tryc3s53pzunl9xydas7kg20grqrrexzcpdndreymlhrdkz5w2d6y6")),
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "KVStore", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::Some(
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       0u8,
+                     ),
+                   ),
+                   [
+                     FieldSchema {
+                       field: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("8bbdee9f3dbcb56dc55fbd7d06feb8f550e94f6560d5058824aed79db2eade36")),
+                           LocalTypeId::SchemaLocalIndex(
+                             0u64,
+                           ),
+                         ),
+                       ),
+                       condition: Condition::Always,
+                       transience: FieldTransience::NotTransient,
+                     },
+                   ],
+                 ),
+               ),
+               collections: [],
+               num_logical_partitions: 1u8,
+             },
+             functions: {
+               "create_key_value_store_with_remote_type" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("8bbdee9f3dbcb56dc55fbd7d06feb8f550e94f6560d5058824aed79db2eade36")),
+                     LocalTypeId::SchemaLocalIndex(
+                       1u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("8bbdee9f3dbcb56dc55fbd7d06feb8f550e94f6560d5058824aed79db2eade36")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {},
+             types: {
+               "TestType" => ScopedTypeId(
+                 SchemaHash(hex("8bbdee9f3dbcb56dc55fbd7d06feb8f550e94f6560d5058824aed79db2eade36")),
+                 LocalTypeId::SchemaLocalIndex(
+                   2u64,
+                 ),
+               ),
+             },
+           },
+           function_exports: {
+             "create_key_value_store_with_remote_type" => PackageExport {
+               code_hash: CodeHash(hex("43940af7c65889131ce8d6d60fc71a22865682fed7198d920c296cfa07e7aea4")),
+               export_name: "KVStore_create_key_value_store_with_remote_type",
+             },
+           },
+           hook_exports: {},
+         },
+       )
+  ├─ Partition(66): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "KVStore", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
+         BlueprintDependencies([]),
+       )
+  ├─ Partition(67): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "KVStore", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionRoyaltyConfigEntryPayload::V1(
+         PackageRoyaltyConfig::Disabled,
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "KVStore", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::AllowAll,
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("43940af7c65889131ce8d6d60fc71a22865682fed7198d920c296cfa07e7aea4"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::ScryptoV1,
+       )
+  ├─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("43940af7c65889131ce8d6d60fc71a22865682fed7198d920c296cfa07e7aea4"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 5bf486d2d35c1d2ed8fdf4e114bb58a2515dfb742cceefbaffd7256c4883c246)
+  ├─ Partition(71): 1 change
+    └─ Set: CodeHash(hex("43940af7c65889131ce8d6d60fc71a22865682fed7198d920c296cfa07e7aea4"))
+       Value: (Hidden as longer than 1024 bytes. Hash: dcca3891f54a8ecebd57d746fc3786eab17d674b5798c2bc585b064a56d39c07)
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")),
+               blueprint_name: "Package",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "package_royalty",
+             ],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tryc3s53pzunl9xydas7kg20grqrrexzcpdndreymlhrdkz5w2d6y6 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0")),
+       )
+├─ component_sim1cr4l0atdgwxm65p3m6xexg0vaar75nfhzv8kcxrqwhh7600d6fjdhd across 3 partitions
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED KVStore {
+         kv_store: Own("internal_keyvaluestore_sim1kr6qg8n03a508wuu8292uyr3q32svm7f5msrjru65vcyjqgeyqev0w"),
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt")),
+               blueprint_name: "KVStore",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_keyvaluestore_sim1kr6qg8n03a508wuu8292uyr3q32svm7f5msrjru65vcyjqgeyqev0w across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::KeyValueStore(
+         KeyValueStoreInfo {
+           generic_substitutions: KeyValueStoreGenericSubstitutions {
+             key_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt")),
+                 blueprint_name: "KVStore",
+                 type_name: "TestType",
+               },
+             ),
+             value_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt")),
+                 blueprint_name: "KVStore",
+                 type_name: "TestType",
+               },
+             ),
+             allow_ownership: false,
+           },
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: TestType { b: 1u32 }
+       Value: TestType {
+         b: 1u32,
+       }
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("18.5460003757")),
+       )
+
+OUTPUTS: 4
+├─ Unit
+├─ None
+├─ Reference("package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt")
+└─ Unit
+
+BALANCE CHANGES: 2
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -37.0920007514
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 18.5460003757
+
+NEW ENTITIES: 2
+└─ Package: package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt
+└─ Component: component_sim1cr4l0atdgwxm65p3m6xexg0vaar75nfhzv8kcxrqwhh7600d6fjdhd

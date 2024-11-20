@@ -1,0 +1,17 @@
+Name: account_locker
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 880f556803f9e04f (allowed to change if not deployed to any network)
+Events       : 46b3c5428d1ec781 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- badge_holder_account: account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh
+- account_rejecting_fungible_resource: account_sim1cykuqm9srf92pn5gdpjh305df2zv9xxuz0qd7ndrehmm2mkt5w958k
+- account_accepting_all_resources: account_sim1c8huhgnhg7rx6q5qjus0kt55qxy0uflvd7g2relms9g5pxw5algkja
+- account_rejecting_non_fungible_resource: account_sim1cxtpmq32c33tqd27aae2f4ulzewj2508kf0224m29tmrx3awxgk02e
+- account_locker: locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3
+- account_locker_badge: resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw
+- fungible_resource: resource_sim1t5820sqdx0jf9zgjd5ge6y0fvfxsnx6dlh5sgfkm4nemgz44q0v7xk
+- non_fungible_resource: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu
+

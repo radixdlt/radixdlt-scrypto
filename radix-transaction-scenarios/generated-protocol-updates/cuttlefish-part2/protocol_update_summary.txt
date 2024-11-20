@@ -1,0 +1,11 @@
+Name: Cuttlefish (Part 2)
+
+========= SUMMARY HASHES =========
+These Cuttlefish (Part 2) hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
+State changes: d9415fb0acf9cbb4 (allowed to change if not deployed to any network)
+Events       : 07c81f1e6d320830 (allowed to change if not deployed to any network)
+
+==== POST ENACTMENT SCENARIOS ====
+The following scenarios are set by default to run on testnets after this protocol update.
+If there are any changes to this list after deploying a testnet, the testnet's ledger will need to be wiped (*not allowed on stokenet*) or the network's protocol update configuration will need to be customised in the node to override the scenarios run on it.
+=> basic_subintents_part2

@@ -1,0 +1,12 @@
+Name: account_authorized_depositors
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 9926dfbe5c3aa177 (allowed to change if not deployed to any network)
+Events       : 712cabc8e678267a (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- source_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
+- destination_account: account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0
+- authorized_deposit_badge: resource_sim1t5jzke2dmva79yatdnv2tzecqavwatcmgylgpur9a5r7nxgfd664lz
+

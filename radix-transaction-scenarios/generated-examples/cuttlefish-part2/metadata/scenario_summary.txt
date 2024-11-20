@@ -1,0 +1,16 @@
+Name: metadata
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 7cf46a45076c1d9d (allowed to change if not deployed to any network)
+Events       : 01f4af692848a13e (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- user_account_1: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
+- user_account_sandbox: account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3
+- user_account_dashboard: account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu
+- package_with_metadata: package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3
+- component_with_metadata: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr
+- resource_with_metadata1: resource_sim1t5z9e7s76mryajk97lrmpe3cyxy2zaj456y2px85ksu2ts4n6qwa39
+- resource_with_metadata2: resource_sim1t4xqgmnnrx396mwjwy46844xmq83nrnwtw6uth6pa3uvxs65ltyavt
+

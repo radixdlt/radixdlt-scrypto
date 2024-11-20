@@ -1,0 +1,212 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0.66920849779 XRD
+├─ Network execution: 0.42023445 XRD, 8404689 execution cost units
+├─ Network finalization: 0.0722582 XRD, 1445164 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.17671584779 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 12
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu, module_id: Main }
+   Event: MintNonFungibleResourceEvent {
+     ids: [
+       NonFungibleLocalId("#10#"),
+       NonFungibleLocalId("#11#"),
+       NonFungibleLocalId("#12#"),
+     ],
+   }
+├─ Emitter: Method { node: internal_vault_sim1nzxzp4wznnrxj7xw0ujvpm36q8mvv8kjyjld486cqcsalfk030437p, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("#10#"),
+     ],
+   }
+├─ Emitter: Method { node: account_sim1cykuqm9srf92pn5gdpjh305df2zv9xxuz0qd7ndrehmm2mkt5w958k, module_id: Main }
+   Event: DepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")),
+     [
+       NonFungibleLocalId("#10#"),
+     ],
+   )
+├─ Emitter: Method { node: internal_vault_sim1nz49q5dgwxz5dg2spgwd2vqsfawzywahlw5ztxwpcyjl4p8le2crd6, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("#11#"),
+     ],
+   }
+├─ Emitter: Method { node: account_sim1c8huhgnhg7rx6q5qjus0kt55qxy0uflvd7g2relms9g5pxw5algkja, module_id: Main }
+   Event: DepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")),
+     [
+       NonFungibleLocalId("#11#"),
+     ],
+   )
+├─ Emitter: Method { node: account_sim1cxtpmq32c33tqd27aae2f4ulzewj2508kf0224m29tmrx3awxgk02e, module_id: Main }
+   Event: RejectedDepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")),
+     [
+       NonFungibleLocalId("#12#"),
+     ],
+   )
+├─ Emitter: Method { node: internal_vault_sim1nrxkgnug32kd87wny27junyc3s9dey2a7ulpylsz9tz3gjql8cwcjf, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("#12#"),
+     ],
+   }
+├─ Emitter: Method { node: locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3, module_id: Main }
+   Event: StoreEvent {
+     claimant: GlobalAccount(Reference("account_sim1cxtpmq32c33tqd27aae2f4ulzewj2508kf0224m29tmrx3awxgk02e")),
+     resource_address: ResourceAddress(Reference("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")),
+     resources: ResourceSpecifier::NonFungible(
+       [
+         NonFungibleLocalId("#12#"),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("0.66920849779"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.334604248895"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.334604248895"),
+   }
+
+STATE UPDATES: 10 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("2.24989374614"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("7cb93b87124b80c668e017b5135c64cc13df2b6ac47b776dd17850a3f3203555"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED NonFungibleResourceManagerTotalSupplyFieldPayload::V1(
+         Decimal("12"),
+       )
+  └─ Partition(65): 3 changes
+    ├─ Set: NonFungibleLocalId("#11#")
+       Value: UNLOCKED Unit
+    ├─ Set: NonFungibleLocalId("#10#")
+       Value: UNLOCKED Unit
+    └─ Set: NonFungibleLocalId("#12#")
+       Value: UNLOCKED Unit
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999991.00042501544")),
+       )
+├─ internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("1")),
+       )
+├─ internal_vault_sim1nzxzp4wznnrxj7xw0ujvpm36q8mvv8kjyjld486cqcsalfk030437p across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("3")),
+       )
+  └─ Partition(65): 1 change
+    └─ Set: NonFungibleLocalId("#10#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+├─ internal_vault_sim1nz49q5dgwxz5dg2spgwd2vqsfawzywahlw5ztxwpcyjl4p8le2crd6 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("3")),
+       )
+  └─ Partition(65): 1 change
+    └─ Set: NonFungibleLocalId("#11#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+├─ internal_vault_sim1nrxkgnug32kd87wny27junyc3s9dey2a7ulpylsz9tz3gjql8cwcjf across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("3")),
+       )
+  └─ Partition(65): 1 change
+    └─ Set: NonFungibleLocalId("#12#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("4.49978749228")),
+       )
+
+OUTPUTS: 5
+├─ Unit
+├─ Own("internal_component_sim1lqlujck06zwd9yenaq2a7epxwhvcdgcwk0vm0tj4jdyfg5y7kf62rg")
+├─ Own("internal_component_sim1lzlswn55ge5h6ashx3n7fmfw40jr5g44lafx5n8cdr5p9yz5gyg0ea")
+├─ None
+└─ Enum::[0]
+
+BALANCE CHANGES: 5
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.66920849779
+├─ Vault: internal_vault_sim1nzxzp4wznnrxj7xw0ujvpm36q8mvv8kjyjld486cqcsalfk030437p
+   ResAddr: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu
+   Change: +{#10#}, -{}
+├─ Vault: internal_vault_sim1nz49q5dgwxz5dg2spgwd2vqsfawzywahlw5ztxwpcyjl4p8le2crd6
+   ResAddr: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu
+   Change: +{#11#}, -{}
+├─ Vault: internal_vault_sim1nrxkgnug32kd87wny27junyc3s9dey2a7ulpylsz9tz3gjql8cwcjf
+   ResAddr: resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu
+   Change: +{#12#}, -{}
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.334604248895
+
+NEW ENTITIES: 0

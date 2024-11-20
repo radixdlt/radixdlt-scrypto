@@ -1,0 +1,10 @@
+Name: access-controller-v2
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 170ab608a012f2b9 (allowed to change if not deployed to any network)
+Events       : 386292c0cc8e215b (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- access_controller_v2_component_address: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh
+

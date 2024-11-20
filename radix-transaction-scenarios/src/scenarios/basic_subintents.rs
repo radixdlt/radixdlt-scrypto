@@ -35,8 +35,12 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
 
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "basic_subintents",
-        protocol_min_requirement: ProtocolVersion::Cuttlefish,
-        testnet_run_at: Some(ProtocolVersion::Cuttlefish),
+        protocol_min_requirement: ProtocolVersion::CuttlefishPart1,
+        // This scenario requires exactly `CuttlefishPart1` to run, because it accidentally uses
+        // the fact that `VERIFY_PARENT` verified the root transaction intent rather than the
+        // direct parent intent in `CuttlefishPart1`. This was fixed in `CuttlefishPart2`.
+        protocol_max_requirement: ProtocolVersion::CuttlefishPart1,
+        testnet_run_at: Some(ProtocolVersion::CuttlefishPart1),
         safe_to_run_on_used_ledger: true,
     };
 

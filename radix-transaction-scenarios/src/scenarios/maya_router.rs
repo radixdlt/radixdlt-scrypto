@@ -46,6 +46,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "maya_router",
         protocol_min_requirement: ProtocolVersion::Bottlenose,
+        protocol_max_requirement: ProtocolVersion::LATEST,
         testnet_run_at: Some(ProtocolVersion::Bottlenose),
         safe_to_run_on_used_ledger: true,
     };

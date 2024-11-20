@@ -99,7 +99,7 @@ impl FeeTable {
             //
             // With divider set to 4500 it takes 543 ms (measured at GH benchmark, git rev c591c4003a,
             // EC2 instance type c6a.4xlarge) which is fine.
-            SystemVersion::V2 => 4500,
+            SystemVersion::V2 | SystemVersion::V3 => 4500,
         };
 
         Self {

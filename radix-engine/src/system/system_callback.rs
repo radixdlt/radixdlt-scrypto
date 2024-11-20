@@ -116,13 +116,17 @@ impl SystemBoot {
 
     pub fn cuttlefish(network_definition: NetworkDefinition) -> Self {
         SystemBoot::V2(
-            SystemVersion::V2,
+            SystemVersion::V3,
             SystemParameters::bottlenose(network_definition),
         )
     }
 
-    pub fn cuttlefish_for_previous_parameters(parameters: SystemParameters) -> Self {
+    pub fn cuttlefish_part1_for_previous_parameters(parameters: SystemParameters) -> Self {
         SystemBoot::V2(SystemVersion::V2, parameters)
+    }
+
+    pub fn cuttlefish_part2_for_previous_parameters(parameters: SystemParameters) -> Self {
+        SystemBoot::V2(SystemVersion::V3, parameters)
     }
 
     pub fn bottlenose(network_definition: NetworkDefinition) -> Self {
@@ -153,11 +157,12 @@ impl SystemBoot {
 pub enum SystemVersion {
     V1,
     V2,
+    V3,
 }
 
 impl SystemVersion {
     pub const fn latest() -> Self {
-        Self::V2
+        Self::V3
     }
 
     fn create_auth_module(
@@ -174,7 +179,7 @@ impl SystemVersion {
                 let intent = executable.transaction_intent();
                 AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
             }
-            SystemVersion::V2 => AuthModule::new(),
+            SystemVersion::V2 | SystemVersion::V3 => AuthModule::new(),
         };
 
         Ok(auth_module)
@@ -205,7 +210,7 @@ impl SystemVersion {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
             }
-            SystemVersion::V2 => {
+            SystemVersion::V2 | SystemVersion::V3 => {
                 let mut txn_threads = MultiThreadIntentProcessor::init(
                     executable,
                     global_address_reservations.as_slice(),
@@ -235,7 +240,7 @@ impl SystemVersion {
                     return false;
                 }
             }
-            SystemVersion::V2 => {}
+            SystemVersion::V2 | SystemVersion::V3 => {}
         }
 
         true
@@ -244,7 +249,14 @@ impl SystemVersion {
     pub fn should_charge_for_transaction_intent(&self) -> bool {
         match self {
             SystemVersion::V1 => false,
-            SystemVersion::V2 => true,
+            SystemVersion::V2 | SystemVersion::V3 => true,
+        }
+    }
+
+    pub fn use_root_for_verify_parent_instruction(&self) -> bool {
+        match self {
+            SystemVersion::V1 | SystemVersion::V2 => true,
+            SystemVersion::V3 => false,
         }
     }
 }

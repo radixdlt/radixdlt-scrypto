@@ -116,7 +116,7 @@ fn run_flash_test_test_environment_crypto_utils_v2(
         .with_protocol(|builder| {
             builder
                 .configure_cuttlefish(|_| {
-                    CuttlefishSettings::all_disabled().set(|s| {
+                    CuttlefishPart1Settings::all_disabled().set(|s| {
                         s.vm_boot_to_enable_crypto_utils_v2 =
                             UpdateSetting::new(enable_crypto_utils_v2)
                     })
