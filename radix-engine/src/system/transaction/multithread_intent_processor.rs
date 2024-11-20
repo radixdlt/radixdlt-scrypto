@@ -151,15 +151,18 @@ impl<'e> MultiThreadIntentProcessor<'e> {
                 }
                 PostExecution::VerifyParent(rule) => {
                     let save_cur_thread = cur_thread;
-                    let parent =
-                        parent_stack
-                            .iter()
-                            .last()
-                            .cloned()
-                            .ok_or(RuntimeError::SystemError(SystemError::IntentError(
-                                IntentError::CannotVerifyParentOnRoot,
-                            )))?;
-                    api.kernel_switch_stack(parent)?;
+                    let system_version = api.system_service().system().versioned_system_logic;
+
+                    let parent = if system_version.use_root_for_verify_parent_instruction() {
+                        parent_stack.first()
+                    } else {
+                        // As of CuttlefishPart2, we use the direct parent intent for the VERIFY_PARENT instruction
+                        parent_stack.last()
+                    };
+                    let parent_thread_index = parent.cloned().ok_or(RuntimeError::SystemError(
+                        SystemError::IntentError(IntentError::CannotVerifyParentOnRoot),
+                    ))?;
+                    api.kernel_switch_stack(parent_thread_index)?;
 
                     // Create a temporary authzone with the current authzone as the global caller since
                     // check_authorization_against_access_rule tests against the global caller authzones.

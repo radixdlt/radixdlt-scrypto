@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_transactions::validation::*;
 
 #[derive(Clone, ScryptoSbor)]
-pub struct CuttlefishSettings {
+pub struct CuttlefishPart1Settings {
     /// Add configuration for system logic versioning
     pub system_logic_update: UpdateSetting<NoSettings>,
     /// Updating the always visible global nodes to include the account locker package.
@@ -38,11 +38,11 @@ pub struct CuttlefishSettings {
     pub vm_boot_to_enable_crypto_utils_v2: UpdateSetting<NoSettings>,
 }
 
-impl UpdateSettings for CuttlefishSettings {
-    type UpdateGenerator = CuttlefishGenerator;
+impl UpdateSettings for CuttlefishPart1Settings {
+    type UpdateGenerator = CuttlefishPart1Generator;
 
     fn protocol_version() -> ProtocolVersion {
-        ProtocolVersion::Cuttlefish
+        ProtocolVersion::CuttlefishPart1
     }
 
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
@@ -87,6 +87,40 @@ impl UpdateSettings for CuttlefishSettings {
     }
 }
 
+/// We had to separate Cuttlefish into two parts, because we noticed an issue
+/// after CuttlefishPart1 was deployed to stokenet.
+#[derive(Clone, ScryptoSbor)]
+pub struct CuttlefishPart2Settings {
+    /// Add configuration for system logic versioning
+    pub another_system_logic_update: UpdateSetting<NoSettings>,
+}
+
+impl UpdateSettings for CuttlefishPart2Settings {
+    type UpdateGenerator = CuttlefishPart2Generator;
+
+    fn protocol_version() -> ProtocolVersion {
+        ProtocolVersion::CuttlefishPart2
+    }
+
+    fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
+        Self {
+            another_system_logic_update: UpdateSetting::enabled_as_default_for_network(network),
+        }
+    }
+
+    fn all_disabled() -> Self {
+        Self {
+            another_system_logic_update: UpdateSetting::Disabled,
+        }
+    }
+
+    fn create_generator(&self) -> Self::UpdateGenerator {
+        Self::UpdateGenerator {
+            settings: self.clone(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Sbor)]
 pub enum UpdateNumberOfMinRoundsPerEpochSettings {
     Set { value: u64 },
@@ -108,22 +142,38 @@ impl UpdateSettingContent for UpdateNumberOfMinRoundsPerEpochSettings {
     }
 }
 
-pub struct CuttlefishGenerator {
-    settings: CuttlefishSettings,
+pub struct CuttlefishPart1Generator {
+    settings: CuttlefishPart1Settings,
 }
 
-impl ProtocolUpdateGenerator for CuttlefishGenerator {
+impl ProtocolUpdateGenerator for CuttlefishPart1Generator {
     fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
         vec![FixedBatchGroupGenerator::named("principal")
-            .add_batch("primary", |store| generate_batch(store, &self.settings))
+            .add_batch("primary", |store| {
+                generate_part1_batch(store, &self.settings)
+            })
+            .build()]
+    }
+}
+
+pub struct CuttlefishPart2Generator {
+    settings: CuttlefishPart2Settings,
+}
+
+impl ProtocolUpdateGenerator for CuttlefishPart2Generator {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![FixedBatchGroupGenerator::named("principal")
+            .add_batch("primary", |store| {
+                generate_part2_batch(store, &self.settings)
+            })
             .build()]
     }
 }
 
 #[deny(unused_variables)]
-fn generate_batch(
+fn generate_part1_batch(
     store: &dyn SubstateDatabase,
-    CuttlefishSettings {
+    CuttlefishPart1Settings {
         system_logic_update,
         kernel_version_update,
         transaction_validation_update,
@@ -133,7 +183,7 @@ fn generate_batch(
         update_number_of_min_rounds_per_epoch,
         update_identity_to_not_create_royalty_module,
         vm_boot_to_enable_crypto_utils_v2,
-    }: &CuttlefishSettings,
+    }: &CuttlefishPart1Settings,
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
 
@@ -200,6 +250,24 @@ fn generate_batch(
     batch
 }
 
+fn generate_part2_batch(
+    store: &dyn SubstateDatabase,
+    CuttlefishPart2Settings {
+        another_system_logic_update: system_logic_update,
+    }: &CuttlefishPart2Settings,
+) -> ProtocolUpdateBatch {
+    let mut batch = ProtocolUpdateBatch::empty();
+
+    if let UpdateSetting::Enabled(NoSettings) = &system_logic_update {
+        batch.mut_add_flash(
+            "cuttlefish-part2-protocol-system-logic-updates",
+            generate_system_logic_v3_updates(store),
+        );
+    }
+
+    batch
+}
+
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let system_boot: SystemBoot = db.get_existing_substate(
         TRANSACTION_TRACKER,
@@ -216,7 +284,27 @@ fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
-        SystemBoot::cuttlefish_for_previous_parameters(cur_system_parameters),
+        SystemBoot::cuttlefish_part1_for_previous_parameters(cur_system_parameters),
+    )
+}
+
+fn generate_system_logic_v3_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
+    let system_boot: SystemBoot = db.get_existing_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+    );
+
+    let cur_system_parameters = match system_boot {
+        SystemBoot::V1(parameters) => parameters,
+        _ => panic!("Unexpected SystemBoot version"),
+    };
+
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+        SystemBoot::cuttlefish_part2_for_previous_parameters(cur_system_parameters),
     )
 }
 

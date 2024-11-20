@@ -199,7 +199,8 @@ where
 
         let matching_scenarios = all_scenarios_iter().filter(|creator| {
             let metadata = creator.metadata();
-            let is_valid = at_version >= metadata.protocol_min_requirement;
+            let is_valid = at_version >= metadata.protocol_min_requirement
+                && at_version <= metadata.protocol_max_requirement;
             if !is_valid {
                 return false;
             }

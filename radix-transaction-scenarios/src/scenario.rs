@@ -498,6 +498,8 @@ pub struct ScenarioMetadata {
     pub logical_name: &'static str,
     /// The minimal protocol version required to successfully run this scenario.
     pub protocol_min_requirement: ProtocolVersion,
+    /// The maximal protocol version required to successfully run this scenario.
+    pub protocol_max_requirement: ProtocolVersion,
     /// If set, this will run immediately after this protocol update on a testnet.
     /// Note that setting this will change the definition of the given protocol update,
     /// so shouldn't be changed once the protocol update is locked in.

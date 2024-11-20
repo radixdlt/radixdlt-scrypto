@@ -207,6 +207,13 @@ macro_rules! define_protocol_version_and_updates {
     };
 }
 
+impl ProtocolVersion {
+    /// This points to `CuttlefishPart2`, for symmetry with updates which didn't need to be
+    /// in two parts.
+    #[allow(non_upper_case_globals)]
+    pub const Cuttlefish: Self = Self::CuttlefishPart2;
+}
+
 // This macro defines the protocol version and the protocol updates enums and all of the methods
 // needed on them.
 //
@@ -237,9 +244,14 @@ define_protocol_version_and_updates! {
             display_name: "Bottlenose",
         },
         {
-            variant_name: Cuttlefish,
+            variant_name: CuttlefishPart1,
             logical_name: "cuttlefish",
-            display_name: "Cuttlefish",
+            display_name: "Cuttlefish (Part 1)",
+        },
+        {
+            variant_name: CuttlefishPart2,
+            logical_name: "cuttlefish-part2",
+            display_name: "Cuttlefish (Part 2)",
         }
     ]
 }
@@ -288,7 +300,7 @@ mod tests {
 
     #[test]
     fn assert_latest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Cuttlefish);
+        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::CuttlefishPart2);
     }
 
     #[test]
@@ -320,7 +332,8 @@ mod tests {
                 ProtocolVersion::Babylon,
                 ProtocolVersion::Anemone,
                 ProtocolVersion::Bottlenose,
-                ProtocolVersion::Cuttlefish,
+                ProtocolVersion::CuttlefishPart1,
+                ProtocolVersion::CuttlefishPart2,
             ],
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))
