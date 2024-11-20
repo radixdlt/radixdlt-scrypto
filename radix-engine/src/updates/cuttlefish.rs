@@ -269,42 +269,36 @@ fn generate_part2_batch(
 }
 
 fn generate_system_logic_v2_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
-    let system_boot: SystemBoot = db.get_existing_substate(
+    let existing_system_boot: SystemBoot = db.get_existing_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
     );
 
-    let cur_system_parameters = match system_boot {
-        SystemBoot::V1(parameters) => parameters,
-        _ => panic!("Unexpected SystemBoot version"),
-    };
-
     StateUpdates::empty().set_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
-        SystemBoot::cuttlefish_part1_for_previous_parameters(cur_system_parameters),
+        SystemBoot::cuttlefish_part1_for_previous_parameters(
+            existing_system_boot.into_parameters(),
+        ),
     )
 }
 
 fn generate_system_logic_v3_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
-    let system_boot: SystemBoot = db.get_existing_substate(
+    let existing_system_boot: SystemBoot = db.get_existing_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
     );
 
-    let cur_system_parameters = match system_boot {
-        SystemBoot::V1(parameters) => parameters,
-        _ => panic!("Unexpected SystemBoot version"),
-    };
-
     StateUpdates::empty().set_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
         BootLoaderField::SystemBoot,
-        SystemBoot::cuttlefish_part2_for_previous_parameters(cur_system_parameters),
+        SystemBoot::cuttlefish_part2_for_previous_parameters(
+            existing_system_boot.into_parameters(),
+        ),
     )
 }
 
