@@ -1,0 +1,10 @@
+Name: max_transaction
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: b537cdf59655fcc8 (allowed to change if not deployed to any network)
+Events       : 67335a9b7d022185 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- component_with_large_state: component_sim1crawpnl7k2d2vlv9q730c3g2yrj59hpc0hzhy24v48qrw6lhxecxcg
+

@@ -1,0 +1,26 @@
+Name: radiswap
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 87d15699fcc8b850 (allowed to change if not deployed to any network)
+Events       : f551c456fde9a0cf (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- radiswap_dapp_definition_account: account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd
+- radiswap_dapp_owner_badge: resource_sim1ngtf8aw0v8l0wsy0clun8j7wggkmdy5gc7zhyrdy0m4sw98zny9y7n:#1#
+- storing_account: account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0
+- user_account_1: account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz
+- user_account_2: account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa
+- user_account_3: account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x
+- radiswap_package: package_sim1p5wscdljf6s7yc0v5u9kjfaqmxk4ccqugvqfd58aazyrlk89u0dgsn
+- pool_1_radiswap: component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8
+- pool_1_pool: pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772
+- pool_1_resource_1: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+- pool_1_resource_2: resource_sim1t5jlu5a523le5q26rclvu9agrr6yjw9783u58fz883gd4s3f47dg6p
+- pool_1_pool_unit: resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5
+- pool_2_radiswap: component_sim1crm3jwwepvqj9vypzvkgmw3cqkuvulhjtq05mge5d38y6ceh9wl529
+- pool_2_pool: pool_sim1c52wwf0qk9q3m4jr6xps7jrwqp86s7wmmhsfnx7x774rnw6lq3y6hj
+- pool_2_resource_1: resource_sim1tkdfgge5tle7w3wnpaz899ve33elycz98yu2dnuqdurnnvhr4v08a2
+- pool_2_resource_2: resource_sim1tkpjzky4e6aq9q5m5332dfm8was8axxjtcwrmhms50qtwc2el8a9s6
+- pool_2_pool_unit: resource_sim1t4rssme0nruj85nax6wyfwl5v64ys5daqth40mwm0ghzvvz0ndtlv9
+

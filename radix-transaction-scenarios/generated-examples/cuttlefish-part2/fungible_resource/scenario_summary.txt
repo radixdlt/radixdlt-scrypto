@@ -1,0 +1,14 @@
+Name: fungible_resource
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 99a575ce65aae06d (allowed to change if not deployed to any network)
+Events       : 34bebe6de255ac4f (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- user_account_1: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
+- user_account_2: account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0
+- max_divisibility_fungible_resource: resource_sim1t5cryrd2t8xhdk3cra2flmvqydf7l5l3kschqerv7w0prljc2uhh09
+- min_divisibility_fungible_resource: resource_sim1tk8mv5cp2uuhjgw34qqh9v7jf6atjsnyrym9f3653k7pyd4gamsx96
+- fungible_vault: internal_vault_sim1tqqp6e7t3gyracm4g475nack22pmw0dq0wd3hgl8wcggz34rl8xvst
+

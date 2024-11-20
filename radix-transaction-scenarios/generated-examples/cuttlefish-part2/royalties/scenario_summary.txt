@@ -1,0 +1,13 @@
+Name: royalties
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: b230609c16661094 (allowed to change if not deployed to any network)
+Events       : db3a780a5367c121 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- royalty_package_address: package_sim1p4qz8edl2w0t5mzwt6zcq0nfnc0ax9rkfawnmsg0s974hxcsggr29z
+- no_royalty_component_address: component_sim1cr7guww2kc22r6vnk8ffep9sv2aphp0mg6hdngg8x2shzf2xn90zmw
+- xrd_royalty_component_address: component_sim1cr6wkdave3fx5vkf7lmpmgx3yaucurjup5vlxy625vt8vw05jchx45
+- usd_royalty_component_address: component_sim1cp6hfzrywgcv9ffwtdhs7lczul27vkscacekxdmpm7zjzyrmwlppa3
+

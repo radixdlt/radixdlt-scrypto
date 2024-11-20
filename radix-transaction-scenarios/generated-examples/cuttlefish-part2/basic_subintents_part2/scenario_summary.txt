@@ -1,0 +1,13 @@
+Name: basic_subintents_part2
+
+== SUMMARY HASHES ==
+These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 33dee6eec56738bc (allowed to change if not deployed to any network)
+Events       : 90a1d784ad54a577 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- parent_account: account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds
+- child_account: account_sim1c9dln9q5pr7f0kt6u7payyeka23jrstgcq6zk6fxsvh9r5zpdpa82s
+- child_token: resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8
+- verified_parent_signature_proof: resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[5c5aff1a507b72ca5e03fd8481815e6c1285ce12e1b61de60c4842a5e4]
+
