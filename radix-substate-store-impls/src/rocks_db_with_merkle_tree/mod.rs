@@ -89,6 +89,12 @@ impl RocksDBWithMerkleTreeSubstateStore {
             })
             .unwrap_or(Hash([0u8; Hash::LENGTH]))
     }
+
+    pub fn overwrite_metadata(&mut self, meta: &Metadata) {
+        self.db
+            .put_cf(self.cf(META_CF), &[], scrypto_encode(meta).unwrap())
+            .unwrap();
+    }
 }
 
 impl SubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
@@ -303,9 +309,9 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
-struct Metadata {
-    current_state_version: u64,
-    current_state_root_hash: Hash,
+pub struct Metadata {
+    pub current_state_version: u64,
+    pub current_state_root_hash: Hash,
 }
 
 #[cfg(test)]
