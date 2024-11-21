@@ -85,7 +85,7 @@ if (!(Test-Path $vsInstallerPath)) {
 }
 
 # 3. Install LLVM
-$llvmVersion = "17.0.6"
+$llvmVersion = "18.1.8"
 Install-IfNotPresent "LLVM" "clang" {
     Write-ColorOutput Cyan "Downloading LLVM..."
 
@@ -104,17 +104,18 @@ Install-IfNotPresent "LLVM" "clang" {
 }
 
 # 4. Install Rust
+$rustVersion = "1.81.0"
 Install-IfNotPresent "Rust" "rustc" {
     Write-ColorOutput Cyan "Downloading and installing Rust..."
     $rustupInit = "$env:TEMP\rustup-init.exe"
     Start-BitsTransfer -Source "https://win.rustup.rs" -Destination $rustupInit
-    Start-Process -Wait -FilePath $rustupInit -ArgumentList "-y", "--default-toolchain", "1.77.2"
+    Start-Process -Wait -FilePath $rustupInit -ArgumentList "-y", "--default-toolchain", $rustVersion
     Remove-Item $rustupInit
 }
 
 # 5. Set Rust default version
-Write-ColorOutput Cyan "Setting Rust default version to 1.77.2..."
-rustup default 1.77.2
+Write-ColorOutput Cyan "Setting Rust default version to $rustVersion..."
+rustup default $rustVersion
 
 # 6. Add WebAssembly target
 Write-ColorOutput Cyan "Adding WebAssembly target..."
@@ -122,7 +123,7 @@ rustup target add wasm32-unknown-unknown
 
 # 7. Install Radix Engine Simulator and CLI tools
 Write-ColorOutput Cyan "Installing Radix Engine Simulator and CLI tools..."
-cargo install --force radix-clis@1.2.0
+cargo install --force radix-clis@1.3.0
 Refresh-EnvironmentVariables
 
 # Final success message

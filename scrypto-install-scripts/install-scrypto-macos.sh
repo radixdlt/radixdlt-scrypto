@@ -44,14 +44,14 @@ fi
 
 # Add LLVM to PATH
 echo -e "\n${BLUE}Configuring LLVM in $SHELL_CONFIG...${NC}"
-if ! grep -q "$(brew --prefix llvm@17)/bin" "$SHELL_CONFIG"; then
-    echo 'PATH="$(brew --prefix llvm@17)/bin:$PATH"' >> "$SHELL_CONFIG"
+if ! grep -q "$(brew --prefix llvm@18)/bin" "$SHELL_CONFIG"; then
+    echo 'PATH="$(brew --prefix llvm@18)/bin:$PATH"' >> "$SHELL_CONFIG"
 fi
 check_status "LLVM path configuration"
 
 # Install Rust
 echo -e "\n${BLUE}Installing Rust...${NC}"
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.77.2 -y
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.81.0 -y
 check_status "Rust installation"
 
 # Source cargo environment
@@ -66,7 +66,7 @@ check_status "WebAssembly target installation"
 
 # Install Radix Engine Simulator and CLI tools
 echo -e "\n${BLUE}Installing Radix Engine Simulator and CLI tools...${NC}"
-cargo install --force radix-clis@1.2.0
+cargo install --force radix-clis@1.3.0
 check_status "Radix tools installation"
 
 echo -e "\n${GREEN}Installation complete! Please restart your terminal or run:${NC}"

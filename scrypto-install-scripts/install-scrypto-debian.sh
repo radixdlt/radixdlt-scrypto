@@ -67,7 +67,7 @@ install_rust() {
     log "INFO" "Installing Rust..."
     
     # Download and install Rust with specific toolchain
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.77.2 -y
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.81.0 -y
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "Rust installed successfully"
@@ -110,7 +110,7 @@ add_wasm_target() {
 install_radix_tools() {
     log "INFO" "Installing Radix Engine Simulator and CLI tools..."
     
-    cargo install --force radix-clis@1.2.0
+    cargo install --force radix-clis@1.3.0
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "Radix tools installed successfully"
