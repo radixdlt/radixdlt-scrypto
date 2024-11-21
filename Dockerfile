@@ -50,11 +50,17 @@ WORKDIR /app
 
 RUN cargo install --path ./radix-clis
 
-FROM base-image as dev-container
+# This dev-container image can be built with the following command:
+# docker build . --target scrypto-dev-container -t scrypto-dev-container
+FROM base-image AS scrypto-dev-container
+# Install improved prompt powerline and bash-completion
 RUN apt install -y bash-completion powerline
 RUN echo 'powerline-daemon -q; POWERLINE_BASH_CONTINUATION=1; POWERLINE_BASH_SELECT=1; . /usr/share/powerline/bindings/bash/powerline.sh; . /etc/bash_completion' >> ~/.bashrc
+
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 COPY --from=builder /app/target/release/resim /usr/local/bin/resim
+COPY --from=builder /app/target/release/rtmc /usr/local/bin/rtmc
+COPY --from=builder /app/target/release/rtmd /usr/local/bin/rtmd
 RUN rustup target add wasm32-unknown-unknown
 
 FROM base-image
