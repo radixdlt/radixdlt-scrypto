@@ -200,6 +200,8 @@ jobs:
         run: |
           cargo test -p radix-engine-monkey-tests --features std,rocksdb,post_run_db_check,resource_tracker --no-run --locked
           cargo test -p radix-engine-profiling --all-features --no-run --locked
+      - name: Build with fuzzing feature
+        run: cargo build --features fuzzing
 
   radix-engine-test:
     name: Run Radix Engine tests

@@ -420,15 +420,15 @@ impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
     // ScryptoSchema, therefore implementing arbitrary by hand.
     // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
     fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
-        Ok(Self::Local {
-            schema: VersionedSchema::V1(SchemaV1 {
+        Ok(Self::Local(LocalNonFungibleDataSchema {
+            schema: VersionedScryptoSchema::from_latest_version(SchemaV1 {
                 type_kinds: vec![],
                 type_metadata: vec![],
                 type_validations: vec![],
             }),
             type_id: LocalTypeId::WellKnown(sbor::basic_well_known_types::UNIT_TYPE),
             mutable_fields: indexset!(),
-        })
+        }))
     }
 }
 
