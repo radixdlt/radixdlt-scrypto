@@ -7,3 +7,7 @@
 // * Have this X_folder.rs file which gets loaded by the test loader
 // * Use a mod definition to point to `X/mod.rs` where tests are defined
 mod vm;
+
+pub mod prelude {
+    pub use radix_engine_tests::prelude::*;
+}
