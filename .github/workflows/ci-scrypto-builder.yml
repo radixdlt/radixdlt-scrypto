@@ -35,6 +35,7 @@ jobs:
       tag: ${{ needs.tags.outputs.tag }}
       context: "."
       dockerfile: "Dockerfile"
+      target: "scrypto-builder"
       platforms: "linux/amd64"
       provenance: "false"
       scan_image: true
@@ -74,8 +75,7 @@ jobs:
 
       - uses: RDXWorks-actions/checkout@main
       - name: Pull scrypto-builder docker image
-        run:
-          DOCKER_DEFAULT_PLATFORM=linux/amd64 docker pull radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
+        run: DOCKER_DEFAULT_PLATFORM=linux/amd64 docker pull radixdlt/private-scrypto-builder:${{ needs.tags.outputs.tag }}
       - name: Build scrypto example using scrypto-builder
         run: |
           cp -r examples/everything test_package

@@ -24,6 +24,7 @@ jobs:
       tag: ${{ inputs.image-label }}
       context: "."
       dockerfile: "Dockerfile"
+      target: "scrypto-builder"
       platforms: "linux/amd64"
       provenance: "false"
       scan_image: true
@@ -31,4 +32,3 @@ jobs:
       enable_dockerhub: true
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
-

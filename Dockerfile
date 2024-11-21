@@ -63,7 +63,7 @@ COPY --from=builder /app/target/release/rtmc /usr/local/bin/rtmc
 COPY --from=builder /app/target/release/rtmd /usr/local/bin/rtmd
 RUN rustup target add wasm32-unknown-unknown
 
-FROM base-image
+FROM base-image AS scrypto-builder
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src
