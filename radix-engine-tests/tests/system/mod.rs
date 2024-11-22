@@ -47,6 +47,7 @@ mod module;
 mod nullification;
 mod package;
 mod package_schema;
+mod proof;
 mod proxy;
 mod recallable;
 mod reference;
