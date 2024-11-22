@@ -77,6 +77,12 @@ pub enum Value<X: CustomValueKind, Y: CustomValue<X>> {
     },
 }
 
+impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
+    pub fn unit() -> Self {
+        Value::Tuple { fields: vec![] }
+    }
+}
+
 /// Represents a custom SBOR value.
 pub trait CustomValue<X: CustomValueKind> {
     fn get_custom_value_kind(&self) -> X;

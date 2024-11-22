@@ -511,8 +511,354 @@ impl SignedIntentTreeStructure for PreparedPreviewTransactionV2 {
 mod tests {
     use crate::internal_prelude::*;
 
+    fn mutate_subintents(
+        transaction: &mut NotarizedTransactionV2,
+        subintents_mutate: impl FnOnce(&mut Vec<SubintentV2>),
+        subintent_signatures_mutate: impl FnOnce(&mut Vec<IntentSignaturesV2>),
+    ) {
+        subintents_mutate(
+            &mut transaction
+                .signed_transaction_intent
+                .transaction_intent
+                .non_root_subintents
+                .0,
+        );
+        subintent_signatures_mutate(
+            &mut transaction
+                .signed_transaction_intent
+                .non_root_subintent_signatures
+                .by_subintent,
+        );
+    }
+
     #[test]
-    fn test_subintent_structure_errors() {}
+    fn test_subintent_structure_errors() {
+        let validator = TransactionValidator::new_for_latest_simulator();
+
+        // SubintentStructureError::DuplicateSubintent
+        {
+            let duplicated_subintent = create_leaf_partial_transaction(0, 0);
+            let duplicated_subintent_hash = duplicated_subintent.root_subintent_hash;
+            let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_children([duplicated_subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            mutate_subintents(
+                &mut transaction,
+                |subintents| {
+                    subintents.push(subintents[0].clone());
+                },
+                |subintent_signatures| {
+                    subintent_signatures.push(subintent_signatures[0].clone());
+                },
+            );
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), subintent_hash),
+                    SubintentStructureError::DuplicateSubintent,
+                )) => {
+                    assert_eq!(subintent_hash, duplicated_subintent_hash);
+                }
+            );
+        }
+
+        // SubintentStructureError::SubintentHasMultipleParents
+        // ====================================================
+        // CASE 1 - Two duplicates as children in the same intent
+        // =======> This isn't possible because `ChildSubintentSpecifiersV2` wraps an `IndexSet<ChildSubintentSpecifier>`
+        // Case 2 - Both duplicates across different intents
+        // =======> This is tested below
+        {
+            let duplicated_subintent = create_leaf_partial_transaction(1, 0);
+
+            let parent_subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_children([duplicated_subintent.clone()])
+                .add_manifest_calling_each_child_once()
+                .build();
+            let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_children([parent_subintent, duplicated_subintent.clone()])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            mutate_subintents(
+                &mut transaction,
+                |subintents| {
+                    subintents.remove(1);
+                },
+                |subintent_signatures| {
+                    subintent_signatures.remove(1);
+                },
+            );
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), subintent_hash),
+                    SubintentStructureError::SubintentHasMultipleParents,
+                )) => {
+                    assert_eq!(subintent_hash, duplicated_subintent.root_subintent_hash);
+                }
+            );
+        }
+
+        // SubintentStructureError::ChildSubintentNotIncludedInTransaction(SubintentHash)
+        {
+            let missing_subintent = create_leaf_partial_transaction(0, 0);
+            let missing_subintent_hash = missing_subintent.root_subintent_hash;
+            let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_children([missing_subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            mutate_subintents(
+                &mut transaction,
+                |subintents| {
+                    subintents.pop();
+                },
+                |subintent_signatures| {
+                    subintent_signatures.pop();
+                },
+            );
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::Unlocatable,
+                    SubintentStructureError::ChildSubintentNotIncludedInTransaction(subintent_hash),
+                )) => {
+                    assert_eq!(subintent_hash, missing_subintent_hash);
+                }
+            );
+        }
+
+        // SubintentStructureError::SubintentExceedsMaxDepth
+        {
+            let depth_4 = create_leaf_partial_transaction(0, 0);
+            let depth_4_hash = depth_4.root_subintent_hash;
+            let depth_3 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_children([depth_4])
+                .add_manifest_calling_each_child_once()
+                .build();
+            let depth_2 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_children([depth_3])
+                .add_manifest_calling_each_child_once()
+                .build();
+            let depth_1 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_children([depth_2])
+                .add_manifest_calling_each_child_once()
+                .build();
+            let transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_children([depth_1])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(_), subintent_hash),
+                    SubintentStructureError::SubintentExceedsMaxDepth,
+                )) => {
+                    assert_eq!(subintent_hash, depth_4_hash);
+                }
+            );
+        }
+
+        // SubintentStructureError::SubintentIsNotReachableFromTheTransactionIntent
+        // ========================================================================
+        // CASE 1 - The subintent is superfluous / has no parent
+        // This is tested below
+        //
+        // CASE 2 - Without a "no parent" short-circuit.
+        // To hit this error (but none of the previous errors) requires that we have
+        // a cycle in the subintent graph.
+        //
+        // But, because parents include a subintent hash of their direct children,
+        // which is itself part of their hash, a cycle would require a hash collision!
+        //
+        // But we can hack around this by explicitly overwriting the prepared subintent
+        // hashes.
+        {
+            // CASE 1 - The subintent has no parent
+            let no_parent_subintent = create_leaf_partial_transaction(0, 0);
+            let no_parent_subintent_hash = no_parent_subintent.root_subintent_hash;
+
+            let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            mutate_subintents(
+                &mut transaction,
+                |subintents| {
+                    subintents.push(
+                        no_parent_subintent
+                            .partial_transaction
+                            .partial_transaction
+                            .root_subintent,
+                    );
+                },
+                |subintent_signatures| {
+                    subintent_signatures.push(IntentSignaturesV2::none());
+                },
+            );
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(0), subintent_hash),
+                    SubintentStructureError::SubintentIsNotReachableFromTheTransactionIntent,
+                )) => {
+                    assert_eq!(subintent_hash, no_parent_subintent_hash);
+                }
+            );
+
+            // CASE 2 - Without a potential "no parent" short-circuit
+            let faked_hash = SubintentHash::from_bytes([1; 32]);
+
+            let self_parent_subintent = SubintentV2 {
+                intent_core: IntentCoreV2 {
+                    header: IntentHeaderV2 {
+                        network_id: NetworkDefinition::simulator().id,
+                        start_epoch_inclusive: Epoch::of(0),
+                        end_epoch_exclusive: Epoch::of(1),
+                        min_proposer_timestamp_inclusive: None,
+                        max_proposer_timestamp_exclusive: None,
+                        intent_discriminator: 0,
+                    },
+                    message: MessageV2::None,
+                    instructions: InstructionsV2(vec![InstructionV2::YieldToParent(
+                        YieldToParent::empty(),
+                    )]),
+                    blobs: BlobsV1::none(),
+                    children: ChildSubintentSpecifiersV2 {
+                        children: indexset![faked_hash.into()],
+                    },
+                },
+            };
+
+            let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            mutate_subintents(
+                &mut transaction,
+                |subintents| {
+                    subintents.push(self_parent_subintent);
+                },
+                |subintent_signatures| {
+                    subintent_signatures.push(IntentSignaturesV2::none());
+                },
+            );
+
+            let mut prepared = transaction
+                .prepare(validator.preparation_settings())
+                .unwrap();
+
+            // We overwrite the subintent hash to the faked hash
+            prepared
+                .signed_intent
+                .transaction_intent
+                .non_root_subintents
+                .subintents[0]
+                .summary
+                .hash = faked_hash.0;
+
+            assert_matches!(
+                prepared.validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(0), subintent_hash),
+                    SubintentStructureError::SubintentIsNotReachableFromTheTransactionIntent,
+                )) => {
+                    assert_eq!(subintent_hash, faked_hash);
+                }
+            );
+        }
+
+        // SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent
+        {
+            let single_yield_subintent = create_leaf_partial_transaction(0, 0);
+            let single_yield_subintent_hash = single_yield_subintent.root_subintent_hash;
+
+            // CASE 1: We yield twice to it, but it yields to us only once
+            let transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_signed_child("child", single_yield_subintent.clone())
+                .manifest_builder(|builder| {
+                    builder
+                        .yield_to_child("child", ())
+                        .yield_to_child("child", ())
+                })
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(0), subintent_hash),
+                    SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent,
+                )) => {
+                    assert_eq!(subintent_hash, single_yield_subintent_hash);
+                }
+            );
+
+            // CASE 2: We yield zero times to it
+            let transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_signed_child("child", single_yield_subintent)
+                .manifest_builder(|builder| builder)
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(0), subintent_hash),
+                    SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent,
+                )) => {
+                    assert_eq!(subintent_hash, single_yield_subintent_hash);
+                }
+            );
+
+            // CASE 3: More complex example, between two subintents, with 2 parent and 3 child yields:
+            let two_parent_yield_subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .manifest_builder(|builder| builder.yield_to_parent(()).yield_to_parent(()))
+                .build();
+            let two_parent_yield_subintent_hash = two_parent_yield_subintent.root_subintent_hash;
+
+            let three_child_yield_parent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_signed_child("child", two_parent_yield_subintent)
+                .manifest_builder(|builder| {
+                    builder
+                        .yield_to_child("child", ())
+                        .yield_to_child("child", ())
+                        .yield_to_child("child", ())
+                        .yield_to_parent(())
+                })
+                .build();
+
+            let transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_children([three_child_yield_parent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction.prepare_and_validate(&validator),
+                Err(TransactionValidationError::SubintentStructureError(
+                    TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(_), subintent_hash),
+                    SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent,
+                )) => {
+                    assert_eq!(subintent_hash, two_parent_yield_subintent_hash);
+                }
+            );
+        }
+    }
 
     #[test]
     fn too_many_signatures_should_be_rejected() {

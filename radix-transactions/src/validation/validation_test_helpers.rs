@@ -123,24 +123,37 @@ impl TransactionV2Builder {
 // All of these are only added when in #[cfg(test)]
 impl PartialTransactionV2Builder {
     pub fn new_with_test_defaults() -> Self {
-        Self::new()
-            .intent_header(IntentHeaderV2 {
-                network_id: NetworkDefinition::simulator().id,
-                start_epoch_inclusive: Epoch::of(0),
-                end_epoch_exclusive: Epoch::of(1),
-                min_proposer_timestamp_inclusive: None,
-                max_proposer_timestamp_exclusive: None,
-                intent_discriminator: 0,
-            })
-            .manifest(
-                ManifestBuilder::new_subintent_v2()
-                    .yield_to_parent(())
-                    .build(),
-            )
+        Self::new().intent_header(IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: Epoch::of(0),
+            end_epoch_exclusive: Epoch::of(1),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 0,
+        })
+    }
+
+    pub fn add_children<T: ResolvableSignedPartialTransaction>(
+        mut self,
+        children: impl IntoIterator<Item = T>,
+    ) -> Self {
+        for (i, child) in children.into_iter().enumerate() {
+            let child_name = format!("child_{i}");
+            self = self.add_signed_child(child_name, child);
+        }
+        self
+    }
+
+    pub fn add_trivial_manifest(self) -> Self {
+        self.manifest(
+            ManifestBuilder::new_subintent_v2()
+                .yield_to_parent(())
+                .build_no_validate(),
+        )
     }
 
     /// It calls into each child once
-    pub fn add_valid_manifest(self) -> Self {
+    pub fn add_manifest_calling_each_child_once(self) -> Self {
         let child_names = self
             .child_partial_transactions
             .keys()
@@ -169,15 +182,12 @@ impl PartialTransactionV2Builder {
 pub(crate) fn create_leaf_partial_transaction(
     intent_discriminator: u64,
     num_signatures: usize,
-) -> SignedPartialTransactionV2 {
-    let mut builder = PartialTransactionV2Builder::new_with_test_defaults()
-        .intent_discriminator(intent_discriminator);
-
-    for i in 0..num_signatures {
-        let signer =
-            Secp256k1PrivateKey::from_u64((intent_discriminator + 1) * 1000 + (i as u64)).unwrap();
-        builder = builder.sign(&signer);
-    }
-
-    builder.build_minimal()
+) -> DetailedSignedPartialTransactionV2 {
+    PartialTransactionV2Builder::new_with_test_defaults()
+        .intent_discriminator(intent_discriminator)
+        .add_trivial_manifest()
+        .multi_sign((0..num_signatures).into_iter().map(|i| {
+            Secp256k1PrivateKey::from_u64((intent_discriminator + 1) * 1000 + (i as u64)).unwrap()
+        }))
+        .build()
 }
