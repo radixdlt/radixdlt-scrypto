@@ -1,13 +1,4 @@
-use crate::decode::*;
-use crate::decoder::*;
-use crate::encode::*;
-use crate::encoder::*;
-use crate::path::SborPathBuf;
-use crate::rust::fmt::Debug;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
-use crate::value_kind::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
@@ -526,7 +517,6 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::internal_prelude::*;
 
     #[derive(Categorize, Encode)]
