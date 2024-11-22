@@ -111,7 +111,7 @@ impl TransactionValidator {
 
         // STEP 1
         // ------
-        // * We establish that the subintents are unique
+        // * We establish that the non-root subintents are unique
         // * We create an index from the SubintentHash to SubintentIndex
         for (index, subintent) in intent_tree.non_root_subintents().enumerate() {
             let subintent_hash = subintent.subintent_hash();
@@ -126,14 +126,14 @@ impl TransactionValidator {
         // STEP 2
         // ------
         // We establish, for each parent intent, that each of its children:
-        // * Exist as subintents in the transaction
-        // * Only is the child of that parent intent and no other
+        // * Exist as subintents in the transaction tree
+        // * Has no other parents
         //
         // We also:
         // * Save the unique parent on each subintent which is a child
         // * Save the children of an intent into its intent details
 
-        // STEP 2A - Handle children of the transaction intent
+        // STEP 2A - Handle children of the root intent
         {
             let parent_hash = intent_tree.root().intent_hash();
             let intent_details = &mut root_intent_details;
