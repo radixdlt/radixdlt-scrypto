@@ -53,9 +53,10 @@ RUN cargo install --path ./radix-clis
 # This dev-container image can be built with the following command:
 # docker build . --target scrypto-dev-container -t scrypto-dev-container
 FROM base-image AS scrypto-dev-container
-# Install improved prompt powerline, bash-completion and git
-RUN apt install -y powerline bash-completion git
-RUN echo 'powerline-daemon -q; POWERLINE_BASH_CONTINUATION=1; POWERLINE_BASH_SELECT=1; . /usr/share/powerline/bindings/bash/powerline.sh; . /etc/bash_completion;' >> ~/.bashrc
+RUN apt install -y curl bash-completion git
+# Install improved prompt for better dev experience - https://starship.rs/
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
+RUN echo 'eval "$(starship init bash)"\n . /etc/bash_completion' >> /root/.bashrc
 
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 COPY --from=builder /app/target/release/resim /usr/local/bin/resim
@@ -63,6 +64,7 @@ COPY --from=builder /app/target/release/rtmc /usr/local/bin/rtmc
 COPY --from=builder /app/target/release/rtmd /usr/local/bin/rtmd
 COPY --from=builder /app/target/release/scrypto-bindgen /usr/local/bin/scrypto-bindgen
 RUN rustup target add wasm32-unknown-unknown
+RUN rustup component add rustfmt
 
 FROM base-image AS scrypto-builder
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
