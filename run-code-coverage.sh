@@ -4,10 +4,12 @@ set -x
 set -e
 
 CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' cargo test --no-fail-fast \
- --package radix-engine-tests \
  --package radix-transactions \
  --package radix-transaction-scenarios \
  --package radix-common \
+ --package radix-engine \
+ --package radix-engine-interface \
+ --package radix-engine-tests \
  --package sbor \
  --package sbor-tests
 
