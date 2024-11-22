@@ -396,20 +396,9 @@ mod tests {
             .notarize(&notary)
             .build();
 
-        let transaction_v2 = TransactionV2Builder::new()
-            .intent_header(IntentHeaderV2 {
-                network_id: network.id,
-                start_epoch_inclusive: Epoch::of(1),
-                end_epoch_exclusive: Epoch::of(10),
-                min_proposer_timestamp_inclusive: None,
-                max_proposer_timestamp_exclusive: None,
-                intent_discriminator: 0,
-            })
-            .transaction_header(TransactionHeaderV2 {
-                notary_public_key: notary.public_key().into(),
-                notary_is_signatory: true,
-                tip_basis_points: 0,
-            })
+        let transaction_v2 = TransactionV2Builder::new_with_test_defaults()
+            .notary_is_signatory(true)
+            .notary_public_key(notary.public_key())
             .manifest(ManifestBuilder::new_v2().drop_auth_zone_proofs().build())
             .sign(&notary)
             .notarize(&notary)
@@ -513,7 +502,9 @@ mod tests {
                         .signer_keys
                 }
                 TransactionVersion::V2 => {
-                    unsigned_v2_builder(notary.public_key().into())
+                    TransactionV2Builder::new_with_test_defaults()
+                        .add_trivial_manifest()
+                        .notary_public_key(notary.public_key())
                         .sign(signer)
                         .notarize(notary)
                         .build_minimal_no_validate()

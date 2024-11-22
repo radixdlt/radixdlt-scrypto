@@ -16,4 +16,4 @@ pub use transaction_structure_validator::*;
 pub use transaction_validation_configuration::*;
 pub use transaction_validator::*;
 #[cfg(test)]
-pub(crate) use validation_test_helpers::*;
+pub use validation_test_helpers::*;
