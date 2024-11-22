@@ -3,6 +3,11 @@
 # Exit on error
 set -e
 
+# Versions to install
+LLVM_VERSION=18
+RUST_VERSION=1.81.0
+RADIX_CLI_VERSION=1.3.0
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -52,7 +57,7 @@ install_llvm() {
     sudo apt-get update
     
     # Install build essentials and LLVM
-    sudo apt-get install -y clang build-essential llvm
+    sudo apt-get install -y clang build-essential llvm-$LLVM_VERSION
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "LLVM and build essentials installed successfully"
@@ -67,7 +72,7 @@ install_rust() {
     log "INFO" "Installing Rust..."
     
     # Download and install Rust with specific toolchain
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.81.0 -y
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=$RUST_VERSION -y
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "Rust installed successfully"
@@ -110,7 +115,7 @@ add_wasm_target() {
 install_radix_tools() {
     log "INFO" "Installing Radix Engine Simulator and CLI tools..."
     
-    cargo install --force radix-clis@1.3.0
+    cargo install --force radix-clis@$RADIX_CLI_VERSION
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "Radix tools installed successfully"

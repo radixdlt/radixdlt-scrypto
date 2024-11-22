@@ -1,9 +1,14 @@
 # Requires PowerShell running as Administrator
 #Requires -RunAsAdministrator
 
+# Versions to install
+$llvmVersion = '18.1.8'
+$rustVersion = '1.81.0'
+$radixCliVersion = '1.3.0'
+
 # Script configuration
-$ErrorActionPreference = "Stop"
-$ProgressPreference = "Continue"
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'Continue'
 
 # Colors for output
 function Write-ColorOutput($ForegroundColor) {
@@ -85,7 +90,6 @@ if (!(Test-Path $vsInstallerPath)) {
 }
 
 # 3. Install LLVM
-$llvmVersion = "18.1.8"
 Install-IfNotPresent "LLVM" "clang" {
     Write-ColorOutput Cyan "Downloading LLVM..."
 
@@ -104,7 +108,6 @@ Install-IfNotPresent "LLVM" "clang" {
 }
 
 # 4. Install Rust
-$rustVersion = "1.81.0"
 Install-IfNotPresent "Rust" "rustc" {
     Write-ColorOutput Cyan "Downloading and installing Rust..."
     $rustupInit = "$env:TEMP\rustup-init.exe"
@@ -123,7 +126,7 @@ rustup target add wasm32-unknown-unknown
 
 # 7. Install Radix Engine Simulator and CLI tools
 Write-ColorOutput Cyan "Installing Radix Engine Simulator and CLI tools..."
-cargo install --force radix-clis@1.3.0
+cargo install --force radix-clis@$radixCliVersion
 Refresh-EnvironmentVariables
 
 # Final success message

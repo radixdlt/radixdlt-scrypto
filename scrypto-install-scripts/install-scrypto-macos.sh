@@ -3,6 +3,11 @@
 # Print commands and exit on errors
 set -ex
 
+# Versions to install
+LLVM_VERSION=18
+RUST_VERSION=1.81.0
+RADIX_CLI_VERSION=1.3.0
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,7 +33,7 @@ check_status "Xcode Command Line Tools installation"
 
 # Install cmake and LLVM
 echo -e "\n${BLUE}Installing cmake and LLVM...${NC}"
-brew install cmake llvm@17
+brew install cmake llvm@$LLVM_VERSION
 check_status "cmake and LLVM installation"
 
 # Detect shell and configure appropriate rc file
@@ -44,14 +49,14 @@ fi
 
 # Add LLVM to PATH
 echo -e "\n${BLUE}Configuring LLVM in $SHELL_CONFIG...${NC}"
-if ! grep -q "$(brew --prefix llvm@18)/bin" "$SHELL_CONFIG"; then
-    echo 'PATH="$(brew --prefix llvm@18)/bin:$PATH"' >> "$SHELL_CONFIG"
+if ! grep -q "$(brew --prefix llvm@${LLVM_VERSION})/bin" "$SHELL_CONFIG"; then
+    echo 'PATH="$(brew --prefix llvm@'$LLVM_VERSION')/bin:$PATH"' >> "$SHELL_CONFIG"
 fi
 check_status "LLVM path configuration"
 
 # Install Rust
 echo -e "\n${BLUE}Installing Rust...${NC}"
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=1.81.0 -y
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain=$RUST_VERSION -y
 check_status "Rust installation"
 
 # Source cargo environment
@@ -66,7 +71,7 @@ check_status "WebAssembly target installation"
 
 # Install Radix Engine Simulator and CLI tools
 echo -e "\n${BLUE}Installing Radix Engine Simulator and CLI tools...${NC}"
-cargo install --force radix-clis@1.3.0
+cargo install --force radix-clis@$RADIX_CLI_VERSION
 check_status "Radix tools installation"
 
 echo -e "\n${GREEN}Installation complete! Please restart your terminal or run:${NC}"
