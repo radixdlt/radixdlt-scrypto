@@ -22,6 +22,39 @@ impl TestTransactionV2Builder {
         }
     }
 
+    /// Yields to each child exactly once with empty arguments.
+    pub fn add_simple_subintent(
+        &mut self,
+        children: impl IntoIterator<Item = SubintentHash>,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> SubintentHash {
+        let mut manifest_builder = ManifestBuilder::new_subintent_v2();
+        for (child_index, child_hash) in children.into_iter().enumerate() {
+            let child_name = format!("child_{child_index}");
+            manifest_builder = manifest_builder.use_child(&child_name, child_hash);
+            manifest_builder = manifest_builder.yield_to_child(child_name, ());
+        }
+        let manifest = manifest_builder.yield_to_parent(()).build();
+        self.add_subintent(manifest, proofs)
+    }
+
+    pub fn add_tweaked_simple_subintent(
+        &mut self,
+        children: impl IntoIterator<Item = SubintentHash>,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+        addition: impl FnOnce(SubintentManifestV2Builder) -> SubintentManifestV2Builder,
+    ) -> SubintentHash {
+        let mut manifest_builder = ManifestBuilder::new_subintent_v2();
+        for (child_index, child_hash) in children.into_iter().enumerate() {
+            let child_name = format!("child_{child_index}");
+            manifest_builder = manifest_builder.use_child(&child_name, child_hash);
+            manifest_builder = manifest_builder.yield_to_child(child_name, ());
+        }
+        manifest_builder = addition(manifest_builder);
+        let manifest = manifest_builder.yield_to_parent(()).build();
+        self.add_subintent(manifest, proofs)
+    }
+
     pub fn add_subintent(
         &mut self,
         manifest: SubintentManifestV2,
@@ -32,6 +65,24 @@ impl TestTransactionV2Builder {
         let hash = intent.hash;
         self.subintents.insert(SubintentHash(hash), intent);
         SubintentHash(hash)
+    }
+
+    /// Uses the faucet and yields to each child exactly once with empty arguments.
+    pub fn finish_with_simple_root_intent(
+        self,
+        children: impl IntoIterator<Item = SubintentHash>,
+        proofs: impl IntoIterator<Item = NonFungibleGlobalId>,
+    ) -> TestTransaction {
+        let mut manifest_builder = ManifestBuilder::new_v2();
+        manifest_builder = manifest_builder.lock_fee_from_faucet();
+        for (child_index, child_hash) in children.into_iter().enumerate() {
+            let child_name = format!("child_{child_index}");
+            // In the manifest builder, we allow USE_CHILD later than in a written manifest
+            manifest_builder = manifest_builder.use_child(&child_name, child_hash);
+            manifest_builder = manifest_builder.yield_to_child(child_name, ());
+        }
+        let manifest = manifest_builder.build();
+        self.finish_with_root_intent(manifest, proofs)
     }
 
     pub fn finish_with_root_intent(
