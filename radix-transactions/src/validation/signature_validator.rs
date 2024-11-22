@@ -1,5 +1,27 @@
 use crate::internal_prelude::*;
 
+#[cfg(feature = "fuzzing")]
+pub fn verify_and_recover(
+    _signed_hash: &Hash,
+    signature: &SignatureWithPublicKeyV1,
+) -> Option<PublicKey> {
+    match signature {
+        SignatureWithPublicKeyV1::Secp256k1 { signature } => {
+            let slice: &[u8] = signature.as_ref();
+            let mut pk = [0; 33];
+            pk[0] = slice[0];
+            Some(PublicKey::Secp256k1(Secp256k1PublicKey(pk)))
+        }
+        SignatureWithPublicKeyV1::Ed25519 { public_key, .. } => Some(public_key.clone().into()),
+    }
+}
+
+#[cfg(feature = "fuzzing")]
+pub fn verify(_signed_hash: &Hash, _public_key: &PublicKey, _signature: &SignatureV1) -> bool {
+    true
+}
+
+#[cfg(not(feature = "fuzzing"))]
 pub fn verify_and_recover(
     signed_hash: &Hash,
     signature: &SignatureWithPublicKeyV1,
@@ -21,6 +43,7 @@ pub fn verify_and_recover(
     }
 }
 
+#[cfg(not(feature = "fuzzing"))]
 pub fn verify(signed_hash: &Hash, public_key: &PublicKey, signature: &SignatureV1) -> bool {
     match (public_key, signature) {
         (PublicKey::Secp256k1(public_key), SignatureV1::Secp256k1(signature)) => {
