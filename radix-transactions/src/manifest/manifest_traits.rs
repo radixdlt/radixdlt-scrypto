@@ -163,6 +163,21 @@ impl<'a, I: ManifestInstructionSet> EphemeralManifest<'a, I> {
             known_object_names_ref: ManifestObjectNamesRef::Unknown,
         }
     }
+
+    pub fn new(
+        instructions: &'a [I],
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
+        child_subintent_specifiers: &'a IndexSet<ChildSubintentSpecifier>,
+        is_subintent: bool,
+    ) -> Self {
+        Self {
+            is_subintent,
+            instructions,
+            blobs,
+            child_subintent_specifiers: Some(child_subintent_specifiers),
+            known_object_names_ref: ManifestObjectNamesRef::Unknown,
+        }
+    }
 }
 
 impl<'a, I: ManifestInstructionSet> ReadableManifestBase for EphemeralManifest<'a, I> {

@@ -33,6 +33,50 @@ pub fn verify(signed_hash: &Hash, public_key: &PublicKey, signature: &SignatureV
     }
 }
 
+pub trait SignedIntentTreeStructure {
+    type IntentTree: IntentTreeStructure;
+    fn root_signatures(&self) -> PendingIntentSignatureValidations;
+    fn non_root_subintent_signatures(
+        &self,
+    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations>;
+    fn intent_tree(&self) -> &Self::IntentTree;
+    fn transaction_version(&self) -> TransactionVersion;
+
+    fn construct_pending_signature_validations<'a>(
+        &'a self,
+        config: &'a TransactionValidationConfig,
+    ) -> Result<AllPendingSignatureValidations<'a>, TransactionValidationError> {
+        let mut pending_signatures = AllPendingSignatureValidations::new_with_root(
+            self.transaction_version(),
+            config,
+            self.intent_tree().root().intent_hash(),
+            self.root_signatures(),
+        )?;
+
+        let non_root_subintents = self.intent_tree().non_root_subintents();
+        let non_root_subintent_signatures = self.non_root_subintent_signatures();
+        if non_root_subintents.len() != non_root_subintent_signatures.len() {
+            return Err(
+                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
+                    .located(TransactionValidationErrorLocation::AcrossTransaction),
+            );
+        }
+        for (index, (subintent, signatures)) in non_root_subintents
+            .zip(non_root_subintent_signatures)
+            .enumerate()
+        {
+            pending_signatures.add_non_root(
+                SubintentIndex(index),
+                subintent.subintent_hash(),
+                signatures.for_subintent(subintent.subintent_hash()),
+            )?;
+        }
+
+        Ok(pending_signatures)
+    }
+}
+
+#[must_use]
 pub struct AllPendingSignatureValidations<'a> {
     transaction_version: TransactionVersion,
     config: &'a TransactionValidationConfig,
@@ -47,9 +91,34 @@ pub struct AllPendingSignatureValidations<'a> {
     total_signature_validations: usize,
 }
 
+pub enum PendingSubintentSignatureValidations<'a> {
+    Subintent {
+        intent_signatures: &'a [IntentSignatureV1],
+    },
+    PreviewSubintent {
+        intent_public_keys: &'a [PublicKey],
+    },
+}
+
+impl<'a> PendingSubintentSignatureValidations<'a> {
+    fn for_subintent(self, signed_hash: SubintentHash) -> PendingIntentSignatureValidations<'a> {
+        match self {
+            PendingSubintentSignatureValidations::Subintent { intent_signatures } => {
+                PendingIntentSignatureValidations::Subintent {
+                    intent_signatures,
+                    signed_hash,
+                }
+            }
+            PendingSubintentSignatureValidations::PreviewSubintent { intent_public_keys } => {
+                PendingIntentSignatureValidations::PreviewSubintent { intent_public_keys }
+            }
+        }
+    }
+}
+
 /// This can assume that the signature counts are within checked limits,
 /// so calculations cannot overflow.
-pub(crate) enum PendingIntentSignatureValidations<'a> {
+pub enum PendingIntentSignatureValidations<'a> {
     TransactionIntent {
         notary_is_signatory: bool,
         notary_public_key: PublicKey,
@@ -100,64 +169,6 @@ impl<'a> AllPendingSignatureValidations<'a> {
             total_signature_validations: intent_signature_validations
                 + notary_signature_validations,
         })
-    }
-
-    pub fn add_non_root_subintents_v2(
-        &mut self,
-        non_root_subintents: &PreparedNonRootSubintentsV2,
-        signatures: &'a PreparedNonRootSubintentSignaturesV2,
-    ) -> Result<(), TransactionValidationError> {
-        let non_root_subintents = &non_root_subintents.subintents;
-        let non_root_subintent_signatures = &signatures.by_subintent;
-        if non_root_subintents.len() != non_root_subintent_signatures.len() {
-            return Err(
-                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
-                    .located(TransactionValidationErrorLocation::AcrossTransaction),
-            );
-        }
-        for (index, (subintent, signatures)) in non_root_subintents
-            .iter()
-            .zip(non_root_subintent_signatures)
-            .enumerate()
-        {
-            self.add_non_root(
-                SubintentIndex(index),
-                subintent.subintent_hash(),
-                PendingIntentSignatureValidations::Subintent {
-                    intent_signatures: &signatures.inner.signatures,
-                    signed_hash: subintent.subintent_hash(),
-                },
-            )?;
-        }
-        Ok(())
-    }
-
-    pub fn add_non_root_preview_subintents_v2(
-        &mut self,
-        non_root_subintents: &PreparedNonRootSubintentsV2,
-        non_root_subintent_signers: &'a Vec<Vec<PublicKey>>,
-    ) -> Result<(), TransactionValidationError> {
-        let non_root_subintents = &non_root_subintents.subintents;
-        if non_root_subintents.len() != non_root_subintent_signers.len() {
-            return Err(
-                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
-                    .located(TransactionValidationErrorLocation::AcrossTransaction),
-            );
-        }
-        for (index, (subintent, signers)) in non_root_subintents
-            .iter()
-            .zip(non_root_subintent_signers)
-            .enumerate()
-        {
-            self.add_non_root(
-                SubintentIndex(index),
-                subintent.subintent_hash(),
-                PendingIntentSignatureValidations::PreviewSubintent {
-                    intent_public_keys: signers,
-                },
-            )?;
-        }
-        Ok(())
     }
 
     fn add_non_root(

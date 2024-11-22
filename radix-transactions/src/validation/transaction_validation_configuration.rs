@@ -33,7 +33,7 @@ impl TransactionValidationConfig {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TransactionVersion {
+pub enum TransactionVersion {
     V1,
     V2,
 }
