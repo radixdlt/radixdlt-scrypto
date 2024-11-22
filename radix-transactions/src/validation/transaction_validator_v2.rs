@@ -1,0 +1,1078 @@
+use crate::internal_prelude::*;
+use core::ops::ControlFlow;
+
+impl TransactionValidator {
+    pub fn validate_notarized_v2(
+        &self,
+        prepared: PreparedNotarizedTransactionV2,
+    ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+        if !self.config.v2_transactions_allowed {
+            return Err(TransactionValidationError::TransactionVersionNotPermitted(
+                2,
+            ));
+        }
+
+        let transaction_intent = &prepared.signed_intent.transaction_intent;
+        let non_root_subintents = &transaction_intent.non_root_subintents;
+
+        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)
+            .map_err(|err| {
+                TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(
+                        transaction_intent.transaction_intent_hash(),
+                    ),
+                    IntentValidationError::HeaderValidationError(err),
+                )
+            })?;
+
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            transaction_intent.transaction_intent_hash().into(),
+            PendingIntentSignatureValidations::TransactionIntent {
+                notary_is_signatory: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_is_signatory,
+                notary_public_key: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_public_key,
+                notary_signature: prepared.notary_signature.inner.0,
+                notarized_hash: prepared.signed_transaction_intent_hash(),
+                intent_signatures: prepared
+                    .signed_intent
+                    .transaction_intent_signatures
+                    .inner
+                    .signatures
+                    .as_slice(),
+                signed_hash: transaction_intent.transaction_intent_hash(),
+            },
+        )?;
+        signatures.add_non_root_subintents_v2(
+            non_root_subintents,
+            &prepared.signed_intent.non_root_subintent_signatures,
+        )?;
+
+        let ValidatedPartialTransactionTreeV2 {
+            overall_validity_range,
+            total_signature_validations,
+            root_intent_info,
+            root_yield_to_parent_count: _, // Checked to be 0 in the manifest validator.
+            non_root_subintents_info,
+        } = self.validate_transaction_subtree_v2(
+            &transaction_intent.root_intent_core,
+            transaction_intent.transaction_intent_hash().into(),
+            non_root_subintents,
+            signatures,
+        )?;
+
+        Ok(ValidatedNotarizedTransactionV2 {
+            prepared,
+            overall_validity_range,
+            total_signature_validations,
+            transaction_intent_info: root_intent_info,
+            non_root_subintents_info,
+        })
+    }
+
+    pub fn validate_preview_transaction_v2(
+        &self,
+        prepared: PreparedPreviewTransactionV2,
+    ) -> Result<ValidatedPreviewTransactionV2, TransactionValidationError> {
+        if !self.config.v2_transactions_allowed {
+            return Err(TransactionValidationError::TransactionVersionNotPermitted(
+                2,
+            ));
+        }
+
+        let transaction_intent = &prepared.transaction_intent;
+        let non_root_subintents = &transaction_intent.non_root_subintents;
+
+        self.validate_transaction_header_v2(&transaction_intent.transaction_header.inner)
+            .map_err(|err| {
+                TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(
+                        transaction_intent.transaction_intent_hash(),
+                    ),
+                    IntentValidationError::HeaderValidationError(err),
+                )
+            })?;
+
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            transaction_intent.transaction_intent_hash().into(),
+            PendingIntentSignatureValidations::PreviewTransactionIntent {
+                notary_is_signatory: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_is_signatory,
+                notary_public_key: transaction_intent
+                    .transaction_header
+                    .inner
+                    .notary_public_key,
+                intent_public_keys: prepared.root_subintent_signatures.inner.as_slice(),
+            },
+        )?;
+        signatures.add_non_root_preview_subintents_v2(
+            non_root_subintents,
+            &prepared.non_root_subintent_signatures.inner,
+        )?;
+
+        let ValidatedPartialTransactionTreeV2 {
+            overall_validity_range,
+            total_signature_validations: total_expected_signature_validations,
+            root_intent_info,
+            root_yield_to_parent_count: _, // Checked to be 0 in the manifest validator.
+            non_root_subintents_info,
+        } = self.validate_transaction_subtree_v2(
+            &transaction_intent.root_intent_core,
+            transaction_intent.transaction_intent_hash().into(),
+            non_root_subintents,
+            signatures,
+        )?;
+
+        Ok(ValidatedPreviewTransactionV2 {
+            prepared,
+            overall_validity_range,
+            total_expected_signature_validations,
+            transaction_intent_info: root_intent_info,
+            non_root_subintents_info,
+        })
+    }
+
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_transaction_header_v2(
+        &self,
+        header: &TransactionHeaderV2,
+    ) -> Result<(), HeaderValidationError> {
+        if header.tip_basis_points < self.config.min_tip_basis_points
+            || header.tip_basis_points > self.config.max_tip_basis_points
+        {
+            return Err(HeaderValidationError::InvalidTip);
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_signed_partial_transaction_v2(
+        &self,
+        prepared: PreparedSignedPartialTransactionV2,
+    ) -> Result<ValidatedSignedPartialTransactionV2, TransactionValidationError> {
+        if !self.config.v2_transactions_allowed {
+            return Err(TransactionValidationError::TransactionVersionNotPermitted(
+                2,
+            ));
+        }
+
+        let root_subintent = &prepared.partial_transaction.root_subintent;
+        let root_intent_hash: IntentHash = root_subintent.subintent_hash().into();
+        let non_root_subintents = &prepared.partial_transaction.non_root_subintents;
+
+        let mut signatures = AllPendingSignatureValidations::new_with_root(
+            TransactionVersion::V2,
+            &self.config,
+            root_intent_hash,
+            PendingIntentSignatureValidations::Subintent {
+                intent_signatures: prepared
+                    .root_subintent_signatures
+                    .inner
+                    .signatures
+                    .as_slice(),
+                signed_hash: root_subintent.subintent_hash(),
+            },
+        )?;
+        signatures.add_non_root_subintents_v2(
+            non_root_subintents,
+            &prepared.non_root_subintent_signatures,
+        )?;
+
+        let ValidatedPartialTransactionTreeV2 {
+            overall_validity_range,
+            root_intent_info,
+            root_yield_to_parent_count,
+            non_root_subintents_info,
+            total_signature_validations,
+        } = self.validate_transaction_subtree_v2(
+            &root_subintent.intent_core,
+            root_subintent.subintent_hash().into(),
+            non_root_subintents,
+            signatures,
+        )?;
+
+        Ok(ValidatedSignedPartialTransactionV2 {
+            prepared,
+            total_signature_validations,
+            overall_validity_range,
+            root_subintent_info: root_intent_info,
+            root_subintent_yield_to_parent_count: root_yield_to_parent_count,
+            non_root_subintents_info,
+        })
+    }
+
+    pub fn validate_transaction_subtree_v2(
+        &self,
+        root_intent_core: &PreparedIntentCoreV2,
+        root_intent_hash: IntentHash,
+        non_root_subintents: &PreparedNonRootSubintentsV2,
+        signatures: AllPendingSignatureValidations,
+    ) -> Result<ValidatedPartialTransactionTreeV2, TransactionValidationError> {
+        let non_root_subintents = non_root_subintents.subintents.as_slice();
+
+        let intent_relationships = self.validate_intent_relationships_v2(
+            root_intent_hash,
+            root_intent_core,
+            non_root_subintents,
+        )?;
+        let (overall_validity_range, root_yield_summary) = self
+            .validate_v2_intent_cores_and_subintent_connection_counts(
+                root_intent_hash,
+                root_intent_core,
+                non_root_subintents,
+                &intent_relationships.non_root_subintents,
+            )?;
+
+        let SignatureValidationSummary {
+            root_signer_keys,
+            non_root_signer_keys,
+            total_signature_validations,
+        } = signatures.validate_all()?;
+
+        let root_intent_info = ValidatedIntentInformationV2 {
+            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
+            children_subintent_indices: intent_relationships.root_intent.children,
+            signer_keys: root_signer_keys,
+        };
+        let non_root_subintents_info = non_root_subintents
+            .iter()
+            .zip(non_root_signer_keys)
+            .zip(intent_relationships.non_root_subintents.into_values())
+            .map(
+                |((subintent, signer_keys), info)| -> Result<_, TransactionValidationError> {
+                    Ok(ValidatedIntentInformationV2 {
+                        encoded_instructions: manifest_encode(
+                            &subintent.intent_core.instructions.inner.0,
+                        )?
+                        .into(),
+                        signer_keys,
+                        children_subintent_indices: info.children,
+                    })
+                },
+            )
+            .collect::<Result<_, _>>()?;
+
+        Ok(ValidatedPartialTransactionTreeV2 {
+            overall_validity_range,
+            root_intent_info,
+            root_yield_to_parent_count: root_yield_summary.parent_yields,
+            non_root_subintents_info,
+            total_signature_validations,
+        })
+    }
+
+    /// Can be used for both partial and complete trees.
+    ///
+    /// This should be run after `validate_intent_relationships_v2`, which creates
+    /// the subintent details map for you which describes the relationship between
+    /// different intents.
+    fn validate_v2_intent_cores_and_subintent_connection_counts(
+        &self,
+        root_intent_hash: IntentHash,
+        root_intent_core: &PreparedIntentCoreV2,
+        non_root_subintents: &[PreparedSubintentV2],
+        non_root_subintent_details: &IndexMap<SubintentHash, SubintentRelationshipDetails>,
+    ) -> Result<(OverallValidityRangeV2, ManifestYieldSummary), TransactionValidationError> {
+        let mut aggregation = AcrossIntentAggregation::start();
+        let mut yield_summaries: IndexMap<IntentHash, ManifestYieldSummary> =
+            index_map_with_capacity(non_root_subintents.len() + 1);
+        let root_yield_summary = {
+            let yield_summary = self
+                .validate_v2_intent_core(
+                    root_intent_core,
+                    &mut aggregation,
+                    root_intent_hash.is_for_subintent(),
+                )
+                .map_err(|err| {
+                    TransactionValidationError::IntentValidationError(
+                        TransactionValidationErrorLocation::for_root(root_intent_hash),
+                        err,
+                    )
+                })?;
+            yield_summaries.insert(root_intent_hash, yield_summary.clone());
+            yield_summary
+        };
+        for (index, subintent) in non_root_subintents.iter().enumerate() {
+            let subintent_hash = subintent.subintent_hash();
+            let yield_summary = self
+                .validate_v2_intent_core(&subintent.intent_core, &mut aggregation, true)
+                .map_err(|err| {
+                    TransactionValidationError::IntentValidationError(
+                        TransactionValidationErrorLocation::NonRootSubintent(
+                            SubintentIndex(index),
+                            subintent_hash,
+                        ),
+                        err,
+                    )
+                })?;
+            yield_summaries.insert(subintent_hash.into(), yield_summary);
+        }
+
+        let overall_validity_range = aggregation.finalize(&self.config)?;
+
+        for (child_hash, child_details) in non_root_subintent_details {
+            let child_intent_hash = IntentHash::Subintent(*child_hash);
+            // This checks that the YIELD_TO_PARENTs in a subintent match the YIELD_TO_CHILDS in the parent.
+            // The instruction validation has already checked that the subintents end with a YIELD_TO_PARENT.
+            let parent_yield_summary = yield_summaries.get(&child_details.parent).unwrap();
+            let parent_yield_child_calls =
+                *parent_yield_summary.child_yields.get(child_hash).unwrap();
+            let child_yield_summary = yield_summaries.get(&child_intent_hash).unwrap();
+            let child_yield_parent_calls = child_yield_summary.parent_yields;
+            if parent_yield_child_calls != child_yield_parent_calls {
+                return Err(
+                    SubintentStructureError::MismatchingYieldChildAndYieldParentCountsForSubintent
+                        .for_subintent(child_details.index, *child_hash),
+                );
+            }
+        }
+
+        Ok((overall_validity_range, root_yield_summary))
+    }
+
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_v2_intent_core(
+        &self,
+        intent_core: &PreparedIntentCoreV2,
+        aggregation: &mut AcrossIntentAggregation,
+        is_subintent: bool,
+    ) -> Result<ManifestYieldSummary, IntentValidationError> {
+        self.validate_intent_header_v2(&intent_core.header.inner, aggregation)?;
+        self.validate_message_v2(&intent_core.message.inner)?;
+        aggregation
+            .record_reference_count(intent_core.instructions.references.len(), &self.config)?;
+        let yield_summary = self.validate_manifest_v2(
+            &intent_core.instructions.inner.0,
+            &intent_core.blobs.blobs_by_hash,
+            &intent_core.children.children,
+            is_subintent,
+        )?;
+        Ok(yield_summary)
+    }
+
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_intent_header_v2(
+        &self,
+        header: &IntentHeaderV2,
+        aggregation: &mut AcrossIntentAggregation,
+    ) -> Result<(), HeaderValidationError> {
+        // Network
+        if let Some(required_network_id) = self.required_network_id {
+            if header.network_id != required_network_id {
+                return Err(HeaderValidationError::InvalidNetwork);
+            }
+        }
+
+        // Epoch
+        if header.end_epoch_exclusive <= header.start_epoch_inclusive {
+            return Err(HeaderValidationError::InvalidEpochRange);
+        }
+        let max_end_epoch = header
+            .start_epoch_inclusive
+            .after(self.config.max_epoch_range)
+            .ok_or(HeaderValidationError::InvalidEpochRange)?;
+        if header.end_epoch_exclusive > max_end_epoch {
+            return Err(HeaderValidationError::InvalidEpochRange);
+        }
+
+        match (
+            header.min_proposer_timestamp_inclusive.as_ref(),
+            header.max_proposer_timestamp_exclusive.as_ref(),
+        ) {
+            (Some(min_timestamp_inclusive), Some(max_timestamp_exclusive)) => {
+                if min_timestamp_inclusive >= max_timestamp_exclusive {
+                    return Err(HeaderValidationError::InvalidTimestampRange);
+                }
+            }
+            _ => {}
+        };
+
+        aggregation.update_headers(
+            header.start_epoch_inclusive,
+            header.end_epoch_exclusive,
+            header.min_proposer_timestamp_inclusive.as_ref(),
+            header.max_proposer_timestamp_exclusive.as_ref(),
+        )?;
+
+        Ok(())
+    }
+
+    // This method is public so it can be used by the toolkit.
+    pub fn validate_message_v2(&self, message: &MessageV2) -> Result<(), InvalidMessageError> {
+        let validation = &self.config.message_validation;
+        match message {
+            MessageV2::None => {}
+            MessageV2::Plaintext(plaintext_message) => {
+                let PlaintextMessageV1 { mime_type, message } = plaintext_message;
+                if mime_type.len() > validation.max_mime_type_length {
+                    return Err(InvalidMessageError::MimeTypeTooLong {
+                        actual: mime_type.len(),
+                        permitted: validation.max_mime_type_length,
+                    });
+                }
+                if message.len() > validation.max_plaintext_message_length {
+                    return Err(InvalidMessageError::PlaintextMessageTooLong {
+                        actual: message.len(),
+                        permitted: validation.max_plaintext_message_length,
+                    });
+                }
+            }
+            MessageV2::Encrypted(encrypted_message) => {
+                let EncryptedMessageV2 {
+                    encrypted,
+                    decryptors_by_curve,
+                } = encrypted_message;
+                if encrypted.0.len() > validation.max_encrypted_message_length {
+                    return Err(InvalidMessageError::EncryptedMessageTooLong {
+                        actual: encrypted.0.len(),
+                        permitted: validation.max_encrypted_message_length,
+                    });
+                }
+                if decryptors_by_curve.len() == 0 {
+                    return Err(InvalidMessageError::NoDecryptors);
+                }
+                let mut total_decryptors = 0;
+                for (curve_type, decryptors) in decryptors_by_curve.iter() {
+                    if decryptors.curve_type() != *curve_type {
+                        return Err(InvalidMessageError::MismatchingDecryptorCurves {
+                            actual: decryptors.curve_type(),
+                            expected: *curve_type,
+                        });
+                    }
+                    if decryptors.number_of_decryptors() == 0 {
+                        return Err(InvalidMessageError::NoDecryptorsForCurveType {
+                            curve_type: decryptors.curve_type(),
+                        });
+                    }
+                    // Can't overflow because decryptor count << size of a transaction < 1MB < usize,
+                    total_decryptors += decryptors.number_of_decryptors();
+                }
+                if total_decryptors > validation.max_decryptors {
+                    return Err(InvalidMessageError::TooManyDecryptors {
+                        actual: total_decryptors,
+                        permitted: validation.max_decryptors,
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    // This method is public so it can be used by the toolkit.
+    /// The `is_subintent` property indicates whether it should be treated as a subintent.
+    /// A subintent is able to `YIELD_TO_PARENT` and is required to end with a `YIELD_TO_PARENT`.
+    pub fn validate_manifest_v2(
+        &self,
+        instructions: &[InstructionV2],
+        blobs: &IndexMap<Hash, Vec<u8>>,
+        children: &IndexSet<ChildSubintentSpecifier>,
+        is_subintent: bool,
+    ) -> Result<ManifestYieldSummary, ManifestValidationError> {
+        if instructions.len() > self.config.max_instructions {
+            return Err(ManifestValidationError::TooManyInstructions);
+        }
+        impl<'a> ReadableManifestBase
+            for (
+                &'a [InstructionV2],
+                &'a IndexMap<Hash, Vec<u8>>,
+                &'a IndexSet<ChildSubintentSpecifier>,
+                bool,
+            )
+        {
+            fn is_subintent(&self) -> bool {
+                self.3
+            }
+
+            fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
+                self.1.iter()
+            }
+
+            fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+                ManifestObjectNamesRef::Unknown
+            }
+
+            fn get_child_subintent_hashes<'b>(
+                &'b self,
+            ) -> impl ExactSizeIterator<Item = &'b ChildSubintentSpecifier> {
+                self.2.iter()
+            }
+        }
+        impl<'a> TypedReadableManifest
+            for (
+                &'a [InstructionV2],
+                &'a IndexMap<Hash, Vec<u8>>,
+                &'a IndexSet<ChildSubintentSpecifier>,
+                bool,
+            )
+        {
+            type Instruction = InstructionV2;
+
+            fn get_typed_instructions(&self) -> &[Self::Instruction] {
+                self.0
+            }
+        }
+        let mut yield_summary = ManifestYieldSummary {
+            parent_yields: 0,
+            child_yields: children.iter().map(|child| (child.hash, 0)).collect(),
+        };
+        StaticManifestInterpreter::new(
+            ValidationRuleset::cuttlefish(),
+            &(instructions, blobs, children, is_subintent),
+        )
+        .validate_and_apply_visitor(&mut yield_summary)?;
+        Ok(yield_summary)
+    }
+
+    /// The root intent can be either:
+    /// * If validating a full transaction: a transaction intent
+    /// * If validating a partial transaction: a root subintent
+    fn validate_intent_relationships_v2(
+        &self,
+        root_intent_hash: IntentHash,
+        root_intent_core: &PreparedIntentCoreV2,
+        non_root_subintents: &[PreparedSubintentV2],
+    ) -> Result<IntentRelationships, TransactionValidationError> {
+        let mut root_intent_details = RootIntentRelationshipDetails::default();
+        let mut non_root_subintent_details =
+            IndexMap::<SubintentHash, SubintentRelationshipDetails>::default();
+
+        // STEP 1
+        // ------
+        // * We establish that the subintents are unique
+        // * We create an index from the SubintentHash to SubintentIndex
+        for (index, subintent) in non_root_subintents.iter().enumerate() {
+            let subintent_hash = subintent.subintent_hash();
+            let index = SubintentIndex(index);
+            let details = SubintentRelationshipDetails::default_for(index);
+            if let Some(_) = non_root_subintent_details.insert(subintent_hash, details) {
+                return Err(SubintentStructureError::DuplicateSubintent
+                    .for_subintent(index, subintent_hash));
+            }
+        }
+
+        // STEP 2
+        // ------
+        // We establish, for each parent intent, that each of its children:
+        // * Exist as subintents in the transaction
+        // * Only is the child of that parent intent and no other
+        //
+        // We also:
+        // * Save the unique parent on each subintent which is a child
+        // * Save the children of an intent into its intent details
+
+        // STEP 2A - Handle children of the transaction intent
+        {
+            let parent_hash = root_intent_hash;
+            let intent_details = &mut root_intent_details;
+            for child_subintent_hash in root_intent_core.children.children.iter() {
+                let child_hash = child_subintent_hash.hash;
+                let child_subintent_details = non_root_subintent_details
+                    .get_mut(&child_hash)
+                    .ok_or_else(|| {
+                        SubintentStructureError::ChildSubintentNotIncludedInTransaction(child_hash)
+                            .for_unindexed()
+                    })?;
+                if child_subintent_details.parent == PLACEHOLDER_PARENT {
+                    child_subintent_details.parent = parent_hash;
+                } else {
+                    return Err(SubintentStructureError::SubintentHasMultipleParents
+                        .for_subintent(child_subintent_details.index, child_hash));
+                }
+                intent_details.children.push(child_subintent_details.index);
+            }
+        }
+
+        // STEP 2B - Handle the children of each subintent
+        for subintent in non_root_subintents.iter() {
+            let subintent_hash = subintent.subintent_hash();
+            let parent_hash: IntentHash = subintent_hash.into();
+            let children = &subintent.intent_core.children.children;
+            let mut children_details = Vec::with_capacity(children.len());
+            for child_subintent in children.iter() {
+                let child_hash = child_subintent.hash;
+                let child_subintent_details = non_root_subintent_details
+                    .get_mut(&child_hash)
+                    .ok_or_else(|| {
+                        SubintentStructureError::ChildSubintentNotIncludedInTransaction(child_hash)
+                            .for_unindexed()
+                    })?;
+                if child_subintent_details.parent == PLACEHOLDER_PARENT {
+                    child_subintent_details.parent = parent_hash;
+                } else {
+                    return Err(SubintentStructureError::SubintentHasMultipleParents
+                        .for_subintent(child_subintent_details.index, child_hash));
+                }
+                children_details.push(child_subintent_details.index);
+            }
+            non_root_subintent_details
+                .get_mut(&subintent_hash)
+                .unwrap()
+                .children = children_details;
+        }
+
+        // STEP 3
+        // ------
+        // We traverse the child relationships from the root, and mark a depth.
+        // We error if any exceed the maximum depth.
+        //
+        // As each child has at most one parent, we can guarantee the work is bounded
+        // by the total number of subintents.
+        let mut work_list = vec![];
+        for index in root_intent_details.children.iter() {
+            work_list.push((*index, 1));
+        }
+
+        let max_depth = if root_intent_hash.is_for_subintent() {
+            self.config.max_subintent_depth - 1
+        } else {
+            self.config.max_subintent_depth
+        };
+
+        loop {
+            let Some((index, depth)) = work_list.pop() else {
+                break;
+            };
+            if depth > max_depth {
+                let (hash, _) = non_root_subintent_details.get_index(index.0).unwrap();
+                return Err(
+                    SubintentStructureError::SubintentExceedsMaxDepth.for_subintent(index, *hash)
+                );
+            }
+            let (_, subintent_details) = non_root_subintent_details.get_index_mut(index.0).unwrap();
+            subintent_details.depth = depth;
+            for index in subintent_details.children.iter() {
+                work_list.push((*index, depth + 1));
+            }
+        }
+
+        // STEP 4
+        // ------
+        // We check that every subintent has a marked "depth from root".
+        //
+        // Combined with step 2 and step 3, we now have that:
+        // * Every subintent has a unique parent.
+        // * Every subintent is reachable from the root.
+        //
+        // Therefore there is a unique path from every subintent to the root
+        // So we have confirmed the subintents form a tree.
+        for (hash, details) in non_root_subintent_details.iter() {
+            if details.depth == 0 {
+                return Err(
+                    SubintentStructureError::SubintentIsNotReachableFromTheTransactionIntent
+                        .for_subintent(details.index, *hash),
+                );
+            }
+        }
+
+        Ok(IntentRelationships {
+            root_intent: root_intent_details,
+            non_root_subintents: non_root_subintent_details,
+        })
+    }
+}
+
+// This type is public so it can be used by the toolkit.
+#[must_use]
+pub struct AcrossIntentAggregation {
+    total_reference_count: usize,
+    overall_start_epoch_inclusive: Epoch,
+    overall_end_epoch_exclusive: Epoch,
+    overall_start_timestamp_inclusive: Option<Instant>,
+    overall_end_timestamp_exclusive: Option<Instant>,
+}
+
+impl AcrossIntentAggregation {
+    pub fn start() -> Self {
+        Self {
+            total_reference_count: 0,
+            overall_start_epoch_inclusive: Epoch::zero(),
+            overall_end_epoch_exclusive: Epoch::of(u64::MAX),
+            overall_start_timestamp_inclusive: None,
+            overall_end_timestamp_exclusive: None,
+        }
+    }
+
+    pub fn finalize(
+        self,
+        config: &TransactionValidationConfig,
+    ) -> Result<OverallValidityRangeV2, TransactionValidationError> {
+        if self.total_reference_count > config.max_total_references {
+            return Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                IntentValidationError::TooManyReferences {
+                    total: self.total_reference_count,
+                    limit: config.max_total_references,
+                },
+            ));
+        }
+        Ok(OverallValidityRangeV2 {
+            epoch_range: EpochRange {
+                start_epoch_inclusive: self.overall_start_epoch_inclusive,
+                end_epoch_exclusive: self.overall_end_epoch_exclusive,
+            },
+            proposer_timestamp_range: ProposerTimestampRange {
+                start_timestamp_inclusive: self.overall_start_timestamp_inclusive,
+                end_timestamp_exclusive: self.overall_end_timestamp_exclusive,
+            },
+        })
+    }
+
+    pub fn record_reference_count(
+        &mut self,
+        count: usize,
+        config: &TransactionValidationConfig,
+    ) -> Result<(), IntentValidationError> {
+        if count > config.max_references_per_intent {
+            return Err(IntentValidationError::TooManyReferences {
+                total: count,
+                limit: config.max_references_per_intent,
+            });
+        }
+        self.total_reference_count = self.total_reference_count.saturating_add(count);
+        Ok(())
+    }
+
+    pub fn update_headers(
+        &mut self,
+        start_epoch_inclusive: Epoch,
+        end_epoch_exclusive: Epoch,
+        start_timestamp_inclusive: Option<&Instant>,
+        end_timestamp_exclusive: Option<&Instant>,
+    ) -> Result<(), HeaderValidationError> {
+        if start_epoch_inclusive > self.overall_start_epoch_inclusive {
+            self.overall_start_epoch_inclusive = start_epoch_inclusive;
+        }
+        if end_epoch_exclusive < self.overall_end_epoch_exclusive {
+            self.overall_end_epoch_exclusive = end_epoch_exclusive;
+        }
+        if self.overall_start_epoch_inclusive >= self.overall_end_epoch_exclusive {
+            return Err(HeaderValidationError::NoValidEpochRangeAcrossAllIntents);
+        }
+        if let Some(start_timestamp_inclusive) = start_timestamp_inclusive {
+            if self.overall_start_timestamp_inclusive.is_none()
+                || self
+                    .overall_start_timestamp_inclusive
+                    .as_ref()
+                    .is_some_and(|t| start_timestamp_inclusive > t)
+            {
+                self.overall_start_timestamp_inclusive = Some(*start_timestamp_inclusive);
+            }
+        }
+        if let Some(end_timestamp_exclusive) = end_timestamp_exclusive {
+            if self.overall_end_timestamp_exclusive.is_none()
+                || self
+                    .overall_end_timestamp_exclusive
+                    .as_ref()
+                    .is_some_and(|t| end_timestamp_exclusive < t)
+            {
+                self.overall_end_timestamp_exclusive = Some(*end_timestamp_exclusive);
+            }
+        }
+        match (
+            self.overall_start_timestamp_inclusive.as_ref(),
+            self.overall_end_timestamp_exclusive.as_ref(),
+        ) {
+            (Some(start_inclusive), Some(end_exclusive)) => {
+                if start_inclusive >= end_exclusive {
+                    return Err(HeaderValidationError::NoValidTimestampRangeAcrossAllIntents);
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+// This type is public so it can be used by the toolkit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestYieldSummary {
+    parent_yields: usize,
+    child_yields: IndexMap<SubintentHash, usize>,
+}
+
+impl ManifestInterpretationVisitor for ManifestYieldSummary {
+    type Output = ManifestValidationError;
+
+    fn on_end_instruction(&mut self, details: OnEndInstruction) -> ControlFlow<Self::Output> {
+        // Safe from overflow due to checking max instruction count
+        match details.effect {
+            ManifestInstructionEffect::Invocation {
+                kind: InvocationKind::YieldToParent,
+                ..
+            } => {
+                self.parent_yields += 1;
+            }
+            ManifestInstructionEffect::Invocation {
+                kind:
+                    InvocationKind::YieldToChild {
+                        child_index: ManifestNamedIntent(index),
+                    },
+                ..
+            } => {
+                let index = index as usize;
+
+                // This should exist because we are handling this after the instruction,
+                // so the interpreter should have errored with ChildIntentNotRegistered
+                // if the child yield was invalid.
+                let (_, count) = self.child_yields.get_index_mut(index).unwrap();
+                *count += 1;
+            }
+            _ => {}
+        }
+        ControlFlow::Continue(())
+    }
+}
+
+struct IntentRelationships {
+    pub root_intent: RootIntentRelationshipDetails,
+    pub non_root_subintents: IndexMap<SubintentHash, SubintentRelationshipDetails>,
+}
+#[derive(Default)]
+pub struct RootIntentRelationshipDetails {
+    children: Vec<SubintentIndex>,
+}
+
+pub struct SubintentRelationshipDetails {
+    index: SubintentIndex,
+    parent: IntentHash,
+    depth: usize,
+    children: Vec<SubintentIndex>,
+}
+
+impl SubintentRelationshipDetails {
+    fn default_for(index: SubintentIndex) -> Self {
+        Self {
+            index,
+            parent: PLACEHOLDER_PARENT,
+            depth: Default::default(),
+            children: Default::default(),
+        }
+    }
+}
+
+const PLACEHOLDER_PARENT: IntentHash =
+    IntentHash::Transaction(TransactionIntentHash(Hash([0u8; Hash::LENGTH])));
+
+#[cfg(test)]
+mod tests {
+    use crate::internal_prelude::*;
+
+    #[test]
+    fn too_many_signatures_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_signatures: usize,
+        ) -> SignedPartialTransactionV2 {
+            let mut builder = PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|builder| builder.yield_to_parent(()));
+
+            for i in 0..num_signatures {
+                let signer =
+                    Secp256k1PrivateKey::from_u64(((subintent_index + 1) * 1000 + i) as u64)
+                        .unwrap();
+                builder = builder.sign(&signer);
+            }
+
+            builder.build_minimal()
+        }
+
+        fn create_transaction(
+            root_signature_count: usize,
+            signature_counts: Vec<usize>,
+        ) -> NotarizedTransactionV2 {
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, signature_count) in signature_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *signature_count),
+                )
+            }
+
+            let mut builder = builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in signature_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                });
+
+            for i in 0..root_signature_count {
+                let signer = Secp256k1PrivateKey::from_u64((100 + i) as u64).unwrap();
+                builder = builder.sign(&signer);
+            }
+
+            builder.notarize(&notary).build_minimal_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert_matches!(
+            create_transaction(1, vec![10]).prepare_and_validate(&validator),
+            Ok(_)
+        );
+        assert_matches!(
+            create_transaction(1, vec![10, 20]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
+                SignatureValidationError::TooManySignatures {
+                    total: 20,
+                    limit: 16,
+                },
+            ))
+        );
+        assert_matches!(
+            create_transaction(17, vec![0, 3]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                SignatureValidationError::TooManySignatures {
+                    total: 17,
+                    limit: 16,
+                },
+            ))
+        );
+        assert_matches!(
+            create_transaction(1, vec![10, 10, 10, 10, 10, 10, 10])
+                .prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::TooManySignatures {
+                    total: 72, // 70 from subintent, 1 from transaction intent, 1 from notarization
+                    limit: 64
+                },
+            ))
+        );
+    }
+
+    #[test]
+    fn too_many_references_should_be_rejected() {
+        fn create_partial_transaction(
+            subintent_index: usize,
+            num_references: usize,
+        ) -> SignedPartialTransactionV2 {
+            PartialTransactionV2Builder::new()
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: subintent_index as u64,
+                })
+                .manifest_builder(|mut builder| {
+                    for i in 0..num_references {
+                        let mut address =
+                            [EntityType::GlobalPreallocatedSecp256k1Account as u8; NodeId::LENGTH];
+                        address[1..9].copy_from_slice(
+                            &(((subintent_index + 1) * 1000 + i) as u64).to_le_bytes(),
+                        );
+                        builder = builder.call_method(
+                            ComponentAddress::new_or_panic(address),
+                            "method_name",
+                            (),
+                        );
+                    }
+
+                    builder.yield_to_parent(())
+                })
+                .sign(&Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
+                .build_minimal()
+        }
+
+        fn create_transaction(reference_counts: Vec<usize>) -> NotarizedTransactionV2 {
+            let signer = Secp256k1PrivateKey::from_u64(1).unwrap();
+            let notary = Secp256k1PrivateKey::from_u64(2).unwrap();
+            let mut builder = TransactionV2Builder::new();
+
+            for (i, reference_count) in reference_counts.iter().enumerate() {
+                builder = builder.add_signed_child(
+                    format!("child{i}"),
+                    create_partial_transaction(i, *reference_count),
+                )
+            }
+
+            builder
+                .intent_header(IntentHeaderV2 {
+                    network_id: NetworkDefinition::simulator().id,
+                    start_epoch_inclusive: Epoch::of(0),
+                    end_epoch_exclusive: Epoch::of(1),
+                    min_proposer_timestamp_inclusive: None,
+                    max_proposer_timestamp_exclusive: None,
+                    intent_discriminator: 0,
+                })
+                .manifest_builder(|mut builder| {
+                    builder = builder.lock_fee_from_faucet();
+                    for (i, _) in reference_counts.iter().enumerate() {
+                        builder = builder.yield_to_child(format!("child{i}"), ());
+                    }
+                    builder
+                })
+                .transaction_header(TransactionHeaderV2 {
+                    notary_public_key: notary.public_key().into(),
+                    notary_is_signatory: false,
+                    tip_basis_points: 0,
+                })
+                .sign(&signer)
+                .notarize(&notary)
+                .build_minimal_no_validate()
+        }
+
+        let validator = TransactionValidator::new_for_latest_simulator();
+        assert_matches!(
+            create_transaction(vec![100]).prepare_and_validate(&validator),
+            Ok(_)
+        );
+        assert_matches!(
+            create_transaction(vec![100, 600]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
+                IntentValidationError::TooManyReferences {
+                    total: 600,
+                    limit: 512,
+                }
+            ))
+        );
+        assert_matches!(
+            create_transaction(vec![500, 500]).prepare_and_validate(&validator),
+            Err(TransactionValidationError::IntentValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                IntentValidationError::TooManyReferences {
+                    total: 1001, // 1000 from subintent, 1 from transaction intent
+                    limit: 512,
+                }
+            ))
+        );
+    }
+}

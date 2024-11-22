@@ -9,7 +9,7 @@ pub struct ChildSubintentSpecifiersV2 {
 }
 
 impl TransactionPartialPrepare for ChildSubintentSpecifiersV2 {
-    type Prepared = PreparedChildSubintentSpecifiersV2V2;
+    type Prepared = PreparedChildSubintentSpecifiersV2;
 }
 
 /// A new-type of a [`SubintentHash`], representing that the subintent is claimed
@@ -73,14 +73,14 @@ impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
 //========
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedChildSubintentSpecifiersV2V2 {
+pub struct PreparedChildSubintentSpecifiersV2 {
     pub children: IndexSet<ChildSubintentSpecifier>,
     pub summary: Summary,
 }
 
-impl_has_summary!(PreparedChildSubintentSpecifiersV2V2);
+impl_has_summary!(PreparedChildSubintentSpecifiersV2);
 
-impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2V2 {
+impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let max_child_subintents_per_intent = decoder.settings().max_child_subintents_per_intent;
         let (hashes, summary) =
