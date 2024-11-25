@@ -56,7 +56,7 @@ macro_rules! assert_matches {
             )
         }
     };
-    ($expression:expr, $pattern:pat $(if $condition:expr)?, $($arg:tt)+ $(,)?) => {
+    ($expression:expr, $pattern:pat $(if $condition:expr)?, $($arg:tt)+) => {
         match $expression {
             $pattern $(if $condition)? => (),
             ref expression => panic!(
@@ -67,7 +67,7 @@ macro_rules! assert_matches {
             )
         }
     };
-    ($expression:expr, $pattern:pat $(if $condition:expr)? => $code:expr, $($arg:tt)+ $(,)?) => {
+    ($expression:expr, $pattern:pat $(if $condition:expr)? => $code:expr, $($arg:tt)+) => {
         match $expression {
             $pattern $(if $condition)? => $code,
             ref expression => panic!(
