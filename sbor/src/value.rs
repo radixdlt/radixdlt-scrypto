@@ -72,6 +72,19 @@ impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
     pub fn unit() -> Self {
         Value::Tuple { fields: vec![] }
     }
+
+    pub fn tuple(fields: impl IntoIterator<Item = Self>) -> Self {
+        Value::Tuple {
+            fields: fields.into_iter().collect(),
+        }
+    }
+
+    pub fn enum_variant(discriminator: u8, fields: impl IntoIterator<Item = Self>) -> Self {
+        Value::Enum {
+            discriminator,
+            fields: fields.into_iter().collect(),
+        }
+    }
 }
 
 /// Represents a custom SBOR value.

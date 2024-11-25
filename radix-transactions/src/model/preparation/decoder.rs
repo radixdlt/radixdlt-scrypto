@@ -4,10 +4,10 @@ use sbor::*;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Blob,
-    Message,
     Subintent,
-    ChildIntentConstraint,
-    IntentSignatures,
+    ChildSubintentSpecifier,
+    SubintentSignatureBatches,
+    // Too many signatures is captured at validation time
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -22,7 +22,9 @@ pub enum PrepareError {
         max: usize,
     },
     LengthOverflow,
-    Other(String),
+    UnexpectedTransactionDiscriminator {
+        actual: Option<u8>,
+    },
 }
 
 impl From<DecodeError> for PrepareError {

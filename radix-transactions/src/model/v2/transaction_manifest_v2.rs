@@ -102,6 +102,18 @@ impl TransactionManifestV2 {
         }
     }
 
+    pub fn to_intent_core(self, header: IntentHeaderV2, message: MessageV2) -> IntentCoreV2 {
+        IntentCoreV2 {
+            header,
+            blobs: self.blobs.into(),
+            message,
+            instructions: self.instructions.into(),
+            children: ChildSubintentSpecifiersV2 {
+                children: self.children,
+            },
+        }
+    }
+
     pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildSubintentSpecifiersV2) {
         (
             self.instructions.into(),

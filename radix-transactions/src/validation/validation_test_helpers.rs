@@ -19,25 +19,33 @@ pub(crate) fn unsigned_v1_builder(notary_public_key: PublicKey) -> TransactionV1
 
 // All of these are only added when in #[cfg(test)]
 impl TransactionV2Builder {
-    pub fn default_notary() -> Ed25519PrivateKey {
+    pub fn testing_default_notary() -> Ed25519PrivateKey {
         Ed25519PrivateKey::from_u64(1337).unwrap()
+    }
+
+    pub fn testing_default_intent_header() -> IntentHeaderV2 {
+        IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: Epoch::of(0),
+            end_epoch_exclusive: Epoch::of(1),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 0,
+        }
+    }
+
+    pub fn testing_default_transaction_header() -> TransactionHeaderV2 {
+        TransactionHeaderV2 {
+            notary_public_key: Self::testing_default_notary().public_key().into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        }
     }
 
     pub fn new_with_test_defaults() -> Self {
         Self::new()
-            .intent_header(IntentHeaderV2 {
-                network_id: NetworkDefinition::simulator().id,
-                start_epoch_inclusive: Epoch::of(0),
-                end_epoch_exclusive: Epoch::of(1),
-                min_proposer_timestamp_inclusive: None,
-                max_proposer_timestamp_exclusive: None,
-                intent_discriminator: 0,
-            })
-            .transaction_header(TransactionHeaderV2 {
-                notary_public_key: Self::default_notary().public_key().into(),
-                notary_is_signatory: false,
-                tip_basis_points: 0,
-            })
+            .intent_header(Self::testing_default_intent_header())
+            .transaction_header(Self::testing_default_transaction_header())
     }
 
     pub fn add_children<T: ResolvableSignedPartialTransaction>(
@@ -141,7 +149,7 @@ impl TransactionV2Builder {
     }
 
     pub fn default_notarize(self) -> Self {
-        self.notarize(&Self::default_notary())
+        self.notarize(&Self::testing_default_notary())
     }
 
     pub fn default_notarize_and_validate(

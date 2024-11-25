@@ -92,7 +92,7 @@ impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2 {
         let (hashes, summary) =
             ConcatenatedDigest::prepare_from_sbor_array_value_body::<Vec<RawHash>>(
                 decoder,
-                ValueType::ChildIntentConstraint,
+                ValueType::ChildSubintentSpecifier,
                 max_child_subintents_per_intent,
             )?;
 

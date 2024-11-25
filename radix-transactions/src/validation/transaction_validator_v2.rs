@@ -2199,4 +2199,255 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_prepare_errors() {
+        let babylon_validator = TransactionValidator::new_with_static_config(
+            TransactionValidationConfig::babylon(),
+            NetworkDefinition::simulator().id,
+        );
+        let latest_validator = TransactionValidator::new_for_latest_simulator();
+
+        fn create_unvalidated_notarized_transaction_from_manifest(
+            manifest: TransactionManifestV2,
+        ) -> NotarizedTransactionV2 {
+            NotarizedTransactionV2 {
+                signed_transaction_intent: SignedTransactionIntentV2 {
+                    transaction_intent: TransactionIntentV2 {
+                        transaction_header:
+                            TransactionV2Builder::testing_default_transaction_header(),
+                        root_intent_core: manifest.to_intent_core(
+                            TransactionV2Builder::testing_default_intent_header(),
+                            MessageV2::None,
+                        ),
+                        non_root_subintents: NonRootSubintentsV2(vec![]),
+                    },
+                    transaction_intent_signatures: IntentSignaturesV2::none(),
+                    non_root_subintent_signatures: NonRootSubintentSignaturesV2 {
+                        by_subintent: vec![],
+                    },
+                },
+                notary_signature: NotarySignatureV2(SignatureV1::Ed25519(Ed25519Signature(
+                    [0; Ed25519Signature::LENGTH],
+                ))),
+            }
+        }
+
+        fn create_unvalidated_raw_notarized_transaction_from_manifest(
+            manifest: TransactionManifestV2,
+        ) -> RawNotarizedTransaction {
+            let transaction = create_unvalidated_notarized_transaction_from_manifest(manifest);
+            let manually_encoded_transaction = manifest_encode_with_depth_limit(
+                &AnyTransaction::NotarizedTransactionV2(transaction),
+                100,
+            )
+            .unwrap();
+            RawNotarizedTransaction::from_vec(manually_encoded_transaction)
+        }
+
+        // TransactionTypeNotSupported
+        {
+            let transaction_v2 = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction_v2.prepare_and_validate(&babylon_validator),
+                Err(TransactionValidationError::PrepareError(
+                    PrepareError::TransactionTypeNotSupported
+                )),
+            );
+        }
+
+        // TransactionTooLarge
+        {
+            let mut manifest_builder = ManifestBuilder::new_v2();
+            manifest_builder.add_blob(vec![0; 1_100_000]);
+            let manifest = manifest_builder.build_no_validate();
+            let transaction = TransactionV2Builder::new_with_test_defaults()
+                .manifest(manifest)
+                .default_notarize()
+                .build_minimal_no_validate();
+
+            assert_matches!(
+                transaction.prepare_and_validate(&latest_validator),
+                Err(TransactionValidationError::PrepareError(
+                    PrepareError::TransactionTooLarge
+                )),
+            );
+        }
+
+        // EncodeError(EncodeError) and DecodeError(DecodeError)
+        // Note that EncodeError doesn't happen as part of preparation in the node, only when preparing from
+        // an encodable model. But we can test it here anyway...
+        {
+            let mut nested_value = ManifestValue::unit();
+            for _ in 0..50 {
+                nested_value = ManifestValue::tuple([nested_value]);
+            }
+            let manifest = ManifestBuilder::new_v2()
+                .add_raw_instruction_ignoring_all_side_effects(CallMethod {
+                    address: XRD.into(),
+                    method_name: "method".into(),
+                    args: nested_value,
+                })
+                .build_no_validate();
+
+            let transaction =
+                create_unvalidated_notarized_transaction_from_manifest(manifest.clone());
+
+            // We get an EncodeError when preparing directly from the model
+            assert_matches!(
+                transaction.prepare_and_validate(&latest_validator),
+                Err(TransactionValidationError::PrepareError(
+                    PrepareError::EncodeError(EncodeError::MaxDepthExceeded(24))
+                )),
+            );
+
+            // We get a DecodeError when preparing directly from the raw transaction
+            let raw_transaction =
+                create_unvalidated_raw_notarized_transaction_from_manifest(manifest);
+            assert_matches!(
+                raw_transaction.validate(&latest_validator),
+                Err(TransactionValidationError::PrepareError(
+                    PrepareError::DecodeError(DecodeError::MaxDepthExceeded(24))
+                )),
+            );
+        }
+
+        // TooManyValues { value_type: ValueType, actual: usize, max: usize, }
+        {
+            // Blob
+            {
+                let mut manifest_builder = ManifestBuilder::new_v2();
+                for i in 0..65 {
+                    manifest_builder.add_blob(vec![0; i as usize]);
+                }
+                let transaction = create_unvalidated_notarized_transaction_from_manifest(
+                    manifest_builder.build_no_validate(),
+                );
+
+                assert_matches!(
+                    transaction.prepare_and_validate(&latest_validator),
+                    Err(TransactionValidationError::PrepareError(
+                        PrepareError::TooManyValues {
+                            value_type: ValueType::Blob,
+                            actual: 65,
+                            max: 64,
+                        }
+                    )),
+                );
+            }
+
+            // Subintent
+            {
+                let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                    .add_trivial_manifest()
+                    .default_notarize()
+                    .build_minimal_no_validate();
+                let subintents = (0..33)
+                    .map(|i| {
+                        create_leaf_partial_transaction(i, 0)
+                            .partial_transaction
+                            .partial_transaction
+                            .root_subintent
+                    })
+                    .collect::<Vec<_>>();
+                transaction
+                    .signed_transaction_intent
+                    .transaction_intent
+                    .non_root_subintents = NonRootSubintentsV2(subintents);
+                assert_matches!(
+                    transaction.prepare_and_validate(&latest_validator),
+                    Err(TransactionValidationError::PrepareError(
+                        PrepareError::TooManyValues {
+                            value_type: ValueType::Subintent,
+                            actual: 33,
+                            max: 32,
+                        }
+                    )),
+                );
+            }
+
+            // ChildSubintentSpecifier
+            {
+                let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                    .add_trivial_manifest()
+                    .default_notarize()
+                    .build_minimal_no_validate();
+                let child_specifiers = (0..33)
+                    .map(|i| ChildSubintentSpecifier {
+                        hash: SubintentHash::from_bytes([i as u8; Hash::LENGTH]),
+                    })
+                    .collect();
+                transaction
+                    .signed_transaction_intent
+                    .transaction_intent
+                    .root_intent_core
+                    .children = ChildSubintentSpecifiersV2 {
+                    children: child_specifiers,
+                };
+                assert_matches!(
+                    transaction.prepare_and_validate(&latest_validator),
+                    Err(TransactionValidationError::PrepareError(
+                        PrepareError::TooManyValues {
+                            value_type: ValueType::ChildSubintentSpecifier,
+                            actual: 33,
+                            max: 32,
+                        }
+                    )),
+                );
+            }
+
+            // SubintentSignatureBatches
+            {
+                let mut transaction = TransactionV2Builder::new_with_test_defaults()
+                    .add_trivial_manifest()
+                    .default_notarize()
+                    .build_minimal_no_validate();
+                let subintent_signature_batches = (0..33)
+                    .map(|_| IntentSignaturesV2::none())
+                    .collect::<Vec<_>>();
+                transaction
+                    .signed_transaction_intent
+                    .non_root_subintent_signatures = NonRootSubintentSignaturesV2 {
+                    by_subintent: subintent_signature_batches,
+                };
+                assert_matches!(
+                    transaction.prepare_and_validate(&latest_validator),
+                    Err(TransactionValidationError::PrepareError(
+                        PrepareError::TooManyValues {
+                            value_type: ValueType::SubintentSignatureBatches,
+                            actual: 33,
+                            max: 32,
+                        }
+                    )),
+                );
+            }
+        }
+
+        // LengthOverflow
+        // -> Rather hard to test, we can leave this.
+
+        // UnexpectedTransactionDiscriminator
+        {
+            let raw_transaction = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .default_notarize()
+                .build_minimal_no_validate()
+                .to_raw()
+                .unwrap();
+
+            let mut amended_payload = raw_transaction.to_vec();
+            amended_payload[2] = 4;
+            let amended_raw = RawNotarizedTransaction::from_vec(amended_payload);
+            assert_eq!(
+                amended_raw.validate(&latest_validator),
+                Err(TransactionValidationError::PrepareError(
+                    PrepareError::UnexpectedTransactionDiscriminator { actual: Some(4) }
+                ))
+            )
+        }
+    }
 }
