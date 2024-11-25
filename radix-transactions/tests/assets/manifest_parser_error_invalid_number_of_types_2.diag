@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1mexpected 1 number of types, found 2[0m
-[1m[94m   |[0m
-[1m[94m 5 |[0m 
-[1m[94m 6 |[0m CREATE_NON_FUNGIBLE_RESOURCE
-[1m[94m 7 |[0m     Enum<OwnerRole::None>()
-[1m[94m 8 |[0m     Enum<NonFungibleIdType::Integer>()
-[1m[94m 9 |[0m     true
-[1m[94m10 |[0m     Enum<0u8>(Enum<0u8>(Tuple(Array<String, Tuple>(), Array<Tuple>(), Array<Enum>())), Enum<0u8>(66u8), Array<String>())
-[1m[94m   |[0m[1m[91m                                     ^^^^^^^^^^^^^[0m [1m[91mexpected 1 number of types[0m
-[1m[94m11 |[0m     Tuple(
-[1m[94m12 |[0m         Some(
-[1m[94m13 |[0m             Tuple(
-[1m[94m14 |[0m                 Some(Enum<AccessRule::AllowAll>()),
-[1m[94m15 |[0m                 Some(Enum<AccessRule::DenyAll>())
-[1m[94m   |[0m
+error: expected 1 number of types, found 2
+   |
+ 5 | 
+ 6 | CREATE_NON_FUNGIBLE_RESOURCE
+ 7 |     Enum<OwnerRole::None>()
+ 8 |     Enum<NonFungibleIdType::Integer>()
+ 9 |     true
+10 |     Enum<0u8>(Enum<0u8>(Tuple(Array<String, Tuple>(), Array<Tuple>(), Array<Enum>())), Enum<0u8>(66u8), Array<String>())
+   |                                     ^^^^^^^^^^^^^ expected 1 number of types
+11 |     Tuple(
+12 |         Some(
+13 |             Tuple(
+14 |                 Some(Enum<AccessRule::AllowAll>()),
+15 |                 Some(Enum<AccessRule::DenyAll>())
+   |

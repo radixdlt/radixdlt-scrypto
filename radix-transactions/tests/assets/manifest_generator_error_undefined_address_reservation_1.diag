@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1mundefined address reservation 'invalid_reservation'[0m
-[1m[94m   |[0m
-[1m[94m14 |[0m     Tuple(
-[1m[94m15 |[0m         Map<String, Tuple>()
-[1m[94m16 |[0m     )
-[1m[94m17 |[0m     Blob("f531e5e82dc195a7a9f6709f5ee048d9541d51c52904b7a76295a13ddfa377b1")
-[1m[94m18 |[0m     Map<String, Tuple>()
-[1m[94m19 |[0m     Some(AddressReservation("invalid_reservation"))
-[1m[94m   |[0m[1m[91m                             ^^^^^^^^^^^^^^^^^^^^^[0m [1m[91mundefined address reservation[0m
-[1m[94m20 |[0m ;
-[1m[94m21 |[0m CALL_FUNCTION
-[1m[94m22 |[0m     NamedAddress("my_package")
-[1m[94m23 |[0m     "BlueprintName"
-[1m[94m24 |[0m     "no_such_function"
-[1m[94m   |[0m
+error: undefined address reservation 'invalid_reservation'
+   |
+14 |     Tuple(
+15 |         Map<String, Tuple>()
+16 |     )
+17 |     Blob("f531e5e82dc195a7a9f6709f5ee048d9541d51c52904b7a76295a13ddfa377b1")
+18 |     Map<String, Tuple>()
+19 |     Some(AddressReservation("invalid_reservation"))
+   |                             ^^^^^^^^^^^^^^^^^^^^^ undefined address reservation
+20 | ;
+21 | CALL_FUNCTION
+22 |     NamedAddress("my_package")
+23 |     "BlueprintName"
+24 |     "no_such_function"
+   |

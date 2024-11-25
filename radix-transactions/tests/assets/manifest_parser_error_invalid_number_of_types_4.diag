@@ -1,14 +1,14 @@
-[1m[91merror[0m: [1mexpected 2 number of types, found 0[0m
-[1m[94m   |[0m
-[1m[94m 5 |[0m   
-[1m[94m 6 |[0m   CALL_METHOD
-[1m[94m 7 |[0m       Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m 8 |[0m       "some_method"
-[1m[94m 9 |[0m       # Invalid array specification
-[1m[94m10 |[0m       Map<
-[1m[94m   |[0m  [1m[91m________^[0m
-[1m[94m11 |[0m [1m[91m|[0m 
-[1m[94m12 |[0m [1m[91m|[0m     >
-[1m[94m   |[0m [1m[91m|[0m[1m[91m_____^[0m [1m[91mexpected 2 number of types[0m
-[1m[94m13 |[0m   ;
-[1m[94m   |[0m
+error: expected 2 number of types, found 0
+   |
+ 5 |   
+ 6 |   CALL_METHOD
+ 7 |       Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+ 8 |       "some_method"
+ 9 |       # Invalid array specification
+10 |       Map<
+   |  ________^
+11 | | 
+12 | |     >
+   | |_____^ expected 2 number of types
+13 |   ;
+   |

@@ -1,13 +1,13 @@
-[1m[91merror[0m: [1mexpected String, found Bytes[0m
-[1m[94m   |[0m
-[1m[94m 5 |[0m CALL_METHOD
-[1m[94m 6 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m 7 |[0m     "some_method"
-[1m[94m 8 |[0m     Array<String>(
-[1m[94m 9 |[0m       "one",
-[1m[94m10 |[0m       Bytes(1u32),
-[1m[94m   |[0m[1m[91m       ^^^^^[0m [1m[91mexpected String[0m
-[1m[94m11 |[0m       "three"
-[1m[94m12 |[0m     )
-[1m[94m13 |[0m ;
-[1m[94m   |[0m
+error: expected String, found Bytes
+   |
+ 5 | CALL_METHOD
+ 6 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+ 7 |     "some_method"
+ 8 |     Array<String>(
+ 9 |       "one",
+10 |       Bytes(1u32),
+   |       ^^^^^ expected String
+11 |       "three"
+12 |     )
+13 | ;
+   |

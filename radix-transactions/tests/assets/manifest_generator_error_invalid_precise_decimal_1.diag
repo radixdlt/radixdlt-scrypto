@@ -1,11 +1,11 @@
-[1m[91merror[0m: [1minvalid precise decimal '1.' - EmptyFractionalPart[0m
-[1m[94m   |[0m
-[1m[94m 4 |[0m ;
-[1m[94m 5 |[0m CALL_FUNCTION
-[1m[94m 6 |[0m     Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
-[1m[94m 7 |[0m     "Hello"
-[1m[94m 8 |[0m     "instantiate_hello"
-[1m[94m 9 |[0m     PreciseDecimal("1.")
-[1m[94m   |[0m[1m[91m                    ^^^^[0m [1m[91minvalid precise decimal[0m
-[1m[94m10 |[0m ;
-[1m[94m   |[0m
+error: invalid precise decimal '1.' - EmptyFractionalPart
+   |
+ 4 | ;
+ 5 | CALL_FUNCTION
+ 6 |     Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+ 7 |     "Hello"
+ 8 |     "instantiate_hello"
+ 9 |     PreciseDecimal("1.")
+   |                    ^^^^ invalid precise decimal
+10 | ;
+   |

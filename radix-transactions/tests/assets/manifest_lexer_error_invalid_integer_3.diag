@@ -1,11 +1,11 @@
-[1m[91merror[0m: [1minvalid integer value '-300u8' - invalid digit found in string[0m
-[1m[94m  |[0m
-[1m[94m3 |[0m     "lock_fee"
-[1m[94m4 |[0m ;
-[1m[94m5 |[0m CALL_METHOD
-[1m[94m6 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m7 |[0m     "some_method"
-[1m[94m8 |[0m     -300u8
-[1m[94m  |[0m[1m[91m     ^^^^^^[0m [1m[91minvalid integer value[0m
-[1m[94m9 |[0m ;
-[1m[94m  |[0m
+error: invalid integer value '-300u8' - invalid digit found in string
+  |
+3 |     "lock_fee"
+4 | ;
+5 | CALL_METHOD
+6 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+7 |     "some_method"
+8 |     -300u8
+  |     ^^^^^^ invalid integer value
+9 | ;
+  |
