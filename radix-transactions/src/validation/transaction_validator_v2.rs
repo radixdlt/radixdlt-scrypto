@@ -1121,4 +1121,471 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn test_header_validations() {
+        let simulator_validator = TransactionValidator::new_for_latest_simulator();
+        let network_agnostic_validator =
+            TransactionValidator::new_with_latest_config_network_agnostic();
+        let config = simulator_validator.config().clone();
+
+        // InvalidEpochRange
+        {
+            // CASE 1 - Negative range
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(98))
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(98))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+
+            // CASE 2 - Equal range
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(100))
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(100))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+
+            // CASE 3 - Range too large
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(100 + config.max_epoch_range + 1))
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(100 + config.max_epoch_range + 1))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidEpochRange
+                    ),
+                )),
+            );
+        }
+
+        // InvalidTimestampRange
+        {
+            // CASE 1 - Negative range
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4999)))
+                .end_epoch_exclusive(Epoch::of(98))
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidTimestampRange
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4999)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidTimestampRange
+                    ),
+                )),
+            );
+
+            // CASE 2 - Equal range
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5000)))
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidTimestampRange
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5000)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidTimestampRange
+                    ),
+                )),
+            );
+
+            // And for good measure, let's test some valid ranges:
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5001)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(result, Ok(_),);
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .max_proposer_timestamp_exclusive(None)
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(result, Ok(_),);
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(None)
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5000)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(result, Ok(_),);
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(None)
+                .max_proposer_timestamp_exclusive(None)
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(result, Ok(_),);
+        }
+
+        // InvalidNetwork
+        {
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .network_id(NetworkDefinition::mainnet().id)
+                .default_notarize()
+                .build_minimal_no_validate()
+                .prepare_and_validate(&simulator_validator);
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidNetwork
+                    ),
+                )),
+            );
+
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .network_id(NetworkDefinition::mainnet().id)
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate()
+                .prepare_and_validate(&simulator_validator);
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::InvalidNetwork
+                    ),
+                )),
+            );
+
+            // And for good measure, demonstrate that the network agnostic validator is okay with this:
+            // (even with different intents being for different networks(!) - which is a bit weird, but
+            // it's only intended for testing)
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .network_id(NetworkDefinition::mainnet().id)
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize()
+                .build_minimal_no_validate()
+                .prepare_and_validate(&network_agnostic_validator);
+            assert_matches!(result, Ok(_),);
+        }
+
+        // InvalidTip
+        {
+            // Note - min tip is 0, so we can't hit that error
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .tip_basis_points(config.max_tip_basis_points + 1)
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::RootTransactionIntent(_),
+                    IntentValidationError::HeaderValidationError(HeaderValidationError::InvalidTip),
+                )),
+            );
+        }
+
+        // NoValidEpochRangeAcrossAllIntents
+        {
+            // Subintent doesn't overlap with TransactionIntent
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(102))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .start_epoch_inclusive(Epoch::of(102))
+                .end_epoch_exclusive(Epoch::of(103))
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::NoValidEpochRangeAcrossAllIntents
+                    ),
+                )),
+            );
+
+            // Only one pair of subintents don't overlap
+            let subintent_1 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(102))
+                .build();
+            let subintent_2 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(101))
+                .end_epoch_exclusive(Epoch::of(103))
+                .build();
+            let subintent_3 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(102))
+                .end_epoch_exclusive(Epoch::of(104))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent_1, subintent_2, subintent_3])
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(105))
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::NoValidEpochRangeAcrossAllIntents
+                    ),
+                )),
+            );
+
+            // There is an overlap
+            let subintent_1 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(102))
+                .build();
+            let subintent_2 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(101))
+                .end_epoch_exclusive(Epoch::of(103))
+                .build();
+            let subintent_3 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .start_epoch_inclusive(Epoch::of(101))
+                .end_epoch_exclusive(Epoch::of(104))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent_1, subintent_2, subintent_3])
+                .start_epoch_inclusive(Epoch::of(100))
+                .end_epoch_exclusive(Epoch::of(105))
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Ok(validated) => {
+                    assert_eq!(validated.overall_validity_range.epoch_range.start_epoch_inclusive, Epoch::of(101));
+                    assert_eq!(validated.overall_validity_range.epoch_range.end_epoch_exclusive, Epoch::of(102));
+                },
+            );
+        }
+
+        // NoValidTimestampRangeAcrossAllIntents
+        {
+            // Subintent doesn't overlap with TransactionIntent
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(5000)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5000)))
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::NoValidTimestampRangeAcrossAllIntents
+                    ),
+                )),
+            );
+
+            // Only one pair of subintents don't overlap
+            let subintent_1 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4000)))
+                .build();
+            let subintent_2 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4003)))
+                .build();
+            let subintent_3 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(4001)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent_1, subintent_2, subintent_3])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Err(TransactionValidationError::IntentValidationError(
+                    TransactionValidationErrorLocation::NonRootSubintent { .. },
+                    IntentValidationError::HeaderValidationError(
+                        HeaderValidationError::NoValidTimestampRangeAcrossAllIntents
+                    ),
+                )),
+            );
+
+            // There is an overlap
+            let subintent_1 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4003)))
+                .build();
+            let subintent_2 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4005)))
+                .build();
+            let subintent_3 = PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .min_proposer_timestamp_inclusive(Some(Instant::new(3998)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(4001)))
+                .build();
+            let result = TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent_1, subintent_2, subintent_3])
+                .min_proposer_timestamp_inclusive(Some(Instant::new(3999)))
+                .max_proposer_timestamp_exclusive(Some(Instant::new(5999)))
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate();
+            assert_matches!(
+                result,
+                Ok(validated) => {
+                    assert_eq!(validated.overall_validity_range.proposer_timestamp_range.start_timestamp_inclusive, Some(Instant::new(3999)));
+                    assert_eq!(validated.overall_validity_range.proposer_timestamp_range.end_timestamp_exclusive, Some(Instant::new(4001)));
+                },
+            );
+        }
+    }
 }

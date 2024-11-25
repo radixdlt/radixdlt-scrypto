@@ -102,6 +102,39 @@ impl TransactionV2Builder {
             .expect("Intent Header should already have been set, e.g. via new_with_test_defaults()")
     }
 
+    pub fn network_id(mut self, network_id: u8) -> Self {
+        self.intent_header_mut().network_id = network_id;
+        self
+    }
+
+    pub fn start_epoch_inclusive(mut self, start_epoch_inclusive: Epoch) -> Self {
+        self.intent_header_mut().start_epoch_inclusive = start_epoch_inclusive;
+        self
+    }
+
+    pub fn end_epoch_exclusive(mut self, end_epoch_exclusive: Epoch) -> Self {
+        self.intent_header_mut().end_epoch_exclusive = end_epoch_exclusive;
+        self
+    }
+
+    pub fn min_proposer_timestamp_inclusive(
+        mut self,
+        min_proposer_timestamp_inclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().min_proposer_timestamp_inclusive =
+            min_proposer_timestamp_inclusive;
+        self
+    }
+
+    pub fn max_proposer_timestamp_exclusive(
+        mut self,
+        max_proposer_timestamp_exclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().max_proposer_timestamp_exclusive =
+            max_proposer_timestamp_exclusive;
+        self
+    }
+
     pub fn intent_discriminator(mut self, intent_discriminator: u64) -> Self {
         self.intent_header_mut().intent_discriminator = intent_discriminator;
         self
@@ -171,6 +204,39 @@ impl PartialTransactionV2Builder {
         self.root_subintent_header
             .as_mut()
             .expect("Intent Header should already have been set, e.g. via new_with_test_defaults()")
+    }
+
+    pub fn network_id(mut self, network_id: u8) -> Self {
+        self.intent_header_mut().network_id = network_id;
+        self
+    }
+
+    pub fn start_epoch_inclusive(mut self, start_epoch_inclusive: Epoch) -> Self {
+        self.intent_header_mut().start_epoch_inclusive = start_epoch_inclusive;
+        self
+    }
+
+    pub fn end_epoch_exclusive(mut self, end_epoch_exclusive: Epoch) -> Self {
+        self.intent_header_mut().end_epoch_exclusive = end_epoch_exclusive;
+        self
+    }
+
+    pub fn min_proposer_timestamp_inclusive(
+        mut self,
+        min_proposer_timestamp_inclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().min_proposer_timestamp_inclusive =
+            min_proposer_timestamp_inclusive;
+        self
+    }
+
+    pub fn max_proposer_timestamp_exclusive(
+        mut self,
+        max_proposer_timestamp_exclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().max_proposer_timestamp_exclusive =
+            max_proposer_timestamp_exclusive;
+        self
     }
 
     pub fn intent_discriminator(mut self, intent_discriminator: u64) -> Self {
