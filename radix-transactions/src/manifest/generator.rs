@@ -2262,14 +2262,13 @@ pub fn generator_error_diagnostics(
         GeneratorErrorKind::ManifestBuildError(
             ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType,
         ) => {
-            let title =
-                format!("preallocated addresses are not supported in this manifest version");
+            let title = format!("preallocated addresses are not supported in this manifest type");
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::ManifestBuildError(
             ManifestBuildError::ChildSubintentsUnsupportedByManifestType,
         ) => {
-            let title = format!("child subintents are not supported in this manifest version");
+            let title = format!("child subintents are not supported in this manifest type");
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::HeaderInstructionMustComeFirst => {

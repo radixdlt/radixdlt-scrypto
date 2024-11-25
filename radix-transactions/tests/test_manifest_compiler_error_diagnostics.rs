@@ -28,7 +28,7 @@ macro_rules! check_manifest {
             panic!("diagnostic reports differ");
         }
     }};
-    ($manifest_kind:expr, $manifest:expr, $(,)?) => {{
+    ($manifest_kind:expr, $manifest:expr $(,)?) => {{
         check_manifest!(
             $manifest_kind,
             $manifest,
@@ -311,6 +311,113 @@ fn test_manifest_generator_error_proof_not_found() {
     // IdValidationError(BucketNotFound)
     check_manifest!("manifest_generator_error_proof_not_found_1");
     check_manifest!("manifest_generator_error_proof_not_found_2");
+}
+
+#[test]
+fn test_manifest_generator_error_invalid_sub_transaction_id() {
+    // InvalidSubTransactionId(String)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_invalid_sub_transaction_id_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_instruction_not_supported_in_manifest_version() {
+    // InstructionNotSupportedInManifestVersion
+    check_manifest!(
+        ManifestKind::V1,
+        "manifest_generator_error_instruction_not_supported_in_manifest_version_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_duplicate_subintent_hash() {
+    // ManifestBuildError(ManifestBuildError::DuplicateChildSubintentHash)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_duplicate_subintent_hash_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_child_subintents_unsupported_by_manifest_type() {
+    // ManifestBuildError(ManifestBuildError::ChildSubintentsUnsupportedByManifestType)
+    check_manifest!(
+        ManifestKind::V1,
+        "manifest_generator_error_child_subintents_unsupported_by_manifest_type_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_preallocated_addresses_unsupported_by_manifest_type() {
+    // ManifestBuildError(ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_preallocated_addresses_unsupported_by_manifest_type_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_header_instruction_must_come_first() {
+    // HeaderInstructionMustComeFirst
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_header_instruction_must_come_first_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_intent_cannot_be_used_in_value() {
+    // IntentCannotBeUsedInValue
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_intent_cannot_be_used_in_value_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_intent_cannot_be_used_as_value_kind() {
+    // IntentCannotBeUsedAsValueKind
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_intent_cannot_be_used_as_value_kind_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_named_intent_cannot_be_used_in_value() {
+    // NamedIntentCannotBeUsedInValue
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_named_intent_cannot_be_used_in_value_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_named_intent_cannot_be_used_as_value_kind() {
+    // NamedIntentCannotBeUsedAsValueKind
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_named_intent_cannot_be_used_as_value_kind_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_argument_could_not_be_read_as_expected_type() {
+    // ArgumentCouldNotBeReadAsExpectedType { type_name: String, error_message: String, },
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_1"
+    );
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_2"
+    );
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_3"
+    );
 }
 
 #[test]
