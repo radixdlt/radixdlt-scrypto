@@ -678,7 +678,6 @@ mod tests {
             123,
             vec![55],
             66,
-            #[allow(deprecated)]
             ManifestBuilder::new()
                 .take_from_worktop(XRD, dec!(100), "bucket")
                 .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")

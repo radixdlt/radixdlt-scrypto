@@ -1588,4 +1588,615 @@ mod tests {
             );
         }
     }
+
+    trait ManifestBuilderExtensions {
+        fn add_test_method_call_with(self, value: impl ManifestEncode) -> Self;
+    }
+
+    impl<M: BuildableManifest> ManifestBuilderExtensions for ManifestBuilder<M>
+    where
+        CallMethod: Into<M::Instruction>,
+    {
+        fn add_test_method_call_with(self, value: impl ManifestEncode) -> Self {
+            self.add_raw_instruction_ignoring_all_side_effects(CallMethod {
+                address: XRD.into(),
+                method_name: "method".into(),
+                args: manifest_decode(&manifest_encode(&(value,)).unwrap()).unwrap(),
+            })
+        }
+    }
+
+    #[test]
+    fn test_manifest_validations() {
+        let account_address = ComponentAddress::preallocated_account_from_public_key(
+            &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+        );
+
+        fn validate_transaction_manifest(
+            manifest: TransactionManifestV2,
+        ) -> Result<ValidatedNotarizedTransactionV2, ManifestValidationError> {
+            let builder = TransactionV2Builder::new_with_test_defaults().manifest(manifest);
+            validate_transaction_builder_manifest(builder)
+        }
+
+        fn validate_transaction_builder_manifest(
+            builder: TransactionV2Builder,
+        ) -> Result<ValidatedNotarizedTransactionV2, ManifestValidationError> {
+            builder
+                .default_notarize_and_validate()
+                .map_err(|err| match err {
+                    TransactionValidationError::IntentValidationError(
+                        _,
+                        IntentValidationError::ManifestValidationError(err),
+                    ) => err,
+                    _ => panic!("Expected ManifestValidationError, but got: {:?}", err),
+                })
+        }
+
+        fn validate_subintent_manifest(
+            subintent_manifest: SubintentManifestV2,
+        ) -> Result<ValidatedNotarizedTransactionV2, ManifestValidationError> {
+            let subintent = PartialTransactionV2Builder::new_with_test_defaults()
+                .manifest(subintent_manifest)
+                .build();
+            TransactionV2Builder::new_with_test_defaults()
+                .add_children([subintent])
+                .add_manifest_calling_each_child_once()
+                .default_notarize_and_validate()
+                .map_err(|err| match err {
+                    TransactionValidationError::IntentValidationError(
+                        _,
+                        IntentValidationError::ManifestValidationError(err),
+                    ) => err,
+                    _ => panic!("Expected ManifestValidationError, but got: {:?}", err),
+                })
+        }
+
+        // DuplicateBlob(ManifestBlobRef)
+        {
+            // This is not actually possible to get in TransactionV2, because the manifest stores an IndexMap<Hash, Bytes>.
+            // Currently we remove duplicates at the `PreparedBlobsV1` layer.
+        }
+
+        // BlobNotRegistered(ManifestBlobRef)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_test_method_call_with(ManifestBlobRef([2; 32]))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::BlobNotRegistered(ManifestBlobRef(blob_ref))) => {
+                    assert_eq!(blob_ref, [2; 32]);
+                }
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(ManifestBlobRef([3; 32]))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::BlobNotRegistered(ManifestBlobRef(blob_ref))) => {
+                    assert_eq!(blob_ref, [3; 32]);
+                }
+            );
+        }
+
+        // BucketNotYetCreated(ManifestBucket)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_test_method_call_with(ManifestBucket(2))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::BucketNotYetCreated(bucket)) => {
+                    assert_eq!(bucket, ManifestBucket(2));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(ManifestBucket(3))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::BucketNotYetCreated(bucket)) => {
+                    assert_eq!(bucket, ManifestBucket(3));
+                }
+            );
+        }
+
+        // BucketAlreadyUsed(ManifestBucket, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .take_all_from_worktop(XRD, "reused_bucket")
+                .add_test_method_call_with(ManifestBucket(0))
+                .add_test_method_call_with(ManifestBucket(0))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::BucketAlreadyUsed(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .take_all_from_worktop(XRD, "reused_bucket")
+                .add_test_method_call_with(ManifestBucket(0))
+                .add_test_method_call_with(ManifestBucket(0))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::BucketAlreadyUsed(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+        }
+
+        // BucketConsumedWhilstLockedByProof(ManifestBucket, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .take_all_from_worktop(XRD, "my_bucket")
+                .create_proof_from_bucket_of_all("my_bucket", "my_proof")
+                .deposit(account_address, "my_bucket")
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::BucketConsumedWhilstLockedByProof(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .take_all_from_worktop(XRD, "my_bucket")
+                .create_proof_from_bucket_of_all("my_bucket", "my_proof")
+                .deposit(account_address, "my_bucket")
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::BucketConsumedWhilstLockedByProof(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+        }
+
+        // ProofNotYetCreated(ManifestProof)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_test_method_call_with(ManifestProof(2))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::ProofNotYetCreated(proof)) => {
+                    assert_eq!(proof, ManifestProof(2));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(ManifestProof(2))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::ProofNotYetCreated(proof)) => {
+                    assert_eq!(proof, ManifestProof(2));
+                },
+            );
+        }
+
+        // ProofAlreadyUsed(ManifestProof, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .create_proof_from_auth_zone_of_all(XRD, "proof")
+                .add_test_method_call_with(ManifestProof(0))
+                .add_test_method_call_with(ManifestProof(0))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::ProofAlreadyUsed(proof, _)) => {
+                    assert_eq!(proof, ManifestProof(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .create_proof_from_auth_zone_of_all(XRD, "proof")
+                .add_test_method_call_with(ManifestProof(0))
+                .add_test_method_call_with(ManifestProof(0))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::ProofAlreadyUsed(proof, _)) => {
+                    assert_eq!(proof, ManifestProof(0));
+                },
+            );
+        }
+
+        // AddressReservationNotYetCreated(ManifestAddressReservation)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_test_method_call_with(ManifestAddressReservation(2))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::AddressReservationNotYetCreated(reservation)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(2));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(ManifestAddressReservation(2))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::AddressReservationNotYetCreated(reservation)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(2));
+                },
+            );
+        }
+
+        // AddressReservationAlreadyUsed(ManifestAddressReservation, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .allocate_global_address(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    "my_address_reservation",
+                    "my_address",
+                )
+                .add_test_method_call_with(ManifestAddressReservation(0))
+                .add_test_method_call_with(ManifestAddressReservation(0))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::AddressReservationAlreadyUsed(reservation, _)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .allocate_global_address(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    "my_address_reservation",
+                    "my_address",
+                )
+                .add_test_method_call_with(ManifestAddressReservation(0))
+                .add_test_method_call_with(ManifestAddressReservation(0))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::AddressReservationAlreadyUsed(reservation, _)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(0));
+                },
+            );
+        }
+
+        // NamedAddressNotYetCreated(ManifestNamedAddress)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_test_method_call_with(ManifestAddress::Named(ManifestNamedAddress(2)))
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::NamedAddressNotYetCreated(named_address)) => {
+                    assert_eq!(named_address, ManifestNamedAddress(2));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(ManifestAddress::Named(ManifestNamedAddress(2)))
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::NamedAddressNotYetCreated(named_address)) => {
+                    assert_eq!(named_address, ManifestNamedAddress(2));
+                },
+            );
+        }
+
+        // ChildIntentNotRegistered(ManifestNamedIntent)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_raw_instruction_ignoring_all_side_effects(YieldToChild {
+                    child_index: ManifestNamedIntentIndex(2),
+                    args: ManifestValue::unit(),
+                })
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::ChildIntentNotRegistered(named_intent)) => {
+                    assert_eq!(named_intent, ManifestNamedIntent(2));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_raw_instruction_ignoring_all_side_effects(YieldToChild {
+                    child_index: ManifestNamedIntentIndex(3),
+                    args: ManifestValue::unit(),
+                })
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::ChildIntentNotRegistered(named_intent)) => {
+                    assert_eq!(named_intent, ManifestNamedIntent(3));
+                },
+            );
+        }
+
+        // DanglingBucket(ManifestBucket, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .take_all_from_worktop(XRD, "my_bucket")
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::DanglingBucket(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .take_all_from_worktop(XRD, "my_bucket")
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::DanglingBucket(bucket, _)) => {
+                    assert_eq!(bucket, ManifestBucket(0));
+                },
+            );
+        }
+
+        // DanglingAddressReservation(ManifestAddressReservation, String)
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .allocate_global_address(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    "my_address_reservation",
+                    "my_address",
+                )
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::DanglingAddressReservation(reservation, _)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(0));
+                },
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .allocate_global_address(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    "my_address_reservation",
+                    "my_address",
+                )
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::DanglingAddressReservation(reservation, _)) => {
+                    assert_eq!(reservation, ManifestAddressReservation(0));
+                },
+            );
+        }
+
+        // ArgsEncodeError(EncodeError)
+        {
+            // Hard to create when coming from a prepared transaction, because the values
+            // come from being decoded
+        }
+
+        // ArgsDecodeError(DecodeError)
+        {
+            // Hard to create when coming from a prepared transaction, because the values
+            // come from being decoded
+        }
+
+        // InstructionNotSupportedInTransactionIntent
+        {
+            // YIELD_TO_PARENT
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_raw_instruction_ignoring_all_side_effects(YieldToParent {
+                    args: ManifestValue::unit(),
+                })
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::InstructionNotSupportedInTransactionIntent),
+            );
+
+            // VERIFY_PARENT
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_raw_instruction_ignoring_all_side_effects(VerifyParent {
+                    access_rule: rule!(allow_all),
+                })
+                .build_no_validate();
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::InstructionNotSupportedInTransactionIntent),
+            );
+        }
+
+        // SubintentDoesNotEndWithYieldToParent
+        {
+            // CASE 1: At least 1 instruction
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .add_test_method_call_with(())
+                .build_no_validate();
+
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::SubintentDoesNotEndWithYieldToParent),
+            );
+
+            // CASE 2: No instructions
+            let subintent_manifest = ManifestBuilder::new_subintent_v2().build_no_validate();
+
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::SubintentDoesNotEndWithYieldToParent),
+            );
+        }
+
+        // ProofCannotBePassedToAnotherIntent
+        {
+            let subintent = create_leaf_partial_transaction(0, 0);
+            let builder = ManifestBuilder::new_v2();
+            let lookup = builder.name_lookup();
+            let transaction_manifest = builder
+                .use_child("child_1", subintent.root_subintent_hash)
+                .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+                .yield_to_child("child_1", (lookup.proof("my_proof"),))
+                .build_no_validate();
+            let builder = TransactionV2Builder::new_with_test_defaults()
+                .add_signed_child("child_1", subintent)
+                .manifest(transaction_manifest);
+
+            assert_matches!(
+                validate_transaction_builder_manifest(builder),
+                Err(ManifestValidationError::ProofCannotBePassedToAnotherIntent),
+            );
+
+            let builder = ManifestBuilder::new_subintent_v2();
+            let lookup = builder.name_lookup();
+            let subintent_manifest = builder
+                .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+                .yield_to_parent((lookup.proof("my_proof"),))
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::ProofCannotBePassedToAnotherIntent),
+            );
+        }
+
+        // TooManyInstructions
+        {
+            let mut builder = ManifestBuilder::new_v2();
+            for _ in 0..1001 {
+                builder = builder.drop_all_proofs();
+            }
+            let transaction_manifest = builder.build_no_validate();
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::TooManyInstructions),
+            );
+            // And test that one less is fine
+            let mut builder = ManifestBuilder::new_v2();
+            for _ in 0..1000 {
+                builder = builder.drop_all_proofs();
+            }
+            let transaction_manifest = builder.build_no_validate();
+            assert_matches!(validate_transaction_manifest(transaction_manifest), Ok(_),);
+
+            let mut builder = ManifestBuilder::new_subintent_v2();
+            for _ in 0..1000 {
+                // Only 1000 because we're adding a yield_to_parent below
+                builder = builder.drop_all_proofs();
+            }
+            let subintent_manifest = builder.yield_to_parent(()).build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::TooManyInstructions),
+            );
+            // And test that one less is fine
+            let mut builder = ManifestBuilder::new_subintent_v2();
+            for _ in 0..999 {
+                builder = builder.drop_all_proofs();
+            }
+            let subintent_manifest = builder.yield_to_parent(()).build_no_validate();
+            assert_matches!(validate_subintent_manifest(subintent_manifest), Ok(_),);
+        }
+
+        // InvalidResourceConstraint
+        {
+            // Invalid because there's no overlap between `required_ids` and `allowed_ids`
+            let invalid_constraints = ManifestResourceConstraints::new().with_unchecked(
+                XRD,
+                ManifestResourceConstraint::General(GeneralResourceConstraint {
+                    required_ids: indexset!(NonFungibleLocalId::integer(3)),
+                    lower_bound: LowerBound::NonZero,
+                    upper_bound: UpperBound::Unbounded,
+                    allowed_ids: AllowedIds::Allowlist(indexset!(
+                        NonFungibleLocalId::integer(4),
+                        NonFungibleLocalId::integer(5),
+                    )),
+                }),
+            );
+
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .add_raw_instruction_ignoring_all_side_effects(AssertWorktopResourcesOnly {
+                    constraints: invalid_constraints.clone(),
+                })
+                .build_no_validate();
+
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::InvalidResourceConstraint),
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .assert_worktop_resources_only(invalid_constraints.clone())
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::InvalidResourceConstraint),
+            );
+        }
+
+        // InstructionFollowingNextCallAssertionWasNotInvocation
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .assert_next_call_returns_include(ManifestResourceConstraints::new())
+                .drop_all_proofs() // This is not an invocation
+                .add_test_method_call_with(())
+                .build_no_validate();
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::InstructionFollowingNextCallAssertionWasNotInvocation),
+            );
+
+            let subintent_manifest = ManifestBuilder::new_subintent_v2()
+                .assert_next_call_returns_only(ManifestResourceConstraints::new())
+                .drop_auth_zone_signature_proofs()
+                .yield_to_parent(())
+                .build_no_validate();
+            assert_matches!(
+                validate_subintent_manifest(subintent_manifest),
+                Err(ManifestValidationError::InstructionFollowingNextCallAssertionWasNotInvocation),
+            );
+        }
+
+        // ManifestEndedWhilstExpectingNextCallAssertion
+        {
+            let transaction_manifest = ManifestBuilder::new_v2()
+                .assert_next_call_returns_include(ManifestResourceConstraints::new())
+                .build_no_validate();
+            assert_matches!(
+                validate_transaction_manifest(transaction_manifest),
+                Err(ManifestValidationError::ManifestEndedWhilstExpectingNextCallAssertion),
+            );
+        }
+    }
 }

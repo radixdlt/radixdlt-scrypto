@@ -20,13 +20,25 @@ impl ManifestResourceConstraints {
     /// * Panics if the constraint isn't valid for the resource address
     /// * Panics if constraints have already been specified against the resource
     pub fn with(
-        mut self,
+        self,
         resource_address: ResourceAddress,
         constraint: ManifestResourceConstraint,
     ) -> Self {
         if !constraint.is_valid_for(&resource_address) {
             panic!("Constraint isn't valid for the resource address");
         }
+        self.with_unchecked(resource_address, constraint)
+    }
+
+    /// Unlike `with`, this does not validate the constraint.
+    ///
+    /// ## Panics
+    /// * Panics if constraints have already been specified against the resource
+    pub fn with_unchecked(
+        mut self,
+        resource_address: ResourceAddress,
+        constraint: ManifestResourceConstraint,
+    ) -> Self {
         let replaced = self
             .specified_resources
             .insert(resource_address, constraint);
