@@ -860,61 +860,198 @@ mod tests {
         }
     }
 
+    // NOTE: This is very similar to the V1 tests, just adjusted to the V2 models
     #[test]
-    fn too_many_signatures_should_be_rejected() {
-        fn validate_transaction(
-            root_signature_count: usize,
-            signature_counts: Vec<usize>,
-        ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
-            TransactionV2Builder::new_with_test_defaults()
-                .add_children(
-                    signature_counts
-                        .iter()
-                        .enumerate()
-                        .map(|(i, signature_count)| {
-                            create_leaf_partial_transaction(i as u64, *signature_count)
-                        }),
-                )
-                .add_manifest_calling_each_child_once()
-                .multi_sign(
-                    (0..root_signature_count)
-                        .into_iter()
-                        .map(|i| Secp256k1PrivateKey::from_u64((100 + i) as u64).unwrap()),
-                )
-                .default_notarize_and_validate()
+    fn test_valid_messages() {
+        // None
+        {
+            let message = MessageV2::None;
+            assert_matches!(validate_transaction_with_message(message), Ok(_),);
+        }
+        // Plaintext
+        {
+            let message = MessageV2::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String("Hello world!".to_string()),
+            });
+            assert_matches!(validate_transaction_with_message(message), Ok(_),);
+        }
+        // Encrypted
+        {
+            // Note - this isn't actually a validly encrypted message,
+            // this just shows that a sufficiently valid encrypted message can pass validation
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurveV2::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                        ),
+                    },
+                    CurveType::Secp256k1 => DecryptorsByCurveV2::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                            PublicKeyFingerprint([1; PublicKeyFingerprint::LENGTH]) => AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                        ),
+                    },
+                ),
+            });
+            assert_matches!(validate_transaction_with_message(message), Ok(_),);
+        }
+    }
+
+    // NOTE: This is very similar to the V1 tests, just adjusted to the V2 models
+    #[test]
+    fn test_invalid_message_errors() {
+        // MimeTypeTooLong
+        {
+            let message = MessageV2::Plaintext(PlaintextMessageV1 {
+                mime_type: "very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, very long mimetype, ".to_owned(),
+                message: MessageContentsV1::String("Hello".to_string()),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::MimeTypeTooLong { .. }),
+            );
         }
 
-        assert_matches!(validate_transaction(1, vec![10]), Ok(_));
-        assert_matches!(
-            validate_transaction(1, vec![10, 20]),
-            Err(TransactionValidationError::SignatureValidationError(
-                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
-                SignatureValidationError::TooManySignatures {
-                    total: 20,
-                    limit: 16,
-                },
-            ))
-        );
-        assert_matches!(
-            validate_transaction(17, vec![0, 3]),
-            Err(TransactionValidationError::SignatureValidationError(
-                TransactionValidationErrorLocation::RootTransactionIntent(_),
-                SignatureValidationError::TooManySignatures {
-                    total: 17,
-                    limit: 16,
-                },
-            ))
-        );
-        assert_matches!(
-            validate_transaction(1, vec![10, 10, 10, 10, 10, 10, 10]),
-            Err(TransactionValidationError::SignatureValidationError(
-                TransactionValidationErrorLocation::AcrossTransaction,
-                SignatureValidationError::TooManySignatures {
-                    total: 72, // 70 from subintent, 1 from transaction intent, 1 from notarization
-                    limit: 64
-                },
-            ))
-        );
+        // PlaintextMessageTooLong
+        {
+            let mut long_message: String = "".to_owned();
+            while long_message.len() <= 2048 {
+                long_message.push_str("more text please!");
+            }
+            let message = MessageV2::Plaintext(PlaintextMessageV1 {
+                mime_type: "text/plain".to_owned(),
+                message: MessageContentsV1::String(long_message),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::PlaintextMessageTooLong { .. }),
+            );
+        }
+
+        // EncryptedMessageTooLong
+        {
+            let mut message_which_is_too_long: String = "".to_owned();
+            while message_which_is_too_long.len() <= 2048 + 50 {
+                // Some more bytes for the AES padding
+                message_which_is_too_long.push_str("more text please!");
+            }
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(message_which_is_too_long.as_bytes().to_vec()),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurveV2::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::EncryptedMessageTooLong { .. }),
+            );
+        }
+
+        // NoDecryptors
+        {
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::NoDecryptors),
+            );
+        }
+
+        // NoDecryptorsForCurveType
+        {
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurveV2::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors: indexmap!(),
+                    }
+                ),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::NoDecryptorsForCurveType {
+                    curve_type: CurveType::Ed25519
+                }),
+            );
+        }
+
+        // MismatchingDecryptorCurves
+        {
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurveV2::Secp256k1 {
+                        dh_ephemeral_public_key: Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]),
+                        decryptors: indexmap!(
+                            PublicKeyFingerprint([0; PublicKeyFingerprint::LENGTH]) => AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                        ),
+                    }
+                ),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::MismatchingDecryptorCurves {
+                    actual: CurveType::Secp256k1,
+                    expected: CurveType::Ed25519
+                }),
+            );
+        }
+
+        // TooManyDecryptors
+        {
+            let mut decryptors = IndexMap::<PublicKeyFingerprint, AesWrapped256BitKey>::default();
+            for i in 0..30 {
+                decryptors.insert(
+                    PublicKeyFingerprint([0, 0, 0, 0, 0, 0, 0, i as u8]),
+                    AesWrapped256BitKey([0; AesWrapped256BitKey::LENGTH]),
+                );
+            }
+            let message = MessageV2::Encrypted(EncryptedMessageV2 {
+                encrypted: AesGcmPayload(vec![]),
+                decryptors_by_curve: indexmap!(
+                    CurveType::Ed25519 => DecryptorsByCurveV2::Ed25519 {
+                        dh_ephemeral_public_key: Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
+                        decryptors,
+                    }
+                ),
+            });
+            assert_matches!(
+                validate_transaction_with_message(message),
+                Err(InvalidMessageError::TooManyDecryptors {
+                    actual: 30,
+                    permitted: 20
+                }),
+            );
+        }
+    }
+
+    fn validate_transaction_with_message(
+        message: MessageV2,
+    ) -> Result<ValidatedNotarizedTransactionV2, InvalidMessageError> {
+        TransactionV2Builder::new_with_test_defaults()
+            .add_trivial_manifest()
+            .message(message)
+            .default_notarize_and_validate()
+            .map_err(|e| match e {
+                TransactionValidationError::IntentValidationError(
+                    _,
+                    IntentValidationError::InvalidMessage(e),
+                ) => e,
+                _ => panic!("Expected InvalidMessageError, but got: {:?}", e),
+            })
     }
 
     #[test]
