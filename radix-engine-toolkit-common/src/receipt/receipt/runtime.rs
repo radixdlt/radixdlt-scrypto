@@ -130,7 +130,7 @@ impl TryFrom<TransactionReceipt> for RuntimeToolkitTransactionReceipt {
                         .collect(),
                     // We get the newly minted non-fungibles from the events.
                     newly_minted_non_fungibles: application_events.iter().fold(
-                        IndexSet::new(),
+                        index_set_new(),
                         |mut acc, (EventTypeIdentifier(emitter, event_name), event_data)| {
                             match emitter {
                                 Emitter::Method(node_id, ModuleId::Main) => {
@@ -234,7 +234,7 @@ fn get_metadata_updates(
                 .map(|partition_state_updates| (node_id, partition_state_updates))
         })
         .fold(
-            IndexMap::new(),
+            index_map_new(),
             |mut acc, (node_id, partition_state_updates)| {
                 acc.entry(*node_id).or_default().extend(
                     partition_state_updates

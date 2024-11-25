@@ -3,7 +3,7 @@ use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
+use arbitrary::{Arbitrary, Unstructured};
 use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -227,7 +227,7 @@ impl StringNonFungibleLocalId {
 
 #[cfg(feature = "fuzzing")]
 impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         let charset: Vec<char> =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ012345678989_"
                 .chars()
@@ -308,7 +308,7 @@ impl BytesNonFungibleLocalId {
 
 #[cfg(feature = "fuzzing")]
 impl<'a> Arbitrary<'a> for BytesNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
         let len: u8 = u
             .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
             .unwrap();
