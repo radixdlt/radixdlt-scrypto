@@ -1013,7 +1013,18 @@ impl Parser {
         open: Token,
         close: Token,
     ) -> Result<Vec<ValueWithSpan>, ParserError> {
-        self.advance_exact(open)?;
+        self.parse_values_any_with_open_close_spans(open, close)
+            .map(|(values, _, _)| values)
+    }
+
+    /// Parse a comma-separated value list, enclosed by a pair of marks.
+    /// Return values and opening and closing span
+    fn parse_values_any_with_open_close_spans(
+        &mut self,
+        open: Token,
+        close: Token,
+    ) -> Result<(Vec<ValueWithSpan>, Span, Span), ParserError> {
+        let open_token = self.advance_exact(open)?;
         let mut values = Vec::new();
         while self.peek()?.token != close {
             values.push(self.parse_value()?);
@@ -1021,14 +1032,29 @@ impl Parser {
                 self.advance_exact(Token::Comma)?;
             }
         }
-        self.advance_exact(close)?;
-        Ok(values)
+        let close_token = self.advance_exact(close)?;
+        Ok((values, open_token.span, close_token.span))
     }
 
     fn parse_values_one(&mut self) -> Result<ValueWithSpan, ParserError> {
-        let values = self.parse_values_any(Token::OpenParenthesis, Token::CloseParenthesis)?;
-        if values.len() != 1 {
-            Err(ParserError {
+        let (values, open_span, close_span) = self.parse_values_any_with_open_close_spans(
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
+        )?;
+        match values.len() {
+            1 => Ok(values[0].clone()),
+            0 => Err(ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfValues {
+                    actual: values.len(),
+                    expected: 1,
+                },
+                // no values returned, use opening and closing spans
+                span: Span {
+                    start: open_span.end,
+                    end: close_span.start,
+                },
+            }),
+            _ => Err(ParserError {
                 error_kind: ParserErrorKind::InvalidNumberOfValues {
                     actual: values.len(),
                     expected: 1,
@@ -1037,9 +1063,7 @@ impl Parser {
                     start: values[0].span.start,
                     end: values[values.len() - 1].span.end,
                 },
-            })
-        } else {
-            Ok(values[0].clone())
+            }),
         }
     }
 
@@ -1464,6 +1488,26 @@ mod tests {
                     expected: 1,
                 },
                 span: span!(start = (8, 0, 8), end = (20, 0, 20)),
+            }
+        );
+        parse_value_error!(
+            r#"Address()"#,
+            ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfValues {
+                    actual: 0,
+                    expected: 1,
+                },
+                span: span!(start = (8, 0, 8), end = (8, 0, 8)),
+            }
+        );
+        parse_value_error!(
+            r#"Address(   )"#,
+            ParserError {
+                error_kind: ParserErrorKind::InvalidNumberOfValues {
+                    actual: 0,
+                    expected: 1,
+                },
+                span: span!(start = (8, 0, 8), end = (11, 0, 11)),
             }
         );
     }
