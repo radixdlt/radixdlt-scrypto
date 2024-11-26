@@ -26,7 +26,6 @@ jobs:
         secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/common/cratesio-token-IjOP4n"
         parse_json: true
     - name: Publish crates
-      if: github.event.release.prerelease == false
       run: |
         cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-rust/Cargo.toml"
         cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive-common/Cargo.toml"
