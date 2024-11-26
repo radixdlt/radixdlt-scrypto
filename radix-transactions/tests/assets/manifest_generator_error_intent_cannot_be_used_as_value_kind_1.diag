@@ -1,0 +1,9 @@
+error: an Intent cannot be used as a value kind
+  |
+1 | CALL_METHOD
+2 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+3 |     "my_method"
+4 |     Array<Intent>()
+  |           ^^^^^^ cannot be used as a value kind
+5 | ;
+  |

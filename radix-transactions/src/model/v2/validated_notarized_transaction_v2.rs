@@ -19,7 +19,7 @@ pub struct ValidatedSignedPartialTransactionV2 {
     pub non_root_subintents_info: Vec<ValidatedIntentInformationV2>,
 }
 
-pub struct ValidatedPartialTransactionTreeV2 {
+pub struct ValidatedTransactionTreeV2 {
     pub overall_validity_range: OverallValidityRangeV2,
     pub total_signature_validations: usize,
     pub root_intent_info: ValidatedIntentInformationV2,

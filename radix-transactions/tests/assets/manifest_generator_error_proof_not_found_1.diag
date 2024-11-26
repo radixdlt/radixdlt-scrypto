@@ -1,12 +1,12 @@
-[1m[91merror[0m: [1mproof id 'ManifestProof(1)' not found[0m
-[1m[94m   |[0m
-[1m[94m18 |[0m   Bucket("some_bucket")
-[1m[94m19 |[0m   Decimal("1")
-[1m[94m20 |[0m   Proof("proof");
-[1m[94m21 |[0m 
-[1m[94m22 |[0m CLONE_PROOF
-[1m[94m23 |[0m   Proof(1u32)
-[1m[94m   |[0m[1m[91m         ^^^^[0m [1m[91mproof not found[0m
-[1m[94m24 |[0m   Proof("cloned_proof")
-[1m[94m25 |[0m ;
-[1m[94m   |[0m
+error: proof id 'ManifestProof(1)' not found
+   |
+18 |   Bucket("some_bucket")
+19 |   Decimal("1")
+20 |   Proof("proof");
+21 | 
+22 | CLONE_PROOF
+23 |   Proof(1u32)
+   |         ^^^^ proof not found
+24 |   Proof("cloned_proof")
+25 | ;
+   |

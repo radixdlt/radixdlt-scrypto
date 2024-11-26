@@ -1,0 +1,9 @@
+error: a psuedo-instruction such as USE_CHILD must come before all other instructions
+  |
+1 |   DROP_ALL_PROOFS;
+2 | / USE_CHILD
+3 | |     NamedIntent("my_child")
+4 | |     Intent("subtxid_sim1f0dp5mcrzvgnujw33lgnjy9usluaek6edfkqdjkj5vhuqf8t7apqnaqedd")
+5 | | ;
+  | |_^ must be at the start of the manifest
+  |

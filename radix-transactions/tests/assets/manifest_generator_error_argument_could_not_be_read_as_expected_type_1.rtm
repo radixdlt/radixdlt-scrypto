@@ -1,0 +1,7 @@
+ASSERT_WORKTOP_RESOURCES_INCLUDE
+    Map<Address, Enum>(
+        Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8") => Enum<8u8>(
+            Decimal("10")
+        )
+    )
+;

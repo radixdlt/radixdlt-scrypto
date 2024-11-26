@@ -70,7 +70,7 @@ impl TransactionV1Builder {
         self
     }
 
-    pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
+    pub fn sign<S: Signer>(mut self, signer: S) -> Self {
         let intent = self.transaction_intent();
         let prepared = intent
             .prepare(PreparationSettings::latest_ref())
@@ -80,7 +80,7 @@ impl TransactionV1Builder {
         self
     }
 
-    pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
+    pub fn multi_sign<S: Signer>(mut self, signers: impl IntoIterator<Item = S>) -> Self {
         let intent = self.transaction_intent();
         let prepared = intent
             .prepare(PreparationSettings::latest_ref())
@@ -97,7 +97,7 @@ impl TransactionV1Builder {
         self
     }
 
-    pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
+    pub fn notarize<S: Signer>(mut self, signer: S) -> Self {
         let signed_intent = self.signed_transaction_intent();
         let prepared = signed_intent
             .prepare(PreparationSettings::latest_ref())
@@ -182,7 +182,7 @@ pub type SignedPartialTransactionV2Builder = PartialTransactionV2Builder;
 /// In future, this may become a state-machine style builder, to catch more errors at compile time.
 #[derive(Default, Clone)]
 pub struct PartialTransactionV2Builder {
-    child_partial_transactions: IndexMap<
+    pub(crate) child_partial_transactions: IndexMap<
         String,
         (
             SubintentHash,
@@ -190,9 +190,9 @@ pub struct PartialTransactionV2Builder {
             TransactionObjectNames,
         ),
     >,
-    root_subintent_header: Option<IntentHeaderV2>,
-    root_subintent_message: Option<MessageV2>,
-    root_subintent_manifest: Option<SubintentManifestV2>,
+    pub(crate) root_subintent_header: Option<IntentHeaderV2>,
+    pub(crate) root_subintent_message: Option<MessageV2>,
+    pub(crate) root_subintent_manifest: Option<SubintentManifestV2>,
     // Cached once created
     root_subintent: Option<(SubintentV2, ManifestObjectNames)>,
     prepared_root_subintent: Option<PreparedSubintentV2>,
@@ -342,14 +342,14 @@ impl PartialTransactionV2Builder {
         self.create_prepared_subintent().subintent_hash()
     }
 
-    pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
+    pub fn sign<S: Signer>(mut self, signer: S) -> Self {
         let hash = self.subintent_hash();
         self.root_subintent_signatures
             .push(IntentSignatureV1(signer.sign_with_public_key(&hash)));
         self
     }
 
-    pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
+    pub fn multi_sign<S: Signer>(mut self, signers: impl IntoIterator<Item = S>) -> Self {
         let hash = self.subintent_hash();
         for signer in signers {
             self.root_subintent_signatures
@@ -581,7 +581,7 @@ pub struct TransactionV2Builder {
     // Note - these names are long, but agreed with Yulong that we would clarify
     // non_root_subintents from root_subintent / transaction_intent so this is
     // applying that logic to these field names
-    child_partial_transactions: IndexMap<
+    pub(crate) child_partial_transactions: IndexMap<
         String,
         (
             SubintentHash,
@@ -589,10 +589,10 @@ pub struct TransactionV2Builder {
             TransactionObjectNames,
         ),
     >,
-    transaction_header: Option<TransactionHeaderV2>,
-    transaction_intent_header: Option<IntentHeaderV2>,
-    transaction_intent_message: Option<MessageV2>,
-    transaction_intent_manifest: Option<TransactionManifestV2>,
+    pub(crate) transaction_header: Option<TransactionHeaderV2>,
+    pub(crate) transaction_intent_header: Option<IntentHeaderV2>,
+    pub(crate) transaction_intent_message: Option<MessageV2>,
+    pub(crate) transaction_intent_manifest: Option<TransactionManifestV2>,
     // Temporarily cached once created
     transaction_intent_and_non_root_subintent_signatures:
         Option<(TransactionIntentV2, NonRootSubintentSignaturesV2)>,
@@ -796,14 +796,14 @@ impl TransactionV2Builder {
         self.create_prepared_intent().transaction_intent_hash()
     }
 
-    pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
+    pub fn sign<S: Signer>(mut self, signer: S) -> Self {
         let hash = self.intent_hash();
         self.transaction_intent_signatures
             .push(IntentSignatureV1(signer.sign_with_public_key(&hash)));
         self
     }
 
-    pub fn multi_sign<S: Signer>(mut self, signers: &[&S]) -> Self {
+    pub fn multi_sign<S: Signer>(mut self, signers: impl IntoIterator<Item = S>) -> Self {
         let hash = self.intent_hash();
         for signer in signers {
             self.transaction_intent_signatures

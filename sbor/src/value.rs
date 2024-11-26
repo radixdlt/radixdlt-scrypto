@@ -1,13 +1,4 @@
-use crate::decode::*;
-use crate::decoder::*;
-use crate::encode::*;
-use crate::encoder::*;
-use crate::path::SborPathBuf;
-use crate::rust::fmt::Debug;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
-use crate::value_kind::*;
-use crate::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 
@@ -75,6 +66,25 @@ pub enum Value<X: CustomValueKind, Y: CustomValue<X>> {
     Custom {
         value: Y,
     },
+}
+
+impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
+    pub fn unit() -> Self {
+        Value::Tuple { fields: vec![] }
+    }
+
+    pub fn tuple(fields: impl IntoIterator<Item = Self>) -> Self {
+        Value::Tuple {
+            fields: fields.into_iter().collect(),
+        }
+    }
+
+    pub fn enum_variant(discriminator: u8, fields: impl IntoIterator<Item = Self>) -> Self {
+        Value::Enum {
+            discriminator,
+            fields: fields.into_iter().collect(),
+        }
+    }
 }
 
 /// Represents a custom SBOR value.
@@ -520,7 +530,6 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::internal_prelude::*;
 
     #[derive(Categorize, Encode)]

@@ -1,0 +1,9 @@
+CALL_METHOD
+    Address(  )
+    "lock_fee"
+;
+SET_COMPONENT_ROYALTY
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "method_with_no_package_royalty"
+    Enum<0u8>()
+;

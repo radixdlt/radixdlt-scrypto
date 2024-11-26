@@ -3,11 +3,9 @@ use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {
-    UnknownVersion(u8),
     InvalidEpochRange,
     InvalidTimestampRange,
     InvalidNetwork,
-    InvalidCostUnitLimit,
     InvalidTip,
     NoValidEpochRangeAcrossAllIntents,
     NoValidTimestampRangeAcrossAllIntents,

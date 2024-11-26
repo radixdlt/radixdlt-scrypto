@@ -33,6 +33,20 @@ pub trait Signer {
     fn sign_with_public_key(&self, message_hash: &impl IsHash) -> SignatureWithPublicKeyV1;
 }
 
+impl<'a, S: Signer> Signer for &'a S {
+    fn public_key(&self) -> PublicKey {
+        (*self).public_key()
+    }
+
+    fn sign_without_public_key(&self, message_hash: &impl IsHash) -> SignatureV1 {
+        (*self).sign_without_public_key(message_hash)
+    }
+
+    fn sign_with_public_key(&self, message_hash: &impl IsHash) -> SignatureWithPublicKeyV1 {
+        (*self).sign_with_public_key(message_hash)
+    }
+}
+
 impl Signer for Secp256k1PrivateKey {
     fn sign_without_public_key(&self, message_hash: &impl IsHash) -> SignatureV1 {
         self.sign(message_hash).into()
