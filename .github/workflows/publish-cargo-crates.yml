@@ -25,33 +25,6 @@ jobs:
         secret_prefix: "CRATES"
         secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/common/cratesio-token-IjOP4n"
         parse_json: true
-    - name: Dry Run Publish crates
-      if: github.event.release.prerelease
-      run: |
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-rust/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive-common/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-sbor-derive/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common-derive/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-blueprint-schema-init/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-interface/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-derive/Cargo.toml" 
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-interface/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-impls/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling-derive/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-native-sdk/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transactions/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transaction-scenarios/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-queries/Cargo.toml" 
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-bindgen/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-compiler/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-test/Cargo.toml"
-        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-clis/Cargo.toml"
     - name: Publish crates
       if: github.event.release.prerelease == false
       run: |
