@@ -1,0 +1,7 @@
+error: an argument's structure does not fit with the radix_engine_interface::blueprints::resource::proof_rule::AccessRule type. [ERROR] byte offset: 1-3, value path: [Root], cause: { expected_type: Enum, found: Tuple }
+  |
+1 | VERIFY_PARENT
+2 |     Tuple()
+  |     ^^^^^ cannot be decoded as a radix_engine_interface::blueprints::resource::proof_rule::AccessRule
+3 | ;
+  |

@@ -132,6 +132,9 @@ impl TransactionValidator {
         // We also:
         // * Save the unique parent on each subintent which is a child
         // * Save the children of an intent into its intent details
+        //
+        // After this step, we know that each subintent has at most one parent.
+        // We determine that every subintent has exactly one parent in step 4.
 
         // STEP 2A - Handle children of the root intent
         {
@@ -186,8 +189,14 @@ impl TransactionValidator {
         // We traverse the child relationships from the root, and mark a depth.
         // We error if any exceed the maximum depth.
         //
-        // As each child has at most one parent, we can guarantee the work is bounded
-        // by the total number of subintents.
+        // The iteration count is guaranteed to be bounded by the number of subintents because:
+        // * Each subintent has at most one parent from step 2.
+        // * Each parent -> child relationship is traversed at most once in the iteration.
+        //   Quick proof by contradiction:
+        //   - Assume not. Then some parent A is visited more than once.
+        //   - Take the earliest such A in the iteration.
+        //   - On both of its visits, A can only have been visited from its parent B.
+        //   - But then B must have been visited more than once, contradicting the minimality of A.
         let mut work_list = vec![];
         for index in root_intent_details.children.iter() {
             work_list.push((*index, 1));
@@ -224,8 +233,8 @@ impl TransactionValidator {
         // * Every subintent has a unique parent.
         // * Every subintent is reachable from the root.
         //
-        // Therefore there is a unique path from every subintent to the root
-        // So we have confirmed the subintents form a tree.
+        // Therefore there is a unique path from every subintent to the root, which implies
+        // the subintents form a tree.
         for (hash, details) in non_root_subintent_details.iter() {
             if details.depth == 0 {
                 return Err(

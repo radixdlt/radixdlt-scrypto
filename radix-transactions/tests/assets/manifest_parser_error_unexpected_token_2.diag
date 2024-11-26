@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1mexpected an instruction, found ';'[0m
-[1m[94m   |[0m
-[1m[94m10 |[0m SET_COMPONENT_ROYALTY
-[1m[94m11 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m12 |[0m     "method_with_xrd_package_royalty"
-[1m[94m13 |[0m     Enum<0u8>()
-[1m[94m14 |[0m ;
-[1m[94m15 |[0m ;
-[1m[94m   |[0m[1m[91m ^[0m [1m[91mexpected an instruction[0m
-[1m[94m16 |[0m SET_COMPONENT_ROYALTY
-[1m[94m17 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m18 |[0m     "method_with_usd_package_royalty"
-[1m[94m19 |[0m     Enum<0u8>()
-[1m[94m20 |[0m ;
-[1m[94m   |[0m
+error: expected an instruction, found ';'
+   |
+10 | SET_COMPONENT_ROYALTY
+11 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+12 |     "method_with_xrd_package_royalty"
+13 |     Enum<0u8>()
+14 | ;
+15 | ;
+   | ^ expected an instruction
+16 | SET_COMPONENT_ROYALTY
+17 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+18 |     "method_with_usd_package_royalty"
+19 |     Enum<0u8>()
+20 | ;
+   |

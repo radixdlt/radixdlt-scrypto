@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1minvalid integer value '-300i8' - number too small to fit in target type[0m
-[1m[94m   |[0m
-[1m[94m 2 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
-[1m[94m 3 |[0m     "lock_fee";
-[1m[94m 4 |[0m CALL_METHOD
-[1m[94m 5 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m 6 |[0m     "some_method"
-[1m[94m 7 |[0m     -300i8;
-[1m[94m   |[0m[1m[91m     ^^^^^^[0m [1m[91minvalid integer value[0m
-[1m[94m 8 |[0m CALL_METHOD
-[1m[94m 9 |[0m     Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma")
-[1m[94m10 |[0m     "try_deposit_batch_or_abort"
-[1m[94m11 |[0m     Expression("ENTIRE_WORKTOP")
-[1m[94m12 |[0m     None;
-[1m[94m   |[0m
+error: invalid integer value '-300i8' - number too small to fit in target type
+   |
+ 2 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+ 3 |     "lock_fee";
+ 4 | CALL_METHOD
+ 5 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+ 6 |     "some_method"
+ 7 |     -300i8;
+   |     ^^^^^^ invalid integer value
+ 8 | CALL_METHOD
+ 9 |     Address("account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma")
+10 |     "try_deposit_batch_or_abort"
+11 |     Expression("ENTIRE_WORKTOP")
+12 |     None;
+   |

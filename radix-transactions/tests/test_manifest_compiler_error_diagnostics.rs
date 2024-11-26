@@ -1,15 +1,19 @@
 use radix_common::network::NetworkDefinition;
-use radix_transactions::manifest::blob_provider::*;
-use radix_transactions::manifest::compiler::*;
+use radix_transactions::manifest::*;
 
 macro_rules! check_manifest {
-    ($manifest:expr, $blob_provider:expr, $style:expr) => {{
+    ($manifest_kind:expr, $manifest:expr, $blob_provider:expr $(,)?) => {{
         let manifest = include_str!(concat!("assets/", $manifest, ".rtm"));
         let diagnostic = include_str!(concat!("assets/", $manifest, ".diag"));
 
-        let err = compile(manifest, &NetworkDefinition::simulator(), $blob_provider).unwrap_err();
-
-        let x = compile_error_diagnostics(manifest, err, $style);
+        let x = compile_any_manifest_with_pretty_error(
+            manifest,
+            $manifest_kind,
+            &NetworkDefinition::simulator(),
+            $blob_provider,
+            CompileErrorDiagnosticsStyle::PlainText,
+        )
+        .unwrap_err();
 
         if x != diagnostic {
             let path = format!("tests/assets/{}.diag.res", $manifest);
@@ -24,13 +28,20 @@ macro_rules! check_manifest {
             panic!("diagnostic reports differ");
         }
     }};
-    ($manifest:expr) => {{
-        // Some instructions require valid blob in order to let
-        // manifest compile, eg. PUBLISH_PACKAGE_ADVANCED
+    ($manifest_kind:expr, $manifest:expr $(,)?) => {{
         check_manifest!(
+            $manifest_kind,
             $manifest,
-            MockBlobProvider::default(),
-            CompileErrorDiagnosticsStyle::TextTerminalColors
+            // The MockBlobProvider pretends any blob is valid
+            MockBlobProvider::default()
+        )
+    }};
+    ($manifest:expr $(,)?) => {{
+        check_manifest!(
+            ManifestKind::V1,
+            $manifest,
+            // The MockBlobProvider pretends any blob is valid
+            MockBlobProvider::default()
         )
     }};
 }
@@ -212,9 +223,9 @@ fn test_manifest_generator_error_invalid_blob_hash() {
 fn test_manifest_generator_error_blob_not_found() {
     // BlobNotFound
     check_manifest!(
+        ManifestKind::V1,
         "manifest_generator_error_blob_not_found_1",
-        BlobProvider::default(),
-        CompileErrorDiagnosticsStyle::TextTerminalColors
+        BlobProvider::default()
     );
 }
 
@@ -303,10 +314,117 @@ fn test_manifest_generator_error_proof_not_found() {
 }
 
 #[test]
+fn test_manifest_generator_error_invalid_sub_transaction_id() {
+    // InvalidSubTransactionId(String)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_invalid_sub_transaction_id_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_instruction_not_supported_in_manifest_version() {
+    // InstructionNotSupportedInManifestVersion
+    check_manifest!(
+        ManifestKind::V1,
+        "manifest_generator_error_instruction_not_supported_in_manifest_version_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_duplicate_subintent_hash() {
+    // ManifestBuildError(ManifestBuildError::DuplicateChildSubintentHash)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_duplicate_subintent_hash_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_child_subintents_unsupported_by_manifest_type() {
+    // ManifestBuildError(ManifestBuildError::ChildSubintentsUnsupportedByManifestType)
+    check_manifest!(
+        ManifestKind::V1,
+        "manifest_generator_error_child_subintents_unsupported_by_manifest_type_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_preallocated_addresses_unsupported_by_manifest_type() {
+    // ManifestBuildError(ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType)
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_preallocated_addresses_unsupported_by_manifest_type_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_header_instruction_must_come_first() {
+    // HeaderInstructionMustComeFirst
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_header_instruction_must_come_first_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_intent_cannot_be_used_in_value() {
+    // IntentCannotBeUsedInValue
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_intent_cannot_be_used_in_value_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_intent_cannot_be_used_as_value_kind() {
+    // IntentCannotBeUsedAsValueKind
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_intent_cannot_be_used_as_value_kind_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_named_intent_cannot_be_used_in_value() {
+    // NamedIntentCannotBeUsedInValue
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_named_intent_cannot_be_used_in_value_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_named_intent_cannot_be_used_as_value_kind() {
+    // NamedIntentCannotBeUsedAsValueKind
+    check_manifest!(
+        ManifestKind::SubintentV2,
+        "manifest_generator_error_named_intent_cannot_be_used_as_value_kind_1"
+    );
+}
+
+#[test]
+fn test_manifest_generator_error_argument_could_not_be_read_as_expected_type() {
+    // ArgumentCouldNotBeReadAsExpectedType { type_name: String, error_message: String, },
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_1"
+    );
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_2"
+    );
+    check_manifest!(
+        ManifestKind::V2,
+        "manifest_generator_error_argument_could_not_be_read_as_expected_type_3"
+    );
+}
+
+#[test]
 fn test_manifest_compiler_error_plain_text() {
     check_manifest!(
+        ManifestKind::V1,
         "manifest_compiler_error_plain_text_1",
         BlobProvider::default(),
-        CompileErrorDiagnosticsStyle::PlainText
     );
 }

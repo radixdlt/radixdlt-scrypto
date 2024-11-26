@@ -585,4 +585,112 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn too_many_signatures_should_be_rejected() {
+        fn validate_transaction(
+            root_signature_count: usize,
+            signature_counts: Vec<usize>,
+        ) -> Result<ValidatedNotarizedTransactionV2, TransactionValidationError> {
+            TransactionV2Builder::new_with_test_defaults()
+                .add_children(
+                    signature_counts
+                        .iter()
+                        .enumerate()
+                        .map(|(i, signature_count)| {
+                            create_leaf_partial_transaction(i as u64, *signature_count)
+                        }),
+                )
+                .add_manifest_calling_each_child_once()
+                .multi_sign(
+                    (0..root_signature_count)
+                        .into_iter()
+                        .map(|i| Secp256k1PrivateKey::from_u64((100 + i) as u64).unwrap()),
+                )
+                .default_notarize_and_validate()
+        }
+
+        assert_matches!(validate_transaction(1, vec![10]), Ok(_));
+        assert_matches!(
+            validate_transaction(1, vec![10, 20]),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::NonRootSubintent(SubintentIndex(1), _),
+                SignatureValidationError::TooManySignatures {
+                    total: 20,
+                    limit: 16,
+                },
+            ))
+        );
+        assert_matches!(
+            validate_transaction(17, vec![0, 3]),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::RootTransactionIntent(_),
+                SignatureValidationError::TooManySignatures {
+                    total: 17,
+                    limit: 16,
+                },
+            ))
+        );
+        assert_matches!(
+            validate_transaction(1, vec![10, 10, 10, 10, 10, 10, 10]),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::TooManySignatures {
+                    total: 72, // 70 from subintent, 1 from transaction intent, 1 from notarization
+                    limit: 64
+                },
+            ))
+        );
+    }
+
+    #[test]
+    fn test_incorrect_number_of_subintent_signature_batches() {
+        // CASE 1: Too fee signatures
+        let validator = TransactionValidator::new_for_latest_simulator();
+
+        let mut transaction = TransactionV2Builder::new_with_test_defaults()
+            .add_children(vec![PartialTransactionV2Builder::new_with_test_defaults()
+                .add_trivial_manifest()
+                .build()])
+            .add_manifest_calling_each_child_once()
+            .default_notarize()
+            .build_minimal_no_validate();
+
+        // Remove one signature batch
+        let removed_signature_batch = transaction
+            .signed_transaction_intent
+            .non_root_subintent_signatures
+            .by_subintent
+            .pop()
+            .unwrap();
+
+        assert_matches!(
+            transaction.prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
+            ))
+        );
+
+        // CASE 2: Too many signature batches
+        let mut transaction = TransactionV2Builder::new_with_test_defaults()
+            .add_trivial_manifest()
+            .default_notarize()
+            .build_minimal_no_validate();
+
+        // Add an extra signature batch
+        transaction
+            .signed_transaction_intent
+            .non_root_subintent_signatures
+            .by_subintent
+            .push(removed_signature_batch);
+
+        assert_matches!(
+            transaction.prepare_and_validate(&validator),
+            Err(TransactionValidationError::SignatureValidationError(
+                TransactionValidationErrorLocation::AcrossTransaction,
+                SignatureValidationError::IncorrectNumberOfSubintentSignatureBatches
+            ))
+        );
+    }
 }

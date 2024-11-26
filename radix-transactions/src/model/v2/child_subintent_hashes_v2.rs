@@ -35,6 +35,12 @@ impl ChildSubintentSpecifier {
     }
 }
 
+impl From<SubintentHash> for ChildSubintentSpecifier {
+    fn from(hash: SubintentHash) -> Self {
+        Self { hash }
+    }
+}
+
 /// A new-type representing the index of a referenced intent.
 /// The first few of these will be the children of the given intent.
 ///
@@ -86,7 +92,7 @@ impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2 {
         let (hashes, summary) =
             ConcatenatedDigest::prepare_from_sbor_array_value_body::<Vec<RawHash>>(
                 decoder,
-                ValueType::ChildIntentConstraint,
+                ValueType::ChildSubintentSpecifier,
                 max_child_subintents_per_intent,
             )?;
 

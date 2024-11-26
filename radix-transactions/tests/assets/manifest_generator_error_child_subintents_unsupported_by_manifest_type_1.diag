@@ -1,0 +1,8 @@
+error: child subintents are not supported in this manifest type
+  |
+1 | / USE_CHILD
+2 | |     NamedIntent("my_child")
+3 | |     Intent("subtxid_sim1f0dp5mcrzvgnujw33lgnjy9usluaek6edfkqdjkj5vhuqf8t7apqnaqedd")
+4 | | ;
+  | |_^ unsupported instruction
+  |

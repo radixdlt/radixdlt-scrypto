@@ -248,9 +248,9 @@ impl PreparedTransaction for PreparedUserTransaction {
     ) -> Result<Self, PrepareError> {
         let offset = decoder.get_offset();
         let slice = decoder.get_input_slice();
-        let discriminator_byte = slice.get(offset + 1).ok_or(PrepareError::Other(
-            "Could not read transaction payload discriminator byte".to_string(),
-        ))?;
+        let discriminator_byte = slice
+            .get(offset + 1)
+            .ok_or(PrepareError::UnexpectedTransactionDiscriminator { actual: None })?;
 
         let prepared = match TransactionDiscriminator::from_repr(*discriminator_byte) {
             Some(TransactionDiscriminator::V1Notarized) => PreparedUserTransaction::V1(
@@ -260,9 +260,9 @@ impl PreparedTransaction for PreparedUserTransaction {
                 PreparedNotarizedTransactionV2::prepare_from_transaction_enum(decoder)?,
             ),
             _ => {
-                return Err(PrepareError::Other(format!(
-                    "Unknown transaction payload discriminator byte: {discriminator_byte}"
-                )))
+                return Err(PrepareError::UnexpectedTransactionDiscriminator {
+                    actual: Some(*discriminator_byte),
+                })
             }
         };
 

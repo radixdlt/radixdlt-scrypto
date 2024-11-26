@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1mexpected 2 number of types, found 3[0m
-[1m[94m   |[0m
-[1m[94m19 |[0m         None,
-[1m[94m20 |[0m         None,
-[1m[94m21 |[0m         None
-[1m[94m22 |[0m     )
-[1m[94m23 |[0m     Tuple(
-[1m[94m24 |[0m         Map<String, Tuple, Tuple>(
-[1m[94m   |[0m[1m[91m             ^^^^^^^^^^^^^^^^^^^^[0m [1m[91mexpected 2 number of types[0m
-[1m[94m25 |[0m         "name" => Tuple(
-[1m[94m26 |[0m                 Some(Enum<Metadata::String>("MyResource")),
-[1m[94m27 |[0m                 true
-[1m[94m28 |[0m             )
-[1m[94m29 |[0m         ),
-[1m[94m   |[0m
+error: expected 2 number of types, found 3
+   |
+19 |         None,
+20 |         None,
+21 |         None
+22 |     )
+23 |     Tuple(
+24 |         Map<String, Tuple, Tuple>(
+   |             ^^^^^^^^^^^^^^^^^^^^ expected 2 number of types
+25 |         "name" => Tuple(
+26 |                 Some(Enum<Metadata::String>("MyResource")),
+27 |                 true
+28 |             )
+29 |         ),
+   |

@@ -1,0 +1,5 @@
+error: unsupported instruction for this manifest version
+  |
+1 | YIELD_TO_PARENT;
+  | ^^^^^^^^^^^^^^^^ unsupported instruction
+  |

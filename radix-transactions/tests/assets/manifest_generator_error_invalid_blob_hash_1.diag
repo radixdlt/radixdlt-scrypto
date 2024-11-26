@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1minvalid blob hash 'abbcc' - invalid hex value[0m
-[1m[94m   |[0m
-[1m[94m12 |[0m PUBLISH_PACKAGE_ADVANCED
-[1m[94m13 |[0m     Enum<AccessRule::AllowAll>()
-[1m[94m14 |[0m     Tuple(
-[1m[94m15 |[0m         Map<String, Tuple>()
-[1m[94m16 |[0m     )
-[1m[94m17 |[0m     Blob("abbcc")
-[1m[94m   |[0m[1m[91m          ^^^^^^^[0m [1m[91minvalid blob hash[0m
-[1m[94m18 |[0m     Map<String, Tuple>()
-[1m[94m19 |[0m     Some(AddressReservation("my_reservation"))
-[1m[94m20 |[0m ;
-[1m[94m21 |[0m CALL_FUNCTION
-[1m[94m22 |[0m     NamedAddress("my_package")
-[1m[94m   |[0m
+error: invalid blob hash 'abbcc' - invalid hex value
+   |
+12 | PUBLISH_PACKAGE_ADVANCED
+13 |     Enum<AccessRule::AllowAll>()
+14 |     Tuple(
+15 |         Map<String, Tuple>()
+16 |     )
+17 |     Blob("abbcc")
+   |          ^^^^^^^ invalid blob hash
+18 |     Map<String, Tuple>()
+19 |     Some(AddressReservation("my_reservation"))
+20 | ;
+21 | CALL_FUNCTION
+22 |     NamedAddress("my_package")
+   |

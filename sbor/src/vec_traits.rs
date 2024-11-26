@@ -1,7 +1,4 @@
-use crate::{
-    internal_prelude::*, validate_payload_against_schema, CustomExtension, CustomSchema,
-    Decoder as _, Describe, Encoder as _, ValidatableCustomExtension, VecDecoder, VecEncoder,
-};
+use crate::internal_prelude::*;
 
 pub trait VecEncode<X: CustomValueKind>: for<'a> Encode<X, VecEncoder<'a, X>> {}
 impl<X: CustomValueKind, T: for<'a> Encode<X, VecEncoder<'a, X>> + ?Sized> VecEncode<X> for T {}
