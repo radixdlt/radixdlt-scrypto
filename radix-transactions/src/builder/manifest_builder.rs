@@ -343,7 +343,9 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
         self
     }
 
-    #[deprecated = "This should not be used apart from for test code purposefully constructing invalid manifests. Instead use the more-tailored instruction, or add_instruction_advanced."]
+    /// This should not be used apart from for test code purposefully constructing invalid manifests.
+    /// Instead use the more-tailored instruction, or add_instruction_advanced.
+    #[cfg(test)]
     pub fn add_raw_instruction_ignoring_all_side_effects(
         self,
         instruction: impl Into<M::Instruction>,

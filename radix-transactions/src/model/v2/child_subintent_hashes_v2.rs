@@ -9,7 +9,7 @@ pub struct ChildSubintentSpecifiersV2 {
 }
 
 impl TransactionPartialPrepare for ChildSubintentSpecifiersV2 {
-    type Prepared = PreparedChildSubintentSpecifiersV2V2;
+    type Prepared = PreparedChildSubintentSpecifiersV2;
 }
 
 /// A new-type of a [`SubintentHash`], representing that the subintent is claimed
@@ -32,6 +32,12 @@ impl ChildSubintentSpecifier {
             .add_raw_argument(format!("NamedIntent(\"{intent_name}\")"))
             .add_raw_argument(format!("Intent(\"{subintent_id}\")"));
         Ok(instruction)
+    }
+}
+
+impl From<SubintentHash> for ChildSubintentSpecifier {
+    fn from(hash: SubintentHash) -> Self {
+        Self { hash }
     }
 }
 
@@ -73,20 +79,20 @@ impl From<ManifestNamedIntent> for ManifestNamedIntentIndex {
 //========
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedChildSubintentSpecifiersV2V2 {
+pub struct PreparedChildSubintentSpecifiersV2 {
     pub children: IndexSet<ChildSubintentSpecifier>,
     pub summary: Summary,
 }
 
-impl_has_summary!(PreparedChildSubintentSpecifiersV2V2);
+impl_has_summary!(PreparedChildSubintentSpecifiersV2);
 
-impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2V2 {
+impl TransactionPreparableFromValueBody for PreparedChildSubintentSpecifiersV2 {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let max_child_subintents_per_intent = decoder.settings().max_child_subintents_per_intent;
         let (hashes, summary) =
             ConcatenatedDigest::prepare_from_sbor_array_value_body::<Vec<RawHash>>(
                 decoder,
-                ValueType::ChildIntentConstraint,
+                ValueType::ChildSubintentSpecifier,
                 max_child_subintents_per_intent,
             )?;
 

@@ -27,7 +27,7 @@ pub struct PreparedIntentCoreV2 {
     pub header: PreparedIntentHeaderV2,
     pub blobs: PreparedBlobsV1,
     pub message: PreparedMessageV2,
-    pub children: PreparedChildSubintentSpecifiersV2V2,
+    pub children: PreparedChildSubintentSpecifiersV2,
     pub instructions: PreparedInstructionsV2,
     pub summary: Summary,
 }

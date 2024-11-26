@@ -1,13 +1,13 @@
-[1m[91merror[0m: [1minvalid package address 'package_1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk'[0m
-[1m[94m  |[0m
-[1m[94m1 |[0m CALL_METHOD
-[1m[94m2 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
-[1m[94m3 |[0m     "lock_fee"
-[1m[94m4 |[0m ;
-[1m[94m5 |[0m CALL_FUNCTION
-[1m[94m6 |[0m     Address("package_1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
-[1m[94m  |[0m[1m[91m             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91minvalid package address[0m
-[1m[94m7 |[0m     "Hello"
-[1m[94m8 |[0m     "instantiate_hello"
-[1m[94m9 |[0m ;
-[1m[94m  |[0m
+error: invalid package address 'package_1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk'
+  |
+1 | CALL_METHOD
+2 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+3 |     "lock_fee"
+4 | ;
+5 | CALL_FUNCTION
+6 |     Address("package_1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ invalid package address
+7 |     "Hello"
+8 |     "instantiate_hello"
+9 | ;
+  |

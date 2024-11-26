@@ -1,11 +1,11 @@
-[1m[91merror[0m: [1minvalid decimal '👩' - InvalidDigit[0m
-[1m[94m   |[0m
-[1m[94m 4 |[0m ;
-[1m[94m 5 |[0m 
-[1m[94m 6 |[0m CALL_METHOD
-[1m[94m 7 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
-[1m[94m 8 |[0m     "some_method"
-[1m[94m 9 |[0m     Decimal("\uD83D\uDC69")
-[1m[94m   |[0m[1m[91m             ^^^^^^^^^^^^^^[0m [1m[91minvalid decimal[0m
-[1m[94m10 |[0m ;
-[1m[94m   |[0m
+error: invalid decimal '👩' - InvalidDigit
+   |
+ 4 | ;
+ 5 | 
+ 6 | CALL_METHOD
+ 7 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+ 8 |     "some_method"
+ 9 |     Decimal("\uD83D\uDC69")
+   |             ^^^^^^^^^^^^^^ invalid decimal
+10 | ;
+   |

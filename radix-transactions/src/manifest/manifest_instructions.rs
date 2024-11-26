@@ -1327,6 +1327,14 @@ pub struct YieldToParent {
     pub args: ManifestValue,
 }
 
+impl YieldToParent {
+    pub fn empty() -> Self {
+        Self {
+            args: ManifestValue::unit(),
+        }
+    }
+}
+
 impl ManifestInstruction for YieldToParent {
     const IDENT: &'static str = "YIELD_TO_PARENT";
     const ID: u8 = INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR;

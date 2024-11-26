@@ -11,6 +11,12 @@ pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,
 }
 
+impl BlobsV1 {
+    pub fn none() -> Self {
+        Self { blobs: Vec::new() }
+    }
+}
+
 impl From<IndexMap<Hash, Vec<u8>>> for BlobsV1 {
     fn from(blobs: IndexMap<Hash, Vec<u8>>) -> Self {
         let blobs = blobs

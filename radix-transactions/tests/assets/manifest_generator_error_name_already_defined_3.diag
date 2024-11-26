@@ -1,14 +1,14 @@
-[1m[91merror[0m: [1mname already defined 'proof1a'[0m
-[1m[94m   |[0m
-[1m[94m 7 |[0m   Bucket("some_xrd")
-[1m[94m 8 |[0m   Array<NonFungibleLocalId>(
-[1m[94m 9 |[0m     NonFungibleLocalId("#123#")
-[1m[94m10 |[0m   )
-[1m[94m11 |[0m   Proof("proof1b");
-[1m[94m12 |[0m CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1a");
-[1m[94m   |[0m[1m[91m                                                          ^^^^^^^^^[0m [1m[91mname already defined[0m
-[1m[94m13 |[0m CLONE_PROOF Proof("proof1c") Proof("proof1d");
-[1m[94m14 |[0m DROP_PROOF Proof("proof1d");
-[1m[94m15 |[0m DROP_PROOF Proof("proof1c");
-[1m[94m16 |[0m DROP_AUTH_ZONE_PROOFS;
-[1m[94m   |[0m
+error: name already defined 'proof1a'
+   |
+ 7 |   Bucket("some_xrd")
+ 8 |   Array<NonFungibleLocalId>(
+ 9 |     NonFungibleLocalId("#123#")
+10 |   )
+11 |   Proof("proof1b");
+12 | CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1a");
+   |                                                          ^^^^^^^^^ name already defined
+13 | CLONE_PROOF Proof("proof1c") Proof("proof1d");
+14 | DROP_PROOF Proof("proof1d");
+15 | DROP_PROOF Proof("proof1c");
+16 | DROP_AUTH_ZONE_PROOFS;
+   |

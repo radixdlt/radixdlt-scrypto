@@ -1,14 +1,14 @@
-[1m[91merror[0m: [1mundefined proof 'proof_2'[0m
-[1m[94m   |[0m
-[1m[94m11 |[0m CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd")
-[1m[94m12 |[0m   Decimal("1")
-[1m[94m13 |[0m   Proof("proof_1");
-[1m[94m14 |[0m 
-[1m[94m15 |[0m CLONE_PROOF
-[1m[94m16 |[0m   Proof("proof_2")
-[1m[94m   |[0m[1m[91m         ^^^^^^^^^[0m [1m[91mundefined proof[0m
-[1m[94m17 |[0m   Proof("cloned_proof");
-[1m[94m18 |[0m 
-[1m[94m19 |[0m DROP_PROOF Proof("proof_1");
-[1m[94m20 |[0m DROP_PROOF Proof("cloned_proof");
-[1m[94m   |[0m
+error: undefined proof 'proof_2'
+   |
+11 | CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd")
+12 |   Decimal("1")
+13 |   Proof("proof_1");
+14 | 
+15 | CLONE_PROOF
+16 |   Proof("proof_2")
+   |         ^^^^^^^^^ undefined proof
+17 |   Proof("cloned_proof");
+18 | 
+19 | DROP_PROOF Proof("proof_1");
+20 | DROP_PROOF Proof("cloned_proof");
+   |

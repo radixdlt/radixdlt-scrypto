@@ -780,7 +780,7 @@ mod tests {
         ];
         check_location_path::<Vec<u8>>(
             payload,
-            "", // container state not established due to failing to read size
+            "[Root]", // container state not established due to failing to read size
             "DecodeError(InvalidSize)",
         );
     }
