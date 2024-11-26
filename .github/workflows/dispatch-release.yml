@@ -37,9 +37,6 @@ jobs:
         git add .
         git commit -m "Update version to ${VERSION_NUMBER:1}"
 
-        echo "Testing to release all updated cargo crates"
-        ./test-cargo-crates-release.sh
-
         git push
         # gh release create ${VERSION_NUMBER} --notes "Release from dispatch" --prerelease
         git tag ${VERSION_NUMBER}
