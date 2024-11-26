@@ -1,10 +1,11 @@
 use crate::manifest::token::Span;
 use radix_common::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
-use strum::{EnumCount, EnumDiscriminants};
+use strum::{EnumCount, EnumDiscriminants, FromRepr};
 
 use super::generator::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumDiscriminants, EnumCount)]
+#[strum_discriminants(derive(FromRepr))]
 pub enum Instruction {
     //========================================
     // PSEUDO-INSTRUCTIONS AT THE START
