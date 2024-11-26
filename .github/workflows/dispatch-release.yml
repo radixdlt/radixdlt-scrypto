@@ -10,6 +10,7 @@ permissions: write-all
 
 jobs:
   dispatch-release:
+    environment: release
     runs-on: ubuntu-latest
     steps:
     - uses: RDXWorks-actions/checkout@main
@@ -36,9 +37,6 @@ jobs:
         git add .
         git commit -m "Update version to ${VERSION_NUMBER:1}"
 
-        echo "Testing to release all updated cargo crates"
-        ./test-cargo-crates-release.sh
-
         git push
         # gh release create ${VERSION_NUMBER} --notes "Release from dispatch" --prerelease
         git tag ${VERSION_NUMBER}
@@ -46,3 +44,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VERSION_NUMBER: ${{ inputs.release-tag }}
+        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}

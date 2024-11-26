@@ -798,7 +798,7 @@ impl ResourceNativePackage {
 
             let mut fields = Vec::new();
             fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<AuthZone>(),
+                aggregator.add_child_type_and_descendents::<GenesisSchemaAuthZone>(),
             ));
 
             let mut functions = index_map_new();

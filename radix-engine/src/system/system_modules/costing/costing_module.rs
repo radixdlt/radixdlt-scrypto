@@ -405,7 +405,9 @@ impl PrivilegedSystemModule for CostingModule {
         api: &mut impl SystemBasedKernelApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-        // Skip invocation costing for transaction processor
+        // This check only applies in SystemV1.
+        // In this case, there was a call from Root => Transaction Processor, which this check avoids charging for.
+        // From SystemV2 onwards, there is no explicit call, and the Root actor is simply overwritten.
         if api.kernel_get_system_state().current_call_frame.is_root() {
             return Ok(());
         }
@@ -495,7 +497,9 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
                 });
         }
 
-        // Skip invocation costing for transaction processor
+        // This check only applies in SystemV1.
+        // In this case, there was a call from Root => Transaction Processor, which this check avoids charging for.
+        // From SystemV2 onwards, there is no explicit call, and the Root actor is simply overwritten.
         if is_root {
             return Ok(());
         }
@@ -527,7 +531,9 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
                 });
         }
 
-        // Skip invocation costing for transaction processor
+        // This check only applies in SystemV1.
+        // In this case, there was a call from Root => Transaction Processor, which this check avoids charging for.
+        // From SystemV2 onwards, there is no explicit call, and the Root actor is simply overwritten.
         if api.system_state().current_call_frame.is_root() {
             return Ok(());
         }

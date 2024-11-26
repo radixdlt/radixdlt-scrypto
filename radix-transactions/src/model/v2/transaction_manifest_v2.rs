@@ -84,12 +84,33 @@ impl BuildableManifest for TransactionManifestV2 {
 impl BuildableManifestSupportingChildren for TransactionManifestV2 {}
 
 impl TransactionManifestV2 {
+    pub fn empty() -> Self {
+        Self {
+            instructions: Default::default(),
+            blobs: Default::default(),
+            children: Default::default(),
+            object_names: ManifestObjectNames::Unknown,
+        }
+    }
+
     pub fn from_intent_core(intent: &IntentCoreV2) -> Self {
         Self {
             instructions: intent.instructions.to_vec(),
             blobs: intent.blobs.clone().into(),
             children: intent.children.children.clone(),
             object_names: ManifestObjectNames::Unknown,
+        }
+    }
+
+    pub fn to_intent_core(self, header: IntentHeaderV2, message: MessageV2) -> IntentCoreV2 {
+        IntentCoreV2 {
+            header,
+            blobs: self.blobs.into(),
+            message,
+            instructions: self.instructions.into(),
+            children: ChildSubintentSpecifiersV2 {
+                children: self.children,
+            },
         }
     }
 

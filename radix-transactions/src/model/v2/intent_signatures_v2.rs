@@ -7,6 +7,18 @@ pub struct IntentSignaturesV2 {
     pub signatures: Vec<IntentSignatureV1>,
 }
 
+impl IntentSignaturesV2 {
+    pub fn none() -> Self {
+        Self {
+            signatures: Vec::new(),
+        }
+    }
+
+    pub fn new(signatures: Vec<IntentSignatureV1>) -> Self {
+        Self { signatures }
+    }
+}
+
 impl TransactionPartialPrepare for IntentSignaturesV2 {
     type Prepared = PreparedIntentSignaturesV2;
 }
@@ -34,7 +46,7 @@ impl TransactionPreparableFromValueBody for PreparedNonRootSubintentSignaturesV2
             Vec<PreparedIntentSignaturesV2>,
         >(
             decoder,
-            ValueType::IntentSignatures,
+            ValueType::SubintentSignatureBatches,
             max_subintents_per_transaction,
         )?;
 

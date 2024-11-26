@@ -12,20 +12,6 @@ use radix_engine_interface::object_modules::royalty::*;
 
 use ManifestInstructionEffect as Effect;
 
-/// A type representing an enum of all possible instructions.
-/// This can then be mapped into a specific instruction type.
-pub type AnyInstruction = InstructionV2;
-
-/// A marker trait for an Instruction set, e.g. InstructionV1
-pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction> + Clone {
-    fn decompile(
-        &self,
-        context: &mut DecompilationContext,
-    ) -> Result<DecompiledInstruction, DecompileError>;
-
-    fn effect(&self) -> Effect;
-}
-
 pub trait ManifestInstruction: Into<AnyInstruction> {
     const IDENT: &'static str;
     const ID: u8;
@@ -1339,6 +1325,14 @@ impl ManifestInstruction for AllocateGlobalAddress {
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct YieldToParent {
     pub args: ManifestValue,
+}
+
+impl YieldToParent {
+    pub fn empty() -> Self {
+        Self {
+            args: ManifestValue::unit(),
+        }
+    }
 }
 
 impl ManifestInstruction for YieldToParent {

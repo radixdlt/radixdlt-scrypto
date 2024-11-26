@@ -1,0 +1,5 @@
+DROP_ALL_PROOFS;
+USE_CHILD
+    NamedIntent("my_child")
+    Intent("subtxid_sim1f0dp5mcrzvgnujw33lgnjy9usluaek6edfkqdjkj5vhuqf8t7apqnaqedd")
+;

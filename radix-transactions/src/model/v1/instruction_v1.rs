@@ -1,83 +1,134 @@
 use crate::internal_prelude::*;
 
 impl<T: SborEnumVariantFor<InstructionV1, ManifestCustomValueKind>> From<T> for InstructionV1 {
-    fn from(value: T) -> Self {
-        value.into_enum()
+    fn from(instruction: T) -> Self {
+        instruction.into_enum()
+    }
+}
+
+impl From<InstructionV1> for AnyInstruction {
+    fn from(any_v1_instruction: InstructionV1) -> Self {
+        any_v1_instruction.into_any()
     }
 }
 
 impl ManifestInstructionSet for InstructionV1 {
-    fn decompile(
-        &self,
-        context: &mut decompiler::DecompilationContext,
-    ) -> Result<decompiler::DecompiledInstruction, DecompileError> {
+    fn map_ref<M: InstructionRefMapper>(&self, mapper: M) -> M::Output<'_> {
         match self {
-            InstructionV1::TakeFromWorktop(x) => x.decompile(context),
-            InstructionV1::TakeNonFungiblesFromWorktop(x) => x.decompile(context),
-            InstructionV1::TakeAllFromWorktop(x) => x.decompile(context),
-            InstructionV1::ReturnToWorktop(x) => x.decompile(context),
-            InstructionV1::BurnResource(x) => x.decompile(context),
-            InstructionV1::AssertWorktopContainsAny(x) => x.decompile(context),
-            InstructionV1::AssertWorktopContains(x) => x.decompile(context),
-            InstructionV1::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
-            InstructionV1::CreateProofFromBucketOfAmount(x) => x.decompile(context),
-            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => x.decompile(context),
-            InstructionV1::CreateProofFromBucketOfAll(x) => x.decompile(context),
-            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => x.decompile(context),
-            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => x.decompile(context),
-            InstructionV1::CreateProofFromAuthZoneOfAll(x) => x.decompile(context),
-            InstructionV1::CloneProof(x) => x.decompile(context),
-            InstructionV1::DropProof(x) => x.decompile(context),
-            InstructionV1::PushToAuthZone(x) => x.decompile(context),
-            InstructionV1::PopFromAuthZone(x) => x.decompile(context),
-            InstructionV1::DropAuthZoneProofs(x) => x.decompile(context),
-            InstructionV1::DropAuthZoneRegularProofs(x) => x.decompile(context),
-            InstructionV1::DropAuthZoneSignatureProofs(x) => x.decompile(context),
-            InstructionV1::DropNamedProofs(x) => x.decompile(context),
-            InstructionV1::DropAllProofs(x) => x.decompile(context),
-            InstructionV1::CallFunction(x) => x.decompile(context),
-            InstructionV1::CallMethod(x) => x.decompile(context),
-            InstructionV1::CallRoyaltyMethod(x) => x.decompile(context),
-            InstructionV1::CallMetadataMethod(x) => x.decompile(context),
-            InstructionV1::CallRoleAssignmentMethod(x) => x.decompile(context),
-            InstructionV1::CallDirectVaultMethod(x) => x.decompile(context),
-            InstructionV1::AllocateGlobalAddress(x) => x.decompile(context),
+            InstructionV1::TakeFromWorktop(x) => mapper.apply(x),
+            InstructionV1::TakeNonFungiblesFromWorktop(x) => mapper.apply(x),
+            InstructionV1::TakeAllFromWorktop(x) => mapper.apply(x),
+            InstructionV1::ReturnToWorktop(x) => mapper.apply(x),
+            InstructionV1::BurnResource(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContainsAny(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContains(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContainsNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfAmount(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfAll(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfAll(x) => mapper.apply(x),
+            InstructionV1::CloneProof(x) => mapper.apply(x),
+            InstructionV1::DropProof(x) => mapper.apply(x),
+            InstructionV1::PushToAuthZone(x) => mapper.apply(x),
+            InstructionV1::PopFromAuthZone(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneProofs(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneRegularProofs(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneSignatureProofs(x) => mapper.apply(x),
+            InstructionV1::DropNamedProofs(x) => mapper.apply(x),
+            InstructionV1::DropAllProofs(x) => mapper.apply(x),
+            InstructionV1::CallFunction(x) => mapper.apply(x),
+            InstructionV1::CallMethod(x) => mapper.apply(x),
+            InstructionV1::CallRoyaltyMethod(x) => mapper.apply(x),
+            InstructionV1::CallMetadataMethod(x) => mapper.apply(x),
+            InstructionV1::CallRoleAssignmentMethod(x) => mapper.apply(x),
+            InstructionV1::CallDirectVaultMethod(x) => mapper.apply(x),
+            InstructionV1::AllocateGlobalAddress(x) => mapper.apply(x),
         }
     }
 
-    fn effect(&self) -> ManifestInstructionEffect {
+    fn map_self<M: OwnedInstructionMapper>(self, mapper: M) -> M::Output {
         match self {
-            InstructionV1::TakeFromWorktop(x) => x.effect(),
-            InstructionV1::TakeNonFungiblesFromWorktop(x) => x.effect(),
-            InstructionV1::TakeAllFromWorktop(x) => x.effect(),
-            InstructionV1::ReturnToWorktop(x) => x.effect(),
-            InstructionV1::BurnResource(x) => x.effect(),
-            InstructionV1::AssertWorktopContainsAny(x) => x.effect(),
-            InstructionV1::AssertWorktopContains(x) => x.effect(),
-            InstructionV1::AssertWorktopContainsNonFungibles(x) => x.effect(),
-            InstructionV1::CreateProofFromBucketOfAmount(x) => x.effect(),
-            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => x.effect(),
-            InstructionV1::CreateProofFromBucketOfAll(x) => x.effect(),
-            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => x.effect(),
-            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => x.effect(),
-            InstructionV1::CreateProofFromAuthZoneOfAll(x) => x.effect(),
-            InstructionV1::CloneProof(x) => x.effect(),
-            InstructionV1::DropProof(x) => x.effect(),
-            InstructionV1::PushToAuthZone(x) => x.effect(),
-            InstructionV1::PopFromAuthZone(x) => x.effect(),
-            InstructionV1::DropAuthZoneProofs(x) => x.effect(),
-            InstructionV1::DropAuthZoneRegularProofs(x) => x.effect(),
-            InstructionV1::DropAuthZoneSignatureProofs(x) => x.effect(),
-            InstructionV1::DropNamedProofs(x) => x.effect(),
-            InstructionV1::DropAllProofs(x) => x.effect(),
-            InstructionV1::CallFunction(x) => x.effect(),
-            InstructionV1::CallMethod(x) => x.effect(),
-            InstructionV1::CallRoyaltyMethod(x) => x.effect(),
-            InstructionV1::CallMetadataMethod(x) => x.effect(),
-            InstructionV1::CallRoleAssignmentMethod(x) => x.effect(),
-            InstructionV1::CallDirectVaultMethod(x) => x.effect(),
-            InstructionV1::AllocateGlobalAddress(x) => x.effect(),
+            InstructionV1::TakeFromWorktop(x) => mapper.apply(x),
+            InstructionV1::TakeNonFungiblesFromWorktop(x) => mapper.apply(x),
+            InstructionV1::TakeAllFromWorktop(x) => mapper.apply(x),
+            InstructionV1::ReturnToWorktop(x) => mapper.apply(x),
+            InstructionV1::BurnResource(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContainsAny(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContains(x) => mapper.apply(x),
+            InstructionV1::AssertWorktopContainsNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfAmount(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromBucketOfAll(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfAmount(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfNonFungibles(x) => mapper.apply(x),
+            InstructionV1::CreateProofFromAuthZoneOfAll(x) => mapper.apply(x),
+            InstructionV1::CloneProof(x) => mapper.apply(x),
+            InstructionV1::DropProof(x) => mapper.apply(x),
+            InstructionV1::PushToAuthZone(x) => mapper.apply(x),
+            InstructionV1::PopFromAuthZone(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneProofs(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneRegularProofs(x) => mapper.apply(x),
+            InstructionV1::DropAuthZoneSignatureProofs(x) => mapper.apply(x),
+            InstructionV1::DropNamedProofs(x) => mapper.apply(x),
+            InstructionV1::DropAllProofs(x) => mapper.apply(x),
+            InstructionV1::CallFunction(x) => mapper.apply(x),
+            InstructionV1::CallMethod(x) => mapper.apply(x),
+            InstructionV1::CallRoyaltyMethod(x) => mapper.apply(x),
+            InstructionV1::CallMetadataMethod(x) => mapper.apply(x),
+            InstructionV1::CallRoleAssignmentMethod(x) => mapper.apply(x),
+            InstructionV1::CallDirectVaultMethod(x) => mapper.apply(x),
+            InstructionV1::AllocateGlobalAddress(x) => mapper.apply(x),
         }
+    }
+}
+
+impl TryFrom<AnyInstruction> for InstructionV1 {
+    type Error = ();
+
+    fn try_from(value: AnyInstruction) -> Result<Self, Self::Error> {
+        let mapped = match value {
+            AnyInstruction::TakeFromWorktop(x) => x.into(),
+            AnyInstruction::TakeNonFungiblesFromWorktop(x) => x.into(),
+            AnyInstruction::TakeAllFromWorktop(x) => x.into(),
+            AnyInstruction::ReturnToWorktop(x) => x.into(),
+            AnyInstruction::BurnResource(x) => x.into(),
+            AnyInstruction::AssertWorktopContainsAny(x) => x.into(),
+            AnyInstruction::AssertWorktopContains(x) => x.into(),
+            AnyInstruction::AssertWorktopContainsNonFungibles(x) => x.into(),
+            AnyInstruction::AssertWorktopResourcesOnly(_) => return Err(()),
+            AnyInstruction::AssertWorktopResourcesInclude(_) => return Err(()),
+            AnyInstruction::AssertNextCallReturnsOnly(_) => return Err(()),
+            AnyInstruction::AssertNextCallReturnsInclude(_) => return Err(()),
+            AnyInstruction::AssertBucketContents(_) => return Err(()),
+            AnyInstruction::CreateProofFromBucketOfAmount(x) => x.into(),
+            AnyInstruction::CreateProofFromBucketOfNonFungibles(x) => x.into(),
+            AnyInstruction::CreateProofFromBucketOfAll(x) => x.into(),
+            AnyInstruction::CreateProofFromAuthZoneOfAmount(x) => x.into(),
+            AnyInstruction::CreateProofFromAuthZoneOfNonFungibles(x) => x.into(),
+            AnyInstruction::CreateProofFromAuthZoneOfAll(x) => x.into(),
+            AnyInstruction::CloneProof(x) => x.into(),
+            AnyInstruction::DropProof(x) => x.into(),
+            AnyInstruction::PushToAuthZone(x) => x.into(),
+            AnyInstruction::PopFromAuthZone(x) => x.into(),
+            AnyInstruction::DropAuthZoneProofs(x) => x.into(),
+            AnyInstruction::DropAuthZoneRegularProofs(x) => x.into(),
+            AnyInstruction::DropAuthZoneSignatureProofs(x) => x.into(),
+            AnyInstruction::DropNamedProofs(x) => x.into(),
+            AnyInstruction::DropAllProofs(x) => x.into(),
+            AnyInstruction::CallFunction(x) => x.into(),
+            AnyInstruction::CallMethod(x) => x.into(),
+            AnyInstruction::CallRoyaltyMethod(x) => x.into(),
+            AnyInstruction::CallMetadataMethod(x) => x.into(),
+            AnyInstruction::CallRoleAssignmentMethod(x) => x.into(),
+            AnyInstruction::CallDirectVaultMethod(x) => x.into(),
+            AnyInstruction::AllocateGlobalAddress(x) => x.into(),
+            AnyInstruction::YieldToParent(_) => return Err(()),
+            AnyInstruction::YieldToChild(_) => return Err(()),
+            AnyInstruction::VerifyParent(_) => return Err(()),
+        };
+        Ok(mapped)
     }
 }
 

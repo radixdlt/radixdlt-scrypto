@@ -106,7 +106,7 @@ pub trait ReadableManifestBase {
     fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef;
 }
 
-/// An object-safe  of ReadableManifest
+/// An object-safe version of ReadableManifest
 pub trait ReadableManifest: ReadableManifestBase {
     fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect>;
     fn iter_cloned_instructions(&self) -> impl Iterator<Item = AnyInstruction>;
@@ -141,3 +141,74 @@ impl<T: TypedReadableManifest + ?Sized> ReadableManifest for T {
 
 static NO_PREALLOCATED_ADDRESSES: [PreAllocatedAddress; 0] = [];
 static NO_CHILD_SUBINTENTS: [ChildSubintentSpecifier; 0] = [];
+
+pub struct EphemeralManifest<'a, I: ManifestInstructionSet> {
+    pub is_subintent: bool,
+    pub instructions: &'a [I],
+    pub blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub child_subintent_specifiers: Option<&'a IndexSet<ChildSubintentSpecifier>>,
+    pub known_object_names_ref: ManifestObjectNamesRef<'a>,
+}
+
+impl<'a, I: ManifestInstructionSet> EphemeralManifest<'a, I> {
+    pub fn new_childless_transaction_manifest(
+        instructions: &'a [I],
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
+    ) -> Self {
+        Self {
+            is_subintent: false,
+            instructions,
+            blobs,
+            child_subintent_specifiers: None,
+            known_object_names_ref: ManifestObjectNamesRef::Unknown,
+        }
+    }
+
+    pub fn new(
+        instructions: &'a [I],
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
+        child_subintent_specifiers: &'a IndexSet<ChildSubintentSpecifier>,
+        is_subintent: bool,
+    ) -> Self {
+        Self {
+            is_subintent,
+            instructions,
+            blobs,
+            child_subintent_specifiers: Some(child_subintent_specifiers),
+            known_object_names_ref: ManifestObjectNamesRef::Unknown,
+        }
+    }
+}
+
+impl<'a, I: ManifestInstructionSet> ReadableManifestBase for EphemeralManifest<'a, I> {
+    fn is_subintent(&self) -> bool {
+        self.is_subintent
+    }
+
+    fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
+        self.blobs.iter()
+    }
+
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+        self.known_object_names_ref
+    }
+
+    fn get_child_subintent_hashes<'b>(
+        &'b self,
+    ) -> impl ExactSizeIterator<Item = &'b ChildSubintentSpecifier> {
+        let iterator: Box<dyn ExactSizeIterator<Item = &'b ChildSubintentSpecifier>> =
+            match self.child_subintent_specifiers {
+                Some(specifiers) => Box::new(specifiers.iter()),
+                None => Box::new(NO_CHILD_SUBINTENTS.iter()),
+            };
+        iterator
+    }
+}
+
+impl<'a, I: ManifestInstructionSet> TypedReadableManifest for EphemeralManifest<'a, I> {
+    type Instruction = I;
+
+    fn get_typed_instructions(&self) -> &[I] {
+        self.instructions
+    }
+}

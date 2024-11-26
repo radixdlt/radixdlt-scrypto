@@ -71,18 +71,20 @@ impl Authorization {
             handles.push(handle);
 
             {
-                let mut virtual_non_fungible_global_ids = BTreeSet::new();
-                let virtual_resources = auth_zone.virtual_resources();
+                let mut implicit_non_fungible_proofs = BTreeSet::new();
+                let simulate_all_proofs_under_resources =
+                    auth_zone.simulate_all_proofs_under_resources();
 
-                virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles().clone());
+                implicit_non_fungible_proofs
+                    .extend(auth_zone.implicit_non_fungible_proofs().clone());
 
                 let proofs = auth_zone.proofs();
 
                 // Check
                 if check(
                     proofs,
-                    virtual_resources,
-                    virtual_non_fungible_global_ids,
+                    simulate_all_proofs_under_resources,
+                    implicit_non_fungible_proofs,
                     api,
                 )? {
                     pass = true;
@@ -132,17 +134,21 @@ impl Authorization {
                 .unwrap()
                 .into_payload();
 
-            // Check Local virtual non fungibles
-            let virtual_proofs = auth_zone.local_virtual_non_fungibles();
-            if !virtual_proofs.is_empty() {
-                if check(&[], &btreeset!(), virtual_proofs, api)? {
+            // Check local implicit non fungible proofs
+            let local_implicit_non_fungible_proofs = auth_zone.local_implicit_non_fungible_proofs();
+            if !local_implicit_non_fungible_proofs.is_empty() {
+                if check(&[], &btreeset!(), local_implicit_non_fungible_proofs, api)? {
                     return Ok(true);
                 }
             }
 
             // Check global caller's full auth zone
-            if let Some((_global_caller, global_caller_reference)) = &auth_zone.global_caller {
-                if Self::global_auth_zone_matches(api, &global_caller_reference.0, &check)? {
+            if let Some((_, global_caller_leaf_auth_zone_reference)) = &auth_zone.global_caller {
+                if Self::global_auth_zone_matches(
+                    api,
+                    &global_caller_leaf_auth_zone_reference.0,
+                    &check,
+                )? {
                     return Ok(true);
                 }
             }

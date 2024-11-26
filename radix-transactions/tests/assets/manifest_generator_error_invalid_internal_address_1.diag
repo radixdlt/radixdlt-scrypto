@@ -1,14 +1,14 @@
-[1m[91merror[0m: [1minvalid internal address 'component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh'[0m
-[1m[94m   |[0m
-[1m[94m 2 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
-[1m[94m 3 |[0m     "lock_fee"
-[1m[94m 4 |[0m     Decimal("5000")
-[1m[94m 5 |[0m ;
-[1m[94m 6 |[0m FREEZE_VAULT
-[1m[94m 7 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
-[1m[94m   |[0m[1m[91m             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91minvalid internal address[0m
-[1m[94m 8 |[0m     Tuple(
-[1m[94m 9 |[0m         2u32
-[1m[94m10 |[0m     )
-[1m[94m11 |[0m ;
-[1m[94m   |[0m
+error: invalid internal address 'component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh'
+   |
+ 2 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+ 3 |     "lock_fee"
+ 4 |     Decimal("5000")
+ 5 | ;
+ 6 | FREEZE_VAULT
+ 7 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ invalid internal address
+ 8 |     Tuple(
+ 9 |         2u32
+10 |     )
+11 | ;
+   |

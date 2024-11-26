@@ -69,12 +69,21 @@ pub struct BlueprintHookActor {
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum Actor {
+    /// In System V1, there was an explicit call to initialize the transaction processor.
+    /// This call has to have an actor making the call, which is the Root.
+    ///
+    /// From V2 onwards, we don't have an explicit function call to initialize the transaction
+    /// processor - but we still temporarily set a CallFrameInit with a `Root` actor.
+    /// This is used to set up the initial AuthZone in [`MultiThreadIntentProcessor::init`].
+    ///
+    /// [`MultiThreadIntentProcessor::init`]: crate::system::transaction::multithread_intent_processor::MultiThreadIntentProcessor::init
     Root,
     Method(MethodActor),
     Function(FunctionActor),
     BlueprintHook(BlueprintHookActor),
 }
 
+// This is only used by `kernel_create_kernel_for_testing` in the testing framework.
 impl Default for Actor {
     fn default() -> Self {
         Self::Root

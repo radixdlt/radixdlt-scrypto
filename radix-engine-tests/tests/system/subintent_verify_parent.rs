@@ -1,12 +1,4 @@
-use radix_common::constants::XRD;
-use radix_common::crypto::HasPublicKeyHash;
-use radix_engine::errors::{IntentError, RuntimeError, SystemError};
-use radix_engine_interface::macros::dec;
-use radix_engine_interface::prelude::{require, require_amount, AccessRule};
-use radix_engine_interface::rule;
-use radix_transactions::builder::ManifestBuilder;
-use radix_transactions::model::TestTransaction;
-use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
+use crate::prelude::*;
 
 #[test]
 fn should_not_be_able_to_use_subintent_when_verify_parent_access_rule_not_met() {
@@ -197,4 +189,68 @@ fn should_be_able_to_use_subintent_when_verify_parent_access_rule_is_met_on_seco
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn verify_parent_should_only_work_against_proofs_in_parent_intent() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    // We will create a complex transaction with lots of intents.
+    // Naming convention: subintent XXX will have children XXXa, XXXb, XXXc, etc.
+    // Each intent will be signed by its own key.
+
+    let keys = indexmap! {
+        "aaa" => ledger.new_allocated_account().0,
+        "aaba" => ledger.new_allocated_account().0,
+        "aab" => ledger.new_allocated_account().0,
+        "aac" => ledger.new_allocated_account().0,
+        "aa" => ledger.new_allocated_account().0,
+        "ab" => ledger.new_allocated_account().0,
+        "a" => ledger.new_allocated_account().0,
+        "ba" => ledger.new_allocated_account().0,
+        "b" => ledger.new_allocated_account().0,
+        "c" => ledger.new_allocated_account().0,
+        "ROOT" => ledger.new_allocated_account().0,
+    };
+
+    // We will set all their manifests to be simple/trivial, except the AAB manifest
+    // which will be set to call "verify parent" with each of the keys.
+    // The transaction should only pass if the AA key is used (its parent).
+    for (key_name_to_assert, key_to_assert) in keys.iter() {
+        let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
+
+        let aaa = builder.add_simple_subintent([], [keys["aaa"].signature_proof()]);
+        let aaba = builder.add_simple_subintent([], [keys["aaba"].signature_proof()]);
+        let aab = builder.add_tweaked_simple_subintent(
+            [aaba],
+            [keys["aab"].signature_proof()],
+            |builder| builder.verify_parent(rule!(require(key_to_assert.signature_proof()))),
+        );
+        let aac = builder.add_simple_subintent([], [keys["aac"].signature_proof()]);
+        let aa = builder.add_simple_subintent([aaa, aab, aac], [keys["aa"].signature_proof()]);
+        let ab = builder.add_simple_subintent([], [keys["ab"].signature_proof()]);
+        let a = builder.add_simple_subintent([aa, ab], [keys["a"].signature_proof()]);
+        let ba = builder.add_simple_subintent([], [keys["ba"].signature_proof()]);
+        let b = builder.add_simple_subintent([ba], [keys["b"].signature_proof()]);
+        let c = builder.add_simple_subintent([], [keys["c"].signature_proof()]);
+        let transaction =
+            builder.finish_with_simple_root_intent([a, b, c], [keys["ROOT"].signature_proof()]);
+
+        let receipt = ledger.execute_test_transaction(transaction);
+
+        // ASSERT
+        if *key_name_to_assert == "aa" {
+            receipt.expect_commit_success();
+        } else {
+            receipt.expect_specific_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::SystemError(SystemError::IntentError(
+                        IntentError::VerifyParentFailed
+                    ))
+                )
+            });
+        }
+    }
 }
