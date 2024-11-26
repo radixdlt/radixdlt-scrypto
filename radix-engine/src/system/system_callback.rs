@@ -249,7 +249,7 @@ impl SystemVersion {
     pub fn should_inject_transaction_processor_proofs_in_call_function(&self) -> bool {
         match self {
             SystemVersion::V1 => true,
-            SystemVersion::V2 => false,
+            SystemVersion::V2 | SystemVersion::V3 => false,
         }
     }
 
