@@ -10,6 +10,7 @@ permissions: write-all
 
 jobs:
   dispatch-release:
+    environment: release
     runs-on: ubuntu-latest
     steps:
     - uses: RDXWorks-actions/checkout@main
@@ -46,3 +47,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VERSION_NUMBER: ${{ inputs.release-tag }}
+        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
