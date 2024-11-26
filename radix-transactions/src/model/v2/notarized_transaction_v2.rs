@@ -97,6 +97,10 @@ define_transaction_payload!(
 #[sbor(transparent)]
 pub struct NotarySignatureV2(pub SignatureV1);
 
+impl TransactionPartialPrepare for NotarySignatureV2 {
+    type Prepared = PreparedNotarySignatureV2;
+}
+
 #[allow(deprecated)]
 pub type PreparedNotarySignatureV2 = SummarizedRawValueBody<NotarySignatureV2>;
 
