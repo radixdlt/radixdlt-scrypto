@@ -1043,25 +1043,14 @@ impl Parser {
         )?;
         match values.len() {
             1 => Ok(values[0].clone()),
-            0 => Err(ParserError {
-                error_kind: ParserErrorKind::InvalidNumberOfValues {
-                    actual: values.len(),
-                    expected: 1,
-                },
-                // no values returned, use opening and closing spans
-                span: Span {
-                    start: open_span.end,
-                    end: close_span.start,
-                },
-            }),
             _ => Err(ParserError {
                 error_kind: ParserErrorKind::InvalidNumberOfValues {
                     actual: values.len(),
                     expected: 1,
                 },
                 span: Span {
-                    start: values[0].span.start,
-                    end: values[values.len() - 1].span.end,
+                    start: open_span.end,
+                    end: close_span.start,
                 },
             }),
         }
