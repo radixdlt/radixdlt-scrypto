@@ -33,22 +33,6 @@ for toml_file in ${RADIX_CARGO_FILES[@]}; do
     mv "${FILENAME}.new" "${FILENAME}"
 done
 
-for toml_file in ${RADIX_CARGO_FILES[@]}; do
-    echo "Update dependencies of $toml_file"
-    for (( i=0; i<$NUMBER_OF_PROJECTS; i++ ))
-    do
-        set +e
-        value=$(toml get $toml_file "dependencies.${INTERNAL_PROJECT_LIST[$i]}" -r);
-        ret=$?
-        set -e
-        if [ $ret -eq 0 ]; then
-            echo "Setting ${INTERNAL_PROJECT_LIST[$i]} version dependency from $value to ${VERSION}"
-            toml set $toml_file "dependencies.${INTERNAL_PROJECT_LIST[$i]}.version" "${VERSION}" > $toml_file.new
-            mv $toml_file.new $toml_file
-        fi
-    done
-done
-
 ./update-cargo-locks-minimally.sh
 
 echo "Done"
