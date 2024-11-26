@@ -16,6 +16,7 @@ set -e
 (set -x; cd radix-clis/tests/blueprints; cargo update --workspace)
 (set -x; cd scrypto-test/tests/blueprints; cargo update --workspace)
 (set -x; cd scrypto-test/assets/blueprints; cargo update --workspace)
+(set -x; cd scrypto-compiler/tests/assets/call_indirect; cargo update --workspace)
 (set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo update --workspace)
 (set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo update --workspace)
 
