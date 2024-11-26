@@ -44,9 +44,10 @@ pub struct Unauthorized {
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
-    /// Special-case the initial transaction processor function call and
-    /// add virtual resources to the transaction processor call frame
-    pub generate_transaction_processor_auth_zone: Option<AuthZoneInit>,
+    /// SystemV1 only - we special-case the initial transaction processor
+    /// function call and add virtual resources to the transaction processor
+    /// call frame
+    pub v1_transaction_processor_proofs_for_injection: Option<AuthZoneInit>,
 }
 
 pub enum AuthorizationCheckResult {
@@ -72,17 +73,22 @@ pub enum ResolvedPermission {
 impl AuthModule {
     pub fn new() -> Self {
         Self {
-            generate_transaction_processor_auth_zone: None,
+            v1_transaction_processor_proofs_for_injection: None,
         }
     }
 
     pub fn new_with_transaction_processor_auth_zone(auth_zone_init: AuthZoneInit) -> Self {
         Self {
-            generate_transaction_processor_auth_zone: Some(auth_zone_init),
+            v1_transaction_processor_proofs_for_injection: Some(auth_zone_init),
         }
     }
 
-    fn on_call_function_auth_zone_params<Y: SystemBasedKernelApi>(
+    // In SystemV1, the transaction processor is initiated via a call_function, and we
+    // used this to inject the signature proofs and resource simulation.
+    //
+    // In SystemV2 and later, we initialize the auth zone directly, so no longer have
+    // need to do this check.
+    fn system_v1_resolve_injectable_transaction_processor_proofs<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
     ) -> Result<(BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>), RuntimeError> {
@@ -93,7 +99,9 @@ impl AuthModule {
         let is_root_thread = system.kernel_get_current_stack_id_uncosted() == 0;
         if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
-            if let Some(auth_zone_init) = &auth_module.generate_transaction_processor_auth_zone {
+            if let Some(auth_zone_init) = &auth_module.v1_transaction_processor_proofs_for_injection
+            {
+                // This is an extra sanity check / defense in depth which I believe isn't strictly needed.
                 let is_transaction_processor_blueprint = blueprint_id
                     .package_address
                     .eq(&TRANSACTION_PROCESSOR_PACKAGE)
@@ -119,9 +127,25 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError> {
         // Create AuthZone
         let auth_zone = {
-            let (virtual_resources, virtual_non_fungibles) =
-                Self::on_call_function_auth_zone_params(system, blueprint_id)?;
-            Self::create_auth_zone(system, None, virtual_resources, virtual_non_fungibles)?
+            if system
+                .system()
+                .versioned_system_logic
+                .should_inject_transaction_processor_proofs_in_call_function()
+            {
+                let (simulate_all_proofs_under_resources, implicit_non_fungible_proofs) =
+                    Self::system_v1_resolve_injectable_transaction_processor_proofs(
+                        system,
+                        blueprint_id,
+                    )?;
+                Self::create_auth_zone(
+                    system,
+                    None,
+                    simulate_all_proofs_under_resources,
+                    implicit_non_fungible_proofs,
+                )?
+            } else {
+                Self::create_auth_zone(system, None, Default::default(), Default::default())?
+            }
         };
 
         // Check authorization
@@ -203,36 +227,45 @@ impl AuthModule {
     pub fn on_call_fn_mock<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         receiver: Option<(&NodeId, bool)>,
-        virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+        simulate_all_proofs_under_resources: BTreeSet<ResourceAddress>,
+        implicit_non_fungible_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Result<NodeId, RuntimeError> {
-        Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
+        Self::create_auth_zone(
+            system,
+            receiver,
+            simulate_all_proofs_under_resources,
+            implicit_non_fungible_proofs,
+        )
     }
 
     fn copy_global_caller<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
-        node_id: &NodeId,
+        direct_caller_auth_zone_id: &NodeId,
     ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError> {
-        let handle = system.kernel_open_substate(
-            node_id,
+        let direct_caller_auth_zone_handle = system.kernel_open_substate(
+            direct_caller_auth_zone_id,
             MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
 
-        let auth_zone = system
-            .kernel_read_substate(handle)?
+        let direct_caller_auth_zone = system
+            .kernel_read_substate(direct_caller_auth_zone_handle)?
             .as_typed::<FieldSubstate<AuthZone>>()
             .unwrap();
-        Ok((auth_zone.into_payload().global_caller, Some(handle)))
+
+        Ok((
+            direct_caller_auth_zone.into_payload().global_caller,
+            Some(direct_caller_auth_zone_handle),
+        ))
     }
 
     pub(crate) fn create_auth_zone<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         receiver: Option<(&NodeId, bool)>,
-        virtual_resources: BTreeSet<ResourceAddress>,
-        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+        simulate_all_proofs_under_resources: BTreeSet<ResourceAddress>,
+        implicit_non_fungible_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Result<NodeId, RuntimeError> {
         let (auth_zone, parent_lock_handle) = {
             let is_global_context_change = if let Some((receiver, direct_access)) = receiver {
@@ -242,58 +275,104 @@ impl AuthModule {
                 true
             };
 
-            let current_actor = system.current_actor();
-            let local_package_address = current_actor.package_address();
+            let direct_caller = system.current_actor();
+            let direct_caller_package_address = direct_caller.package_address();
 
             // Retrieve global caller property of next auth zone
-            let (global_caller, parent_lock_handle) = match current_actor {
+            let (global_caller, parent_lock_handle) = match direct_caller {
                 Actor::Root | Actor::BlueprintHook(..) => (None, None),
-                Actor::Method(current_method_actor) => {
-                    let node_visibility =
-                        system.kernel_get_node_visibility_uncosted(&current_method_actor.node_id);
-                    let current_ref_origin = node_visibility
-                        .reference_origin(current_method_actor.node_id)
+                Actor::Method(direct_caller_method_actor) => {
+                    let direct_caller_ancestor_visibility_origin = system
+                        .kernel_get_node_visibility_uncosted(&direct_caller_method_actor.node_id)
+                        .reference_origin(direct_caller_method_actor.node_id)
                         .unwrap();
-                    let self_auth_zone = current_method_actor.auth_zone;
-                    match (current_ref_origin, is_global_context_change) {
-                        // Actor is part of the global component state tree AND next actor is a global context change
-                        (ReferenceOrigin::Global(address), true) => {
-                            (Some((address.into(), Reference(self_auth_zone))), None)
-                        }
-                        // Actor is part of the global component state tree AND next actor is NOT a global context change
-                        (ReferenceOrigin::Global(..), false) => {
-                            Self::copy_global_caller(system, &self_auth_zone)?
-                        }
-                        // Actor is a direct access reference
-                        (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
-                        // Actor is a non-global reference
-                        (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
-                        // Actor is a frame-owned object
-                        (ReferenceOrigin::FrameOwned, _) => {
-                            // In the past frame-owned objects were inheriting the AuthZone of the caller.
-                            // It was a critical issue, which could allow called components to eg.
-                            // withdraw resources from the signing account.
-                            // To prevent this we use TRANSACTION_TRACKER NodeId as a marker, that we are dealing with a frame-owned object.
-                            // It is checked later on when virtual proofs for AuthZone are verified.
-                            // Approach with such marker allows to keep backward compatibility with substate database.
-                            let (caller, lock_handle) =
-                                Self::copy_global_caller(system, &self_auth_zone)?;
+                    let direct_caller_auth_zone = direct_caller_method_actor.auth_zone;
+
+                    // The `direct_caller_ancestor_visibility_origin` is rather indirect, but it is intended to
+                    // capture the concept:  "Who is the direct caller's ancestor for the purpose of auth?"
+                    //
+                    // In particular:
+                    // * If the direct caller is a global object, then it has ReferenceOrigin::Global
+                    // * If the direct caller was loaded from a substate belonging to a global object,
+                    //   then it gets a Borrowed visibility, which transforms into a ReferenceOrigin::Global.
+                    //   This also works transitively.
+                    // * If the direct caller was made visible by being passed to the call frame, (i.e. it didn't
+                    //   arise from track), then it is `ReferenceOrigin::FrameOwned`
+                    //
+                    // At some point we should refactor this to make this all much more explicit.
+                    match (
+                        direct_caller_ancestor_visibility_origin,
+                        is_global_context_change,
+                    ) {
+                        // Direct caller's ancestor is global AND this call is a global context change
+                        (ReferenceOrigin::Global(global_root_address), true) => {
+                            let global_caller_address = global_root_address.into();
+                            let global_caller_leaf_auth_zone_reference =
+                                Reference(direct_caller_auth_zone);
                             (
-                                caller.map(|_| {
-                                    (FRAME_OWNED_GLOBAL_MARKER.into(), Reference(self_auth_zone))
-                                }),
-                                lock_handle,
+                                Some((
+                                    global_caller_address,
+                                    global_caller_leaf_auth_zone_reference,
+                                )),
+                                None,
                             )
+                        }
+                        // Direct caller's ancestor is global AND this call is NOT a global context change
+                        (ReferenceOrigin::Global(..), false) => {
+                            Self::copy_global_caller(system, &direct_caller_auth_zone)?
+                        }
+                        // Direct caller's ancestor was directly accessed
+                        (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
+                        // Direct caller's ancestor was borrowed from an internal referance in a substate
+                        (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
+                        // Direct caller's ancestor was passed into the call frame
+                        (ReferenceOrigin::FrameOwned, _) => {
+                            // In the past, all frame-owned direct callers copied their global caller to their callee.
+                            // This was a mistake, as it could allow frame-owned objects to use proofs from e.g.
+                            // the transaction processor.
+                            //
+                            // A fix needed to be backwards-compatible (without changing the size of substates, which would
+                            // affect the fee costs), and whilst the auth zone reference could be fixed by using a `Reference`
+                            // to `self_auth_zone`, the global caller was harder.
+                            //
+                            // As a work-around, the `FRAME_OWNED_GLOBAL_MARKER = TRANSACTION_TRACKER` was used as a marker
+                            // that the global caller was invalid and shouldn't be used. It is checked used to avoid adding
+                            // a global caller implicit proof in this case.
+
+                            let (caller, lock_handle) =
+                                Self::copy_global_caller(system, &direct_caller_auth_zone)?;
+
+                            // To avoid changing the size of the substate, we need to make sure that we replace Some
+                            // with Some and None with None.
+                            let global_caller = match caller {
+                                Some(_) => {
+                                    let global_caller_address = FRAME_OWNED_GLOBAL_MARKER.into();
+                                    // NOTE: This results in both the global caller stack and the parent stack being the same.
+                                    // This won't cause any critical issues, but should be reworked at some point.
+                                    let global_caller_leaf_auth_zone_reference =
+                                        Reference(direct_caller_auth_zone);
+                                    Some((
+                                        global_caller_address,
+                                        global_caller_leaf_auth_zone_reference,
+                                    ))
+                                }
+                                None => None,
+                            };
+
+                            (global_caller, lock_handle)
                         }
                     }
                 }
                 Actor::Function(function_actor) => {
-                    let self_auth_zone = function_actor.auth_zone;
+                    let direct_caller_auth_zone = function_actor.auth_zone;
                     let global_caller = function_actor.as_global_caller();
                     if is_global_context_change {
-                        (Some((global_caller, Reference(self_auth_zone))), None)
+                        (
+                            Some((global_caller, Reference(direct_caller_auth_zone))),
+                            None,
+                        )
                     } else {
-                        Self::copy_global_caller(system, &self_auth_zone)?
+                        Self::copy_global_caller(system, &direct_caller_auth_zone)?
                     }
                 }
             };
@@ -309,9 +388,9 @@ impl AuthModule {
 
             let auth_zone = AuthZone::new(
                 vec![],
-                virtual_resources,
-                virtual_non_fungibles,
-                local_package_address,
+                simulate_all_proofs_under_resources,
+                implicit_non_fungible_proofs,
+                direct_caller_package_address,
                 global_caller,
                 auth_zone_parent,
             );
