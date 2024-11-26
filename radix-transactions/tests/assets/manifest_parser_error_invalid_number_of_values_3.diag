@@ -1,0 +1,11 @@
+error: expected 1 number of values, found 0
+  |
+1 | CALL_METHOD
+2 |     Address(  )
+  |             ^^ expected 1 number of values
+3 |     "lock_fee"
+4 | ;
+5 | SET_COMPONENT_ROYALTY
+6 |     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+7 |     "method_with_no_package_royalty"
+  |

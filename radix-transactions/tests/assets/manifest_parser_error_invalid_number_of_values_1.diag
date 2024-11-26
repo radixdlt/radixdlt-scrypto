@@ -2,8 +2,8 @@ error: expected 1 number of values, found 2
   |
 1 |   CALL_METHOD
 2 |       Address(
-3 |         "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh",
-  |  _______^
+  |  _____________^
+3 | |       "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh",
 4 | |       "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
   | |____________________________________________________________________________^ expected 1 number of values
 5 |       "lock_fee"

@@ -83,6 +83,7 @@ fn test_manifest_parser_error_diagnostics_invalid_number_of_values() {
     // InvalidNumberOfValues
     check_manifest!("manifest_parser_error_invalid_number_of_values_1");
     check_manifest!("manifest_parser_error_invalid_number_of_values_2");
+    check_manifest!("manifest_parser_error_invalid_number_of_values_3");
 }
 
 #[test]

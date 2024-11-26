@@ -2632,9 +2632,9 @@ mod tests {
                         .try_into()
                         .unwrap()
                     ),
-                    IndexMap::<String, BlueprintStateSchemaInit>::new(),
-                    IndexMap::<String, PackageRoyaltyConfig>::new(),
-                    IndexMap::<String, MetadataValue>::new(),
+                    IndexMap::<String, BlueprintStateSchemaInit, _>::new(),
+                    IndexMap::<String, PackageRoyaltyConfig, _>::new(),
+                    IndexMap::<String, MetadataValue, _>::new(),
                     RoleAssignmentInit::new()
                 )
                 .into(),
@@ -2806,13 +2806,13 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        entries: IndexMap::from([(
-                            NonFungibleLocalId::integer(1),
+                        entries: indexmap!(
+                            NonFungibleLocalId::integer(1) =>
                             (to_manifest_value_and_unwrap!(&(
                                 String::from("Hello World"),
                                 dec!("12")
                             )),),
-                        )]),
+                        ),
                         address_reservation: None,
                     }
                 ),
@@ -2930,13 +2930,13 @@ mod tests {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintManifestInput {
-                    entries: IndexMap::from([(
-                        NonFungibleLocalId::integer(1),
+                    entries: indexmap!(
+                        NonFungibleLocalId::integer(1) =>
                         (to_manifest_value_and_unwrap!(&(
                             String::from("Hello World"),
                             dec!("12")
                         )),)
-                    )])
+                    )
                 })
             },
         );

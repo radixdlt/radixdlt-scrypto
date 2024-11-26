@@ -40,6 +40,7 @@ impl ManifestAddress {
     as_ref = "&ManifestAddress::Named(*self)",
     from_value = "value.into_named().ok_or(DecodeError::InvalidCustomValue)?"
 )]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 pub struct ManifestNamedAddress(pub u32);
 
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_STATIC: u8 = 0u8;
