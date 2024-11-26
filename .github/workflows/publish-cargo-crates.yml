@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   publish-crates:
-    runs-on: ubuntu-latest
+    runs-on: selfhosted-ec2-ubuntu-22-2core
     steps:
     - uses: RDXWorks-actions/checkout@main
     - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
