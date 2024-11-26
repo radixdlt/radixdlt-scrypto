@@ -343,7 +343,7 @@ impl AuthModule {
                             let (caller, lock_handle) =
                                 Self::copy_global_caller(system, &direct_caller_auth_zone)?;
 
-                            // To avoid changing the size of the substate, we need to make that we replace Some
+                            // To avoid changing the size of the substate, we need to make sure that we replace Some
                             // with Some and None with None.
                             let global_caller = match caller {
                                 Some(_) => {
