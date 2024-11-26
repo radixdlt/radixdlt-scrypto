@@ -1,3 +1,4 @@
+mod any_instruction;
 mod any_manifest;
 pub mod ast;
 pub mod blob_provider;
@@ -19,6 +20,7 @@ mod static_manifest_interpreter;
 pub mod static_resource_movements;
 pub mod token;
 
+pub use any_instruction::*;
 pub use any_manifest::*;
 pub use blob_provider::*;
 pub use compiler::*;
