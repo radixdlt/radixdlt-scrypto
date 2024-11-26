@@ -1,0 +1,5 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "my_method"
+    Intent("subtxid_sim1f0dp5mcrzvgnujw33lgnjy9usluaek6edfkqdjkj5vhuqf8t7apqnaqedd")
+;

@@ -19,25 +19,33 @@ pub(crate) fn unsigned_v1_builder(notary_public_key: PublicKey) -> TransactionV1
 
 // All of these are only added when in #[cfg(test)]
 impl TransactionV2Builder {
-    pub fn default_notary() -> Ed25519PrivateKey {
+    pub fn testing_default_notary() -> Ed25519PrivateKey {
         Ed25519PrivateKey::from_u64(1337).unwrap()
+    }
+
+    pub fn testing_default_intent_header() -> IntentHeaderV2 {
+        IntentHeaderV2 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: Epoch::of(0),
+            end_epoch_exclusive: Epoch::of(1),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: None,
+            intent_discriminator: 0,
+        }
+    }
+
+    pub fn testing_default_transaction_header() -> TransactionHeaderV2 {
+        TransactionHeaderV2 {
+            notary_public_key: Self::testing_default_notary().public_key().into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        }
     }
 
     pub fn new_with_test_defaults() -> Self {
         Self::new()
-            .intent_header(IntentHeaderV2 {
-                network_id: NetworkDefinition::simulator().id,
-                start_epoch_inclusive: Epoch::of(0),
-                end_epoch_exclusive: Epoch::of(1),
-                min_proposer_timestamp_inclusive: None,
-                max_proposer_timestamp_exclusive: None,
-                intent_discriminator: 0,
-            })
-            .transaction_header(TransactionHeaderV2 {
-                notary_public_key: Self::default_notary().public_key().into(),
-                notary_is_signatory: false,
-                tip_basis_points: 0,
-            })
+            .intent_header(Self::testing_default_intent_header())
+            .transaction_header(Self::testing_default_transaction_header())
     }
 
     pub fn add_children<T: ResolvableSignedPartialTransaction>(
@@ -102,13 +110,46 @@ impl TransactionV2Builder {
             .expect("Intent Header should already have been set, e.g. via new_with_test_defaults()")
     }
 
+    pub fn network_id(mut self, network_id: u8) -> Self {
+        self.intent_header_mut().network_id = network_id;
+        self
+    }
+
+    pub fn start_epoch_inclusive(mut self, start_epoch_inclusive: Epoch) -> Self {
+        self.intent_header_mut().start_epoch_inclusive = start_epoch_inclusive;
+        self
+    }
+
+    pub fn end_epoch_exclusive(mut self, end_epoch_exclusive: Epoch) -> Self {
+        self.intent_header_mut().end_epoch_exclusive = end_epoch_exclusive;
+        self
+    }
+
+    pub fn min_proposer_timestamp_inclusive(
+        mut self,
+        min_proposer_timestamp_inclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().min_proposer_timestamp_inclusive =
+            min_proposer_timestamp_inclusive;
+        self
+    }
+
+    pub fn max_proposer_timestamp_exclusive(
+        mut self,
+        max_proposer_timestamp_exclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().max_proposer_timestamp_exclusive =
+            max_proposer_timestamp_exclusive;
+        self
+    }
+
     pub fn intent_discriminator(mut self, intent_discriminator: u64) -> Self {
         self.intent_header_mut().intent_discriminator = intent_discriminator;
         self
     }
 
     pub fn default_notarize(self) -> Self {
-        self.notarize(&Self::default_notary())
+        self.notarize(&Self::testing_default_notary())
     }
 
     pub fn default_notarize_and_validate(
@@ -171,6 +212,39 @@ impl PartialTransactionV2Builder {
         self.root_subintent_header
             .as_mut()
             .expect("Intent Header should already have been set, e.g. via new_with_test_defaults()")
+    }
+
+    pub fn network_id(mut self, network_id: u8) -> Self {
+        self.intent_header_mut().network_id = network_id;
+        self
+    }
+
+    pub fn start_epoch_inclusive(mut self, start_epoch_inclusive: Epoch) -> Self {
+        self.intent_header_mut().start_epoch_inclusive = start_epoch_inclusive;
+        self
+    }
+
+    pub fn end_epoch_exclusive(mut self, end_epoch_exclusive: Epoch) -> Self {
+        self.intent_header_mut().end_epoch_exclusive = end_epoch_exclusive;
+        self
+    }
+
+    pub fn min_proposer_timestamp_inclusive(
+        mut self,
+        min_proposer_timestamp_inclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().min_proposer_timestamp_inclusive =
+            min_proposer_timestamp_inclusive;
+        self
+    }
+
+    pub fn max_proposer_timestamp_exclusive(
+        mut self,
+        max_proposer_timestamp_exclusive: Option<Instant>,
+    ) -> Self {
+        self.intent_header_mut().max_proposer_timestamp_exclusive =
+            max_proposer_timestamp_exclusive;
+        self
     }
 
     pub fn intent_discriminator(mut self, intent_discriminator: u64) -> Self {

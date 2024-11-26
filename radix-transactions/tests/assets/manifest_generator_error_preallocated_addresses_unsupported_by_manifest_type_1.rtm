@@ -1,0 +1,6 @@
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "FungibleResourceManager"
+    AddressReservation("reservation1")
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+;

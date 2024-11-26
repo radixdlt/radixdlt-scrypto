@@ -1,0 +1,9 @@
+error: an Intent(...) cannot currently be used inside a value
+  |
+1 | CALL_METHOD
+2 |     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+3 |     "my_method"
+4 |     Intent("subtxid_sim1f0dp5mcrzvgnujw33lgnjy9usluaek6edfkqdjkj5vhuqf8t7apqnaqedd")
+  |     ^^^^^^ cannot be used inside a value
+5 | ;
+  |

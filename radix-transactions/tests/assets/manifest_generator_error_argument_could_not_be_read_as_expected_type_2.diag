@@ -1,0 +1,11 @@
+error: an argument's structure does not fit with the radix_common::data::manifest::model::manifest_resource_assertion::ManifestResourceConstraint type. [ERROR] byte offset: 1-26, value path: [Root], cause: { expected_type: Enum, found: Custom(Decimal) }
+  |
+2 |     Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+3 |     Bucket("my_bucket")
+4 | ;
+5 | ASSERT_BUCKET_CONTENTS
+6 |     Bucket("my_bucket")
+7 |     Decimal("10")
+  |     ^^^^^^^ cannot be decoded as a radix_common::data::manifest::model::manifest_resource_assertion::ManifestResourceConstraint
+8 | ;
+  |

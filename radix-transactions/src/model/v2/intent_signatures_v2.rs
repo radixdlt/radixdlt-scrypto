@@ -46,7 +46,7 @@ impl TransactionPreparableFromValueBody for PreparedNonRootSubintentSignaturesV2
             Vec<PreparedIntentSignaturesV2>,
         >(
             decoder,
-            ValueType::IntentSignatures,
+            ValueType::SubintentSignatureBatches,
             max_subintents_per_transaction,
         )?;
 

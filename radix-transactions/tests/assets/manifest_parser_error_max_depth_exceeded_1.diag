@@ -1,15 +1,15 @@
-[1m[91merror[0m: [1mmanifest actual depth 21 exceeded max 20[0m
-[1m[94m   |[0m
-[1m[94m20 |[0m                                 Tuple(
-[1m[94m21 |[0m                                   Tuple(
-[1m[94m22 |[0m                                     Tuple(
-[1m[94m23 |[0m                                       Tuple(
-[1m[94m24 |[0m                                         Tuple(
-[1m[94m25 |[0m                                           Tuple(
-[1m[94m   |[0m[1m[91m                                           ^^^^^[0m [1m[91mmax depth exceeded[0m
-[1m[94m26 |[0m                                             Tuple(
-[1m[94m27 |[0m                                               Tuple(
-[1m[94m28 |[0m                                                 Tuple(
-[1m[94m29 |[0m                                                   Tuple(
-[1m[94m30 |[0m                                                     Tuple(
-[1m[94m   |[0m
+error: manifest actual depth 21 exceeded max 20
+   |
+20 |                                 Tuple(
+21 |                                   Tuple(
+22 |                                     Tuple(
+23 |                                       Tuple(
+24 |                                         Tuple(
+25 |                                           Tuple(
+   |                                           ^^^^^ max depth exceeded
+26 |                                             Tuple(
+27 |                                               Tuple(
+28 |                                                 Tuple(
+29 |                                                   Tuple(
+30 |                                                     Tuple(
+   |

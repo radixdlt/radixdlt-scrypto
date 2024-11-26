@@ -1,0 +1,8 @@
+error: invalid sub transaction id 'subtxid_sim1___oops_this_is_invalid'
+  |
+1 | USE_CHILD
+2 |     NamedIntent("my_child")
+3 |     Intent("subtxid_sim1___oops_this_is_invalid")
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ invalid sub transaction id
+4 | ;
+  |

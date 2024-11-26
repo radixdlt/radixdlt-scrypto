@@ -1,11 +1,11 @@
-[1m[91merror[0m: [1mcannot consume bucket 'some_bucket' because it's believed to be currently locked[0m
-[1m[94m   |[0m
-[1m[94m18 |[0m   Bucket("some_bucket")
-[1m[94m19 |[0m   Decimal("1")
-[1m[94m20 |[0m   Proof("proof");
-[1m[94m21 |[0m 
-[1m[94m22 |[0m RETURN_TO_WORKTOP
-[1m[94m23 |[0m     Bucket("some_bucket");
-[1m[94m   |[0m[1m[91m            ^^^^^^^^^^^^^[0m [1m[91mbucket locked[0m
-[1m[94m24 |[0m 
-[1m[94m   |[0m
+error: cannot consume bucket 'some_bucket' because it's believed to be currently locked
+   |
+18 |   Bucket("some_bucket")
+19 |   Decimal("1")
+20 |   Proof("proof");
+21 | 
+22 | RETURN_TO_WORKTOP
+23 |     Bucket("some_bucket");
+   |            ^^^^^^^^^^^^^ bucket locked
+24 | 
+   |
