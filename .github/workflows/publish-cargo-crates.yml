@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: RDXWorks-actions/checkout@main
-    - uses: radixdlt/iac-resuable-artifacts/fetch-secrets@v0.8.0
+    - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
       with:
         role_name: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
         app_name: "radixdlt-scrypto"
