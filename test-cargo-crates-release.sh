@@ -31,7 +31,9 @@ CARGO_FILES=(
 )
 for toml_file_dir in ${CARGO_FILES[@]}; do
     echo "Publishing crate in directory ${toml_file_dir}"
-    echo "cargo publish --dry-run --token "${CRATES_TOKEN}" --manifest-path ${toml_file_dir}"
+    # Use --no-verify as the crates haven't been published
+    # https://github.com/crate-ci/cargo-release/issues/691#issuecomment-1636475265
+    echo "cargo publish --no-verify --dry-run --token "${CRATES_TOKEN}" --manifest-path ${toml_file_dir}"
     cargo publish --dry-run --token "${CRATES_TOKEN}" --manifest-path ${toml_file_dir}
     cargo package --list --manifest-path "${toml_file_dir}"
 done
