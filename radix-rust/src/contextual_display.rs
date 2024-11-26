@@ -20,9 +20,9 @@ pub trait ContextualDisplay<Context> {
     /// instead of a `&Context`.
     ///
     /// [`format`]: #method.format
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &Context,
     ) -> Result<(), Self::Error>;
 
@@ -34,9 +34,9 @@ pub trait ContextualDisplay<Context> {
     ///
     /// [`contextual_format`]: #method.contextual_format
     /// [`display`]: #method.display
-    fn format<F: fmt::Write, TContext: Into<Context>>(
+    fn format<TContext: Into<Context>>(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: TContext,
     ) -> Result<(), Self::Error> {
         self.contextual_format(f, &context.into())

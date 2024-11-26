@@ -165,9 +165,9 @@ impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomExten
 {
     type Error = sbor::representations::FormattingError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ValueDisplayParameters<'_, '_, ScryptoCustomExtension>,
     ) -> Result<(), Self::Error> {
         ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(f, *context)

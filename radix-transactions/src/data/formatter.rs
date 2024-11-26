@@ -83,9 +83,9 @@ impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for Option<&'a AddressBec
 impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for ManifestValue {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_manifest_value(f, self, context, false, 0)
@@ -515,9 +515,9 @@ impl<'a> fmt::Display for DisplayableManifestValueKind<'a> {
 impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for ManifestCustomValue {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_custom_value(f, self, context, false, 0)

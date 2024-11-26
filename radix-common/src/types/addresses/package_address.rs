@@ -255,9 +255,9 @@ impl fmt::Debug for PackageAddress {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
     type Error = AddressBech32EncodeError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
