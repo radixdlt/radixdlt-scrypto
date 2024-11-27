@@ -8,7 +8,7 @@ runs:
       uses: RDXWorks-actions/toolchain@master
       with:
         # IMPORTANT:
-        # To update the Rust version, you must update it in five total places (including the toolchain below):
+        # To update the Rust version, you must update it in below places (including the toolchain below) in this repo:
         # => [README.md - part 1] Update "Install Rust - we recommend to use Rust X.XX.X"
         # => [README.md - part 2] Update "rustup default X.XX.X"
         # => [action.yml - part 1] Update "toolchain: X.XX.X" below
@@ -18,6 +18,9 @@ runs:
         # => [Dockerfile] Update "FROM rust:X.XX.X-slim-bookworm AS base-image" in the deterministic builder
         # => [radix-clis/assets/template/rust-toolchain.toml_template] Update the rust version
         # => [https://docs.radixdlt.com/docs/getting-rust-scrypto] Update the recommended rust version on docs
+        # Additionally, Rust version should be updated in below repos on respective branches:
+        # - babylon-node - .github/actions/setup-env/action.yml
+        # - fuzzer - .github/actions/setup-env/action.yml
         toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown
