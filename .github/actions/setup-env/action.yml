@@ -8,7 +8,7 @@ runs:
       uses: RDXWorks-actions/toolchain@master
       with:
         # IMPORTANT:
-        # To update the Rust version, you must update it in below places (including the toolchain below) in this repo:
+        # To update the Rust version, you must update it in the below places (including the toolchain below) in this repo:
         # => [README.md - part 1] Update "Install Rust - we recommend to use Rust X.XX.X"
         # => [README.md - part 2] Update "rustup default X.XX.X"
         # => [action.yml - part 1] Update "toolchain: X.XX.X" below
