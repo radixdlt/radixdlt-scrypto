@@ -49,20 +49,38 @@ check_dependencies() {
     fi
 }
 
-# Function to install LLVM and build essentials
-install_llvm() {
-    log "INFO" "Installing LLVM and build essentials..."
+# Function to install build essentials
+install_build_essentials() {
+    log "INFO" "Installing build essentials..."
     
     # Update package list
     sudo apt-get update
     
-    # Install build essentials and LLVM
-    sudo apt-get install -y clang build-essential llvm-$LLVM_VERSION
+    # Install build essentials
+    sudo apt-get install -y build-essential
     
     if [ $? -eq 0 ]; then
-        log "SUCCESS" "LLVM and build essentials installed successfully"
+        log "SUCCESS" "Build essentials installed successfully"
     else
-        log "ERROR" "Failed to install LLVM and build essentials"
+        log "ERROR" "Failed to install build essentials"
+        exit 1
+    fi
+}
+
+# Function to install LLVM
+install_llvm() {
+    log "INFO" "Installing LLVM..."
+
+    # Download and install LLVM
+    wget https://apt.llvm.org/llvm.sh
+    chmod +x llvm.sh
+    sudo ./llvm.sh $LLVM_VERSION
+    rm llvm.sh
+
+    if [ $? -eq 0 ]; then
+        log "SUCCESS" "LLVM installed successfully"
+    else
+        log "ERROR" "Failed to install LLVM"
         exit 1
     fi
 }
@@ -125,6 +143,40 @@ install_radix_tools() {
     fi
 }
 
+# Function to add Clang to shell configuration
+add_clang_to_shell_config() {
+    # Determine the user's shell
+    SHELL_NAME=$(basename "$SHELL")
+
+    # Determine the shell configuration file based on the default shell
+    case "$SHELL_NAME" in
+        bash) SHELL_CONFIG="$HOME/.bashrc" ;;
+        zsh) SHELL_CONFIG="$HOME/.zshrc" ;;
+        ksh) SHELL_CONFIG="$HOME/.kshrc" ;;
+        fish) SHELL_CONFIG="$HOME/.config/fish/config.fish" ;;
+        *)
+        log "ERROR" "Unsupported shell. Please add 'export CC=clang-${LLVM_VERSION}' to your shell configuration manually."
+        exit 1
+            ;;
+    esac
+
+    # The line to add
+    EXPORT_LINE="export CC=clang-${LLVM_VERSION}"
+
+    # Check if the line already exists to prevent duplicates
+    if grep -Fxq "$EXPORT_LINE" "$SHELL_CONFIG"
+    then
+        log "INFO" "The CC variable is already set in $SHELL_CONFIG"
+    else
+        # Backup the shell configuration file
+        cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup"
+
+        # Append the export line to the shell configuration file
+        echo "$EXPORT_LINE" >> "$SHELL_CONFIG"
+        log "INFO" "Added '$EXPORT_LINE' to $SHELL_CONFIG"
+    fi
+}
+
 # Main installation process
 main() {
     log "INFO" "Starting installation process..."
@@ -133,24 +185,30 @@ main() {
     check_dependencies
     
     # Install components
+    install_build_essentials
     install_llvm
     install_rust
     setup_cargo
     add_wasm_target
     install_radix_tools
+    add_clang_to_shell_config
     
     # Final success message
     log "SUCCESS" "Installation completed successfully!"
-    log "INFO" "Please restart your terminal or run: source $HOME/.cargo/env"
+    source $HOME/.cargo/env
     
     # Verify installations
     log "INFO" "Verifying installations..."
     echo -e "\nVersions installed:"
-    echo -e "LLVM: $(clang --version | head -n 1)"
+    echo -e "LLVM: $(llvm-config-${LLVM_VERSION} --version)"
+    echo -e "Clang: $(clang-${LLVM_VERSION} --version | head -n 1)"
     echo -e "Rust: $(rustc --version)"
     echo -e "Cargo: $(cargo --version)"
+    echo -e "Radix CLI: $(scrypto --version)\n"
+ 
+    log "INFO" "Please restart your terminal or run:"
+    echo "source $SHELL_CONFIG"
 }
 
 # Run main function
 main
-
