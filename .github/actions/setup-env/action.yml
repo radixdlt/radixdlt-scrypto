@@ -27,7 +27,9 @@ runs:
         components: rustfmt
 
     - name: Install nextest
-      uses: RDXWorks-actions/install-action@nextest
+      uses: RDXWorks-actions/install-action@main
+      with:
+        tool: nextest@0.9.85
 
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
