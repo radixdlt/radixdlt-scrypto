@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_decode_struct_with_generic_params() {
-        let input = TokenStream::from_str("#[sbor(categorize_types = \"T1, T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
+        let input = TokenStream::from_str("#[sbor(categorize_types = \"T1; T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
         let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
