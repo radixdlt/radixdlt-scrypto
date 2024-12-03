@@ -654,11 +654,11 @@ pub fn parse_single_type(source_string: &LitStr) -> syn::Result<Type> {
     source_string.parse()
 }
 
-pub fn parse_comma_separated_types(source_string: &LitStr) -> syn::Result<Vec<Type>> {
+pub fn parse_semicolon_separated_types(source_string: &LitStr) -> syn::Result<Vec<Type>> {
     let span = source_string.span();
     source_string
         .value()
-        .split(',')
+        .split(';')
         .map(|s| s.trim().to_owned())
         .filter(|f| f.len() > 0)
         .map(|s| LitStr::new(&s, span).parse())
@@ -670,27 +670,29 @@ pub fn parse_comma_separated_types(source_string: &LitStr) -> syn::Result<Vec<Ty
 /// `Encode` / `Decode` / `Describe`.
 ///
 /// By default, like e.g. the default `Clone` impl, we assume that all generic types are
-/// child types. But a user can override this with the `#[sbor(child_types = "A,B")]` attribute.
+/// child types. But a user can override this with the `#[sbor(child_types = "A; B")]` attribute.
 ///
 /// One of the prime use cases for this is where associated types are used, for example
 /// a type `<T> MyStruct(T::MyAssociatedType)` should use `#[sbor(child_types = "T::MyAssociatedType")]`.
 fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
-    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")?
+    let Some(child_types_attribute_value) =
+        get_sbor_attribute_string_value(attributes, "child_types")?
     else {
         // If no explicit child_types list is set, we use all pre-existing generic type parameters.
-        // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
+        // This means (e.g.) that they all have to implement the relevant trait (Encode/Decode/Describe)
         // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
         // It's not perfect - but it's typically good enough!
         return Ok(get_generic_types(existing_generics));
     };
 
-    parse_comma_separated_types(&comma_separated_types)
+    parse_semicolon_separated_types(&child_types_attribute_value)
 }
 
 fn get_types_requiring_categorize_bound_for_encode_and_decode(
     attributes: &[Attribute],
 ) -> Result<Vec<Type>> {
-    let comma_separated_types = get_sbor_attribute_string_value(attributes, "categorize_types")?;
+    let categorize_types_attribute_value =
+        get_sbor_attribute_string_value(attributes, "categorize_types")?;
     // We need to work out what the default behaviour is if no `categorize_types` are provided.
     //
     // Now, for a given generic parameter T, we have a few cases how it appears in the type:
@@ -718,8 +720,8 @@ fn get_types_requiring_categorize_bound_for_encode_and_decode(
     // We used to use (C), but we have now switched to (A) because we believe it to be clearer, on balance.
     // Also, providing #[sbor(categorize_types = "T")] feels more explicit sometimes than confusingly having
     // to add #[sbor(categorize_types = "")] sometimes.
-    if let Some(comma_separated_types) = comma_separated_types {
-        parse_comma_separated_types(&comma_separated_types)
+    if let Some(categorize_types_attribute_value) = categorize_types_attribute_value {
+        parse_semicolon_separated_types(&categorize_types_attribute_value)
     } else {
         Ok(vec![])
     }

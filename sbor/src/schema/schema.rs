@@ -3,7 +3,7 @@ use crate::*;
 
 define_single_versioned!(
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-    #[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+    #[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
     pub VersionedSchema(SchemaVersions)<S: CustomSchema> => Schema<S> = SchemaV1::<S>
 );
 
@@ -32,7 +32,7 @@ impl<S: CustomSchema> Default for VersionedSchema<S> {
 /// A serializable record of the schema of a single type.
 /// Intended for historical backwards compatibility checking of a single type.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct SingleTypeSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_id: LocalTypeId,
@@ -58,7 +58,7 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
 ///
 /// For example, traits, or blueprint interfaces.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct TypeCollectionSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_ids: IndexMap<String, LocalTypeId>,
@@ -84,7 +84,7 @@ impl<S: CustomSchema> TypeCollectionSchema<S> {
 // * Via TypeKind, S::CustomLocalTypeKind gets embedded
 // * Via TypeValidation, S::CustomTypeValidation gets embedded
 // So theses are the child types which need to be registered with the sbor macro for it to compile
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct SchemaV1<S: CustomSchema> {
     pub type_kinds: Vec<LocalTypeKind<S>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!

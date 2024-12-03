@@ -22,7 +22,7 @@ use sbor::SborEnum;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-#[sbor(categorize_types = "U, O")]
+#[sbor(categorize_types = "U; O")]
 pub enum GenericMetadataValue<U, O> {
     #[sbor(discriminator(METADATA_VALUE_STRING_DISCRIMINATOR))]
     String(String),
