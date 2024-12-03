@@ -65,6 +65,7 @@ COPY --from=builder /app/target/release/rtmd /usr/local/bin/rtmd
 COPY --from=builder /app/target/release/scrypto-bindgen /usr/local/bin/scrypto-bindgen
 RUN rustup target add wasm32-unknown-unknown
 RUN rustup component add rustfmt
+RUN rustup component add clippy
 
 FROM base-image AS scrypto-builder
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
