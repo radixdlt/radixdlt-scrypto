@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Print commands and exit on errors
-set -ex
+# Exit on error
+set -e
 
 # Versions to install
 LLVM_VERSION=18
