@@ -1,0 +1,45 @@
+name: Build scrypto-dev-container image
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - release\/*
+  pull_request:
+
+jobs:
+  tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.setup_tags.outputs.tag }}
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          fetch-depth: 0
+      - id: setup_tags
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+  build-amd:
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+      pull-requests: write
+    needs: tags
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: gh-runner-scrypto-ubuntu-jammy-16-cores
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "private-scrypto-dev-container"
+      tag: ${{ needs.tags.outputs.tag }}
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "scrypto-dev-container"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: false
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
