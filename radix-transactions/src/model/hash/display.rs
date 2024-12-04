@@ -31,9 +31,9 @@ macro_rules! impl_contextual_display {
             impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for $type {
                 type Error = fmt::Error;
 
-                fn contextual_format<F: fmt::Write>(
+                fn contextual_format(
                     &self,
-                    f: &mut F,
+                    f: &mut fmt::Formatter,
                     context: &TransactionHashDisplayContext<'a>,
                 ) -> Result<(), Self::Error> {
                     if let Some(encoder) = context.encoder {
