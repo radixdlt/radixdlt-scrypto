@@ -26,7 +26,7 @@ use scrypto::prelude::*;
 #[blueprint]
 mod hello {
     struct Hello {
-        sample_vault: Vault,
+        sample_vault: FungibleVault,
     }
 
     impl Hello {
@@ -34,7 +34,7 @@ mod hello {
             // stripped
          }
 
-         pub fn free_token(&mut self) -> Bucket {
+         pub fn free_token(&mut self) -> FungibleBucket {
             // stripped
          }
     }
@@ -47,7 +47,7 @@ The way to instantiate a component is through the `instantiate()` method on the 
 
 ```rust
 Self {
-    sample_vault: Vault::with_bucket(my_bucket),
+    sample_vault: FungibleVault::with_bucket(my_bucket),
 }
 .instantiate()
 ```
@@ -59,16 +59,16 @@ In Scrypto, assets like tokens, NFTs, and more are not implemented as blueprints
 To define a new resource, we use the `ResourceBuilder`, specifying the metadata and initial supply. We can use the `ResourceBuilder` to create a simple fungible-supply token called `HelloToken` like this:
 
 ```rust
-let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+let my_bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
     .mint_initial_supply(1000);
 ```
 
-Once created, the 1000 resource-based `HelloToken` tokens are held in transient container `my_bucket`. To permanently store the created resources, we need to put them into a `Vault` like this:
+Once created, the 1000 resource-based `HelloToken` tokens are held in transient container `my_bucket`. To permanently store the created resources, we need to put them into a `FungibleVault` like this:
 
 ```rust
-let vault: Vault = Vault::with_bucket(my_bucket);
+let vault = FungibleVault::with_bucket(my_bucket);
 ```
 
 ## How to Play?

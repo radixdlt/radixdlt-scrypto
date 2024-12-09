@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod hello {
     struct Hello {
         // Define what resources and data will be managed by Hello components
-        sample_vault: Vault,
+        sample_vault: FungibleVault,
     }
 
     impl Hello {
@@ -13,7 +13,7 @@ mod hello {
         // This is a function, and can be called directly on the blueprint once deployed
         pub fn instantiate_hello() -> Global<Hello> {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
-            let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let my_bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -26,7 +26,7 @@ mod hello {
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {
-                sample_vault: Vault::with_bucket(my_bucket),
+                sample_vault: FungibleVault::with_bucket(my_bucket),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -34,7 +34,7 @@ mod hello {
         }
 
         // This is a method, because it needs a reference to self.  Methods can only be called on components
-        pub fn free_token(&mut self) -> Bucket {
+        pub fn free_token(&mut self) -> FungibleBucket {
             info!(
                 "My balance is: {} HelloToken. Now giving away a token!",
                 self.sample_vault.amount()
