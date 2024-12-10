@@ -37,7 +37,7 @@ mod everything {
         Faucet as FiFi {
             fn new(
                 address_reservation: GlobalAddressReservation,
-                bucket: Bucket
+                bucket: FungibleBucket
             ) -> Global<FiFi>;
 
             fn lock_fee(&self, amount: Decimal);
@@ -96,7 +96,7 @@ mod everything {
             faucet.lock_fee(amount);
         }
 
-        pub fn public_method(&self) -> ResourceManager {
+        pub fn public_method(&self) -> NonFungibleResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
                 .mint_roles(mint_roles! {
                     minter => rule!(allow_all);
