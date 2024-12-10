@@ -38,7 +38,7 @@ pub struct RuleSet {
     pub confirmation_role: AccessRule,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct RecoveryProposal {
     /// The set of rules being proposed for the different roles.
     pub rule_set: RuleSet,
