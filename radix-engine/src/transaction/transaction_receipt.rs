@@ -1020,9 +1020,9 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
 impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for TransactionReceipt {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
@@ -1195,9 +1195,9 @@ impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
 {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let state_updates = self.0;

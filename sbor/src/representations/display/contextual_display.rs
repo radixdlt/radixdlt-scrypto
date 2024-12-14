@@ -141,9 +141,9 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
 {
     type Error = FormattingError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         options: &ValueDisplayParameters<'s, 'a, E>,
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_id();
@@ -171,9 +171,9 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
 {
     type Error = FormattingError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         options: &ValueDisplayParameters<'s, 'a, E>,
     ) -> Result<(), Self::Error> {
         let context = options.get_context_and_type_id();

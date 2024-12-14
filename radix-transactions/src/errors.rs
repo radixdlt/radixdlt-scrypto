@@ -69,6 +69,41 @@ pub enum TransactionValidationError {
     SignatureValidationError(TransactionValidationErrorLocation, SignatureValidationError),
 }
 
+impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for TransactionValidationError {
+    type Error = fmt::Error;
+
+    fn contextual_format(
+        &self,
+        f: &mut fmt::Formatter,
+        context: &TransactionHashDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            Self::TransactionVersionNotPermitted(arg0) => f
+                .debug_tuple("TransactionVersionNotPermitted")
+                .field(arg0)
+                .finish(),
+            Self::TransactionTooLarge => write!(f, "TransactionTooLarge"),
+            Self::EncodeError(arg0) => f.debug_tuple("EncodeError").field(arg0).finish(),
+            Self::PrepareError(arg0) => f.debug_tuple("PrepareError").field(arg0).finish(),
+            Self::SubintentStructureError(arg0, arg1) => f
+                .debug_tuple("SubintentStructureError")
+                .field(&arg0.debug_as_display(*context))
+                .field(&arg1.debug_as_display(*context))
+                .finish(),
+            Self::IntentValidationError(arg0, arg1) => f
+                .debug_tuple("IntentValidationError")
+                .field(&arg0.debug_as_display(*context))
+                .field(arg1)
+                .finish(),
+            Self::SignatureValidationError(arg0, arg1) => f
+                .debug_tuple("SignatureValidationError")
+                .field(&arg0.debug_as_display(*context))
+                .field(arg1)
+                .finish(),
+        }
+    }
+}
+
 pub enum IntentSpecifier {
     RootTransactionIntent(TransactionIntentHash),
     RootSubintent(SubintentHash),
@@ -89,6 +124,37 @@ impl TransactionValidationErrorLocation {
         match intent_hash {
             IntentHash::Transaction(hash) => Self::RootTransactionIntent(hash),
             IntentHash::Subintent(hash) => Self::RootSubintent(hash),
+        }
+    }
+}
+
+impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>>
+    for TransactionValidationErrorLocation
+{
+    type Error = fmt::Error;
+
+    fn contextual_format(
+        &self,
+        f: &mut fmt::Formatter,
+        context: &TransactionHashDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        // Copied from the auto-generated `Debug` implementation, and tweaked
+        match self {
+            Self::RootTransactionIntent(arg0) => f
+                .debug_tuple("RootTransactionIntent")
+                .field(&arg0.debug_as_display(*context))
+                .finish(),
+            Self::RootSubintent(arg0) => f
+                .debug_tuple("RootSubintent")
+                .field(&arg0.debug_as_display(*context))
+                .finish(),
+            Self::NonRootSubintent(arg0, arg1) => f
+                .debug_tuple("NonRootSubintent")
+                .field(arg0)
+                .field(&arg1.debug_as_display(*context))
+                .finish(),
+            Self::AcrossTransaction => write!(f, "AcrossTransaction"),
+            Self::Unlocatable => write!(f, "Unlocatable"),
         }
     }
 }
@@ -174,6 +240,33 @@ pub enum SubintentStructureError {
     SubintentExceedsMaxDepth,
     SubintentIsNotReachableFromTheTransactionIntent,
     MismatchingYieldChildAndYieldParentCountsForSubintent,
+}
+
+impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for SubintentStructureError {
+    type Error = fmt::Error;
+
+    fn contextual_format(
+        &self,
+        f: &mut fmt::Formatter,
+        context: &TransactionHashDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        // Copied from the auto-generated `Debug` implementation, and tweaked
+        match self {
+            Self::DuplicateSubintent => write!(f, "DuplicateSubintent"),
+            Self::SubintentHasMultipleParents => write!(f, "SubintentHasMultipleParents"),
+            Self::ChildSubintentNotIncludedInTransaction(arg0) => f
+                .debug_tuple("ChildSubintentNotIncludedInTransaction")
+                .field(&arg0.debug_as_display(*context))
+                .finish(),
+            Self::SubintentExceedsMaxDepth => write!(f, "SubintentExceedsMaxDepth"),
+            Self::SubintentIsNotReachableFromTheTransactionIntent => {
+                write!(f, "SubintentIsNotReachableFromTheTransactionIntent")
+            }
+            Self::MismatchingYieldChildAndYieldParentCountsForSubintent => {
+                write!(f, "MismatchingYieldChildAndYieldParentCountsForSubintent")
+            }
+        }
+    }
 }
 
 impl SubintentStructureError {
