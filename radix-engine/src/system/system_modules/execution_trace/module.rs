@@ -93,6 +93,7 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
 pub enum VaultOp {
     Put(ResourceAddress, Decimal), // TODO: add non-fungible support
     Take(ResourceAddress, Decimal),
+    TakeNonFungibles(ResourceAddress, Decimal),
     TakeAdvanced(ResourceAddress, Decimal),
     Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
@@ -725,12 +726,20 @@ impl ExecutionTraceModule {
             Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
                 if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id()) {
                     match ident.as_str() {
-                        VAULT_TAKE_IDENT | VAULT_TAKE_ADVANCED_IDENT | VAULT_RECALL_IDENT => {
+                        VAULT_TAKE_IDENT
+                        | VAULT_TAKE_ADVANCED_IDENT
+                        | VAULT_RECALL_IDENT
+                        | NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                             for (_, resource) in &resource_summary.buckets {
                                 let op = if ident == VAULT_TAKE_IDENT {
                                     VaultOp::Take(resource.resource_address(), resource.amount())
                                 } else if ident == VAULT_TAKE_ADVANCED_IDENT {
                                     VaultOp::TakeAdvanced(
+                                        resource.resource_address(),
+                                        resource.amount(),
+                                    )
+                                } else if ident == NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT {
+                                    VaultOp::TakeNonFungibles(
                                         resource.resource_address(),
                                         resource.amount(),
                                     )
@@ -756,8 +765,8 @@ impl ExecutionTraceModule {
                         | FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => { /* no-op */ }
-                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT
-                        | NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
+
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
                         | NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT
                         | NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT
                         | NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT
@@ -904,6 +913,7 @@ pub fn calculate_resource_changes(
                 }
                 VaultOp::Take(resource_address, amount)
                 | VaultOp::TakeAdvanced(resource_address, amount)
+                | VaultOp::TakeNonFungibles(resource_address, amount)
                 | VaultOp::Recall(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
