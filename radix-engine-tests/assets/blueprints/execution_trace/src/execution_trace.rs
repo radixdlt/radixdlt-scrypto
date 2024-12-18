@@ -118,4 +118,3 @@ mod execution_trace_test {
         }
     }
 }
-

@@ -91,8 +91,10 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
 
 #[derive(Debug, Clone)]
 pub enum VaultOp {
-    Put(ResourceAddress, Decimal), // TODO: add non-fungible support
+    Put(ResourceAddress, Decimal),
     Take(ResourceAddress, Decimal),
+    // We intentionally disregard IDs and only use the amount for non-fungibles.
+    // This maintains backward compatibility for users of the `ResourceChange` struct.
     TakeNonFungibles(ResourceAddress, Decimal),
     TakeAdvanced(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
