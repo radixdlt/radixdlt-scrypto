@@ -95,7 +95,6 @@ pub enum VaultOp {
     Take(ResourceAddress, Decimal),
     TakeNonFungibles(ResourceAddress, Decimal),
     TakeAdvanced(ResourceAddress, Decimal),
-    Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
 }
 
@@ -728,7 +727,6 @@ impl ExecutionTraceModule {
                     match ident.as_str() {
                         VAULT_TAKE_IDENT
                         | VAULT_TAKE_ADVANCED_IDENT
-                        | VAULT_RECALL_IDENT
                         | NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                             for (_, resource) in &resource_summary.buckets {
                                 let op = if ident == VAULT_TAKE_IDENT {
@@ -743,8 +741,6 @@ impl ExecutionTraceModule {
                                         resource.resource_address(),
                                         resource.amount(),
                                     )
-                                } else if ident == VAULT_RECALL_IDENT {
-                                    VaultOp::Recall(resource.resource_address(), resource.amount())
                                 } else {
                                     panic!("Unhandled vault method")
                                 };
@@ -760,7 +756,8 @@ impl ExecutionTraceModule {
                         | VAULT_GET_AMOUNT_IDENT
                         | VAULT_FREEZE_IDENT
                         | VAULT_UNFREEZE_IDENT
-                        | VAULT_BURN_IDENT => { /* no-op */ }
+                        | VAULT_BURN_IDENT
+                        | VAULT_RECALL_IDENT => { /* no-op */ }
                         FUNGIBLE_VAULT_LOCK_FEE_IDENT
                         | FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
@@ -913,8 +910,7 @@ pub fn calculate_resource_changes(
                 }
                 VaultOp::Take(resource_address, amount)
                 | VaultOp::TakeAdvanced(resource_address, amount)
-                | VaultOp::TakeNonFungibles(resource_address, amount)
-                | VaultOp::Recall(resource_address, amount) => {
+                | VaultOp::TakeNonFungibles(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()
