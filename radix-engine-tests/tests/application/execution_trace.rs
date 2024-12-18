@@ -7,12 +7,12 @@ use radix_transactions::{model::PreviewFlags, validation::TransactionValidator};
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_trace_resource_transfers_using_take() {
+fn test_trace_fungible_resource_transfers_within_blueprint_using_take() {
     run_resource_transfers_trace_test(false);
 }
 
 #[test]
-fn test_trace_resource_transfers_using_take_advanced() {
+fn test_trace_fungible_resource_transfers_within_blueprint_using_take_advanced() {
     run_resource_transfers_trace_test(true);
 }
 
@@ -29,7 +29,7 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         .call_function(
             package_address,
             "ExecutionTraceBp",
-            "transfer_resource_between_two_components",
+            "transfer_fungible_resource_between_two_components",
             manifest_args!(transfer_amount, use_take_advanced),
         )
         .build();
@@ -47,74 +47,32 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         ComponentAddress,
     ) = receipt.expect_commit(true).output(1);
 
+    let resource_changes = &receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap()
+        .resource_changes;
+
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
-    println!(
-        "{:?}",
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-    );
-    assert_eq!(
-        2,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .len()
-    ); // Two instructions
-    assert_eq!(
-        1,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .get(&0)
-            .unwrap()
-            .len()
-    ); // One resource change in the first instruction (lock fee)
-    assert_eq!(
-        2,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .get(&1)
-            .unwrap()
-            .len()
-    ); // One resource change in the first instruction (lock fee)
+    println!("{:?}", resource_changes);
+    assert_eq!(2, resource_changes.len()); // Two instructions
+    assert_eq!(1, resource_changes.get(&0).unwrap().len()); // One resource change in the first instruction (lock fee)
+    assert_eq!(2, resource_changes.get(&1).unwrap().len()); // Two resource changes in the second instruction (transfer_fungible_resource_between_two_components)
 
     let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
-    assert!(receipt
-        .expect_commit_success()
-        .execution_trace
-        .as_ref()
-        .unwrap()
-        .resource_changes
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == source_component.into()
             && r.amount == Decimal::from(transfer_amount).checked_neg().unwrap()));
 
     // Target vault deposit
-    assert!(receipt
-        .expect_commit_success()
-        .execution_trace
-        .as_ref()
-        .unwrap()
-        .resource_changes
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
@@ -122,12 +80,79 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         ));
 
     // Fee withdrawal
-    assert!(receipt
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == account.into()
+            && r.amount == Decimal::from(total_fee_paid).checked_neg().unwrap()));
+}
+
+#[test]
+fn test_trace_non_fungible_resource_transfers_within_blueprint() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("execution_trace"));
+    let transfer_amount = 10u8;
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 500)
+        .call_function(
+            package_address,
+            "ExecutionTraceBp",
+            "transfer_non_fungible_resource_between_two_components",
+            manifest_args!(transfer_amount),
+        )
+        .build();
+    let receipt = ledger.preview_manifest(
+        manifest,
+        vec![public_key.clone().into()],
+        0,
+        PreviewFlags::default(),
+    );
+
+    // Assert
+    let (_resource_address, source_component, target_component): (
+        ResourceAddress,
+        ComponentAddress,
+        ComponentAddress,
+    ) = receipt.expect_commit(true).output(1);
+
+    let resource_changes = &receipt
         .expect_commit_success()
         .execution_trace
         .as_ref()
         .unwrap()
-        .resource_changes
+        .resource_changes;
+
+    /* There should be three resource changes: withdrawal from the source vault,
+    deposit to the target vault and withdrawal for the fee */
+    println!("{:?}", resource_changes);
+    assert_eq!(2, resource_changes.len()); // Two instructions
+    assert_eq!(1, resource_changes.get(&0).unwrap().len()); // One resource change in the first instruction (lock fee)
+    assert_eq!(2, resource_changes.get(&1).unwrap().len()); // Two resource changes in the second instruction (transfer_non_fungible_resource_between_two_components)
+
+    let fee_summary = receipt.fee_summary.clone();
+    let total_fee_paid = fee_summary.total_cost();
+
+    // Source vault withdrawal
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == source_component.into()
+            && r.amount == Decimal::from(transfer_amount).checked_neg().unwrap()));
+
+    // Target vault deposit
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(
+            |r| r.node_id == target_component.into() && r.amount == Decimal::from(transfer_amount)
+        ));
+
+    // Fee withdrawal
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == account.into()
@@ -1046,4 +1071,61 @@ fn test_execution_trace_for_transaction_v2() {
     },
 )"#;
     assert_eq!(format!("{:#?}", trace), expected_trace);
+}
+
+#[test]
+fn test_trace_non_fungible_resource_transfers_using_manifest() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let (from_public_key, _from_private_key, from_address) = ledger.new_allocated_account();
+    let (_to_public_key, _to_private_key, to_address) = ledger.new_allocated_account();
+
+    let nf_resource_address = ledger.create_non_fungible_resource_advanced(
+        NonFungibleResourceRoles::default(),
+        from_address,
+        4,
+    );
+    let nf_global_id =
+        NonFungibleGlobalId::new(nf_resource_address, NonFungibleLocalId::integer(1));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(from_address, 100)
+        .withdraw_non_fungible_from_account(from_address, nf_global_id)
+        .take_all_from_worktop(nf_resource_address, "nf_bucket")
+        .try_deposit_or_abort(to_address, None, "nf_bucket")
+        .build();
+
+    let receipt = ledger.preview_manifest(
+        manifest,
+        vec![from_public_key.clone().into()],
+        0,
+        PreviewFlags::default(),
+    );
+    let fee_summary = receipt.fee_summary.clone();
+    let total_fee_paid = fee_summary.total_cost();
+
+    // Act & Assert: Execute the preview, followed by a normal execution.
+    let resource_changes = &receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap()
+        .resource_changes;
+
+    println!("{:?}", resource_changes);
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == from_address.into() && r.amount == -total_fee_paid));
+
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == from_address.into() && r.amount == dec!(-1)));
+
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == to_address.into() && r.amount == dec!(1)));
 }
