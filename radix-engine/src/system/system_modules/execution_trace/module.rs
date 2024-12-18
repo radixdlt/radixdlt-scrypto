@@ -91,10 +91,12 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
 
 #[derive(Debug, Clone)]
 pub enum VaultOp {
-    Put(ResourceAddress, Decimal), // TODO: add non-fungible support
+    Put(ResourceAddress, Decimal),
     Take(ResourceAddress, Decimal),
+    // We intentionally disregard IDs and only use the amount for non-fungibles.
+    // This maintains backward compatibility for users of the `ResourceChange` struct.
+    TakeNonFungibles(ResourceAddress, Decimal),
     TakeAdvanced(ResourceAddress, Decimal),
-    Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
 }
 
@@ -725,7 +727,9 @@ impl ExecutionTraceModule {
             Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
                 if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id()) {
                     match ident.as_str() {
-                        VAULT_TAKE_IDENT | VAULT_TAKE_ADVANCED_IDENT | VAULT_RECALL_IDENT => {
+                        VAULT_TAKE_IDENT
+                        | VAULT_TAKE_ADVANCED_IDENT
+                        | NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                             for (_, resource) in &resource_summary.buckets {
                                 let op = if ident == VAULT_TAKE_IDENT {
                                     VaultOp::Take(resource.resource_address(), resource.amount())
@@ -734,8 +738,11 @@ impl ExecutionTraceModule {
                                         resource.resource_address(),
                                         resource.amount(),
                                     )
-                                } else if ident == VAULT_RECALL_IDENT {
-                                    VaultOp::Recall(resource.resource_address(), resource.amount())
+                                } else if ident == NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT {
+                                    VaultOp::TakeNonFungibles(
+                                        resource.resource_address(),
+                                        resource.amount(),
+                                    )
                                 } else {
                                     panic!("Unhandled vault method")
                                 };
@@ -751,13 +758,14 @@ impl ExecutionTraceModule {
                         | VAULT_GET_AMOUNT_IDENT
                         | VAULT_FREEZE_IDENT
                         | VAULT_UNFREEZE_IDENT
-                        | VAULT_BURN_IDENT => { /* no-op */ }
+                        | VAULT_BURN_IDENT
+                        | VAULT_RECALL_IDENT => { /* no-op */ }
                         FUNGIBLE_VAULT_LOCK_FEE_IDENT
                         | FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => { /* no-op */ }
-                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT
-                        | NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
+
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
                         | NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT
                         | NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT
                         | NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT
@@ -904,7 +912,7 @@ pub fn calculate_resource_changes(
                 }
                 VaultOp::Take(resource_address, amount)
                 | VaultOp::TakeAdvanced(resource_address, amount)
-                | VaultOp::Recall(resource_address, amount) => {
+                | VaultOp::TakeNonFungibles(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()
