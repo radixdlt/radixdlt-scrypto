@@ -1326,12 +1326,17 @@ impl ScryptoCompilerBuilder {
         self
     }
 
-    pub fn log_level(&mut self, log_level: Level) -> &mut Self {
-        // Firstly clear any log level previously set
+    pub fn disable_logs(&mut self) -> &mut Self {
         let all_features = ScryptoCompilerInputParams::log_level_to_scrypto_features(Level::Trace);
         all_features.iter().for_each(|log_level| {
             self.input_params.features.swap_remove(log_level);
         });
+        self
+    }
+
+    pub fn log_level(&mut self, log_level: Level) -> &mut Self {
+        // Firstly clear any log level previously set
+        self.disable_logs();
 
         // Now set log level provided by the user
         if Level::Error <= log_level {
