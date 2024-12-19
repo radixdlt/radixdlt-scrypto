@@ -29,8 +29,9 @@ mod logger {
         }
 
         // This function tests the logging macros.
-        // If the respective log level is enabled, the macro arguments will be
-        // ignored (even if an argument is an expression that mutates data or has side effects).
+        // If the respective log level is disabled, the macro arguments will still be
+        // visible to development tools, but no action will be performed at runtime
+        // (even if an argument is an expression that mutates data or has side effects).
         pub fn mutate_input_if_log_level_enabled(level: Level, number: String) -> u8 {
             let mut number = number.parse::<u8>().unwrap();
             match level {
