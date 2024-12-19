@@ -17,7 +17,16 @@ macro_rules! error {
 #[cfg(not(feature = "log-error"))]
 #[macro_export]
 macro_rules! error {
-    ($($args: expr),+) => {{}};
+    ($($args: expr),+) => {{
+        // The operation below does nothing at runtime but consumes the expressions,
+        // allowing tools (e.g., rust-analyzer) to parse them correctly to identify
+        // syntactical errors or provide hints and completions.
+        // Using `false` ensures the expression is optimized out in case of expressions
+        // that mutate data or have side effects.
+        if false {
+            let _ = ($($args),+);
+        }
+    }};
 }
 
 /// Logs a `WARN` message.
@@ -39,7 +48,12 @@ macro_rules! warn {
 #[cfg(not(feature = "log-warn"))]
 #[macro_export]
 macro_rules! warn {
-    ($($args: expr),+) => {{}};
+    ($($args: expr),+) => {{
+        // See `error` macro comment
+        if false {
+            let _ = ($($args),+);
+        }
+    }};
 }
 
 /// Logs an `INFO` message.
@@ -61,7 +75,12 @@ macro_rules! info {
 #[cfg(not(feature = "log-info"))]
 #[macro_export]
 macro_rules! info {
-    ($($args: expr),+) => {{}};
+    ($($args: expr),+) => {{
+        // See `error` macro comment
+        if false {
+            let _ = ($($args),+);
+        }
+    }};
 }
 
 /// Logs a `DEBUG` message.
@@ -83,7 +102,12 @@ macro_rules! debug {
 #[cfg(not(feature = "log-debug"))]
 #[macro_export]
 macro_rules! debug {
-    ($($args: expr),+) => {{}};
+    ($($args: expr),+) => {{
+        // See `error` macro comment
+        if false {
+            let _ = ($($args),+);
+        }
+    }};
 }
 
 /// Logs a `TRACE` message.
@@ -105,7 +129,12 @@ macro_rules! trace {
 #[cfg(not(feature = "log-trace"))]
 #[macro_export]
 macro_rules! trace {
-    ($($args: expr),+) => {{}};
+    ($($args: expr),+) => {{
+        // See `error` macro comment
+        if false {
+            let _ = ($($args),+);
+        }
+    }};
 }
 
 // This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
