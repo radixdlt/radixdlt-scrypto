@@ -25,6 +25,26 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     receipt
 }
 
+fn call_log_macro<S: AsRef<str>>(
+    ledger: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    level: Level,
+    message: S,
+) -> TransactionReceipt {
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "Logger",
+            "mutate_input_if_log_level_enabled",
+            manifest_args!(level, message.as_ref().to_owned()),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+
+    receipt
+}
+
 #[test]
 fn test_emit_log() {
     // Arrange
@@ -108,5 +128,82 @@ fn test_assert_length_5() {
             }
             _ => false,
         })
+    }
+}
+
+#[test]
+fn test_log_macros_enabled() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    // PackageLoader compiles with all logs enabled (CompileProfile::FastWithTraceLogs)
+    let package_address = ledger.publish_package_simple(PackageLoader::get("logger"));
+
+    let input = "2";
+    let output_log = "Mutated input = 3";
+
+    for level in [
+        Level::Error,
+        Level::Warn,
+        Level::Info,
+        Level::Debug,
+        Level::Trace,
+    ] {
+        // Act
+        let receipt = call_log_macro(&mut ledger, package_address, level, input);
+
+        // Assert
+        {
+            receipt.expect_commit_success();
+
+            let logs = receipt.expect_commit(true).application_logs.clone();
+            let output = receipt.expect_commit(true).output::<u8>(1);
+
+            assert_eq!(output, 3);
+
+            let expected_logs = vec![(level, output_log.to_owned())];
+            assert_eq!(logs, expected_logs)
+        }
+    }
+}
+
+#[test]
+fn test_log_macros_disabled() {
+    use std::path::PathBuf;
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let package_dir = manifest_dir
+        .join("assets")
+        .join("blueprints")
+        .join("logger");
+    // Disable all logging macros
+    let package = ledger.compile_with_option(package_dir, CompileProfile::FastWithNoLogs);
+
+    let package_address = ledger.publish_package_simple(package);
+    let input = "2";
+
+    for level in [
+        Level::Error,
+        Level::Warn,
+        Level::Info,
+        Level::Debug,
+        Level::Trace,
+    ] {
+        // Act
+        let receipt = call_log_macro(&mut ledger, package_address, level, input);
+
+        // Assert
+        {
+            receipt.expect_commit_success();
+
+            let logs = receipt.expect_commit(true).application_logs.clone();
+            let output = receipt.expect_commit(true).output::<u8>(1);
+
+            assert_eq!(output, 2);
+
+            let expected_logs: Vec<(Level, String)> = vec![];
+            assert_eq!(logs, expected_logs)
+        }
     }
 }
