@@ -27,7 +27,7 @@ macro_rules! error {
         // in the future, we should address it proactively.
         #[allow(unreachable_code)]
         if false {
-            let _ = ($($args),+);
+            let _ = ::scrypto::prelude::sbor::rust::format!($($args),+);
         }
     }};
 }
@@ -54,7 +54,7 @@ macro_rules! warn {
     ($($args: expr),+) => {{
         // See `error` macro comment
         if false {
-            let _ = ($($args),+);
+            let _ = ::scrypto::prelude::sbor::rust::format!($($args),+);
         }
     }};
 }
@@ -81,7 +81,7 @@ macro_rules! info {
     ($($args: expr),+) => {{
         // See `error` macro comment
         if false {
-            let _ = ($($args),+);
+            let _ = ::scrypto::prelude::sbor::rust::format!($($args),+);
         }
     }};
 }
@@ -108,7 +108,7 @@ macro_rules! debug {
     ($($args: expr),+) => {{
         // See `error` macro comment
         if false {
-            let _ = ($($args),+);
+            let _ = ::scrypto::prelude::sbor::rust::format!($($args),+);
         }
     }};
 }
@@ -135,7 +135,7 @@ macro_rules! trace {
     ($($args: expr),+) => {{
         // See `error` macro comment
         if false {
-            let _ = ($($args),+);
+            let _ = ::scrypto::prelude::sbor::rust::format!($($args),+);
         }
     }};
 }
