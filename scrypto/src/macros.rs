@@ -23,6 +23,9 @@ macro_rules! error {
         // syntactical errors or provide hints and completions.
         // Using `false` ensures the expression is optimized out in case of expressions
         // that mutate data or have side effects.
+        // As of now, the linter does not complain about unreachable code, but if it does
+        // in the future, we should address it proactively.
+        #[allow(unreachable_code)]
         if false {
             let _ = ($($args),+);
         }
