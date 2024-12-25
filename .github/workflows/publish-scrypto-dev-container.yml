@@ -3,8 +3,8 @@ name: Publish scrypto-dev-container image
 on:
   workflow_dispatch:
     inputs:
-      image-label:
-        description: "Docker image label to be published"
+      docker_tag:
+        description: "Docker tag to be published"
 
 permissions:
   packages: write
@@ -21,7 +21,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-dev-container"
-      tag: ${{ inputs.image-label }}
+      tag: ${{ inputs.docker_tag }}
       context: "."
       dockerfile: "Dockerfile"
       target: "scrypto-dev-container"
