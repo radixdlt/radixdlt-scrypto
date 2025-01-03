@@ -101,8 +101,8 @@ impl PreciseDecimal {
     ]));
 
     /// Constructs a [`PreciseDecimal`] from its underlying `10^(-36)` subunits.
-    pub const fn from_precise_subunits(attos: I256) -> Self {
-        Self(attos)
+    pub const fn from_precise_subunits(precise_subunits: I256) -> Self {
+        Self(precise_subunits)
     }
 
     /// Returns the underlying `10^(-36)` subunits of the [`PreciseDecimal`].
