@@ -52,6 +52,13 @@ impl ExecutionTraceModule {
     }
 }
 
+// This structure tracks changes in resource balances per actor and vault.
+// Its purpose is to record balance changes for each instruction within a transaction
+// (as observed in `TransactionExecutionTrace`).
+// These changes can be further examined using the node's Core API.
+// NOTE!
+// This feature is not a comprehensive abstraction and may be removed in the future once it
+// is deprecated in the node's Core API.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub node_id: NodeId,
@@ -89,6 +96,9 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
     }
 }
 
+// Supported operations on Vaults.
+// The Recall operation is intentionally not supported, as it is impossible to identify the account
+// from which resources are recalled. This is because Recall functions with an internal vault.
 #[derive(Debug, Clone)]
 pub enum VaultOp {
     Put(ResourceAddress, Decimal),
