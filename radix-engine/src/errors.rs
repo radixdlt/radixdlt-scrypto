@@ -144,9 +144,9 @@ pub enum RejectionReason {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for RejectionReason {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ScryptoValueDisplayContext,
     ) -> Result<(), Self::Error> {
         self.create_persistable().contextual_format(f, context)
@@ -172,9 +172,9 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableReject
     type Error = fmt::Error;
 
     /// See [`SerializableRuntimeError::contextual_format`] for more information.
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ScryptoValueDisplayContext,
     ) -> Result<(), Self::Error> {
         let value = &self.encoded_rejection_reason;
@@ -339,9 +339,9 @@ pub enum RuntimeError {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for RuntimeError {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ScryptoValueDisplayContext,
     ) -> Result<(), Self::Error> {
         self.create_persistable().contextual_format(f, context)
@@ -383,9 +383,9 @@ pub struct PersistableRuntimeError {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for PersistableRuntimeError {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ScryptoValueDisplayContext,
     ) -> Result<(), Self::Error> {
         let value = &self.encoded_error;

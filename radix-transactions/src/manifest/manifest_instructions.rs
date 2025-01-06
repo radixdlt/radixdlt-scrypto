@@ -1374,6 +1374,15 @@ pub struct YieldToChild {
     pub args: ManifestValue,
 }
 
+impl YieldToChild {
+    pub fn empty(index: u32) -> Self {
+        Self {
+            child_index: ManifestNamedIntentIndex(index),
+            args: ManifestValue::unit(),
+        }
+    }
+}
+
 impl ManifestInstruction for YieldToChild {
     const IDENT: &'static str = "YIELD_TO_CHILD";
     const ID: u8 = INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR;
