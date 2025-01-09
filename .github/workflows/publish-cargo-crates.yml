@@ -21,11 +21,11 @@ jobs:
       uses: ./.github/actions/setup-env
     - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
       with:
-        role_name: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
+        role_name: ${{ secrets.AWS_SCRYPTO_RELEASE_SECRET_ROLE }}
         app_name: "radixdlt-scrypto"
         step_name: "publish-crate"
         secret_prefix: "CRATES"
-        secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/common/cratesio-token-IjOP4n"
+        secret_name: ${{ secrets.AWS_CRATES_TOKEN_SECRET_PATH }}
         parse_json: true
     - name: Publish crates
       run: |
