@@ -24,7 +24,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-dev-container"
-      tag: testing # TODO Update after testing
+      tag: testing
       # tag: ${{ inputs.docker_tag }} # TODO Update after testing
       context: "."
       dockerfile: "Dockerfile"
@@ -45,14 +45,14 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-dev-container"
-      # tag: ${{ inputs.docker_tag }} # TODO Update after testing
-      tag: testing # TODO Update after testing
+      # tag: ${{ inputs.docker_tag }}-arm64 # TODO Update after testing
+      tag: testing-arm64
       context: "."
       dockerfile: "Dockerfile"
       target: "scrypto-dev-container"
       platforms: "linux/arm64"
       provenance: "false"
-      scan_image: true
+      scan_image: false
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
     secrets:
@@ -70,6 +70,6 @@ jobs:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
     with:
       aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
-      amd_meta_data_json: ${{needs.build_push_container_dockerhub.outputs.json}}
+      amd_meta_data_json: ${{needs.build_amd64.outputs.json}}
     secrets:
       role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
