@@ -6,9 +6,6 @@ on:
       docker_tag:
         description: "Docker tag to be published"
 
-  # TODO: Remove after testing
-  pull_request:
-
 permissions:
   packages: write
   pull-requests: write
@@ -24,8 +21,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-dev-container"
-      tag: testing
-      # tag: ${{ inputs.docker_tag }} # TODO Update after testing
+      tag: ${{ inputs.docker_tag }}
       context: "."
       dockerfile: "Dockerfile"
       target: "scrypto-dev-container"
@@ -49,8 +45,7 @@ jobs:
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "scrypto-dev-container"
-      # tag: ${{ inputs.docker_tag }}-arm64 # TODO Update after testing
-      tag: testing
+      tag: ${{ inputs.docker_tag }}
       context: "."
       dockerfile: "Dockerfile"
       target: "scrypto-dev-container"
