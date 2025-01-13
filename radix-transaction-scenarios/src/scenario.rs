@@ -417,9 +417,9 @@ pub enum DescribedAddress {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for DescribedAddress {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
