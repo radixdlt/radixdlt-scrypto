@@ -28,28 +28,11 @@
 
 ## Changelog
 <!--
-> [!NOTE]
-> 
-> Write "The Changelog has been updated to capture XX changes which affect XX" or explain why this is not needed.
+> [!TIP]
 >
-> > * ### Guidance for dApp Developers
->   * Migration recommendations for a dApp developer to update their dApp/integrations due to to the change/s in this PR. This should include renames and interface changes.
->   * Upon merge, please copy these instructions to an appropriate draft page under https://docs.radixdlt.com/main/scrypto/release_notes
-> * ### Guidance for Internal Integrators
->   * Instructions to any internal integrations (e.g. Node, Toolkit, Gateway, Ledger App) for how the changes may affect them and recommendations for how they should update to support this change.
--->
-
-## Update Recommendations
-<!--
-> [!NOTE]
-> 
-> This section is to provide recommendations to consumers of this repo about how they should handle breaking changes, or integrate new features.
-> 
-> If your PR contains no breaking changes or new features or hasn't been tagged, this whole section can be deleted. Add sub-headings if required for:
-> * ### Guidance for dApp Developers
->   * Migration recommendations for a dApp developer to update their dApp/integrations due to to the change/s in this PR. This should include renames and interface changes.
->   * Upon merge, please copy these instructions to an appropriate draft page under https://docs.radixdlt.com/main/scrypto/release_notes
-> * ### Guidance for Internal Integrators
->   * Instructions to any internal integrations (e.g. Node, Toolkit, Gateway, Ledger App) for how the changes may affect them and recommendations for how they should update to support this change.
+> If the change in your PR is a new feature, or could affect or break any users/integrators, including scrypto developers, dApp developers, transaction creators, or internal integrators, then it likely will need an update to the CHANGELOG.md file.
 >
+> After making any required updates, write either of these two:
+> * "The changelog has been updated to capture XX changes which affect XX"
+> * "The changelog was not updated because this change has no user-facing impact"
 -->
