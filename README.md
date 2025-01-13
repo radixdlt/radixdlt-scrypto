@@ -24,7 +24,6 @@ It also includes various supporting crates ([guide](https://docs.radixdlt.com/do
   - [`scrypto`](https://docs.radixdlt.com/docs/scrypto-cli-tool)
   - [`resim`](https://docs.radixdlt.com/docs/resim-radix-engine-simulator)
 
-
 ## Branching
 
 The default branch for this repository is `develop`, which typically includes unreleased code.
