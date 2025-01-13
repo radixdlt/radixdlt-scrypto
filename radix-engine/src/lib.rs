@@ -43,6 +43,7 @@ pub(crate) mod internal_prelude {
     pub use crate::init::*;
     pub use crate::kernel::kernel_api::*;
     pub use crate::system::system_substates::*;
+    pub(crate) use crate::track::NodeSubstatesExt;
     pub use crate::vm::*;
     pub use crate::{
         dispatch, event_schema, function_schema, method_auth_template, roles_template,

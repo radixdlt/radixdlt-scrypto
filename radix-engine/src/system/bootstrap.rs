@@ -1,17 +1,9 @@
-use crate::blueprints::access_controller::v1::*;
-use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
-use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
-use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
+use crate::blueprints::account::AccountOwnerBadgeData;
+use crate::blueprints::identity::IdentityOwnerBadgeData;
+use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
-use crate::blueprints::pool::v1::package::{PoolNativePackage, PoolV1MinorVersion};
-use crate::blueprints::resource::ResourceNativePackage;
-use crate::blueprints::test_utils::TestUtilsNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::*;
 use crate::internal_prelude::*;
-use crate::object_modules::metadata::MetadataNativePackage;
-use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::*;
 use crate::updates::*;
@@ -254,7 +246,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
     let package_flashes = [
         (
             PACKAGE_PACKAGE,
-            PackageNativePackage::definition(),
+            PACKAGE_PACKAGE_DEFINITION.clone(),
             NativeCodeId::PackageCode1 as u64,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
@@ -270,7 +262,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROYALTY_MODULE_PACKAGE,
-            RoyaltyNativePackage::definition(),
+            ROYALTY_PACKAGE_DEFINITION.clone(),
             NativeCodeId::RoyaltyCode1 as u64,
             metadata_init! {
                 "name" => "Royalty Package".to_owned(), locked;
@@ -280,7 +272,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             RESOURCE_PACKAGE,
-            ResourceNativePackage::definition(),
+            RESOURCE_PACKAGE_DEFINITION.clone(),
             NativeCodeId::ResourceCode1 as u64,
             metadata_init! {
                 "name" => "Resource Package".to_owned(), locked;
@@ -290,7 +282,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
-            TransactionProcessorNativePackage::definition(),
+            TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.clone(),
             NativeCodeId::TransactionProcessorCode1 as u64,
             metadata_init! {
                 "name" => "Transaction Processor Package".to_owned(), locked;
@@ -300,7 +292,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             METADATA_MODULE_PACKAGE,
-            MetadataNativePackage::definition(),
+            METADATA_PACKAGE_DEFINITION.clone(),
             NativeCodeId::MetadataCode1 as u64,
             metadata_init! {
                 "name" => "Metadata Package".to_owned(), locked;
@@ -310,7 +302,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
-            RoleAssignmentNativePackage::definition(),
+            ROLE_ASSIGNMENT_PACKAGE_DEFINITION.clone(),
             NativeCodeId::RoleAssignmentCode1 as u64,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
@@ -320,7 +312,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TEST_UTILS_PACKAGE,
-            TestUtilsNativePackage::definition(),
+            TEST_UTILS_PACKAGE_DEFINITION.clone(),
             NativeCodeId::TestUtilsCode1 as u64,
             metadata_init! {
                 "name" => "Test Utils Package".to_owned(), locked;
@@ -603,7 +595,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(package_reservation),
-                definition: IdentityNativePackage::definition(),
+                definition: IDENTITY_PACKAGE_DEFINITION.clone(),
                 native_package_code_id: NativeCodeId::IdentityCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
@@ -626,7 +618,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: ConsensusManagerNativePackage::definition(),
+                definition: CONSENSUS_MANAGER_PACKAGE_DEFINITION.clone(),
                 native_package_code_id: NativeCodeId::ConsensusManagerCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
@@ -685,7 +677,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(package_reservation),
-                definition: AccountNativePackage::definition(),
+                definition: ACCOUNT_PACKAGE_DEFINITION.clone(),
                 native_package_code_id: NativeCodeId::AccountCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
@@ -708,7 +700,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: AccessControllerV1NativePackage::definition(),
+                definition: ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0.clone(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
@@ -731,7 +723,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: PoolNativePackage::definition(PoolV1MinorVersion::Zero),
+                definition: POOL_PACKAGE_DEFINITION_V1_0.clone(),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
@@ -929,7 +921,7 @@ pub fn create_system_bootstrap_transaction(
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
                 native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
-                definition: TransactionTrackerNativePackage::definition(),
+                definition: TRANSACTION_TRACKER_PACKAGE_DEFINITION.clone(),
                 metadata: metadata_init!(),
             },
         );

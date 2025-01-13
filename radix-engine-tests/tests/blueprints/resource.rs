@@ -31,8 +31,7 @@ fn test_take_from_vault_after_mint() {
     );
 
     // Assert
-    let result = receipt.expect_commit_success();
-    println!("{}", result.state_updates_string());
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -58,8 +57,7 @@ fn test_query_nonexistent_and_mint() {
     );
 
     // Assert
-    let result = receipt.expect_commit_success();
-    println!("{}", result.state_updates_string());
+    receipt.expect_commit_success();
 }
 
 #[test]

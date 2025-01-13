@@ -1415,6 +1415,5 @@ fn test_non_fungible_global_id() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    let result = receipt.expect_commit_success();
-    println!("{}", result.state_updates_string());
+    receipt.expect_commit_success();
 }
