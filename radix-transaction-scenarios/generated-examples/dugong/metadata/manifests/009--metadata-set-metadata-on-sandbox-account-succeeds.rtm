@@ -1,0 +1,19 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+SET_METADATA
+    Address("account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3")
+    "account_type"
+    Enum<0u8>(
+        "dapp definition"
+    )
+;
+SET_METADATA
+    Address("account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3")
+    "name"
+    Enum<0u8>(
+        "Radix Sandbox dApp"
+    )
+;

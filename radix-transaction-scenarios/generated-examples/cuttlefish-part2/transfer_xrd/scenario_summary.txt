@@ -1,9 +1,9 @@
 Name: transfer_xrd
 
 == SUMMARY HASHES ==
-These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 3eaaadd557735aa1 (allowed to change if not deployed to any network)
-Events       : e2c9e85cb9427826 (allowed to change if not deployed to any network)
+These Cuttlefish (Part 2) hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 3eaaadd557735aa1 (should never change)
+Events       : e2c9e85cb9427826 (should never change)
 
 == INTERESTING ADDRESSES ==
 - from_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw

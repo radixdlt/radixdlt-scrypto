@@ -1,0 +1,221 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<1u8>()
+    true
+    Enum<0u8>(
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(
+                    Enum<14u8>(
+                        Array<Enum>(
+                            Enum<0u8>(
+                                10u8
+                            ),
+                            Enum<0u8>(
+                                195u8
+                            ),
+                            Enum<0u8>(
+                                12u8
+                            ),
+                            Enum<1u8>(
+                                1u64
+                            ),
+                            Enum<1u8>(
+                                3u64
+                            )
+                        )
+                    ),
+                    Enum<14u8>(
+                        Array<Enum>(
+                            Enum<0u8>(
+                                7u8
+                            ),
+                            Enum<1u8>(
+                                2u64
+                            )
+                        )
+                    ),
+                    Enum<15u8>(
+                        Map<U8, Array>(
+                            0u8 => Array<Enum>(),
+                            1u8 => Array<Enum>(
+                                Enum<0u8>(
+                                    12u8
+                                )
+                            )
+                        )
+                    ),
+                    Enum<15u8>(
+                        Map<U8, Array>(
+                            0u8 => Array<Enum>(),
+                            1u8 => Array<Enum>(
+                                Enum<1u8>(
+                                    3u64
+                                )
+                            ),
+                            2u8 => Array<Enum>(
+                                Enum<1u8>(
+                                    1u64
+                                )
+                            )
+                        )
+                    )
+                ),
+                Array<Tuple>(
+                    Tuple(
+                        Enum<1u8>(
+                            "ComplexNonFungibleData"
+                        ),
+                        Enum<1u8>(
+                            Enum<0u8>(
+                                Array<String>(
+                                    "fixed_number",
+                                    "fixed_non_fungible_global_id",
+                                    "mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces",
+                                    "inner_struct",
+                                    "mutable_inner_enum"
+                                )
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Enum<1u8>(
+                            "InnerStruct"
+                        ),
+                        Enum<1u8>(
+                            Enum<0u8>(
+                                Array<String>(
+                                    "byte",
+                                    "string"
+                                )
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Enum<1u8>(
+                            "Option"
+                        ),
+                        Enum<1u8>(
+                            Enum<1u8>(
+                                Map<U8, Tuple>(
+                                    0u8 => Tuple(
+                                        Enum<1u8>(
+                                            "None"
+                                        ),
+                                        Enum<0u8>()
+                                    ),
+                                    1u8 => Tuple(
+                                        Enum<1u8>(
+                                            "Some"
+                                        ),
+                                        Enum<0u8>()
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Enum<1u8>(
+                            "InnerEnum"
+                        ),
+                        Enum<1u8>(
+                            Enum<1u8>(
+                                Map<U8, Tuple>(
+                                    0u8 => Tuple(
+                                        Enum<1u8>(
+                                            "None"
+                                        ),
+                                        Enum<0u8>()
+                                    ),
+                                    1u8 => Tuple(
+                                        Enum<1u8>(
+                                            "InnerEnum"
+                                        ),
+                                        Enum<0u8>()
+                                    ),
+                                    2u8 => Tuple(
+                                        Enum<1u8>(
+                                            "InnerStruct"
+                                        ),
+                                        Enum<0u8>()
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                Array<Enum>(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            0u64
+        ),
+        Array<String>(
+            "mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces",
+            "mutable_inner_enum"
+        )
+    )
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("#1#") => Tuple(
+            Tuple(
+                100u64,
+                NonFungibleGlobalId("resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn:#8#"),
+                "Some string which could be made long for test cases",
+                Tuple(
+                    42u8,
+                    Enum<1u8>(
+                        "Hello world!"
+                    )
+                ),
+                Enum<1u8>(
+                    Enum<0u8>()
+                )
+            )
+        )
+    )
+    Tuple(
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<1u8>(
+            Tuple(
+                Enum<0u8>(),
+                Enum<0u8>()
+            )
+        )
+    )
+    Tuple(
+        Map<String, Tuple>(),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

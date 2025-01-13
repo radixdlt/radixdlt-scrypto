@@ -1,0 +1,84 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    false
+    0u8
+    Decimal("100000")
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        )
+    )
+    Tuple(
+        Map<String, Tuple>(),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

@@ -1,0 +1,17 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3")
+    "claim"
+    Address("account_sim1cykuqm9srf92pn5gdpjh305df2zv9xxuz0qd7ndrehmm2mkt5w958k")
+    Address("resource_sim1t5820sqdx0jf9zgjd5ge6y0fvfxsnx6dlh5sgfkm4nemgz44q0v7xk")
+    Decimal("1")
+;
+CALL_METHOD
+    Address("account_sim1cykuqm9srf92pn5gdpjh305df2zv9xxuz0qd7ndrehmm2mkt5w958k")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;

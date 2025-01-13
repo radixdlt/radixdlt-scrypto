@@ -1,9 +1,9 @@
 Name: maya_router
 
 == SUMMARY HASHES ==
-These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: a4cc424b8478a3af (allowed to change if not deployed to any network)
-Events       : c64fb6ff0145cd49 (allowed to change if not deployed to any network)
+These Cuttlefish (Part 2) hashes should NEVER change, else they will cause divergence when run historically.
+State changes: a4cc424b8478a3af (should never change)
+Events       : c64fb6ff0145cd49 (should never change)
 
 == INTERESTING ADDRESSES ==
 - owner_account: account_sim1cy2m8fzpwz7uyvkdlrleay34k94yz63skerrshcrl0d3fpm2cnmlqy

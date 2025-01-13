@@ -1,0 +1,29 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim1cykuqm9srf92pn5gdpjh305df2zv9xxuz0qd7ndrehmm2mkt5w958k")
+    "set_resource_preference"
+    Address("resource_sim1t5820sqdx0jf9zgjd5ge6y0fvfxsnx6dlh5sgfkm4nemgz44q0v7xk")
+    Enum<1u8>()
+;
+CALL_METHOD
+    Address("account_sim1cxtpmq32c33tqd27aae2f4ulzewj2508kf0224m29tmrx3awxgk02e")
+    "set_resource_preference"
+    Address("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")
+    Enum<1u8>()
+;
+CALL_METHOD
+    Address("account_sim1cx8g933qpc6hlw2a7luuq22x0l3lxuvm9lnj93gnww23t4keggkjls")
+    "set_default_deposit_rule"
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim1cx8g933qpc6hlw2a7luuq22x0l3lxuvm9lnj93gnww23t4keggkjls")
+    "add_authorized_depositor"
+    Enum<0u8>(
+        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l:[b97fafd6115bb27a48fab16c91b6109db81865c6e2a6894005a7e9439cdfe7c0]")
+    )
+;

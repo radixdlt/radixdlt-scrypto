@@ -1,0 +1,99 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0.20501791004 XRD
+├─ Network execution: 0.14394875 XRD, 2878975 execution cost units
+├─ Network finalization: 0.0202519 XRD, 405038 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.04081726004 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 4
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("0.20501791004"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.10250895502"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.10250895502"),
+   }
+
+STATE UPDATES: 6 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("0.887447472475"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("ea2c10d9332f4e07743c8bfd74c4f8df5e562229abf9ad54a539d81822dfd1b0"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tqqp6e7t3gyracm4g475nack22pmw0dq0wd3hgl8wcggz34rl8xvst across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED FungibleVaultFreezeStatusFieldPayload::V1(
+         VaultFrozenFlag {
+           bits: 1u32,
+         },
+       )
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999996.4502101101")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("1.77489494495")),
+       )
+
+OUTPUTS: 2
+├─ Unit
+└─ Unit
+
+BALANCE CHANGES: 2
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.20501791004
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.10250895502
+
+NEW ENTITIES: 0

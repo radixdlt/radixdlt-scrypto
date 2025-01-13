@@ -1,0 +1,253 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    false
+    18u8
+    Decimal("100000000000")
+    Tuple(
+        Enum<0u8>(),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Bitcoin"
+                    )
+                ),
+                true
+            ),
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "BTC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A peer to peer decentralized proof of work network."
+                    )
+                ),
+                true
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "p2p",
+                            "blockchain"
+                        )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    true
+    18u8
+    Decimal("100000000000")
+    Tuple(
+        Enum<0u8>(),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Ethereum"
+                    )
+                ),
+                true
+            ),
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "ETH"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "The native token of the Ethereum blockchain"
+                    )
+                ),
+                true
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "p2p",
+                            "blockchain",
+                            "gas"
+                        )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    true
+    18u8
+    Decimal("100000000000")
+    Tuple(
+        Enum<0u8>(),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Ethereum"
+                    )
+                ),
+                true
+            ),
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "ETC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "The native token of the Ethereum Classic blockchain"
+                    )
+                ),
+                true
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "p2p",
+                            "blockchain",
+                            "gas"
+                        )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "https://www.example.com/"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
