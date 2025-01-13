@@ -52,7 +52,8 @@
 
 > Changes which may cause compilation errors for Scrypto developers or other integrators
 
-* *Pending...*
+* [#2035](https://github.com/radixdlt/radixdlt-scrypto/pull/2035) - types specifying multiple types in `#[sbor(categorize_types = "S, T")]` should now use a semi-colon as a separator: `#[sbor(categorize_types = "S; T")]`
+* [#2017](https://github.com/radixdlt/radixdlt-scrypto/pull/2017) - Manual implementations of `ContextualDisplay` must now take a `&mut fmt::Formatter` instead of a `F: fmt::Write`.
 
 ### Other changes
 
