@@ -1,10 +1,17 @@
-# Scrypto
+# Scrypto / Radix Engine
 
 [![CI](https://github.com/radixdlt/radixdlt-scrypto/actions/workflows/ci.yml/badge.svg)](https://github.com/radixdlt/radixdlt-scrypto/actions/workflows/ci.yml)
 
-Language for building DeFi apps on Radix.
+This repository includes the source for:
+* The **[Scrypto](./scrypto)** language ([guide](https://docs.radixdlt.com/docs/scrypto-1)) - The language for building DeFi apps on Radix. See the below section for getting started with Scrypto.
+* The **[Radix Engine](./radix-engine)** ([reference](https://docs.radixdlt.com/docs/engine-tech-docs)) - The execution environment for transactions in the Radix network, used by the [babylon-node](https://github.com/babylon-node).
 
-Documentation: https://docs.radixdlt.com/docs/scrypto-1
+It also includes various supporting crates ([guide](https://docs.radixdlt.com/docs/rust-libraries-overview)), such as:
+* [radix-transactions](./radix-transactions/) ([guide](https://docs.radixdlt.com/docs/rust-libraries-overview) | [docs.rs](https://docs.rs/radix-transactions/latest/radix_transactions/)) - The transaction models and transaction builders for constructing transactions and subintents for pre-authorizations.
+* [radix-common](./radix-common) ([docs.rs](https://docs.rs/radix-common/latest/radix_common/)) - Various Radix types, used across the stack.
+* [radix-rust](./radix-rust) ([docs.rs](https://docs.rs/radix-rust/latest/radix_rust/)) - Various common abstractions/utilities built on top of the `core` library, enabling some libraries to run in `no-std` environments
+* [sbor](./sbor/) ([reference](https://docs.radixdlt.com/docs/what-is-sbor)) - The tagged, verifiable encoding format used by the Radix engine.
+* [clis](./radix-clis) ([guide](https://docs.radixdlt.com/docs/tools-for-scrypto) | [docs.rs](https://docs.rs/radix-clis/latest/radix_clis/)) - Various developer CLIs to support dApp development.
 
 ## Scrypto Development
 
@@ -16,6 +23,13 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
 - CLI references
   - [`scrypto`](https://docs.radixdlt.com/docs/scrypto-cli-tool)
   - [`resim`](https://docs.radixdlt.com/docs/resim-radix-engine-simulator)
+
+
+## Branching
+
+The default branch for this repository is `develop`, which typically includes unreleased code.
+
+To look at the currently live code, use the corresponding release tag or `release/<protocol-update>` branch for the correct [protocol update](https://docs.radixdlt.com/docs/protocol-updates).
 
 ## Contribute
 
