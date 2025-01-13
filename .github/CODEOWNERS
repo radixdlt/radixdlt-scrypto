@@ -1,2 +1,17 @@
-* @radixdlt/devops
-* @radixdlt/radix
+# Docs:
+# - https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Ideally, we want the following rules:
+# - Each normal code review requires an approval from the protocol team
+# - Each change to something security-sensitive (lock file or .github folder) requires an approval from the security subteam
+# - Each workflow change requires a devops approval
+#
+# However, there isn't a way for a single file change to require two sets of approvals,
+# ... so we ignore devops here, and make it just require a protocol-security-approvers
+
+# DEFAULT
+* @radixdlt/protocol-github-approvers
+
+# SECURITY-SENSITIVE
+/.github/ @radixdlt/protocol-security-approvers
+*.lock @radixdlt/protocol-security-approvers
