@@ -265,7 +265,7 @@ pub mod collections {
         #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
-        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        pub type DefaultHashBuilder = hashbrown::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
@@ -318,7 +318,7 @@ pub mod collections {
         #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
-        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        pub type DefaultHashBuilder = hashbrown::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
@@ -455,7 +455,7 @@ pub mod collections {
         #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
-        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        pub type DefaultHashBuilder = hashbrown::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
@@ -515,7 +515,7 @@ pub mod collections {
         #[cfg(feature = "fuzzing")]
         pub type DefaultHashBuilder = crate::rust::collections::stub_hasher::StubHasher;
         #[cfg(all(not(feature = "fuzzing"), feature = "alloc"))]
-        pub type DefaultHashBuilder = hashbrown::hash_map::DefaultHashBuilder;
+        pub type DefaultHashBuilder = hashbrown::DefaultHashBuilder;
         #[cfg(all(not(feature = "fuzzing"), not(feature = "alloc")))]
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
