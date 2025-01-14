@@ -1466,13 +1466,13 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.6"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
+checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
 dependencies = [
  "arbitrary",
  "equivalent",
- "hashbrown 0.14.3",
+ "hashbrown 0.15.2",
  "serde",
 ]
 
@@ -1494,7 +1494,7 @@ dependencies = [
  "crossbeam-utils",
  "dashmap",
  "env_logger",
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "is-terminal",
  "itoa",
  "log",
@@ -2475,7 +2475,7 @@ name = "radix-rust"
 version = "1.4.0-dev"
 dependencies = [
  "hashbrown 0.15.2",
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "serde",
 ]
 
@@ -2854,7 +2854,7 @@ name = "sbor-derive-common"
 version = "1.4.0-dev"
 dependencies = [
  "const-sha1",
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "itertools",
  "proc-macro2",
  "quote",
@@ -3068,7 +3068,7 @@ version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8043c06d9f82bd7271361ed64f415fe5e12a77fdb52e573e7f06a516dea329ad"
 dependencies = [
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "itoa",
  "memchr",
  "ryu",
@@ -3094,7 +3094,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3488,7 +3488,7 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -3501,7 +3501,7 @@ version = "0.22.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
 dependencies = [
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -3818,7 +3818,7 @@ version = "0.111.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad71036aada3f6b09251546e97e4f4f176dd6b41cf6fa55e7e0f65e86aec319a"
 dependencies = [
- "indexmap 2.2.6",
+ "indexmap 2.7.0",
  "semver",
 ]
 
