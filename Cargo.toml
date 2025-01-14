@@ -86,6 +86,7 @@ crossbeam = { version = "0.8.2" }
 dirs = { version = "4.0.0" } # Used in radix-clis
 ed25519-dalek = { version = "2.1.1", default-features = false, features = ["fast", "zeroize"] }
 ethnum = {version = "1.3.2", default-features = false }
+extend = { version = "1.2.0" }
 fixedstr = { version = "0.2.9" }
 flate2 = { version = "1.0.27" } # Used in radix-clis for GzDecoder
 flume = { version = "0.11.0" } # Used in radix-clis for multi-threaded channels
@@ -126,15 +127,14 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 tar = { version = "0.4.40" } # Used in radix-clis
 temp-env = { version = "0.2.0" } # Used in radix-clis
+tempfile = { version = "3.8.0" }
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
 wasmi = { version = "=0.39.1" } # Used for WASM Execution in the Engine. Requires explicit upgrades for testing non-determinism.
 wasm-opt = { version = "0.114.1" }
 wasmparser = { version = "0.107.0", default-features = false }
-extend = { version = "1.2.0" }
 zeroize = { version = "1.3.0" }
-tempfile = { version = "3.8.0" }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch
