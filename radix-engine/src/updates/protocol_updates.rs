@@ -7,6 +7,7 @@ define_single_versioned! {
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
             cuttlefish = "FILE:protocol_update_status_substate_cuttlefish_schema.bin",
+            dugong = "FILE:protocol_update_status_substate_dugong_schema.bin",
         ))]
     ]
 }
