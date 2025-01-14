@@ -32,6 +32,8 @@
 >
 > If the change in your PR is a new feature, or could affect or break any users/integrators, including scrypto developers, dApp developers, transaction creators, or internal integrators, then it likely will need an update to the CHANGELOG.md file.
 >
+> Changelog entries should include a link to the PR like: [#2053](https://github.com/radixdlt/radixdlt-scrypto/pull/2053) so may need to be added after the PR is created.
+>
 > After making any required updates, write either of these two:
 > * "The changelog has been updated to capture XX changes which affect XX"
 > * "The changelog was not updated because this change has no user-facing impact"
