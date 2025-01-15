@@ -1,0 +1,543 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 43.9874881889 XRD
+├─ Network execution: 0.8452599 XRD, 16905198 execution cost units
+├─ Network finalization: 0.10958285 XRD, 2191657 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 43.0326454389 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 5
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58a1298a966fcbaadf52a43761755d6a34e0b94d964cef150e6d19fdbcd7")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("43.9874881889"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("21.99374409445"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("21.99374409445"),
+   }
+
+STATE UPDATES: 9 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("10.996872047225"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("f308066db2dcf6dc7fbb3f299cac73ec56e6876459956ca3f3e031fec043a18c"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999956.0125118111")),
+       )
+├─ package_sim1ph5xhxsxn2ekenmudd0p5rmsjggmzkxcd8eu3pjjame6f2mxc0jwmn across 11 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(170u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(65u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MaxTransaction",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "kv_store",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MaxTransaction_new_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MaxTransaction_max_events_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "n",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MaxTransaction_max_state_updates_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "n",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "A",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "a",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED PackageRoyaltyAccumulatorFieldPayload::V1(
+         PackageRoyaltyAccumulatorV1 {
+           royalty_vault: Vault(Own("internal_vault_sim1tzsjnz5kdl964h6j5smkza2adg6wpw2djexw79gwd5vlm0xhh5y3la")),
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MaxTransaction", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::Some(
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       0u8,
+                     ),
+                   ),
+                   [
+                     FieldSchema {
+                       field: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                           LocalTypeId::SchemaLocalIndex(
+                             0u64,
+                           ),
+                         ),
+                       ),
+                       condition: Condition::Always,
+                       transience: FieldTransience::NotTransient,
+                     },
+                   ],
+                 ),
+               ),
+               collections: [],
+               num_logical_partitions: 1u8,
+             },
+             functions: {
+               "new" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::SchemaLocalIndex(
+                       1u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "max_events" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::SchemaLocalIndex(
+                       2u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "max_state_updates" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::SchemaLocalIndex(
+                       3u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {
+               "A" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("7af2acbb09c32df56ef06c9bb630c84ce023f54c46ebce1b5c09dea915c30989")),
+                   LocalTypeId::SchemaLocalIndex(
+                     4u64,
+                   ),
+                 ),
+               ),
+             },
+             types: {},
+           },
+           function_exports: {
+             "new" => PackageExport {
+               code_hash: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec")),
+               export_name: "MaxTransaction_new",
+             },
+             "max_events" => PackageExport {
+               code_hash: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec")),
+               export_name: "MaxTransaction_max_events",
+             },
+             "max_state_updates" => PackageExport {
+               code_hash: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec")),
+               export_name: "MaxTransaction_max_state_updates",
+             },
+           },
+           hook_exports: {},
+         },
+       )
+  ├─ Partition(66): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MaxTransaction", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
+         BlueprintDependencies([]),
+       )
+  ├─ Partition(67): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MaxTransaction", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionRoyaltyConfigEntryPayload::V1(
+         PackageRoyaltyConfig::Disabled,
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MaxTransaction", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::AllowAll,
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::ScryptoV1,
+       )
+  ├─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 0656905c5038cfc5da899eabbda2d32fc303c8f47bccb658810f5841daac645f)
+  ├─ Partition(71): 1 change
+    └─ Set: CodeHash(hex("c7677b39b34332c91f0c7a1ee4a502280f450badca77d1160aafeec930c519ec"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 954cf77c1c58dca5a311f6060d2ba41ba1fcc6aa4550edb65f54535686599bc1)
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")),
+               blueprint_name: "Package",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "package_royalty",
+             ],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tzsjnz5kdl964h6j5smkza2adg6wpw2djexw79gwd5vlm0xhh5y3la across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0")),
+       )
+├─ component_sim1crawpnl7k2d2vlv9q730c3g2yrj59hpc0hzhy24v48qrw6lhxecxcg across 3 partitions
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED MaxTransaction {
+         kv_store: KeyValueStore(Own("internal_keyvaluestore_sim1krwy3nu9853y0gqa3kpcrrvjx9je56r3pm53wcwmy6m5ahsx3l8rev")),
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1ph5xhxsxn2ekenmudd0p5rmsjggmzkxcd8eu3pjjame6f2mxc0jwmn")),
+               blueprint_name: "MaxTransaction",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_keyvaluestore_sim1krwy3nu9853y0gqa3kpcrrvjx9je56r3pm53wcwmy6m5ahsx3l8rev across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::KeyValueStore(
+         KeyValueStoreInfo {
+           generic_substitutions: KeyValueStoreGenericSubstitutions {
+             key_generic_substitution: GenericSubstitution::Local(
+               ScopedTypeId(
+                 SchemaHash(hex("5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9")),
+                 LocalTypeId::WellKnown(
+                   WellKnownTypeId(9u8),
+                 ),
+               ),
+             ),
+             value_generic_substitution: GenericSubstitution::Local(
+               ScopedTypeId(
+                 SchemaHash(hex("5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9")),
+                 LocalTypeId::WellKnown(
+                   WellKnownTypeId(65u8),
+                 ),
+               ),
+             ),
+             allow_ownership: true,
+           },
+         },
+       )
+  └─ Partition(1): 1 change
+    └─ Set: SchemaHash(5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [],
+                 type_metadata: [],
+                 type_validations: [],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("21.99374409445")),
+       )
+
+OUTPUTS: 4
+├─ Unit
+├─ None
+├─ Reference("package_sim1ph5xhxsxn2ekenmudd0p5rmsjggmzkxcd8eu3pjjame6f2mxc0jwmn")
+└─ Unit
+
+BALANCE CHANGES: 2
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -43.9874881889
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 21.99374409445
+
+NEW ENTITIES: 2
+└─ Package: package_sim1ph5xhxsxn2ekenmudd0p5rmsjggmzkxcd8eu3pjjame6f2mxc0jwmn
+└─ Component: component_sim1crawpnl7k2d2vlv9q730c3g2yrj59hpc0hzhy24v48qrw6lhxecxcg

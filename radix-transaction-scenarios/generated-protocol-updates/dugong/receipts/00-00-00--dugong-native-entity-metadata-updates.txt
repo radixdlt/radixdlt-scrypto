@@ -1,0 +1,62 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 3 entities
+├─ package_sim1pkgxxxxxxxxxmtdataxxxxxxxxx005246577269xxxxxxxxx9qjump across 1 partitions
+  └─ Partition(2): 2 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Metadata Module Package",
+         ),
+       )
+    └─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "A native package that defines the logic of the metadata module which is attached to global objects. The metadata module allows for setting and reading metadata.",
+         ),
+       )
+├─ package_sim1pkgxxxxxxxxxarulesxxxxxxxxx002304462983xxxxxxxxxrgr7fv across 1 partitions
+  └─ Partition(2): 2 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Role Assignment Module Package",
+         ),
+       )
+    └─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "A native package that defines the logic of the role assignments module which is attached to global objects. The role assignments module is used by the system to set and resolve the access roles for entity roles.",
+         ),
+       )
+└─ package_sim1pkgxxxxxxxxxryaltyxxxxxxxxx003849573396xxxxxxxxxa0z7mc across 1 partitions
+  └─ Partition(2): 2 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Royalty Module Package",
+         ),
+       )
+    └─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "A native package that defines the logic of the royalty module which is optionally attached to global components if they enable royalties. The royalties module is used to configure and claim component royalties.",
+         ),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

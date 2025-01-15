@@ -1,0 +1,363 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    false
+    18u8
+    Decimal("100000000000")
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<1u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "address" => Tuple(
+                Enum<1u8>(
+                    Enum<8u8>(
+                        Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+                    )
+                ),
+                false
+            ),
+            "address_array" => Tuple(
+                Enum<1u8>(
+                    Enum<136u8>(
+                        Array<Address>(
+                            Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+                        )
+                    )
+                ),
+                false
+            ),
+            "bool" => Tuple(
+                Enum<1u8>(
+                    Enum<1u8>(
+                        true
+                    )
+                ),
+                false
+            ),
+            "bool_array" => Tuple(
+                Enum<1u8>(
+                    Enum<129u8>(
+                        Array<Bool>(
+                            true,
+                            false
+                        )
+                    )
+                ),
+                false
+            ),
+            "decimal" => Tuple(
+                Enum<1u8>(
+                    Enum<7u8>(
+                        Decimal("1")
+                    )
+                ),
+                false
+            ),
+            "decimal_array" => Tuple(
+                Enum<1u8>(
+                    Enum<135u8>(
+                        Array<Decimal>(
+                            Decimal("1"),
+                            Decimal("2.1")
+                        )
+                    )
+                ),
+                false
+            ),
+            "i32" => Tuple(
+                Enum<1u8>(
+                    Enum<5u8>(
+                        4i32
+                    )
+                ),
+                false
+            ),
+            "i32_array" => Tuple(
+                Enum<1u8>(
+                    Enum<133u8>(
+                        Array<I32>(
+                            4i32,
+                            5i32
+                        )
+                    )
+                ),
+                false
+            ),
+            "i64" => Tuple(
+                Enum<1u8>(
+                    Enum<6u8>(
+                        5i64
+                    )
+                ),
+                false
+            ),
+            "i64_array" => Tuple(
+                Enum<1u8>(
+                    Enum<134u8>(
+                        Array<I64>(
+                            5i64,
+                            6i64
+                        )
+                    )
+                ),
+                false
+            ),
+            "instant" => Tuple(
+                Enum<1u8>(
+                    Enum<12u8>(
+                        1687446137i64
+                    )
+                ),
+                false
+            ),
+            "instant_array" => Tuple(
+                Enum<1u8>(
+                    Enum<140u8>(
+                        Array<I64>(
+                            1687446137i64
+                        )
+                    )
+                ),
+                false
+            ),
+            "non_fungible_global_id" => Tuple(
+                Enum<1u8>(
+                    Enum<10u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]")
+                    )
+                ),
+                false
+            ),
+            "non_fungible_global_id_array" => Tuple(
+                Enum<1u8>(
+                    Enum<138u8>(
+                        Array<Tuple>(
+                            NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]")
+                        )
+                    )
+                ),
+                false
+            ),
+            "non_fungible_local_id" => Tuple(
+                Enum<1u8>(
+                    Enum<11u8>(
+                        NonFungibleLocalId("<Hello_world>")
+                    )
+                ),
+                false
+            ),
+            "non_fungible_local_id_array" => Tuple(
+                Enum<1u8>(
+                    Enum<139u8>(
+                        Array<NonFungibleLocalId>(
+                            NonFungibleLocalId("<Hello_world>"),
+                            NonFungibleLocalId("#42#"),
+                            NonFungibleLocalId("[01]"),
+                            NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}")
+                        )
+                    )
+                ),
+                false
+            ),
+            "origin" => Tuple(
+                Enum<1u8>(
+                    Enum<14u8>(
+                        "https://www.radixdlt.com"
+                    )
+                ),
+                false
+            ),
+            "origin_array" => Tuple(
+                Enum<1u8>(
+                    Enum<142u8>(
+                        Array<String>(
+                            "https://www.radixdlt.com"
+                        )
+                    )
+                ),
+                false
+            ),
+            "public_key" => Tuple(
+                Enum<1u8>(
+                    Enum<9u8>(
+                        Enum<1u8>(
+                            Bytes("0000000000000000000000000000000000000000000000000000000000000000")
+                        )
+                    )
+                ),
+                false
+            ),
+            "public_key_array" => Tuple(
+                Enum<1u8>(
+                    Enum<137u8>(
+                        Array<Enum>(
+                            Enum<1u8>(
+                                Bytes("0000000000000000000000000000000000000000000000000000000000000000")
+                            ),
+                            Enum<0u8>(
+                                Bytes("000000000000000000000000000000000000000000000000000000000000000000")
+                            )
+                        )
+                    )
+                ),
+                false
+            ),
+            "public_key_hash" => Tuple(
+                Enum<1u8>(
+                    Enum<15u8>(
+                        Enum<1u8>(
+                            Bytes("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")
+                        )
+                    )
+                ),
+                false
+            ),
+            "public_key_hash_array" => Tuple(
+                Enum<1u8>(
+                    Enum<143u8>(
+                        Array<Enum>(
+                            Enum<1u8>(
+                                Bytes("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")
+                            ),
+                            Enum<0u8>(
+                                Bytes("165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428")
+                            )
+                        )
+                    )
+                ),
+                false
+            ),
+            "string" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Hello"
+                    )
+                ),
+                false
+            ),
+            "string_array" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "Hello",
+                            "world!"
+                        )
+                    )
+                ),
+                false
+            ),
+            "u32" => Tuple(
+                Enum<1u8>(
+                    Enum<3u8>(
+                        2u32
+                    )
+                ),
+                false
+            ),
+            "u32_array" => Tuple(
+                Enum<1u8>(
+                    Enum<131u8>(
+                        Array<U32>(
+                            2u32,
+                            3u32
+                        )
+                    )
+                ),
+                false
+            ),
+            "u64" => Tuple(
+                Enum<1u8>(
+                    Enum<4u8>(
+                        3u64
+                    )
+                ),
+                false
+            ),
+            "u64_array" => Tuple(
+                Enum<1u8>(
+                    Enum<132u8>(
+                        Array<U64>(
+                            3u64,
+                            4u64
+                        )
+                    )
+                ),
+                false
+            ),
+            "u8" => Tuple(
+                Enum<1u8>(
+                    Enum<2u8>(
+                        1u8
+                    )
+                ),
+                false
+            ),
+            "u8_array" => Tuple(
+                Enum<1u8>(
+                    Enum<130u8>(
+                        Bytes("0102")
+                    )
+                ),
+                false
+            ),
+            "url" => Tuple(
+                Enum<1u8>(
+                    Enum<13u8>(
+                        "https://www.radixdlt.com"
+                    )
+                ),
+                false
+            ),
+            "url_array" => Tuple(
+                Enum<1u8>(
+                    Enum<141u8>(
+                        Array<String>(
+                            "https://www.radixdlt.com"
+                        )
+                    )
+                ),
+                false
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

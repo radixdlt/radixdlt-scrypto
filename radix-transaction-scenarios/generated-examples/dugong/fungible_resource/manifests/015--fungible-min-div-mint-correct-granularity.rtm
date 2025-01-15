@@ -1,0 +1,15 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+MINT_FUNGIBLE
+    Address("resource_sim1tk8mv5cp2uuhjgw34qqh9v7jf6atjsnyrym9f3653k7pyd4gamsx96")
+    Decimal("166")
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

@@ -1,9 +1,9 @@
 Name: non_fungible_resource
 
 == SUMMARY HASHES ==
-These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 6ef13462fe13583a (allowed to change if not deployed to any network)
-Events       : d8aea2350b8b2463 (allowed to change if not deployed to any network)
+These Cuttlefish (Part 2) hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 6ef13462fe13583a (should never change)
+Events       : d8aea2350b8b2463 (should never change)
 
 == INTERESTING ADDRESSES ==
 - main_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw

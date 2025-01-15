@@ -1,0 +1,27 @@
+VERIFY_PARENT
+    Enum<2u8>(
+        Enum<0u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[5c5aff1a507b72ca5e03fd8481815e6c1285ce12e1b61de60c4842a5e4]")
+                )
+            )
+        )
+    )
+;
+CALL_METHOD
+    Address("account_sim1c9dln9q5pr7f0kt6u7payyeka23jrstgcq6zk6fxsvh9r5zpdpa82s")
+    "withdraw"
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Decimal("10")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Bucket("given_to_parent")
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>()
+;
+YIELD_TO_PARENT
+    Bucket("given_to_parent")
+;

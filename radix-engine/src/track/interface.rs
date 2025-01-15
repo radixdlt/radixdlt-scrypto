@@ -29,6 +29,25 @@ impl<E, C> CallbackError<E, C> {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+pub(crate) trait NodeSubstatesExt {
+    fn into_node_state_updates(self) -> NodeStateUpdates;
+}
+
+impl NodeSubstatesExt for NodeSubstates {
+    fn into_node_state_updates(self) -> NodeStateUpdates {
+        let mut updates = NodeStateUpdates::empty();
+        for (partition_num, substates) in self {
+            for (substate_key, indexed_scrypto_value) in substates {
+                updates.of_partition(partition_num).mut_update_substate(
+                    substate_key,
+                    DatabaseUpdate::Set(indexed_scrypto_value.unpack().0),
+                );
+            }
+        }
+        updates
+    }
+}
+
 pub enum TrackedSubstateInfo {
     New,
     Updated,

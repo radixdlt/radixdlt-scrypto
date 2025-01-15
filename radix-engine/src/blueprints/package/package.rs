@@ -1,4 +1,7 @@
 use super::substates::*;
+use crate::blueprints::native_schema::{
+    METADATA_PACKAGE_DEFINITION, PACKAGE_PACKAGE_DEFINITION, ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
+};
 use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
 use crate::object_modules::metadata::{validate_metadata_init, MetadataNativePackage};
@@ -678,7 +681,7 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
 }
 
 fn blueprint_state_schema(
-    package: PackageDefinition,
+    package: &PackageDefinition,
     blueprint_name: &str,
     system_mappings: IndexMap<usize, PartitionNumber>,
 ) -> IndexedStateSchema {
@@ -707,9 +710,8 @@ pub fn create_package_partition_substates(
 
     {
         // Note: We don't include royalty field because it's been disabled
-
         let package_schema = blueprint_state_schema(
-            PackageNativePackage::definition(),
+            &PACKAGE_PACKAGE_DEFINITION,
             PACKAGE_BLUEPRINT,
             indexmap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
         );
@@ -729,27 +731,12 @@ pub fn create_package_partition_substates(
 
     // Metadata
     {
-        let metadata_schema = blueprint_state_schema(
-            MetadataNativePackage::definition(),
-            METADATA_BLUEPRINT,
-            indexmap!(),
-        );
-        // Additional validation has been added as part of this commit.
-        // The logic is backward compatible, as it's used by protocol updates only.
-        let metadata_system_struct =
-            MetadataNativePackage::init_system_struct(validate_metadata_init(metadata).unwrap())
-                .unwrap();
-        let metadata_substates = SystemMapper::system_struct_to_node_substates(
-            &metadata_schema,
-            metadata_system_struct,
-            METADATA_BASE_PARTITION,
-        );
-        node_substates.extend(metadata_substates);
+        node_substates.extend(create_metadata_substates(metadata));
     }
 
     {
         let role_assignment_schema = blueprint_state_schema(
-            RoleAssignmentNativePackage::definition(),
+            &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
             ROLE_ASSIGNMENT_BLUEPRINT,
             indexmap!(),
         );
@@ -789,6 +776,24 @@ pub fn create_package_partition_substates(
     }
 
     node_substates
+}
+
+pub fn create_metadata_substates(metadata: MetadataInit) -> NodeSubstates {
+    let metadata_schema = blueprint_state_schema(
+        &METADATA_PACKAGE_DEFINITION,
+        METADATA_BLUEPRINT,
+        indexmap!(),
+    );
+    // Additional validation has been added as part of this commit.
+    // The logic is backward compatible, as it's used by protocol updates only.
+    let metadata_system_struct =
+        MetadataNativePackage::init_system_struct(validate_metadata_init(metadata).unwrap())
+            .unwrap();
+    SystemMapper::system_struct_to_node_substates(
+        &metadata_schema,
+        metadata_system_struct,
+        METADATA_BASE_PARTITION,
+    )
 }
 
 fn globalize_package<Y: SystemApi<RuntimeError>>(

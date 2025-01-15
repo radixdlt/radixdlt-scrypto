@@ -1,0 +1,398 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 68.3112619291 XRD
+├─ Network execution: 1.2667118 XRD, 25334236 execution cost units
+├─ Network finalization: 0.15669575 XRD, 3133915 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 66.8878543791 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 5
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5836b0f213dd92c8bc94d09d64cd3663c084dc87a56d04ad932b69bd197f")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("68.3112619291"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("34.15563096455"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("34.15563096455"),
+   }
+
+STATE UPDATES: 10 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("17.5639368216625"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("0ecac9c64ae3bc892d38f55f285510115d74f5514d63805016893128279472c7"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999989929.74425271335")),
+       )
+├─ package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3 across 12 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(fa160b6fda209b4a676a67a128414fad1569cbdf4c98c1139feb17e2751f6f3a)
+       Value: (Hidden as longer than 1024 bytes. Hash: a7df6834b5a7b252a815089208aca1e3278e95ef75de2daa6a6f21addac10720)
+  ├─ Partition(2): 3 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "MayaRouter Package",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "MayaRouter package stores assets swappable with assets from other networks",
+         ),
+       )
+    └─ Set: "tags"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
+             "bridge",
+             "cross-chain",
+           ],
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED PackageRoyaltyAccumulatorFieldPayload::V1(
+         PackageRoyaltyAccumulatorV1 {
+           royalty_vault: Vault(Own("internal_vault_sim1tqmtpusnmkfv30y56zwkfnfkv0qgfhy854ksftvn9d5m6xtltnqnt6")),
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: (Hidden as longer than 1024 bytes. Hash: 41340c5b20fd98918c8ebc2529f17407e24118382a8524e38d2813e94df93c8a)
+  ├─ Partition(66): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
+         BlueprintDependencies([]),
+       )
+  ├─ Partition(67): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionRoyaltyConfigEntryPayload::V1(
+         PackageRoyaltyConfig::Disabled,
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::StaticRoleDefinition(
+             StaticRoleDefinition {
+               roles: RoleSpecification::Normal(
+                 {},
+               ),
+               methods: {
+                 MethodKey("user_deposit") => MethodAccessibility::Public,
+                 MethodKey("withdraw") => MethodAccessibility::Public,
+                 MethodKey("transfer") => MethodAccessibility::Public,
+                 MethodKey("direct_deposit") => MethodAccessibility::Public,
+                 MethodKey("get_vault_balance") => MethodAccessibility::Public,
+               },
+             },
+           ),
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::ScryptoV1,
+       )
+  ├─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 4fc7b8989acd34df7f7cddf1f7deea3258353a94296d0fcf09e216dd962d4ca9)
+  ├─ Partition(71): 1 change
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
+       Value: (Hidden as longer than 1024 bytes. Hash: b89d91a4786531a64dca4f0a37b54096735d930c710255656812a8f706b73729)
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")),
+               blueprint_name: "Package",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "package_royalty",
+             ],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tqmtpusnmkfv30y56zwkfnfkv0qgfhy854ksftvn9d5m6xtltnqnt6 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0")),
+       )
+├─ component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr across 3 partitions
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED MayaRouter {
+         locker: GlobalAccountLocker(Reference("locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy")),
+         vaults: KeyValueStore(Own("internal_keyvaluestore_sim1kqt0p03x3levw8580h9zs5ezccav208dz37nemtgh9s532f8vempze")),
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
+               blueprint_name: "MayaRouter",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy across 4 partitions
+  ├─ Partition(2): 1 change
+    └─ Set: "admin_badge"
+       Value: LOCKED EMPTY
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(6): 4 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("storer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recoverer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("storer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l")),
+                   local_id: NonFungibleLocalId("[dda26882402a4b067593cae3a074b07fb63d48c39626c875db70924e809c1501]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recoverer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6")),
+               blueprint_name: "AccountLocker",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_keyvaluestore_sim1kqt0p03x3levw8580h9zs5ezccav208dz37nemtgh9s532f8vempze across 1 partitions
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::KeyValueStore(
+         KeyValueStoreInfo {
+           generic_substitutions: KeyValueStoreGenericSubstitutions {
+             key_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
+                 blueprint_name: "MayaRouter",
+                 type_name: "ComponentAddress",
+               },
+             ),
+             value_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
+                 blueprint_name: "MayaRouter",
+                 type_name: "KeyValueStore_ResourceAddress_FungibleVault",
+               },
+             ),
+             allow_ownership: true,
+           },
+         },
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("35.127873643325")),
+       )
+
+OUTPUTS: 4
+├─ Unit
+├─ None
+├─ Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")
+└─ Reference("component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr")
+
+BALANCE CHANGES: 2
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -68.3112619291
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 34.15563096455
+
+NEW ENTITIES: 3
+└─ Package: package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3
+├─ Component: component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr
+└─ Component: locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy

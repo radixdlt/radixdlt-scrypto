@@ -57,6 +57,17 @@ impl StateUpdates {
         self
     }
 
+    pub fn mut_add_node_updates(
+        &mut self,
+        node_id: impl Into<NodeId>,
+        node_updates: impl Into<NodeStateUpdates>,
+    ) {
+        let Some(node_updates) = node_updates.into().rebuild_without_empty_entries() else {
+            return;
+        };
+        self.of_node(node_id).mut_add_updates(node_updates);
+    }
+
     pub fn rebuild_without_empty_entries(self) -> Self {
         Self {
             by_node: self
@@ -161,6 +172,20 @@ impl NodeStateUpdates {
             .mut_set_substate(key.into_substate_key(), value);
     }
 
+    pub fn mut_add_updates(&mut self, other: impl Into<Self>) {
+        let Self::Delta {
+            by_partition: other_by_partition,
+        } = other.into();
+        for (partition_number, partition_state_updates) in other_by_partition {
+            // Avoid creating empty updates
+            if partition_state_updates.is_no_op() {
+                continue;
+            }
+            self.of_partition(partition_number)
+                .mut_add_updates(partition_state_updates);
+        }
+    }
+
     /// Starts a Partition-level update.
     pub fn of_partition(&mut self, partition_num: PartitionNumber) -> &mut PartitionStateUpdates {
         match self {
@@ -224,6 +249,13 @@ impl Default for PartitionStateUpdates {
 }
 
 impl PartitionStateUpdates {
+    pub fn is_no_op(&self) -> bool {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset { .. }) => false,
+        }
+    }
+
     pub fn set_substate<'a>(
         mut self,
         key: impl ResolvableSubstateKey<'a>,
@@ -231,6 +263,18 @@ impl PartitionStateUpdates {
     ) -> Self {
         self.mut_set_substate(key, value);
         self
+    }
+
+    pub fn mut_add_updates<'a>(&mut self, other: impl Into<Self>) {
+        match other.into() {
+            PartitionStateUpdates::Delta { by_substate } => {
+                self.mut_update_substates(by_substate);
+            }
+            // If we reset, we replace the current state with the reset state
+            other @ PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset { .. }) => {
+                *self = other;
+            }
+        }
     }
 
     pub fn mut_set_substate<'a>(
@@ -279,19 +323,9 @@ impl PartitionStateUpdates {
             PartitionStateUpdates::Delta { by_substate } => {
                 by_substate.insert(substate_key, database_update);
             }
-            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                new_substate_values,
-            }) => match database_update {
-                DatabaseUpdate::Set(new_value) => {
-                    new_substate_values.insert(substate_key, new_value);
-                }
-                DatabaseUpdate::Delete => {
-                    let existed = new_substate_values.swap_remove(&substate_key).is_some();
-                    if !existed {
-                        panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
-                    }
-                }
-            },
+            PartitionStateUpdates::Batch(batch_updates) => {
+                batch_updates.mut_update_substate(substate_key, database_update);
+            }
         }
     }
 
@@ -310,23 +344,11 @@ impl PartitionStateUpdates {
         updates: impl IntoIterator<Item = (SubstateKey, DatabaseUpdate)>,
     ) {
         match self {
-            PartitionStateUpdates::Delta { by_substate } => by_substate.extend(updates),
-            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                new_substate_values,
-            }) => {
-                for (substate_key, database_update) in updates {
-                    match database_update {
-                        DatabaseUpdate::Set(new_value) => {
-                            new_substate_values.insert(substate_key, new_value);
-                        }
-                        DatabaseUpdate::Delete => {
-                            let existed = new_substate_values.swap_remove(&substate_key).is_some();
-                            if !existed {
-                                panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
-                            }
-                        }
-                    }
-                }
+            PartitionStateUpdates::Delta { by_substate } => {
+                by_substate.extend(updates);
+            }
+            PartitionStateUpdates::Batch(batch_updates) => {
+                batch_updates.mut_update_substates(updates);
             }
         }
     }
@@ -391,6 +413,35 @@ pub enum BatchPartitionStateUpdate {
     Reset {
         new_substate_values: IndexMap<SubstateKey, DbSubstateValue>,
     },
+}
+
+impl BatchPartitionStateUpdate {
+    pub fn mut_update_substates(
+        &mut self,
+        updates: impl IntoIterator<Item = (SubstateKey, DatabaseUpdate)>,
+    ) {
+        for (substate_key, database_update) in updates {
+            self.mut_update_substate(substate_key, database_update);
+        }
+    }
+
+    pub fn mut_update_substate(
+        &mut self,
+        substate_key: SubstateKey,
+        database_update: DatabaseUpdate,
+    ) {
+        let BatchPartitionStateUpdate::Reset {
+            new_substate_values,
+        } = self;
+        match database_update {
+            DatabaseUpdate::Set(new_value) => {
+                new_substate_values.insert(substate_key, new_value);
+            }
+            DatabaseUpdate::Delete => {
+                new_substate_values.swap_remove(&substate_key);
+            }
+        }
+    }
 }
 
 /// An update of a single substate's value.
