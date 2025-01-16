@@ -156,10 +156,10 @@ mod tests {
             .inspect_err(|e| println!("Scrypto cli build failed: {}", e))
             .unwrap();
 
-        // Run `scrypto build` for example blueprit
+        // Run `scrypto build` for example blueprint
         Command::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../radix-clis/target/release/scrypto"
+            "/../target/release/scrypto"
         ))
         .arg("build")
         .args(additional_args)
