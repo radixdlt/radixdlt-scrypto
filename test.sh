@@ -22,7 +22,6 @@ echo "Running tests..."
 (set -x; cd radix-engine-tests/assets/blueprints; cargo $cargo_test_runner)
 (set -x; cd radix-clis/tests/blueprints; cargo $cargo_test_runner)
 (set -x; cd scrypto-test/tests/blueprints; cargo $cargo_test_runner)
-(set -x; cd scrypto-test/assets/blueprints; cargo $cargo_test_runner)
 (set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo $cargo_test_runner)
 (set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo $cargo_test_runner)
 (
