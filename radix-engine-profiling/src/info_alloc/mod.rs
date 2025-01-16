@@ -158,11 +158,14 @@ mod tests {
         assert_eq!((sum, current, peak), (10, 1, 10));
 
         // allocate 3 bytes
-        let _a = Box::new(1u8);
-        let _b = Box::new(1u8);
-        let _c = Box::new(1u8);
+        let a = Box::new(1u8);
+        let b = Box::new(1u8);
+        let c = Box::new(1u8);
         let (sum, current, peak) = INFO_ALLOC.get_counters_value();
         assert_eq!((sum, current, peak), (13, 4, 10));
+
+        // Dummy operation with a, b, c to prevent compiler from complaining about unused variables
+        let _d = *a + *b + *c;
 
         // allocate 10 bytes
         let mut v = Vec::<u8>::with_capacity(10);
