@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::MaybeUninit;
 #[cfg(not(feature = "fuzzing"))]
 use sbor::rust::sync::Arc;
+use wasm::WasmFeaturesConfig;
 use wasmi::core::HostError;
 use wasmi::errors::InstantiationError;
 use wasmi::*;
@@ -960,6 +961,27 @@ pub enum WasmiInstantiationError {
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let mut config = wasmi::Config::default();
+
+        let features = WasmFeaturesConfig::default().features;
+
+        config.wasm_mutable_global(features.mutable_global);
+        config.wasm_sign_extension(features.sign_extension);
+        config.wasm_saturating_float_to_int(features.saturating_float_to_int);
+        config.wasm_multi_value(features.multi_value);
+        config.wasm_multi_memory(features.multi_memory);
+        config.wasm_bulk_memory(features.bulk_memory);
+        config.wasm_reference_types(features.reference_types);
+        config.wasm_tail_call(features.tail_call);
+        config.wasm_extended_const(features.extended_const);
+        config.floats(features.floats);
+        // Below features are not configurable in `wasmi`
+        //   component_model,
+        //   simd
+        //   relaxed_simd
+        //   threads
+        //   exceptions
+        //   memory64
+        //   memory_control
 
         // In order to speed compilation we deliberately
         // - use LazyTranslation compilation mode
