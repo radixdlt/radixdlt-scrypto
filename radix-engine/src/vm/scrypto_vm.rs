@@ -10,14 +10,12 @@ use radix_engine_profiling_derive::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
-    pub wasm_validator_config: WasmValidatorConfigV1,
 }
 
 impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
     fn default() -> Self {
         Self {
             wasm_engine: W::default(),
-            wasm_validator_config: WasmValidatorConfigV1::new(),
         }
     }
 }
