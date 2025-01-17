@@ -2,10 +2,9 @@
 mod tests {
     use radix_common::prelude::*;
     use radix_engine::utils::ExtractSchemaError;
-    use radix_engine::vm::wasm::PrepareError;
+    use radix_engine::vm::wasm::{PrepareError, WasmFeaturesConfig};
     use radix_engine_interface::types::Level;
     use scrypto_compiler::*;
-    use std::process::Command;
     use std::{env, path::PathBuf, process::Stdio};
     use tempdir::TempDir;
 
@@ -478,37 +477,11 @@ mod tests {
 
         blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
 
-        // Check clang/LLVM version
-        let clang_version = Command::new("clang").arg("--version").output().unwrap();
+        let cflags = WasmFeaturesConfig::default()
+            .set_reference_types(true)
+            .into_target_cflags();
+        let action = EnvironmentVariableAction::Set(cflags);
 
-        // clang --version exemplary output
-        // Ubuntu clang version 17.0.6 (++20231209124227+6009708b4367-1~exp1~20231209124336.77)
-        // Target: x86_64-pc-linux-gnu
-        // Thread model: posix
-        // InstalledDir: /usr/lib/llvm-17/bin
-        let clang_version = String::from_utf8_lossy(&clang_version.stdout);
-        let mut idx = clang_version
-            .find("clang version")
-            .expect("Failed to get clang version");
-        idx += "clang version ".len();
-        let version = &clang_version[idx..]
-            .split_whitespace()
-            .next()
-            .expect("Failed to get version");
-        let major_version = version
-            .split(".")
-            .next()
-            .expect("Failed to get major version");
-        let major_version: u8 = major_version.parse().unwrap();
-
-        let action = if major_version >= 19 {
-            // Since LLVM 19 reference-types are enabled by default, no dedicated CFLAGS needed.
-            // Unset TARGET_CFLAGS to build with default WASM features.
-            EnvironmentVariableAction::Unset
-        } else {
-            // In previous versions reference-types must be enabled explicitly.
-            EnvironmentVariableAction::Set("-mreference-types".to_string())
-        };
         // Act
         let status = ScryptoCompiler::builder()
             .env("TARGET_CFLAGS", action)

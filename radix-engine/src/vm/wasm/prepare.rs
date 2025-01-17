@@ -1,7 +1,7 @@
 extern crate radix_wasm_instrument as wasm_instrument;
 
 use crate::internal_prelude::*;
-use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use crate::vm::wasm::{constants::*, errors::*, PrepareError, WasmFeaturesConfig};
 use num_traits::CheckedAdd;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use syn::Ident;
@@ -10,7 +10,7 @@ use wasm_instrument::{
     inject_stack_limiter,
     utils::module_info::ModuleInfo,
 };
-use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
+use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType};
 
 use super::WasmiModule;
 use crate::vm::ScryptoVmVersion;
@@ -25,28 +25,7 @@ impl WasmModule {
         // deserialize
         let module = ModuleInfo::new(code).map_err(|_| PrepareError::DeserializationError)?;
 
-        // Radix Engine supports MVP + proposals: mutable globals and sign-extension-ops
-        let features = WasmFeatures {
-            mutable_global: true,
-            saturating_float_to_int: false,
-            sign_extension: true,
-            reference_types: false,
-            multi_value: false,
-            bulk_memory: false,
-            simd: false,
-            relaxed_simd: false,
-            threads: false,
-            tail_call: false,
-            floats: false,
-            multi_memory: false,
-            exceptions: false,
-            memory64: false,
-            extended_const: false,
-            component_model: false,
-            function_references: false,
-            memory_control: false,
-            gc: false,
-        };
+        let features = WasmFeaturesConfig::default().features;
 
         module
             .validate(features)
