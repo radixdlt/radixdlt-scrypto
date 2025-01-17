@@ -1082,6 +1082,15 @@ impl WasmModule {
                         InvalidTable::InitialTableSizeLimitExceeded,
                     ));
                 }
+                // As of now (Jan 17, 2025) tables are not growable, because TableGrow operator is disabled
+                // in `wasmparser`, but let's add below check in case it is enabled in the future.
+                if let Some(maximum) = table.ty.maximum {
+                    if maximum > max_initial_table_size {
+                        return Err(PrepareError::InvalidTable(
+                            InvalidTable::InitialTableSizeLimitExceeded,
+                        ));
+                    }
+                }
             }
         }
 
