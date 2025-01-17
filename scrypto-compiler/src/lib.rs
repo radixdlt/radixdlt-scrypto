@@ -2,6 +2,7 @@ use cargo_toml::Manifest;
 use fslock::{LockFile, ToOsStr};
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
+use radix_engine::vm::wasm::WasmFeaturesConfig;
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use radix_rust::prelude::{IndexMap, IndexSet};
 use std::cmp::Ordering;
@@ -15,11 +16,6 @@ const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
-
-// Radix Engine supports WASM MVP + proposals: mmutable-globals and sign-extension-ops
-// (see radix-engine/src/vm/wasm.prepare.rs)
-// More on CFLAGS for WASM:  https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly
-const TARGET_CLAGS_FOR_WASM: &str = "-mcpu=mvp -mmutable-globals -msign-ext";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -66,7 +62,7 @@ pub struct ScryptoCompilerInputParams {
     pub profile: Profile,
     /// List of environment variables to set or unset during compilation.
     /// By default it includes compilation flags for C libraries to configure WASM with the same
-    /// features as Radix Engine.
+    /// features as Radix Engine, eg.
     /// TARGET_CFLAGS="-mcpu=mvp -mmutable-globals -msign-ext"
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
     /// List of features, used for 'cargo build --features'. Optional field.
@@ -111,7 +107,7 @@ impl Default for ScryptoCompilerInputParams {
             environment_variables: indexmap!(
                 "TARGET_CFLAGS".to_string() =>
                 EnvironmentVariableAction::Set(
-                    TARGET_CLAGS_FOR_WASM.to_string()
+                    WasmFeaturesConfig::default().into_target_cflags()
                 )
             ),
             features: indexset!(),
