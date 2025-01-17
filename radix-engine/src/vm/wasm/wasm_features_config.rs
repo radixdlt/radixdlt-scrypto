@@ -8,13 +8,24 @@ pub struct WasmFeaturesConfig {
 impl Default for WasmFeaturesConfig {
     fn default() -> Self {
         Self {
-            // Radix Engine supports MVP + proposals:
-            // - mutable globals and sign-extension-ops
+            // The Radix Engine supports the MVP and additional proposals, specifically:
+            // - mutable-globals and sign-extension-ops
+            // - reference-types and multi-value returns
+            //   These features have been enabled by default in LLVM version 19, which Rust has used starting from version 1.82.
+            //   To ensure compatibility with Rust versions 1.82 and later, both features must be enabled.
+            //
+            //   - Reference types
+            //     Enabling this is safe since Rust does not support `externref`.
+            //     Regarding indirect function calls—which are common in Rust code—there is no issue with the 5-byte LEB128 encoding.
+            //     The proposal has been around for a while, and WebAssembly engines, including `wasmi`, have had sufficient time to stabilize it.
+            //   - Multi-value returns
+            //     This is also safe to enable because the Radix Engine has never used the Nightly `extern "wasm"` feature.
+            //   You can find more details here: https://blog.rust-lang.org/2024/09/24/webassembly-targets-change-in-default-target-features.html
             features: WasmFeatures {
                 mutable_global: true,
                 sign_extension: true,
-                reference_types: false,
-                multi_value: false,
+                reference_types: true,
+                multi_value: true,
                 saturating_float_to_int: false,
                 bulk_memory: false,
                 simd: false,
@@ -48,11 +59,6 @@ macro_rules! cflag {
 impl WasmFeaturesConfig {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn set_reference_types(&mut self, value: bool) -> &mut Self {
-        self.features.reference_types = value;
-        self
     }
 
     // More on CFLAGS for WASM:  https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly

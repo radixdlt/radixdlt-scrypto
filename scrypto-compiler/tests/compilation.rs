@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
     use radix_common::prelude::*;
-    use radix_engine::utils::ExtractSchemaError;
-    use radix_engine::vm::wasm::{PrepareError, WasmFeaturesConfig};
+    use radix_engine::vm::wasm::WasmFeaturesConfig;
     use radix_engine_interface::types::Level;
     use scrypto_compiler::*;
     use std::{env, path::PathBuf, process::Stdio};
@@ -454,47 +453,19 @@ mod tests {
     }
 
     #[test]
-    fn test_compilation_with_wasm_reference_types_disabled() {
+    fn test_compilation_of_code_using_reference_types() {
         // Arrange
         let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
         blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
 
         // Act
-        // ScryptoCompiler compiles WASM by default with reference-types disabled.
+        // ScryptoCompiler compiles WASM by default with reference-types enabled.
         let status = ScryptoCompiler::builder()
             .manifest_path(blueprint_manifest_path)
             .compile();
 
         // Assert
         assert!(status.is_ok(), "{:?}", status);
-    }
-
-    #[test]
-    fn test_compilation_with_wasm_reference_types_enabled() {
-        // Arrange
-        let mut blueprint_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        blueprint_manifest_path.extend(["tests", "assets", "call_indirect", "Cargo.toml"]);
-
-        let cflags = WasmFeaturesConfig::default()
-            .set_reference_types(true)
-            .into_target_cflags();
-        let action = EnvironmentVariableAction::Set(cflags);
-
-        // Act
-        let status = ScryptoCompiler::builder()
-            .env("TARGET_CFLAGS", action)
-            .manifest_path(blueprint_manifest_path)
-            .compile();
-
-        // Assert
-        // Error is expected here because Radix Engine expects WASM with reference-types disabled.
-        // See `call_indirect.c` for more details.
-        assert_matches!(
-            status.unwrap_err(),
-            ScryptoCompilerError::SchemaExtractionError(
-                ExtractSchemaError::InvalidWasm(PrepareError::ValidationError(msg))) if msg.contains("reference-types not enabled: zero byte expected")
-        )
     }
 }
