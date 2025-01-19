@@ -1,14 +1,7 @@
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use radix_rust::copy_u8_array;
-use sbor::rust::convert::TryFrom;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
-use sbor::*;
 
-use crate::data::manifest::*;
-use crate::*;
+use crate::internal_prelude::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -57,10 +50,17 @@ impl ManifestBlobRef {
 
 manifest_type!(ManifestBlobRef, ManifestCustomValueKind::Blob, 32);
 
+impl sbor::Describe<ScryptoCustomTypeKind> for ManifestBlobRef {
+    const TYPE_ID: sbor::RustTypeId = <Vec<u8> as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
+
+    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, sbor::RustTypeId> {
+        Vec::<u8>::type_data()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::internal_prelude::*;
 
     #[test]
     fn manifest_blob_parse_fail() {

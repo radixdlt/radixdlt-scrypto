@@ -107,7 +107,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
 }
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
