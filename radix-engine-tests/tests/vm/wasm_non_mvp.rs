@@ -1,6 +1,7 @@
 use paste::paste;
 use radix_common::prelude::*;
 use radix_engine::vm::wasm::WasmModule;
+use radix_engine::vm::ScryptoVmVersion;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -29,7 +30,7 @@ macro_rules! assert_sign_extensions {
                         .replace("${value_kind}", &value_kind)
                         .replace("${slice_len}", &slice_len));
 
-                assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+                assert!(WasmModule::init(&code, ScryptoVmVersion::latest()).unwrap().contains_sign_ext_ops());
 
                 let mut ledger = LedgerSimulatorBuilder::new().build();
                 let package_address = ledger.publish_package(

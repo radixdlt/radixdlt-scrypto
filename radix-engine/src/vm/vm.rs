@@ -66,7 +66,7 @@ impl VmApi for VmBoot {
 }
 
 /// This trait is intended to encapsulate the data and types required to
-/// initalize the VMs in the engine.
+/// initialize the VMs in the engine.
 ///
 /// The canonical implementation is [`VmModules`] - but we have this trait
 /// as well so that functions can take an `&impl VmInitialize` parameter,
@@ -267,6 +267,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         address,
                         export.code_hash,
                         &instrumented_code.instrumented_code,
+                        vm_api.get_scrypto_version(),
                     )
                 };
 

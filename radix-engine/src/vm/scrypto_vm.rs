@@ -26,10 +26,14 @@ impl<W: WasmEngine> ScryptoVm<W> {
         package_address: &PackageAddress,
         code_hash: CodeHash,
         instrumented_code: &[u8],
+        version: ScryptoVmVersion,
     ) -> ScryptoVmInstance<W::WasmInstance> {
         ScryptoVmInstance {
-            instance: self.wasm_engine.instantiate(code_hash, instrumented_code),
+            instance: self
+                .wasm_engine
+                .instantiate(code_hash, instrumented_code, version),
             package_address: *package_address,
+            version,
         }
     }
 }
@@ -37,6 +41,7 @@ impl<W: WasmEngine> ScryptoVm<W> {
 pub struct ScryptoVmInstance<I: WasmInstance> {
     instance: I,
     package_address: PackageAddress,
+    version: ScryptoVmVersion,
 }
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
@@ -46,14 +51,14 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         export_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
-        vm_api: &V,
+        _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
                 api,
                 self.package_address,
                 export_name.to_string(),
-                vm_api.get_scrypto_version(),
+                self.version,
             ));
 
             let mut input = Vec::new();

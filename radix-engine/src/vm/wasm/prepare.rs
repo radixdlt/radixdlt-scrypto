@@ -21,11 +21,11 @@ pub struct WasmModule {
 }
 
 impl WasmModule {
-    pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
+    pub fn init(code: &[u8], version: ScryptoVmVersion) -> Result<Self, PrepareError> {
         // deserialize
         let module = ModuleInfo::new(code).map_err(|_| PrepareError::DeserializationError)?;
 
-        let features = WasmFeaturesConfig::default().features;
+        let features = WasmFeaturesConfig::from_scrypto_vm_version(version).features;
 
         module
             .validate(features)
@@ -1255,7 +1255,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_instantiatable(self) -> Result<Self, PrepareError> {
+    pub fn ensure_instantiatable(self, version: ScryptoVmVersion) -> Result<Self, PrepareError> {
         // During instantiation time, the following procedures are applied:
 
         // 1. Resolve imports with external values
@@ -1273,7 +1273,7 @@ impl WasmModule {
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
         let code = self.module.bytes();
-        WasmiModule::new(&code[..])
+        WasmiModule::new(&code[..], version)
             .map_err(|_| PrepareError::NotCompilable)?
             .instantiate()
             .map_err(|e| PrepareError::NotInstantiatable {
@@ -1399,12 +1399,20 @@ mod tests {
     macro_rules! assert_invalid_wasm {
         ($wat: expr, $err: expr) => {
             let code = wat2wasm!($wat);
-            assert_eq!($err, WasmModule::init(&code).unwrap_err());
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, ScryptoVmVersion::latest()).unwrap_err()
+            );
         };
 
         ($wat: expr, $err: expr, $func: expr) => {
             let code = wat2wasm!($wat);
-            assert_eq!($err, WasmModule::init(&code).and_then($func).unwrap_err());
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, ScryptoVmVersion::latest())
+                    .and_then($func)
+                    .unwrap_err()
+            );
         };
     }
 
@@ -1850,7 +1858,9 @@ mod tests {
             "#
         );
 
-        assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+        assert!(WasmModule::init(&code, ScryptoVmVersion::latest())
+            .unwrap()
+            .contains_sign_ext_ops());
 
         let code = wat2wasm!(
             r#"
@@ -1863,6 +1873,8 @@ mod tests {
             "#
         );
 
-        assert!(!WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+        assert!(!WasmModule::init(&code, ScryptoVmVersion::latest())
+            .unwrap()
+            .contains_sign_ext_ops());
     }
 }

@@ -959,29 +959,35 @@ pub enum WasmiInstantiationError {
 }
 
 impl WasmiModule {
-    pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
+    pub fn new(code: &[u8], version: ScryptoVmVersion) -> Result<Self, WasmiInstantiationError> {
         let mut config = wasmi::Config::default();
 
-        let features = WasmFeaturesConfig::default().features;
+        // In previous versions we didn't adjust `wasmi` config according to the WASM features.
+        // This is not a big issue, since the code at this stage is already validated in terms
+        // of WASM features (see `WasmModule::init()`)
+        // But since Dugong we want to keep it aligned
+        if version >= ScryptoVmVersion::dugong() {
+            let features = WasmFeaturesConfig::from_scrypto_vm_version(version).features;
 
-        config.wasm_mutable_global(features.mutable_global);
-        config.wasm_sign_extension(features.sign_extension);
-        config.wasm_saturating_float_to_int(features.saturating_float_to_int);
-        config.wasm_multi_value(features.multi_value);
-        config.wasm_multi_memory(features.multi_memory);
-        config.wasm_bulk_memory(features.bulk_memory);
-        config.wasm_reference_types(features.reference_types);
-        config.wasm_tail_call(features.tail_call);
-        config.wasm_extended_const(features.extended_const);
-        config.floats(features.floats);
-        // Below features are not configurable in `wasmi`
-        //   component_model,
-        //   simd
-        //   relaxed_simd
-        //   threads
-        //   exceptions
-        //   memory64
-        //   memory_control
+            config.wasm_mutable_global(features.mutable_global);
+            config.wasm_sign_extension(features.sign_extension);
+            config.wasm_saturating_float_to_int(features.saturating_float_to_int);
+            config.wasm_multi_value(features.multi_value);
+            config.wasm_multi_memory(features.multi_memory);
+            config.wasm_bulk_memory(features.bulk_memory);
+            config.wasm_reference_types(features.reference_types);
+            config.wasm_tail_call(features.tail_call);
+            config.wasm_extended_const(features.extended_const);
+            config.floats(features.floats);
+            // Below features are not configurable in `wasmi`
+            //   component_model,
+            //   simd
+            //   relaxed_simd
+            //   threads
+            //   exceptions
+            //   memory64
+            //   memory_control
+        }
 
         // In order to speed compilation we deliberately
         // - use LazyTranslation compilation mode
@@ -2120,7 +2126,12 @@ impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
     #[allow(unused_variables)]
-    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmiInstance {
+    fn instantiate(
+        &self,
+        code_hash: CodeHash,
+        instrumented_code: &[u8],
+        version: ScryptoVmVersion,
+    ) -> WasmiInstance {
         #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
@@ -2135,7 +2146,8 @@ impl WasmEngine for WasmiEngine {
             }
         }
 
-        let module = WasmiModule::new(instrumented_code).expect("Failed to compile module");
+        let module =
+            WasmiModule::new(instrumented_code, version).expect("Failed to compile module");
         let instance = module.instantiate_unchecked();
 
         #[cfg(not(feature = "fuzzing"))]
@@ -2243,7 +2255,7 @@ mod tests {
         // wat2wasm has "mutable-globals" enabled by default
         let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
 
-        let wasmi_module = WasmiModule::new(&code).unwrap();
+        let wasmi_module = WasmiModule::new(&code, ScryptoVmVersion::latest()).unwrap();
         let module = wasmi_module.module;
 
         let mut store = Store::new(&module.engine(), WasmiInstanceEnv::new());

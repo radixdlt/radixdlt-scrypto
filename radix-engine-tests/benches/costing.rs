@@ -374,7 +374,7 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
     let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
 
     c.bench_function("costing::deserialize_wasm", |b| {
-        b.iter(|| WasmModule::init(code).unwrap())
+        b.iter(|| WasmModule::init(code, ScryptoVmVersion::latest()).unwrap())
     });
 }
 

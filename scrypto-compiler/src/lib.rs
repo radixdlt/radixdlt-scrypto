@@ -3,6 +3,7 @@ use fslock::{LockFile, ToOsStr};
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine::vm::wasm::WasmFeaturesConfig;
+use radix_engine::vm::ScryptoVmVersion;
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use radix_rust::prelude::{IndexMap, IndexSet};
 use std::cmp::Ordering;
@@ -975,8 +976,9 @@ impl ScryptoCompiler {
             })?;
         let code_hash = hash(&code);
 
-        let package_definition =
-            extract_definition(&code).map_err(ScryptoCompilerError::SchemaExtractionError)?;
+        // TODO WASM configurable ScryptoVmVersion
+        let package_definition = extract_definition(&code, ScryptoVmVersion::latest())
+            .map_err(ScryptoCompilerError::SchemaExtractionError)?;
 
         std::fs::write(
             &manifest_def.target_output_binary_rpd_path,

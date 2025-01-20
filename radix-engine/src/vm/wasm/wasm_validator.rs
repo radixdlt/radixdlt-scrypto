@@ -41,7 +41,7 @@ impl ScryptoV1WasmValidator {
         code: &[u8],
         blueprints: I,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
-        WasmModule::init(code)?
+        WasmModule::init(code, self.version)?
             .enforce_no_start_function()?
             .enforce_import_constraints(self.version)?
             .enforce_export_names()?
@@ -57,7 +57,7 @@ impl ScryptoV1WasmValidator {
             .enforce_export_constraints(blueprints)?
             .inject_instruction_metering(&self.instrumenter_config)?
             .inject_stack_metering(self.instrumenter_config.max_stack_size())?
-            .ensure_instantiatable()?
+            .ensure_instantiatable(self.version)?
             .ensure_compilable()?
             .to_bytes()
     }
