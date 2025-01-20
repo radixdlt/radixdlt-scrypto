@@ -316,13 +316,19 @@ macro_rules! define_manifest_typed_invocation {
             pub use uniform_match_on_manifest_typed_invocation;
 
             /// This is a function that's there for testing purposes only.
-            pub fn typed_native_invocation_function_table() -> HashMap<&'static str, HashMap<&'static str, HashSet<&'static str>>> {
+            pub fn typed_native_invocation_function_table() -> HashMap<&'static str, HashMap<&'static str, HashMap<&'static str, SingleTypeSchema<ScryptoCustomSchema>>>> {
                 hashmap! {
                     $(
                         stringify!($blueprint_ident) => hashmap! {
-                            "Function" => hashset![$($function_name),*],
-                            "Method" => hashset![$($method_name),*],
-                            "DirectMethod" => hashset![$($direct_method_name),*],
+                            "Function" => hashmap![$(
+                                $function_name => generate_single_type_schema::<$function_input, ScryptoCustomSchema>()
+                            ),*],
+                            "Method" => hashmap![$(
+                                $method_name => generate_single_type_schema::<$method_input, ScryptoCustomSchema>()
+                            ),*],
+                            "DirectMethod" => hashmap![$(
+                                $direct_method_name => generate_single_type_schema::<$direct_method_input, ScryptoCustomSchema>()
+                            ),*],
                         },
                     )*
                 }

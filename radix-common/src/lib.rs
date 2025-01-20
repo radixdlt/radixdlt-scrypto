@@ -87,7 +87,7 @@ pub mod prelude {
 
 pub(crate) mod internal_prelude {
     pub use super::prelude::*;
-    pub use crate::*;
+    pub use crate::manifest_type;
     pub use sbor::representations::*;
     pub use sbor::traversal::*;
 }
