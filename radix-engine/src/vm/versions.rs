@@ -6,9 +6,11 @@ pub enum ScryptoVmVersion {
     V1_0,
     V1_1,
     V1_2,
+    V1_3,
 }
 
 impl ScryptoVmVersion {
+    // TODO WASM Switch to Dugong
     pub const fn latest() -> ScryptoVmVersion {
         Self::cuttlefish()
     }
@@ -32,6 +34,10 @@ impl ScryptoVmVersion {
     pub const fn crypto_utils_v2() -> ScryptoVmVersion {
         Self::V1_2
     }
+
+    pub const fn dugong() -> ScryptoVmVersion {
+        Self::V1_3
+    }
 }
 
 impl From<ScryptoVmVersion> for u64 {
@@ -48,6 +54,7 @@ impl TryFrom<u64> for ScryptoVmVersion {
             0 => Ok(Self::V1_0),
             1 => Ok(Self::V1_1),
             2 => Ok(Self::V1_2),
+            3 => Ok(Self::V1_3),
             v => Err(Self::Error::FromIntError(v)),
         }
     }
