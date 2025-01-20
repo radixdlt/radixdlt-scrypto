@@ -294,13 +294,13 @@ pub mod collections {
         #[macro_export]
         macro_rules! hashmap {
             ( ) => ({
-                $crate::rust::collections::hash_map::HashMap::default()
+                $crate::rust::collections::hash_map::new()
             });
             ( $($key:expr => $value:expr),* ) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
                 // but we throw away that string literal during constant evaluation.
                 const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
-                let mut temp = $crate::rust::collections::hash_map::HashMap::with_capacity(CAP);
+                let mut temp = $crate::rust::collections::hash_map::with_capacity(CAP);
                 $(
                     temp.insert($key, $value);
                 )*
@@ -347,13 +347,13 @@ pub mod collections {
         #[macro_export]
         macro_rules! hashset {
             ( ) => ({
-                $crate::rust::collections::hash_set::HashSet::new()
+                $crate::rust::collections::hash_set::new()
             });
             ( $($key:expr),* ) => ({
                 // Note: `stringify!($key)` is just here to consume the repetition,
                 // but we throw away that string literal during constant evaluation.
                 const CAP: usize = <[()]>::len(&[$({ stringify!($key); }),*]);
-                let mut temp = $crate::rust::collections::hash_set::HashSet::with_capacity(CAP);
+                let mut temp = $crate::rust::collections::hash_set::with_capacity(CAP);
                 $(
                     temp.insert($key);
                 )*

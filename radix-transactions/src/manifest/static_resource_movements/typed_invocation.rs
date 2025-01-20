@@ -14,6 +14,7 @@ use radix_engine_interface::object_modules::royalty::*;
 use super::*;
 use radix_common::prelude::*;
 use radix_engine_interface::prelude::*;
+use radix_rust::rust::collections::{HashMap, HashSet};
 
 /// This macro defines a TypedManifestNativeInvocation type for our native blueprints. To make this
 /// easier to define this macro doesn't care about what package they live in when being INVOKED.
