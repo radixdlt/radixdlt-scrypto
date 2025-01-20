@@ -91,29 +91,27 @@ fn test_that_all_functions_are_in_the_typed_invocation_type() {
                     // they're equal.
                     let function_idents = constructed_function_type_functions_idents;
                     for function_ident in function_idents.iter() {
-                        let _constructed_function_schema = constructed_function_type_functions
+                        let constructed_function_schema = constructed_function_type_functions
                             .get(function_ident)
                             .unwrap();
-                        let _canonical_function_schema = canonical_function_type_functions
+                        let canonical_function_schema = canonical_function_type_functions
                             .get(function_ident)
                             .unwrap();
 
-                        // TODO: We can currently compare the schemas together since some of them
-                        // use typed addresses (references in particular) and others do not.
-                        // compare_single_type_schemas(
-                        //     &SchemaComparisonSettings::require_equality()
-                        //         .with_metadata(|metadata| {
-                        //             metadata.with_type_name_changes(NameChangeRule::AllowAllChanges)
-                        //         })
-                        //         .with_completeness(|completeness| {
-                        //             completeness
-                        //                 .with_allow_root_unreachable_types_in_base_schema()
-                        //                 .with_allow_root_unreachable_types_in_compared_schema()
-                        //         }),
-                        //     constructed_function_schema,
-                        //     canonical_function_schema,
-                        // )
-                        // .assert_valid("Typed Manifest Invocation", "Blueprint Definition");
+                        compare_single_type_schemas(
+                            &SchemaComparisonSettings::require_equality()
+                                .with_metadata(|metadata| {
+                                    metadata.with_type_name_changes(NameChangeRule::AllowAllChanges)
+                                })
+                                .with_completeness(|completeness| {
+                                    completeness
+                                        .with_allow_root_unreachable_types_in_base_schema()
+                                        .with_allow_root_unreachable_types_in_compared_schema()
+                                }),
+                            constructed_function_schema,
+                            canonical_function_schema,
+                        )
+                        .assert_valid("Typed Manifest Invocation", "Blueprint Definition");
                     }
                 }
                 (Some(v), None) if !v.is_empty() => {

@@ -61,7 +61,7 @@ define_invocation! {
     },
     output: type (),
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -77,7 +77,7 @@ define_invocation! {
     },
     output: type Option<Bucket>,
     manifest_input: struct {
-        claimants: IndexMap<ManifestComponentAddress, ResourceSpecifier>,
+        claimants: IndexMap<GenericGlobal<ManifestComponentAddress, AccountMarker>, ResourceSpecifier>,
         bucket: ManifestBucket,
         try_direct_send: bool
     }
@@ -97,7 +97,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: ManifestResourceAddress,
         amount: Decimal
     }
@@ -113,7 +113,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: ManifestResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
@@ -133,7 +133,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: ManifestResourceAddress,
         amount: Decimal
     }
@@ -149,7 +149,7 @@ define_invocation! {
     },
     output: type Bucket,
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: ManifestResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     }
@@ -168,7 +168,7 @@ define_invocation! {
     },
     output: type Decimal,
     manifest_input: struct {
-        claimant: DynamicComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: DynamicResourceAddress,
     }
 }
@@ -183,7 +183,7 @@ define_invocation! {
     },
     output: type IndexSet<NonFungibleLocalId>,
     manifest_input: struct {
-        claimant: ManifestComponentAddress,
+        claimant: GenericGlobal<ManifestComponentAddress, AccountMarker>,
         resource_address: ManifestResourceAddress,
         limit: u32
     }
