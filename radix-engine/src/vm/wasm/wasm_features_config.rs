@@ -1,3 +1,4 @@
+use radix_rust::prelude::String;
 use wasmparser::WasmFeatures;
 
 #[derive(Debug, Clone)]
@@ -61,7 +62,7 @@ impl WasmFeaturesConfig {
         Self::default()
     }
 
-    // More on CFLAGS for WASM:  https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly
+    // More on CFLAGS for WASM: https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly
     pub fn into_target_cflags(&self) -> String {
         let mut cflags = String::from("-mcpu=mvp");
         // Assuming that remaining options have sensible defaults
