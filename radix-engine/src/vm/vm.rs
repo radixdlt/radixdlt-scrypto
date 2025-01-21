@@ -36,18 +36,24 @@ impl VmBoot {
     }
 
     pub fn latest() -> Self {
-        Self::bottlenose()
+        Self::dugong()
+    }
+
+    pub fn dugong() -> Self {
+        Self::V1 {
+            scrypto_version: ScryptoVmVersion::dugong().into(),
+        }
     }
 
     pub fn bottlenose() -> Self {
         Self::V1 {
-            scrypto_version: ScryptoVmVersion::V1_1.into(),
+            scrypto_version: ScryptoVmVersion::bottlenose().into(),
         }
     }
 
     pub fn babylon_genesis() -> Self {
         Self::V1 {
-            scrypto_version: ScryptoVmVersion::V1_0.into(),
+            scrypto_version: ScryptoVmVersion::babylon_genesis().into(),
         }
     }
 }
