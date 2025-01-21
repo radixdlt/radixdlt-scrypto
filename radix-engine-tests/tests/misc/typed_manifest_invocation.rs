@@ -108,10 +108,10 @@ fn test_that_all_functions_are_in_the_typed_invocation_type() {
                                         .with_allow_root_unreachable_types_in_base_schema()
                                         .with_allow_root_unreachable_types_in_compared_schema()
                                 }),
-                            constructed_function_schema,
                             canonical_function_schema,
+                            constructed_function_schema,
                         )
-                        .assert_valid("Typed Manifest Invocation", "Blueprint Definition");
+                        .assert_valid("Blueprint Definition", "Typed Manifest Invocation");
                     }
                 }
                 (Some(v), None) if !v.is_empty() => {
