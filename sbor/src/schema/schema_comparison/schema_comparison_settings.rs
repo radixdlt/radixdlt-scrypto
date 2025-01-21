@@ -143,7 +143,7 @@ impl SchemaComparisonCompletenessSettings {
         self
     }
 
-    pub fn with_dont_allow_root_unreachable_types_in_base_schema(mut self) -> Self {
+    pub const fn with_dont_allow_root_unreachable_types_in_base_schema(mut self) -> Self {
         self.allow_root_unreachable_types_in_base_schema = false;
         self
     }
@@ -153,7 +153,7 @@ impl SchemaComparisonCompletenessSettings {
         self
     }
 
-    pub fn with_dont_allow_root_unreachable_types_in_compared_schema(mut self) -> Self {
+    pub const fn with_dont_allow_root_unreachable_types_in_compared_schema(mut self) -> Self {
         self.allow_root_unreachable_types_in_compared_schema = false;
         self
     }
@@ -163,7 +163,7 @@ impl SchemaComparisonCompletenessSettings {
         self
     }
 
-    pub fn with_dont_allow_compared_to_have_more_root_types(mut self) -> Self {
+    pub const fn with_dont_allow_compared_to_have_more_root_types(mut self) -> Self {
         self.allow_compared_to_have_more_root_types = false;
         self
     }
