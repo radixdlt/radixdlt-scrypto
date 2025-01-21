@@ -80,7 +80,7 @@ pub struct NonFungibleResourceManagerCreateInput {
 }
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateManifestInput {
     pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
@@ -123,7 +123,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
 
 /// For manifest
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
@@ -167,7 +167,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
 
 /// For manifest
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
@@ -204,7 +204,7 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
 
 /// For manifest
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerUpdateDataManifestInput {
     pub id: NonFungibleLocalId,
     pub field_name: String,
@@ -253,7 +253,7 @@ pub struct NonFungibleResourceManagerMintInput {
 
 /// For manifest
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
 }
@@ -275,7 +275,7 @@ pub struct NonFungibleResourceManagerMintRuidInput {
 
 /// For manifest
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerMintRuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
 }
@@ -295,7 +295,7 @@ pub struct NonFungibleResourceManagerMintSingleRuidInput {
     pub entry: ScryptoValue,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerMintSingleRuidManifestInput {
     pub entry: ManifestValue,
 }

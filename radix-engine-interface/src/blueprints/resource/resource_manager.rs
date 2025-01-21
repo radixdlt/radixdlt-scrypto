@@ -35,7 +35,7 @@ pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerBurnManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -49,7 +49,7 @@ pub struct ResourceManagerPackageBurnInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerPackageBurnManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -81,7 +81,7 @@ pub struct ResourceManagerDropEmptyBucketInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerDropEmptyBucketManifestInput {
     pub bucket: ManifestBucket,
 }

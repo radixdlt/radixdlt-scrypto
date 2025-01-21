@@ -25,7 +25,7 @@ pub struct AccessControllerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccessControllerCreateManifestInput {
     pub controlled_asset: ManifestBucket,
     pub rule_set: RuleSet,
@@ -358,7 +358,7 @@ pub struct AccessControllerContributeRecoveryFeeInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccessControllerContributeRecoveryFeeManifestInput {
     pub bucket: ManifestBucket,
 }

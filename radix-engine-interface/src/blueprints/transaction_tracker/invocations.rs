@@ -9,7 +9,7 @@ pub struct TransactionTrackerCreateInput {
     pub address_reservation: GlobalAddressReservation,
 }
 
-#[derive(Debug, Clone, ManifestSbor)]
+#[derive(Debug, Clone, ManifestSbor, ScryptoDescribe)]
 pub struct TransactionTrackerCreateManifestInput {
     pub address_reservation: ManifestAddressReservation,
 }

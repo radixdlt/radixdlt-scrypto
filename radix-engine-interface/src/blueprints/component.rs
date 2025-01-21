@@ -1,5 +1,5 @@
+use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-
 use radix_common::prelude::*;
 
 pub trait TypeInfoMarker {
@@ -9,84 +9,82 @@ pub trait TypeInfoMarker {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Global<T>(pub ComponentAddress, PhantomData<T>)
-where
-    T: TypeInfoMarker;
+// This type is added for backwards compatibility so that this change is not apparent at all to
+// Scrypto Developers
+pub type Global<T> = GenericGlobal<ComponentAddress, T>;
 
-impl<T: TypeInfoMarker> core::hash::Hash for Global<T> {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.as_node_id().hash(state)
-    }
-}
-
-pub struct Owned<T>(pub InternalAddress, PhantomData<T>)
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoEncode,
+    ScryptoDecode,
+    ScryptoCategorize,
+    ManifestEncode,
+    ManifestDecode,
+    ManifestCategorize,
+)]
+#[sbor(transparent, child_types = "A")]
+pub struct GenericGlobal<A, M>(pub A, #[sbor(skip)] PhantomData<M>)
 where
-    T: TypeInfoMarker;
+    M: TypeInfoMarker;
 
-impl<T> Global<T>
+impl<A, M> GenericGlobal<A, M>
 where
-    T: TypeInfoMarker,
+    M: TypeInfoMarker,
 {
-    pub fn new(address: ComponentAddress) -> Self {
+    pub fn new(address: A) -> Self {
         Self(address, PhantomData)
     }
 }
 
-impl<T> Owned<T>
+impl<A, M> Hash for GenericGlobal<A, M>
 where
-    T: TypeInfoMarker,
+    A: Hash,
+    M: TypeInfoMarker,
 {
-    pub fn new(address: InternalAddress) -> Self {
-        Self(address, PhantomData)
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
     }
 }
 
-impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for Global<O> {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Reference)
-    }
-}
-
-impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-    for Global<O>
+impl<A, M> From<A> for GenericGlobal<A, M>
+where
+    M: TypeInfoMarker,
 {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.0.encode_body(encoder)
+    fn from(value: A) -> Self {
+        Self(value, PhantomData)
     }
 }
 
-impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-    for Global<O>
+impl<M> From<ComponentAddress> for GenericGlobal<ManifestComponentAddress, M>
+where
+    M: TypeInfoMarker,
 {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        ComponentAddress::decode_body_with_value_kind(decoder, value_kind)
-            .map(|address| Self(address, Default::default()))
+    fn from(value: ComponentAddress) -> Self {
+        Self(value.into_manifest_address(), PhantomData)
     }
 }
 
-impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Global<T> {
+impl<A, M> Describe<ScryptoCustomTypeKind> for GenericGlobal<A, M>
+where
+    M: TypeInfoMarker,
+{
     const TYPE_ID: RustTypeId =
-        RustTypeId::Novel(const_sha1::sha1(T::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
+        RustTypeId::Novel(const_sha1::sha1(M::GLOBAL_TYPE_NAME.as_bytes()).as_bytes());
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
-            metadata: TypeMetadata::no_child_names(T::GLOBAL_TYPE_NAME),
+            metadata: TypeMetadata::no_child_names(M::GLOBAL_TYPE_NAME),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobalTyped(
-                    T::PACKAGE_ADDRESS,
-                    T::BLUEPRINT_NAME.to_string(),
+                    M::PACKAGE_ADDRESS,
+                    M::BLUEPRINT_NAME.to_string(),
                 ),
             )),
         }
@@ -95,49 +93,71 @@ impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Global<T> {
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
-impl<O: TypeInfoMarker> Categorize<ScryptoCustomValueKind> for Owned<O> {
-    #[inline]
-    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
-        ValueKind::Custom(ScryptoCustomValueKind::Own)
-    }
-}
+// This type is added for backwards compatibility so that this change is not apparent at all to
+// Scrypto Developers
+pub type Owned<T> = GenericOwned<InternalAddress, T>;
 
-impl<O: TypeInfoMarker, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-    for Owned<O>
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoEncode,
+    ScryptoDecode,
+    ScryptoCategorize,
+    ManifestEncode,
+    ManifestDecode,
+    ManifestCategorize,
+)]
+#[sbor(transparent, child_types = "A")]
+pub struct GenericOwned<A, M>(pub A, #[sbor(skip)] PhantomData<M>)
+where
+    M: TypeInfoMarker;
+
+impl<A, M> GenericOwned<A, M>
+where
+    M: TypeInfoMarker,
 {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.0.encode_body(encoder)
+    pub fn new(address: A) -> Self {
+        Self(address, PhantomData)
     }
 }
 
-impl<O: TypeInfoMarker, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-    for Owned<O>
+impl<A, M> Hash for GenericOwned<A, M>
+where
+    A: Hash,
+    M: TypeInfoMarker,
 {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<ScryptoCustomValueKind>,
-    ) -> Result<Self, DecodeError> {
-        InternalAddress::decode_body_with_value_kind(decoder, value_kind)
-            .map(|address| Self(address, Default::default()))
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
     }
 }
 
-impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Owned<T> {
+impl<A, M> From<A> for GenericOwned<A, M>
+where
+    M: TypeInfoMarker,
+{
+    fn from(value: A) -> Self {
+        Self(value, PhantomData)
+    }
+}
+
+impl<A, M> Describe<ScryptoCustomTypeKind> for GenericOwned<A, M>
+where
+    M: TypeInfoMarker,
+{
     const TYPE_ID: RustTypeId =
-        RustTypeId::Novel(const_sha1::sha1(T::OWNED_TYPE_NAME.as_bytes()).as_bytes());
+        RustTypeId::Novel(const_sha1::sha1(M::OWNED_TYPE_NAME.as_bytes()).as_bytes());
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
-            metadata: TypeMetadata::no_child_names(T::OWNED_TYPE_NAME),
+            metadata: TypeMetadata::no_child_names(M::OWNED_TYPE_NAME),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(T::PACKAGE_ADDRESS, T::BLUEPRINT_NAME.to_string()),
+                OwnValidation::IsTypedObject(M::PACKAGE_ADDRESS, M::BLUEPRINT_NAME.to_string()),
             )),
         }
     }

@@ -1,0 +1,1 @@
+mod typed_manifest_invocation;

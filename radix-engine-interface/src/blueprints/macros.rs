@@ -14,20 +14,20 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($input_ident: $input_type),*
             }
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($output_ident: $output_type),*
             }
 
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
+                    [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -45,7 +45,7 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($input_ident: $input_type),*
             }
 
@@ -57,7 +57,7 @@ macro_rules! define_invocation {
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
+                    [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -80,14 +80,14 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($output_ident: $output_type),*
             }
 
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
+                    [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -116,7 +116,7 @@ macro_rules! define_invocation {
             $(
                 $crate::blueprints::macros::resolve_struct_definition! {
                     [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
+                    [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
                     $($manifest_input_ident: $manifest_input_type),*
                 }
             )?
@@ -125,12 +125,14 @@ macro_rules! define_invocation {
 }
 
 macro_rules! resolve_struct_definition {
-    ($name: ident, $derive: ty$(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+    ($name: ident, [$($derive: ty),* $(,)?] $(,)?) => {
+        #[derive( $($derive),* )]
+        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq)]
         pub struct $name;
     };
-    ($name: ident, $derive: ty, $($ident: ident: $type: ty),* $(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+    ($name: ident, [$($derive: ty),* $(,)?], $($ident: ident: $type: ty),* $(,)?) => {
+        #[derive( $($derive),* )]
+        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq)]
         pub struct $name {
             $(
                 pub $ident: $type,

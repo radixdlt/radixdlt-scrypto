@@ -30,7 +30,7 @@ pub struct ConsensusManagerCreateInput {
     pub initial_current_leader: Option<ValidatorIndex>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ConsensusManagerCreateManifestInput {
     pub validator_owner_token_address: ManifestAddressReservation,
     pub component_address: ManifestAddressReservation,
@@ -381,7 +381,7 @@ pub struct ConsensusManagerCreateValidatorInput {
     pub xrd_payment: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ConsensusManagerCreateValidatorManifestInput {
     pub key: Secp256k1PublicKey,
     pub fee_factor: Decimal,
@@ -415,7 +415,7 @@ pub struct ValidatorStakeAsOwnerInput {
     pub stake: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorStakeAsOwnerManifestInput {
     pub stake: ManifestBucket,
 }
@@ -428,7 +428,7 @@ pub struct ValidatorStakeInput {
     pub stake: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorStakeManifestInput {
     pub stake: ManifestBucket,
 }
@@ -441,7 +441,7 @@ pub struct ValidatorUnstakeInput {
     pub stake_unit_bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorUnstakeManifestInput {
     pub stake_unit_bucket: ManifestBucket,
 }
@@ -454,7 +454,7 @@ pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorClaimXrdManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -573,7 +573,7 @@ pub struct ValidatorApplyEmissionInput {
     pub proposals_missed: u64,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorApplyEmissionManifestInput {
     /// A bucket with the emitted XRDs for this validator.
     /// The validator should subtract the configured fee from this amount.
@@ -598,7 +598,7 @@ pub struct ValidatorApplyRewardInput {
     pub epoch: Epoch,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorApplyRewardManifestInput {
     /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
     pub xrd_bucket: ManifestBucket,
@@ -615,7 +615,7 @@ pub struct ValidatorLockOwnerStakeUnitsInput {
     pub stake_unit_bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorLockOwnerStakeUnitsManifestInput {
     pub stake_unit_bucket: ManifestBucket,
 }
