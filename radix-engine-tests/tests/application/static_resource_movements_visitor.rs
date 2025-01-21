@@ -1089,10 +1089,46 @@ fn static_analysis_on_account_add_authorized_depositor_with_named_address_succee
     assert!(rtn.is_ok());
 }
 
+#[test]
+fn static_analyzer_understands_when_non_of_the_input_resources_will_be_returned() {
+    // Arrange
+    let account = account_address(0);
+    let validator = validator_address(1);
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, XRD, 100)
+        .take_from_worktop(XRD, 50, "bucket")
+        .stake_validator(validator, "bucket")
+        .take_all_from_worktop(XRD, "xrd")
+        .try_deposit_or_abort(account, None, "xrd")
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+
+    // Act
+    let (deposits, ..) = statically_analyze(&manifest).unwrap();
+
+    // Assert
+    let account_deposits = deposits.get(&account).unwrap();
+    let first_deposit = account_deposits.first().unwrap();
+    assert_eq!(
+        first_deposit.unspecified_resources(),
+        UnspecifiedResources::none()
+    );
+    assert_eq!(
+        first_deposit.specified_resources().get(&XRD),
+        Some(&SimpleResourceBounds::Fungible(
+            SimpleFungibleResourceBounds::Exact(50.into())
+        ))
+    );
+}
+
 fn account_address(id: u64) -> ComponentAddress {
     unsafe {
         ComponentAddress::new_unchecked(node_id(EntityType::GlobalPreallocatedEd25519Account, id).0)
     }
+}
+
+fn validator_address(id: u64) -> ComponentAddress {
+    unsafe { ComponentAddress::new_unchecked(node_id(EntityType::GlobalValidator, id).0) }
 }
 
 fn component_address(id: u64) -> ComponentAddress {
