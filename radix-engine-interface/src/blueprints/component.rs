@@ -61,6 +61,15 @@ where
     }
 }
 
+impl<M> From<ComponentAddress> for GenericGlobal<ManifestComponentAddress, M>
+where
+    M: TypeInfoMarker,
+{
+    fn from(value: ComponentAddress) -> Self {
+        Self(value.into_manifest_address(), PhantomData)
+    }
+}
+
 impl<A, M> Describe<ScryptoCustomTypeKind> for GenericGlobal<A, M>
 where
     M: TypeInfoMarker,
