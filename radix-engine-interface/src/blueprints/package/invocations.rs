@@ -25,7 +25,7 @@ pub struct PackagePublishWasmInput {
     pub metadata: MetadataInit,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmManifestInput {
     pub definition: PackageDefinition,
     pub code: ManifestBlobRef,
@@ -45,7 +45,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub owner_role: OwnerRole,
     pub definition: PackageDefinition,
@@ -66,7 +66,7 @@ pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishNativeManifestInput {
     pub definition: PackageDefinition,
     pub native_package_code_id: u64,

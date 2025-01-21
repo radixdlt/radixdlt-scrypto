@@ -25,7 +25,7 @@ pub enum ResourceOrNonFungible {
     Resource(ResourceAddress),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ManifestSbor, ScryptoDescribe)]
 pub enum ManifestResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
     Resource(ManifestResourceAddress),

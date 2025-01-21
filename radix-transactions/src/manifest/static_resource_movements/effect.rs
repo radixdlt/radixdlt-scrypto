@@ -114,6 +114,9 @@ no_output_static_invocation_resources_output_impl![
     AccountTryDepositBatchOrAbortManifestInput,
     AccountAddAuthorizedDepositorManifestInput,
     AccountRemoveAuthorizedDepositorManifestInput,
+    AccountBalanceManifestInput,
+    AccountNonFungibleLocalIdsManifestInput,
+    AccountHasNonFungibleManifestInput,
     // ConsensusManager
     ConsensusManagerCreateManifestInput,
     ConsensusManagerGetCurrentEpochManifestInput,
@@ -212,6 +215,7 @@ no_output_static_invocation_resources_output_impl![
     RoleAssignmentLockOwnerManifestInput,
     RoleAssignmentSetManifestInput,
     RoleAssignmentGetManifestInput,
+    RoleAssignmentGetOwnerRoleManifestInput,
     // ComponentRoyalty
     ComponentRoyaltyCreateManifestInput,
     ComponentRoyaltySetManifestInput,
@@ -505,7 +509,6 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
             .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
     }
 }
-
 // endregion:Validator
 
 // region:Identity

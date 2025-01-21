@@ -137,6 +137,36 @@ impl SchemaComparisonCompletenessSettings {
             allow_compared_to_have_more_root_types: false,
         }
     }
+
+    pub const fn with_allow_root_unreachable_types_in_base_schema(mut self) -> Self {
+        self.allow_root_unreachable_types_in_base_schema = true;
+        self
+    }
+
+    pub fn with_dont_allow_root_unreachable_types_in_base_schema(mut self) -> Self {
+        self.allow_root_unreachable_types_in_base_schema = false;
+        self
+    }
+
+    pub const fn with_allow_root_unreachable_types_in_compared_schema(mut self) -> Self {
+        self.allow_root_unreachable_types_in_compared_schema = true;
+        self
+    }
+
+    pub fn with_dont_allow_root_unreachable_types_in_compared_schema(mut self) -> Self {
+        self.allow_root_unreachable_types_in_compared_schema = false;
+        self
+    }
+
+    pub const fn with_allow_compared_to_have_more_root_types(mut self) -> Self {
+        self.allow_compared_to_have_more_root_types = true;
+        self
+    }
+
+    pub fn with_dont_allow_compared_to_have_more_root_types(mut self) -> Self {
+        self.allow_compared_to_have_more_root_types = false;
+        self
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
@@ -191,6 +221,19 @@ impl SchemaComparisonMetadataSettings {
             field_name_changes: NameChangeRule::AllowAllChanges,
             variant_name_changes: NameChangeRule::AllowAllChanges,
         }
+    }
+
+    pub const fn with_type_name_changes(mut self, type_name_changes: NameChangeRule) -> Self {
+        self.type_name_changes = type_name_changes;
+        self
+    }
+    pub const fn with_field_name_changes(mut self, field_name_changes: NameChangeRule) -> Self {
+        self.field_name_changes = field_name_changes;
+        self
+    }
+    pub const fn with_variant_name_changes(mut self, variant_name_changes: NameChangeRule) -> Self {
+        self.variant_name_changes = variant_name_changes;
+        self
     }
 
     pub(crate) fn checks_required(&self) -> bool {

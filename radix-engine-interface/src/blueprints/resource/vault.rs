@@ -16,7 +16,7 @@ pub struct VaultPutInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct VaultPutManifestInput {
     pub bucket: ManifestBucket,
 }
