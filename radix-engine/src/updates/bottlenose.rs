@@ -35,7 +35,7 @@ pub struct BottlenoseSettings {
     /// Imposes a limits on the blobs in the transaction processor
     pub impose_a_limit_on_transaction_processor_blobs: UpdateSetting<NoSettings>,
 
-    /// Adds differed reference cost checks.    
+    /// Adds differed reference cost checks.
     pub apply_costing_for_ref_checks: UpdateSetting<NoSettings>,
 
     /// Add restrictions to use of role key in role list.
@@ -331,7 +331,7 @@ fn generate_locker_package_state_updates() -> StateUpdates {
         (NativeCodeId::LockerCode1 as u64).to_be_bytes().to_vec(),
         Default::default(),
         false,
-        &VmBoot::latest(),
+        &VmBoot::bottlenose(),
     )
     .unwrap_or_else(|err| {
         panic!(
