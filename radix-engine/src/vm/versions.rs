@@ -38,6 +38,10 @@ impl ScryptoVmVersion {
     pub const fn dugong() -> ScryptoVmVersion {
         Self::V1_3
     }
+
+    pub const fn wasm_new_features() -> ScryptoVmVersion {
+        Self::V1_3
+    }
 }
 
 impl From<ScryptoVmVersion> for u64 {

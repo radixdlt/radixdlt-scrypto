@@ -4,6 +4,8 @@ use crate::internal_prelude::*;
 #[derive(Clone, ScryptoSbor)]
 pub struct DugongSettings {
     pub native_entity_metadata_updates: UpdateSetting<NoSettings>,
+    /// Enables WASM proposals: reference-types and multi-value
+    pub vm_boot_wasm_new_features: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for DugongSettings {
@@ -16,12 +18,14 @@ impl UpdateSettings for DugongSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             native_entity_metadata_updates: UpdateSetting::enabled_as_default_for_network(network),
+            vm_boot_wasm_new_features: UpdateSetting::enabled_as_default_for_network(network),
         }
     }
 
     fn all_disabled() -> Self {
         Self {
             native_entity_metadata_updates: UpdateSetting::Disabled,
+            vm_boot_wasm_new_features: UpdateSetting::Disabled,
         }
     }
 
@@ -51,6 +55,7 @@ fn generate_main_batch(
     store: &dyn SubstateDatabase,
     DugongSettings {
         native_entity_metadata_updates,
+        vm_boot_wasm_new_features,
     }: &DugongSettings,
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
@@ -60,6 +65,13 @@ fn generate_main_batch(
         batch.mut_add_flash(
             "dugong-native-entity-metadata-updates",
             generate_dugong_native_metadata_updates(),
+        );
+    }
+
+    if let UpdateSetting::Enabled(NoSettings) = &vm_boot_wasm_new_features {
+        batch.mut_add_flash(
+            "dugong-vm-boot-wasm-new-features",
+            generate_dugong_vm_boot_wasm_new_features(),
         );
     }
 
@@ -97,4 +109,15 @@ fn generate_dugong_native_metadata_updates() -> StateUpdates {
     }
 
     state_updates
+}
+
+fn generate_dugong_vm_boot_wasm_new_features() -> StateUpdates {
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::VmBoot,
+        VmBoot::V1 {
+            scrypto_version: ScryptoVmVersion::wasm_new_features().into(),
+        },
+    )
 }
