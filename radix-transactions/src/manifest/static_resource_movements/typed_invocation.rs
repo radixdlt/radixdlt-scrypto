@@ -151,6 +151,78 @@ macro_rules! define_manifest_typed_invocation {
                 }
             }
 
+            #[derive(Debug)]
+            pub enum TypedManifestMethodNativeInvocationRef<'a> {
+                $(
+                    [< $blueprint_ident BlueprintMethod >](&'a [< $blueprint_ident BlueprintMethod >])
+                ),*
+            }
+
+            impl<'a> TryFrom<&'a TypedManifestNativeInvocation> for TypedManifestMethodNativeInvocationRef<'a> {
+                type Error = ();
+
+                fn try_from(value: &'a TypedManifestNativeInvocation) -> Result<Self, Self::Error> {
+                    match value {
+                        $(
+                            TypedManifestNativeInvocation::[< $blueprint_ident BlueprintInvocation >](
+                                [< $blueprint_ident BlueprintInvocation >]::Method(ref method)
+                            ) => Ok(
+                                TypedManifestMethodNativeInvocationRef::[< $blueprint_ident BlueprintMethod >](method)
+                            ),
+                        )*
+                        _ => Err(())
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            pub enum TypedManifestDirectMethodNativeInvocationRef<'a> {
+                $(
+                    [< $blueprint_ident BlueprintDirectMethod >](&'a [< $blueprint_ident BlueprintDirectMethod >])
+                ),*
+            }
+
+            impl<'a> TryFrom<&'a TypedManifestNativeInvocation> for TypedManifestDirectMethodNativeInvocationRef<'a> {
+                type Error = ();
+
+                fn try_from(value: &'a TypedManifestNativeInvocation) -> Result<Self, Self::Error> {
+                    match value {
+                        $(
+                            TypedManifestNativeInvocation::[< $blueprint_ident BlueprintInvocation >](
+                                [< $blueprint_ident BlueprintInvocation >]::DirectMethod(ref direct_method)
+                            ) => Ok(
+                                TypedManifestDirectMethodNativeInvocationRef::[< $blueprint_ident BlueprintDirectMethod >](direct_method)
+                            ),
+                        )*
+                        _ => Err(())
+                    }
+                }
+            }
+
+            #[derive(Debug)]
+            pub enum TypedManifestFunctionNativeInvocationRef<'a> {
+                $(
+                    [< $blueprint_ident BlueprintFunction >](&'a [< $blueprint_ident BlueprintFunction >])
+                ),*
+            }
+
+            impl<'a> TryFrom<&'a TypedManifestNativeInvocation> for TypedManifestFunctionNativeInvocationRef<'a> {
+                type Error = ();
+
+                fn try_from(value: &'a TypedManifestNativeInvocation) -> Result<Self, Self::Error> {
+                    match value {
+                        $(
+                            TypedManifestNativeInvocation::[< $blueprint_ident BlueprintInvocation >](
+                                [< $blueprint_ident BlueprintInvocation >]::Function(ref function)
+                            ) => Ok(
+                                TypedManifestFunctionNativeInvocationRef::[< $blueprint_ident BlueprintFunction >](function)
+                            ),
+                        )*
+                        _ => Err(())
+                    }
+                }
+            }
+
             /* The Method and Function types for each blueprint */
             $(
                 #[derive(Debug, ManifestSbor, ScryptoDescribe)]
