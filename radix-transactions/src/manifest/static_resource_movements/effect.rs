@@ -56,23 +56,55 @@ macro_rules! no_output_static_invocation_resources_output_impl {
     };
 }
 
+macro_rules! handle_single_unknown_output_static_invocation_resources_output_impl {
+    ($input_ty: ty) => {
+        impl StaticInvocationResourcesOutput for $input_ty {
+            fn output(
+                &self,
+                details: InvocationDetails,
+            ) -> Result<TrackedResources, StaticResourceMovementsError> {
+                Ok(
+                    TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                        details.source
+                    ]),
+                )
+            }
+        }
+    };
+    (no_resource_inputs_returned: $input_ty: ty) => {
+        impl StaticInvocationResourcesOutput for $input_ty {
+            fn output(
+                &self,
+                details: InvocationDetails,
+            ) -> Result<TrackedResources, StaticResourceMovementsError> {
+                let mut tracked_resources =
+                    TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                        details.source
+                    ]);
+                for resource_address in details.sent_resources.specified_resources().keys() {
+                    tracked_resources.handle_resource_assertion(
+                        *resource_address,
+                        ResourceBounds::zero(),
+                        details.source,
+                    )?;
+                }
+
+                Ok(tracked_resources)
+            }
+        }
+    };
+}
+
 macro_rules! unknown_output_static_invocation_resources_output_impl {
     (
         $(
-            $output_ident: ident
+            $([$modifier: ident]:)? $input_ty: ident
         ),* $(,)?
     ) => {
         $(
-            impl StaticInvocationResourcesOutput for $output_ident {
-                fn output(
-                    &self,
-                    details: InvocationDetails
-                ) -> Result<TrackedResources, StaticResourceMovementsError> {
-                    Ok(TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                        details.source
-                    ]))
-                }
-            }
+            handle_single_unknown_output_static_invocation_resources_output_impl!(
+                $($modifier:)? $input_ty
+            );
         )*
     };
 }
@@ -232,33 +264,33 @@ unknown_output_static_invocation_resources_output_impl![
     AccessControllerMintRecoveryBadgesManifestInput,
     // The validator stake unit resource is unknown at static validation time
     /* Validator */
-    ValidatorStakeAsOwnerManifestInput,
+    [no_resource_inputs_returned]: ValidatorStakeAsOwnerManifestInput,
     // The validator stake unit resource is unknown at static validation time
-    ValidatorStakeManifestInput,
+    [no_resource_inputs_returned]: ValidatorStakeManifestInput,
     // The validator unstake receipt is unknown at static validation time
-    ValidatorUnstakeManifestInput,
+    [no_resource_inputs_returned]: ValidatorUnstakeManifestInput,
     // This can return validator stake units which are an unknown resource at static validation time
-    ValidatorFinishUnlockOwnerStakeUnitsManifestInput,
+    [no_resource_inputs_returned]: ValidatorFinishUnlockOwnerStakeUnitsManifestInput,
     // This generates and returns a new badge resource, which is unknowable at static time
     /* AccountLocker */
     AccountLockerInstantiateSimpleManifestInput,
     /* OneResourcePool */
     // This returns pool units of an unknown resource address and an unknown amount.
-    OneResourcePoolContributeManifestInput,
+    [no_resource_inputs_returned]: OneResourcePoolContributeManifestInput,
     // This returns unknown resources of an unknown amount from the redemption.
-    OneResourcePoolRedeemManifestInput,
+    [no_resource_inputs_returned]: OneResourcePoolRedeemManifestInput,
     // This returns an unknown resource but a known amount which we can't do much with.
     OneResourcePoolProtectedWithdrawManifestInput,
     /* TwoResourcePool */
     // This returns pool units of an unknown resource address and an unknown amount.
     TwoResourcePoolContributeManifestInput,
     // This returns unknown resources of an unknown amount from the redemption.
-    TwoResourcePoolRedeemManifestInput,
+    [no_resource_inputs_returned]: TwoResourcePoolRedeemManifestInput,
     /* MultiResourcePool */
     // This returns pool units of an unknown resource address and an unknown amount.
     MultiResourcePoolContributeManifestInput,
     // This returns unknown resources of an unknown amount from the redemption.
-    MultiResourcePoolRedeemManifestInput,
+    [no_resource_inputs_returned]: MultiResourcePoolRedeemManifestInput,
     /* FungibleResourceManager */
     // This returns this resource so we know the amount but we don't know the resource address
     // so we can't do much with that.
