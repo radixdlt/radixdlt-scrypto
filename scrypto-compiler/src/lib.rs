@@ -2,8 +2,7 @@ use cargo_toml::Manifest;
 use fslock::{LockFile, ToOsStr};
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
-use radix_engine::vm::wasm::WasmFeaturesConfig;
-use radix_engine::vm::ScryptoVmVersion;
+use radix_engine::vm::{wasm::WasmFeaturesConfig, ScryptoVmVersion};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use radix_rust::prelude::{IndexMap, IndexSet};
 use std::cmp::Ordering;
@@ -87,7 +86,9 @@ pub struct ScryptoCompilerInputParams {
     /// Default configuration is equivalent to running the following commands in the CLI:
     /// wasm-opt -0z --strip-debug --strip-dwarf --strip-producers --dce $some_path $some_path
     pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
-    /// If set to true then compiler informs about the compilation progress
+    /// Scrypto VM version. If not specified then the latest version will be used.
+    pub scrypto_vm_version: ScryptoVmVersion,
+    /// If set to true then compiler informs about the compilation progress.
     pub verbose: bool,
 }
 impl Default for ScryptoCompilerInputParams {
@@ -119,6 +120,7 @@ impl Default for ScryptoCompilerInputParams {
             ignore_locked_env_var: false,
             locked: false,
             wasm_optimization,
+            scrypto_vm_version: ScryptoVmVersion::latest(),
             verbose: false,
         };
         // Apply default log level features
@@ -976,8 +978,7 @@ impl ScryptoCompiler {
             })?;
         let code_hash = hash(&code);
 
-        // TODO WASM configurable ScryptoVmVersion
-        let package_definition = extract_definition(&code, ScryptoVmVersion::latest())
+        let package_definition = extract_definition(&code, self.input_params.scrypto_vm_version)
             .map_err(ScryptoCompilerError::SchemaExtractionError)?;
 
         std::fs::write(
@@ -1046,10 +1047,11 @@ impl ScryptoCompiler {
         // They are applied in 2nd compilation, which means one can receive different WASMs
         // for the same WASM files from 1st compilation.
         let options = format!(
-            "{:?}/{:?}/{:?}",
+            "{:?}-{:?}-{:?}-{:?}",
             code_hash,
             self.input_params.profile.as_target_directory_name(),
-            self.input_params.wasm_optimization
+            self.input_params.wasm_optimization,
+            self.input_params.scrypto_vm_version
         );
         let hash_dir = hash(options);
 
@@ -1377,6 +1379,11 @@ impl ScryptoCompilerBuilder {
         options: Option<wasm_opt::OptimizationOptions>,
     ) -> &mut Self {
         self.input_params.wasm_optimization = options;
+        self
+    }
+
+    pub fn scrypto_vm_version(&mut self, scrypto_vm_version: ScryptoVmVersion) -> &mut Self {
+        self.input_params.scrypto_vm_version = scrypto_vm_version;
         self
     }
 
