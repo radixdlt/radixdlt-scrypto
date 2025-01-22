@@ -35,10 +35,18 @@ impl Default for WasmFeaturesConfig {
 //      Regarding indirect function calls—which are common in Rust code—there is no issue with the 5-byte LEB128 encoding.
 //      The proposal has been around for a while and WebAssembly engines, including `wasmi`, have had sufficient time to stabilize it.
 //   d) multi-value
-//      This is also safe to enable because the Radix Engine has never used the Nightly `extern "wasm"` feature.
+//      This feature allows to specify
+//      - multiple return values for function, blocks, loops and if sections.
+//      - what types are expected to be present on the stack at the start of the block or loop
+//        sections.
 //
-//   New features have been enabled by default in LLVM version 19, which Rust has used starting from version 1.82.
+//      Multi-value feature that has been enabled refer only to the WebAssembly language features.
+//      It does not change the ABI used by LLVM (see https://github.com/llvm/llvm-project/pull/80923/files#diff-ec770381d76c859f5f572db789175fe44410a72608f58ad5dbb14335ba56eb97R672).
+//      It means that it safe to enable this feature.
+//
+//   New features have been enabled by default in LLVM version 19, which has been used in Rust since 1.82.
 //   To ensure compatibility with Rust versions 1.82 and later, both features must be enabled.
+//   More details: https://blog.rust-lang.org/2024/09/24/webassembly-targets-change-in-default-target-features.html
 impl WasmFeaturesConfig {
     pub const fn mvp() -> Self {
         Self {
