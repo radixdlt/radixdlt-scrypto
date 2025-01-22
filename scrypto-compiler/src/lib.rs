@@ -26,27 +26,27 @@ pub enum ScryptoCompilerError {
     IOErrorWithPath(io::Error, PathBuf, Option<String>),
     /// Returns process exit status in case of 'cargo build' fail.
     CargoBuildFailure(ExitStatus),
-    /// Returns `cargo metadata` command stderr output, path to Cargo.toml for which cargo metadata
+    /// Returns `cargo metadata` command stderr output, path to `Cargo.toml` for which cargo metadata
     /// command failed and process exit status.
     CargoMetadataFailure(String, PathBuf, ExitStatus),
-    /// Returns path to Cargo.toml for which results of cargo metadata command is not not valid json
+    /// Returns path to `Cargo.toml` for which results of cargo metadata command is not a valid json
     /// or target directory field is missing.
     CargoTargetDirectoryResolutionError(String),
     /// Compiler is unable to generate target binary file name.
     CargoTargetBinaryResolutionError,
-    /// Returns path to Cargo.toml which was failed to load.
+    /// Returns path to `Cargo.toml` which was failed to load.
     CargoManifestLoadFailure(String),
-    /// Returns path to Cargo.toml which cannot be found.
+    /// Returns path to `Cargo.toml`` which cannot be found.
     CargoManifestFileNotFound(String),
     /// Provided package ID is not a member of the workspace.
     CargoWrongPackageId(String),
     /// Returns WASM Optimization error.
     WasmOptimizationError(wasm_opt::OptimizationError),
-    /// Returns error occured during schema extraction.
+    /// Returns error occurred during schema extraction.
     SchemaExtractionError(ExtractSchemaError),
-    /// Returns error occured during schema encoding.
+    /// Returns error occurred during schema encoding.
     SchemaEncodeError(EncodeError),
-    /// Returns error occured during schema decoding.
+    /// Returns error occurred during schema decoding.
     SchemaDecodeError(DecodeError),
     /// Returned when trying to compile workspace without any scrypto packages.
     NothingToCompile,
@@ -80,7 +80,7 @@ pub struct ScryptoCompilerInputParams {
     /// Defaults to false.
     pub ignore_locked_env_var: bool,
     /// List of custom options, passed as 'cargo build' arguments without any modifications. Optional field.
-    /// Add each option as separate entry (for instance: '-j 1' must be added as two entires: '-j' and '1' one by one).
+    /// Add each option as separate entry (for instance: '-j 1' must be added as two entries: '-j' and '1' one by one).
     pub custom_options: IndexSet<String>,
     /// If specified optimizes the built wasm using Binaryen's wasm-opt tool.
     /// Default configuration is equivalent to running the following commands in the CLI:
@@ -272,10 +272,10 @@ where
 /// Programmatic implementation of Scrypto compiler which is a wrapper around rust cargo tool.
 /// To create an instance of `ScryptoCompiler` use `builder()` constructor which implements builder pattern,
 /// provide any required parameter @see `ScryptoCompilerInputParams` and finally call `compile()` function.
-/// `ScryptoCompiler` supports worspace compilation by providing workspace manifest as `manifest_path` parameter of
-/// running compiler from directory containg workspace Cargo.toml file. Only packages with defined metadata group:
+/// `ScryptoCompiler` supports workspace compilation by providing workspace manifest as `manifest_path` parameter of
+/// running compiler from directory containing workspace Cargo.toml file. Only packages with defined metadata group:
 /// [package.metadata.scrypto] will be used during workspace compilation (so workspace manifest can contain also non
-/// Scrypto packages). Alternativelly packages for workspace compilation can be provided in `package` input parameter,
+/// Scrypto packages). Alternatively packages for workspace compilation can be provided in `package` input parameter,
 /// metadata is not validated in that case.
 /// Compilation results consists of list of `BuildArtifacts` which contains generated WASM file path and its content
 /// and path to RPD file with package definition and `PackageDefinition` struct.
@@ -600,7 +600,7 @@ impl ScryptoCompiler {
         )?))
     }
 
-    // Basing on manifest path returns target directory, target binary WASM path and target binary PRD path
+    // Basing on manifest path returns target directory, target binary WASM path and target binary '*.rpd' path
     fn prepare_paths_for_manifest(
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
@@ -945,10 +945,10 @@ impl ScryptoCompiler {
 
     // used for unit tests
     fn prepare_command_phase_2(&mut self, command: &mut Command) {
-        self.prepare_command(command, false); // build without schema and with userchoosen profile
+        self.prepare_command(command, false); // build without schema and with user choosen profile
     }
 
-    // Compile without schema and with optional wasm optimisations - this is the final .wasm file
+    // Compile without schema and with optional wasm optimisations - this is the final '*.wasm' file
     fn compile_phase_2(
         &mut self,
         command: &mut Command,
@@ -1036,7 +1036,7 @@ impl ScryptoCompiler {
             .ok_or(ScryptoCompilerError::CargoBuildFailure(status))
     }
 
-    // Return paths to the Scrypto cache for given manifest deifinition and code hash
+    // Return paths to the Scrypto cache for given manifest definition and code hash
     fn get_scrypto_cache_paths(
         &self,
         manifest_def: &CompilerManifestDefinition,
@@ -1147,7 +1147,7 @@ impl ScryptoCompiler {
         let (rpd_cache_path, wasm_cache_path) =
             self.get_scrypto_cache_paths(manifest_def, code_hash, false)?;
 
-        // Get WASM and RPD files only if they both exist
+        // Get '*.wasm' and '*.rpd' files only if they both exist
         if std::fs::metadata(&rpd_cache_path).is_ok() && std::fs::metadata(&wasm_cache_path).is_ok()
         {
             let rpd = std::fs::read(&rpd_cache_path).map_err(|e| {
