@@ -2425,6 +2425,8 @@ pub fn is_wasm_error(e: &RuntimeError) -> bool {
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     let mut features = wabt::Features::new();
     features.enable_sign_extension();
+    features.enable_multi_value();
+    features.enable_reference_types();
 
     wabt::wat2wasm_with_features(
         wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
