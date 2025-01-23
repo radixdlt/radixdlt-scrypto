@@ -68,14 +68,13 @@ impl ScryptoV1WasmValidator {
 #[cfg(test)]
 mod tests {
     use radix_engine_interface::blueprints::package::PackageDefinition;
-    use wabt::{wasm2wat, wat2wasm};
 
     use super::ScryptoV1WasmValidator;
     use super::ScryptoVmVersion;
 
     #[test]
     fn test_validate() {
-        let code = wat2wasm(
+        let code = wat::parse_str(
             r#"
         (module
 
@@ -108,7 +107,7 @@ mod tests {
         )
         .unwrap();
 
-        let instrumented_code = wasm2wat(
+        let instrumented_code = wasmprinter::print_bytes(
             ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(
                     &code,
@@ -121,12 +120,18 @@ mod tests {
         )
         .unwrap();
 
+        println!("{}", instrumented_code);
+
         assert_eq!(
             instrumented_code,
             r#"(module
   (type (;0;) (func (param i64) (result i64)))
   (type (;1;) (func (param i64)))
   (import "env" "gas" (func (;0;) (type 1)))
+  (memory (;0;) 1 64)
+  (global (;0;) (mut i32) i32.const 0)
+  (export "memory" (memory 0))
+  (export "Test_f" (func 2))
   (func (;1;) (type 0) (param i64) (result i64)
     i64.const 14788284
     call 0
@@ -142,7 +147,8 @@ mod tests {
     i32.const 2
     i32.const 0
     i32.store8
-    i64.const 3)
+    i64.const 3
+  )
   (func (;2;) (type 0) (param i64) (result i64)
     local.get 0
     global.get 0
@@ -152,18 +158,16 @@ mod tests {
     global.get 0
     i32.const 1024
     i32.gt_u
-    if  ;; label = @1
+    if ;; label = @1
       unreachable
     end
     call 1
     global.get 0
     i32.const 4
     i32.sub
-    global.set 0)
-  (memory (;0;) 1 64)
-  (global (;0;) (mut i32) (i32.const 0))
-  (export "memory" (memory 0))
-  (export "Test_f" (func 2)))
+    global.set 0
+  )
+)
 "#
         )
     }

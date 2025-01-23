@@ -2177,7 +2177,6 @@ impl WasmEngine for WasmiEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
     use wasmi::Global;
 
     static MODULE_MUTABLE_GLOBALS: &str = r#"
@@ -2203,25 +2202,26 @@ mod tests {
         "#;
 
     // This test is not wasmi-specific, but decided to put it here along with next one
-    #[test]
-    fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
-        let mut features = Features::new();
-        features.disable_mutable_globals();
+    // #[test]
+    // fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
+    //     let mut features = Features::new();
+    //     features.disable_mutable_globals();
 
-        assert!(
-            match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
-                Err(err) => {
-                    match err.kind() {
-                        ErrorKind::Validate(msg) => {
-                            msg.contains("mutable globals cannot be imported")
-                        }
-                        _ => false,
-                    }
-                }
-                Ok(_) => false,
-            }
-        )
-    }
+    //     assert!(
+    //         match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
+    //             Err(err) => {
+    //                 match err.kind() {
+    //                     ErrorKind::Validate(msg) => {
+    //                         msg.contains("mutable globals cannot be imported")
+    //                     }
+    //                     _ => false,
+    //                 }
+    //             }
+    //             Ok(_) => false,
+    //         }
+    //     )
+    // }
+
     pub fn run_module_with_mutable_global(
         module: &Module,
         mut store: StoreContextMut<WasmiInstanceEnv>,
@@ -2252,8 +2252,8 @@ mod tests {
 
     #[test]
     fn test_wasm_non_mvp_mutable_globals_execute_code() {
-        // wat2wasm has "mutable-globals" enabled by default
-        let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
+        // wat::parse_str has all features enabled by default
+        let code = wat::parse_str(MODULE_MUTABLE_GLOBALS).unwrap();
 
         let wasmi_module = WasmiModule::new(&code, ScryptoVmVersion::latest()).unwrap();
         let module = wasmi_module.module;

@@ -14,7 +14,6 @@ use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_test::prelude::*;
-use wabt::wat2wasm;
 
 fn generate_interesting_bytes_of_length(length: usize) -> Vec<u8> {
     include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd")

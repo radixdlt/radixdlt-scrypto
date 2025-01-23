@@ -21,7 +21,6 @@ radix-engine-profiling = { workspace = true, optional = true, features = ["resou
 radix-engine-profiling-derive = { workspace = true }
 scrypto-test = { workspace = true }
 
-wabt = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 rayon = { workspace = true }

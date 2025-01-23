@@ -1394,17 +1394,10 @@ mod tests {
     };
     use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
-    use wabt::{wat2wasm_with_features, Features};
 
     macro_rules! wat2wasm {
         ($wat: expr) => {{
-            let mut features = Features::new();
-            features.enable_sign_extension();
-            features.enable_mutable_globals();
-            features.enable_multi_value();
-            features.enable_reference_types();
-            let code = wat2wasm_with_features($wat, features).unwrap();
-            code
+            wat::parse_str($wat).unwrap()
         }};
     }
 
@@ -1441,11 +1434,7 @@ mod tests {
     macro_rules! assert_valid_wasm {
         ($wat: expr, $func: expr, $version: expr) => {
             let code = wat2wasm!($wat);
-            assert!(
-                WasmModule::init(&code, $version)
-                    .and_then($func)
-                    .is_ok()
-            );
+            assert!(WasmModule::init(&code, $version).and_then($func).is_ok());
         };
     }
 
@@ -1710,7 +1699,10 @@ mod tests {
                 (table 5 5 funcref)
             )
             "#,
-            PrepareError::ValidationError("WasmParserError(BinaryReaderError { multiple tables (at offset 0xa) })".to_string()),
+            PrepareError::ValidationError(
+                "WasmParserError(BinaryReaderError { multiple tables (at offset 0xa) })"
+                    .to_string()
+            ),
             |x| WasmModule::enforce_table_limit(x, 2, 5),
             ScryptoVmVersion::cuttlefish()
         );
