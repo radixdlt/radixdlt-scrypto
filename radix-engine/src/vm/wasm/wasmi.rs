@@ -2201,27 +2201,6 @@ mod tests {
             )
         "#;
 
-    // This test is not wasmi-specific, but decided to put it here along with next one
-    // #[test]
-    // fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
-    //     let mut features = Features::new();
-    //     features.disable_mutable_globals();
-
-    //     assert!(
-    //         match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
-    //             Err(err) => {
-    //                 match err.kind() {
-    //                     ErrorKind::Validate(msg) => {
-    //                         msg.contains("mutable globals cannot be imported")
-    //                     }
-    //                     _ => false,
-    //                 }
-    //             }
-    //             Ok(_) => false,
-    //         }
-    //     )
-    // }
-
     pub fn run_module_with_mutable_global(
         module: &Module,
         mut store: StoreContextMut<WasmiInstanceEnv>,
