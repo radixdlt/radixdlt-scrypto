@@ -4,8 +4,11 @@ pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
 #[cfg(feature = "coverage")]
 pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 512;
 
-/// The maximum initial table size
-pub const MAX_INITIAL_TABLE_SIZE: u32 = 1024;
+/// The maximum number of tables if `reference-types` feature enabled
+pub const MAX_NUMBER_OF_TABLES: u32 = 64;
+
+/// The maximum table size
+pub const MAX_TABLE_SIZE: u32 = 1024;
 
 /// The max number of labels of a table jump, excluding the default
 pub const MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;

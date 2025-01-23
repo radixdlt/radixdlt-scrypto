@@ -5,7 +5,8 @@ use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
 pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
-    pub max_initial_table_size: u32,
+    pub max_number_of_tables: u32,
+    pub max_table_size: u32,
     pub max_number_of_br_table_targets: u32,
     pub max_number_of_functions: u32,
     pub max_number_of_function_params: u32,
@@ -23,7 +24,8 @@ impl ScryptoV1WasmValidator {
 
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
-            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
+            max_number_of_tables: MAX_NUMBER_OF_TABLES,
+            max_table_size: MAX_TABLE_SIZE,
             max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
             max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
             max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
@@ -46,7 +48,7 @@ impl ScryptoV1WasmValidator {
             .enforce_import_constraints(self.version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
-            .enforce_table_limit(self.max_initial_table_size)?
+            .enforce_table_limit(self.max_number_of_tables, self.max_table_size)?
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
             .enforce_function_limit(
                 self.max_number_of_functions,

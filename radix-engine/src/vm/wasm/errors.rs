@@ -88,6 +88,7 @@ pub enum InvalidMemory {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
+// TODO WASM is it safe to refactor to be up-to-date with reference-types feature?
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,

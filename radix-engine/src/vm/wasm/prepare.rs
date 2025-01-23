@@ -10,7 +10,7 @@ use wasm_instrument::{
     inject_stack_limiter,
     utils::module_info::ModuleInfo,
 };
-use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType};
+use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
 use super::WasmiModule;
 use crate::vm::ScryptoVmVersion;
@@ -18,6 +18,7 @@ use crate::vm::ScryptoVmVersion;
 #[derive(Debug)]
 pub struct WasmModule {
     module: ModuleInfo,
+    features: WasmFeatures,
 }
 
 impl WasmModule {
@@ -31,7 +32,7 @@ impl WasmModule {
             .validate(features)
             .map_err(|err| PrepareError::ValidationError(err.to_string()))?;
 
-        Ok(Self { module })
+        Ok(Self { module, features })
     }
 
     pub fn enforce_no_start_function(self) -> Result<Self, PrepareError> {
@@ -1043,28 +1044,37 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_table_limit(self, max_initial_table_size: u32) -> Result<Self, PrepareError> {
+    pub fn enforce_table_limit(
+        self,
+        max_number_of_tables: u32,
+        max_table_size: u32,
+    ) -> Result<Self, PrepareError> {
         let section = self
             .module
             .table_section()
             .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?;
 
         if let Some(section) = section {
-            if section.len() > 1 {
+            let max_number_of_tables = if !self.features.reference_types {
                 // Sanity check MVP rule
+                1
+            } else {
+                max_number_of_tables
+            };
+
+            if section.len() > max_number_of_tables as usize {
                 return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
             }
 
             if let Some(table) = section.get(0) {
-                if table.ty.initial > max_initial_table_size {
+                if table.ty.initial > max_table_size {
                     return Err(PrepareError::InvalidTable(
                         InvalidTable::InitialTableSizeLimitExceeded,
                     ));
                 }
-                // As of now (Jan 17, 2025) tables are not growable, because TableGrow operator is disabled
-                // in `wasmparser`, but let's add below check in case it is enabled in the future.
+
                 if let Some(maximum) = table.ty.maximum {
-                    if maximum > max_initial_table_size {
+                    if maximum > max_table_size {
                         return Err(PrepareError::InvalidTable(
                             InvalidTable::InitialTableSizeLimitExceeded,
                         ));
@@ -1391,6 +1401,8 @@ mod tests {
             let mut features = Features::new();
             features.enable_sign_extension();
             features.enable_mutable_globals();
+            features.enable_multi_value();
+            features.enable_reference_types();
             let code = wat2wasm_with_features($wat, features).unwrap();
             code
         }};
@@ -1412,6 +1424,27 @@ mod tests {
                 WasmModule::init(&code, ScryptoVmVersion::latest())
                     .and_then($func)
                     .unwrap_err()
+            );
+        };
+
+        ($wat: expr, $err: expr, $func: expr, $version: expr) => {
+            let code = wat2wasm!($wat);
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, $version)
+                    .and_then($func)
+                    .unwrap_err()
+            );
+        };
+    }
+
+    macro_rules! assert_valid_wasm {
+        ($wat: expr, $func: expr, $version: expr) => {
+            let code = wat2wasm!($wat);
+            assert!(
+                WasmModule::init(&code, $version)
+                    .and_then($func)
+                    .is_ok()
             );
         };
     }
@@ -1633,10 +1666,22 @@ mod tests {
         //     PrepareError::InvalidMemory(InvalidMemory::TooManyMemories),
         //     |x| WasmModule::enforce_memory_limit(x, 5)
         // );
+
+        // Assert memory initial size
         assert_invalid_wasm!(
             r#"
             (module
                 (memory 6)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
+        );
+        // Assert memory maximum size
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 5 6)
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
@@ -1655,6 +1700,48 @@ mod tests {
 
     #[test]
     fn test_table() {
+        // Multiple tables not allowed until `reference-types` enabled (Dugong)
+        // We won't get `InvalidTable::MoreThanOneTable` error because wasmparser
+        // detects multiple tables first during WASM validation stage.
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            PrepareError::ValidationError("WasmParserError(BinaryReaderError { multiple tables (at offset 0xa) })".to_string()),
+            |x| WasmModule::enforce_table_limit(x, 2, 5),
+            ScryptoVmVersion::cuttlefish()
+        );
+
+        // Multiple tables not allowed until Dugong
+        assert_valid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            |x| WasmModule::enforce_table_limit(x, 2, 5),
+            ScryptoVmVersion::dugong()
+        );
+
+        // Multiple tables are allowed since `reference-types` has been enabled (Dugong)
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            // TODO WASM this error is misleading
+            PrepareError::InvalidTable(InvalidTable::MoreThanOneTable),
+            |x| WasmModule::enforce_table_limit(x, 2, 5)
+        );
+
+        // Assert table initial size
         assert_invalid_wasm!(
             r#"
             (module
@@ -1662,7 +1749,17 @@ mod tests {
             )
             "#,
             PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
-            |x| WasmModule::enforce_table_limit(x, 5)
+            |x| WasmModule::enforce_table_limit(x, 1, 5)
+        );
+        // Assert table maximum size
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 5 6 funcref)
+            )
+            "#,
+            PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
+            |x| WasmModule::enforce_table_limit(x, 1, 5)
         );
     }
 
