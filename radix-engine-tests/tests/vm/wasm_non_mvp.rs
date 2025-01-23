@@ -356,13 +356,13 @@ mod multi_value {
         // Assert
         receipt.expect_specific_failure(|error| {
             match error {
-        RuntimeError::ApplicationError(ApplicationError::PackageError(
-            PackageError::InvalidWasm(PrepareError::ValidationError(message)),
-        )) => message.contains(
-            "blocks, loops, and ifs may only produce a resulttype when multi-value is not enabled",
-        ),
-        _ => false,
-    }
+                RuntimeError::ApplicationError(ApplicationError::PackageError(
+                    PackageError::InvalidWasm(PrepareError::ValidationError(message)),
+                )) => message.contains(
+                    "blocks, loops, and ifs may only produce a resulttype when multi-value is not enabled",
+                ),
+                _ => false,
+            }
         });
     }
 
@@ -416,5 +416,52 @@ mod multi_value {
         // Assert
         let outcome: i32 = receipt.expect_commit(true).output(1);
         assert_eq!(outcome, 30);
+    }
+}
+
+// Verify WASM reference-types, which was enabled by default to the wasm32 target
+// since rust 1.82.0 (which switched to LLVM 19)
+// see: https://blog.rust-lang.org/2024/09/24/webassembly-targets-change-in-default-target-features.html
+mod reference_types {
+    use super::*;
+
+    #[test]
+    fn test_wasm_non_mvp_reference_types_externref_cuttlefish_failure() {
+        // Arrange
+        let code = wat2wasm(&include_local_wasm_str!("reference_types_externref.wat"));
+
+        // Act
+        let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
+
+        let receipt =
+            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+
+        // Assert
+        receipt.expect_specific_failure(|error| match error {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::ValidationError(message)),
+            )) => message.contains("reference types support is not enabled"),
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_wasm_non_mvp_reference_types_externref_dugong_success() {
+        // Arrange
+        let code = wat2wasm(&include_local_wasm_str!("reference_types_externref.wat"));
+
+        // Act
+        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+
+        let receipt =
+            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+        // Assert
+        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+        // Act
+        let receipt = manifest_execute_test_function!(ledger, package_address);
+
+        // Assert
+        receipt.expect_commit(true);
     }
 }
