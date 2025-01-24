@@ -120,8 +120,6 @@ mod tests {
         )
         .unwrap();
 
-        println!("{}", instrumented_code);
-
         assert_eq!(
             instrumented_code,
             r#"(module

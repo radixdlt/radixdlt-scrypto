@@ -175,8 +175,7 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
     let code =
-        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
-            .unwrap();
+        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()));
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -209,7 +208,7 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
 // There is only one instruction `br` per iteration.
 // It's extremely helpful for stress testing the `consume_wasm_execution_units` host function.
 fn bench_spin_loop_v2(c: &mut Criterion) {
-    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat"));
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -337,7 +336,7 @@ macro_rules! bench_instantiate {
             c.bench_function(concat!("costing::instantiate_", $what), |b| {
                 b.iter(|| {
                     let wasm_engine = DefaultWasmEngine::default();
-                    wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &instrumented_code);
+                    wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &instrumented_code, ScryptoVmVersion::latest());
                 })
             });
 
