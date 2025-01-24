@@ -367,4 +367,89 @@ mod reference_types {
         // Assert
         receipt.expect_commit(true);
     }
+
+    #[test]
+    fn test_wasm_non_mvp_reference_types_tables_cuttlefish_failure() {
+        // Arrange
+        let code = wat2wasm(
+            &include_local_wasm_str!("reference_types_tables.wat")
+                .replace("${index}", "0")
+                .replace("${a}", "20")
+                .replace("${b}", "10"),
+        );
+
+        // Act
+        let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
+
+        let receipt =
+            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+
+        // Assert
+        receipt.expect_specific_failure(|error| match error {
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::ValidationError(message)),
+            )) => message.contains("reference types support is not enabled"),
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_wasm_non_mvp_reference_types_tables_dugong_success() {
+        for (index, result) in [
+            ("0", 30),  // Add
+            ("1", 200), // Multiply
+            ("2", 10),  // Subtract
+        ] {
+            // Arrange
+            let code = wat2wasm(
+                &include_local_wasm_str!("reference_types_tables.wat")
+                    .replace("${index}", index)
+                    .replace("${a}", "20")
+                    .replace("${b}", "10"),
+            );
+
+            // Act
+            let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+
+            let receipt =
+                ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+            // Assert
+            let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+            // Act
+            let receipt = manifest_execute_test_function!(ledger, package_address);
+
+            // Assert
+            let outcome: i32 = receipt.expect_commit(true).output(1);
+            assert_eq!(outcome, result);
+        }
+    }
+
+    #[test]
+    fn test_wasm_non_mvp_reference_types_ref_func_should_success() {
+        // TODO WASM this test demonstrates that RefFunc (and some other instructions enabled in
+        // reference-types) are not supported in 'wasm-instrument'
+        // see https://github.com/radixdlt/wasm-instrument/blob/405166c526aa60fa2af4e4b1122b156dbcc1bb15/src/stack_limiter/max_height.rs#L455
+        // It would be perfect to update the 'wasm-instrument' crate.
+        // If not it shall be carefully investigated if it is safe to enable 'reference-types'
+        // (all WASM-related tests are running fine when 'reference-types' are enabled,
+        // as if the Rust compiler (LLVM) was not using those instructions)
+
+        // Arrange
+        let code = wat2wasm(
+            &include_local_wasm_str!("reference_types_ref_func.wat").replace("${index}", "0"),
+        );
+
+        // Act
+        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+
+        let receipt =
+            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+        // Assert
+        // This test should success but it returns below error
+        // thread 'vm::wasm_non_mvp::reference_types::test_wasm_non_mvp_reference_types_ref_func_failure' panicked at
+        //   /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/radix-wasm-instrument-1.0.0/src/stack_limiter/max_height.rs:455:17:
+        //   not yet implemented: some reference types proposal are not supported
+        let _package_address = receipt.expect_commit(true).new_package_addresses()[0];
+    }
 }
