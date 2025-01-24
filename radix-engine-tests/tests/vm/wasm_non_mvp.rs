@@ -207,215 +207,118 @@ mod multi_value {
     }
 
     #[test]
-    fn test_wasm_non_mvp_multi_value_if_return_multiple_values_dugong_success() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_if_return_multiple_values.wat")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
+    fn test_wasm_non_mvp_multi_value_return_multiple_values_cuttlefish_failure() {
+        for section in ["block", "loop"] {
+            // Arrange
+            let code = wat2wasm(
+                &include_local_wasm_str!("multi_value_loop_or_block_return_multiple_values.wat")
+                    .replace("${loop_or_block}", section)
+                    .replace("${a}", "10")
+                    .replace("${b}", "20"),
+            );
 
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+            // Act
+            let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
+            let receipt =
+                ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
 
-        // Assert
-        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
-
-        // Act
-        let receipt = manifest_execute_test_function!(ledger, package_address);
-
-        // Assert
-        let outcome: i32 = receipt.expect_commit(true).output(1);
-        assert_eq!(outcome, 30);
-    }
-
-    #[test]
-    fn test_wasm_non_mvp_multi_value_loop_return_multiple_values_cuttlefish_failure() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_return_multiple_values.wat")
-                .replace("${loop_or_block}", "loop")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
-
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-
-        // Assert
-        receipt.expect_specific_failure(|error| match error {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(PrepareError::ValidationError(message)),
-            )) => message.contains(
-                "func type returns multiple values but the multi-value feature is not enabled",
-            ),
-            _ => false,
-        });
-    }
-
-    #[test]
-    fn test_wasm_non_mvp_multi_value_block_return_multiple_values_dugong_success() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_return_multiple_values.wat")
-                .replace("${loop_or_block}", "block")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
-
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-
-        // Assert
-        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
-
-        // Act
-        let receipt = manifest_execute_test_function!(ledger, package_address);
-
-        // Assert
-        let outcome: i32 = receipt.expect_commit(true).output(1);
-        assert_eq!(outcome, 30);
-    }
-
-    #[test]
-    fn test_wasm_non_mvp_multi_value_loop_return_multiple_values_dugong_success() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_return_multiple_values.wat")
-                .replace("${loop_or_block}", "loop")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
-
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-
-        // Assert
-        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
-
-        // Act
-        let receipt = manifest_execute_test_function!(ledger, package_address);
-
-        // Assert
-        let outcome: i32 = receipt.expect_commit(true).output(1);
-        assert_eq!(outcome, 30);
-    }
-
-    #[test]
-    fn test_wasm_non_mvp_multi_value_block_params_cuttlefish_failure() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
-                .replace("${loop_or_block}", "block")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
-
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
-
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-
-        // Assert
-        receipt.expect_specific_failure(|error| {
-            match error {
-        RuntimeError::ApplicationError(ApplicationError::PackageError(
-            PackageError::InvalidWasm(PrepareError::ValidationError(message)),
-        )) => message.contains(
-            "blocks, loops, and ifs may only produce a resulttype when multi-value is not enabled",
-        ),
-        _ => false,
-    }
-        });
-    }
-
-    #[test]
-    fn test_wasm_non_mvp_multi_value_loop_params_cuttlefish_failure() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
-                .replace("${loop_or_block}", "loop")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
-
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-
-        // Assert
-        receipt.expect_specific_failure(|error| {
-            match error {
+            // Assert
+            receipt.expect_specific_failure(|error| match error {
                 RuntimeError::ApplicationError(ApplicationError::PackageError(
                     PackageError::InvalidWasm(PrepareError::ValidationError(message)),
                 )) => message.contains(
-                    "blocks, loops, and ifs may only produce a resulttype when multi-value is not enabled",
+                    "func type returns multiple values but the multi-value feature is not enabled",
                 ),
                 _ => false,
-            }
-        });
+            });
+        }
     }
 
     #[test]
-    fn test_wasm_non_mvp_multi_value_block_params_dugong_success() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
-                .replace("${loop_or_block}", "block")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
+    fn test_wasm_non_mvp_multi_value_return_multiple_values_dugong_success() {
+        for section in ["block", "loop"] {
+            // Arrange
+            let code = wat2wasm(
+                &include_local_wasm_str!("multi_value_loop_or_block_return_multiple_values.wat")
+                    .replace("${loop_or_block}", section)
+                    .replace("${a}", "10")
+                    .replace("${b}", "20"),
+            );
 
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+            // Act
+            let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+            let receipt =
+                ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
 
-        // Assert
-        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+            // Assert
+            let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
-        // Act
-        let receipt = manifest_execute_test_function!(ledger, package_address);
+            // Act
+            let receipt = manifest_execute_test_function!(ledger, package_address);
 
-        // Assert
-        let outcome: i32 = receipt.expect_commit(true).output(1);
-        assert_eq!(outcome, 30);
+            // Assert
+            let outcome: i32 = receipt.expect_commit(true).output(1);
+            assert_eq!(outcome, 30);
+        }
     }
 
     #[test]
-    fn test_wasm_non_mvp_multi_value_loop_params_dugong_success() {
-        // Arrange
-        let code = wat2wasm(
-            &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
-                .replace("${loop_or_block}", "loop")
-                .replace("${a}", "10")
-                .replace("${b}", "20"),
-        );
+    fn test_wasm_non_mvp_multi_value_params_cuttlefish_failure() {
+        for section in ["block", "loop"] {
+            // Arrange
+            let code = wat2wasm(
+                &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
+                    .replace("${loop_or_block}", section)
+                    .replace("${a}", "10")
+                    .replace("${b}", "20"),
+            );
 
-        // Act
-        let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+            // Act
+            let mut ledger = get_ledger!(ProtocolVersion::Cuttlefish);
 
-        let receipt =
-            ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
-        // Assert
-        let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+            let receipt =
+                ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
 
-        // Act
-        let receipt = manifest_execute_test_function!(ledger, package_address);
+            // Assert
+            receipt.expect_specific_failure(|error| {
+                match error {
+                    RuntimeError::ApplicationError(ApplicationError::PackageError(
+                        PackageError::InvalidWasm(PrepareError::ValidationError(message)),
+                    )) => message.contains(
+                        "blocks, loops, and ifs may only produce a resulttype when multi-value is not enabled",
+                    ),
+                    _ => false,
+                }
+            });
+        }
+    }
 
-        // Assert
-        let outcome: i32 = receipt.expect_commit(true).output(1);
-        assert_eq!(outcome, 30);
+    #[test]
+    fn test_wasm_non_mvp_multi_value_params_dugong_success() {
+        for section in ["block", "loop"] {
+            // Arrange
+            let code = wat2wasm(
+                &include_local_wasm_str!("multi_value_loop_or_block_params.wat")
+                    .replace("${loop_or_block}", section)
+                    .replace("${a}", "10")
+                    .replace("${b}", "20"),
+            );
+
+            // Act
+            let mut ledger = get_ledger!(ProtocolVersion::Dugong);
+            let receipt =
+                ledger.try_publish_package((code, single_function_package_definition("Test", "f")));
+
+            // Assert
+            let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+
+            // Act
+            let receipt = manifest_execute_test_function!(ledger, package_address);
+
+            // Assert
+            let outcome: i32 = receipt.expect_commit(true).output(1);
+            assert_eq!(outcome, 30);
+        }
     }
 }
 
