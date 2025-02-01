@@ -60,6 +60,7 @@
 > Other incidental features or changes which shouldn't break existing integrations, but are worthy of mention to scrypto developers, dApp developers or other integrators.
 
 * [#2053](https://github.com/radixdlt/radixdlt-scrypto/pull/2053) - Minor updates to improve the `name` and `description` of the native node module packages.
+* [#2067](https://github.com/radixdlt/radixdlt-scrypto/pull/2067) - Removed the `eager!` macro and replaced it with the rewritten, open-source and more comprehensive `preinterpret!` macro which David is supporting in an open-source [preinterpret](https://github.com/dhedey/preinterpret) crate. Give it a try for replacing code-generation procedural macros.
 
 # v1.3.x - [Cuttlefish](https://docs.radixdlt.com/docs/cuttlefish)
 
