@@ -65,7 +65,7 @@ jobs:
         uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
         with:
           secret-ids: |
-            DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials
+            DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials-read-only
           parse-json-secrets: true
       - name: Login to Docker Hub (Private)
         uses: RDXWorks-actions/login-action@master
