@@ -68,8 +68,8 @@ pub use versioned::*;
 // Re-export derives
 extern crate sbor_derive;
 pub use sbor_derive::{
-    eager_replace, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor,
-    BasicSborAssertion, Categorize, Decode, Describe, Encode, PermitSborAttributes, Sbor,
+    BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, BasicSborAssertion,
+    Categorize, Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
 // extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
@@ -100,7 +100,6 @@ pub mod prelude {
     pub use radix_rust::prelude::*;
 
     // Exports from current crate
-    pub use crate::eager_replace;
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
     pub use crate::enum_variant::SborFixedEnumVariant;
     pub use crate::path::{SborPath, SborPathBuf};

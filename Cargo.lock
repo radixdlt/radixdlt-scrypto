@@ -2137,6 +2137,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
+name = "preinterpret"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1727fb2b8bcde3f60a0073507de280c5da6494798be79b4ee412b487e91891b4"
+dependencies = [
+ "proc-macro2",
+ "syn 2.0.76",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2476,6 +2486,7 @@ version = "1.4.0-dev"
 dependencies = [
  "hashbrown 0.15.2",
  "indexmap 2.7.0",
+ "preinterpret",
  "serde",
 ]
 
