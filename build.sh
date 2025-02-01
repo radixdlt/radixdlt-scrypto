@@ -16,7 +16,6 @@ echo "Building scrypto packages and tests using cargo build, to catch errors qui
 (set -x; cd radix-engine-tests/assets/blueprints; cargo build; cargo test --no-run)
 (set -x; cd radix-clis/tests/blueprints; cargo build; cargo test --no-run)
 (set -x; cd scrypto-test/tests/blueprints; cargo build; cargo test --no-run)
-(set -x; cd scrypto-test/assets/blueprints; cargo build; cargo test --no-run)
 (set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build; cargo test --no-run)
 (set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo build; cargo test --no-run)
 (set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo build; cargo test --no-run)
@@ -44,11 +43,6 @@ echo "Building scrypto packages used in tests with scrypto build..."
 )
 (
     find "scrypto-test/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
-)
-(
-    find "scrypto-test/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
