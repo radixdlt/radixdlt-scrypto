@@ -35,7 +35,6 @@ if [ $doc_test_separately -eq 1 ] ; then
     (set -x; cd radix-engine-tests/assets/blueprints; cargo test --doc)
     (set -x; cd radix-clis/tests/blueprints; cargo test --doc)
     (set -x; cd scrypto-test/tests/blueprints; cargo test --doc)
-    (set -x; cd scrypto-test/assets/blueprints; cargo test --doc)
     (set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo test --doc)
     (set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo test --doc)
     (

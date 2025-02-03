@@ -872,7 +872,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         payload: &[u8],
         payload_schema: &'b ResolvedPayloadSchema,
         depth_limit: usize,
-    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
+    ) -> Result<(), LocatedValidationError<'b, ScryptoCustomExtension>> {
         let validation_context: Box<dyn ValidationContext<Error = String>> =
             Box::new(ValidationPayloadCheckerContext {
                 reader: self,

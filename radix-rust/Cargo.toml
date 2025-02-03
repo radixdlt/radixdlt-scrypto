@@ -11,6 +11,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 serde = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 indexmap = { workspace = true }
+preinterpret = { workspace = true }
 
 [features]
 default = ["std"]

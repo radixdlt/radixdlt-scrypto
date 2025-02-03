@@ -786,6 +786,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "preinterpret"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1727fb2b8bcde3f60a0073507de280c5da6494798be79b4ee412b487e91891b4"
+dependencies = [
+ "proc-macro2",
+ "syn 2.0.76",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -967,6 +977,7 @@ name = "radix-rust"
 version = "1.4.0-dev"
 dependencies = [
  "indexmap 2.7.0",
+ "preinterpret",
  "serde",
 ]
 
