@@ -1,7 +1,7 @@
 extern crate radix_wasm_instrument as wasm_instrument;
 
 use crate::internal_prelude::*;
-use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use crate::vm::wasm::{constants::*, errors::*, PrepareError, WasmFeaturesConfig};
 use num_traits::CheckedAdd;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use syn::Ident;
@@ -18,41 +18,21 @@ use crate::vm::ScryptoVmVersion;
 #[derive(Debug)]
 pub struct WasmModule {
     module: ModuleInfo,
+    features: WasmFeatures,
 }
 
 impl WasmModule {
-    pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
+    pub fn init(code: &[u8], version: ScryptoVmVersion) -> Result<Self, PrepareError> {
         // deserialize
         let module = ModuleInfo::new(code).map_err(|_| PrepareError::DeserializationError)?;
 
-        // Radix Engine supports MVP + proposals: mutable globals and sign-extension-ops
-        let features = WasmFeatures {
-            mutable_global: true,
-            saturating_float_to_int: false,
-            sign_extension: true,
-            reference_types: false,
-            multi_value: false,
-            bulk_memory: false,
-            simd: false,
-            relaxed_simd: false,
-            threads: false,
-            tail_call: false,
-            floats: false,
-            multi_memory: false,
-            exceptions: false,
-            memory64: false,
-            extended_const: false,
-            component_model: false,
-            function_references: false,
-            memory_control: false,
-            gc: false,
-        };
+        let features = WasmFeaturesConfig::from_scrypto_vm_version(version).features;
 
         module
             .validate(features)
             .map_err(|err| PrepareError::ValidationError(err.to_string()))?;
 
-        Ok(Self { module })
+        Ok(Self { module, features })
     }
 
     pub fn enforce_no_start_function(self) -> Result<Self, PrepareError> {
@@ -1064,23 +1044,41 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_table_limit(self, max_initial_table_size: u32) -> Result<Self, PrepareError> {
+    pub fn enforce_table_limit(
+        self,
+        max_number_of_tables: u32,
+        max_table_size: u32,
+    ) -> Result<Self, PrepareError> {
         let section = self
             .module
             .table_section()
             .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?;
 
         if let Some(section) = section {
-            if section.len() > 1 {
+            let max_number_of_tables = if !self.features.reference_types {
                 // Sanity check MVP rule
+                1
+            } else {
+                max_number_of_tables
+            };
+
+            if section.len() > max_number_of_tables as usize {
                 return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
             }
 
             if let Some(table) = section.get(0) {
-                if table.ty.initial > max_initial_table_size {
+                if table.ty.initial > max_table_size {
                     return Err(PrepareError::InvalidTable(
                         InvalidTable::InitialTableSizeLimitExceeded,
                     ));
+                }
+
+                if let Some(maximum) = table.ty.maximum {
+                    if maximum > max_table_size {
+                        return Err(PrepareError::InvalidTable(
+                            InvalidTable::InitialTableSizeLimitExceeded,
+                        ));
+                    }
                 }
             }
         }
@@ -1267,7 +1265,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_instantiatable(self) -> Result<Self, PrepareError> {
+    pub fn ensure_instantiatable(self, version: ScryptoVmVersion) -> Result<Self, PrepareError> {
         // During instantiation time, the following procedures are applied:
 
         // 1. Resolve imports with external values
@@ -1285,7 +1283,7 @@ impl WasmModule {
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
         let code = self.module.bytes();
-        WasmiModule::new(&code[..])
+        WasmiModule::new(&code[..], version)
             .map_err(|_| PrepareError::NotCompilable)?
             .instantiate()
             .map_err(|e| PrepareError::NotInstantiatable {
@@ -1396,27 +1394,47 @@ mod tests {
     };
     use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
-    use wabt::{wat2wasm_with_features, Features};
 
     macro_rules! wat2wasm {
         ($wat: expr) => {{
-            let mut features = Features::new();
-            features.enable_sign_extension();
-            features.enable_mutable_globals();
-            let code = wat2wasm_with_features($wat, features).unwrap();
-            code
+            wat::parse_str($wat).unwrap()
         }};
     }
 
     macro_rules! assert_invalid_wasm {
         ($wat: expr, $err: expr) => {
             let code = wat2wasm!($wat);
-            assert_eq!($err, WasmModule::init(&code).unwrap_err());
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, ScryptoVmVersion::latest()).unwrap_err()
+            );
         };
 
         ($wat: expr, $err: expr, $func: expr) => {
             let code = wat2wasm!($wat);
-            assert_eq!($err, WasmModule::init(&code).and_then($func).unwrap_err());
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, ScryptoVmVersion::latest())
+                    .and_then($func)
+                    .unwrap_err()
+            );
+        };
+
+        ($wat: expr, $err: expr, $func: expr, $version: expr) => {
+            let code = wat2wasm!($wat);
+            assert_eq!(
+                $err,
+                WasmModule::init(&code, $version)
+                    .and_then($func)
+                    .unwrap_err()
+            );
+        };
+    }
+
+    macro_rules! assert_valid_wasm {
+        ($wat: expr, $func: expr, $version: expr) => {
+            let code = wat2wasm!($wat);
+            assert!(WasmModule::init(&code, $version).and_then($func).is_ok());
         };
     }
 
@@ -1637,10 +1655,22 @@ mod tests {
         //     PrepareError::InvalidMemory(InvalidMemory::TooManyMemories),
         //     |x| WasmModule::enforce_memory_limit(x, 5)
         // );
+
+        // Assert memory initial size
         assert_invalid_wasm!(
             r#"
             (module
                 (memory 6)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
+        );
+        // Assert memory maximum size
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 5 6)
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
@@ -1659,6 +1689,51 @@ mod tests {
 
     #[test]
     fn test_table() {
+        // Multiple tables not allowed until `reference-types` enabled (Dugong)
+        // We won't get `InvalidTable::MoreThanOneTable` error because wasmparser
+        // detects multiple tables first during WASM validation stage.
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            PrepareError::ValidationError(
+                "WasmParserError(BinaryReaderError { multiple tables (at offset 0xa) })"
+                    .to_string()
+            ),
+            |x| WasmModule::enforce_table_limit(x, 2, 5),
+            ScryptoVmVersion::cuttlefish()
+        );
+
+        // Multiple tables not allowed until Dugong
+        assert_valid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            |x| WasmModule::enforce_table_limit(x, 2, 5),
+            ScryptoVmVersion::dugong()
+        );
+
+        // Multiple tables are allowed since `reference-types` has been enabled (Dugong)
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 1 5 funcref)
+                (table 5 5 funcref)
+                (table 5 5 funcref)
+            )
+            "#,
+            // TODO WASM this error is misleading
+            PrepareError::InvalidTable(InvalidTable::MoreThanOneTable),
+            |x| WasmModule::enforce_table_limit(x, 2, 5)
+        );
+
+        // Assert table initial size
         assert_invalid_wasm!(
             r#"
             (module
@@ -1666,7 +1741,17 @@ mod tests {
             )
             "#,
             PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
-            |x| WasmModule::enforce_table_limit(x, 5)
+            |x| WasmModule::enforce_table_limit(x, 1, 5)
+        );
+        // Assert table maximum size
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 5 6 funcref)
+            )
+            "#,
+            PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
+            |x| WasmModule::enforce_table_limit(x, 1, 5)
         );
     }
 
@@ -1862,7 +1947,9 @@ mod tests {
             "#
         );
 
-        assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+        assert!(WasmModule::init(&code, ScryptoVmVersion::latest())
+            .unwrap()
+            .contains_sign_ext_ops());
 
         let code = wat2wasm!(
             r#"
@@ -1875,6 +1962,8 @@ mod tests {
             "#
         );
 
-        assert!(!WasmModule::init(&code).unwrap().contains_sign_ext_ops());
+        assert!(!WasmModule::init(&code, ScryptoVmVersion::latest())
+            .unwrap()
+            .contains_sign_ext_ops());
     }
 }

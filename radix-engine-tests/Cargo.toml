@@ -27,7 +27,7 @@ lazy_static = { workspace = true }
 
 [dev-dependencies]
 radix-transactions = { workspace = true }
-wabt = { workspace = true }
+wat = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 scrypto = { workspace = true }
 rand = { workspace = true }

@@ -37,7 +37,9 @@ fn invalid_export_name_should_fail() {
         "a!",
         "a-",
         "a\u{221A}",
-        "\0",
+        // TODO WASM: wat parser does not allow '\0', so cannot generate WASM module for further
+        // validations. Use old wabt::wat2wasm or get rid of this test case?
+        // "\0",
         "a\'",
         "self",
         "crate",

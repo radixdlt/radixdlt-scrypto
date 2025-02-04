@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::package::CodeHash;
 use sbor::rust::mem::MaybeUninit;
 #[cfg(not(feature = "fuzzing"))]
 use sbor::rust::sync::Arc;
+use wasm::WasmFeaturesConfig;
 use wasmi::core::HostError;
 use wasmi::errors::InstantiationError;
 use wasmi::*;
@@ -958,8 +959,35 @@ pub enum WasmiInstantiationError {
 }
 
 impl WasmiModule {
-    pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
+    pub fn new(code: &[u8], version: ScryptoVmVersion) -> Result<Self, WasmiInstantiationError> {
         let mut config = wasmi::Config::default();
+
+        // In previous versions we didn't adjust `wasmi` config according to the WASM features.
+        // This is not a big issue, since the code at this stage is already validated in terms
+        // of WASM features (see `WasmModule::init()`)
+        // But since Dugong we want to keep it aligned
+        if version >= ScryptoVmVersion::dugong() {
+            let features = WasmFeaturesConfig::from_scrypto_vm_version(version).features;
+
+            config.wasm_mutable_global(features.mutable_global);
+            config.wasm_sign_extension(features.sign_extension);
+            config.wasm_saturating_float_to_int(features.saturating_float_to_int);
+            config.wasm_multi_value(features.multi_value);
+            config.wasm_multi_memory(features.multi_memory);
+            config.wasm_bulk_memory(features.bulk_memory);
+            config.wasm_reference_types(features.reference_types);
+            config.wasm_tail_call(features.tail_call);
+            config.wasm_extended_const(features.extended_const);
+            config.floats(features.floats);
+            // Below features are not configurable in `wasmi`
+            //   component_model,
+            //   simd
+            //   relaxed_simd
+            //   threads
+            //   exceptions
+            //   memory64
+            //   memory_control
+        }
 
         // In order to speed compilation we deliberately
         // - use LazyTranslation compilation mode
@@ -2098,7 +2126,12 @@ impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
     #[allow(unused_variables)]
-    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmiInstance {
+    fn instantiate(
+        &self,
+        code_hash: CodeHash,
+        instrumented_code: &[u8],
+        version: ScryptoVmVersion,
+    ) -> WasmiInstance {
         #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
@@ -2113,7 +2146,8 @@ impl WasmEngine for WasmiEngine {
             }
         }
 
-        let module = WasmiModule::new(instrumented_code).expect("Failed to compile module");
+        let module =
+            WasmiModule::new(instrumented_code, version).expect("Failed to compile module");
         let instance = module.instantiate_unchecked();
 
         #[cfg(not(feature = "fuzzing"))]
@@ -2143,7 +2177,6 @@ impl WasmEngine for WasmiEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
     use wasmi::Global;
 
     static MODULE_MUTABLE_GLOBALS: &str = r#"
@@ -2168,26 +2201,6 @@ mod tests {
             )
         "#;
 
-    // This test is not wasmi-specific, but decided to put it here along with next one
-    #[test]
-    fn test_wasm_non_mvp_mutable_globals_build_with_feature_disabled() {
-        let mut features = Features::new();
-        features.disable_mutable_globals();
-
-        assert!(
-            match wat2wasm_with_features(MODULE_MUTABLE_GLOBALS, features) {
-                Err(err) => {
-                    match err.kind() {
-                        ErrorKind::Validate(msg) => {
-                            msg.contains("mutable globals cannot be imported")
-                        }
-                        _ => false,
-                    }
-                }
-                Ok(_) => false,
-            }
-        )
-    }
     pub fn run_module_with_mutable_global(
         module: &Module,
         mut store: StoreContextMut<WasmiInstanceEnv>,
@@ -2218,10 +2231,10 @@ mod tests {
 
     #[test]
     fn test_wasm_non_mvp_mutable_globals_execute_code() {
-        // wat2wasm has "mutable-globals" enabled by default
-        let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
+        // wat::parse_str has all features enabled by default
+        let code = wat::parse_str(MODULE_MUTABLE_GLOBALS).unwrap();
 
-        let wasmi_module = WasmiModule::new(&code).unwrap();
+        let wasmi_module = WasmiModule::new(&code, ScryptoVmVersion::latest()).unwrap();
         let module = wasmi_module.module;
 
         let mut store = Store::new(&module.engine(), WasmiInstanceEnv::new());

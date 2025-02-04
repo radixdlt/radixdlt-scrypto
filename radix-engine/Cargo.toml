@@ -49,7 +49,8 @@ wasmi = {  workspace = true }
 lazy_static = { workspace = true }
 
 [dev-dependencies]
-wabt = { workspace = true }
+wat = { workspace = true }
+wasmprinter = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
 

@@ -214,8 +214,20 @@ impl Rules for WasmValidatorConfigV1 {
             I64Extend16S => Some(self.weights.i64extendsi32),
             I64Extend32S => Some(self.weights.i64extendsi32),
 
+            // Reference types proposal
+            // TODO WASM Adjust weights accordingly
+            TypedSelect { .. }
+            | RefNull { .. }
+            | RefIsNull { .. }
+            | RefFunc { .. }
+            | TableFill { .. }
+            | TableGet { .. }
+            | TableSet { .. }
+            | TableGrow { .. }
+            | TableSize { .. } => Some(self.weights.fallback),
+
             // Bulk memory proposal
-            | MemoryInit { .. }
+            MemoryInit { .. }
             | DataDrop { .. }
             | MemoryCopy { .. }
             | MemoryFill { .. }
@@ -245,17 +257,6 @@ impl Rules for WasmValidatorConfigV1 {
 
             // Memory control proposal
             | MemoryDiscard { .. }
-
-            // Reference types proposal
-            | TypedSelect { .. }
-            | RefNull { .. }
-            | RefIsNull { .. }
-            | RefFunc { .. }
-            | TableFill { .. }
-            | TableGet { .. }
-            | TableSet { .. }
-            | TableGrow { .. }
-            | TableSize { .. }
 
             // Relaxed SIMD proposal
             | I8x16RelaxedSwizzle { .. }

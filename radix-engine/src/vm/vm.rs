@@ -36,18 +36,24 @@ impl VmBoot {
     }
 
     pub fn latest() -> Self {
-        Self::bottlenose()
+        Self::dugong()
+    }
+
+    pub fn dugong() -> Self {
+        Self::V1 {
+            scrypto_version: ScryptoVmVersion::dugong().into(),
+        }
     }
 
     pub fn bottlenose() -> Self {
         Self::V1 {
-            scrypto_version: ScryptoVmVersion::V1_1.into(),
+            scrypto_version: ScryptoVmVersion::bottlenose().into(),
         }
     }
 
     pub fn babylon_genesis() -> Self {
         Self::V1 {
-            scrypto_version: ScryptoVmVersion::V1_0.into(),
+            scrypto_version: ScryptoVmVersion::babylon_genesis().into(),
         }
     }
 }
@@ -66,7 +72,7 @@ impl VmApi for VmBoot {
 }
 
 /// This trait is intended to encapsulate the data and types required to
-/// initalize the VMs in the engine.
+/// initialize the VMs in the engine.
 ///
 /// The canonical implementation is [`VmModules`] - but we have this trait
 /// as well so that functions can take an `&impl VmInitialize` parameter,
@@ -267,6 +273,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         address,
                         export.code_hash,
                         &instrumented_code.instrumented_code,
+                        vm_api.get_scrypto_version(),
                     )
                 };
 

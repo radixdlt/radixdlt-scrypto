@@ -5,7 +5,8 @@ use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 
 pub struct ScryptoV1WasmValidator {
     pub max_memory_size_in_pages: u32,
-    pub max_initial_table_size: u32,
+    pub max_number_of_tables: u32,
+    pub max_table_size: u32,
     pub max_number_of_br_table_targets: u32,
     pub max_number_of_functions: u32,
     pub max_number_of_function_params: u32,
@@ -23,7 +24,8 @@ impl ScryptoV1WasmValidator {
 
         Self {
             max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
-            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
+            max_number_of_tables: MAX_NUMBER_OF_TABLES,
+            max_table_size: MAX_TABLE_SIZE,
             max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
             max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
             max_number_of_function_params: MAX_NUMBER_OF_FUNCTION_PARAMS,
@@ -41,12 +43,12 @@ impl ScryptoV1WasmValidator {
         code: &[u8],
         blueprints: I,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
-        WasmModule::init(code)?
+        WasmModule::init(code, self.version)?
             .enforce_no_start_function()?
             .enforce_import_constraints(self.version)?
             .enforce_export_names()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
-            .enforce_table_limit(self.max_initial_table_size)?
+            .enforce_table_limit(self.max_number_of_tables, self.max_table_size)?
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
             .enforce_function_limit(
                 self.max_number_of_functions,
@@ -57,7 +59,7 @@ impl ScryptoV1WasmValidator {
             .enforce_export_constraints(blueprints)?
             .inject_instruction_metering(&self.instrumenter_config)?
             .inject_stack_metering(self.instrumenter_config.max_stack_size())?
-            .ensure_instantiatable()?
+            .ensure_instantiatable(self.version)?
             .ensure_compilable()?
             .to_bytes()
     }
@@ -66,14 +68,13 @@ impl ScryptoV1WasmValidator {
 #[cfg(test)]
 mod tests {
     use radix_engine_interface::blueprints::package::PackageDefinition;
-    use wabt::{wasm2wat, wat2wasm};
 
     use super::ScryptoV1WasmValidator;
     use super::ScryptoVmVersion;
 
     #[test]
     fn test_validate() {
-        let code = wat2wasm(
+        let code = wat::parse_str(
             r#"
         (module
 
@@ -106,7 +107,7 @@ mod tests {
         )
         .unwrap();
 
-        let instrumented_code = wasm2wat(
+        let instrumented_code = wasmprinter::print_bytes(
             ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(
                     &code,
@@ -125,6 +126,10 @@ mod tests {
   (type (;0;) (func (param i64) (result i64)))
   (type (;1;) (func (param i64)))
   (import "env" "gas" (func (;0;) (type 1)))
+  (memory (;0;) 1 64)
+  (global (;0;) (mut i32) i32.const 0)
+  (export "memory" (memory 0))
+  (export "Test_f" (func 2))
   (func (;1;) (type 0) (param i64) (result i64)
     i64.const 14788284
     call 0
@@ -140,7 +145,8 @@ mod tests {
     i32.const 2
     i32.const 0
     i32.store8
-    i64.const 3)
+    i64.const 3
+  )
   (func (;2;) (type 0) (param i64) (result i64)
     local.get 0
     global.get 0
@@ -150,18 +156,16 @@ mod tests {
     global.get 0
     i32.const 1024
     i32.gt_u
-    if  ;; label = @1
+    if ;; label = @1
       unreachable
     end
     call 1
     global.get 0
     i32.const 4
     i32.sub
-    global.set 0)
-  (memory (;0;) 1 64)
-  (global (;0;) (mut i32) (i32.const 0))
-  (export "memory" (memory 0))
-  (export "Test_f" (func 2)))
+    global.set 0
+  )
+)
 "#
         )
     }

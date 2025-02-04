@@ -21,15 +21,18 @@ impl From<PrepareError> for ExtractSchemaError {
     }
 }
 
-pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchemaError> {
-    let function_exports = WasmModule::init(code)
+pub fn extract_definition(
+    code: &[u8],
+    version: ScryptoVmVersion,
+) -> Result<PackageDefinition, ExtractSchemaError> {
+    let function_exports = WasmModule::init(code, version)
         .and_then(WasmModule::to_bytes)?
         .1
         .into_iter()
         .filter(|s| s.ends_with("_schema"));
 
     // Validate WASM
-    let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
+    let validator = ScryptoV1WasmValidator::new(version);
     let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
         .validate(&code, iter::empty())
@@ -51,7 +54,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         fee_reserve,
         &mut wasm_execution_units_consumed,
     ));
-    let mut instance = wasm_engine.instantiate(code_hash, &instrumented_code);
+    let mut instance = wasm_engine.instantiate(code_hash, &instrumented_code, version);
     let mut blueprints = index_map_new();
     for function_export in function_exports {
         let rtn = instance
