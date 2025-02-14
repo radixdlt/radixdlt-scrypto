@@ -289,7 +289,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api, unify with VmApi
     fn invoke<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError>
+            + KernelNodeApi
+            + KernelSubstateApi<SystemLockData>
+            + SystemBasedKernelInternalApi,
         V: VmApi,
     >(
         &mut self,
