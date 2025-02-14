@@ -62,6 +62,7 @@
 * [#2053](https://github.com/radixdlt/radixdlt-scrypto/pull/2053) - Minor updates to improve the `name` and `description` of the native node module packages.
 * [#2067](https://github.com/radixdlt/radixdlt-scrypto/pull/2067) - Removed the `eager!` macro and replaced it with the rewritten, open-source and more comprehensive `preinterpret!` macro which David is supporting in an open-source [preinterpret](https://github.com/dhedey/preinterpret) crate. Give it a try for replacing code-generation procedural macros.
 * [#2068](https://github.com/radixdlt/radixdlt-scrypto/pull/2068) - Added a `radiswap-v2` scenario to run at Dugong launch. It demonstrates the use of `enable_blueprint_linking` feature as [an alternative to direct linking](https://docs.radixdlt.com/docs/metadata-for-verification), and also demonstrates how to configure a badge to be its own owner in the manifest.
+* [#2069](https://github.com/radixdlt/radixdlt-scrypto/pull/2069) - Running a preview with the `no_auth` flag will now cause any `Runtime::assert_access_rule(..)` checks to be ignored, as well as disabling the authorization layer.
 
 # v1.3.x - [Cuttlefish](https://docs.radixdlt.com/docs/cuttlefish)
 
