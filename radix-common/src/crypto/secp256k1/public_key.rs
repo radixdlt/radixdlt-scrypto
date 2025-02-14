@@ -114,6 +114,14 @@ impl IsPublicKeyHash for Secp256k1PublicKeyHash {
     }
 }
 
+impl HasPublicKeyHash for Secp256k1PublicKeyHash {
+    type TypedPublicKeyHash = Self;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        *self
+    }
+}
+
 //======
 // error
 //======

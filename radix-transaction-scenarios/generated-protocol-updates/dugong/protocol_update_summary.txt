@@ -4,3 +4,8 @@ Name: Dugong
 These Dugong hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
 State changes: 03f38c587a6ab2ea (allowed to change if not deployed to any network)
 Events       : 2a6146032d8e884d (allowed to change if not deployed to any network)
+
+==== POST ENACTMENT SCENARIOS ====
+The following scenarios are set by default to run on testnets after this protocol update.
+If there are any changes to this list after deploying a testnet, the testnet's ledger will need to be wiped (*not allowed on stokenet*) or the network's protocol update configuration will need to be customised in the node to override the scenarios run on it.
+=> radiswap_v2

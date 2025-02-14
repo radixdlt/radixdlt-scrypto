@@ -46,6 +46,12 @@ pub struct ManifestNamedAddress(pub u32);
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_STATIC: u8 = 0u8;
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_NAMED: u8 = 1u8;
 
+impl From<ManifestNamedAddress> for ManifestAddress {
+    fn from(value: ManifestNamedAddress) -> Self {
+        Self::Named(value)
+    }
+}
+
 //========
 // binary
 //========

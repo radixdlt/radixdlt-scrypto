@@ -35,6 +35,7 @@ pub mod prelude {}
 pub(crate) mod internal_prelude {
     pub use crate::accounts::*;
     pub use crate::scenario::*;
+    pub use crate::utils::*;
     pub use radix_common::prelude::*;
     pub use radix_engine::errors::*;
     pub use radix_engine::transaction::*;
