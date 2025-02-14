@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfugnk3ljcgwzqzug2mr4wl30qeh5t43xqukhckkdkk3vtulcfyjtv:#1#")
+                        NonFungibleGlobalId("resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha:#1#")
                     )
                 )
             )
@@ -522,7 +522,7 @@ PUBLISH_PACKAGE_ADVANCED
                     "Radiswap Package"
                 )
             ),
-            true
+            false
         ),
         "description" => Tuple(
             Enum<1u8>(
@@ -530,7 +530,7 @@ PUBLISH_PACKAGE_ADVANCED
                     "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX."
                 )
             ),
-            true
+            false
         ),
         "tags" => Tuple(
             Enum<1u8>(
@@ -542,7 +542,15 @@ PUBLISH_PACKAGE_ADVANCED
                     )
                 )
             ),
-            true
+            false
+        ),
+        "info_url" => Tuple(
+            Enum<1u8>(
+                Enum<13u8>(
+                    "https://radiswap.radixdlt.com/"
+                )
+            ),
+            false
         )
     )
     Enum<1u8>(
@@ -558,7 +566,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfugnk3ljcgwzqzug2mr4wl30qeh5t43xqukhckkdkk3vtulcfyjtv:#1#")
+                        NonFungibleGlobalId("resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha:#1#")
                     )
                 )
             )
@@ -576,7 +584,7 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfugnk3ljcgwzqzug2mr4wl30qeh5t43xqukhckkdkk3vtulcfyjtv:#1#")
+                        NonFungibleGlobalId("resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha:#1#")
                     )
                 )
             )

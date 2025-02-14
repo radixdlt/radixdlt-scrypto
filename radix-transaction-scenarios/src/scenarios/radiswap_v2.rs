@@ -204,27 +204,74 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
             })
             .successful_transaction(|core, config, state| {
                 core.v2_transaction("create-owner-badge-and-configure-dapp-definition-account")
-                    .manifest_builder(|builder| {
+                    .manifest_builder_with_lookup(|builder, lookup| {
                         let definition_account = state.radiswap_dapp_definition_account.unwrap();
                         builder.lock_fee_from_faucet()
-                            .create_non_fungible_resource(
-                                // TODO: Once we can use address reservation with resource creation,
-                                // we can set the owner badge to be its own owner
-                                OwnerRole::None,
-                                NonFungibleIdType::Integer,
-                                true,
-                                NonFungibleResourceRoles::default(),
-                                metadata! {
-                                    init {
-                                        "name" => "Radiswap - dApp Owner Badge", updatable;
-                                        "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
-                                        "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
-                                        "info_url" => UncheckedUrl::of("https://radiswap.radixdlt.com/"), updatable;
-                                    }
-                                },
-                                Some([
-                                    (NonFungibleLocalId::integer(1), ())
-                                ]),
+                            .allocate_global_address(
+                                RESOURCE_PACKAGE,
+                                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                "badge_reservation",
+                                "badge"
+                            )
+                            .call_function(
+                                RESOURCE_PACKAGE,
+                                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                                (
+                                    {
+                                        // We wish to set the owner role of the badge to itself. i.e. something like this:
+                                        // OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::new(
+                                        //     GlobalAddress::from(lookup.named_address("badge")),
+                                        //     NonFungibleLocalId::integer(1)
+                                        // ))))
+                                        // But currently there aren't manifest models for this, so instead we need to do this manually
+                                        // with ugly manual ManifestValues.
+                                        let badge_non_fungible = ManifestValue::tuple([
+                                            ManifestValue::custom(ManifestCustomValue::Address(lookup.named_address("badge").into())),
+                                            ManifestValue::custom(ManifestCustomValue::NonFungibleLocalId(ManifestNonFungibleLocalId::integer(1).unwrap())),
+                                        ]);
+                                        ManifestValue::Enum {
+                                            discriminator: 1, // OwnerRole::Fixed
+                                            fields: vec![
+                                                ManifestValue::Enum {
+                                                    discriminator: 2, // AccessRule::Protected
+                                                    fields: vec![
+                                                        ManifestValue::Enum {
+                                                            discriminator: 0, // CompositeRequirement::BasicRequirement
+                                                            fields: vec![
+                                                                ManifestValue::Enum {
+                                                                    discriminator: 0, // BasicRequirement::Require
+                                                                    fields: vec![
+                                                                        ManifestValue::Enum {
+                                                                            discriminator: 0, // ResourceOrNonFungible::NonFungible
+                                                                            fields: vec![badge_non_fungible],
+                                                                        }
+                                                                    ],
+                                                                }
+                                                            ],
+                                                        }
+                                                    ],
+                                                }
+                                            ],
+                                        }
+                                    },
+                                    NonFungibleIdType::Integer,
+                                    true, // Track total supply
+                                    NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                                    indexmap!( // Entries
+                                        NonFungibleLocalId::integer(1) => ((),),
+                                    ),
+                                    NonFungibleResourceRoles::default(),
+                                    metadata! {
+                                        init {
+                                            "name" => "Radiswap - dApp Owner Badge", updatable;
+                                            "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
+                                            "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
+                                            "info_url" => UncheckedUrl::of("https://radiswap.radixdlt.com/"), updatable;
+                                        }
+                                    },
+                                    Some(lookup.address_reservation("badge_reservation")),
+                                )
                             )
                             .try_deposit_entire_worktop_or_abort(definition_account, None)
                             .set_metadata(definition_account, "account_type", "dapp definition")
@@ -280,16 +327,17 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 code.to_vec(),
                                 schema,
                                 metadata_init! {
-                                    "name" => "Radiswap Package", locked;
-                                    "description" => "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
-                                    "tags" => ["dex", "pool", "radiswap"], locked;
+                                    "name" => "Radiswap Package", updatable;
+                                    "description" => "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX.".to_owned(), updatable;
+                                    "tags" => ["dex", "pool", "radiswap"], updatable;
+                                    "info_url" => UncheckedUrl::of("https://radiswap.radixdlt.com/"), updatable;
                                 },
                                 owner_role.clone(),
                             ).call_function(
                                 lookup.named_address("radiswap_package"),
                                 "Radiswap",
                                 "new",
-                                manifest_args!(
+                                (
                                     owner_role.clone(),
                                     state.pool_1.resource_1.unwrap(),
                                     state.pool_1.resource_2.unwrap(),
@@ -299,7 +347,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 lookup.named_address("radiswap_package"),
                                 "Radiswap",
                                 "new",
-                                manifest_args!(
+                                (
                                     owner_role.clone(),
                                     state.pool_2.resource_1.unwrap(),
                                     state.pool_2.resource_2.unwrap(),
@@ -445,13 +493,17 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
             })
             .successful_transaction(|core, config, state| {
                 let definition = GlobalAddress::from(state.radiswap_dapp_definition_account.get()?);
+                let radiswap_package = GlobalAddress::from(state.radiswap_package.get()?);
+                let owner_badge = GlobalAddress::from(state.owner_badge.get()?.resource_address());
                 let radiswap_1 = GlobalAddress::from(state.pool_1.radiswap.get()?);
                 let pool_1 = GlobalAddress::from(state.pool_1.pool.get()?);
                 let pool_unit_1 = GlobalAddress::from(state.pool_1.pool_unit.get()?);
                 let radiswap_2 = GlobalAddress::from(state.pool_2.radiswap.get()?);
                 let pool_2 = GlobalAddress::from(state.pool_2.pool.get()?);
                 let pool_unit_2 = GlobalAddress::from(state.pool_2.pool_unit.get()?);
-                let claimed_entities = vec![radiswap_1, pool_1, pool_unit_1, radiswap_2, pool_2, pool_unit_2];
+                // radiswap_1 and radiswap_2 will not be claimed; but will be blueprint-linked
+                // Unfortunately blueprint linking can't work with pools and pool units, because they have a native blueprint!
+                let claimed_entities = vec![radiswap_package, owner_badge, pool_1, pool_unit_1, pool_2, pool_unit_2];
                 fn add_metadata(
                     builder: TransactionManifestV2Builder,
                     address: GlobalAddress,
@@ -461,7 +513,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                     builder
                         .set_metadata(address, "name", name)
                         .set_metadata(address, "description", description)
-                        .set_metadata(address, "tags", ["badge", "dex", "pool", "radiswap"])
+                        .set_metadata(address, "tags", ["dex", "pool", "radiswap"])
                         .set_metadata(address, "info_url", UncheckedUrl::of("https://radiswap.radixdlt.com/"))
                 }
                 core.v2_transaction("set-two-way-linking")
@@ -474,10 +526,13 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                             // Set up two-way-linking
                             .set_metadata(definition, "claimed_entities", claimed_entities)
                             // Note - Components use "dapp_definition" but Resources use "dapp_definitions"
-                            .set_metadata(radiswap_1, "dapp_definition", definition)
-                            .set_metadata(radiswap_2, "dapp_definition", definition)
+                            .set_metadata(radiswap_package, "dapp_definition", definition)
+                            // Technically we should ensure the constructor is private before using `enable_blueprint_linking`
+                            // but for the sake of this demonstration, it's not important.
+                            .set_metadata(radiswap_package, "enable_blueprint_linking", ["Radiswap"])
                             .set_metadata(pool_1, "dapp_definition", definition)
                             .set_metadata(pool_2, "dapp_definition", definition)
+                            .set_metadata(owner_badge, "dapp_definitions", [definition])
                             .set_metadata(pool_unit_1, "dapp_definitions", [definition])
                             .set_metadata(pool_unit_2, "dapp_definitions", [definition])
                             // Set up other metadata which has been missed

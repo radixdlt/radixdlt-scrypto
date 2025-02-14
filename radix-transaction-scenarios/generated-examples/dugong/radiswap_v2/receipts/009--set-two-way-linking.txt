@@ -1,15 +1,15 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 1.83664525279 XRD
-├─ Network execution: 0.66125745 XRD, 13225149 execution cost units
-├─ Network finalization: 0.1880488 XRD, 3760976 finalization cost units
+TRANSACTION COST: 1.89099859617 XRD
+├─ Network execution: 0.69452975 XRD, 13890595 execution cost units
+├─ Network finalization: 0.19329885 XRD, 3865977 finalization cost units
 ├─ Tip: 0 XRD
-├─ Network Storage: 0.98733900279 XRD
+├─ Network Storage: 1.00316999617 XRD
 └─ Royalties: 0 XRD
 
 LOGS: 0
 
-EVENTS: 35
+EVENTS: 36
 ├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
    Event: LockFeeEvent {
      amount: Decimal("5000"),
@@ -19,44 +19,46 @@ EVENTS: 35
      key: "claimed_entities",
      value: GenericMetadataValue::GlobalAddressArray(
        [
-         GlobalAddress(Reference("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")),
-         GlobalAddress(Reference("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")),
-         GlobalAddress(Reference("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")),
-         GlobalAddress(Reference("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")),
-         GlobalAddress(Reference("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")),
-         GlobalAddress(Reference("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")),
+         GlobalAddress(Reference("package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc")),
+         GlobalAddress(Reference("resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha")),
+         GlobalAddress(Reference("pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6")),
+         GlobalAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+         GlobalAddress(Reference("pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz")),
+         GlobalAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
        ],
      ),
    }
-├─ Emitter: Method { node: component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr, module_id: Metadata }
+├─ Emitter: Method { node: package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "dapp_definition",
      value: GenericMetadataValue::GlobalAddress(
        GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
      ),
    }
-├─ Emitter: Method { node: component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v, module_id: Metadata }
+├─ Emitter: Method { node: package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "enable_blueprint_linking",
+     value: GenericMetadataValue::StringArray(
+       [
+         "Radiswap",
+       ],
+     ),
+   }
+├─ Emitter: Method { node: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "dapp_definition",
      value: GenericMetadataValue::GlobalAddress(
        GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
      ),
    }
-├─ Emitter: Method { node: pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "dapp_definition",
      value: GenericMetadataValue::GlobalAddress(
        GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
      ),
    }
-├─ Emitter: Method { node: pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku, module_id: Metadata }
-   Event: SetMetadataEvent {
-     key: "dapp_definition",
-     value: GenericMetadataValue::GlobalAddress(
-       GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
-     ),
-   }
-├─ Emitter: Method { node: resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "dapp_definitions",
      value: GenericMetadataValue::GlobalAddressArray(
@@ -65,7 +67,7 @@ EVENTS: 35
        ],
      ),
    }
-├─ Emitter: Method { node: resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "dapp_definitions",
      value: GenericMetadataValue::GlobalAddressArray(
@@ -74,198 +76,201 @@ EVENTS: 35
        ],
      ),
    }
-├─ Emitter: Method { node: component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "dapp_definitions",
+     value: GenericMetadataValue::GlobalAddressArray(
+       [
+         GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 1 - XRD/BTC: Component",
      ),
    }
-├─ Emitter: Method { node: component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
      ),
    }
-├─ Emitter: Method { node: component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
        Url("https://radiswap.radixdlt.com/"),
      ),
    }
-├─ Emitter: Method { node: pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 1 - XRD/BTC: Pool",
      ),
    }
-├─ Emitter: Method { node: pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
      ),
    }
-├─ Emitter: Method { node: pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
        Url("https://radiswap.radixdlt.com/"),
      ),
    }
-├─ Emitter: Method { node: resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 1 - XRD/BTC: Pool Units",
      ),
    }
-├─ Emitter: Method { node: resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
      ),
    }
-├─ Emitter: Method { node: resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
        Url("https://radiswap.radixdlt.com/"),
      ),
    }
-├─ Emitter: Method { node: component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 2 - ETH/ETC: Component",
      ),
    }
-├─ Emitter: Method { node: component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
      ),
    }
-├─ Emitter: Method { node: component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v, module_id: Metadata }
+├─ Emitter: Method { node: component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
        Url("https://radiswap.radixdlt.com/"),
      ),
    }
-├─ Emitter: Method { node: pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 2 - ETH/ETC: Pool",
      ),
    }
-├─ Emitter: Method { node: pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
      ),
    }
-├─ Emitter: Method { node: pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku, module_id: Metadata }
+├─ Emitter: Method { node: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
        Url("https://radiswap.radixdlt.com/"),
      ),
    }
-├─ Emitter: Method { node: resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
        "Radiswap 2 - ETH/ETC: Pool Units",
      ),
    }
-├─ Emitter: Method { node: resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\"",
      ),
    }
-├─ Emitter: Method { node: resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "tags",
      value: GenericMetadataValue::StringArray(
        [
-         "badge",
          "dex",
          "pool",
          "radiswap",
        ],
      ),
    }
-├─ Emitter: Method { node: resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt, module_id: Metadata }
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "info_url",
      value: GenericMetadataValue::Url(
@@ -274,25 +279,25 @@ EVENTS: 35
    }
 ├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
    Event: PayFeeEvent {
-     amount: Decimal("1.83664525279"),
+     amount: Decimal("1.89099859617"),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
    Event: DepositEvent {
-     amount: Decimal("0.918322626395"),
+     amount: Decimal("0.945499298085"),
    }
 └─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: BurnFungibleResourceEvent {
-     amount: Decimal("0.918322626395"),
+     amount: Decimal("0.945499298085"),
    }
 
-STATE UPDATES: 13 entities
+STATE UPDATES: 15 entities
 ├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(2)
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("17.46445390953"),
+             0u8 => Decimal("17.4863902009075"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -310,7 +315,7 @@ STATE UPDATES: 13 entities
          },
        )
   └─ Partition(65): 1 change
-    └─ Set: Hash(hex("309316a1e1fb44d96bceb9598650fd5e405988e55d2a5656f5d8c6b8e83263e8"))
+    └─ Set: Hash(hex("e1297a002de171727465d58c26691b37ccf400d27d47c9fef42ccc8b10d12d01"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
@@ -327,53 +332,42 @@ STATE UPDATES: 13 entities
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::GlobalAddressArray(
            [
-             GlobalAddress(Reference("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")),
-             GlobalAddress(Reference("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")),
-             GlobalAddress(Reference("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")),
-             GlobalAddress(Reference("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")),
-             GlobalAddress(Reference("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")),
-             GlobalAddress(Reference("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")),
+             GlobalAddress(Reference("package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc")),
+             GlobalAddress(Reference("resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha")),
+             GlobalAddress(Reference("pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6")),
+             GlobalAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+             GlobalAddress(Reference("pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz")),
+             GlobalAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
            ],
          ),
        )
-├─ component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr across 1 partitions
-  └─ Partition(2): 5 changes
-    ├─ Set: "info_url"
+├─ resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha across 1 partitions
+  └─ Partition(2): 1 change
+    └─ Set: "dapp_definitions"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::Url(
-           Url("https://radiswap.radixdlt.com/"),
+         GenericMetadataValue::GlobalAddressArray(
+           [
+             GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
+           ],
          ),
        )
-    ├─ Set: "name"
+├─ package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc across 1 partitions
+  └─ Partition(2): 2 changes
+    ├─ Set: "enable_blueprint_linking"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::String(
-           "Radiswap 1 - XRD/BTC: Component",
+         GenericMetadataValue::StringArray(
+           [
+             "Radiswap",
+           ],
          ),
        )
-    ├─ Set: "dapp_definition"
+    └─ Set: "dapp_definition"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::GlobalAddress(
            GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
          ),
        )
-    ├─ Set: "description"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::String(
-           "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
-         ),
-       )
-    └─ Set: "tags"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::StringArray(
-           [
-             "badge",
-             "dex",
-             "pool",
-             "radiswap",
-           ],
-         ),
-       )
-├─ pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2 across 1 partitions
+├─ pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6 across 1 partitions
   └─ Partition(2): 5 changes
     ├─ Set: "info_url"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
@@ -403,14 +397,13 @@ STATE UPDATES: 13 entities
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::StringArray(
            [
-             "badge",
              "dex",
              "pool",
              "radiswap",
            ],
          ),
        )
-├─ resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf across 1 partitions
+├─ resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av across 1 partitions
   └─ Partition(2): 5 changes
     ├─ Set: "dapp_definitions"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
@@ -442,51 +435,13 @@ STATE UPDATES: 13 entities
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::StringArray(
            [
-             "badge",
              "dex",
              "pool",
              "radiswap",
            ],
          ),
        )
-├─ component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v across 1 partitions
-  └─ Partition(2): 5 changes
-    ├─ Set: "info_url"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::Url(
-           Url("https://radiswap.radixdlt.com/"),
-         ),
-       )
-    ├─ Set: "name"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::String(
-           "Radiswap 2 - ETH/ETC: Component",
-         ),
-       )
-    ├─ Set: "dapp_definition"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::GlobalAddress(
-           GlobalAddress(Reference("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")),
-         ),
-       )
-    ├─ Set: "description"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::String(
-           "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
-         ),
-       )
-    └─ Set: "tags"
-       Value: UNLOCKED MetadataEntryEntryPayload::V1(
-         GenericMetadataValue::StringArray(
-           [
-             "badge",
-             "dex",
-             "pool",
-             "radiswap",
-           ],
-         ),
-       )
-├─ pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku across 1 partitions
+├─ pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz across 1 partitions
   └─ Partition(2): 5 changes
     ├─ Set: "info_url"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
@@ -516,14 +471,13 @@ STATE UPDATES: 13 entities
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::StringArray(
            [
-             "badge",
              "dex",
              "pool",
              "radiswap",
            ],
          ),
        )
-├─ resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt across 1 partitions
+├─ resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh across 1 partitions
   └─ Partition(2): 5 changes
     ├─ Set: "dapp_definitions"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
@@ -555,7 +509,66 @@ STATE UPDATES: 13 entities
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::StringArray(
            [
-             "badge",
+             "dex",
+             "pool",
+             "radiswap",
+           ],
+         ),
+       )
+├─ component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7 across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "info_url"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://radiswap.radixdlt.com/"),
+         ),
+       )
+    ├─ Set: "name"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Radiswap 1 - XRD/BTC: Component",
+         ),
+       )
+    ├─ Set: "description"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+         ),
+       )
+    └─ Set: "tags"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
+             "dex",
+             "pool",
+             "radiswap",
+           ],
+         ),
+       )
+├─ component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk across 1 partitions
+  └─ Partition(2): 4 changes
+    ├─ Set: "info_url"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://radiswap.radixdlt.com/"),
+         ),
+       )
+    ├─ Set: "name"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Radiswap 2 - ETH/ETC: Component",
+         ),
+       )
+    ├─ Set: "description"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
+         ),
+       )
+    └─ Set: "tags"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
              "dex",
              "pool",
              "radiswap",
@@ -566,9 +579,9 @@ STATE UPDATES: 13 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("99999999999969930.14218436188")),
+         LiquidFungibleResource(Decimal("99999999999969930.05443919637")),
        )
-├─ internal_vault_sim1npqklats20wuye4ykrgy2ea7345dsdlqtgxxrx89f9kfu88mejqyf9 across 2 partitions
+├─ internal_vault_sim1nrp7rhk2x83x7ktdhks394gfw8dgy8jnx624zvqtwppens363scgc0 across 2 partitions
   ├─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
@@ -583,12 +596,13 @@ STATE UPDATES: 13 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("34.92890781906")),
+         LiquidFungibleResource(Decimal("34.972780401815")),
        )
 
-OUTPUTS: 33
+OUTPUTS: 34
 ├─ Unit
-├─ Own("internal_component_sim1lrt8vh59tddg8tszlvgm439hg68vdxqypc82l49z92j079t4wkavx9")
+├─ Own("internal_component_sim1lrsyw240wnfp20ulraucejv88m6sxz9x882jzqnufez90qgcwzrq4r")
+├─ Unit
 ├─ Unit
 ├─ Unit
 ├─ Unit
@@ -624,9 +638,9 @@ OUTPUTS: 33
 BALANCE CHANGES: 2
 ├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: -1.83664525279
+   Change: -1.89099859617
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: 0.918322626395
+   Change: 0.945499298085
 
 NEW ENTITIES: 0
