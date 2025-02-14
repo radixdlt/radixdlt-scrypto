@@ -43,7 +43,7 @@ impl Coverage {
 
         if !is_wasm_target_installed {
             eprintln!(
-                "The {}wasm32-unknown-unknown target is not installed.",
+                "The {} wasm32-unknown-unknown target is not installed.",
                 if nightly { "nightly" } else { "" }
             );
             eprintln!("You can install it by using the following command:");
