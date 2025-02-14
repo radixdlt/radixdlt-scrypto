@@ -2,5 +2,5 @@ Name: Dugong
 
 ========= SUMMARY HASHES =========
 These Dugong hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
-State changes: 95b66449fe6829bb (allowed to change if not deployed to any network)
-Events       : 07c81f1e6d320830 (allowed to change if not deployed to any network)
+State changes: 03f38c587a6ab2ea (allowed to change if not deployed to any network)
+Events       : 2a6146032d8e884d (allowed to change if not deployed to any network)
