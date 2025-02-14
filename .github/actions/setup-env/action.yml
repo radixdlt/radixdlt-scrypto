@@ -7,8 +7,7 @@ runs:
     - name: Install Rust toolchain
       uses: RDXWorks-actions/toolchain@master
       with:
-        # IMPORTANT: If updating this, please ensure you updates it in rust-toolchain.toml and all other
-        # places that it mentions!
+        # IMPORTANT: Ensure this aligns with rust-toolchain.toml
         toolchain: 1.81.0
         default: true
         target: wasm32-unknown-unknown

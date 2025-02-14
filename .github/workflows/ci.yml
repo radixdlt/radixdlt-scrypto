@@ -410,7 +410,7 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
       # Coverage needs a nightly compiler.
-      # This should be at or in front of the default toolchain defined in action.yml
+      # This should be at or in front of rust-toolchain.toml
       - name: Install rustc 1.81.0-nightly
         run: |
           rustup toolchain install nightly-2024-07-18
