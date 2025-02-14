@@ -83,6 +83,7 @@ pub type SystemBootSubstate = SystemBoot;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ScryptoSborAssertion)]
 #[sbor_assert(backwards_compatible(
     cuttlefish = "FILE:system_boot_substate_cuttlefish_schema.bin",
+    dugong = "FILE:system_boot_substate_dugong_schema.bin",
 ))]
 pub enum SystemBoot {
     V1(SystemParameters),
