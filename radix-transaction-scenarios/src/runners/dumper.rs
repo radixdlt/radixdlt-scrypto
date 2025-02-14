@@ -40,10 +40,7 @@ mod test {
     #[test]
     #[ignore = "Run this test manually to update a single scenario"]
     pub fn update_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Write,
-            [get_scenario("basic_subintents")],
-        )
+        run_all_scenarios(AlignerExecutionMode::Write, [get_scenario("radiswap_v2")])
     }
 
     #[test]
@@ -54,10 +51,7 @@ mod test {
     #[test]
     #[ignore = "Run this test manually to validate a single scenario"]
     pub fn validate_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Assert,
-            [get_scenario("basic_subintents")],
-        )
+        run_all_scenarios(AlignerExecutionMode::Assert, [get_scenario("radiswap_v2")])
     }
 
     //=============================

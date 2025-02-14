@@ -16,17 +16,17 @@ pub trait HasPublicKeyHash {
     }
 }
 
-pub trait IsPublicKeyHash: Copy {
-    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH];
-    fn into_enum(self) -> PublicKeyHash;
-}
-
-impl<H: IsPublicKeyHash> HasPublicKeyHash for H {
-    type TypedPublicKeyHash = Self;
+impl<T: HasPublicKeyHash> HasPublicKeyHash for &T {
+    type TypedPublicKeyHash = T::TypedPublicKeyHash;
 
     fn get_hash(&self) -> Self::TypedPublicKeyHash {
-        *self
+        <T as HasPublicKeyHash>::get_hash(self)
     }
+}
+
+pub trait IsPublicKeyHash: Copy + HasPublicKeyHash {
+    fn get_hash_bytes(&self) -> &[u8; NodeId::RID_LENGTH];
+    fn into_enum(self) -> PublicKeyHash;
 }
 
 pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_LENGTH] {
@@ -91,5 +91,13 @@ impl IsPublicKeyHash for PublicKeyHash {
 
     fn into_enum(self) -> PublicKeyHash {
         self
+    }
+}
+
+impl HasPublicKeyHash for PublicKeyHash {
+    type TypedPublicKeyHash = Self;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        *self
     }
 }

@@ -1,0 +1,271 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    "create_proof_of_non_fungibles"
+    Address("resource_sim1nfugnk3ljcgwzqzug2mr4wl30qeh5t43xqukhckkdkk3vtulcfyjtv")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#")
+    )
+;
+SET_METADATA
+    Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    "claimed_entities"
+    Enum<136u8>(
+        Array<Address>(
+            Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr"),
+            Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2"),
+            Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf"),
+            Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v"),
+            Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku"),
+            Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+        )
+    )
+;
+SET_METADATA
+    Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    )
+;
+SET_METADATA
+    Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    )
+;
+SET_METADATA
+    Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    )
+;
+SET_METADATA
+    Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")
+    "dapp_definition"
+    Enum<8u8>(
+        Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+    )
+;
+SET_METADATA
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    "dapp_definitions"
+    Enum<136u8>(
+        Array<Address>(
+            Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+        )
+    )
+;
+SET_METADATA
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    "dapp_definitions"
+    Enum<136u8>(
+        Array<Address>(
+            Address("account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0")
+        )
+    )
+;
+SET_METADATA
+    Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")
+    "name"
+    Enum<0u8>(
+        "Radiswap 1 - XRD/BTC: Component"
+    )
+;
+SET_METADATA
+    Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\""
+    )
+;
+SET_METADATA
+    Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("component_sim1crx6kh5adu6hdll955j5kwgnpxe4ey5w5rked8e8ecx30e2g4uspqr")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")
+    "name"
+    Enum<0u8>(
+        "Radiswap 1 - XRD/BTC: Pool"
+    )
+;
+SET_METADATA
+    Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
+    )
+;
+SET_METADATA
+    Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("pool_sim1cke8pe8rx9u04g25t6sylsm88k66j0af9wtzf9peaqyqcwem37gac2")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    "name"
+    Enum<0u8>(
+        "Radiswap 1 - XRD/BTC: Pool Units"
+    )
+;
+SET_METADATA
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\""
+    )
+;
+SET_METADATA
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")
+    "name"
+    Enum<0u8>(
+        "Radiswap 2 - ETH/ETC: Component"
+    )
+;
+SET_METADATA
+    Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\""
+    )
+;
+SET_METADATA
+    Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("component_sim1cqx9cep7wu590gpnvkdnj7kn4k06fjqjz8fl6hkpf8mgtswqwc8p7v")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")
+    "name"
+    Enum<0u8>(
+        "Radiswap 2 - ETH/ETC: Pool"
+    )
+;
+SET_METADATA
+    Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\""
+    )
+;
+SET_METADATA
+    Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("pool_sim1c4h9afhgg4ydj8ud87uruwhyzj955h2ryt7jpmjrmdp2yx7guyr7ku")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    "name"
+    Enum<0u8>(
+        "Radiswap 2 - ETH/ETC: Pool Units"
+    )
+;
+SET_METADATA
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\""
+    )
+;
+SET_METADATA
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "badge",
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;

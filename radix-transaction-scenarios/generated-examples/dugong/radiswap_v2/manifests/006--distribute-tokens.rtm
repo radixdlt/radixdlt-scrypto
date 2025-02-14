@@ -1,0 +1,141 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1tkp72tfnz3ulvxmlfrvty05vf6rusnz3stlf9gr0mt6h7r37xurqcf")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce")
+    "withdraw"
+    Address("resource_sim1th42czuk9e69rdg9mnmv85mwlxxkvqv05g7c5shck3v2j0ldfg8ktt")
+    Decimal("333")
+;
+CALL_METHOD
+    Address("account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

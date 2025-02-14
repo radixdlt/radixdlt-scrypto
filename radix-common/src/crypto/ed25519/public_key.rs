@@ -102,6 +102,14 @@ impl IsPublicKeyHash for Ed25519PublicKeyHash {
     }
 }
 
+impl HasPublicKeyHash for Ed25519PublicKeyHash {
+    type TypedPublicKeyHash = Self;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        *self
+    }
+}
+
 //======
 // error
 //======

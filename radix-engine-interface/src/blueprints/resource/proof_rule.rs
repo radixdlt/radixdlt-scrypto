@@ -200,7 +200,7 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
 }
 
 /// A requirement for the transaction to be signed using a specific key.
-pub fn signature(public_key: &impl HasPublicKeyHash) -> ResourceOrNonFungible {
+pub fn signature(public_key: impl HasPublicKeyHash) -> ResourceOrNonFungible {
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(public_key))
 }
 
