@@ -447,7 +447,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                     .complete(core)
             })
             .successful_transaction(|core, config, state| {
-                core.v2_transaction("radiswap-swap-tokens")
+                core.v2_transaction("swap-tokens")
                     .manifest_builder_with_lookup(|builder, lookup| {
                         builder.lock_fee_from_faucet()
                             .withdraw_from_account(
@@ -469,7 +469,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                     .complete(core)
             })
             .successful_transaction(|core, config, state| {
-                core.v2_transaction("radiswap-remove-tokens")
+                core.v2_transaction("remove-tokens")
                     .manifest_builder_with_lookup(|builder, lookup| {
                         builder.lock_fee_from_faucet()
                             .withdraw_from_account(
