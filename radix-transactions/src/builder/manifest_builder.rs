@@ -799,9 +799,9 @@ where
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
+                        entries,
                         resource_roles,
                         metadata,
-                        entries,
                         address_reservation: None,
                     }
                 ),

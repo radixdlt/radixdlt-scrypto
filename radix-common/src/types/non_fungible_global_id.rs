@@ -180,13 +180,13 @@ impl fmt::Debug for NonFungibleGlobalId {
 }
 
 pub trait FromPublicKey: Sized {
-    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self;
+    fn from_public_key<P: HasPublicKeyHash>(public_key: P) -> Self;
     fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self;
 }
 
 impl FromPublicKey for NonFungibleGlobalId {
     /// Prefer using the `signature(public_key)` or `public_key.signature_proof()`.
-    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self {
+    fn from_public_key<P: HasPublicKeyHash>(public_key: P) -> Self {
         Self::from_public_key_hash(public_key.get_hash())
     }
 

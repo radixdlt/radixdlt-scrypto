@@ -15,6 +15,7 @@ mod metadata;
 mod non_fungible_resource;
 mod non_fungible_resource_with_remote_type;
 mod radiswap;
+mod radiswap_v2;
 mod royalties;
 mod transfer_xrd;
 
@@ -74,6 +75,9 @@ lazy_static::lazy_static! {
 
         // testnet_run_at: CUTTLEFISH (Part 2)
         add(&mut map, basic_subintents_part2::BasicSubintentsPart2ScenarioCreator);
+
+        // testnet_run_at: DUGONG
+        add(&mut map, radiswap_v2::RadiswapV2ScenarioCreator);
 
         map
     };

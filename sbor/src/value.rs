@@ -85,6 +85,10 @@ impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
             fields: fields.into_iter().collect(),
         }
     }
+
+    pub fn custom(value: Y) -> Self {
+        Value::Custom { value }
+    }
 }
 
 /// Represents a custom SBOR value.
