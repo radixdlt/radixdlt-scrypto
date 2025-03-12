@@ -22,6 +22,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::object_modules::metadata::MetadataNativePackage;
 use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyNativePackage;
+use crate::system::system_callback::SystemBasedKernelInternalApi;
 use crate::system::system_callback::SystemLockData;
 use crate::vm::{VmApi, VmInvoke};
 use radix_engine_interface::api::SystemApi;
@@ -96,7 +97,10 @@ impl<I: VmInvoke> NativeVmInstance<I> {
 impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     #[trace_resources(log=self.package_address().is_native_package(), log=self.package_address().to_hex(), log=export_name)]
     fn invoke<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError>
+            + KernelNodeApi
+            + KernelSubstateApi<SystemLockData>
+            + SystemBasedKernelInternalApi,
         V: VmApi,
     >(
         &mut self,

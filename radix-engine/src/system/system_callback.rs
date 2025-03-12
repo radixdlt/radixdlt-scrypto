@@ -83,6 +83,7 @@ pub type SystemBootSubstate = SystemBoot;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ScryptoSborAssertion)]
 #[sbor_assert(backwards_compatible(
     cuttlefish = "FILE:system_boot_substate_cuttlefish_schema.bin",
+    dugong = "FILE:system_boot_substate_dugong_schema.bin",
 ))]
 pub enum SystemBoot {
     V1(SystemParameters),
@@ -129,6 +130,10 @@ impl SystemBoot {
         SystemBoot::V2(SystemVersion::V3, parameters)
     }
 
+    pub fn dugong_for_previous_parameters(parameters: SystemParameters) -> Self {
+        SystemBoot::V2(SystemVersion::V4, parameters)
+    }
+
     pub fn bottlenose(network_definition: NetworkDefinition) -> Self {
         SystemBoot::V1(SystemParameters::bottlenose(network_definition))
     }
@@ -153,118 +158,105 @@ impl SystemBoot {
 }
 
 /// System logic which may change given a protocol version
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor)]
 pub enum SystemVersion {
     V1,
     V2,
     V3,
+    V4,
 }
 
 impl SystemVersion {
     pub const fn latest() -> Self {
-        Self::V3
+        Self::V4
     }
 
     fn create_auth_module(
-        &self,
+        self,
         executable: &ExecutableTransaction,
     ) -> Result<AuthModule, RejectionReason> {
-        let auth_module = match self {
-            SystemVersion::V1 => {
-                // This isn't exactly a necessary check as node logic should protect against this
-                // but keep it here for sanity
-                if executable.subintents().len() > 0 {
-                    return Err(RejectionReason::SubintentsNotYetSupported);
-                }
-                let intent = executable.transaction_intent();
-                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
+        let auth_module = if self <= SystemVersion::V1 {
+            // This isn't exactly a necessary check as node logic should protect against this
+            // but keep it here for sanity
+            if executable.subintents().len() > 0 {
+                return Err(RejectionReason::SubintentsNotYetSupported);
             }
-            SystemVersion::V2 | SystemVersion::V3 => AuthModule::new(),
+            let intent = executable.transaction_intent();
+            AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
+        } else {
+            AuthModule::new()
         };
 
         Ok(auth_module)
     }
 
     fn execute_transaction<Y: SystemBasedKernelApi>(
-        &self,
+        self,
         api: &mut Y,
         executable: &ExecutableTransaction,
         global_address_reservations: Vec<GlobalAddressReservation>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let output = match self {
-            SystemVersion::V1 => {
-                let mut system_service = SystemService::new(api);
-                let intent = executable.transaction_intent();
-                let rtn = system_service.call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.as_ref(),
-                        global_address_reservations: global_address_reservations.as_slice(),
-                        references: &intent.references,
-                        blobs: &intent.blobs,
-                    })
-                    .unwrap(),
-                )?;
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            }
-            SystemVersion::V2 | SystemVersion::V3 => {
-                let mut txn_threads = MultiThreadIntentProcessor::init(
-                    executable,
-                    global_address_reservations.as_slice(),
-                    api,
-                )?;
-                txn_threads.execute(api)?;
-                let output = txn_threads
-                    .threads
-                    .get_mut(0)
-                    .unwrap()
-                    .0
-                    .outputs
-                    .drain(..)
-                    .collect();
-                output
-            }
+        let output = if self <= SystemVersion::V1 {
+            let mut system_service = SystemService::new(api);
+            let intent = executable.transaction_intent();
+            let rtn = system_service.call_function(
+                TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+                TRANSACTION_PROCESSOR_RUN_IDENT,
+                scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                    manifest_encoded_instructions: intent.encoded_instructions.as_ref(),
+                    global_address_reservations: global_address_reservations.as_slice(),
+                    references: &intent.references,
+                    blobs: &intent.blobs,
+                })
+                .unwrap(),
+            )?;
+            let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+            output
+        } else {
+            let mut txn_threads = MultiThreadIntentProcessor::init(
+                executable,
+                global_address_reservations.as_slice(),
+                api,
+            )?;
+            txn_threads.execute(api)?;
+            let output = txn_threads
+                .threads
+                .get_mut(0)
+                .unwrap()
+                .0
+                .outputs
+                .drain(..)
+                .collect();
+            output
         };
 
         Ok(output)
     }
 
-    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
-        match self {
-            SystemVersion::V1 => {
-                // Skip client-side costing requested by TransactionProcessor
-                if api.kernel_get_current_stack_depth_uncosted() == 1 {
-                    return false;
-                }
-            }
-            SystemVersion::V2 | SystemVersion::V3 => {}
-        }
-
-        true
-    }
-
-    pub fn should_inject_transaction_processor_proofs_in_call_function(&self) -> bool {
-        match self {
-            SystemVersion::V1 => true,
-            SystemVersion::V2 | SystemVersion::V3 => false,
+    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(self, api: &mut Y) -> bool {
+        if self <= SystemVersion::V1 {
+            // Skip client-side costing requested by TransactionProcessor
+            api.kernel_get_current_stack_depth_uncosted() != 1
+        } else {
+            true
         }
     }
 
-    pub fn should_charge_for_transaction_intent(&self) -> bool {
-        match self {
-            SystemVersion::V1 => false,
-            SystemVersion::V2 | SystemVersion::V3 => true,
-        }
+    pub fn should_inject_transaction_processor_proofs_in_call_function(self) -> bool {
+        self <= SystemVersion::V1
     }
 
-    pub fn use_root_for_verify_parent_instruction(&self) -> bool {
-        match self {
-            SystemVersion::V1 | SystemVersion::V2 => true,
-            SystemVersion::V3 => false,
-        }
+    pub fn should_charge_for_transaction_intent(self) -> bool {
+        self >= SystemVersion::V2
+    }
+
+    pub fn use_root_for_verify_parent_instruction(self) -> bool {
+        self <= SystemVersion::V2
+    }
+
+    pub fn assert_access_rule_is_noop_when_auth_module_disabled(self) -> bool {
+        self >= SystemVersion::V4
     }
 }
 

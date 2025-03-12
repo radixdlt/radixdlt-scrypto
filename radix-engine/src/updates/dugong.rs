@@ -1,9 +1,10 @@
 use super::*;
-use crate::internal_prelude::*;
+use crate::{internal_prelude::*, system::system_callback::SystemBoot};
 
 #[derive(Clone, ScryptoSbor)]
 pub struct DugongSettings {
     pub native_entity_metadata_updates: UpdateSetting<NoSettings>,
+    pub system_logic_updates: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for DugongSettings {
@@ -16,12 +17,14 @@ impl UpdateSettings for DugongSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             native_entity_metadata_updates: UpdateSetting::enabled_as_default_for_network(network),
+            system_logic_updates: UpdateSetting::enabled_as_default_for_network(network),
         }
     }
 
     fn all_disabled() -> Self {
         Self {
             native_entity_metadata_updates: UpdateSetting::Disabled,
+            system_logic_updates: UpdateSetting::Disabled,
         }
     }
 
@@ -51,15 +54,22 @@ fn generate_main_batch(
     store: &dyn SubstateDatabase,
     DugongSettings {
         native_entity_metadata_updates,
+        system_logic_updates,
     }: &DugongSettings,
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
-    let _ = store;
 
     if let UpdateSetting::Enabled(NoSettings) = &native_entity_metadata_updates {
         batch.mut_add_flash(
             "dugong-native-entity-metadata-updates",
             generate_dugong_native_metadata_updates(),
+        );
+    }
+
+    if let UpdateSetting::Enabled(NoSettings) = &system_logic_updates {
+        batch.mut_add_flash(
+            "dugong-system-logic-updates",
+            generate_system_logic_v4_updates(store),
         );
     }
 
@@ -97,4 +107,19 @@ fn generate_dugong_native_metadata_updates() -> StateUpdates {
     }
 
     state_updates
+}
+
+fn generate_system_logic_v4_updates(store: &dyn SubstateDatabase) -> StateUpdates {
+    let existing_system_boot: SystemBoot = store.get_existing_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+    );
+
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+        SystemBoot::dugong_for_previous_parameters(existing_system_boot.into_parameters()),
+    )
 }

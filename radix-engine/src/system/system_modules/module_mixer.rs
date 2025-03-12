@@ -154,6 +154,11 @@ impl SystemModuleMixer {
             .contains(EnabledModules::EXECUTION_TRACE)
     }
 
+    #[inline]
+    pub fn is_auth_enabled(&self) -> bool {
+        self.enabled_modules.contains(EnabledModules::AUTH)
+    }
+
     pub fn unpack_costing(self) -> CostingModule {
         self.costing
     }

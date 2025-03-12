@@ -6,6 +6,7 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemBasedKernelInternalApi;
 use crate::system::system_callback::SystemLockData;
 use radix_blueprint_schema_init::*;
 use radix_engine_interface::api::SystemApi;
@@ -989,7 +990,10 @@ impl ResourceNativePackage {
     }
 
     pub fn invoke_export<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError>
+            + KernelNodeApi
+            + KernelSubstateApi<SystemLockData>
+            + SystemBasedKernelInternalApi,
     >(
         export_name: &str,
         input: &IndexedScryptoValue,

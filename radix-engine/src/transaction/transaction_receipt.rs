@@ -593,7 +593,7 @@ impl TransactionReceipt {
             .to_string(NO_NETWORK);
         assert!(
             error_message.contains(error_needle),
-            "{error_needle:?} was not contained in RuntimeError"
+            "{error_needle:?} was not contained in RuntimeError: {error_message}"
         );
     }
 

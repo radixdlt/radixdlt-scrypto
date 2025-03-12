@@ -98,7 +98,10 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     struct ResourceOverride(HashSet<String>);
     impl VmInvoke for ResourceOverride {
         fn invoke<
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError>
+                + KernelNodeApi
+                + KernelSubstateApi<SystemLockData>
+                + SystemBasedKernelInternalApi,
             V: VmApi,
         >(
             &mut self,

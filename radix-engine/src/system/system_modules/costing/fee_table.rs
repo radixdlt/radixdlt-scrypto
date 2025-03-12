@@ -71,12 +71,12 @@ pub struct FeeTable {
 
 impl FeeTable {
     pub fn new(version: SystemVersion) -> Self {
-        let wasm_execution_units_divider = match version {
+        let wasm_execution_units_divider = if version <= SystemVersion::V1 {
             // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
             // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
             // 1 / 0.00028877714 = 3462 rounded down gives 3000
-            SystemVersion::V1 => 3000,
-
+            3000
+        } else {
             // W - WASM execution units
             // C - cost units
             // c - single cost unit
@@ -99,7 +99,7 @@ impl FeeTable {
             //
             // With divider set to 4500 it takes 543 ms (measured at GH benchmark, git rev c591c4003a,
             // EC2 instance type c6a.4xlarge) which is fine.
-            SystemVersion::V2 | SystemVersion::V3 => 4500,
+            4500
         };
 
         Self {
