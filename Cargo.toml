@@ -44,30 +44,30 @@ members = [
 ]
 
 [workspace.dependencies]
-radix-blueprint-schema-init = { version = "1.3.0", path = "./radix-blueprint-schema-init", default-features = false }
-radix-common = { version = "1.3.0", path = "./radix-common", default-features = false }
-radix-common-derive = { version = "1.3.0", path = "./radix-common-derive", default-features = false }
-radix-engine = { version = "1.3.0", path = "./radix-engine", default-features = false }
-radix-engine-toolkit-common = { version = "1.3.0", path = "./radix-engine-toolkit-common", default-features = false }
-radix-engine-interface = { version = "1.3.0", path = "./radix-engine-interface", default-features = false }
-radix-engine-profiling = { version = "1.3.0", path = "./radix-engine-profiling", default-features = false }
-radix-engine-profiling-derive = { version = "1.3.0", path = "./radix-engine-profiling-derive", default-features = false }
-radix-native-sdk = { version = "1.3.0", path = "./radix-native-sdk", default-features = false }
-radix-rust = { version = "1.3.0", path = "./radix-rust", default-features = false }
-radix-sbor-derive = { version = "1.3.0", path = "./radix-sbor-derive", default-features = false }
-radix-substate-store-impls = { version = "1.3.0", path = "./radix-substate-store-impls", default-features = false }
-radix-substate-store-interface = { version = "1.3.0", path = "./radix-substate-store-interface", default-features = false }
-radix-substate-store-queries = { version = "1.3.0", path = "./radix-substate-store-queries", default-features = false }
-radix-transaction-scenarios = { version = "1.3.0", path = "./radix-transaction-scenarios", default-features = false }
-radix-transactions = { version = "1.3.0", path = "./radix-transactions", default-features = false }
-sbor = { version = "1.3.0", path = "./sbor", default-features = false }
-sbor-derive = { version = "1.3.0", path = "./sbor-derive", default-features = false }
-sbor-derive-common = { version = "1.3.0", path = "./sbor-derive-common", default-features = false }
-scrypto = { version = "1.3.0", path = "./scrypto", default-features = false }
-scrypto-bindgen = { version = "1.3.0", path = "./scrypto-bindgen", default-features = false }
-scrypto-compiler = { version = "1.3.0", path = "./scrypto-compiler", default-features = false }
-scrypto-derive = { version = "1.3.0", path = "./scrypto-derive", default-features = false }
-scrypto-test = { version = "1.3.0", path = "./scrypto-test", default-features = false }
+radix-blueprint-schema-init = { version = "1.3.1", path = "./radix-blueprint-schema-init", default-features = false }
+radix-common = { version = "1.3.1", path = "./radix-common", default-features = false }
+radix-common-derive = { version = "1.3.1", path = "./radix-common-derive", default-features = false }
+radix-engine = { version = "1.3.1", path = "./radix-engine", default-features = false }
+radix-engine-toolkit-common = { version = "1.3.1", path = "./radix-engine-toolkit-common", default-features = false }
+radix-engine-interface = { version = "1.3.1", path = "./radix-engine-interface", default-features = false }
+radix-engine-profiling = { version = "1.3.1", path = "./radix-engine-profiling", default-features = false }
+radix-engine-profiling-derive = { version = "1.3.1", path = "./radix-engine-profiling-derive", default-features = false }
+radix-native-sdk = { version = "1.3.1", path = "./radix-native-sdk", default-features = false }
+radix-rust = { version = "1.3.1", path = "./radix-rust", default-features = false }
+radix-sbor-derive = { version = "1.3.1", path = "./radix-sbor-derive", default-features = false }
+radix-substate-store-impls = { version = "1.3.1", path = "./radix-substate-store-impls", default-features = false }
+radix-substate-store-interface = { version = "1.3.1", path = "./radix-substate-store-interface", default-features = false }
+radix-substate-store-queries = { version = "1.3.1", path = "./radix-substate-store-queries", default-features = false }
+radix-transaction-scenarios = { version = "1.3.1", path = "./radix-transaction-scenarios", default-features = false }
+radix-transactions = { version = "1.3.1", path = "./radix-transactions", default-features = false }
+sbor = { version = "1.3.1", path = "./sbor", default-features = false }
+sbor-derive = { version = "1.3.1", path = "./sbor-derive", default-features = false }
+sbor-derive-common = { version = "1.3.1", path = "./sbor-derive-common", default-features = false }
+scrypto = { version = "1.3.1", path = "./scrypto", default-features = false }
+scrypto-bindgen = { version = "1.3.1", path = "./scrypto-bindgen", default-features = false }
+scrypto-compiler = { version = "1.3.1", path = "./scrypto-compiler", default-features = false }
+scrypto-derive = { version = "1.3.1", path = "./scrypto-derive", default-features = false }
+scrypto-test = { version = "1.3.1", path = "./scrypto-test", default-features = false }
 
 arbitrary = { version = "1.3.0", features = ["derive"] }
 bech32 = { version = "0.9.0", default-features = false }

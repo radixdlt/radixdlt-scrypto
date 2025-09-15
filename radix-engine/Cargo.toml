@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "Reference implementation of Radix Engine, from the Radix DLT project."
 readme = "README.md"
