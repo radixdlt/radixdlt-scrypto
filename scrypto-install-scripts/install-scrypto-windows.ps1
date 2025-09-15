@@ -3,7 +3,7 @@
 
 # Versions to install
 $llvmVersion = '18.1.8'
-$rustVersion = '1.81.0'
+$rustVersion = '1.85.0'
 $radixCliVersion = '1.3.0'
 
 # Script configuration

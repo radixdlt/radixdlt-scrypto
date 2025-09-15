@@ -25,7 +25,7 @@ runs:
         # Additionally, Rust version should be updated in below repos on respective branches:
         # - babylon-node - .github/actions/setup-env/action.yml
         # - fuzzer - .github/actions/setup-env/action.yml
-        toolchain: 1.81.0
+        toolchain: 1.85.0
         default: true
         target: wasm32-unknown-unknown
         components: rustfmt
