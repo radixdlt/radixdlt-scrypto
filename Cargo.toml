@@ -112,7 +112,7 @@ rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon =  { version = "1.5.3" }
 regex = { version = "=1.9.3", default-features = false, features = [] }
-rocksdb = { version = "0.24.0" }
+rocksdb = { version = "0.21.0" }
 rug = { version = "1.18" }
 secp256k1 = { version = "0.28.0", default-features = false, features = ["recovery"] }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
