@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/rust/tags
-FROM rust:1.85.0-slim-bookworm AS base-image
+FROM rust:1.86.0-slim-bookworm AS base-image
 
 RUN apt update && apt install -y \
     cmake=3.25.1-1 \

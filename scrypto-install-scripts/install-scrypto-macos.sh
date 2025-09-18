@@ -5,8 +5,8 @@ set -e
 
 # Versions to install
 LLVM_VERSION=18
-RUST_VERSION=1.85.0
-RADIX_CLI_VERSION=1.3.0
+RUST_VERSION=1.86.0
+RADIX_CLI_VERSION=1.3.1
 
 # Colors for output
 RED='\033[0;31m'
