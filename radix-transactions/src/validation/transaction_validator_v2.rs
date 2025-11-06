@@ -1599,7 +1599,7 @@ mod tests {
     {
         fn add_test_method_call_with(self, value: impl ManifestEncode) -> Self {
             self.add_raw_instruction_ignoring_all_side_effects(CallMethod {
-                address: XRD.into(),
+                address: RORK.into(),
                 method_name: "method".into(),
                 args: manifest_decode(&manifest_encode(&(value,)).unwrap()).unwrap(),
             })
@@ -1711,7 +1711,7 @@ mod tests {
         // BucketAlreadyUsed(ManifestBucket, String)
         {
             let transaction_manifest = ManifestBuilder::new_v2()
-                .take_all_from_worktop(XRD, "reused_bucket")
+                .take_all_from_worktop(RORK, "reused_bucket")
                 .add_test_method_call_with(ManifestBucket(0))
                 .add_test_method_call_with(ManifestBucket(0))
                 .build_no_validate();
@@ -1724,7 +1724,7 @@ mod tests {
             );
 
             let subintent_manifest = ManifestBuilder::new_subintent_v2()
-                .take_all_from_worktop(XRD, "reused_bucket")
+                .take_all_from_worktop(RORK, "reused_bucket")
                 .add_test_method_call_with(ManifestBucket(0))
                 .add_test_method_call_with(ManifestBucket(0))
                 .yield_to_parent(())
@@ -1740,7 +1740,7 @@ mod tests {
         // BucketConsumedWhilstLockedByProof(ManifestBucket, String)
         {
             let transaction_manifest = ManifestBuilder::new_v2()
-                .take_all_from_worktop(XRD, "my_bucket")
+                .take_all_from_worktop(RORK, "my_bucket")
                 .create_proof_from_bucket_of_all("my_bucket", "my_proof")
                 .deposit(account_address, "my_bucket")
                 .build_no_validate();
@@ -1753,7 +1753,7 @@ mod tests {
             );
 
             let subintent_manifest = ManifestBuilder::new_subintent_v2()
-                .take_all_from_worktop(XRD, "my_bucket")
+                .take_all_from_worktop(RORK, "my_bucket")
                 .create_proof_from_bucket_of_all("my_bucket", "my_proof")
                 .deposit(account_address, "my_bucket")
                 .yield_to_parent(())
@@ -1794,7 +1794,7 @@ mod tests {
         // ProofAlreadyUsed(ManifestProof, String)
         {
             let transaction_manifest = ManifestBuilder::new_v2()
-                .create_proof_from_auth_zone_of_all(XRD, "proof")
+                .create_proof_from_auth_zone_of_all(RORK, "proof")
                 .add_test_method_call_with(ManifestProof(0))
                 .add_test_method_call_with(ManifestProof(0))
                 .build_no_validate();
@@ -1807,7 +1807,7 @@ mod tests {
             );
 
             let subintent_manifest = ManifestBuilder::new_subintent_v2()
-                .create_proof_from_auth_zone_of_all(XRD, "proof")
+                .create_proof_from_auth_zone_of_all(RORK, "proof")
                 .add_test_method_call_with(ManifestProof(0))
                 .add_test_method_call_with(ManifestProof(0))
                 .yield_to_parent(())
@@ -1943,7 +1943,7 @@ mod tests {
         // DanglingBucket(ManifestBucket, String)
         {
             let transaction_manifest = ManifestBuilder::new_v2()
-                .take_all_from_worktop(XRD, "my_bucket")
+                .take_all_from_worktop(RORK, "my_bucket")
                 .build_no_validate();
 
             assert_matches!(
@@ -1954,7 +1954,7 @@ mod tests {
             );
 
             let subintent_manifest = ManifestBuilder::new_subintent_v2()
-                .take_all_from_worktop(XRD, "my_bucket")
+                .take_all_from_worktop(RORK, "my_bucket")
                 .yield_to_parent(())
                 .build_no_validate();
             assert_matches!(
@@ -2066,7 +2066,7 @@ mod tests {
             let lookup = builder.name_lookup();
             let transaction_manifest = builder
                 .use_child("child_1", subintent.root_subintent_hash)
-                .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+                .create_proof_from_auth_zone_of_all(RORK, "my_proof")
                 .yield_to_child("child_1", (lookup.proof("my_proof"),))
                 .build_no_validate();
             let builder = TransactionV2Builder::new_with_test_defaults()
@@ -2081,7 +2081,7 @@ mod tests {
             let builder = ManifestBuilder::new_subintent_v2();
             let lookup = builder.name_lookup();
             let subintent_manifest = builder
-                .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+                .create_proof_from_auth_zone_of_all(RORK, "my_proof")
                 .yield_to_parent((lookup.proof("my_proof"),))
                 .build_no_validate();
             assert_matches!(
@@ -2132,7 +2132,7 @@ mod tests {
         {
             // Invalid because there's no overlap between `required_ids` and `allowed_ids`
             let invalid_constraints = ManifestResourceConstraints::new().with_unchecked(
-                XRD,
+                RORK,
                 ManifestResourceConstraint::General(GeneralResourceConstraint {
                     required_ids: indexset!(NonFungibleLocalId::integer(3)),
                     lower_bound: LowerBound::NonZero,
@@ -2288,7 +2288,7 @@ mod tests {
             }
             let manifest = ManifestBuilder::new_v2()
                 .add_raw_instruction_ignoring_all_side_effects(CallMethod {
-                    address: XRD.into(),
+                    address: RORK.into(),
                     method_name: "method".into(),
                     args: nested_value,
                 })

@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[blueprint]
 mod function_access_rules {
     enable_function_auth! {
-        protected_function => rule!(require(XRD));
+        protected_function => rule!(require(RORK));
         public_function => rule!(allow_all);
     }
 

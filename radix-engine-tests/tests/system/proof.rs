@@ -11,8 +11,8 @@ fn test_clone_fungible_proof() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, XRD, 1)
-        .create_proof_from_auth_zone_of_all(XRD, "proof1")
+        .create_proof_from_account_of_amount(account, RORK, 1)
+        .create_proof_from_auth_zone_of_all(RORK, "proof1")
         .clone_proof("proof1", "proof2")
         .build();
     let receipt = ledger.execute_manifest(

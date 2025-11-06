@@ -240,7 +240,7 @@ pub trait UpdateAuthBuilder {
     /// use radix_engine_interface::mint_roles;
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mint_roles(mint_roles! {
@@ -248,7 +248,7 @@ pub trait UpdateAuthBuilder {
     ///         minter_updater => rule!(deny_all);
     ///     });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mint_roles(mint_roles! {
@@ -269,7 +269,7 @@ pub trait UpdateAuthBuilder {
     /// use radix_engine_interface::burn_roles;
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burn_roles(burn_roles! {
@@ -277,7 +277,7 @@ pub trait UpdateAuthBuilder {
     ///        burner_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burn_roles(burn_roles! {
@@ -297,7 +297,7 @@ pub trait UpdateAuthBuilder {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recall_roles(recall_roles! {
@@ -305,7 +305,7 @@ pub trait UpdateAuthBuilder {
     ///        recaller_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recall_roles(recall_roles! {
@@ -326,7 +326,7 @@ pub trait UpdateAuthBuilder {
     /// use radix_engine_interface::freeze_roles;
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freeze_roles(freeze_roles! {
@@ -334,7 +334,7 @@ pub trait UpdateAuthBuilder {
     ///        freezer_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freeze_roles(freeze_roles! {
@@ -355,7 +355,7 @@ pub trait UpdateAuthBuilder {
     /// use radix_engine_interface::withdraw_roles;
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .withdraw_roles(withdraw_roles! {
@@ -363,7 +363,7 @@ pub trait UpdateAuthBuilder {
     ///        withdrawer_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .withdraw_roles(withdraw_roles! {
@@ -383,7 +383,7 @@ pub trait UpdateAuthBuilder {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .deposit_roles(deposit_roles! {
@@ -391,7 +391,7 @@ pub trait UpdateAuthBuilder {
     ///        depositor_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .deposit_roles(deposit_roles! {
@@ -488,7 +488,7 @@ impl<
     /// use radix_engine_interface::non_fungible_data_update_roles;
     /// use scrypto::prelude::*;
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
@@ -503,7 +503,7 @@ impl<
     ///        non_fungible_data_updater_updater => rule!(deny_all);
     ///    });
     ///
-    /// # let resource_address = XRD;
+    /// # let resource_address = RORK;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {

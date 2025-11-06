@@ -8,11 +8,11 @@ use crate::types::*;
 // FUNGIBLES
 //=========================================================================
 
-/// XRD is the native token of the Radix ledger.
+/// RORK is the native token of the Radix ledger.
 /// It is a fungible token, measured in attos (`10^-18`).
 ///
 /// It is used for paying fees and staking.
-pub const XRD: ResourceAddress = ResourceAddress::new_or_panic([
+pub const RORK: ResourceAddress = ResourceAddress::new_or_panic([
     93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247, 148, 170, 141,
     41, 95, 20, 230, 49, 140, 99, 24, 198,
 ]);
@@ -220,7 +220,7 @@ pub const GENESIS_HELPER: ComponentAddress = ComponentAddress::new_or_panic([
     244, 94, 170, 68, 166, 49, 140, 99, 24, 198,
 ]);
 
-/// The faucet native component - use this on testnets for getting XRD and locking fee.
+/// The faucet native component - use this on testnets for getting RORK and locking fee.
 pub const FAUCET: ComponentAddress = ComponentAddress::new_or_panic([
     192, 86, 99, 24, 198, 49, 140, 100, 247, 152, 202, 204, 99, 24, 198, 49, 140, 247, 190, 138,
     247, 138, 120, 248, 166, 49, 140, 99, 24, 198,
@@ -250,7 +250,7 @@ mod tests {
     fn test_mainnet_vanity_addresses() {
         // Fungible Resources
         check_address(
-            XRD.as_ref(),
+            RORK.as_ref(),
             EntityType::GlobalFungibleResourceManager,
             "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd",
         );

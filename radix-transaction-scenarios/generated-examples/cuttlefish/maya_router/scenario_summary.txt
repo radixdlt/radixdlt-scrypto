@@ -10,7 +10,7 @@ Events       : c64fb6ff0145cd49 (should never change)
 - swapper_account: account_sim1cyc3r8ntawdamyhh6u0sttq22r036rzjcdpnakzl2c3n4tul2ua5ud
 - maya_router_package: package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3
 - maya_router_address: component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr
-- XRD: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+- RORK: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
 - resource_1: resource_sim1tkl8f4ev0djxy2jjy4fpnaexhw0t0t39seqs26u0mfqjzn3e4m80zf
 - resource_2: resource_sim1t5ulpyse43vcfndkelufmzzap46aprkxtkc8hsdydpgfpxytdwq7dj
 

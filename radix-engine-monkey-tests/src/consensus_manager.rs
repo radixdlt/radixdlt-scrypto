@@ -1,5 +1,5 @@
 use crate::{SystemTestFuzzer, ValidatorMeta};
-use radix_common::constants::{CONSENSUS_MANAGER, XRD};
+use radix_common::constants::{CONSENSUS_MANAGER, RORK};
 use radix_common::prelude::ComponentAddress;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -32,8 +32,8 @@ impl ConsensusManagerFuzzAction {
                 let bucket_name = format!("stake{}", uuid);
 
                 let builder = builder
-                    .withdraw_from_account(account_address, XRD, amount)
-                    .take_all_from_worktop(XRD, bucket_name.as_str())
+                    .withdraw_from_account(account_address, RORK, amount)
+                    .take_all_from_worktop(RORK, bucket_name.as_str())
                     .with_bucket(bucket_name.as_str(), |builder, bucket| {
                         builder.call_method(
                             CONSENSUS_MANAGER,

@@ -23,7 +23,7 @@ mod threading {
 
         pub fn new2(reservation: GlobalAddressReservation) -> ComponentAddress {
             Self {
-                vault: Vault::new(XRD),
+                vault: Vault::new(RORK),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

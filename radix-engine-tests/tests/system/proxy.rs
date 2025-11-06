@@ -30,7 +30,7 @@ fn create_some_resources(ledger: &mut DefaultLedgerSimulator) -> IndexMap<String
     let (_public_key, _, account_address) = ledger.new_account(false);
     let mut resources = indexmap!();
 
-    for symbol in ["XRD", "USDT", "ETH"] {
+    for symbol in ["RORK", "USDT", "ETH"] {
         resources.insert(
             symbol.to_string(),
             ledger.create_fungible_resource(dec!(20000), 18, account_address),
@@ -87,7 +87,7 @@ fn set_prices_in_oracle_directly(
             oracle_address,
             "set_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("USDT").unwrap(),
                 dec!(20)
             ),
@@ -96,7 +96,7 @@ fn set_prices_in_oracle_directly(
             oracle_address,
             "set_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("ETH").unwrap(),
                 dec!(30)
             ),
@@ -117,7 +117,7 @@ fn get_price_in_oracle_directly(
             oracle_address,
             "get_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("USDT").unwrap(),
             ),
         )
@@ -138,7 +138,7 @@ fn get_price_in_oracle_via_oracle_proxy(
             proxy_address,
             "get_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("USDT").unwrap(),
             ),
         )
@@ -161,7 +161,7 @@ fn set_prices_in_oracle_via_oracle_proxy(
             proxy_address,
             "set_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("USDT").unwrap(),
                 dec!(20)
             ),
@@ -170,7 +170,7 @@ fn set_prices_in_oracle_via_oracle_proxy(
             proxy_address,
             "set_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("ETH").unwrap(),
                 dec!(30)
             ),
@@ -192,7 +192,7 @@ fn set_prices_in_oracle_v3_directly(
         .call_method(
             oracle_address,
             "add_symbol",
-            manifest_args!(resources.get("XRD").unwrap(), "XRD".to_string()),
+            manifest_args!(resources.get("RORK").unwrap(), "RORK".to_string()),
         )
         .call_method(
             oracle_address,
@@ -207,12 +207,12 @@ fn set_prices_in_oracle_v3_directly(
         .call_method(
             oracle_address,
             "set_price",
-            manifest_args!("XRD".to_string(), "USDT".to_string(), dec!(20)),
+            manifest_args!("RORK".to_string(), "USDT".to_string(), dec!(20)),
         )
         .call_method(
             oracle_address,
             "set_price",
-            manifest_args!("XRD".to_string(), "ETH".to_string(), dec!(30)),
+            manifest_args!("RORK".to_string(), "ETH".to_string(), dec!(30)),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![oracle_manager_badge]);
@@ -232,7 +232,7 @@ fn invoke_oracle_via_oracle_proxy(
             proxy_address,
             "get_price",
             manifest_args!(
-                resources.get("XRD").unwrap(),
+                resources.get("RORK").unwrap(),
                 resources.get("USDT").unwrap(),
             ),
         )
@@ -268,7 +268,7 @@ fn get_price_in_oracle_via_generic_proxy(
             manifest_args!(
                 "get_price",
                 to_manifest_value(&(
-                    resources.get("XRD").unwrap(),
+                    resources.get("RORK").unwrap(),
                     resources.get("USDT").unwrap(),
                 ))
                 .unwrap()
@@ -295,7 +295,7 @@ fn invoke_oracle_via_generic_proxy(
             manifest_args!(
                 "get_price",
                 to_manifest_value(&(
-                    resources.get("XRD").unwrap(),
+                    resources.get("RORK").unwrap(),
                     resources.get("USDT").unwrap(),
                 ))
                 .unwrap()
@@ -364,7 +364,7 @@ fn invoke_oracle_v3_via_generic_proxy(
             "call_method",
             manifest_args!(
                 "get_price",
-                to_manifest_value(&("XRD".to_string(), "USDT".to_string())).unwrap()
+                to_manifest_value(&("RORK".to_string(), "USDT".to_string())).unwrap()
             ),
         )
         .build();

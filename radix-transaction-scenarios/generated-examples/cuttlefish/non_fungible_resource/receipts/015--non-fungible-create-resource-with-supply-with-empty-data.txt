@@ -1,11 +1,11 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 0.73879452002 XRD
-├─ Network execution: 0.27102 XRD, 5420400 execution cost units
-├─ Network finalization: 0.1612636 XRD, 3225272 finalization cost units
-├─ Tip: 0 XRD
-├─ Network Storage: 0.30651092002 XRD
-└─ Royalties: 0 XRD
+TRANSACTION COST: 0.73879452002 RORK
+├─ Network execution: 0.27102 RORK, 5420400 execution cost units
+├─ Network finalization: 0.1612636 RORK, 3225272 finalization cost units
+├─ Tip: 0 RORK
+├─ Network Storage: 0.30651092002 RORK
+└─ Royalties: 0 RORK
 
 LOGS: 0
 

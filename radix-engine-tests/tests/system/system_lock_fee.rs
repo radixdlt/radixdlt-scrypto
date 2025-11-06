@@ -40,7 +40,7 @@ fn cannot_lock_fee_on_new_global_vault() {
                 "new" => {
                     let metadata = Metadata::create(api)?;
                     let access_rules = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
-                    let resman: ResourceManager = ResourceManager(XRD);
+                    let resman: ResourceManager = ResourceManager(RORK);
                     let vault = resman.new_empty_vault(api)?;
                     let node_id = api.new_simple_object(
                         BLUEPRINT_NAME,

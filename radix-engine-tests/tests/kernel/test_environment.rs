@@ -80,7 +80,7 @@ fn auth_module_can_be_disabled_at_runtime() {
     let mut env = TestEnvironment::new();
     env.with_auth_module_disabled(|env| {
         // Act
-        let rtn = ResourceManager(XRD).mint_fungible(1.into(), env);
+        let rtn = ResourceManager(RORK).mint_fungible(1.into(), env);
 
         // Assert
         assert!(rtn.is_ok())
@@ -298,7 +298,7 @@ fn creation_of_mock_fungible_buckets_succeeds() -> Result<(), RuntimeError> {
     let mut env = TestEnvironment::new();
 
     // Act
-    let bucket = BucketFactory::create_fungible_bucket(XRD, 10.into(), Mock, &mut env)?;
+    let bucket = BucketFactory::create_fungible_bucket(RORK, 10.into(), Mock, &mut env)?;
 
     // Assert
     let amount = bucket.amount(&mut env)?;
@@ -334,7 +334,7 @@ fn creation_of_disable_auth_and_mint_fungible_buckets_succeeds() -> Result<(), R
 
     // Act
     let bucket =
-        BucketFactory::create_fungible_bucket(XRD, 10.into(), DisableAuthAndMint, &mut env)?;
+        BucketFactory::create_fungible_bucket(RORK, 10.into(), DisableAuthAndMint, &mut env)?;
 
     // Assert
     let amount = bucket.amount(&mut env)?;

@@ -19,7 +19,7 @@ mod tests {
         test_equivalence(ORIGIN_TYPE, UncheckedOrigin::of("example.com"));
 
         // ROLE ASSIGNMENT
-        let resource_or_non_fungible_1 = ResourceOrNonFungible::Resource(XRD);
+        let resource_or_non_fungible_1 = ResourceOrNonFungible::Resource(RORK);
         let resource_or_non_fungible_2 = ResourceOrNonFungible::NonFungible(nf_global_id);
         let resource_or_non_fungible_list = vec![
             resource_or_non_fungible_1.clone(),

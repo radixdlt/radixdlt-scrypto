@@ -14,7 +14,7 @@ fn test_worktop_resource_leak() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .build();
     let receipt = ledger.execute_manifest(
         manifest,

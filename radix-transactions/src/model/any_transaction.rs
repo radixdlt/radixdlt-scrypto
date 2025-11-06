@@ -760,7 +760,7 @@ mod tests {
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {
             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            address: XRD.into(),
+            address: RORK.into(),
         }];
         let expected_preallocated_addresses_hash =
             hash_encoded_sbor_value(&pre_allocated_addresses_v1);

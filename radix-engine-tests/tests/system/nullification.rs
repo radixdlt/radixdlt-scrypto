@@ -56,7 +56,7 @@ fn v2_subintent_only_gets_nullified_on_success() {
                 builder
                     .lock_fee_from_faucet()
                     .yield_to_child("child", ())
-                    .assert_worktop_contains(XRD, 1)
+                    .assert_worktop_contains(RORK, 1)
             }, // Fail
         )
         .notarize(&ledger.default_notary())

@@ -30,9 +30,9 @@ fn create_manifest_with_middle(
     ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_from_worktop(XRD, dec!(1), "bucket")
-        .take_from_worktop(XRD, dec!("0"), "empty_bucket")
-        .take_from_worktop(XRD, dec!(1), "proof_bucket")
+        .take_from_worktop(RORK, dec!(1), "bucket")
+        .take_from_worktop(RORK, dec!("0"), "empty_bucket")
+        .take_from_worktop(RORK, dec!(1), "proof_bucket")
         .create_proof_from_bucket_of_all("proof_bucket", "proof")
         .with_name_lookup(|builder, lookup| {
             constructor(
@@ -280,7 +280,7 @@ fn test_receive_reference_of_specific_blueprint() {
         .call_method(
             component_address,
             "accept_custom_reference",
-            manifest_args!(XRD),
+            manifest_args!(RORK),
         )
         .build();
 

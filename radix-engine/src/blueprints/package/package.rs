@@ -803,7 +803,7 @@ fn globalize_package<Y: SystemApi<RuntimeError>>(
     role_assignment: RoleAssignment,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError> {
-    let vault = Vault(ResourceManager(XRD).new_empty_vault(api)?);
+    let vault = Vault(ResourceManager(RORK).new_empty_vault(api)?);
 
     let (fields, kv_entries) =
         PackageNativePackage::init_system_struct(Some(vault), package_structure);

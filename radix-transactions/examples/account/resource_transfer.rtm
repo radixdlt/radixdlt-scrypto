@@ -1,5 +1,5 @@
 # This transaction manifest shows how resources may be transferred between two accounts in a 
-# transaction. We will be withdrawing 100 XRD from our account component and depositing them in 
+# transaction. We will be withdrawing 100 RORK from our account component and depositing them in 
 # another account component. 
 
 # ==================================================================================================
@@ -12,14 +12,14 @@ CALL_METHOD
     "lock_fee"
     Decimal("500");
 
-# Withdrawing 100 XRD from the account component
+# Withdrawing 100 RORK from the account component
 CALL_METHOD 
     Address("${this_account_address}") 
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("100");
 
-# Depositing all of the XRD withdrawn from the account into the other account
+# Depositing all of the RORK withdrawn from the account into the other account
 CALL_METHOD
     Address("${other_account_address}") 
     "try_deposit_batch_or_abort"

@@ -79,7 +79,7 @@ fn get_owner_role_method_call_succeeds_with_the_protocol_update2() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let account =
-        ledger.new_account_advanced(OwnerRole::Fixed(rule!(require_amount(dec!(100), XRD))));
+        ledger.new_account_advanced(OwnerRole::Fixed(rule!(require_amount(dec!(100), RORK))));
 
     // Act
     let receipt = ledger.execute_manifest(
@@ -99,7 +99,7 @@ fn get_owner_role_method_call_succeeds_with_the_protocol_update2() {
     assert_eq!(
         owner_role_entry,
         OwnerRoleEntry {
-            rule: rule!(require_amount(dec!(100), XRD)),
+            rule: rule!(require_amount(dec!(100), RORK)),
             updater: OwnerRoleUpdater::None
         }
     )

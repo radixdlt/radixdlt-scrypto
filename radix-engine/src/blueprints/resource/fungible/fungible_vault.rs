@@ -373,7 +373,7 @@ impl FungibleVaultBlueprint {
         // Check resource address and amount
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
-        if resource_address != XRD {
+        if resource_address != RORK {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
             ));

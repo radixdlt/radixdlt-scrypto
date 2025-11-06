@@ -116,7 +116,7 @@ impl RoyaltyNativePackage {
                 blueprint_type: BlueprintType::default(),
                 is_transient: true,
                 feature_set: indexset!(),
-                dependencies: indexset!(XRD.into(),),
+                dependencies: indexset!(RORK.into(),),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -311,7 +311,7 @@ impl ComponentRoyaltyBlueprint {
     ) -> Result<Own, RuntimeError> {
         // Create a royalty vault
         let accumulator_substate = ComponentRoyaltySubstate {
-            royalty_vault: Vault::create(XRD, api)?,
+            royalty_vault: Vault::create(RORK, api)?,
         };
 
         let mut kv_entries = index_map_new();

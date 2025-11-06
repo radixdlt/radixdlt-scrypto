@@ -1049,7 +1049,7 @@ mod tests {
         {
             let runtime_error = RuntimeError::ApplicationError(ApplicationError::AccountError(
                 AccountError::VaultDoesNotExist {
-                    resource_address: XRD,
+                    resource_address: RORK,
                 },
             ));
 

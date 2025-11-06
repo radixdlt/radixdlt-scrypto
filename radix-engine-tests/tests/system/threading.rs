@@ -23,7 +23,7 @@ fn can_transfer_locked_bucket_between_threads() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .call_method(FAUCET, "free", ())
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .call_function_with_name_lookup(package_address, "Threading", "new", |lookup| {
                     (lookup.bucket("bucket"),)
                 })
@@ -76,7 +76,7 @@ fn can_pass_global_and_direct_access_references() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, sk1, account1) = ledger.new_allocated_account();
     let (_, _, account) = ledger.new_allocated_account();
-    let vault = ledger.get_component_vaults(account, XRD).pop().unwrap();
+    let vault = ledger.get_component_vaults(account, RORK).pop().unwrap();
 
     let transaction = ledger
         .v2_transaction_builder()
@@ -199,8 +199,8 @@ fn can_not_pass_proof_between_threads() {
         .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
-                .create_proof_from_account_of_amount(account1, XRD, 10)
-                .create_proof_from_auth_zone_of_amount(XRD, 10, "proof")
+                .create_proof_from_account_of_amount(account1, RORK, 10)
+                .create_proof_from_auth_zone_of_amount(RORK, 10, "proof")
                 .yield_to_child_with_name_lookup("child", |lookup| (lookup.proof("proof"),))
         })
         .sign(&sk1)
@@ -228,8 +228,8 @@ fn can_not_pass_proof_between_threads() {
     let transaction_manifest = TransactionManifestV2::builder()
         .use_child("child", subintent_hash)
         .lock_fee(account1, 3)
-        .create_proof_from_account_of_amount(account1, XRD, 10)
-        .create_proof_from_auth_zone_of_amount(XRD, 10, "proof")
+        .create_proof_from_account_of_amount(account1, RORK, 10)
+        .create_proof_from_auth_zone_of_amount(RORK, 10, "proof")
         .yield_to_child_with_name_lookup("child", |lookup| (lookup.proof("proof"),))
         .build_no_validate();
     let test_transaction = test_builder

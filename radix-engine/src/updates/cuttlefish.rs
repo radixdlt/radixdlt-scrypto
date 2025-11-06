@@ -413,7 +413,7 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     // The metadata entries that we would like to update and the values that we would like to update
     // them to be.
     let metadata_updates = indexmap! {
-        XRD => MetadataUpdates {
+        RORK => MetadataUpdates {
             name: None,
             description: None,
             icon_url: Some(MetadataValue::Url(UncheckedUrl("https://assets.radixdlt.com/icons/icon-xrd.png".into())))
@@ -448,7 +448,7 @@ fn generate_cuttlefish_metadata_fix<S: SubstateDatabase + ?Sized>(db: &S) -> Sta
     // We would like to add an `info_url` entry for the various entities that we have. The this is
     // the mapping that we're using.
     let info_url_metadata = [
-        (XRD.into_node_id(), "https://www.radixdlt.com/info-url/xrd"),
+        (RORK.into_node_id(), "https://www.radixdlt.com/info-url/xrd"),
         (
             SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
             "https://www.radixdlt.com/info-url/secp256k1-signature-resource",

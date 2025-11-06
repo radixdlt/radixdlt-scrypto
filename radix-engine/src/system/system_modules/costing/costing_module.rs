@@ -66,7 +66,7 @@ impl OnApplyCost {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CostingModuleConfig {
-    /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
+    /// The maximum allowed method royalty in RORK allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
     /// If true, execution costing for all system calls will occur
     pub apply_execution_cost_2: bool,
@@ -77,7 +77,7 @@ pub struct CostingModuleConfig {
 impl CostingModuleConfig {
     pub fn babylon_genesis() -> Self {
         Self {
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK)
                 .unwrap(),
             apply_execution_cost_2: false,
             apply_boot_ref_check_costing: false,
@@ -86,7 +86,7 @@ impl CostingModuleConfig {
 
     pub fn bottlenose() -> Self {
         Self {
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK)
                 .unwrap(),
             apply_execution_cost_2: true,
             apply_boot_ref_check_costing: true,

@@ -339,7 +339,7 @@ impl StaticInvocationResourcesOutput for AccessControllerWithdrawRecoveryFeeMani
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty().add_resource(
-            XRD,
+            RORK,
             TrackedResource::exact_amount(self.amount, [details.source])?,
         )
     }
@@ -538,7 +538,7 @@ impl StaticInvocationResourcesOutput for ValidatorClaimXrdManifestInput {
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty()
-            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
+            .add_resource(RORK, TrackedResource::zero_or_more([details.source]))
     }
 }
 // endregion:Validator
@@ -694,7 +694,7 @@ impl StaticInvocationResourcesOutput for PackageClaimRoyaltiesManifestInput {
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty()
-            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
+            .add_resource(RORK, TrackedResource::zero_or_more([details.source]))
     }
 }
 // endregion:Package
@@ -914,7 +914,7 @@ impl StaticInvocationResourcesOutput for ComponentClaimRoyaltiesManifestInput {
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
         TrackedResources::new_empty()
-            .add_resource(XRD, TrackedResource::zero_or_more([details.source]))
+            .add_resource(RORK, TrackedResource::zero_or_more([details.source]))
     }
 }
 // endregion:ComponentRoyalty

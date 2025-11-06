@@ -8,7 +8,7 @@ use radix_substate_store_queries::typed_substate_layout::*;
 use scrypto_test::prelude::*;
 
 /// The state of the access controller changes with the bottlenose protocol update where we're
-/// adding a new XRD vault to the state. This test ensures that we don't have any regression from
+/// adding a new RORK vault to the state. This test ensures that we don't have any regression from
 /// the refactoring and that the package definition for the v1.0 access controller package remains
 /// the same.
 #[test]
@@ -38,7 +38,7 @@ fn access_controller_instantiated_before_protocol_update_has_v1_state() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(allow_all),
@@ -74,7 +74,7 @@ fn access_controller_instantiated_after_protocol_update_has_v2_state() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(allow_all),
@@ -235,7 +235,7 @@ fn before_protocol_update_calling_any_method_on_an_access_controller_with_v1_sta
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
-                    .take_all_from_worktop(XRD, "xrd")
+                    .take_all_from_worktop(RORK, "xrd")
                     .create_access_controller(
                         "xrd",
                         rule!(allow_all),
@@ -320,7 +320,7 @@ fn before_protocol_update_calling_any_method_on_an_access_controller_with_v1_sta
             if method_name == ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT {
                 manifest_builder = manifest_builder
                     .get_free_xrd_from_faucet()
-                    .take_all_from_worktop(XRD, "xrd")
+                    .take_all_from_worktop(RORK, "xrd")
             }
 
             manifest_builder
@@ -504,7 +504,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
-                    .take_all_from_worktop(XRD, "xrd")
+                    .take_all_from_worktop(RORK, "xrd")
                     .create_access_controller(
                         "xrd",
                         rule!(allow_all),
@@ -593,7 +593,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
             if method_name == ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT {
                 manifest_builder = manifest_builder
                     .get_free_xrd_from_faucet()
-                    .take_all_from_worktop(XRD, "xrd")
+                    .take_all_from_worktop(RORK, "xrd")
             }
 
             manifest_builder
@@ -639,7 +639,7 @@ fn lock_recovery_fee_is_only_callable_by_primary_recovery_or_confirmation() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(require(primary_badge_resource)),
@@ -661,7 +661,7 @@ fn lock_recovery_fee_is_only_callable_by_primary_recovery_or_confirmation() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .with_bucket("xrd", |builder, bucket| {
                     builder.call_method(
                         access_controller,
@@ -744,7 +744,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(require(primary_badge_resource)),
@@ -766,7 +766,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .with_bucket("xrd", |builder, bucket| {
                     builder.call_method(
                         access_controller,
@@ -839,7 +839,7 @@ fn contribute_recovery_fee_is_callable_without_auth() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(allow_all),
@@ -861,7 +861,7 @@ fn contribute_recovery_fee_is_callable_without_auth() {
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "xrd")
+            .take_all_from_worktop(RORK, "xrd")
             .with_bucket("xrd", |builder, bucket| {
                 builder.call_method(
                     access_controller,
@@ -887,7 +887,7 @@ fn deposit_event_is_emitted_when_recovery_xrd_is_contributed() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(allow_all),
@@ -909,7 +909,7 @@ fn deposit_event_is_emitted_when_recovery_xrd_is_contributed() {
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "xrd")
+            .take_all_from_worktop(RORK, "xrd")
             .with_bucket("xrd", |builder, bucket| {
                 builder.call_method(
                     access_controller,
@@ -964,7 +964,7 @@ fn withdraw_event_is_emitted_when_recovery_xrd_is_withdrawn() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(allow_all),
@@ -986,7 +986,7 @@ fn withdraw_event_is_emitted_when_recovery_xrd_is_withdrawn() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .with_bucket("xrd", |builder, bucket| {
                     builder.call_method(
                         access_controller,
@@ -1053,7 +1053,7 @@ fn fees_can_be_locked_from_an_access_controller_with_a_badge_primary_role() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .create_access_controller(
                     "xrd",
                     rule!(require(primary_badge_resource)),
@@ -1075,7 +1075,7 @@ fn fees_can_be_locked_from_an_access_controller_with_a_badge_primary_role() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "xrd")
+                .take_all_from_worktop(RORK, "xrd")
                 .with_bucket("xrd", |builder, bucket| {
                     builder.call_method(
                         access_controller,

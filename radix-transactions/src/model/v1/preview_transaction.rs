@@ -38,7 +38,7 @@ impl ValidatedPreviewIntent {
         let fee_payment = TransactionCostingParameters {
             tip: TipSpecifier::Percentage(header.tip_percentage),
             free_credit_in_xrd: if flags.use_free_credit {
-                Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap()
+                Decimal::try_from(PREVIEW_CREDIT_IN_RORK).unwrap()
             } else {
                 Decimal::ZERO
             },

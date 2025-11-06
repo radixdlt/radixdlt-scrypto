@@ -106,7 +106,7 @@ impl BabylonSettings {
             GenesisDataChunk::ResourceBalances {
                 accounts: vec![staker_account],
                 allocations: vec![(
-                    XRD,
+                    RORK,
                     vec![GenesisResourceAllocation {
                         account_index: 0u32,
                         amount: staker_account_xrd_amount,

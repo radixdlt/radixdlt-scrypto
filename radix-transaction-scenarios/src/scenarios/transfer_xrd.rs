@@ -49,8 +49,8 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "transfer--try_deposit_or_abort",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
-                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
+                            .take_from_worktop(RORK, dec!(1), "xrd")
                             .try_deposit_or_abort(config.to_account_1.address, None, "xrd")
                             .done()
                     },
@@ -62,8 +62,8 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "transfer--try_deposit_or_refund",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
-                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
+                            .take_from_worktop(RORK, dec!(1), "xrd")
                             .try_deposit_or_refund(config.to_account_1.address, None, "xrd")
                             .done()
                     },
@@ -75,7 +75,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "transfer--try_deposit_batch_or_abort",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
                             .try_deposit_entire_worktop_or_abort(config.to_account_1.address, None)
                             .done()
                     },
@@ -87,7 +87,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "transfer--try_deposit_batch_or_refund",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
                             .try_deposit_entire_worktop_or_refund(config.to_account_1.address, None)
                             .done()
                     },
@@ -99,7 +99,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "self-transfer--deposit_batch",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
                             .deposit_entire_worktop(config.from_account.address)
                             .done()
                     },
@@ -111,9 +111,9 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     "multi-transfer--deposit_batch",
                     |builder| {
                         builder
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
                             .try_deposit_entire_worktop_or_abort(config.to_account_1.address, None)
-                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .withdraw_from_account(config.from_account.address, RORK, dec!(1))
                             .try_deposit_entire_worktop_or_abort(config.to_account_2.address, None)
                             .done()
                     },

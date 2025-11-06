@@ -59,7 +59,7 @@ mod everything {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    some_role => rule!(require(XRD));
+                    some_role => rule!(require(RORK));
                     some_role_updater => rule!(require(SOME_RESOURCE.address()));
                 })
                 .enable_component_royalties(component_royalties! {

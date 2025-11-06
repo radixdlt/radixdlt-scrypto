@@ -33,7 +33,7 @@ fn test_component_royalty() {
 
     // Act
     // Call the paid method
-    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let account_pre_balance = ledger.get_component_balance(account, RORK);
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -45,7 +45,7 @@ fn test_component_royalty() {
     // Assert
     receipt.expect_commit(true);
     assert_eq!(receipt.fee_summary.total_royalty_cost_in_xrd, dec!("3"));
-    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let account_post_balance = ledger.get_component_balance(account, RORK);
     let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
         account_pre_balance
@@ -88,7 +88,7 @@ fn test_component_royalty_in_usd() {
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
     // Call the paid method
-    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let account_pre_balance = ledger.get_component_balance(account, RORK);
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -100,12 +100,12 @@ fn test_component_royalty_in_usd() {
     receipt.expect_commit(true);
     assert_eq!(
         receipt.fee_summary.total_royalty_cost_in_xrd,
-        Decimal::try_from(USD_PRICE_IN_XRD)
+        Decimal::try_from(USD_PRICE_IN_RORK)
             .unwrap()
             .checked_mul(Decimal::ONE)
             .unwrap()
     );
-    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let account_post_balance = ledger.get_component_balance(account, RORK);
     let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
         account_pre_balance
@@ -130,7 +130,7 @@ fn test_package_royalty() {
         _owner_badge_resource,
     ) = set_up_package_and_component();
 
-    let account_pre_balance = ledger.get_component_balance(account, XRD);
+    let account_pre_balance = ledger.get_component_balance(account, RORK);
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -144,7 +144,7 @@ fn test_package_royalty() {
         receipt.fee_summary.total_royalty_cost_in_xrd,
         dec!(1).checked_add(dec!("2")).unwrap()
     );
-    let account_post_balance = ledger.get_component_balance(account, XRD);
+    let account_post_balance = ledger.get_component_balance(account, RORK);
     let package_royalty = ledger.inspect_package_royalty(package_address).unwrap();
     let component_royalty = ledger.inspect_component_royalty(component_address).unwrap();
     assert_eq!(
@@ -316,7 +316,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
 
 #[test]
 fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
-    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
     let royalty_amount =
         RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd.checked_add(dec!(1)).unwrap());
     cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
@@ -324,9 +324,9 @@ fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
 
 #[test]
 fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
-    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed_in_xrd = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
     let max_royalty_allowed_in_usd = max_royalty_allowed_in_xrd
-        .checked_div(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+        .checked_div(Decimal::try_from(USD_PRICE_IN_RORK).unwrap())
         .unwrap();
     let royalty_amount =
         RoyaltyAmount::Usd(max_royalty_allowed_in_usd.checked_add(dec!(1)).unwrap());
@@ -345,7 +345,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
         ledger.publish_package_with_owner(PackageLoader::get("royalty"), owner_badge_addr);
 
     // Act
-    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
@@ -381,7 +381,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
         component_address,
         owner_badge_resource,
     ) = set_up_package_and_component();
-    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed = Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
 
     // Act
     let receipt = ledger.execute_manifest(

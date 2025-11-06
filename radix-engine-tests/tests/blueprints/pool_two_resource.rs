@@ -439,7 +439,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
             TwoResourcePoolInstantiateManifestInput {
-                resource_addresses: (non_fungible_resource.into(), XRD.into()),
+                resource_addresses: (non_fungible_resource.into(), RORK.into()),
                 pool_manager_rule: rule!(allow_all),
                 owner_role: OwnerRole::None,
                 address_reservation: None,

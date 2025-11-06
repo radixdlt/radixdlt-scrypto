@@ -385,7 +385,7 @@ fn substates_written_on_a_staging_database_from_transactions_can_be_read_later()
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .withdraw_from_account(account1, XRD, dec!(100))
+            .withdraw_from_account(account1, RORK, dec!(100))
             .deposit_entire_worktop(account2)
             .build(),
         [public_key1, public_key2]

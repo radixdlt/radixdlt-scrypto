@@ -73,16 +73,16 @@ pub struct ValidatorSubstate {
     /// and receiving the validator's stake units which act as the pool units for the staking pool".
     pub stake_unit_resource: ResourceAddress,
 
-    /// A vault holding the XRDs currently staked to this validator.
+    /// A vault holding the RORKs currently staked to this validator.
     pub stake_xrd_vault_id: Own,
 
     /// A type of non-fungible token used as a receipt for unstaked stake units.
-    /// Unstaking burns the SUs and inactivates the staked XRDs (i.e. moves it from the regular
+    /// Unstaking burns the SUs and inactivates the staked RORKs (i.e. moves it from the regular
     /// [`stake_xrd_vault_id`] to the [`pending_xrd_withdraw_vault_id`]), and then requires to claim
-    /// the XRDs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
+    /// the RORKs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
     pub claim_nft: ResourceAddress,
 
-    /// A vault holding the XRDs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
+    /// A vault holding the RORKs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
     pub pending_xrd_withdraw_vault_id: Own,
 
     /// A vault holding the SUs that this validator's owner voluntarily decided to temporarily lock
@@ -123,11 +123,11 @@ pub struct ValidatorProtocolUpdateReadinessSignalSubstate {
 pub struct UnstakeData {
     pub name: String,
 
-    /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
+    /// An epoch number at (or after) which the pending unstaked RORK may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
     pub claim_epoch: Epoch,
 
-    /// An XRD amount to be claimed.
+    /// An RORK amount to be claimed.
     pub claim_amount: Decimal,
 }
 
@@ -288,7 +288,7 @@ impl ValidatorBlueprint {
             },
         );
         functions.insert(
-            VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+            VALIDATOR_CLAIM_RORK_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: TypeRef::Static(
@@ -297,7 +297,7 @@ impl ValidatorBlueprint {
                 output: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
                 ),
-                export: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
+                export: VALIDATOR_CLAIM_RORK_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -353,7 +353,7 @@ impl ValidatorBlueprint {
             },
         );
         functions.insert(
-            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+            VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: TypeRef::Static(
@@ -364,7 +364,7 @@ impl ValidatorBlueprint {
                     aggregator
                         .add_child_type_and_descendents::<ValidatorTotalStakeXrdAmountOutput>(),
                 ),
-                export: VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT.to_string(),
+                export: VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -521,10 +521,10 @@ impl ValidatorBlueprint {
                 method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template! {
                     methods {
                         VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
-                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_CLAIM_RORK_IDENT => MethodAccessibility::Public;
                         VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
                         VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => MethodAccessibility::Public;
-                        VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => MethodAccessibility::Public;
+                        VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT => MethodAccessibility::Public;
                         VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT => MethodAccessibility::Public;
                         VALIDATOR_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
                         VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
@@ -1341,7 +1341,7 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
+    /// Puts the given bucket into this validator's stake RORK vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the validator's proposal statistics passed to this method are used only for creating
     /// an event (i.e. they are only informational and they do not drive any logic at this point).
@@ -1377,12 +1377,12 @@ impl ValidatorBlueprint {
             ))?;
         let fee_xrd_bucket = xrd_bucket.take(validator_fee_xrd, api)?;
 
-        // - put the net emission XRDs into the stake pool
+        // - put the net emission RORKs into the stake pool
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
         stake_xrd_vault.put(xrd_bucket, api)?;
 
-        // - stake the validator fee XRDs (effectively same as regular staking)
+        // - stake the validator fee RORKs (effectively same as regular staking)
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
         let stake_pool_added_xrd = total_emission_xrd.checked_sub(validator_fee_xrd).ok_or(
             RuntimeError::ApplicationError(ApplicationError::ValidatorError(
@@ -1617,7 +1617,7 @@ impl ValidatorBlueprint {
         Ok(xrd_amount)
     }
 
-    /// Returns an amount of stake units to be minted when [`xrd_amount`] of XRDs is being staked.
+    /// Returns an amount of stake units to be minted when [`xrd_amount`] of RORKs is being staked.
     fn calculate_stake_unit_amount(
         xrd_amount: Decimal,
         total_stake_xrd_amount: Decimal,
@@ -1649,9 +1649,9 @@ fn check_validator_fee_factor(fee_factor: Decimal) -> Result<(), RuntimeError> {
 }
 
 fn create_sort_prefix_from_stake(stake: Decimal) -> Result<[u8; 2], RuntimeError> {
-    // Note: XRD max supply is 24bn
+    // Note: RORK max supply is 24bn
     // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
-    // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
+    // If all available RORK was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
     // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
     let stake_100k: Decimal = stake
         .checked_div(100000)
@@ -1708,7 +1708,7 @@ impl ValidatorCreator {
             },
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
-                "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
+                "description" => "Liquid Stake Unit tokens that represent a proportion of RORK stake delegated to a Radix Network validator.".to_owned(), locked;
                 "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
@@ -1741,7 +1741,7 @@ impl ValidatorCreator {
             },
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
-                "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
+                "description" => "Unique Stake Claim tokens that represent a timed claimable amount of RORK stake from a Radix Network validator.".to_owned(), locked;
                 "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
@@ -1768,8 +1768,8 @@ impl ValidatorCreator {
                 blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
             })?;
 
-        let stake_xrd_vault = Vault::create(XRD, api)?;
-        let pending_xrd_withdraw_vault = Vault::create(XRD, api)?;
+        let stake_xrd_vault = Vault::create(RORK, api)?;
+        let pending_xrd_withdraw_vault = Vault::create(RORK, api)?;
         let claim_nft = Self::create_claim_nft(validator_address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;

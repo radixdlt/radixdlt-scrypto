@@ -8,8 +8,8 @@ pub const EXECUTION_COST_UNIT_LIMIT: u32 = 100_000_000;
 pub const FINALIZATION_COST_UNIT_LIMIT: u32 = 50_000_000;
 
 /// The free credit amount used by preview.
-/// 1000000 XRD = $60000, which should be enough to cover all sensible preview requests.
-pub const PREVIEW_CREDIT_IN_XRD: &str = "1000000";
+/// 1000000 RORK = $60000, which should be enough to cover all sensible preview requests.
+pub const PREVIEW_CREDIT_IN_RORK: &str = "1000000";
 
 pub const MAX_EXECUTION_TRACE_DEPTH: usize = 16;
 
@@ -106,21 +106,21 @@ pub const MAX_FUNCTION_NAME_LEN: usize = 256;
 /// The max number of fields a blueprint can have
 pub const MAX_NUMBER_OF_BLUEPRINT_FIELDS: usize = 0xFF;
 
-/// The price of execution cost unit, in XRD.
-pub const EXECUTION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";
+/// The price of execution cost unit, in RORK.
+pub const EXECUTION_COST_UNIT_PRICE_IN_RORK: &str = "0.00000005";
 
-/// The price of finalization cost unit, in XRD.
-pub const FINALIZATION_COST_UNIT_PRICE_IN_XRD: &str = "0.00000005";
+/// The price of finalization cost unit, in RORK.
+pub const FINALIZATION_COST_UNIT_PRICE_IN_RORK: &str = "0.00000005";
 
-/// The price for adding a single byte to state storage, in XRD. 1 MB = 6 USD
-pub const STATE_STORAGE_PRICE_IN_XRD: &str = "0.00009536743";
+/// The price for adding a single byte to state storage, in RORK. 1 MB = 6 USD
+pub const STATE_STORAGE_PRICE_IN_RORK: &str = "0.00009536743";
 
-/// The price for adding a single byte to archive storage, in XRD. 1 MB = 6 USD
+/// The price for adding a single byte to archive storage, in RORK. 1 MB = 6 USD
 /// This is primarily for transaction payload, events and logs.
-pub const ARCHIVE_STORAGE_PRICE_IN_XRD: &str = "0.00009536743";
+pub const ARCHIVE_STORAGE_PRICE_IN_RORK: &str = "0.00009536743";
 
-/// The USD price, in XRD. 1 XRD = 0.06 USD
-pub const USD_PRICE_IN_XRD: &str = "16.666666666666666666";
+/// The USD price, in RORK. 1 RORK = 0.06 USD
+pub const USD_PRICE_IN_RORK: &str = "16.666666666666666666";
 
 /// The maximum that a package or component owner is allowed to set their method royalty to. 10 USD
-pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "166.666666666666666666";
+pub const MAX_PER_FUNCTION_ROYALTY_IN_RORK: &str = "166.666666666666666666";

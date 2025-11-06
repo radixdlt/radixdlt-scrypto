@@ -1,10 +1,10 @@
 # This transaction shows how funds can be transferred from one account into multiple accounts all 
-# in a single transaction. In this example, imagine that we would like to send XRD to three accounts
+# in a single transaction. In this example, imagine that we would like to send RORK to three accounts
 # in the following quantities:
-# Account A: 150 XRD
-# Account B: 130 XRD
-# Account C: 50 XRD
-# Which is a total of 330 XRD. 
+# Account A: 150 RORK
+# Account B: 130 RORK
+# Account C: 50 RORK
+# Which is a total of 330 RORK. 
 
 # ==================================================================================================
 # WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
@@ -16,14 +16,14 @@ CALL_METHOD
     "lock_fee"
     Decimal("500");
 
-# Withdrawing 330 XRD from the account component
+# Withdrawing 330 RORK from the account component
 CALL_METHOD 
     Address("${this_account_address}") 
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("330");
 
-# Taking 150 XRD from the worktop and depositing them into Account A
+# Taking 150 RORK from the worktop and depositing them into Account A
 TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Decimal("150")
@@ -34,7 +34,7 @@ CALL_METHOD
     Bucket("account_a_bucket")
     None;
 
-# Taking 130 XRD from the worktop and depositing them into Account B
+# Taking 130 RORK from the worktop and depositing them into Account B
 TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Decimal("130")
@@ -45,7 +45,7 @@ CALL_METHOD
     Bucket("account_b_bucket")
     None;
 
-# Taking 50 XRD from the worktop and depositing them into Account C
+# Taking 50 RORK from the worktop and depositing them into Account C
 TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Decimal("50")

@@ -684,7 +684,7 @@ define_manifest_typed_invocation! {
             ),
             ClaimXrd => (
                 ValidatorClaimXrdManifestInput,
-                VALIDATOR_CLAIM_XRD_IDENT,
+                VALIDATOR_CLAIM_RORK_IDENT,
             ),
             UpdateKey => (
                 ValidatorUpdateKeyManifestInput,
@@ -704,7 +704,7 @@ define_manifest_typed_invocation! {
             ),
             TotalStakeXrdAmount => (
                 ValidatorTotalStakeXrdAmountManifestInput,
-                VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT,
+                VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT,
             ),
             TotalStakeUnitSupply => (
                 ValidatorTotalStakeUnitSupplyManifestInput,

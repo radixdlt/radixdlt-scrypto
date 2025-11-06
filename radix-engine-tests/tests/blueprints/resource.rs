@@ -69,7 +69,7 @@ fn cannot_get_total_supply_of_xrd() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            XRD,
+            RORK,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             manifest_args!(),
         )

@@ -14,7 +14,7 @@ fn test_lock_fee_and_then_withdraw_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .withdraw_from_account(account, XRD, dec!("1000000"))
+        .withdraw_from_account(account, RORK, dec!("1000000"))
         .build();
     let receipt = ledger.execute_manifest(
         manifest,

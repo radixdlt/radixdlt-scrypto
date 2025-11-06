@@ -63,8 +63,8 @@ fn test_stake_reconciliation() {
             VALIDATOR_OWNER_BADGE,
             [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
-        .withdraw_from_account(account, XRD, 10)
-        .take_all_from_worktop(XRD, "stake")
+        .withdraw_from_account(account, RORK, 10)
+        .take_all_from_worktop(RORK, "stake")
         .stake_validator_as_owner(validator_address, "stake")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();

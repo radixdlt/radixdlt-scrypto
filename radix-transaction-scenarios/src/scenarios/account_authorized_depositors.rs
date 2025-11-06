@@ -125,7 +125,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                         builder
                             .create_proof_from_account_of_amount(config.source_account.address, badge_resource_address, 1)
                             .get_free_xrd_from_faucet()
-                            .take_all_from_worktop(XRD, "bucket")
+                            .take_all_from_worktop(RORK, "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
                                     config.destination_account.address,
@@ -151,7 +151,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                             let badge = ResourceOrNonFungible::Resource(badge_resource_address);
                             builder
                                 .get_free_xrd_from_faucet()
-                                .take_all_from_worktop(XRD, "bucket")
+                                .take_all_from_worktop(RORK, "bucket")
                                 .with_bucket("bucket", |builder, bucket| {
                                     builder.call_method(
                                         config.destination_account.address,
@@ -177,7 +177,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                         |builder| {
                             builder
                                 .get_free_xrd_from_faucet()
-                                .take_all_from_worktop(XRD, "bucket")
+                                .take_all_from_worktop(RORK, "bucket")
                                 .with_bucket("bucket", |builder, bucket| {
                                     builder.call_method(
                                         config.destination_account.address,

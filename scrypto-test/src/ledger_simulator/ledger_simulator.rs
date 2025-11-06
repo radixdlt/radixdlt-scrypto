@@ -751,7 +751,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "free_xrd")
+            .take_all_from_worktop(RORK, "free_xrd")
             .try_deposit_or_abort(account_address, None, "free_xrd")
             .build();
 
@@ -977,7 +977,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .take_from_worktop(RORK, *DEFAULT_VALIDATOR_RORK_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
@@ -994,7 +994,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .take_from_worktop(RORK, *DEFAULT_VALIDATOR_RORK_COST, "xrd_creation_fee")
             .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
@@ -1010,7 +1010,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     VALIDATOR_OWNER_BADGE,
                     [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                 )
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         validator_address,

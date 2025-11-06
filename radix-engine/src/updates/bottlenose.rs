@@ -29,7 +29,7 @@ pub struct BottlenoseSettings {
     /// Moves various protocol parameters to state.
     pub move_protocol_params_to_state: UpdateSetting<ProtocolParamsSettings>,
 
-    /// Adds an XRD vault to the access controller for locking fees.
+    /// Adds an RORK vault to the access controller for locking fees.
     pub update_access_controller_to_add_xrd_fee_vault: UpdateSetting<NoSettings>,
 
     /// Imposes a limits on the blobs in the transaction processor

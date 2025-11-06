@@ -103,12 +103,12 @@ fn account_try_deposit_batch_or_refund_method_is_callable_with_array_of_resource
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "xrd_1a")
-            .take_all_from_worktop(XRD, "xrd_1b")
+            .take_all_from_worktop(RORK, "xrd_1a")
+            .take_all_from_worktop(RORK, "xrd_1b")
             .try_deposit_batch_or_refund(account_address, ["xrd_1a", "xrd_1b"], None)
             .try_deposit_batch_or_refund(account_address, Vec::<String>::new(), None)
-            .take_all_from_worktop(XRD, "xrd_2a")
-            .take_all_from_worktop(XRD, "xrd_2b")
+            .take_all_from_worktop(RORK, "xrd_2a")
+            .take_all_from_worktop(RORK, "xrd_2b")
             .try_deposit_batch_or_abort(account_address, ["xrd_2a", "xrd_2b"], None)
             .try_deposit_batch_or_abort(account_address, Vec::<String>::new(), None)
             .build(),
@@ -266,7 +266,7 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
         ledger
             .transition_default_deposit_rule(DefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
-        ledger.add_to_deny_list(XRD, true).expect_commit_success();
+        ledger.add_to_deny_list(RORK, true).expect_commit_success();
 
         // Act
         let receipt =
@@ -516,7 +516,7 @@ fn cannot_trick_account_allow_existing_by_adding_empty_bucket_to_account() {
             .get_free_xrd_from_faucet()
             .mint_fungible(bad_resource_address, 0)
             .assert_worktop_resources_only(
-                ManifestResourceConstraints::new().with_at_least_amount(XRD, Decimal::ONE_ATTO),
+                ManifestResourceConstraints::new().with_at_least_amount(RORK, Decimal::ONE_ATTO),
             )
             .deposit_entire_worktop(account_address)
             .build(),
@@ -528,7 +528,7 @@ fn cannot_trick_account_allow_existing_by_adding_empty_bucket_to_account() {
             .take_from_worktop(bad_resource_address, 10, "bucket_to_burn")
             .burn_resource("bucket_to_burn")
             .assert_worktop_resources_only(
-                ManifestResourceConstraints::new().with_at_least_amount(XRD, Decimal::ONE_ATTO),
+                ManifestResourceConstraints::new().with_at_least_amount(RORK, Decimal::ONE_ATTO),
             )
             .deposit_entire_worktop(account_address)
             .build(),
@@ -601,7 +601,7 @@ impl AccountDepositModesLedgerSimulator {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "free_tokens")
+            .take_all_from_worktop(RORK, "free_tokens")
             .with_bucket("free_tokens", |builder, bucket| {
                 deposit_method.call(builder, self.account_address, bucket)
             })

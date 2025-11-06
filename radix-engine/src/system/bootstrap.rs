@@ -26,11 +26,11 @@ use radix_transactions::prelude::*;
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
-    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
-        .checked_mul(Decimal::try_from(USD_PRICE_IN_XRD).unwrap())
+    pub static ref DEFAULT_VALIDATOR_RORK_COST: Decimal = DEFAULT_VALIDATOR_USD_COST
+        .checked_mul(Decimal::try_from(USD_PRICE_IN_RORK).unwrap())
         .unwrap();  // NOTE: Decimal arithmetic operation safe unwrap.
                     // No chance to overflow.
-                    // The chance to overflow will be decreasing over time since USD price in XRD will only get lower ;)
+                    // The chance to overflow will be decreasing over time since USD price in RORK will only get lower ;)
 }
 
 //==========================================================================================
@@ -399,10 +399,10 @@ pub fn create_system_bootstrap_transaction(
     let mut manifest_builder = ManifestBuilder::new_system_v1();
     let lookup = manifest_builder.name_lookup();
 
-    // XRD Token
+    // RORK Token
     {
         let xrd_reservation = manifest_builder.use_preallocated_address(
-            XRD,
+            RORK,
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
         );
@@ -427,7 +427,7 @@ pub fn create_system_bootstrap_transaction(
                 },
                 metadata: metadata! {
                     init {
-                        "symbol" => "XRD".to_owned(), locked;
+                        "symbol" => "RORK".to_owned(), locked;
                         "name" => "Radix".to_owned(), locked;
                         "description" => "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(), locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
@@ -948,11 +948,11 @@ pub fn create_system_bootstrap_transaction(
     {
         let reservation =
             manifest_builder.use_preallocated_address(FAUCET, FAUCET_PACKAGE, FAUCET_BLUEPRINT);
-        // Mint XRD for the faucet, and then deposit it into the new faucet
+        // Mint RORK for the faucet, and then deposit it into the new faucet
         // Note - on production environments, the faucet will be empty
         manifest_builder = manifest_builder
-            .mint_fungible(XRD, faucet_supply)
-            .take_from_worktop(XRD, faucet_supply, "faucet_xrd")
+            .mint_fungible(RORK, faucet_supply)
+            .take_from_worktop(RORK, faucet_supply, "faucet_xrd")
             .call_function(
                 FAUCET_PACKAGE,
                 FAUCET_BLUEPRINT,

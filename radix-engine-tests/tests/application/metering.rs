@@ -110,7 +110,7 @@ fn run_basic_transfer(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
-        .withdraw_from_account(account1, XRD, 100)
+        .withdraw_from_account(account1, RORK, 100)
         .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 
@@ -135,7 +135,7 @@ fn run_basic_transfer_to_preallocated_account(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
-        .withdraw_from_account(account1, XRD, 100)
+        .withdraw_from_account(account1, RORK, 100)
         .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 
@@ -281,8 +281,8 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
-                .withdraw_from_account(account2, XRD, xrd_init_amount)
-                .take_all_from_worktop(XRD, "bucket")
+                .withdraw_from_account(account2, RORK, xrd_init_amount)
+                .take_all_from_worktop(RORK, "bucket")
                 .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
@@ -301,13 +301,13 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Take loan
     let loan_amount = Decimal::from(50);
     let repay_amount = loan_amount.checked_mul(dec!("1.001")).unwrap();
-    let old_balance = ledger.get_component_balance(account3, XRD);
+    let old_balance = ledger.get_component_balance(account3, RORK);
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account3, 500)
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
-            .withdraw_from_account(account3, XRD, dec!(10))
-            .take_from_worktop(XRD, repay_amount, "repayment")
+            .withdraw_from_account(account3, RORK, dec!(10))
+            .take_from_worktop(RORK, repay_amount, "repayment")
             .take_all_from_worktop(promise_token_address, "promise")
             .with_name_lookup(|builder, lookup| {
                 builder.call_method(
@@ -321,7 +321,7 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
     receipt.expect_commit(true);
-    let new_balance = ledger.get_component_balance(account3, XRD);
+    let new_balance = ledger.get_component_balance(account3, RORK);
     assert!(ledger
         .get_component_balance(account3, promise_token_address)
         .is_zero());
@@ -650,11 +650,11 @@ fn can_run_large_manifest() {
     // Act
     let mut builder = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .withdraw_from_account(account, XRD, 100);
+        .withdraw_from_account(account, RORK, 100);
     for _ in 0..40 {
         let bucket = builder.generate_bucket_name("bucket");
         builder = builder
-            .take_from_worktop(XRD, 1, &bucket)
+            .take_from_worktop(RORK, 1, &bucket)
             .return_to_worktop(bucket);
     }
     let manifest = builder
@@ -705,8 +705,8 @@ fn setup_ledger_with_fee_blueprint_component() -> (DefaultLedgerSimulator, Compo
     let receipt1 = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
-            .withdraw_from_account(account, XRD, 10)
-            .take_all_from_worktop(XRD, "bucket")
+            .withdraw_from_account(account, RORK, 10)
+            .take_all_from_worktop(RORK, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
@@ -799,12 +799,12 @@ fn system_loan_should_cover_intended_use_case() {
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
             manifest_args!(),
         )
-        .lock_fee_and_withdraw(account, dec!(10), XRD, dec!(10))
+        .lock_fee_and_withdraw(account, dec!(10), RORK, dec!(10))
         .then(|mut builder| {
             // Artificial workload
             for _ in 0..10 {
                 builder = builder
-                    .withdraw_from_account(account, XRD, 1)
+                    .withdraw_from_account(account, RORK, 1)
                     .try_deposit_entire_worktop_or_abort(account, None);
             }
             builder
@@ -849,7 +849,7 @@ fn system_loan_should_cover_very_minimal_lock_fee_in_scrypto_component() {
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,

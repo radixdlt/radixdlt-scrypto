@@ -648,7 +648,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let components = ledger.find_all_components();
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
-        let xrd_balance = ledger.get_component_balance(component, XRD);
+        let xrd_balance = ledger.get_component_balance(component, RORK);
         total_xrd_supply = total_xrd_supply.checked_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
@@ -658,7 +658,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     for tx_events in ledger.collected_events() {
         for event in tx_events {
             match &event.0 .0 {
-                Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
+                Emitter::Method(x, _) if x.eq(RORK.as_node_id()) => {}
                 _ => {
                     continue;
                 }
@@ -687,7 +687,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
             }
         }
     }
-    println!("Total XRD supply: {}", total_xrd_supply);
+    println!("Total RORK supply: {}", total_xrd_supply);
     println!("Total mint amount: {}", total_mint_amount);
     println!("Total burn amount: {}", total_burn_amount);
     assert_eq!(

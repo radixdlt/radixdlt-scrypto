@@ -420,8 +420,8 @@ pub fn test_fake_bucket() {
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
-            .withdraw_from_account(account, XRD, 100)
-            .take_from_worktop(XRD, 100, "bucket")
+            .withdraw_from_account(account, RORK, 100)
+            .take_from_worktop(RORK, 100, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,

@@ -361,7 +361,7 @@ mod tests {
 
         // We include an object name to check that gets preserved
         let manifest = builder
-            .take_all_from_worktop(XRD, "my_bucket")
+            .take_all_from_worktop(RORK, "my_bucket")
             .yield_to_parent((lookup.bucket("my_bucket"),))
             .build();
         let encoded = manifest.clone().to_raw().unwrap();
@@ -383,7 +383,7 @@ mod tests {
         // We include an object name to check that gets preserved
         let manifest = builder
             .lock_fee_from_faucet()
-            .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+            .create_proof_from_auth_zone_of_all(RORK, "my_proof")
             .build();
         let encoded = manifest.clone().to_raw().unwrap();
         let decoded = TransactionManifestV2::from_raw(&encoded).unwrap();

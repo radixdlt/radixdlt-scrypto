@@ -11,7 +11,7 @@ fn subintent_should_not_be_able_to_use_proofs_from_transaction_intent() {
 
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            .withdraw_from_account(account, XRD, dec!(10))
+            .withdraw_from_account(account, RORK, dec!(10))
             .deposit_entire_worktop(account)
             .yield_to_parent(())
             .build(),
@@ -132,7 +132,7 @@ fn should_be_able_to_use_separate_auth_in_subintent() {
 
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
-            .withdraw_from_account(account2, XRD, dec!(10))
+            .withdraw_from_account(account2, RORK, dec!(10))
             .deposit_entire_worktop(account2)
             .yield_to_parent(())
             .build(),

@@ -77,21 +77,21 @@ fn test_transaction_preview_cost_estimate() {
             .fee_summary
             .total_cost()
             .checked_add(
-                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_RORK)
                     .unwrap()
                     .checked_mul(FeeTable::latest().validate_tx_payload_cost(size_diff))
                     .unwrap()
             )
             .unwrap()
             .checked_add(
-                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_XRD)
+                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_RORK)
                     .unwrap()
                     .checked_mul(size_diff)
                     .unwrap()
             )
             .unwrap()
             .checked_add(
-                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_RORK)
                     .unwrap()
                     .checked_mul(FeeTable::latest().verify_tx_signatures_cost(2))
                     .unwrap()
@@ -155,7 +155,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Check method authorization (withdrawal) without a proof in the auth zone
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
 
@@ -245,7 +245,7 @@ fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
                 },
                 instructions: InstructionsV1::from(
                     ManifestBuilder::new()
-                        .lock_fee_and_withdraw(account, 10, XRD, 10)
+                        .lock_fee_and_withdraw(account, 10, RORK, 10)
                         .deposit_entire_worktop(account)
                         .build()
                         .instructions,
@@ -290,7 +290,7 @@ fn notary_key_is_not_in_initial_proofs_when_notary_as_signatory_is_false() {
                 },
                 instructions: InstructionsV1::from(
                     ManifestBuilder::new()
-                        .lock_fee_and_withdraw(account, 10, XRD, 10)
+                        .lock_fee_and_withdraw(account, 10, RORK, 10)
                         .deposit_entire_worktop(account)
                         .build()
                         .instructions,

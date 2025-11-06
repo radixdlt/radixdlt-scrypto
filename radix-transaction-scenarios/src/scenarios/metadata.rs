@@ -374,7 +374,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
     add(&mut metadata, "i32", &[4i32, 5i32]);
     add(&mut metadata, "i64", &[5i64, 6i64]);
     add(&mut metadata, "decimal", &[dec!(1), dec!("2.1")]);
-    add(&mut metadata, "address", &[GlobalAddress::from(XRD)]);
+    add(&mut metadata, "address", &[GlobalAddress::from(RORK)]);
     add(
         &mut metadata,
         "public_key",

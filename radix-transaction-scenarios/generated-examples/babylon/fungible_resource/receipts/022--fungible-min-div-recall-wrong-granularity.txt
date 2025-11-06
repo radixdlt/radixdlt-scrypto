@@ -1,11 +1,11 @@
 TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(VaultError(InvalidAmount(123.12321)))
 
-TRANSACTION COST: 0.1765914692 XRD
-├─ Network execution: 0.1346298 XRD, 2692596 execution cost units
-├─ Network finalization: 0 XRD, 0 finalization cost units
-├─ Tip: 0 XRD
-├─ Network Storage: 0.0419616692 XRD
-└─ Royalties: 0 XRD
+TRANSACTION COST: 0.1765914692 RORK
+├─ Network execution: 0.1346298 RORK, 2692596 execution cost units
+├─ Network finalization: 0 RORK, 0 finalization cost units
+├─ Tip: 0 RORK
+├─ Network Storage: 0.0419616692 RORK
+└─ Royalties: 0 RORK
 
 LOGS: 0
 

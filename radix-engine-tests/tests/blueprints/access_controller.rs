@@ -22,9 +22,9 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -32,9 +32,9 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     let receipt = ledger.quick_confirm_recovery(
         Role::Recovery,
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -48,9 +48,9 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -74,18 +74,18 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
     // Act
     let receipt = ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -99,9 +99,9 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
     ledger.set_current_minute(9);
@@ -109,9 +109,9 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     // Act
     let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -125,9 +125,9 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
     ledger.set_current_minute(10);
@@ -135,9 +135,9 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     // Act
     let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -151,9 +151,9 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     let mut ledger = AccessControllerLedgerSimulator::new(None);
     ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
     ledger.set_current_minute(10);
@@ -161,9 +161,9 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     // Act
     let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(XRD)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
 
@@ -178,8 +178,8 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
     ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(ledger.primary_role_badge)),
-        rule!(require(XRD)),
-        rule!(require(XRD)),
+        rule!(require(RORK)),
+        rule!(require(RORK)),
         Some(10),
     );
     ledger
@@ -192,8 +192,8 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         .timed_confirm_recovery(
             Role::Recovery,
             rule!(require(ledger.primary_role_badge)),
-            rule!(require(XRD)),
-            rule!(require(XRD)),
+            rule!(require(RORK)),
+            rule!(require(RORK)),
             Some(10),
         )
         .expect_commit_success();
@@ -217,9 +217,9 @@ pub fn stop_timed_recovery_with_no_access_fails() {
             "stop_timed_recovery",
             AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
-                    primary_role: rule!(require(XRD)),
-                    recovery_role: rule!(require(XRD)),
-                    confirmation_role: rule!(require(XRD)),
+                    primary_role: rule!(require(RORK)),
+                    recovery_role: rule!(require(RORK)),
+                    confirmation_role: rule!(require(RORK)),
                 },
                 timed_recovery_delay_in_minutes: Some(10),
             },
@@ -279,9 +279,9 @@ pub fn quick_confirm_semantics_are_correct() {
         ledger
             .initiate_recovery(
                 proposer.into(),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 Some(10),
             )
             .expect_commit_success();
@@ -290,9 +290,9 @@ pub fn quick_confirm_semantics_are_correct() {
         let receipt = ledger.quick_confirm_recovery(
             role,
             proposer.into(),
-            rule!(require(XRD)),
-            rule!(require(XRD)),
-            rule!(require(XRD)),
+            rule!(require(RORK)),
+            rule!(require(RORK)),
+            rule!(require(RORK)),
             Some(10),
         );
 
@@ -551,9 +551,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = ledger.initiate_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -645,9 +645,9 @@ mod no_recovery_with_primary_unlocked {
             let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -675,9 +675,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = ledger.timed_confirm_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -736,9 +736,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = ledger.stop_timed_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -806,9 +806,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = ledger.initiate_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -900,9 +900,9 @@ mod no_recovery_with_primary_locked {
             let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -930,9 +930,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = ledger.timed_confirm_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -991,9 +991,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = ledger.stop_timed_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1018,9 +1018,9 @@ mod recovery_mode_with_primary_unlocked {
         ledger
             .initiate_recovery(
                 Role::Recovery,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
@@ -1069,9 +1069,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = ledger.initiate_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1163,9 +1163,9 @@ mod recovery_mode_with_primary_unlocked {
             let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1199,9 +1199,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = ledger.timed_confirm_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1257,9 +1257,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = ledger.stop_timed_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1287,9 +1287,9 @@ mod recovery_mode_with_primary_locked {
         ledger
             .initiate_recovery(
                 Role::Recovery,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
@@ -1341,9 +1341,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = ledger.initiate_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1435,9 +1435,9 @@ mod recovery_mode_with_primary_locked {
             let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1471,9 +1471,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = ledger.timed_confirm_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1529,9 +1529,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = ledger.stop_timed_recovery(
                 role,
-                rule!(require(XRD)),
-                rule!(require(XRD)),
-                rule!(require(XRD)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
+                rule!(require(RORK)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 

@@ -189,7 +189,7 @@ fn store_can_only_be_called_by_storer_role() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .create_proof_from_account_of_amount(account, badge, dec!(1))
-                .take_from_worktop(XRD, dec!(0), "bucket")
+                .take_from_worktop(RORK, dec!(0), "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -267,7 +267,7 @@ fn airdrop_can_only_be_called_by_storer_role() {
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .create_proof_from_account_of_amount(account, badge, dec!(1))
-                .take_from_worktop(XRD, dec!(0), "bucket")
+                .take_from_worktop(RORK, dec!(0), "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -350,7 +350,7 @@ fn recover_can_only_be_called_by_recoverer_role() {
                     ACCOUNT_LOCKER_RECOVER_IDENT,
                     AccountLockerRecoverManifestInput {
                         claimant: account.into(),
-                        resource_address: XRD.into(),
+                        resource_address: RORK.into(),
                         amount: dec!(0),
                     },
                 )
@@ -500,7 +500,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD.into(),
+                        resource_address: RORK.into(),
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
@@ -521,7 +521,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                 dec!(1),
             )
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
@@ -542,7 +542,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        ledger.get_component_balance(user_account, XRD),
+        ledger.get_component_balance(user_account, RORK),
         dec!(10_000) // The initial 10_000 we get when we create a new account. Nothing more.
     )
 }
@@ -596,7 +596,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD.into(),
+                        resource_address: RORK.into(),
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
@@ -624,7 +624,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                 dec!(1),
             )
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
@@ -645,7 +645,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        ledger.get_component_balance(user_account, XRD),
+        ledger.get_component_balance(user_account, RORK),
         dec!(20_000) // The initial 10_000 we get when we create a new account. Nothing more.
     )
 }
@@ -700,7 +700,7 @@ fn claim_is_public_and_callable_by_all() {
                     ACCOUNT_LOCKER_CLAIM_IDENT,
                     AccountLockerClaimManifestInput {
                         claimant: account.into(),
-                        resource_address: XRD.into(),
+                        resource_address: RORK.into(),
                         amount: dec!(0),
                     },
                 )
@@ -851,7 +851,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                     dec!(1),
                 )
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -879,7 +879,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
                     claimant: user_account1.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -893,7 +893,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        ledger.get_component_balance(user_account1, XRD),
+        ledger.get_component_balance(user_account1, RORK),
         dec!(20_000)
     )
 }
@@ -950,7 +950,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                     dec!(1),
                 )
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -978,7 +978,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
                     claimant: user_account1.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1049,7 +1049,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                     dec!(1),
                 )
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -1078,7 +1078,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
                     claimant: user_account1.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1092,7 +1092,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        ledger.get_component_balance(badge_holder_account, XRD),
+        ledger.get_component_balance(badge_holder_account, RORK),
         dec!(20_000)
     )
 }
@@ -1148,7 +1148,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                     dec!(1),
                 )
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -1177,7 +1177,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
                     claimant: user_account1.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(10_000),
                 },
             )
@@ -1250,7 +1250,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                     dec!(1),
                 )
                 .get_free_xrd_from_faucet()
-                .take_all_from_worktop(XRD, "bucket")
+                .take_all_from_worktop(RORK, "bucket")
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
@@ -1278,7 +1278,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                 ACCOUNT_LOCKER_GET_AMOUNT_IDENT,
                 AccountLockerGetAmountManifestInput {
                     claimant: user_account1.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                 },
             )
             .build(),
@@ -3121,7 +3121,7 @@ fn send_does_not_accept_an_address_that_is_not_an_account() {
                 dec!(1),
             )
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
@@ -3204,7 +3204,7 @@ fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
                 dec!(1),
             )
             .get_free_xrd_from_faucet()
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
@@ -3293,7 +3293,7 @@ fn claim_does_not_accept_an_address_that_is_not_an_account() {
                 ACCOUNT_LOCKER_CLAIM_IDENT,
                 AccountLockerClaimManifestInput {
                     claimant: FAUCET.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(1),
                 },
             )
@@ -3372,7 +3372,7 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
                 ACCOUNT_LOCKER_RECOVER_IDENT,
                 AccountLockerRecoverManifestInput {
                     claimant: FAUCET.into(),
-                    resource_address: XRD.into(),
+                    resource_address: RORK.into(),
                     amount: dec!(1),
                 },
             )
@@ -3472,7 +3472,7 @@ fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .create_proof_from_account_of_amount(account, account_locker_badge, 1)
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,

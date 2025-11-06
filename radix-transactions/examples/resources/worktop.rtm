@@ -1,10 +1,10 @@
 ## NOTE: This manifest is not intended to make cohesive sense
 ## - it is more intended to demonstrate various worktop-related commands 
 
-# Withdraw XRD from account
+# Withdraw RORK from account
 CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_address}") Decimal("5.0");
 
-# Buy GUM with XRD
+# Buy GUM with RORK
 TAKE_FROM_WORKTOP Address("${xrd_resource_address}") Decimal("2.0") Bucket("xrd");
 CALL_METHOD Address("${component_address}") "buy_gumball" Bucket("xrd");
 ASSERT_WORKTOP_CONTAINS_ANY Address("${gumball_resource_address}");

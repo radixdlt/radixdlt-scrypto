@@ -6,7 +6,7 @@
 # that you are using is resim then you can safely ignore this warning.
 # ==================================================================================================
 
-# Locking 10 XRD in fees from the account component. 
+# Locking 10 RORK in fees from the account component. 
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"

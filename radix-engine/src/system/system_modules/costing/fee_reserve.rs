@@ -114,9 +114,9 @@ pub struct SystemLoanFeeReserve {
     /// (Cache) The effective finalization cost unit price, with tips considered
     effective_finalization_cost_unit_price: Decimal,
 
-    /// The XRD balance
+    /// The RORK balance
     xrd_balance: Decimal,
-    /// The amount of XRD owed to the system
+    /// The amount of RORK owed to the system
     xrd_owed: Decimal,
 
     /// Execution costs
@@ -514,7 +514,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
             self.xrd_balance = self
                 .xrd_balance
                 .checked_add(fee.amount())
-                .expect("No overflow due to limited XRD supply");
+                .expect("No overflow due to limited RORK supply");
         }
 
         // Move resource

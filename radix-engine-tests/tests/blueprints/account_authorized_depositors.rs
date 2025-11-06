@@ -12,7 +12,7 @@ use scrypto_test::prelude::LedgerSimulatorBuilder;
 fn account_add_authorized_depositor_without_owner_auth_fails() {
     test_depositors_operation_method_auth(
         DepositorsOperation::Add {
-            badge: ResourceOrNonFungible::Resource(XRD),
+            badge: ResourceOrNonFungible::Resource(RORK),
         },
         false,
         |receipt| receipt.expect_auth_failure(),
@@ -23,7 +23,7 @@ fn account_add_authorized_depositor_without_owner_auth_fails() {
 fn account_add_authorized_depositor_with_owner_auth_succeeds() {
     test_depositors_operation_method_auth(
         DepositorsOperation::Add {
-            badge: ResourceOrNonFungible::Resource(XRD),
+            badge: ResourceOrNonFungible::Resource(RORK),
         },
         true,
         |receipt| {
@@ -36,7 +36,7 @@ fn account_add_authorized_depositor_with_owner_auth_succeeds() {
 fn account_remove_authorized_depositor_without_owner_auth_fails() {
     test_depositors_operation_method_auth(
         DepositorsOperation::Remove {
-            badge: ResourceOrNonFungible::Resource(XRD),
+            badge: ResourceOrNonFungible::Resource(RORK),
         },
         false,
         |receipt| receipt.expect_auth_failure(),
@@ -47,7 +47,7 @@ fn account_remove_authorized_depositor_without_owner_auth_fails() {
 fn account_remove_authorized_depositor_with_owner_auth_succeeds() {
     test_depositors_operation_method_auth(
         DepositorsOperation::Remove {
-            badge: ResourceOrNonFungible::Resource(XRD),
+            badge: ResourceOrNonFungible::Resource(RORK),
         },
         true,
         |receipt| {
@@ -63,7 +63,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -89,7 +89,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "bucket")
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -109,7 +109,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(ledger.get_component_balance(account2, XRD), dec!(20_000));
+    assert_eq!(ledger.get_component_balance(account2, RORK), dec!(20_000));
 }
 
 #[test]
@@ -120,7 +120,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -147,8 +147,8 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -175,7 +175,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -202,9 +202,9 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -230,7 +230,7 @@ fn authorized_depositor_can_be_removed_later() {
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -257,9 +257,9 @@ fn authorized_depositor_can_be_removed_later() {
     // Act 1
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -294,9 +294,9 @@ fn authorized_depositor_can_be_removed_later() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -322,7 +322,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -348,7 +348,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "bucket")
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_refund(
                 account1,
@@ -363,7 +363,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(ledger.get_component_balance(account2, XRD), dec!(20_000))
+    assert_eq!(ledger.get_component_balance(account2, RORK), dec!(20_000))
 }
 
 #[test]
@@ -374,7 +374,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -401,8 +401,8 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
         })
@@ -422,7 +422,7 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -449,9 +449,9 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
         })
@@ -470,7 +470,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -495,8 +495,8 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -525,7 +525,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -552,8 +552,8 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -580,7 +580,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -607,9 +607,9 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
                 account1,
@@ -635,7 +635,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -660,8 +660,8 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_abort(
                 account1,
@@ -685,7 +685,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -712,8 +712,8 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
         })
@@ -733,7 +733,7 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
     let (pk1, _, account1) = ledger.new_account(true);
     let (pk2, _, account2) = ledger.new_account(true);
 
-    let badge = ResourceOrNonFungible::Resource(XRD);
+    let badge = ResourceOrNonFungible::Resource(RORK);
     ledger
         .execute_manifest(
             ManifestBuilder::new()
@@ -760,9 +760,9 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .withdraw_from_account(account2, XRD, 1)
-        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .withdraw_from_account(account2, RORK, 1)
+        .take_all_from_worktop(RORK, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
         })
@@ -793,7 +793,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
                 method_name,
                 manifest_args!(
                     ManifestExpression::EntireWorktop,
-                    Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                    Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(RORK))
                 ),
             )
             .build();
@@ -819,14 +819,14 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(FAUCET, "free", ())
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account,
                     method_name,
                     manifest_args!(
                         bucket,
-                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(RORK))
                     ),
                 )
             })
@@ -861,14 +861,14 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
                 },
             )
             .call_method(FAUCET, "free", ())
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account,
                     method_name,
                     manifest_args!(
                         bucket,
-                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(RORK))
                     ),
                 )
             })
@@ -881,7 +881,7 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
 
         // Assert
         if should_refund {
-            assert_eq!(ledger.get_component_balance(sink, XRD), dec!(20_000));
+            assert_eq!(ledger.get_component_balance(sink, RORK), dec!(20_000));
         } else {
             receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
         }
@@ -912,19 +912,19 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
                 account,
                 ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
                 AccountAddAuthorizedDepositorInput {
-                    badge: ResourceOrNonFungible::Resource(XRD),
+                    badge: ResourceOrNonFungible::Resource(RORK),
                 },
             )
-            .create_proof_from_account_of_amount(account, XRD, 1)
+            .create_proof_from_account_of_amount(account, RORK, 1)
             .call_method(FAUCET, "free", ())
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account,
                     method_name,
                     manifest_args!(
                         bucket,
-                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(XRD))
+                        Option::<ResourceOrNonFungible>::Some(ResourceOrNonFungible::Resource(RORK))
                     ),
                 )
             })

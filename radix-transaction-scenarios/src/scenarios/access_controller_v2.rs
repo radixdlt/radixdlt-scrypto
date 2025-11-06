@@ -68,7 +68,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                         |builder| {
                             builder
                                 .get_free_xrd_from_faucet()
-                                .take_all_from_worktop(XRD, "bucket")
+                                .take_all_from_worktop(RORK, "bucket")
                                 .with_bucket("bucket", |builder, bucket| {
                                     builder.call_function(
                                         ACCESS_CONTROLLER_PACKAGE,
@@ -99,7 +99,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                     |builder| {
                         builder
                             .get_free_xrd_from_faucet()
-                            .take_all_from_worktop(XRD, "bucket")
+                            .take_all_from_worktop(RORK, "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
                                     state.access_controller_component_address.unwrap(),

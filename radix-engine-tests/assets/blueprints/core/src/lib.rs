@@ -290,7 +290,7 @@ mod globalize_unflushed {
         }
 
         pub fn globalize_with_unflushed_another_transient_own() {
-            let bucket = Bucket::new(XRD);
+            let bucket = Bucket::new(RORK);
             let kv_store = KeyValueStore::<u32, Own>::new();
 
             let key_payload = scrypto_encode(&1u32).unwrap();

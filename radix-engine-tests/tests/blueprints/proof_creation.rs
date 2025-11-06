@@ -135,10 +135,10 @@ fn compose_proof(amount: Decimal) -> u32 {
 
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
-        .create_proof_from_account_of_amount(account2, XRD, 1)
-        .create_proof_from_account_of_amount(account3, XRD, 1)
-        .create_proof_from_account_of_amount(account4, XRD, 1)
-        .create_proof_from_auth_zone_of_amount(XRD, amount, "new_proof")
+        .create_proof_from_account_of_amount(account2, RORK, 1)
+        .create_proof_from_account_of_amount(account3, RORK, 1)
+        .create_proof_from_account_of_amount(account4, RORK, 1)
+        .create_proof_from_auth_zone_of_amount(RORK, amount, "new_proof")
         .build();
 
     let receipt = ledger.execute_manifest(

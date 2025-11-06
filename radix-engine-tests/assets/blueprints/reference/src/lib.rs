@@ -12,7 +12,7 @@ mod reference_test {
 
     impl ReferenceTest {
         pub fn create_global_node_with_local_ref() {
-            let bucket = Bucket::new(XRD.into());
+            let bucket = Bucket::new(RORK.into());
 
             Self {
                 reference: Some(Reference(bucket.0.as_node_id().clone())),
@@ -28,7 +28,7 @@ mod reference_test {
 
         pub fn new() -> Global<ReferenceTest> {
             Self {
-                reference: Some(Reference(XRD.as_node_id().clone())),
+                reference: Some(Reference(RORK.as_node_id().clone())),
                 vault: None,
                 kv_store: None,
             }
@@ -39,7 +39,7 @@ mod reference_test {
 
         pub fn new_with_bucket(bucket: Bucket) -> Global<ReferenceTest> {
             Self {
-                reference: Some(Reference(XRD.as_node_id().clone())),
+                reference: Some(Reference(RORK.as_node_id().clone())),
                 vault: Some(Vault::with_bucket(bucket)),
                 kv_store: None,
             }
@@ -49,7 +49,7 @@ mod reference_test {
         }
 
         pub fn add_local_ref_to_stored_substate(&mut self) {
-            let bucket = Bucket::new(XRD.into());
+            let bucket = Bucket::new(RORK.into());
 
             self.reference = Some(Reference(bucket.0.as_node_id().clone()));
         }
@@ -96,7 +96,7 @@ mod reference_test {
         }
 
         pub fn send_and_receive_reference() {
-            let bucket = Bucket::new(XRD.into());
+            let bucket = Bucket::new(RORK.into());
             Blueprint::<ChildReferenceHolder>::bounce_back_reference(Reference(
                 bucket.0.as_node_id().clone(),
             ));
@@ -104,7 +104,7 @@ mod reference_test {
         }
 
         pub fn send_and_receive_reference_wrapped_in_owned() {
-            let bucket = Bucket::new(XRD.into());
+            let bucket = Bucket::new(RORK.into());
             let bucket_reference = Reference(bucket.0.as_node_id().clone());
             // Instantiating a new object is possible
             let wrapper = ChildReferenceHolder {

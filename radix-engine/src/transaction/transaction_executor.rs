@@ -12,14 +12,14 @@ use radix_transactions::model::*;
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct CostingParameters {
-    /// The price of execution cost unit in XRD.
+    /// The price of execution cost unit in RORK.
     pub execution_cost_unit_price: Decimal,
     /// The max number execution cost units to consume.
     pub execution_cost_unit_limit: u32,
     /// The number of execution cost units loaned from system.
     pub execution_cost_unit_loan: u32,
 
-    /// The price of finalization cost unit in XRD.
+    /// The price of finalization cost unit in RORK.
     pub finalization_cost_unit_price: Decimal,
     /// The max number finalization cost units to consume.
     pub finalization_cost_unit_limit: u32,
@@ -40,14 +40,14 @@ impl CostingParameters {
     #[cfg(not(feature = "coverage"))]
     pub fn babylon_genesis() -> Self {
         Self {
-            execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_RORK.try_into().unwrap(),
             execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
             execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
-            finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_RORK.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
-            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
-            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: USD_PRICE_IN_RORK.try_into().unwrap(),
+            state_storage_price: STATE_STORAGE_PRICE_IN_RORK.try_into().unwrap(),
+            archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_RORK.try_into().unwrap(),
         }
     }
     #[cfg(feature = "coverage")]
@@ -58,7 +58,7 @@ impl CostingParameters {
             execution_cost_unit_loan: u32::MAX,
             finalization_cost_unit_price: Decimal::zero(),
             finalization_cost_unit_limit: u32::MAX,
-            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: USD_PRICE_IN_RORK.try_into().unwrap(),
             state_storage_price: Decimal::zero(),
             archive_storage_price: Decimal::zero(),
         }

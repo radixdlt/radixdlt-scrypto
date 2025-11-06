@@ -353,7 +353,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let account = ComponentAddress::preallocated_account_from_public_key(&public_key);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
-        fuzzer.add_resource(XRD);
+        fuzzer.add_resource(RORK);
 
         let validator_meta = {
             let validator_address = *validator_set

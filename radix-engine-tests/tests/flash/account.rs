@@ -18,11 +18,11 @@ fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depo
                 user_account,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
-                    resource_address: XRD,
+                    resource_address: RORK,
                     resource_preference: ResourcePreference::Disallowed,
                 },
             )
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.try_deposit_or_refund(
                     user_account,
@@ -62,11 +62,11 @@ fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_auth
                 user_account,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
-                    resource_address: XRD,
+                    resource_address: RORK,
                     resource_preference: ResourcePreference::Disallowed,
                 },
             )
-            .take_all_from_worktop(XRD, "bucket")
+            .take_all_from_worktop(RORK, "bucket")
             .with_bucket("bucket", |builder, bucket| {
                 builder.try_deposit_or_refund(
                     user_account,
@@ -82,7 +82,7 @@ fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_auth
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        ledger.get_component_balance(user_account, XRD),
+        ledger.get_component_balance(user_account, RORK),
         dec!(20_000)
     )
 }

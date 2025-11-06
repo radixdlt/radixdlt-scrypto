@@ -84,11 +84,11 @@ mod multi_threaded_test {
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .withdraw_from_account(account1, XRD, dec!("0.000001"))
+            .withdraw_from_account(account1, RORK, dec!("0.000001"))
             .try_deposit_entire_worktop_or_abort(account2, None)
             .build();
 
-        // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
+        // Spawning threads that will attempt to withdraw some RORK amount from account1 and deposit to
         // account2
         thread::scope(|s| {
             for _i in 0..20 {

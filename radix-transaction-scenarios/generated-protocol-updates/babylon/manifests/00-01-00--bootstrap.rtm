@@ -192,7 +192,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "symbol" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "XRD"
+                        "RORK"
                     )
                 ),
                 true

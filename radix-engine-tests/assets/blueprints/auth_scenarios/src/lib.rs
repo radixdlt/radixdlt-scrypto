@@ -202,7 +202,7 @@ mod subservio {
 mod swappy {
     enable_function_auth! {
         create => rule!(allow_all);
-        protected_function => rule!(require(XRD));
+        protected_function => rule!(require(RORK));
     }
 
     enable_method_auth! {
@@ -296,7 +296,7 @@ mod swappy {
 #[blueprint]
 mod count_of_zero {
     enable_function_auth! {
-        hi => AccessRule::Protected(CompositeRequirement::BasicRequirement(BasicRequirement::CountOf(0, vec![ResourceOrNonFungible::Resource(XRD)])));
+        hi => AccessRule::Protected(CompositeRequirement::BasicRequirement(BasicRequirement::CountOf(0, vec![ResourceOrNonFungible::Resource(RORK)])));
     }
 
     struct CountOfZero {}

@@ -63,7 +63,7 @@ mod proxy {
         //         "call_method",
         //         manifest_args!(
         //             "get_price",
-        //             to_manifest_value(&("XRD".to_string(),)).unwrap()
+        //             to_manifest_value(&("RORK".to_string(),)).unwrap()
         //         ),
         //     )
         //     .build();

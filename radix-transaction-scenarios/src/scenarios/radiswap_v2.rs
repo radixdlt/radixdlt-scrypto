@@ -111,7 +111,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
             })
             .on_next_transaction_commit(|core, config, state, result| {
                 let new_resources = result.new_resource_addresses();
-                state.pool_1.resource_1.set(XRD);
+                state.pool_1.resource_1.set(RORK);
                 state.pool_1.resource_2.set(new_resources[0]);
                 state.pool_2.resource_1.set(new_resources[1]);
                 state.pool_2.resource_2.set(new_resources[2]);
@@ -539,20 +539,20 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                             .then(|builder| add_metadata(
                                 builder,
                                 radiswap_1,
-                                "Radiswap 1 - XRD/BTC: Component",
-                                "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+                                "Radiswap 1 - RORK/BTC: Component",
+                                "[EXAMPLE] A Radiswap component between test tokens \"RORK\" and \"BTC\"",
                             ))
                             .then(|builder| add_metadata(
                                 builder,
                                 pool_1,
-                                "Radiswap 1 - XRD/BTC: Pool",
-                                "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+                                "Radiswap 1 - RORK/BTC: Pool",
+                                "[EXAMPLE] The underyling pool between test tokens \"RORK\" and \"BTC\"",
                             ))
                             .then(|builder| add_metadata(
                                 builder,
                                 pool_unit_1,
-                                "Radiswap 1 - XRD/BTC: Pool Units",
-                                "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
+                                "Radiswap 1 - RORK/BTC: Pool Units",
+                                "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"RORK\" and \"BTC\"",
                             ))
                             .then(|builder| add_metadata(
                                 builder,

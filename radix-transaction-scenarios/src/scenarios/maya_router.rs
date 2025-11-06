@@ -216,7 +216,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                         .add("swapper_account", state.swapper_account.get()?)
                         .add("maya_router_package", state.maya_router_package.get()?)
                         .add("maya_router_address", state.maya_router_data.maya_router_address.get()?)
-                        .add("XRD", XRD)
+                        .add("RORK", RORK)
                         .add("resource_1", state.maya_router_data.resource_1.get()?)
                         .add("resource_2", state.maya_router_data.resource_2.get()?)
                 })

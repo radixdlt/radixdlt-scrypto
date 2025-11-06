@@ -448,7 +448,7 @@ pub struct ValidatorUnstakeManifestInput {
 
 pub type ValidatorUnstakeOutput = Bucket;
 
-pub const VALIDATOR_CLAIM_XRD_IDENT: &str = "claim_xrd";
+pub const VALIDATOR_CLAIM_RORK_IDENT: &str = "claim_xrd";
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorClaimXrdInput {
     pub bucket: Bucket,
@@ -506,7 +506,7 @@ pub type ValidatorAcceptsDelegatedStakeManifestInput = ValidatorAcceptsDelegated
 
 pub type ValidatorAcceptsDelegatedStakeOutput = bool;
 
-pub const VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT: &str = "total_stake_xrd_amount";
+pub const VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT: &str = "total_stake_xrd_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ValidatorTotalStakeXrdAmountInput {}
@@ -562,7 +562,7 @@ pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorApplyEmissionInput {
-    /// A bucket with the emitted XRDs for this validator.
+    /// A bucket with the emitted RORKs for this validator.
     /// The validator should subtract the configured fee from this amount.
     pub xrd_bucket: Bucket,
     /// The *concluded* epoch's number. Informational-only.
@@ -575,7 +575,7 @@ pub struct ValidatorApplyEmissionInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorApplyEmissionManifestInput {
-    /// A bucket with the emitted XRDs for this validator.
+    /// A bucket with the emitted RORKs for this validator.
     /// The validator should subtract the configured fee from this amount.
     pub xrd_bucket: ManifestBucket,
     /// The *concluded* epoch's number. Informational-only.
@@ -592,7 +592,7 @@ pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorApplyRewardInput {
-    /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
+    /// A bucket with the rewarded RORKs (from transaction fees) for this validator.
     pub xrd_bucket: Bucket,
     /// The *concluded* epoch's number. Informational-only.
     pub epoch: Epoch,
@@ -600,7 +600,7 @@ pub struct ValidatorApplyRewardInput {
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ValidatorApplyRewardManifestInput {
-    /// A bucket with the rewarded XRDs (from transaction fees) for this validator.
+    /// A bucket with the rewarded RORKs (from transaction fees) for this validator.
     pub xrd_bucket: ManifestBucket,
     /// The *concluded* epoch's number. Informational-only.
     pub epoch: Epoch,

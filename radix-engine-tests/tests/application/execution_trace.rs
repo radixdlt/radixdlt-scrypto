@@ -227,7 +227,7 @@ fn test_instruction_traces() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "bucket")
+        .take_all_from_worktop(RORK, "bucket")
         .create_proof_from_bucket_of_all("bucket", "proof")
         .drop_proof("proof")
         .return_to_worktop("bucket")
@@ -280,7 +280,7 @@ fn test_instruction_traces() {
         assert!(free_trace.output.proofs.is_empty());
         assert_eq!(1, free_trace.output.buckets.len());
         let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
-        assert_eq!(XRD, output_resource.resource_address());
+        assert_eq!(RORK, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
 
         let worktop_put_trace = traces.get(1).unwrap();
@@ -295,7 +295,7 @@ fn test_instruction_traces() {
         assert!(worktop_put_trace.input.proofs.is_empty());
         assert_eq!(1, worktop_put_trace.input.buckets.len());
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(XRD, input_resource.resource_address());
+        assert_eq!(RORK, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
 
@@ -319,7 +319,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.buckets.len());
 
         let output_resource = trace.output.buckets.values().nth(0).unwrap();
-        assert_eq!(XRD, output_resource.resource_address());
+        assert_eq!(RORK, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
     }
 
@@ -341,7 +341,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.proofs.len());
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
-        assert_eq!(XRD, output_proof.resource_address());
+        assert_eq!(RORK, output_proof.resource_address());
         assert_eq!(dec!(10000), output_proof.amount());
     }
 
@@ -363,7 +363,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.proofs.len());
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
-        assert_eq!(XRD, input_proof.resource_address());
+        assert_eq!(RORK, input_proof.resource_address());
         assert_eq!(dec!(10000), input_proof.amount());
     }
 
@@ -384,7 +384,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.buckets.len());
 
         let input_resource = trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(XRD, input_resource.resource_address());
+        assert_eq!(RORK, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
 
@@ -417,7 +417,7 @@ fn test_instruction_traces() {
         assert!(call_trace.input.proofs.is_empty());
         assert_eq!(1, call_trace.input.buckets.len());
         let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(XRD, input_resource.resource_address());
+        assert_eq!(RORK, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
 }
@@ -642,9 +642,9 @@ fn test_execution_trace_for_transaction_v2() {
     let (_public_key2, private_key2, account2) = ledger.new_allocated_account();
 
     // Flow:
-    // 1. root sends child 10 XRD
-    // 2. child deposits 7 XRD
-    // 3. child yields 3 XRD to root
+    // 1. root sends child 10 RORK
+    // 2. child deposits 7 RORK
+    // 3. child yields 3 RORK to root
     // 4. root deposits all
     let start_epoch_inclusive = ledger.get_current_epoch();
     let end_epoch_exclusive = start_epoch_inclusive.after(1).unwrap();
@@ -662,9 +662,9 @@ fn test_execution_trace_for_transaction_v2() {
                 })
                 .manifest_builder(|builder| {
                     builder
-                        .take_from_worktop(XRD, 7, "bucket1")
+                        .take_from_worktop(RORK, 7, "bucket1")
                         .try_deposit_batch_or_abort(account2, ["bucket1"], None)
-                        .take_all_from_worktop(XRD, "bucket2")
+                        .take_all_from_worktop(RORK, "bucket2")
                         .yield_to_parent_with_name_lookup(|lookup| (lookup.bucket("bucket2"),))
                 })
                 .sign(&private_key2)
@@ -681,8 +681,8 @@ fn test_execution_trace_for_transaction_v2() {
         .manifest_builder(|builder| {
             builder
                 .lock_fee(account1, 3)
-                .withdraw_from_account(account1, XRD, 10)
-                .take_all_from_worktop(XRD, "bucket")
+                .withdraw_from_account(account1, RORK, 10)
+                .take_all_from_worktop(RORK, "bucket")
                 .yield_to_child_with_name_lookup("child", |lookup| (lookup.bucket("bucket"),))
                 .deposit_entire_worktop(account1)
         })

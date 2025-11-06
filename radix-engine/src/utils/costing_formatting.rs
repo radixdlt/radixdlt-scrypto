@@ -27,7 +27,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "Total Cost (XRD)",
+        "Total Cost (RORK)",
         total_cost.to_string(),
         100.0,
     )
@@ -36,7 +36,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "- Execution Cost (XRD)",
+        "- Execution Cost (RORK)",
         fee_summary.total_execution_cost_in_xrd.to_string(),
         percentage_decimal(fee_summary.total_execution_cost_in_xrd, total_cost),
     )
@@ -44,7 +44,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "- Finalization Cost (XRD)",
+        "- Finalization Cost (RORK)",
         fee_summary.total_finalization_cost_in_xrd.to_string(),
         percentage_decimal(fee_summary.total_finalization_cost_in_xrd, total_cost),
     )
@@ -52,7 +52,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "- Storage Cost (XRD)",
+        "- Storage Cost (RORK)",
         fee_summary.total_storage_cost_in_xrd.to_string(),
         percentage_decimal(fee_summary.total_storage_cost_in_xrd, total_cost),
     )
@@ -60,7 +60,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "- Tipping Cost (XRD)",
+        "- Tipping Cost (RORK)",
         fee_summary.total_tipping_cost_in_xrd.to_string(),
         percentage_decimal(fee_summary.total_tipping_cost_in_xrd, total_cost),
     )
@@ -68,7 +68,7 @@ pub fn format_cost_breakdown(
     writeln!(
         &mut buffer,
         "{:<75},{:>25}, {:8.1}%",
-        "- Royalty Cost (XRD)",
+        "- Royalty Cost (RORK)",
         fee_summary.total_royalty_cost_in_xrd.to_string(),
         percentage_decimal(fee_summary.total_royalty_cost_in_xrd, total_cost),
     )

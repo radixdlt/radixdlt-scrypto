@@ -40,8 +40,8 @@ fi
 
 # Test - show account
 account_dump=`$resim show $account`
-if [[ ${account_dump} != *"XRD"* ]];then
-    echo "XRD not present!"
+if [[ ${account_dump} != *"RORK"* ]];then
+    echo "RORK not present!"
     exit 1
 fi
 

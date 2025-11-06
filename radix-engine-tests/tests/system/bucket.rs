@@ -279,9 +279,9 @@ fn create_empty_bucket() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(RORK, "bucket1")
         .return_to_worktop("bucket1")
-        .take_from_worktop(XRD, Decimal::zero(), "bucket2")
+        .take_from_worktop(RORK, Decimal::zero(), "bucket2")
         .return_to_worktop("bucket2")
         .take_non_fungibles_from_worktop(non_fungible_resource, [], "bucket3")
         .return_to_worktop("bucket3")

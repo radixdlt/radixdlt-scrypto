@@ -44,6 +44,6 @@ fn fee_xrd_on_empty_faucet_should_give_nice_error() {
 
     // Assert
     receipt.expect_rejection_containing_error(
-        "The faucet doesn't have funds on this environment. You will need to source XRD another way."
+        "The faucet doesn't have funds on this environment. You will need to source RORK another way."
     );
 }

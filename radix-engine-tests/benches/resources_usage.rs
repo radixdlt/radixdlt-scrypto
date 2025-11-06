@@ -200,7 +200,7 @@ fn transfer_test(c: &mut Criterion) {
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account1, XRD, dec!("0.000001"))
+        .withdraw_from_account(account1, RORK, dec!("0.000001"))
         .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 

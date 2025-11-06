@@ -297,7 +297,7 @@ fn can_set_address_metadata_through_manifest() {
         .expect("Should exist");
     assert_eq!(stored_entry, entry);
 
-    can_set_metadata_through_manifest(MetadataValue::GlobalAddress(XRD.into()));
+    can_set_metadata_through_manifest(MetadataValue::GlobalAddress(RORK.into()));
 }
 
 #[test]

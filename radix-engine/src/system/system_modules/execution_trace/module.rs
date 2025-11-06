@@ -940,7 +940,7 @@ pub fn calculate_resource_changes(
                         .entry(node_id)
                         .or_default()
                         .entry(vault_id)
-                        .or_insert((XRD, Decimal::zero()))
+                        .or_insert((RORK, Decimal::zero()))
                         .1;
                     *entry = entry
                         .checked_sub(fee_payments.get(&vault_id).cloned().unwrap_or_default())

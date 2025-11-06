@@ -410,10 +410,10 @@ fn create_validator_twice() {
             .lock_standard_test_fee(account)
             .withdraw_from_account(
                 account,
-                XRD,
-                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+                RORK,
+                DEFAULT_VALIDATOR_RORK_COST.checked_add(dec!(1)).unwrap(),
             )
-            .take_all_from_worktop(XRD, "creation_fee")
+            .take_all_from_worktop(RORK, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
@@ -429,10 +429,10 @@ fn create_validator_twice() {
             .lock_standard_test_fee(account)
             .withdraw_from_account(
                 account,
-                XRD,
-                DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+                RORK,
+                DEFAULT_VALIDATOR_RORK_COST.checked_add(dec!(1)).unwrap(),
             )
-            .take_all_from_worktop(XRD, "creation_fee")
+            .take_all_from_worktop(RORK, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
@@ -452,8 +452,8 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
-            .withdraw_from_account(account, XRD, amount)
-            .take_all_from_worktop(XRD, "creation_fee")
+            .withdraw_from_account(account, RORK, amount)
+            .take_all_from_worktop(RORK, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
@@ -478,7 +478,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
 #[test]
 fn create_validator_with_not_enough_payment_should_fail() {
     create_validator_with_low_payment_amount_should_fail(
-        DEFAULT_VALIDATOR_XRD_COST.checked_sub(dec!(1)).unwrap(),
+        DEFAULT_VALIDATOR_RORK_COST.checked_sub(dec!(1)).unwrap(),
         false,
     )
 }
@@ -486,7 +486,7 @@ fn create_validator_with_not_enough_payment_should_fail() {
 #[test]
 fn create_validator_with_too_much_payment_should_succeed() {
     create_validator_with_low_payment_amount_should_fail(
-        DEFAULT_VALIDATOR_XRD_COST.checked_add(dec!(1)).unwrap(),
+        DEFAULT_VALIDATOR_RORK_COST.checked_add(dec!(1)).unwrap(),
         true,
     )
 }
@@ -497,13 +497,13 @@ fn create_validator_with_wrong_resource_should_fail() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        ledger.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 18u8, account);
+        ledger.create_fungible_resource(*DEFAULT_VALIDATOR_RORK_COST, 18u8, account);
 
     // Act
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
-            .withdraw_from_account(account, resource_address, *DEFAULT_VALIDATOR_XRD_COST)
+            .withdraw_from_account(account, resource_address, *DEFAULT_VALIDATOR_RORK_COST)
             .take_all_from_worktop(resource_address, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .build(),
@@ -741,7 +741,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
 
     let manifest = builder
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "stake")
+        .take_all_from_worktop(RORK, "stake")
         .with_name_lookup(|builder, lookup| {
             let bucket = lookup.bucket("stake");
             if owner {
@@ -1063,7 +1063,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         Some(validator_stake_added)
     );
 
-    // Assert: the next epoch event reflects the new amount of staked XRD for this validator
+    // Assert: the next epoch event reflects the new amount of staked RORK for this validator
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
         .next_epoch()
@@ -1159,7 +1159,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         vec![ValidatorEmissionAppliedEvent {
             epoch: initial_epoch,
             starting_stake_pool_xrd: validator_stake,
-            stake_pool_added_xrd: Decimal::zero(), // even though the emission gave 0 XRD to the regular stakers...
+            stake_pool_added_xrd: Decimal::zero(), // even though the emission gave 0 RORK to the regular stakers...
             total_stake_unit_supply: validator_stake,
             validator_fee_xrd: Decimal::zero(), // ... or to the owner...
             proposals_made: 1,
@@ -1600,9 +1600,9 @@ impl RegisterAndStakeTransactionType {
                         VALIDATOR_OWNER_BADGE,
                         [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
-                    .withdraw_from_account(account_address, XRD, stake_amount)
+                    .withdraw_from_account(account_address, RORK, stake_amount)
                     .register_validator(validator_address)
-                    .take_all_from_worktop(XRD, "stake")
+                    .take_all_from_worktop(RORK, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
@@ -1616,8 +1616,8 @@ impl RegisterAndStakeTransactionType {
                         VALIDATOR_OWNER_BADGE,
                         [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
-                    .withdraw_from_account(account_address, XRD, stake_amount)
-                    .take_all_from_worktop(XRD, "stake")
+                    .withdraw_from_account(account_address, RORK, stake_amount)
+                    .take_all_from_worktop(RORK, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .register_validator(validator_address)
                     .try_deposit_entire_worktop_or_abort(account_address, None)
@@ -1642,8 +1642,8 @@ impl RegisterAndStakeTransactionType {
                         VALIDATOR_OWNER_BADGE,
                         [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
-                    .withdraw_from_account(account_address, XRD, stake_amount)
-                    .take_all_from_worktop(XRD, "stake")
+                    .withdraw_from_account(account_address, RORK, stake_amount)
+                    .take_all_from_worktop(RORK, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
@@ -1668,8 +1668,8 @@ impl RegisterAndStakeTransactionType {
                         VALIDATOR_OWNER_BADGE,
                         [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
                     )
-                    .withdraw_from_account(account_address, XRD, stake_amount)
-                    .take_all_from_worktop(XRD, "stake")
+                    .withdraw_from_account(account_address, RORK, stake_amount)
+                    .take_all_from_worktop(RORK, "stake")
                     .stake_validator_as_owner(validator_address, "stake")
                     .try_deposit_entire_worktop_or_abort(account_address, None)
                     .build();
@@ -3350,7 +3350,7 @@ fn cannot_unstake_with_wrong_resource() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "fake_stake_units")
+        .take_all_from_worktop(RORK, "fake_stake_units")
         .unstake_validator(validator_address, "fake_stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
@@ -3504,7 +3504,7 @@ fn can_stake_with_zero_bucket() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "zero_xrd")
+        .take_all_from_worktop(RORK, "zero_xrd")
         .stake_validator(validator_address, "zero_xrd")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
@@ -3731,6 +3731,6 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
             .checked_add(result1.fee_destination.to_validator_set)
             .unwrap()
     );
-    let vault_id = ledger.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
+    let vault_id = ledger.get_component_vaults(CONSENSUS_MANAGER, RORK)[0];
     assert_close_to!(ledger.inspect_vault_balance(vault_id).unwrap(), dec!(0));
 }

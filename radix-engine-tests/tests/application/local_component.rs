@@ -60,8 +60,8 @@ fn recursion_bomb() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, Decimal::from(4u32))
-        .take_all_from_worktop(XRD, "xrd")
+        .withdraw_from_account(account, RORK, Decimal::from(4u32))
+        .take_all_from_worktop(RORK, "xrd")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
@@ -91,8 +91,8 @@ fn recursion_bomb_to_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, Decimal::from(100u32))
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account, RORK, Decimal::from(100u32))
+        .take_all_from_worktop(RORK, "bucket")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
@@ -130,8 +130,8 @@ fn recursion_bomb_2() {
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, Decimal::from(4u32))
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account, RORK, Decimal::from(4u32))
+        .take_all_from_worktop(RORK, "bucket")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
@@ -161,8 +161,8 @@ fn recursion_bomb_2_to_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, Decimal::from(100u32))
-        .take_all_from_worktop(XRD, "bucket")
+        .withdraw_from_account(account, RORK, Decimal::from(100u32))
+        .take_all_from_worktop(RORK, "bucket")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,

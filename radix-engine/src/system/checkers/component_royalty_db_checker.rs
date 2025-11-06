@@ -61,8 +61,8 @@ impl ComponentRoyaltyDatabaseChecker {
         location: ErrorLocation,
     ) {
         let royalty_amount = royalty_amount.fully_update_and_into_latest_version();
-        let max_royalty_in_xrd = Decimal::from_str(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-        let max_royalty_in_usd = max_royalty_in_xrd / Decimal::from_str(USD_PRICE_IN_XRD).unwrap();
+        let max_royalty_in_xrd = Decimal::from_str(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
+        let max_royalty_in_usd = max_royalty_in_xrd / Decimal::from_str(USD_PRICE_IN_RORK).unwrap();
 
         match royalty_amount {
             RoyaltyAmount::Free => {}

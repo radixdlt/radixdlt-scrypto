@@ -621,7 +621,7 @@ impl AccessControllerV2Blueprint {
             let vault = match state.xrd_fee_vault {
                 Some(ref mut vault) => vault,
                 None => {
-                    state.xrd_fee_vault = Some(Vault::create(XRD, api)?);
+                    state.xrd_fee_vault = Some(Vault::create(RORK, api)?);
                     state.xrd_fee_vault.as_mut().unwrap()
                 }
             };

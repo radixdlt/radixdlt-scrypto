@@ -13,7 +13,7 @@
         "name": {
           "Set": {
             "kind": "String",
-            "value": "Radiswap 1 - XRD/BTC: Component"
+            "value": "Radiswap 1 - RORK/BTC: Component"
           }
         },
         "dapp_definition": {
@@ -25,7 +25,7 @@
         "description": {
           "Set": {
             "kind": "String",
-            "value": "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\""
+            "value": "[EXAMPLE] A Radiswap component between test tokens \"RORK\" and \"BTC\""
           }
         },
         "tags": {
@@ -50,7 +50,7 @@
         "name": {
           "Set": {
             "kind": "String",
-            "value": "Radiswap 1 - XRD/BTC: Pool"
+            "value": "Radiswap 1 - RORK/BTC: Pool"
           }
         },
         "dapp_definition": {
@@ -62,7 +62,7 @@
         "description": {
           "Set": {
             "kind": "String",
-            "value": "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
+            "value": "[EXAMPLE] The underyling pool between test tokens \"RORK\" and \"BTC\""
           }
         },
         "tags": {
@@ -95,13 +95,13 @@
         "name": {
           "Set": {
             "kind": "String",
-            "value": "Radiswap 1 - XRD/BTC: Pool Units"
+            "value": "Radiswap 1 - RORK/BTC: Pool Units"
           }
         },
         "description": {
           "Set": {
             "kind": "String",
-            "value": "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\""
+            "value": "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"RORK\" and \"BTC\""
           }
         },
         "tags": {

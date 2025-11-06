@@ -43,14 +43,14 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
-        .create_proof_from_auth_zone_of_all(XRD, "proof1")
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
+        .create_proof_from_auth_zone_of_all(RORK, "proof1")
         .push_to_auth_zone("proof1")
         .try_deposit_entire_worktop_or_abort(account, None)
-        .create_proof_from_auth_zone_of_all(XRD, "proof2")
+        .create_proof_from_auth_zone_of_all(RORK, "proof2")
         .push_to_auth_zone("proof2")
         .try_deposit_entire_worktop_or_abort(account, None)
-        .create_proof_from_auth_zone_of_all(XRD, "proof3")
+        .create_proof_from_auth_zone_of_all(RORK, "proof3")
         .push_to_auth_zone("proof3")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
@@ -76,10 +76,10 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
@@ -148,12 +148,12 @@ fn test_entire_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .call_function(
             package_address,
             "Receiver",
             "assert_first_proof",
-            manifest_args!(ManifestExpression::EntireAuthZone, dec!(1), XRD),
+            manifest_args!(ManifestExpression::EntireAuthZone, dec!(1), RORK),
         )
         .build();
     let receipt = ledger.execute_manifest(
@@ -246,11 +246,11 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
     let (_, _, account) = ledger.new_account(true);
 
     ManifestBuilder::new()
-        .withdraw_from_account(account, XRD, 73)
-        .take_from_worktop(XRD, 73, "XRD")
-        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .withdraw_from_account(account, RORK, 73)
+        .take_from_worktop(RORK, 73, "RORK")
+        .create_proof_from_bucket_of_amount("RORK", 73, "RORKProof")
         .drop_all_proofs()
-        .try_deposit_or_abort(account, None, "XRD")
+        .try_deposit_or_abort(account, None, "RORK")
         .build(); // This asserts the manifest is valid
 }
 
@@ -261,11 +261,11 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
     let (_, _, account) = ledger.new_account(true);
 
     ManifestBuilder::new()
-        .withdraw_from_account(account, XRD, 73)
-        .take_from_worktop(XRD, 73, "XRD")
-        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .withdraw_from_account(account, RORK, 73)
+        .take_from_worktop(RORK, 73, "RORK")
+        .create_proof_from_bucket_of_amount("RORK", 73, "RORKProof")
         .drop_named_proofs()
-        .try_deposit_or_abort(account, None, "XRD")
+        .try_deposit_or_abort(account, None, "RORK")
         .build(); // This asserts the manifest is valid
 }
 
@@ -276,11 +276,11 @@ fn test_create_proof_from_bucket_of_amount() {
     let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account, XRD, 73)
-        .take_from_worktop(XRD, 73, "XRD")
-        .create_proof_from_bucket_of_amount("XRD", 73, "XRDProof")
+        .withdraw_from_account(account, RORK, 73)
+        .take_from_worktop(RORK, 73, "RORK")
+        .create_proof_from_bucket_of_amount("RORK", 73, "RORKProof")
         .drop_all_proofs()
-        .try_deposit_or_abort(account, None, "XRD")
+        .try_deposit_or_abort(account, None, "RORK")
         .build();
 
     // Act
@@ -315,7 +315,7 @@ fn test_create_proof_from_bucket_of_amount() {
             .unwrap()
             .clone(),
         ProofSnapshot::Fungible {
-            resource_address: XRD,
+            resource_address: RORK,
             total_locked: 73.into()
         }
     );
@@ -393,7 +393,7 @@ fn test_drop_auth_zone_regular_proofs() {
     let (_, _, account) = ledger.new_account(true);
 
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account_of_amount(account, XRD, 73)
+        .create_proof_from_account_of_amount(account, RORK, 73)
         .drop_auth_zone_regular_proofs()
         .pop_from_auth_zone("proof")
         .build();

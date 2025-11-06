@@ -75,14 +75,14 @@ SET_METADATA
     Address("component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8")
     "name"
     Enum<0u8>(
-        "Radiswap 1 - XRD/BTC: Component"
+        "Radiswap 1 - RORK/BTC: Component"
     )
 ;
 SET_METADATA
     Address("component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\""
+        "[EXAMPLE] A Radiswap component between test tokens \"RORK\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -108,14 +108,14 @@ SET_METADATA
     Address("pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772")
     "name"
     Enum<0u8>(
-        "Radiswap 1 - XRD/BTC: Pool"
+        "Radiswap 1 - RORK/BTC: Pool"
     )
 ;
 SET_METADATA
     Address("pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
+        "[EXAMPLE] The underyling pool between test tokens \"RORK\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -141,14 +141,14 @@ SET_METADATA
     Address("resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5")
     "name"
     Enum<0u8>(
-        "Radiswap 1 - XRD/BTC: Pool Units"
+        "Radiswap 1 - RORK/BTC: Pool Units"
     )
 ;
 SET_METADATA
     Address("resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\""
+        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"RORK\" and \"BTC\""
     )
 ;
 SET_METADATA

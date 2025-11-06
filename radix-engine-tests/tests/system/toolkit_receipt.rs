@@ -620,11 +620,11 @@ fn worktop_changes_are_mapped_correctly_in_receipt() {
         worktop_changes,
         indexmap! {
             1 => vec![WorktopChange::Put(ResourceSpecifier::Amount(
-                XRD,
+                RORK,
                 dec!(10_000)
             ))],
             2 => vec![WorktopChange::Take(ResourceSpecifier::Amount(
-                XRD,
+                RORK,
                 dec!(10_000)
             ))]
         }

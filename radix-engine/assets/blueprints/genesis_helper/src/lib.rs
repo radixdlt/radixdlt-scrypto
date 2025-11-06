@@ -62,7 +62,7 @@ mod genesis_helper {
         }
     }
 
-    const XRD_MGR: ResourceManager = resource_manager!(XRD);
+    const RORK_MGR: ResourceManager = resource_manager!(RORK);
 
     struct GenesisHelper {
         consensus_manager: Global<ConsensusManager>,
@@ -114,7 +114,7 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, mut validator: GenesisValidator) {
-            let xrd_payment = XRD_MGR.create_empty_bucket();
+            let xrd_payment = RORK_MGR.create_empty_bucket();
             let (mut validator_component, owner_token_bucket, change) = self
                 .consensus_manager
                 .create_validator(validator.key, validator.fee_factor, xrd_payment);
@@ -158,7 +158,7 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
+            let mut xrd_bucket = RORK_MGR.mint(xrd_needed);
 
             for (validator_key, stake_allocations) in allocations.into_iter() {
                 let mut validator = self.validators.get_mut(&validator_key).unwrap();
@@ -291,7 +291,7 @@ mod genesis_helper {
                 }
                 sum
             };
-            let mut xrd_bucket = XRD_MGR.mint(xrd_needed);
+            let mut xrd_bucket = RORK_MGR.mint(xrd_needed);
 
             for (mut account, amount) in allocations.into_iter() {
                 let bucket = xrd_bucket.take(amount);

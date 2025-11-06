@@ -35,7 +35,7 @@ fn build_transaction_v1_with_invalid_blob(
         .construct_unsigned_notarized_transaction_v1(
             ManifestBuilder::new_v1()
                 .lock_fee_from_faucet()
-                .call_method(XRD, "foobar", (ManifestBlobRef([0; 32]),))
+                .call_method(RORK, "foobar", (ManifestBlobRef([0; 32]),))
                 .build_no_validate(),
         )
         .to_raw()

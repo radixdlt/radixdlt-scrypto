@@ -81,12 +81,12 @@ fn when_less_is_returned_assert_next_call_returns_include_should_fail() {
                     resource1,
                     ManifestResourceConstraint::AtLeastAmount(dec!(1)),
                 )
-                .with(XRD, ManifestResourceConstraint::AtLeastAmount(dec!(1)))
+                .with(RORK, ManifestResourceConstraint::AtLeastAmount(dec!(1)))
         },
         false,
         |_, _| {
             Some(ResourceConstraintsError::ResourceConstraintFailed {
-                resource_address: XRD,
+                resource_address: RORK,
                 error: ResourceConstraintError::ExpectedAtLeastAmount {
                     expected_at_least_amount: dec!(1),
                     actual_amount: dec!(0),
@@ -105,7 +105,7 @@ fn when_less_is_returned_assert_next_call_returns_only_should_fail() {
                     resource1,
                     ManifestResourceConstraint::AtLeastAmount(dec!(1)),
                 )
-                .with(XRD, ManifestResourceConstraint::AtLeastAmount(dec!(1)))
+                .with(RORK, ManifestResourceConstraint::AtLeastAmount(dec!(1)))
         },
         true,
         |_, resource2| {
@@ -155,7 +155,7 @@ fn when_extra_zero_constraints_on_assert_next_call_returns_include_should_succee
                     resource2,
                     ManifestResourceConstraint::AtLeastAmount(dec!(1)),
                 )
-                .with(XRD, ManifestResourceConstraint::ExactAmount(dec!(0)))
+                .with(RORK, ManifestResourceConstraint::ExactAmount(dec!(0)))
         },
         false,
         |_, _| None,
@@ -175,7 +175,7 @@ fn when_extra_zero_constraints_on_assert_next_call_returns_only_should_succeed()
                     resource2,
                     ManifestResourceConstraint::AtLeastAmount(dec!(1)),
                 )
-                .with(XRD, ManifestResourceConstraint::ExactAmount(dec!(0)))
+                .with(RORK, ManifestResourceConstraint::ExactAmount(dec!(0)))
         },
         true,
         |_, _| None,
@@ -194,9 +194,9 @@ fn when_withdrawing_zero_amount_with_zero_constraints_on_assert_worktop_resource
         .lock_fee_from_faucet()
         .assert_worktop_resources_only(
             ManifestResourceConstraints::new()
-                .with(XRD, ManifestResourceConstraint::ExactAmount(dec!(0))),
+                .with(RORK, ManifestResourceConstraint::ExactAmount(dec!(0))),
         )
-        .withdraw_from_account(account, XRD, dec!(0))
+        .withdraw_from_account(account, RORK, dec!(0))
         .build();
     let transaction = TestTransaction::new_v2_builder(ledger.next_transaction_nonce())
         .finish_with_root_intent(manifest, [public_key.signature_proof()]);

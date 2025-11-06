@@ -86,8 +86,8 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, 10)
-        .create_proof_from_auth_zone_of_all(XRD, "proof")
+        .create_proof_from_account_of_amount(account, RORK, 10)
+        .create_proof_from_auth_zone_of_all(RORK, "proof")
         .drop_proof("proof")
         .build();
     let receipt = ledger.execute_manifest(

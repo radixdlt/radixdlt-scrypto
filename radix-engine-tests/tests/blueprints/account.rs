@@ -85,7 +85,7 @@ where
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500, XRD, 1)
+        .lock_fee_and_withdraw(account, 500, RORK, 1)
         .try_deposit_entire_worktop_or_refund(other_account, None)
         .build();
     let receipt = ledger.execute_manifest(
@@ -94,12 +94,12 @@ where
     );
 
     // Assert
-    let other_account_balance: Decimal = ledger.get_component_balance(other_account, XRD);
+    let other_account_balance: Decimal = ledger.get_component_balance(other_account, RORK);
     let transfer_amount = other_account_balance.checked_sub(10000).unwrap() /* initial balance */;
 
     let balance_change = ledger
         .sum_descendant_balance_changes(receipt.expect_commit_success(), other_account.as_node_id())
-        .get(&XRD)
+        .get(&RORK)
         .unwrap()
         .clone();
     assert_eq!(balance_change, BalanceChange::Fungible(transfer_amount));
@@ -143,7 +143,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let (_, _, other_account) = ledger.new_account(is_virtual);
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32)
-        .withdraw_from_account(other_account, XRD, 1)
+        .withdraw_from_account(other_account, RORK, 1)
         .try_deposit_entire_worktop_or_refund(account, None)
         .build();
 
@@ -190,8 +190,8 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(use_virtual);
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500u32, XRD, 1)
-        .take_all_from_worktop(XRD, "xrd")
+        .lock_fee_and_withdraw(account, 500u32, RORK, 1)
+        .take_all_from_worktop(RORK, "xrd")
         .try_deposit_or_abort(account, None, "xrd")
         .build();
 
@@ -204,7 +204,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Assert
     let balance_change = ledger
         .sum_descendant_balance_changes(receipt.expect_commit_success(), account.as_node_id())
-        .get(&XRD)
+        .get(&RORK)
         .unwrap()
         .clone();
     assert_eq!(

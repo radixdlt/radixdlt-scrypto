@@ -15,16 +15,16 @@ pub trait SystemCostingApi<E> {
     /// Retrieve the cost unit limit for the transaction
     fn execution_cost_unit_limit(&mut self) -> Result<u32, E>;
 
-    /// Retrieve the cost unit price in XRD
+    /// Retrieve the cost unit price in RORK
     fn execution_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
     /// Retrieve the finalization cost unit limit
     fn finalization_cost_unit_limit(&mut self) -> Result<u32, E>;
 
-    /// Retrieve the finalization cost unit price in XRD
+    /// Retrieve the finalization cost unit price in RORK
     fn finalization_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
-    /// Retrieve the usd price of XRD
+    /// Retrieve the usd price of RORK
     fn usd_price(&mut self) -> Result<Decimal, E>;
 
     /// Retrieve the maximum allowable royalty per function
@@ -33,6 +33,6 @@ pub trait SystemCostingApi<E> {
     /// Retrieve the tip percentage of the transaction
     fn tip_percentage_truncated(&mut self) -> Result<u32, E>;
 
-    /// Retrieve the current fee balance in XRD
+    /// Retrieve the current fee balance in RORK
     fn fee_balance(&mut self) -> Result<Decimal, E>;
 }

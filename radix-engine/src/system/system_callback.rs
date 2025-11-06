@@ -895,7 +895,7 @@ impl<V: SystemCallbackObject> System<V> {
         if to_burn.is_positive() {
             events.push((
                 EventTypeIdentifier(
-                    Emitter::Method(XRD.into_node_id(), ModuleId::Main),
+                    Emitter::Method(RORK.into_node_id(), ModuleId::Main),
                     "BurnFungibleResourceEvent".to_string(),
                 ),
                 scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
@@ -1037,12 +1037,12 @@ impl<V: SystemCallbackObject> System<V> {
         );
         println!(
             "{:<40}: {:>25}",
-            "Execution Cost in XRD",
+            "Execution Cost in RORK",
             receipt.fee_summary.total_execution_cost_in_xrd.to_string()
         );
         println!(
             "{:<40}: {:>25}",
-            "Finalization Cost in XRD",
+            "Finalization Cost in RORK",
             receipt
                 .fee_summary
                 .total_finalization_cost_in_xrd
@@ -1050,17 +1050,17 @@ impl<V: SystemCallbackObject> System<V> {
         );
         println!(
             "{:<40}: {:>25}",
-            "Tipping Cost in XRD",
+            "Tipping Cost in RORK",
             receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
         );
         println!(
             "{:<40}: {:>25}",
-            "Storage Cost in XRD",
+            "Storage Cost in RORK",
             receipt.fee_summary.total_storage_cost_in_xrd.to_string()
         );
         println!(
             "{:<40}: {:>25}",
-            "Royalty Costs in XRD",
+            "Royalty Costs in RORK",
             receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
         );
 

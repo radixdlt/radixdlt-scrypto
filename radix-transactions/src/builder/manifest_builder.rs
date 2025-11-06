@@ -30,8 +30,8 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// # );
 /// let manifest = ManifestBuilder::new()
 ///     .lock_fee_from_faucet()
-///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+///     .take_from_worktop(RORK, dec!(1), "xrd")
 ///     .try_deposit_or_abort(to_account_address, None, "xrd")
 ///     .build();
 /// ```
@@ -50,8 +50,8 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// # );
 /// let manifest = ManifestBuilder::new()
 ///     .lock_fee_from_faucet()
-///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+///     .take_from_worktop(RORK, dec!(1), "xrd")
 ///     .call_function_with_name_lookup(
 ///         package_address,
 ///         "SomeBlueprint",
@@ -79,7 +79,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 ///     // "transfer" that doesn't collide with any previously used bucket names
 ///     let bucket_name = builder.generate_bucket_name("transfer");
 ///     builder = builder
-///         .take_from_worktop(XRD, "0.001", &bucket_name)
+///         .take_from_worktop(RORK, "0.001", &bucket_name)
 ///         .try_deposit_or_abort(to_account_address, None, bucket_name);
 /// }
 /// let manifest = builder.build();
@@ -316,7 +316,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
     /// # let package_address = FAUCET_PACKAGE; // Just so it compiles
     ///
     /// let manifest = ManifestBuilder::new()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .withdraw_from_account(from_account_address, RORK, dec!(1))
     ///     // ...
     ///     .then(|mut builder| {
     ///         let code_blob_ref = builder.add_blob(vec![]);
@@ -1008,7 +1008,7 @@ where
     ) -> Self {
         let address = validator_address.resolve_referenced(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
-        self.call_method(address, VALIDATOR_CLAIM_XRD_IDENT, (bucket,))
+        self.call_method(address, VALIDATOR_CLAIM_RORK_IDENT, (bucket,))
     }
 
     /// Calls a scrypto function where the arguments should be one of:
@@ -1082,8 +1082,8 @@ where
     /// # );
     /// let manifest = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+    ///     .take_from_worktop(RORK, dec!(1), "xrd_bucket")
     ///     .call_function_with_name_lookup(
     ///         package_address,
     ///         "SomeBlueprint",
@@ -1099,8 +1099,8 @@ where
     /// // Alternative using `then`
     /// let manifest2 = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+    ///     .take_from_worktop(RORK, dec!(1), "xrd_bucket")
     ///     .then(|builder| {
     ///         let lookup = builder.name_lookup();
     ///         builder.call_function(
@@ -1329,8 +1329,8 @@ where
     /// # );
     /// let manifest = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+    ///     .take_from_worktop(RORK, dec!(1), "xrd_bucket")
     ///     .call_method_with_name_lookup(
     ///         component_address,
     ///         "some_method",
@@ -1345,8 +1345,8 @@ where
     /// // Alternative using `then`
     /// let manifest2 = ManifestBuilder::new()
     ///     .lock_fee_from_faucet()
-    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .withdraw_from_account(from_account_address, RORK, dec!(1))
+    ///     .take_from_worktop(RORK, dec!(1), "xrd_bucket")
     ///     .then(|builder| {
     ///         let lookup = builder.name_lookup();
     ///         builder.call_method(
@@ -1896,7 +1896,7 @@ where
         self.lock_standard_test_fee(FAUCET)
     }
 
-    /// Locks a large fee from the XRD vault of an account.
+    /// Locks a large fee from the RORK vault of an account.
     pub fn lock_standard_test_fee(
         self,
         account_address: impl ReferencedManifestComponentAddress,
@@ -1904,7 +1904,7 @@ where
         self.lock_fee(account_address, 5000)
     }
 
-    /// Locks a fee from the XRD vault of an account.
+    /// Locks a fee from the RORK vault of an account.
     pub fn lock_fee(
         self,
         account_address: impl ReferencedManifestComponentAddress,
@@ -2433,7 +2433,7 @@ mod tests {
 
     fn get_builder_and_bucket_and_proof() -> (ManifestBuilder, ManifestBucket, ManifestProof) {
         let builder = ManifestBuilder::new()
-            .take_from_worktop(XRD, dec!(100), "bucket")
+            .take_from_worktop(RORK, dec!(100), "bucket")
             .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof");
         let lookup = builder.name_lookup();
         let proof_id = lookup.proof("proof");
@@ -2451,19 +2451,19 @@ mod tests {
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(CreateProofFromAuthZoneOfAmount {
-            resource_address: XRD,
+            resource_address: RORK,
             amount: dec!(1),
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(CreateProofFromAuthZoneOfNonFungibles {
-            resource_address: XRD,
+            resource_address: RORK,
             ids: vec![],
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(CreateProofFromAuthZoneOfAll {
-            resource_address: XRD,
+            resource_address: RORK,
         });
 
         let (builder, bucket_id, _) = get_builder_and_bucket_and_proof();
@@ -2486,18 +2486,18 @@ mod tests {
     fn test_manifest_builder_add_instruction_advanced_worktop() {
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(TakeFromWorktop {
-            resource_address: XRD,
+            resource_address: RORK,
             amount: dec!(1),
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(TakeAllFromWorktop {
-            resource_address: XRD,
+            resource_address: RORK,
         });
 
         let (builder, _, _) = get_builder_and_bucket_and_proof();
         builder.add_instruction_advanced(TakeNonFungiblesFromWorktop {
-            resource_address: XRD,
+            resource_address: RORK,
             ids: vec![],
         });
     }
@@ -2516,7 +2516,7 @@ mod tests {
         let account = GENESIS_HELPER; // Not actually an account, but not relevant for this test
         ManifestBuilder::new()
             .get_free_xrd_from_faucet()
-            .take_from_worktop(XRD, dec!(1000), "bucket_1")
+            .take_from_worktop(RORK, dec!(1000), "bucket_1")
             .try_deposit_entire_worktop_or_abort(account, None)
             .try_deposit_batch_or_abort(account, ["bucket_1"], None)
             .build();

@@ -142,7 +142,7 @@ impl ConsensusManagerNativePackage {
                 let rtn = ValidatorBlueprint::unstake(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VALIDATOR_CLAIM_XRD_IDENT => {
+            VALIDATOR_CLAIM_RORK_IDENT => {
                 let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -181,7 +181,7 @@ impl ConsensusManagerNativePackage {
                 let rtn = ValidatorBlueprint::accepts_delegated_stake(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => {
+            VALIDATOR_TOTAL_STAKE_RORK_AMOUNT_IDENT => {
                 let _: ValidatorTotalStakeXrdAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

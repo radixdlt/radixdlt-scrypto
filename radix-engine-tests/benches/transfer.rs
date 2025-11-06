@@ -82,7 +82,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
-        .withdraw_from_account(account1, XRD, dec!("0.000001"))
+        .withdraw_from_account(account1, RORK, dec!("0.000001"))
         .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
 

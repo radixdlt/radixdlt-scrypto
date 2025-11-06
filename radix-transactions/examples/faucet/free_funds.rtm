@@ -1,4 +1,4 @@
-# This transaction manifest shows how you can call into the testnet's faucet to get XRD.
+# This transaction manifest shows how you can call into the testnet's faucet to get RORK.
 
 # ==================================================================================================
 # WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
@@ -6,7 +6,7 @@
 # that you are using is resim then you can safely ignore this warning.
 # ==================================================================================================
 
-# Locking 10 XRD in fees from the faucet component. Alternatively, we may also lock a fee from our 
+# Locking 10 RORK in fees from the faucet component. Alternatively, we may also lock a fee from our 
 # account component. However, since this example hows how to get free funds from the faucet, then 
 # we can assume that our account component probably has no funds in the first place. 
 CALL_METHOD 
@@ -15,12 +15,12 @@ CALL_METHOD
     Decimal("500");
 
 # Calling the "free" method on the faucet component which is the method responsible for dispensing 
-# XRD from the faucet.
+# RORK from the faucet.
 CALL_METHOD 
     Address("${faucet_component_address}") 
     "free";
 
-# Depositing all of the XRD dispensed from the faucet into our account component.
+# Depositing all of the RORK dispensed from the faucet into our account component.
 CALL_METHOD
     Address("${account_address}") 
     "deposit_batch"

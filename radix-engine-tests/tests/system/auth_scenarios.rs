@@ -718,7 +718,7 @@ fn scenario_24() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(env.acco, XRD, 1)
+        .create_proof_from_account_of_amount(env.acco, RORK, 1)
         .call_method(env.big_fi, "call_swappy_function", manifest_args!())
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);

@@ -97,7 +97,7 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                                 ))),
                             )
                             .get_free_xrd_from_faucet()
-                            .take_all_from_worktop(XRD, "free_xrd")
+                            .take_all_from_worktop(RORK, "free_xrd")
                             .deposit("parent_account", "free_xrd")
                             .create_fungible_resource(
                                 OwnerRole::Fixed(rule!(require(
@@ -208,10 +208,10 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                             .take_all_from_worktop(state.child_token.unwrap(), "sold_to_parent")
                             .assert_next_call_returns_only(
                                 ManifestResourceConstraints::new()
-                                    .with_at_least_amount(XRD, dec!(23.32)),
+                                    .with_at_least_amount(RORK, dec!(23.32)),
                             )
                             .yield_to_parent((lookup.bucket("sold_to_parent"),))
-                            .take_all_from_worktop(XRD, "bought_from_parent")
+                            .take_all_from_worktop(RORK, "bought_from_parent")
                             .deposit(state.child_account.unwrap(), "bought_from_parent")
                             .yield_to_parent(())
                     })
@@ -226,8 +226,8 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                             .yield_to_child("trading_subintent", ())
                             .take_all_from_worktop(state.child_token.unwrap(), "bought")
                             .deposit(state.parent_account.unwrap(), "bought")
-                            .withdraw_from_account(state.parent_account.unwrap(), XRD, dec!(23.5))
-                            .take_all_from_worktop(XRD, "sold")
+                            .withdraw_from_account(state.parent_account.unwrap(), RORK, dec!(23.5))
+                            .take_all_from_worktop(RORK, "sold")
                             .yield_to_child("trading_subintent", (lookup.bucket("sold"),))
                     })
                     .sign(&config.parent_account_key)
@@ -322,7 +322,7 @@ impl ScenarioCreator for BasicSubintentsScenarioCreator {
                         builder
                             .lock_standard_test_fee(state.parent_account.unwrap())
                             .yield_to_child("subintent-with-free-gift", ())
-                            .assert_worktop_contains(XRD, 1) // Fail the transaction
+                            .assert_worktop_contains(RORK, 1) // Fail the transaction
                             .deposit_entire_worktop(state.parent_account.unwrap())
                     })
                     .sign(&config.parent_account_key)

@@ -17,7 +17,7 @@ mod data_validation {
 
             Self {
                 vault: Vault::with_bucket(resource),
-                reference: XRD,
+                reference: RORK,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -47,11 +47,11 @@ mod data_validation {
         }
 
         pub fn create_object_with_illegal_data() {
-            let bucket = Bucket::new(XRD);
+            let bucket = Bucket::new(RORK);
 
             Self {
                 vault: Vault(bucket.0),
-                reference: XRD,
+                reference: RORK,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

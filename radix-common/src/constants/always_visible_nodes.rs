@@ -19,7 +19,7 @@ lazy_static! {
     static ref ALWAYS_VISIBLE_GLOBAL_NODES_V1: IndexSet<NodeId> = {
         indexset!(
             // resource managers
-            XRD.into(),
+            RORK.into(),
             SECP256K1_SIGNATURE_RESOURCE.into(),
             ED25519_SIGNATURE_RESOURCE.into(),
             SYSTEM_EXECUTION_RESOURCE.into(),
@@ -53,7 +53,7 @@ lazy_static! {
     static ref ALWAYS_VISIBLE_GLOBAL_NODES_V2: IndexSet<NodeId> = {
         indexset!(
             // resource managers
-            XRD.into(),
+            RORK.into(),
             SECP256K1_SIGNATURE_RESOURCE.into(),
             ED25519_SIGNATURE_RESOURCE.into(),
             SYSTEM_EXECUTION_RESOURCE.into(),

@@ -1,11 +1,11 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 1.83212699961 XRD
-├─ Network execution: 0.66421875 XRD, 13284375 execution cost units
-├─ Network finalization: 0.1830488 XRD, 3660976 finalization cost units
-├─ Tip: 0 XRD
-├─ Network Storage: 0.98485944961 XRD
-└─ Royalties: 0 XRD
+TRANSACTION COST: 1.83212699961 RORK
+├─ Network execution: 0.66421875 RORK, 13284375 execution cost units
+├─ Network finalization: 0.1830488 RORK, 3660976 finalization cost units
+├─ Tip: 0 RORK
+├─ Network Storage: 0.98485944961 RORK
+└─ Royalties: 0 RORK
 
 LOGS: 0
 
@@ -78,14 +78,14 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
-       "Radiswap 1 - XRD/BTC: Component",
+       "Radiswap 1 - RORK/BTC: Component",
      ),
    }
 ├─ Emitter: Method { node: component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+       "[EXAMPLE] A Radiswap component between test tokens \"RORK\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8, module_id: Metadata }
@@ -111,14 +111,14 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
-       "Radiswap 1 - XRD/BTC: Pool",
+       "Radiswap 1 - RORK/BTC: Pool",
      ),
    }
 ├─ Emitter: Method { node: pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+       "[EXAMPLE] The underyling pool between test tokens \"RORK\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: pool_sim1ckuszfut07jaqy7ke4hfsy27206cu0jqs0uqsprp6emtz79jpz4772, module_id: Metadata }
@@ -144,14 +144,14 @@ EVENTS: 35
    Event: SetMetadataEvent {
      key: "name",
      value: GenericMetadataValue::String(
-       "Radiswap 1 - XRD/BTC: Pool Units",
+       "Radiswap 1 - RORK/BTC: Pool Units",
      ),
    }
 ├─ Emitter: Method { node: resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5, module_id: Metadata }
    Event: SetMetadataEvent {
      key: "description",
      value: GenericMetadataValue::String(
-       "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
+       "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"RORK\" and \"BTC\"",
      ),
    }
 ├─ Emitter: Method { node: resource_sim1t5d6cc8v4sdv4wlwzf2qngh74028lumvd2ftes7tq7vnass85ap5m5, module_id: Metadata }
@@ -332,7 +332,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "name"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Radiswap 1 - XRD/BTC: Component",
+           "Radiswap 1 - RORK/BTC: Component",
          ),
        )
     ├─ Set: "dapp_definition"
@@ -344,7 +344,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+           "[EXAMPLE] A Radiswap component between test tokens \"RORK\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"
@@ -369,7 +369,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "name"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Radiswap 1 - XRD/BTC: Pool",
+           "Radiswap 1 - RORK/BTC: Pool",
          ),
        )
     ├─ Set: "dapp_definition"
@@ -381,7 +381,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+           "[EXAMPLE] The underyling pool between test tokens \"RORK\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"
@@ -414,13 +414,13 @@ STATE UPDATES: 13 entities
     ├─ Set: "name"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Radiswap 1 - XRD/BTC: Pool Units",
+           "Radiswap 1 - RORK/BTC: Pool Units",
          ),
        )
     ├─ Set: "description"
        Value: UNLOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
+           "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"RORK\" and \"BTC\"",
          ),
        )
     └─ Set: "tags"

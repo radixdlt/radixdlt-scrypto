@@ -19,10 +19,10 @@ fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_div
 ) -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
-    let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
+    let mut pool = OneResourcePool::instantiate(RORK, OwnerRole::None, rule!(allow_all), None, env)?;
 
     let bucket = env
-        .with_auth_module_disabled(|env| ResourceManager(XRD).mint_fungible(dec!(100_000), env))?;
+        .with_auth_module_disabled(|env| ResourceManager(RORK).mint_fungible(dec!(100_000), env))?;
     let _ = pool.contribute(bucket, env)?;
 
     // Act
@@ -96,16 +96,16 @@ fn one_resource_pool_redemption_returning_zero_fails_with_error() -> Result<(), 
 fn one_resource_pool_contributions_must_return_pool_units() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
-    let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
+    let mut pool = OneResourcePool::instantiate(RORK, OwnerRole::None, rule!(allow_all), None, env)?;
 
     let contribution_bucket = env.with_auth_module_disabled(|env| {
-        ResourceManager(XRD).mint_fungible(dec!(100_000_000_000), env)
+        ResourceManager(RORK).mint_fungible(dec!(100_000_000_000), env)
     })?;
     let _ = pool.contribute(contribution_bucket, env)?;
 
     // Act
     let second_contribution_bucket = env.with_auth_module_disabled(|env| {
-        ResourceManager(XRD).mint_fungible(dec!(0.000000010000000000), env)
+        ResourceManager(RORK).mint_fungible(dec!(0.000000010000000000), env)
     })?;
     let pool_units = pool.contribute(second_contribution_bucket, env)?;
 
@@ -117,18 +117,18 @@ fn one_resource_pool_contributions_must_return_pool_units() -> Result<(), Runtim
 /// In this test very small amount of pool units ≡ very large amount of tokens. This is what we call
 /// concentrated pool units.
 ///
-/// In this test roughly 100,000,000,000 XRD is equivalent to 1 Atto of a Pool Unit. Contributions
-/// of anything less than 100,000,000,000 XRD would mean minting less than 1 Atto of a pool unit
+/// In this test roughly 100,000,000,000 RORK is equivalent to 1 Atto of a Pool Unit. Contributions
+/// of anything less than 100,000,000,000 RORK would mean minting less than 1 Atto of a pool unit
 /// which is not possible. Thus, this results in an error.
 #[test]
 fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error(
 ) -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
-    let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
+    let mut pool = OneResourcePool::instantiate(RORK, OwnerRole::None, rule!(allow_all), None, env)?;
 
     let xrd_bucket = env.with_auth_module_disabled(|env| {
-        ResourceManager(XRD).mint_fungible(dec!(100_000_000_000), env)
+        ResourceManager(RORK).mint_fungible(dec!(100_000_000_000), env)
     })?;
     let contribution_bucket = xrd_bucket.take(atto!(1), env)?;
     let _ = pool.contribute(contribution_bucket, env)?;
@@ -136,7 +136,7 @@ fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
     // Act
     pool.protected_deposit(xrd_bucket, env)?;
     let contribution_bucket =
-        env.with_auth_module_disabled(|env| ResourceManager(XRD).mint_fungible(dec!(1), env))?;
+        env.with_auth_module_disabled(|env| ResourceManager(RORK).mint_fungible(dec!(1), env))?;
     let rtn = pool.contribute(contribution_bucket, env);
 
     // Assert

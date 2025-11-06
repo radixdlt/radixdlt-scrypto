@@ -30,8 +30,8 @@ fn setup_ledger() -> (DefaultLedgerSimulator, ComponentAddress) {
     let receipt1 = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
-            .withdraw_from_account(account, XRD, 1000)
-            .take_all_from_worktop(XRD, "bucket")
+            .withdraw_from_account(account, RORK, 1000)
+            .take_all_from_worktop(RORK, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
@@ -215,19 +215,19 @@ fn test_fee_accounting_success() {
     let (_, _, account2) = ledger.new_allocated_account();
     let account1_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
-        .withdraw_from_account(account1, XRD, 66)
+        .withdraw_from_account(account1, RORK, 66)
         .try_deposit_entire_worktop_or_abort(account2, None)
         .build();
     let receipt = ledger.execute_manifest(
@@ -239,12 +239,12 @@ fn test_fee_accounting_success() {
     receipt.expect_commit(true);
     let account1_new_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_new_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     assert_eq!(
@@ -269,21 +269,21 @@ fn test_fee_accounting_failure() {
     let (_, _, account2) = ledger.new_allocated_account();
     let account1_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
-        .withdraw_from_account(account1, XRD, 66)
+        .withdraw_from_account(account1, RORK, 66)
         .try_deposit_entire_worktop_or_abort(account2, None)
-        .assert_worktop_contains(XRD, 1)
+        .assert_worktop_contains(RORK, 1)
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
@@ -296,7 +296,7 @@ fn test_fee_accounting_failure() {
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
                 WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
-                    resource_address: XRD,
+                    resource_address: RORK,
                     error: ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount: Decimal::ONE,
                         actual_amount: Decimal::ZERO,
@@ -308,12 +308,12 @@ fn test_fee_accounting_failure() {
     receipt.expect_commit(false);
     let account1_new_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_new_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     assert_eq!(
@@ -332,7 +332,7 @@ fn test_fee_accounting_rejection() {
     let (public_key, _, account1) = ledger.new_allocated_account();
     let account1_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
 
@@ -349,7 +349,7 @@ fn test_fee_accounting_rejection() {
     receipt.expect_rejection();
     let account1_new_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     assert_eq!(account1_new_balance, account1_balance);
@@ -363,12 +363,12 @@ fn test_contingent_fee_accounting_success() {
     let (public_key2, _, account2) = ledger.new_allocated_account();
     let account1_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
 
@@ -389,12 +389,12 @@ fn test_contingent_fee_accounting_success() {
     receipt.expect_commit(true);
     let account1_new_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_new_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let contingent_fee = dec!("0.001");
@@ -434,12 +434,12 @@ fn test_contingent_fee_accounting_failure() {
     let (public_key2, _, account2) = ledger.new_allocated_account();
     let account1_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
 
@@ -447,7 +447,7 @@ fn test_contingent_fee_accounting_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .lock_contingent_fee(account2, dec!("0.001"))
-        .assert_worktop_contains(XRD, 1)
+        .assert_worktop_contains(RORK, 1)
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
@@ -463,7 +463,7 @@ fn test_contingent_fee_accounting_failure() {
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
                 WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
-                    resource_address: XRD,
+                    resource_address: RORK,
                     error: ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount: Decimal::ONE,
                         actual_amount: Decimal::ZERO,
@@ -475,12 +475,12 @@ fn test_contingent_fee_accounting_failure() {
     receipt.expect_commit(false);
     let account1_new_balance = ledger
         .get_component_resources(account1)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     let account2_new_balance = ledger
         .get_component_resources(account2)
-        .get(&XRD)
+        .get(&RORK)
         .cloned()
         .unwrap();
     assert_eq!(

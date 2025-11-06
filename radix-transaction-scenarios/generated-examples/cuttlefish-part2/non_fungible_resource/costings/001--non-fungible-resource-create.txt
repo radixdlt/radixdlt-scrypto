@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,            0.87426466999,    100.0%
-- Execution Cost (XRD)                                                     ,                 0.284043,     32.5%
-- Finalization Cost (XRD)                                                  ,               0.17127255,     19.6%
-- Storage Cost (XRD)                                                       ,            0.41894911999,     47.9%
-- Tipping Cost (XRD)                                                       ,                        0,      0.0%
-- Royalty Cost (XRD)                                                       ,                        0,      0.0%
+Total Cost (RORK)                                                           ,            0.87426466999,    100.0%
+- Execution Cost (RORK)                                                     ,                 0.284043,     32.5%
+- Finalization Cost (RORK)                                                  ,               0.17127255,     19.6%
+- Storage Cost (RORK)                                                       ,            0.41894911999,     47.9%
+- Tipping Cost (RORK)                                                       ,                        0,      0.0%
+- Royalty Cost (RORK)                                                       ,                        0,      0.0%
 Execution Cost Breakdown                                                   ,                  5680860,    100.0%
 - AfterInvoke                                                              ,                      690,      0.0%
 - AllocateNodeId                                                           ,                     2813,      0.0%

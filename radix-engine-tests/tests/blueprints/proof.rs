@@ -379,8 +379,8 @@ fn can_move_restricted_proofs_internally() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
-        .create_proof_from_auth_zone_of_all(XRD, "proof")
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
+        .create_proof_from_auth_zone_of_all(RORK, "proof")
         .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
@@ -1010,7 +1010,7 @@ fn test_proof_check_with_message() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Not XRD proof") =>
+            if e.eq("Not RORK proof") =>
         {
             true
         }

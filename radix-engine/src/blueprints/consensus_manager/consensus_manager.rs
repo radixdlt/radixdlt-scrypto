@@ -465,7 +465,7 @@ impl ConsensusManagerBlueprint {
             is_transient: false,
             feature_set,
             dependencies: indexset!(
-                XRD.into(),
+                RORK.into(),
                 PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
                 SYSTEM_EXECUTION_RESOURCE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
@@ -566,7 +566,7 @@ impl ConsensusManagerBlueprint {
             };
             let validator_rewards = ValidatorRewardsSubstate {
                 proposer_rewards: index_map_new(),
-                rewards_vault: Vault::create(XRD, api)?,
+                rewards_vault: Vault::create(RORK, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -1014,7 +1014,7 @@ impl ConsensusManagerBlueprint {
         xrd_payment: Bucket,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError> {
-        if !xrd_payment.resource_address(api)?.eq(&XRD) {
+        if !xrd_payment.resource_address(api)?.eq(&RORK) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd),
             ));
@@ -1318,7 +1318,7 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    /// Emits a configured XRD amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
+    /// Emits a configured RORK amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
     fn apply_validator_emissions_and_rewards<Y: SystemApi<RuntimeError>>(
         validator_set: ActiveValidatorSet,
@@ -1366,7 +1366,7 @@ impl ConsensusManagerBlueprint {
         // Distribute emissions
         //======================
 
-        // calculate "how much XRD is emitted by 1 XRD staked", and later apply it evenly among validators
+        // calculate "how much RORK is emitted by 1 RORK staked", and later apply it evenly among validators
         // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
         let emission_per_staked_xrd = config
             .total_emission_xrd_per_epoch
@@ -1400,7 +1400,7 @@ impl ConsensusManagerBlueprint {
         };
 
         let total_emission_xrd_bucket =
-            ResourceManager(XRD).mint_fungible(effective_total_emission_xrd, api)?;
+            ResourceManager(RORK).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_info in validator_infos.values() {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(

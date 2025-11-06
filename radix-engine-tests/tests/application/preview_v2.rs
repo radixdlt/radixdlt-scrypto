@@ -62,14 +62,14 @@ fn test_transaction_preview_cost_estimate() {
             .fee_summary
             .total_cost()
             .checked_add(
-                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD)
+                Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_RORK)
                     .unwrap()
                     .checked_mul(FeeTable::latest().validate_tx_payload_cost(size_diff))
                     .unwrap()
             )
             .unwrap()
             .checked_add(
-                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_XRD)
+                Decimal::try_from(ARCHIVE_STORAGE_PRICE_IN_RORK)
                     .unwrap()
                     .checked_mul(size_diff)
                     .unwrap()
@@ -210,8 +210,8 @@ fn prepare_complex_matching_transaction_and_preview_transaction(
         })
         .manifest_builder(|builder| {
             builder
-                .withdraw_from_account(subintent_account_address, XRD, 10)
-                .take_all_from_worktop(XRD, "xrd")
+                .withdraw_from_account(subintent_account_address, RORK, 10)
+                .take_all_from_worktop(RORK, "xrd")
                 .yield_to_parent_with_name_lookup(|lookup| (lookup.bucket("xrd"),))
         })
         .then(|builder| {

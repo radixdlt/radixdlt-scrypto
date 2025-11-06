@@ -3,7 +3,7 @@ use crate::prelude::*;
 /// Defines the set of Nodes that all test [`CallFrame`]s have visibility to when they're first
 /// created. This contains all of the well-known addresses of nodes.
 pub(super) const GLOBAL_VISIBLE_NODES: [NodeId; 28] = [
-    XRD.into_node_id(),
+    RORK.into_node_id(),
     SECP256K1_SIGNATURE_RESOURCE.into_node_id(),
     ED25519_SIGNATURE_RESOURCE.into_node_id(),
     PACKAGE_OF_DIRECT_CALLER_RESOURCE.into_node_id(),

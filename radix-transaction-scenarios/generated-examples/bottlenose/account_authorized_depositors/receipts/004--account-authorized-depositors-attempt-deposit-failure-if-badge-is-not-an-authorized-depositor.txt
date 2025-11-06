@@ -1,11 +1,11 @@
 TRANSACTION STATUS: COMMITTED FAILURE: ApplicationError(FungibleResourceManagerError(DropNonEmptyBucket))
 
-TRANSACTION COST: 0.3479681164 XRD
-├─ Network execution: 0.30219175 XRD, 6043835 execution cost units
-├─ Network finalization: 0 XRD, 0 finalization cost units
-├─ Tip: 0 XRD
-├─ Network Storage: 0.0457763664 XRD
-└─ Royalties: 0 XRD
+TRANSACTION COST: 0.3479681164 RORK
+├─ Network execution: 0.30219175 RORK, 6043835 execution cost units
+├─ Network finalization: 0 RORK, 0 finalization cost units
+├─ Tip: 0 RORK
+├─ Network Storage: 0.0457763664 RORK
+└─ Royalties: 0 RORK
 
 LOGS: 0
 

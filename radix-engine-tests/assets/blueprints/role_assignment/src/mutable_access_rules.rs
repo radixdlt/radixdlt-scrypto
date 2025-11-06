@@ -30,7 +30,7 @@ mod mutable_role_assignment_component {
                 .instantiate()
                 .prepare_to_globalize(owner_role)
                 .roles(roles! {
-                    borrow_funds_auth => rule!(require(XRD));
+                    borrow_funds_auth => rule!(require(RORK));
                     deposit_funds_auth => OWNER;
                 })
                 .globalize()

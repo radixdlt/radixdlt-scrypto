@@ -756,7 +756,7 @@ mod test {
         let arg = format!(
             "{}:{}",
             AddressBech32Encoder::for_simulator()
-                .encode(XRD.as_ref())
+                .encode(RORK.as_ref())
                 .unwrap(),
             amount
         );
@@ -783,7 +783,7 @@ mod test {
             assert_eq!(
                 instructions.get(0).unwrap(),
                 &InstructionV1::TakeFromWorktop(TakeFromWorktop {
-                    resource_address: XRD,
+                    resource_address: RORK,
                     amount: amount.into()
                 })
             );

@@ -87,7 +87,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         })
         .manifest(
             ManifestBuilder::new()
-                .withdraw_from_account(account1, XRD, 1)
+                .withdraw_from_account(account1, RORK, 1)
                 .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
         )

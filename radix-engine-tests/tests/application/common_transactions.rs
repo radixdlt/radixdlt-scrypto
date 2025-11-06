@@ -49,7 +49,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
 
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!("account/resource_transfer.rtm"),
-            xrd_resource_address = XRD.display(address_bech32_encoder),
+            xrd_resource_address = RORK.display(address_bech32_encoder),
             this_account_address = this_account_address.display(address_bech32_encoder),
             other_account_address = other_account_address.display(address_bech32_encoder)
         );
@@ -67,7 +67,7 @@ fn multi_account_fund_transfer_succeeds() {
                 include_workspace_transaction_examples_str!(
                     "account/multi_account_resource_transfer.rtm"
                 ),
-                xrd_resource_address = XRD.display(address_bech32_encoder),
+                xrd_resource_address = RORK.display(address_bech32_encoder),
                 this_account_address = address_bech32_encoder
                     .encode(this_account_address.as_ref())
                     .unwrap(),
@@ -190,7 +190,7 @@ fn publish_package_succeeds() {
             include_workspace_transaction_examples_str!("package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
             account_address = account_address.display(address_bech32_encoder),
-            auth_badge_resource_address = XRD.display(address_bech32_encoder),
+            auth_badge_resource_address = RORK.display(address_bech32_encoder),
             auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob])

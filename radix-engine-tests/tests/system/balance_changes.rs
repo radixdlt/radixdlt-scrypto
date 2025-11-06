@@ -41,8 +41,8 @@ fn test_balance_changes_when_success() {
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .withdraw_from_account(account, XRD, Decimal::ONE)
-            .take_all_from_worktop(XRD, "bucket")
+            .withdraw_from_account(account, RORK, Decimal::ONE)
+            .take_all_from_worktop(RORK, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     component_address,
@@ -59,31 +59,31 @@ fn test_balance_changes_when_success() {
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap())
+            RORK => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap())
         )
     );
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, account.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(dec!("-1"))
+            RORK => BalanceChange::Fungible(dec!("-1"))
         )
     );
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, component_address.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
+            RORK => BalanceChange::Fungible(dec!("2")) // 1 for put another 1 for component royalties
         )
     );
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, package_address.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(dec!("2"))
+            RORK => BalanceChange::Fungible(dec!("2"))
         )
     );
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+            RORK => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
         )
     );
 }
@@ -125,8 +125,8 @@ fn test_balance_changes_when_failure() {
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .withdraw_from_account(account, XRD, Decimal::ONE)
-            .take_all_from_worktop(XRD, "bucket")
+            .withdraw_from_account(account, RORK, Decimal::ONE)
+            .take_all_from_worktop(RORK, "bucket")
             .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     component_address,
@@ -143,13 +143,13 @@ fn test_balance_changes_when_failure() {
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id(),),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
+            RORK => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
     );
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+            RORK => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
         )
     );
 }
@@ -182,7 +182,7 @@ fn test_balance_changes_when_recall() {
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
+            RORK => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
     );
     assert_eq!(
@@ -194,7 +194,7 @@ fn test_balance_changes_when_recall() {
     assert_eq!(
         ledger.sum_descendant_balance_changes(result, CONSENSUS_MANAGER.as_node_id()),
         indexmap!(
-            XRD => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
+            RORK => BalanceChange::Fungible(receipt.fee_summary.expected_reward_if_single_validator())
         )
     );
     assert_eq!(
@@ -261,7 +261,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     assert_eq!(
         faucet_changes,
         indexmap!(
-            XRD => BalanceChange::Fungible(total_cost_in_xrd.checked_neg().unwrap()),
+            RORK => BalanceChange::Fungible(total_cost_in_xrd.checked_neg().unwrap()),
         ),
     );
 }

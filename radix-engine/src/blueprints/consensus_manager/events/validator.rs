@@ -36,24 +36,24 @@ pub struct ProtocolUpdateReadinessSignalEvent {
 pub struct ValidatorEmissionAppliedEvent {
     /// An epoch number of the *concluded* epoch (i.e. for which this emission applies).
     pub epoch: Epoch,
-    /// An amount of XRD in the validator's stake pool, captured *before* this emission.
+    /// An amount of RORK in the validator's stake pool, captured *before* this emission.
     pub starting_stake_pool_xrd: Decimal,
-    /// An amount of XRD added to the validator's stake pool from this epoch's emissions.
+    /// An amount of RORK added to the validator's stake pool from this epoch's emissions.
     /// Note: this number represents the net emission, after any applicable reliability penalty
     /// and validator fee have been subtracted.
     pub stake_pool_added_xrd: Decimal,
     /// A total supply of stake units of the validator at the moment of applying this emission.
-    /// Note: calculating `stake_pool_added_xrd / total_stake_unit_supply` gives a convenient "XRD
+    /// Note: calculating `stake_pool_added_xrd / total_stake_unit_supply` gives a convenient "RORK
     /// emitted per stake unit" factor, which may be used to easily calculate individual staker's
     /// gains.
     /// Note: this number is captured *before* auto-staking of the validator fee described below.
     pub total_stake_unit_supply: Decimal,
-    /// An amount of XRD received by the validator's owner (according to the configured fee
+    /// An amount of RORK received by the validator's owner (according to the configured fee
     /// percentage).
     /// Note: this fee is automatically staked and placed inside the owner's stake vault (internal
     /// to the validator).
     /// Note: calculating `stake_pool_added_xrd + validator_fee_xrd` gives the total emission for
-    /// this validator (entirety of which goes into its stake pool XRD vault).
+    /// this validator (entirety of which goes into its stake pool RORK vault).
     /// Note: calculating `validator_fee_xrd / (stake_pool_added_xrd + validator_fee_xrd)` gives the
     /// validator's configured fee percentage effective during the emission period.
     pub validator_fee_xrd: Decimal,

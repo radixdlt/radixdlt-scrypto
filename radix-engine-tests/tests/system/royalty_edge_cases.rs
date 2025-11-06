@@ -618,7 +618,7 @@ fn update_package_royalties(
 }
 
 fn max_per_function_royalty_in_xrd() -> Decimal {
-    Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap()
+    Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap()
 }
 
 fn max_per_function_royalty_in_usd() -> Decimal {

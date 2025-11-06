@@ -1,11 +1,11 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 0 XRD
-├─ Network execution: 0 XRD, 0 execution cost units
-├─ Network finalization: 0 XRD, 0 finalization cost units
-├─ Tip: 0 XRD
-├─ Network Storage: 0 XRD
-└─ Royalties: 0 XRD
+TRANSACTION COST: 0 RORK
+├─ Network execution: 0 RORK, 0 execution cost units
+├─ Network finalization: 0 RORK, 0 finalization cost units
+├─ Tip: 0 RORK
+├─ Network Storage: 0 RORK
+└─ Royalties: 0 RORK
 
 LOGS: 0
 
@@ -347,7 +347,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.",
+           "Unique Stake Claim tokens that represent a timed claimable amount of RORK stake from a Radix Network validator.",
          ),
        )
     ├─ Set: "icon_url"
@@ -539,7 +539,7 @@ STATE UPDATES: 13 entities
     ├─ Set: "description"
        Value: LOCKED MetadataEntryEntryPayload::V1(
          GenericMetadataValue::String(
-           "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.",
+           "Liquid Stake Unit tokens that represent a proportion of RORK stake delegated to a Radix Network validator.",
          ),
        )
     ├─ Set: "icon_url"

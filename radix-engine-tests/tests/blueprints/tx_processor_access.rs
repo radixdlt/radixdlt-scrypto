@@ -82,9 +82,9 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let (pub_key, _, account0) = ledger.new_account(true);
     let (_, _, account1) = ledger.new_account(true);
     let package_address = ledger.publish_package_simple(PackageLoader::get("tx_processor_access"));
-    let initial_balance = ledger.get_component_balance(account0, XRD);
+    let initial_balance = ledger.get_component_balance(account0, RORK);
     let instructions = ManifestBuilder::new()
-        .withdraw_from_account(account0, XRD, 10)
+        .withdraw_from_account(account0, RORK, 10)
         .try_deposit_entire_worktop_or_abort(account1, None)
         .build()
         .instructions;
@@ -107,6 +107,6 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     );
 
     // Assert
-    let final_balance = ledger.get_component_balance(account0, XRD);
+    let final_balance = ledger.get_component_balance(account0, RORK);
     assert_eq!(initial_balance, final_balance);
 }

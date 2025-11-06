@@ -1,10 +1,10 @@
 use crate::{SystemTestFuzzer, ValidatorMeta};
-use radix_common::constants::XRD;
+use radix_common::constants::RORK;
 use radix_common::data::manifest::ManifestArgs;
 use radix_common::manifest_args;
 use radix_common::prelude::{ComponentAddress, NonFungibleLocalId, VALIDATOR_OWNER_BADGE};
 use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_XRD_IDENT,
+    ValidatorGetRedemptionValueInput, VALIDATOR_CLAIM_RORK_IDENT,
     VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
     VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
     VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT, VALIDATOR_UNSTAKE_IDENT,
@@ -58,8 +58,8 @@ impl ValidatorFuzzAction {
                 let amount_to_stake = fuzzer.next_amount();
 
                 let builder = builder
-                    .withdraw_from_account(meta.account_address, XRD, amount_to_stake)
-                    .take_all_from_worktop(XRD, "xrd")
+                    .withdraw_from_account(meta.account_address, RORK, amount_to_stake)
+                    .take_all_from_worktop(RORK, "xrd")
                     .with_bucket("xrd", |builder, bucket| {
                         builder.call_method(
                             meta.validator_address,
@@ -97,7 +97,7 @@ impl ValidatorFuzzAction {
                     .with_bucket("claim_resource", |builder, bucket| {
                         builder.call_method(
                             meta.validator_address,
-                            VALIDATOR_CLAIM_XRD_IDENT,
+                            VALIDATOR_CLAIM_RORK_IDENT,
                             manifest_args!(bucket),
                         )
                     });

@@ -14,7 +14,7 @@ use walkdir::WalkDir;
 fn validator_sees_valid_transfer_manifest_as_valid() {
     // Arrange
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account1(), XRD, dec!("10"))
+        .withdraw_from_account(account1(), RORK, dec!("10"))
         .try_deposit_entire_worktop_or_abort(account2(), None)
         .build();
 

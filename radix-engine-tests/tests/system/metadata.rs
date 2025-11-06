@@ -40,7 +40,7 @@ fn can_get_from_scrypto() {
         .call_method(
             component_address,
             "set_array",
-            manifest_args!("key", vec![GlobalAddress::from(XRD)]),
+            manifest_args!("key", vec![GlobalAddress::from(RORK)]),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -53,7 +53,7 @@ fn can_get_from_scrypto() {
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
     let x: Vec<GlobalAddress> = receipt.expect_commit_success().output(1);
-    assert_eq!(x, vec![GlobalAddress::from(XRD)])
+    assert_eq!(x, vec![GlobalAddress::from(RORK)])
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn can_set_from_scrypto() {
         .call_method(
             component_address,
             "set_array",
-            manifest_args!("key", vec![GlobalAddress::from(XRD)]),
+            manifest_args!("key", vec![GlobalAddress::from(RORK)]),
         )
         .build();
 
@@ -461,7 +461,7 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
     assert_metadata_val_encoding(1i32);
     assert_metadata_val_encoding(1i64);
     assert_metadata_val_encoding(dec!(1));
-    assert_metadata_val_encoding(GlobalAddress::from(XRD));
+    assert_metadata_val_encoding(GlobalAddress::from(RORK));
     assert_metadata_val_encoding(PublicKey::Ed25519(Ed25519PublicKey(
         [0; Ed25519PublicKey::LENGTH],
     )));
@@ -496,7 +496,7 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
     assert_metadata_val_encoding(vec![1i32, 1i32]);
     assert_metadata_val_encoding(vec![1i64, 1i64]);
     assert_metadata_val_encoding(vec![dec!(1), dec!(1)]);
-    assert_metadata_val_encoding(vec![GlobalAddress::from(XRD), GlobalAddress::from(XRD)]);
+    assert_metadata_val_encoding(vec![GlobalAddress::from(RORK), GlobalAddress::from(RORK)]);
     assert_metadata_val_encoding(vec![
         PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
         PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),

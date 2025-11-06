@@ -11,8 +11,8 @@ fn vector_of_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "bucket1")
-        .take_all_from_worktop(XRD, "bucket2")
+        .take_all_from_worktop(RORK, "bucket1")
+        .take_all_from_worktop(RORK, "bucket2")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
@@ -37,8 +37,8 @@ fn tuple_of_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "bucket1")
-        .take_all_from_worktop(XRD, "bucket2")
+        .take_all_from_worktop(RORK, "bucket1")
+        .take_all_from_worktop(RORK, "bucket2")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
@@ -63,8 +63,8 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "bucket1")
-        .take_all_from_worktop(XRD, "bucket2")
+        .take_all_from_worktop(RORK, "bucket1")
+        .take_all_from_worktop(RORK, "bucket2")
         .with_name_lookup(|builder, lookup| {
             let mut map = BTreeMap::new();
             map.insert("first".to_string(), lookup.bucket("bucket1"));
@@ -92,8 +92,8 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "bucket1")
-        .take_all_from_worktop(XRD, "bucket2")
+        .take_all_from_worktop(RORK, "bucket1")
+        .take_all_from_worktop(RORK, "bucket2")
         .with_name_lookup(|builder, lookup| {
             let mut map = BTreeMap::new();
             map.insert("first".to_string(), lookup.bucket("bucket1"));
@@ -121,7 +121,7 @@ fn some_optional_bucket_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(RORK, "bucket1")
         .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,

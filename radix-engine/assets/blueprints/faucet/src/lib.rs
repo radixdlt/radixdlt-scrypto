@@ -40,7 +40,7 @@ mod faucet {
             let amount: Decimal = 10000.into();
 
             if self.vault.amount() < amount {
-                panic!("The faucet doesn't have funds on this environment. You will need to source XRD another way.")
+                panic!("The faucet doesn't have funds on this environment. You will need to source RORK another way.")
             }
 
             self.vault.take(amount)

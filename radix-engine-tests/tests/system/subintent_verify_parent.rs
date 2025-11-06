@@ -168,7 +168,7 @@ fn should_be_able_to_use_subintent_when_verify_parent_access_rule_is_met_on_seco
     let child = builder.add_subintent(
         ManifestBuilder::new_subintent_v2()
             .yield_to_parent(())
-            .verify_parent(rule!(require_amount(dec!(10), XRD)))
+            .verify_parent(rule!(require_amount(dec!(10), RORK)))
             .yield_to_parent(())
             .build(),
         [],
@@ -179,7 +179,7 @@ fn should_be_able_to_use_subintent_when_verify_parent_access_rule_is_met_on_seco
             .use_child("child", child)
             .lock_standard_test_fee(account)
             .yield_to_child("child", ())
-            .create_proof_from_account_of_amount(account, XRD, dec!(10))
+            .create_proof_from_account_of_amount(account, RORK, dec!(10))
             .yield_to_child("child", ())
             .build(),
         [public_key.signature_proof()],

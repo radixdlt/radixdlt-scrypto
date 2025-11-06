@@ -65,7 +65,7 @@ fn can_call_protected_function_with_auth() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .call_function(
             package_address,
             "FunctionAccessRules",
@@ -85,7 +85,7 @@ fn roles_assignment_method_auth_cannot_be_mutated_when_locked() {
     let mut roles = RoleAssignmentInit::new();
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_role("borrow_funds_auth", rule!(allow_all));
-    roles.define_role("deposit_funds_auth", rule!(require(XRD)));
+    roles.define_role("deposit_funds_auth", rule!(require(RORK)));
     let mut ledger = MutableRolesLedgerSimulator::new(roles);
 
     // Act
@@ -175,7 +175,7 @@ fn component_role_assignment_can_be_mutated_to_deny_all_through_manifest() {
 
 #[test]
 fn component_role_assignment_can_be_mutated_to_fungible_resource_through_manifest() {
-    component_role_assignment_can_be_mutated_through_manifest(rule!(require(XRD)));
+    component_role_assignment_can_be_mutated_through_manifest(rule!(require(RORK)));
 }
 
 #[test]
@@ -209,7 +209,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(XRD))),
+            manifest_args!(rule!(require(RORK))),
         )
         .build();
 
@@ -248,11 +248,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(XRD))),
+            manifest_args!(rule!(require(RORK))),
         )
         .build();
 
@@ -283,7 +283,7 @@ fn update_rule() {
         InstructionOutput::CallReturn(
             scrypto_encode(&Some(AccessRule::Protected(
                 CompositeRequirement::BasicRequirement(BasicRequirement::Require(
-                    ResourceOrNonFungible::Resource(XRD)
+                    ResourceOrNonFungible::Resource(RORK)
                 ))
             )))
             .unwrap()

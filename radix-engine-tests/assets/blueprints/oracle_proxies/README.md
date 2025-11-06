@@ -36,9 +36,9 @@ Below table shows the cost overhead of a singe `get_price` method call via proxy
 
 | Proxy | Cost overhead |
 | :--- | :--- |
-| `oracle_proxy_with_global` | < 0.19 XRD |
-| `oracle_proxy_with_owned` | < 0.19 XRD |
-| `oracle_generic_proxy_with_global` | < 0.19 XRD |
+| `oracle_proxy_with_global` | < 0.19 RORK |
+| `oracle_proxy_with_owned` | < 0.19 RORK |
+| `oracle_generic_proxy_with_global` | < 0.19 RORK |
 
 NOTE!
 The cost overhead highly depepends on the complexity of the arguments and return values of proxied methods,

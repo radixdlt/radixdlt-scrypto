@@ -663,11 +663,11 @@ CommitStateUpdates::InternalFungibleVault                                  :    
 ------------------------------------------------------Fee Summary-------------------------------------------------------
 Execution Cost Units Consumed           :                   3884427
 Finalization Cost Units Consumed        :                    705097
-Execution Cost in XRD                   :                0.19422135
-Finalization Cost in XRD                :                0.03525485
-Tipping Cost in XRD                     :                         0
-Storage Cost in XRD                     :             0.07095336792
-Royalty Costs in XRD                    :                         0
+Execution Cost in RORK                   :                0.19422135
+Finalization Cost in RORK                :                0.03525485
+Tipping Cost in RORK                     :                         0
+Storage Cost in RORK                     :             0.07095336792
+Royalty Costs in RORK                    :                         0
 ----------------------------------------------------Application Logs----------------------------------------------------
 --------------------------------------------------------Outcome---------------------------------------------------------
 Success
@@ -2128,11 +2128,11 @@ CommitStateUpdates::InternalKeyValueStore                                  :    
 ------------------------------------------------------Fee Summary-------------------------------------------------------
 Execution Cost Units Consumed           :                   5979801
 Finalization Cost Units Consumed        :                    625126
-Execution Cost in XRD                   :                0.29899005
-Finalization Cost in XRD                :                 0.0312563
-Tipping Cost in XRD                     :                         0
-Storage Cost in XRD                     :             0.09746551346
-Royalty Costs in XRD                    :                         0
+Execution Cost in RORK                   :                0.29899005
+Finalization Cost in RORK                :                 0.0312563
+Tipping Cost in RORK                     :                         0
+Storage Cost in RORK                     :             0.09746551346
+Royalty Costs in RORK                    :                         0
 ----------------------------------------------------Application Logs----------------------------------------------------
 --------------------------------------------------------Outcome---------------------------------------------------------
 Success
@@ -5954,11 +5954,11 @@ CommitStateUpdates::InternalNonFungibleVault                               :    
 ------------------------------------------------------Fee Summary-------------------------------------------------------
 Execution Cost Units Consumed           :                   9661744
 Finalization Cost Units Consumed        :                   7166104
-Execution Cost in XRD                   :                 0.4830872
-Finalization Cost in XRD                :                 0.3583052
-Tipping Cost in XRD                     :                         0
-Storage Cost in XRD                     :             0.79574583592
-Royalty Costs in XRD                    :                         0
+Execution Cost in RORK                   :                 0.4830872
+Finalization Cost in RORK                :                 0.3583052
+Tipping Cost in RORK                     :                         0
+Storage Cost in RORK                     :             0.79574583592
+Royalty Costs in RORK                    :                         0
 ----------------------------------------------------Application Logs----------------------------------------------------
 --------------------------------------------------------Outcome---------------------------------------------------------
 Success
@@ -7226,11 +7226,11 @@ CommitStateUpdates::InternalNonFungibleVault                               :    
 ------------------------------------------------------Fee Summary-------------------------------------------------------
 Execution Cost Units Consumed           :                   5213556
 Finalization Cost Units Consumed        :                    510120
-Execution Cost in XRD                   :                 0.2606778
-Finalization Cost in XRD                :                  0.025506
-Tipping Cost in XRD                     :                         0
-Storage Cost in XRD                     :              0.0371932977
-Royalty Costs in XRD                    :                         0
+Execution Cost in RORK                   :                 0.2606778
+Finalization Cost in RORK                :                  0.025506
+Tipping Cost in RORK                     :                         0
+Storage Cost in RORK                     :              0.0371932977
+Royalty Costs in RORK                    :                         0
 ----------------------------------------------------Application Logs----------------------------------------------------
 --------------------------------------------------------Outcome---------------------------------------------------------
 Success
@@ -10145,11 +10145,11 @@ CommitStateUpdates::InternalNonFungibleVault                               :    
 ------------------------------------------------------Fee Summary-------------------------------------------------------
 Execution Cost Units Consumed           :                   7364368
 Finalization Cost Units Consumed        :                   1245297
-Execution Cost in XRD                   :                 0.3682184
-Finalization Cost in XRD                :                0.06226485
-Tipping Cost in XRD                     :                         0
-Storage Cost in XRD                     :             0.16603469563
-Royalty Costs in XRD                    :                         0
+Execution Cost in RORK                   :                 0.3682184
+Finalization Cost in RORK                :                0.06226485
+Tipping Cost in RORK                     :                         0
+Storage Cost in RORK                     :             0.16603469563
+Royalty Costs in RORK                    :                         0
 ----------------------------------------------------Application Logs----------------------------------------------------
 --------------------------------------------------------Outcome---------------------------------------------------------
 Success

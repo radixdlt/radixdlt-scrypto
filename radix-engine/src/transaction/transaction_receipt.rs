@@ -196,15 +196,15 @@ pub struct TransactionFeeSummary {
     /// Total finalization cost units consumed.
     pub total_finalization_cost_units_consumed: u32,
 
-    /// Total execution cost in XRD.
+    /// Total execution cost in RORK.
     pub total_execution_cost_in_xrd: Decimal,
-    /// Total finalization cost in XRD.
+    /// Total finalization cost in RORK.
     pub total_finalization_cost_in_xrd: Decimal,
-    /// Total tipping cost in XRD.
+    /// Total tipping cost in RORK.
     pub total_tipping_cost_in_xrd: Decimal,
-    /// Total storage cost in XRD.
+    /// Total storage cost in RORK.
     pub total_storage_cost_in_xrd: Decimal,
-    /// Total royalty cost in XRD.
+    /// Total royalty cost in RORK.
     pub total_royalty_cost_in_xrd: Decimal,
 }
 
@@ -960,37 +960,37 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         context.format_top_level_title_with_detail(
             f,
             "Transaction Cost",
-            format!("{} XRD", self.fee_summary.total_cost()),
+            format!("{} RORK", self.fee_summary.total_cost()),
         )?;
         write!(
             f,
-            "\n├─ {} {} XRD, {} execution cost units",
+            "\n├─ {} {} RORK, {} execution cost units",
             context.display_title("Network execution:"),
             self.fee_summary.total_execution_cost_in_xrd,
             self.fee_summary.total_execution_cost_units_consumed,
         )?;
         write!(
             f,
-            "\n├─ {} {} XRD, {} finalization cost units",
+            "\n├─ {} {} RORK, {} finalization cost units",
             context.display_title("Network finalization:"),
             self.fee_summary.total_finalization_cost_in_xrd,
             self.fee_summary.total_finalization_cost_units_consumed,
         )?;
         write!(
             f,
-            "\n├─ {} {} XRD",
+            "\n├─ {} {} RORK",
             context.display_title("Tip:"),
             self.fee_summary.total_tipping_cost_in_xrd
         )?;
         write!(
             f,
-            "\n├─ {} {} XRD",
+            "\n├─ {} {} RORK",
             context.display_title("Network Storage:"),
             self.fee_summary.total_storage_cost_in_xrd
         )?;
         write!(
             f,
-            "\n└─ {} {} XRD",
+            "\n└─ {} {} RORK",
             context.display_title("Royalties:"),
             self.fee_summary.total_royalty_cost_in_xrd
         )?;

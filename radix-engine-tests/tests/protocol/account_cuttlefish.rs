@@ -16,7 +16,7 @@ fn bottlenose_account_has_no_balance_method() {
                 account,
                 ACCOUNT_BALANCE_IDENT,
                 AccountBalanceInput {
-                    resource_address: XRD,
+                    resource_address: RORK,
                 },
             )
             .build(),
@@ -41,7 +41,7 @@ fn balance_method_returns_expected_amount_for_a_resource_the_account_has() {
                 account,
                 ACCOUNT_BALANCE_IDENT,
                 AccountBalanceInput {
-                    resource_address: XRD,
+                    resource_address: RORK,
                 },
             )
             .build(),

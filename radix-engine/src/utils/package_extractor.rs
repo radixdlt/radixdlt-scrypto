@@ -42,7 +42,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
         CostingParameters::babylon_genesis(),
         TransactionCostingParameters {
             tip: Default::default(),
-            free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
+            free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_RORK).unwrap(),
         },
         false,
     );

@@ -124,7 +124,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                         entries: indexmap!(
                                             NonFungibleLocalId::integer(1) => (manifest_decode(&manifest_encode(&RemoveLiquidityEvent {
                                                 pool_units_amount: dec!(5),
-                                                redeemed_resources: [(XRD, dec!(1)), (XRD, dec!(1))]
+                                                redeemed_resources: [(RORK, dec!(1)), (RORK, dec!(1))]
                                             }).unwrap()).unwrap(), ),
                                         ),
                                     }

@@ -23,7 +23,7 @@ pub struct FeeReserveFinalizationSummary {
 
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub total_bad_debt_in_xrd: Decimal,
-    /// The vaults locked for XRD payment
+    /// The vaults locked for RORK payment
     pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: IndexMap<RoyaltyRecipient, Decimal>,

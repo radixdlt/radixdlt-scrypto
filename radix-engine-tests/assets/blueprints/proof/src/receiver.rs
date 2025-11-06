@@ -34,11 +34,11 @@ mod receiver {
         }
 
         pub fn check_if_xrd(proof: Proof) {
-            proof.check(XRD);
+            proof.check(RORK);
         }
 
         pub fn check_with_message_if_xrd(proof: Proof) {
-            proof.check_with_message(XRD, "Not XRD proof");
+            proof.check_with_message(RORK, "Not RORK proof");
         }
     }
 }

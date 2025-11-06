@@ -18,7 +18,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            manifest_args!(XRD, depth),
+            manifest_args!(RORK, depth),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -32,7 +32,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            manifest_args!(XRD, depth),
+            manifest_args!(RORK, depth),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -62,7 +62,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 10usize;
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
+        .call_method(component_address, "set_depth", manifest_args!(RORK, depth))
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -71,7 +71,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 100usize;
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
+        .call_method(component_address, "set_depth", manifest_args!(RORK, depth))
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_failure_containing_error("MaxDepthExceeded");

@@ -16,7 +16,7 @@ pub struct AccessControllerV2Substate {
     /// A vault where the asset controlled by the access controller lives.
     pub controlled_asset: Vault,
 
-    /// A vault that stores some XRD that can be used by any of the three roles for locking fees.
+    /// A vault that stores some RORK that can be used by any of the three roles for locking fees.
     pub xrd_fee_vault: Option<Vault>,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is

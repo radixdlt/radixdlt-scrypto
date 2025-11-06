@@ -19,7 +19,7 @@ fn test_auth_rule(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
     let receipt = ledger.execute_manifest(manifest, AuthAddresses::signer_set(signer_public_keys));
@@ -210,7 +210,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require(XRD));
+    let xrd_auth = rule!(require(RORK));
     let account = ledger.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = ledger.new_allocated_account();
 
@@ -218,10 +218,10 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "free_xrd")
+        .take_all_from_worktop(RORK, "free_xrd")
         .create_proof_from_bucket_of_all("free_xrd", "proof")
         .push_to_auth_zone("proof")
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .pop_from_auth_zone("second_proof")
         .drop_proof("second_proof")
         .return_to_worktop("free_xrd")
@@ -237,7 +237,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal::ONE_ATTO, XRD));
+    let xrd_auth = rule!(require_amount(Decimal::ONE_ATTO, RORK));
     let account = ledger.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = ledger.new_allocated_account();
 
@@ -245,10 +245,10 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "free_xrd")
+        .take_all_from_worktop(RORK, "free_xrd")
         .create_proof_from_bucket_of_all("free_xrd", "proof")
         .push_to_auth_zone("proof")
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("free_xrd")
@@ -263,7 +263,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal::from(2), XRD));
+    let xrd_auth = rule!(require_amount(Decimal::from(2), RORK));
     let account = ledger.new_account_advanced(OwnerRole::Fixed(xrd_auth));
     let (_, _, other_account) = ledger.new_allocated_account();
 
@@ -271,10 +271,10 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_from_worktop(XRD, dec!(1), "bucket")
+        .take_from_worktop(RORK, dec!(1), "bucket")
         .create_proof_from_bucket_of_all("bucket", "proof")
         .push_to_auth_zone("proof")
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
         .return_to_worktop("bucket")
@@ -290,14 +290,14 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 fn can_update_updatable_owner_role_account() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let xrd_auth = rule!(require_amount(Decimal::from_attos(I192::from(1)), XRD));
+    let xrd_auth = rule!(require_amount(Decimal::from_attos(I192::from(1)), RORK));
     let account = ledger.new_account_advanced(OwnerRole::Updatable(xrd_auth));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_all_from_worktop(XRD, "bucket")
+        .take_all_from_worktop(RORK, "bucket")
         .create_proof_from_bucket_of_all("bucket", "proof")
         .push_to_auth_zone("proof")
         .set_owner_role(account, AccessRule::DenyAll)
@@ -345,7 +345,7 @@ fn can_call_function_requiring_count_of_zero() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .call_function(package_address, "CountOfZero", "hi", manifest_args!())
         .build();
     let receipt =

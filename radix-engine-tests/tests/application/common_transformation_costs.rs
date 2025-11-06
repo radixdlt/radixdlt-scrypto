@@ -59,7 +59,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
     println!(
-        "Locking fee from an account protected by signature: {} XRD",
+        "Locking fee from an account protected by signature: {} RORK",
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
@@ -125,7 +125,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
     println!(
-        "Locking fee from an account protected by an access controller (1-4): {} XRD",
+        "Locking fee from an account protected by an access controller (1-4): {} RORK",
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
@@ -191,7 +191,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
     println!(
-        "Asserting worktop contains (fungible resource; asserting amount only): {} XRD",
+        "Asserting worktop contains (fungible resource; asserting amount only): {} RORK",
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
@@ -262,7 +262,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
     println!(
-        "Asserting worktop contains (non-fungible resource; asserting amount only): {} XRD",
+        "Asserting worktop contains (non-fungible resource; asserting amount only): {} RORK",
         delta
     );
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
@@ -288,7 +288,7 @@ fn estimate_adding_signature() {
         .then(|mut builder| {
             for _ in 0..10 {
                 builder = builder
-                    .withdraw_from_account(account1, XRD, 1) // require auth
+                    .withdraw_from_account(account1, RORK, 1) // require auth
                     .try_deposit_entire_worktop_or_abort(account2, None); // require no auth
             }
             builder
@@ -331,7 +331,7 @@ fn estimate_adding_signature() {
         .total_cost()
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
-    println!("Adding a signer signature: {} XRD", delta);
+    println!("Adding a signer signature: {} RORK", delta);
     // see https://radixdlt.atlassian.net/wiki/spaces/s/pages/3134783512/manifest+mutation+cost+addition+estimates
     assert!(delta <= dec!("0.01109974758"));
 }
@@ -354,7 +354,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
         .then(|mut builder| {
             for _ in 0..10 {
                 builder = builder
-                    .withdraw_from_account(account1, XRD, 1) // require auth
+                    .withdraw_from_account(account1, RORK, 1) // require auth
                     .try_deposit_entire_worktop_or_abort(account2, None); // require no auth
             }
             builder
@@ -392,7 +392,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
         .checked_sub(receipt1.fee_summary.total_cost())
         .unwrap();
     println!(
-        "Notarizing (notary_is_signatory: {}): {} XRD",
+        "Notarizing (notary_is_signatory: {}): {} RORK",
         notary_is_signatory, delta
     );
     assert!(delta <= max);

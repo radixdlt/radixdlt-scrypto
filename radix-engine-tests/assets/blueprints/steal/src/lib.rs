@@ -10,7 +10,7 @@ mod steal_child {
     impl StealChild {
         pub fn child_create() -> Owned<StealChild> {
             Self {
-                vault: Vault::new(XRD),
+                vault: Vault::new(RORK),
             }
             .instantiate()
         }
@@ -19,7 +19,7 @@ mod steal_child {
             let mut account: Global<Account> =
                 Global(Account::new(ObjectStubHandle::Global(address.into())));
 
-            let bucket = account.withdraw(XRD, dec!(100));
+            let bucket = account.withdraw(RORK, dec!(100));
             bucket
         }
 
@@ -39,7 +39,7 @@ mod steal {
     impl Steal {
         pub fn instantiate() -> Global<Steal> {
             Self {
-                vault: Vault::new(XRD),
+                vault: Vault::new(RORK),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

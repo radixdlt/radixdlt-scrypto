@@ -275,7 +275,7 @@ mod tests {
         let payload = manifest_encode(&(
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
-                    XRD.as_node_id().clone(),
+                    RORK.as_node_id().clone(),
                 )),
             },
             ManifestValue::Custom {
@@ -326,7 +326,7 @@ mod tests {
     #[test]
     fn manifest_address_fails_validation_against_mismatching_radix_blueprint_schema_init() {
         let payload = manifest_encode(&ManifestValue::Custom {
-            value: ManifestCustomValue::Address(ManifestAddress::Static(XRD.as_node_id().clone())),
+            value: ManifestCustomValue::Address(ManifestAddress::Static(RORK.as_node_id().clone())),
         })
         .unwrap();
 

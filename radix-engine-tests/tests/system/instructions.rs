@@ -18,8 +18,8 @@ fn drop_auth_zone_proofs_should_not_drop_named_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .create_proof_from_auth_zone_of_all(XRD, "proof")
+        .create_proof_from_account_of_amount(account, RORK, dec!(5))
+        .create_proof_from_auth_zone_of_all(RORK, "proof")
         .drop_auth_zone_proofs()
         .drop_proof("proof") // Proof should continue to work after DROP_AUTH_ZONE_PROOFS
         .build();
@@ -46,8 +46,8 @@ fn drop_all_proofs_should_drop_named_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .create_proof_from_auth_zone_of_all(XRD, "proof")
+        .create_proof_from_account_of_amount(account, RORK, dec!(5))
+        .create_proof_from_auth_zone_of_all(RORK, "proof")
         .with_name_lookup(|builder, lookup| {
             // We capture the proof before the lookup knows that the proof has been cleared,
             // which causes a panic in the lookup and would void the test too early!
@@ -79,9 +79,9 @@ fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(5))
+        .create_proof_from_account_of_amount(account, RORK, dec!(5))
         .drop_auth_zone_signature_proofs()
-        .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(other_account, RORK, dec!(1))
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
@@ -104,15 +104,15 @@ fn drop_auth_zone_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let rule = rule!(require_amount(dec!(5), XRD));
+    let rule = rule!(require_amount(dec!(5), RORK));
     let other_account = ledger.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!(5))
+        .create_proof_from_account_of_amount(account, RORK, dec!(5))
         .drop_auth_zone_signature_proofs()
-        .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(other_account, RORK, dec!(1))
         .build();
     let receipt = ledger.execute_manifest(
         manifest,

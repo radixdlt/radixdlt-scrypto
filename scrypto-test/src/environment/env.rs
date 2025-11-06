@@ -57,7 +57,7 @@ use crate::prelude::*;
 ///
 /// ## Getting Started
 ///
-/// The following example shows a very simple test that gets XRD from the faucet and then asserts
+/// The following example shows a very simple test that gets RORK from the faucet and then asserts
 /// that the amount is equal to what we expect.
 ///
 /// ```
@@ -117,7 +117,7 @@ use crate::prelude::*;
 /// // Act
 /// let bucket = env.with_auth_module_disabled(|env| {
 ///     /* Auth Module is disabled just before this point */
-///     ResourceManager(XRD).mint_fungible(100.into(), env)
+///     ResourceManager(RORK).mint_fungible(100.into(), env)
 ///     /* Kernel modules are reset just after this point. */
 /// })?;
 ///

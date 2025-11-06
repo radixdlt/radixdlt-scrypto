@@ -723,7 +723,7 @@ impl AccountBlueprint {
         contingent: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let resource_address = XRD;
+        let resource_address = RORK;
 
         Self::get_vault(
             resource_address,
@@ -1286,7 +1286,7 @@ impl AccountBlueprint {
                     DefaultDepositRule::Accept => Ok(true),
                     DefaultDepositRule::Reject => Ok(false),
                     DefaultDepositRule::AllowExisting => {
-                        Ok(*resource_address == XRD
+                        Ok(*resource_address == RORK
                             || Self::does_vault_exist(resource_address, api)?)
                     }
                 }

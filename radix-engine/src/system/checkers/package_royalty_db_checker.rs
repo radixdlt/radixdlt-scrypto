@@ -125,8 +125,8 @@ where
     }
 
     pub fn check_royalty_amount(&mut self, royalty_amount: RoyaltyAmount, location: ErrorLocation) {
-        let max_royalty_in_xrd = Decimal::from_str(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
-        let max_royalty_in_usd = max_royalty_in_xrd / Decimal::from_str(USD_PRICE_IN_XRD).unwrap();
+        let max_royalty_in_xrd = Decimal::from_str(MAX_PER_FUNCTION_ROYALTY_IN_RORK).unwrap();
+        let max_royalty_in_usd = max_royalty_in_xrd / Decimal::from_str(USD_PRICE_IN_RORK).unwrap();
 
         match royalty_amount {
             RoyaltyAmount::Free => {}

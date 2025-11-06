@@ -38,7 +38,7 @@ pub enum AccessControllerError {
         found: Box<RecoveryProposal>,
     },
 
-    /// No XRD fee vault exists, one needs to be created by depositing XRD first.
+    /// No RORK fee vault exists, one needs to be created by depositing RORK first.
     NoXrdFeeVault,
 }
 

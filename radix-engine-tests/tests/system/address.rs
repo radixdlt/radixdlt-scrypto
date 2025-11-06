@@ -579,7 +579,7 @@ fn test_pass_static_global_addresses() {
                 ManifestGlobalAddress::Static(FAUCET_COMPONENT.into()),
                 ManifestPackageAddress::Static(RESOURCE_PACKAGE),
                 ManifestComponentAddress::Static(CONSENSUS_MANAGER),
-                ManifestResourceAddress::Static(XRD)
+                ManifestResourceAddress::Static(RORK)
             ),
         )
         .build();

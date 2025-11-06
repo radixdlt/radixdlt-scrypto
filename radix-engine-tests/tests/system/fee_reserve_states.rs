@@ -40,12 +40,12 @@ fn test_fee_states() {
     assert_eq!(execution_cost_unit_limit, EXECUTION_COST_UNIT_LIMIT);
     assert_eq!(
         execution_cost_unit_price,
-        Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_XRD).unwrap()
+        Decimal::try_from(EXECUTION_COST_UNIT_PRICE_IN_RORK).unwrap()
     );
     assert_eq!(finalization_cost_unit_limit, FINALIZATION_COST_UNIT_LIMIT);
     assert_eq!(
         finalization_cost_unit_price,
-        Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_XRD).unwrap()
+        Decimal::try_from(FINALIZATION_COST_UNIT_PRICE_IN_RORK).unwrap()
     );
     assert_eq!(tip_percentage, 0u32);
     // At the time checking fee balance, it should be still using system loan. This is because

@@ -469,7 +469,7 @@ mod tests {
         encode_decode(&[4i32, 5i32]);
         encode_decode(&[5i64, 6i64]);
         encode_decode(&[dec!("1"), dec!("2.1")]);
-        encode_decode(&[GlobalAddress::from(XRD)]);
+        encode_decode(&[GlobalAddress::from(RORK)]);
         encode_decode(&[
             PublicKey::Ed25519(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
             PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),

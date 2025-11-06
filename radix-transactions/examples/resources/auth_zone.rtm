@@ -1,7 +1,7 @@
 ## NOTE: This manifest is not intended to make cohesive sense
 ## - it is more intended to demonstrate various authzone-related commands 
 
-# Withdraw XRD from account
+# Withdraw RORK from account
 CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_address}") Decimal("5.0");
 
 # Create a proof from bucket, clone it and drop both

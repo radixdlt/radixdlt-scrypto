@@ -6,7 +6,7 @@ fn metadata_is_changed_after_cuttlefish() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let MetadataValue::Url(url) = ledger.get_metadata(XRD.into(), "icon_url").unwrap() else {
+    let MetadataValue::Url(url) = ledger.get_metadata(RORK.into(), "icon_url").unwrap() else {
         panic!()
     };
 

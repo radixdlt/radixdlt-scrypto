@@ -32,8 +32,8 @@ fn test_events_of_commit_failure() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!(100))
-        .withdraw_from_account(account, XRD, dec!(100)) // reverted
-        .assert_worktop_contains(XRD, dec!(500))
+        .withdraw_from_account(account, RORK, dec!(100)) // reverted
+        .assert_worktop_contains(RORK, dec!(500))
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -120,7 +120,7 @@ fn create_proof_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, dec!(500))
-        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, RORK, dec!(1))
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -1093,7 +1093,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         vec![
             MintFungibleResourceEvent {
                 amount: emission_xrd
-            }, // we mint XRD (because of emission)
+            }, // we mint RORK (because of emission)
             MintFungibleResourceEvent {
                 amount: emission_xrd
             } // we stake them all immediately because of validator fee = 100% (and thus mint stake units)
@@ -1279,8 +1279,8 @@ fn validator_staking_emits_correct_event() {
             VALIDATOR_OWNER_BADGE,
             [NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()],
         )
-        .withdraw_from_account(account, XRD, 100)
-        .take_all_from_worktop(XRD, "stake")
+        .withdraw_from_account(account, RORK, 100)
+        .take_all_from_worktop(RORK, "stake")
         .stake_validator_as_owner(validator_address, "stake")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
@@ -1326,7 +1326,7 @@ fn validator_staking_emits_correct_event() {
                 ref event_data,
             )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
-                    &account::WithdrawEvent::Fungible(XRD, 100.into()),
+                    &account::WithdrawEvent::Fungible(RORK, 100.into()),
                     event_data
                 ) =>
                 true,
@@ -2061,7 +2061,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = ledger.preview_manifest(
@@ -2111,7 +2111,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
-            account::WithdrawEvent::Fungible(XRD, dec!("1"))
+            account::WithdrawEvent::Fungible(RORK, dec!("1"))
         )
     }
     {
@@ -2131,7 +2131,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
         );
         assert_eq!(
             scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
-            account::DepositEvent::Fungible(XRD, dec!("1"))
+            account::DepositEvent::Fungible(RORK, dec!("1"))
         )
     }
 }
@@ -2510,7 +2510,7 @@ fn account_deposit_batch_emits_expected_events() {
             _ => manifest_args!(ManifestExpression::EntireWorktop),
         };
         let manifest = ManifestBuilder::new()
-            .withdraw_from_account(account, XRD, 1)
+            .withdraw_from_account(account, RORK, 1)
             .withdraw_from_account(account, resource_address, 3)
             .call_method(account, method_name, manifest_args)
             .build();
@@ -2532,11 +2532,11 @@ fn account_deposit_batch_emits_expected_events() {
             .application_events
             .as_slice();
         let [
-            _, /* Withdraw of XRD from vault 1 */
-            _, /* Withdraw of XRD from account 1 */
+            _, /* Withdraw of RORK from vault 1 */
+            _, /* Withdraw of RORK from account 1 */
             _, /* Withdraw of NFTs from vault 1 */
             _, /* Withdraw of NFTs from account 1 */
-            _, /* Deposit of XRD into vault 2 */
+            _, /* Deposit of RORK into vault 2 */
             xrd_deposit_event,
             _, /* Deposit of NFTs into vault 2 */
             nfts_deposit_event,
@@ -2556,7 +2556,7 @@ fn account_deposit_batch_emits_expected_events() {
             );
             assert_eq!(
                 scrypto_decode::<account::DepositEvent>(&xrd_deposit_event.1).unwrap(),
-                account::DepositEvent::Fungible(XRD, dec!("1"))
+                account::DepositEvent::Fungible(RORK, dec!("1"))
             )
         }
         {
@@ -2599,7 +2599,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
                 default: DefaultDepositRule::Reject,
             },
         )
-        .withdraw_from_account(account, XRD, 1)
+        .withdraw_from_account(account, RORK, 1)
         .withdraw_from_account(account, resource_address, 3)
         .try_deposit_entire_worktop_or_refund(account, None)
         .deposit_entire_worktop(account)
@@ -2623,8 +2623,8 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         .as_slice();
     let [
         _, /* Default deposit rule -> Reject */
-        _, /* Withdraw of XRD from vault 1 */
-        _, /* Withdraw of XRD from account 1 */
+        _, /* Withdraw of RORK from vault 1 */
+        _, /* Withdraw of RORK from account 1 */
         _, /* Withdraw of NFTs from vault 1 */
         _, /* Withdraw of NFTs from account 1 */
         xrd_rejected_deposit_event,
@@ -2645,7 +2645,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         );
         assert_eq!(
             scrypto_decode::<account::RejectedDepositEvent>(&xrd_rejected_deposit_event.1).unwrap(),
-            account::RejectedDepositEvent::Fungible(XRD, dec!("1"))
+            account::RejectedDepositEvent::Fungible(RORK, dec!("1"))
         )
     }
     {
@@ -2707,7 +2707,7 @@ fn event_replacements_occur_as_expected() {
         .as_slice();
     let [
         _, /* Faucet Lock Fee Event */
-        (metadata_event_type_identifier, metadata_event_data), /* Withdraw of XRD from vault 1 */
+        (metadata_event_type_identifier, metadata_event_data), /* Withdraw of RORK from vault 1 */
         _, /* Royalty Module vault creation event */
         _, /* Pay Fee Event */
         _, /* Deposit Fee Event */
