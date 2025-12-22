@@ -11,7 +11,7 @@ runs:
         toolchain: stable
         default: true
         target: wasm32-unknown-unknown
-        components: rustfmt
+        components: rustfmt,rust-std
 
     - name: Install nextest
       uses: RDXWorks-actions/install-action@main
