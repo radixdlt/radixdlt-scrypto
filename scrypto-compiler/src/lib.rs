@@ -16,10 +16,12 @@ const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
 
-// Radix Engine supports WASM MVP + proposals: mmutable-globals and sign-extension-ops
-// (see radix-engine/src/vm/wasm.prepare.rs)
-// More on CFLAGS for WASM:  https://clang.llvm.org/docs/ClangCommandLineReference.html#webassembly
-const TARGET_CLAGS_FOR_WASM: &str = "-mcpu=mvp -mmutable-globals -msign-ext";
+pub const DEFAULT_RUSTFLAGS: &[&str] = &[
+    "-Ctarget-cpu=mvp",
+    "-Ctarget-feature=+mutable-globals,+sign-ext",
+    "-Zunstable-options",
+    "-Cpanic=abort",
+];
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -98,10 +100,14 @@ impl Default for ScryptoCompilerInputParams {
     fn default() -> Self {
         let wasm_optimization = Some(
             wasm_opt::OptimizationOptions::new_optimize_for_size_aggressively()
+                .set_converge()
                 .add_pass(wasm_opt::Pass::StripDebug)
                 .add_pass(wasm_opt::Pass::StripDwarf)
                 .add_pass(wasm_opt::Pass::StripProducers)
                 .add_pass(wasm_opt::Pass::Dce)
+                .add_pass(wasm_opt::Pass::Vacuum)
+                .add_pass(wasm_opt::Pass::MergeSimilarFunctions)
+                .set_converge()
                 .to_owned(),
         );
         let mut ret = Self {
@@ -109,16 +115,25 @@ impl Default for ScryptoCompilerInputParams {
             target_directory: None,
             profile: Profile::Release,
             environment_variables: indexmap!(
-                "TARGET_CFLAGS".to_string() =>
+                "RUSTC_BOOTSTRAP".to_string() =>
                 EnvironmentVariableAction::Set(
-                    TARGET_CLAGS_FOR_WASM.to_string()
+                    "1".to_string()
+                ),
+                "RUSTFLAGS".to_string() => EnvironmentVariableAction::Set(
+                    DEFAULT_RUSTFLAGS.join(" ")
+                ),
+                "CARGO_ENCODED_RUSTFLAGS".to_string() => EnvironmentVariableAction::Set(
+                    DEFAULT_RUSTFLAGS.join("\x1f")
                 )
             ),
             features: indexset!(),
             no_default_features: false,
             all_features: false,
             package: indexset!(),
-            custom_options: indexset!(),
+            custom_options: indexset!(
+                "-Zbuild-std=std,panic_abort".to_string(),
+                "-Zbuild-std-features=optimize_for_size".to_string(),
+            ),
             ignore_locked_env_var: false,
             locked: false,
             wasm_optimization,
@@ -126,7 +141,7 @@ impl Default for ScryptoCompilerInputParams {
         };
         // Apply default log level features
         ret.features
-            .extend(Self::log_level_to_scrypto_features(Level::default()).into_iter());
+            .extend(Self::log_level_to_scrypto_features(Level::default()));
         ret
     }
 }

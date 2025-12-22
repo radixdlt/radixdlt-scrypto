@@ -411,11 +411,11 @@ jobs:
           workspaces: radix-clis
       # Coverage needs a nightly compiler.
       # This should be at or in front of rust-toolchain.toml
-      - name: Install rustc 1.81.0-nightly
+      - name: Install rustc nightly
         run: |
-          rustup toolchain install nightly-2024-07-18
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-18
-          rustup override set nightly-2024-07-18
+          rustup toolchain install nightly
+          rustup target add wasm32-unknown-unknown --toolchain nightly
+          rustup override set nightly
           rustup show
       - name: Install LLVM 18
         run: |

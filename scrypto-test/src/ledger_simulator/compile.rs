@@ -26,8 +26,8 @@ impl Compile {
         Self::compile_with_env_vars(
             package_dir,
             btreemap! {
-                "RUSTFLAGS".to_owned() => "".to_owned(),
-                "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
+                "RUSTFLAGS".to_owned() => DEFAULT_RUSTFLAGS.join(" "),
+                "CARGO_ENCODED_RUSTFLAGS".to_owned() => DEFAULT_RUSTFLAGS.join("\x1f"),
             },
             compile_profile,
             true,
