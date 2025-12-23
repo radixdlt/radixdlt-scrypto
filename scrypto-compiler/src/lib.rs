@@ -295,6 +295,7 @@ where
 /// metadata is not validated in that case.
 /// Compilation results consists of list of `BuildArtifacts` which contains generated WASM file path and its content
 /// and path to RPD file with package definition and `PackageDefinition` struct.
+#[derive(Debug)]
 pub struct ScryptoCompiler {
     /// Scrypto compiler input parameters.
     input_params: ScryptoCompilerInputParams,
@@ -1275,7 +1276,7 @@ impl ScryptoCompiler {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ScryptoCompilerBuilder {
     input_params: ScryptoCompilerInputParams,
 }
@@ -1519,9 +1520,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1550,9 +1551,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1580,9 +1581,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1616,9 +1617,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --release --no-default-features", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --release --no-default-features -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --features scrypto/no-schema --profile release --no-default-features", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/log-debug --features scrypto/log-trace --features feature_1 --features scrypto/no-schema --profile release --no-default-features -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1648,9 +1649,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
     #[test]
     fn test_command_output_workspace() {
@@ -1678,9 +1679,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_2 --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1713,9 +1714,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --package test_blueprint --package test_blueprint_3 --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1745,9 +1746,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile dev", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile dev -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1778,9 +1779,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", default_target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1812,9 +1813,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Ctarget-cpu=mvp\u{1f}-Ctarget-feature=+mutable-globals,+sign-ext\u{1f}-Zunstable-options\u{1f}-Cpanic=abort' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
     }
 
     #[test]
@@ -1851,9 +1852,9 @@ mod tests {
 
         // Assert
         assert_eq!(cmd_to_string(&cmd_phase_1),
-            format!("TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+            format!("RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
-            format!("CARGO_ENCODED_RUSTFLAGS='-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir' TARGET_CFLAGS='-mcpu=mvp -mmutable-globals -msign-ext' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+            format!("CARGO_ENCODED_RUSTFLAGS='-Clto=off\u{1f}-Cinstrument-coverage\u{1f}-Zno-profiler-runtime\u{1f}--emit=llvm-ir' RUSTC_BOOTSTRAP='1' RUSTFLAGS='-Ctarget-cpu=mvp -Ctarget-feature=+mutable-globals,+sign-ext -Zunstable-options -Cpanic=abort' cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size", target_path.display(), manifest_path.display()));
     }
 
     #[test]
