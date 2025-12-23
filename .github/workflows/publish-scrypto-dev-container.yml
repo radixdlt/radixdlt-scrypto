@@ -16,7 +16,7 @@ jobs:
   build_amd64:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@fix-docker-build-self-hosted
     with:
-      runs_on: ubuntu-16-cores-selfhosted
+      runs_on: ubuntu-latest
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
@@ -40,7 +40,7 @@ jobs:
   build_arm64:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@fix-docker-build-self-hosted
     with:
-      runs_on: selfhosted-ubuntu-22.04-arm
+      runs_on: macos-latest
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
