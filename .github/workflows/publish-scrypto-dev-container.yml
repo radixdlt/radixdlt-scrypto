@@ -40,7 +40,7 @@ jobs:
   build_arm64:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@fix-docker-build-self-hosted
     with:
-      runs_on: macos-latest
+      runs_on: ubuntu-24.04-arm
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
