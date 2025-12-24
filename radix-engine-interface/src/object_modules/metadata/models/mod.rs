@@ -18,6 +18,7 @@ use radix_common::math::Decimal;
 use radix_common::time::Instant;
 use radix_common::types::GlobalAddress;
 use radix_common::types::NonFungibleGlobalId;
+use radix_common::*;
 use sbor::SborEnum;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
@@ -94,38 +95,9 @@ pub enum GenericMetadataValue<U, O> {
 pub type MetadataValue = GenericMetadataValue<UncheckedUrl, UncheckedOrigin>;
 pub type CheckedMetadataValue = GenericMetadataValue<CheckedUrl, CheckedOrigin>;
 
-/// An un-typed alternative to [`MetadataValue`] that implements [`ManifestSbor`]. This is designed
-/// to be used in manifest invocations.
-///
-/// When decoding into a [`ManifestMetadataValue`] the SBOR payload is checked to ensure that it's
-/// an enum. No other checks are performed beyond that as checking that the variant is actually
-/// inline with what [`MetadataValue`] expects or that the values are the same.
-///
-/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
-/// only through the use of [`EnumVariantValue`].
-#[cfg_attr(
-    feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
-#[sbor(transparent)]
-pub struct ManifestMetadataValue(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
-
-impl From<MetadataValue> for ManifestMetadataValue {
-    fn from(value: MetadataValue) -> Self {
-        manifest_decode(&manifest_encode(&value).unwrap())
-            .map(Self)
-            .unwrap()
-    }
-}
-
-impl Describe<ScryptoCustomTypeKind> for ManifestMetadataValue {
-    const TYPE_ID: RustTypeId = <MetadataValue as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
-
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
-        <MetadataValue as Describe<ScryptoCustomTypeKind>>::type_data()
-    }
-}
+define_untyped_manifest_type_wrapper!(
+    MetadataValue => ManifestMetadataValue(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum MetadataConversionError {

@@ -4,7 +4,7 @@ use super::ast::Instruction;
 use super::ast::InstructionWithSpan;
 use super::ast::ValueKindWithSpan;
 use super::blob_provider::*;
-use crate::data::*;
+use crate::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;

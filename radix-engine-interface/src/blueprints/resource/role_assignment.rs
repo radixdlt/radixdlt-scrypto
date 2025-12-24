@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::ToRoleEntry;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_common::define_untyped_manifest_type_wrapper;
 
 use super::AccessRule;
 
@@ -229,16 +230,7 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 /// Front end data structure for specifying owner role
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
-    Default,
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    ManifestSbor,
-    ScryptoCategorize,
-    ScryptoDecode,
-    ScryptoEncode,
+    Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
 )]
 pub enum OwnerRole {
     /// No owner role
@@ -269,38 +261,9 @@ impl From<OwnerRole> for OwnerRoleEntry {
     }
 }
 
-/// An un-typed alternative to [`OwnerRole`] that implements [`ManifestSbor`]. This is designed to
-/// be used in manifest invocations.
-///
-/// When decoding into a [`ManifestOwnerRole`] the SBOR payload is checked to ensure that it's an
-/// enum. No other checks are performed beyond that as checking that the variant is actually inline
-/// with what [`OwnerRole`] expects or that the values are the same.
-///
-/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
-/// only through the use of [`EnumVariantValue`].
-#[cfg_attr(
-    feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
-#[sbor(transparent)]
-pub struct ManifestOwnerRole(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
-
-impl From<OwnerRole> for ManifestOwnerRole {
-    fn from(value: OwnerRole) -> Self {
-        manifest_decode(&manifest_encode(&value).unwrap())
-            .map(Self)
-            .unwrap()
-    }
-}
-
-impl Describe<ScryptoCustomTypeKind> for ManifestOwnerRole {
-    const TYPE_ID: RustTypeId = <OwnerRole as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
-
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
-        <OwnerRole as Describe<ScryptoCustomTypeKind>>::type_data()
-    }
-}
+define_untyped_manifest_type_wrapper!(
+    OwnerRole => ManifestOwnerRole(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 #[cfg_attr(
     feature = "fuzzing",

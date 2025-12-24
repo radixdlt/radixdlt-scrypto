@@ -113,7 +113,7 @@ fn test_non_existent_blob_hash() {
                     blueprints: indexmap!(),
                 },
                 metadata: metadata_init!().into(),
-                owner_role: OwnerRole::None,
+                owner_role: ManifestOwnerRole::from(OwnerRole::None),
                 package_address: None,
             },
         )

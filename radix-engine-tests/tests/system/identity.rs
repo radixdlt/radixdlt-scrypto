@@ -4,8 +4,8 @@ use radix_engine::system::system_db_reader::SystemReaderError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
-    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
+    IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT,
+    IDENTITY_SECURIFY_IDENT,
 };
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_tests::common::PackageLoader;
@@ -262,8 +262,8 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,
                 IDENTITY_CREATE_ADVANCED_IDENT,
-                IdentityCreateAdvancedInput {
-                    owner_role: OwnerRole::None,
+                IdentityCreateAdvancedManifestInput {
+                    owner_role: OwnerRole::None.into(),
                 },
             )
             .build();
@@ -308,7 +308,7 @@ fn identity_created_before_cuttlefish_has_royalty_module() {
             IDENTITY_PACKAGE,
             IDENTITY_BLUEPRINT,
             IDENTITY_CREATE_ADVANCED_IDENT,
-            manifest_args!(OwnerRole::None),
+            manifest_args!(ManifestOwnerRole::from(OwnerRole::None)),
         ),
         (
             package_address,
@@ -355,7 +355,7 @@ fn identity_created_after_cuttlefish_has_no_royalty_module() {
             IDENTITY_PACKAGE,
             IDENTITY_BLUEPRINT,
             IDENTITY_CREATE_ADVANCED_IDENT,
-            manifest_args!(OwnerRole::None),
+            manifest_args!(ManifestOwnerRole::from(OwnerRole::None)),
         ),
         (
             package_address,

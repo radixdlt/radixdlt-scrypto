@@ -914,7 +914,9 @@ where
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedManifestInput {
+                owner_role: owner_role.into()
+            }),
         })
     }
 
@@ -1501,7 +1503,7 @@ where
                 definition,
                 metadata: metadata.into(),
                 package_address: address_reservation,
-                owner_role,
+                owner_role: owner_role.into(),
             }),
         })
     }
@@ -1540,7 +1542,7 @@ where
                 code: code_blob_ref,
                 definition,
                 metadata: metadata_init!().into(),
-                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))).into(),
             }),
         })
     }

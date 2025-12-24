@@ -338,7 +338,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 (
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_1.resource_1.unwrap(),
                                     state.pool_1.resource_2.unwrap(),
                                 )
@@ -348,7 +348,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 (
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_2.resource_1.unwrap(),
                                     state.pool_2.resource_2.unwrap(),
                                 )

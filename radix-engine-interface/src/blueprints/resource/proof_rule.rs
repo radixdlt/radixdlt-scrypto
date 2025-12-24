@@ -2,6 +2,7 @@ use crate::blueprints::resource::CompositeRequirement::{AllOf, AnyOf};
 use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_common::define_untyped_manifest_type_wrapper;
 
 #[cfg_attr(
     feature = "fuzzing",
@@ -290,44 +291,9 @@ impl From<CompositeRequirement> for AccessRule {
     }
 }
 
-/// An un-typed alternative to [`AccessRule`] that implements [`ManifestSbor`]. This is designed to
-/// be used in manifest invocations.
-///
-/// When decoding into a [`ManifestAccessRule`] the SBOR payload is checked to ensure that it's an
-/// enum. No other checks are performed beyond that as checking that the variant is actually inline
-/// with what [`AccessRule`] expects or that the values are the same.
-///
-/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
-/// only through the use of [`EnumVariantValue`].
-#[cfg_attr(
-    feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
-)]
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
-#[sbor(transparent)]
-pub struct ManifestAccessRule(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
-
-impl From<AccessRule> for ManifestAccessRule {
-    fn from(value: AccessRule) -> Self {
-        manifest_decode(&manifest_encode(&value).unwrap())
-            .map(Self)
-            .unwrap()
-    }
-}
-
-impl From<CompositeRequirement> for ManifestAccessRule {
-    fn from(value: CompositeRequirement) -> Self {
-        AccessRule::from(value).into()
-    }
-}
-
-impl Describe<ScryptoCustomTypeKind> for ManifestAccessRule {
-    const TYPE_ID: RustTypeId = <AccessRule as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
-
-    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
-        <AccessRule as Describe<ScryptoCustomTypeKind>>::type_data()
-    }
-}
+define_untyped_manifest_type_wrapper!(
+    AccessRule => ManifestAccessRule(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 pub trait AccessRuleVisitor {
     type Error;

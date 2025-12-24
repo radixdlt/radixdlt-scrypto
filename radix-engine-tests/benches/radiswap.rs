@@ -70,7 +70,7 @@ fn bench_radiswap(c: &mut Criterion) {
                     package_address,
                     "Radiswap",
                     "new",
-                    manifest_args!(OwnerRole::None, btc, eth),
+                    manifest_args!(ManifestOwnerRole::from(OwnerRole::None), btc, eth),
                 )
                 .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),

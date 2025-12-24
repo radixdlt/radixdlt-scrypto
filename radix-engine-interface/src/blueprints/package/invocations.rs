@@ -56,7 +56,7 @@ pub struct PackagePublishWasmAdvancedInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     // We understand that the `PackageDefinition` type is not 100% compatiable with manifest SBOR
     // since it makes use of `GlobalAddress` and `AccessRule` rather than their manifest SBOR types.
     // However, we do accept this and don't have any plans of introducing an equivalent manifest

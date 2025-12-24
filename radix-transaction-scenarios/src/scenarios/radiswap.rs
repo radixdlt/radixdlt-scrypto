@@ -241,7 +241,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 manifest_args!(
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_1.resource_1.get()?,
                                     state.pool_1.resource_2.get()?,
                                 )
@@ -251,7 +251,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 manifest_args!(
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_2.resource_1.get()?,
                                     state.pool_2.resource_2.get()?,
                                 )
