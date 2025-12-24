@@ -87,22 +87,17 @@ impl StaticResourceMovementsVisitor {
             instruction_index: current_instruction.index,
         };
 
-        // TODO: In the future we should propagate errors from the native instruction conversion.
-        // We do not do it at the moment as we have found issues when decoding valid invocations as
-        // their manifest SBOR types.
-        let mut invocation_output = match self.resolve_native_invocation(invocation_kind, args) {
-            Ok(Some((matched_invocation, receiver))) => {
+        let mut invocation_output = match self.resolve_native_invocation(invocation_kind, args)? {
+            Some((matched_invocation, receiver)) => {
                 matched_invocation.output(InvocationDetails {
                     receiver,
                     sent_resources: &invocation_input,
                     source: change_source,
                 })?
             }
-            Err(..) | Ok(None) => {
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    change_source,
-                ])
-            }
+            None => TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                change_source,
+            ]),
         };
 
         if let Some((assertion, change_source)) = self.next_invocation_assertion.take() {

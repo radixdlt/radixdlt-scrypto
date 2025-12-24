@@ -246,18 +246,29 @@ macro_rules! define_manifest_typed_invocation {
                         method_name: &str,
                         args: &ManifestValue
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
+                        ::lazy_static::lazy_static!(
+                            $(
+                                static ref [< $method_name:camel:snake:upper _SCHEMA >]: (::radix_common::prelude::LocalTypeId, ::radix_common::prelude::VersionedSchema<::radix_common::prelude::ScryptoCustomSchema>)
+                                    = generate_full_schema_from_single_type::<$method_input, ::radix_common::prelude::ScryptoCustomSchema>();
+                            )*
+                        );
+
                         match method_name {
                             $(
-                                $method_name => decode_args(args)
-                                    .map(Self::$method_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeMethodInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            method_name: method_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $method_name => decode_args(
+                                    args,
+                                    &[< $method_name:camel:snake:upper _SCHEMA >].0,
+                                    &[< $method_name:camel:snake:upper _SCHEMA >].1,
+                                )
+                                .map(Self::$method_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeMethodInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        method_name: method_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid method was called. We
                             // have all of the methods on all blueprints we have supported so this
@@ -283,18 +294,29 @@ macro_rules! define_manifest_typed_invocation {
                         direct_method_name: &str,
                         args: &ManifestValue
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
+                        ::lazy_static::lazy_static!(
+                            $(
+                                static ref [< $direct_method_name:camel:snake:upper _SCHEMA >]: (::radix_common::prelude::LocalTypeId, ::radix_common::prelude::VersionedSchema<::radix_common::prelude::ScryptoCustomSchema>)
+                                    = generate_full_schema_from_single_type::<$direct_method_input, ::radix_common::prelude::ScryptoCustomSchema>();
+                            )*
+                        );
+
                         match direct_method_name {
                             $(
-                                $direct_method_name => decode_args(args)
-                                    .map(Self::$direct_method_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeDirectMethodInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            method_name: direct_method_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $direct_method_name => decode_args(
+                                    args,
+                                    &[< $direct_method_name:camel:snake:upper _SCHEMA >].0,
+                                    &[< $direct_method_name:camel:snake:upper _SCHEMA >].1,
+                                )
+                                .map(Self::$direct_method_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeDirectMethodInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        method_name: direct_method_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid method was called. We
                             // have all of the methods on all blueprints we have supported so this
@@ -321,18 +343,29 @@ macro_rules! define_manifest_typed_invocation {
                         function_name: &str,
                         args: &ManifestValue
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
+                        ::lazy_static::lazy_static!(
+                            $(
+                                static ref [< $function_name:camel:snake:upper _SCHEMA >]: (::radix_common::prelude::LocalTypeId, ::radix_common::prelude::VersionedSchema<::radix_common::prelude::ScryptoCustomSchema>)
+                                    = generate_full_schema_from_single_type::<$function_input, ::radix_common::prelude::ScryptoCustomSchema>();
+                            )*
+                        );
+
                         match function_name {
                             $(
-                                $function_name => decode_args(args)
-                                    .map(Self::$function_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeFunctionInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            function_name: function_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $function_name => decode_args(
+                                    args,
+                                    &[< $function_name:camel:snake:upper _SCHEMA >].0,
+                                    &[< $function_name:camel:snake:upper _SCHEMA >].1,
+                                )
+                                .map(Self::$function_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeFunctionInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        function_name: function_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid function was called. We
                             // have all of the functions on all blueprints we have supported so this
@@ -1348,7 +1381,20 @@ pub enum TypedManifestNativeInvocationError {
     },
 }
 
-fn decode_args<M: ManifestDecode>(args: &ManifestValue) -> Result<M, String> {
+fn decode_args<M: ManifestDecode>(
+    args: &ManifestValue,
+    local_type_id: &LocalTypeId,
+    schema: &VersionedSchema<ScryptoCustomSchema>,
+) -> Result<M, String> {
     let encoded = manifest_encode(&args).map_err(|error| format!("{error:#?}"))?;
-    manifest_decode(&encoded).map_err(|error| format!("{error:#?}"))
+    let value = manifest_decode::<M>(&encoded).map_err(|error| format!("{error:#?}"))?;
+    validate_payload_against_schema::<ManifestCustomExtension, _>(
+        &encoded,
+        schema.v1(),
+        *local_type_id,
+        &(),
+        MANIFEST_SBOR_V1_MAX_DEPTH,
+    )
+    .map_err(|error| format!("{error:#?}"))?;
+    Ok(value)
 }
