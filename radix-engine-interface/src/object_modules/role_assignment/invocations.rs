@@ -140,6 +140,7 @@ impl ToRoleEntry for Option<AccessRule> {
 }
 
 pub type RoleDefinition = Option<AccessRule>;
+pub type ManifestRoleDefinition = Option<ManifestAccessRule>;
 
 #[macro_export]
 macro_rules! internal_roles {

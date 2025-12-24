@@ -739,11 +739,11 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         divisibility,
                         track_total_supply,
-                        metadata,
-                        resource_roles,
+                        metadata: metadata.into(),
+                        resource_roles: resource_roles.into(),
                         initial_supply,
                         address_reservation: None,
                     }
@@ -755,11 +755,11 @@ where
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
-                    owner_role,
+                    owner_role: owner_role.into(),
                     divisibility,
                     track_total_supply,
-                    metadata,
-                    resource_roles,
+                    metadata: metadata.into(),
+                    resource_roles: resource_roles.into(),
                     address_reservation: None,
                 }),
             }
@@ -794,14 +794,14 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
                         entries,
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         address_reservation: None,
                     }
                 ),
@@ -813,13 +813,13 @@ where
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         address_reservation: None,
                     }
                 ),
@@ -854,12 +854,12 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         entries,
                         address_reservation: None,
                     }
@@ -873,12 +873,12 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         entries: vec![],
                         address_reservation: None,
                     }

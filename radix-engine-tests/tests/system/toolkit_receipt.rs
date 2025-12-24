@@ -507,7 +507,7 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
                         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                         NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                            owner_role: Default::default(),
+                            owner_role: OwnerRole::default().into(),
                             id_type: NonFungibleIdType::Integer,
                             track_total_supply: Default::default(),
                             non_fungible_schema:
@@ -539,7 +539,8 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
                                     non_fungible_data_updater_updater: Some(rule!(allow_all)),
                                 }),
                                 ..Default::default()
-                            },
+                            }
+                            .into(),
                             metadata: Default::default(),
                             address_reservation: Some(reservation),
                         },

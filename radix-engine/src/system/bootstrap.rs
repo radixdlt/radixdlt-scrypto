@@ -411,7 +411,7 @@ pub fn create_system_bootstrap_transaction(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 track_total_supply: false,
                 divisibility: 18,
                 resource_roles: FungibleResourceRoles {
@@ -424,7 +424,7 @@ pub fn create_system_bootstrap_transaction(
                         burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "symbol" => "XRD".to_owned(), locked;
@@ -434,7 +434,7 @@ pub fn create_system_bootstrap_transaction(
                         "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com".to_owned()), locked;
                         "tags" => Vec::<String>::new(), locked;
                     }
-                },
+                }.into(),
                 initial_supply: Decimal::zero(),
                 address_reservation: Some(xrd_reservation),
             },
@@ -453,7 +453,7 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -463,7 +463,7 @@ pub fn create_system_bootstrap_transaction(
                         withdrawer_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "name" => "Package Virtual Badges".to_owned(), locked;
@@ -471,7 +471,8 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
                     }
-                },
+                }
+                .into(),
                 address_reservation: Some(reservation),
             },
         );
@@ -489,7 +490,7 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -499,7 +500,7 @@ pub fn create_system_bootstrap_transaction(
                         withdrawer_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "name" => "Global Caller Virtual Badges".to_owned(), locked;
@@ -507,7 +508,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(reservation),
             },
         );
@@ -525,7 +526,7 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<PackageOwnerBadgeData>(),
@@ -535,7 +536,7 @@ pub fn create_system_bootstrap_transaction(
                         minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "name" => "Package Owner Badges".to_owned(), locked;
@@ -543,7 +544,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned(), "package".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(reservation),
             },
         );
@@ -561,7 +562,7 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<IdentityOwnerBadgeData>(),
@@ -571,7 +572,7 @@ pub fn create_system_bootstrap_transaction(
                         minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "name" => "Identity Owner Badges".to_owned(), locked;
@@ -579,7 +580,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned(), "identity".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(badge_reservation),
             },
         );
@@ -640,7 +641,7 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<AccountOwnerBadgeData>(),
@@ -650,7 +651,7 @@ pub fn create_system_bootstrap_transaction(
                         minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
-                },
+                }.into(),
                 metadata: metadata! {
                     init {
                         "name" => "Account Owner Badges".to_owned(), locked;
@@ -661,7 +662,7 @@ pub fn create_system_bootstrap_transaction(
                         ], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(badge_reservation),
             },
         );
@@ -745,11 +746,11 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                resource_roles: NonFungibleResourceRoles::default(),
+                resource_roles: NonFungibleResourceRoles::default().into(),
                 metadata: metadata! {
                     init {
                         "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
@@ -757,7 +758,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(reservation),
             }
         );
@@ -775,11 +776,11 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 id_type: NonFungibleIdType::Bytes,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                resource_roles: NonFungibleResourceRoles::default(),
+                resource_roles: NonFungibleResourceRoles::default().into(),
                 metadata: metadata! {
                     init {
                         "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
@@ -787,7 +788,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(reservation),
             },
         );
@@ -805,11 +806,11 @@ pub fn create_system_bootstrap_transaction(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))).into(),
                 id_type: NonFungibleIdType::Integer,
                 track_total_supply: false,
                 non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                resource_roles: NonFungibleResourceRoles::default(),
+                resource_roles: NonFungibleResourceRoles::default().into(),
                 metadata: metadata! {
                     init {
                         "name" => "System Transaction Badge".to_owned(), locked;
@@ -817,7 +818,7 @@ pub fn create_system_bootstrap_transaction(
                         "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
                         "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
                     }
-                },
+                }.into(),
                 address_reservation: Some(reservation),
             },
         );
@@ -838,7 +839,7 @@ pub fn create_system_bootstrap_transaction(
                 "name" => "Faucet Package".to_owned(), locked;
                 "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
             },
-            OwnerRole::None,
+            OwnerRole::None.into()
         );
     }
 
@@ -857,7 +858,7 @@ pub fn create_system_bootstrap_transaction(
                 "name" => "Genesis Helper Package".to_owned(), locked;
                 "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
             },
-            OwnerRole::None,
+            OwnerRole::None.into(),
         );
     }
 

@@ -309,7 +309,7 @@ impl RoleAssignmentInit {
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Default, Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct ManifestRoleAssignmentInit {
     pub data: IndexMap<RoleKey, Option<ManifestAccessRule>>,

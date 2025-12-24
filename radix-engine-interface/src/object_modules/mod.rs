@@ -9,7 +9,7 @@ pub mod royalty;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct ModuleConfig<T: Default> {
+pub struct ModuleConfig<T: Default, R = RoleAssignmentInit> {
     pub init: T,
-    pub roles: RoleAssignmentInit,
+    pub roles: R,
 }

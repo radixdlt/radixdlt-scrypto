@@ -30,6 +30,57 @@ pub struct NonFungibleResourceRoles {
     pub non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
 }
 
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestNonFungibleResourceRoles {
+    pub mint_roles: Option<MintRoles<ManifestRoleDefinition>>,
+    pub burn_roles: Option<BurnRoles<ManifestRoleDefinition>>,
+    pub freeze_roles: Option<FreezeRoles<ManifestRoleDefinition>>,
+    pub recall_roles: Option<RecallRoles<ManifestRoleDefinition>>,
+    pub withdraw_roles: Option<WithdrawRoles<ManifestRoleDefinition>>,
+    pub deposit_roles: Option<DepositRoles<ManifestRoleDefinition>>,
+    pub non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<ManifestRoleDefinition>>,
+}
+
+impl From<NonFungibleResourceRoles> for ManifestNonFungibleResourceRoles {
+    fn from(value: NonFungibleResourceRoles) -> Self {
+        Self {
+            mint_roles: value.mint_roles.map(|roles| MintRoles {
+                minter: roles.minter.map(Into::into),
+                minter_updater: roles.minter_updater.map(Into::into),
+            }),
+            burn_roles: value.burn_roles.map(|roles| BurnRoles {
+                burner: roles.burner.map(Into::into),
+                burner_updater: roles.burner_updater.map(Into::into),
+            }),
+            freeze_roles: value.freeze_roles.map(|roles| FreezeRoles {
+                freezer: roles.freezer.map(Into::into),
+                freezer_updater: roles.freezer_updater.map(Into::into),
+            }),
+            recall_roles: value.recall_roles.map(|roles| RecallRoles {
+                recaller: roles.recaller.map(Into::into),
+                recaller_updater: roles.recaller_updater.map(Into::into),
+            }),
+            withdraw_roles: value.withdraw_roles.map(|roles| WithdrawRoles {
+                withdrawer: roles.withdrawer.map(Into::into),
+                withdrawer_updater: roles.withdrawer_updater.map(Into::into),
+            }),
+            deposit_roles: value.deposit_roles.map(|roles| DepositRoles {
+                depositor: roles.depositor.map(Into::into),
+                depositor_updater: roles.depositor_updater.map(Into::into),
+            }),
+            non_fungible_data_update_roles: value.non_fungible_data_update_roles.map(|roles| {
+                NonFungibleDataUpdateRoles {
+                    non_fungible_data_updater: roles.non_fungible_data_updater.map(Into::into),
+                    non_fungible_data_updater_updater: roles
+                        .non_fungible_data_updater_updater
+                        .map(Into::into),
+                }
+            }),
+        }
+    }
+}
+
 impl NonFungibleResourceRoles {
     pub fn single_locked_rule(access_rule: AccessRule) -> Self {
         Self {
@@ -82,12 +133,12 @@ pub struct NonFungibleResourceManagerCreateInput {
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
@@ -125,13 +176,13 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
@@ -169,12 +220,12 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: Vec<(ManifestValue,)>,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 

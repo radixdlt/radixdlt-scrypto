@@ -423,6 +423,17 @@ impl From<MetadataInit> for ManifestMetadataInit {
     }
 }
 
+impl From<ModuleConfig<MetadataInit>>
+    for ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>
+{
+    fn from(value: ModuleConfig<MetadataInit>) -> Self {
+        Self {
+            init: value.init.into(),
+            roles: value.roles.into(),
+        }
+    }
+}
+
 impl From<BTreeMap<String, MetadataValue>> for MetadataInit {
     fn from(data: BTreeMap<String, MetadataValue>) -> Self {
         let mut metadata_init = MetadataInit::new();
