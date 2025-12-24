@@ -210,10 +210,20 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 /// Front end data structure for specifying owner role
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    ManifestSbor,
+    ScryptoCategorize,
+    ScryptoDecode,
+    ScryptoEncode,
 )]
 pub enum OwnerRole {
     /// No owner role
+    #[default]
     None,
     /// Rule protected Owner role which may not be updated
     Fixed(AccessRule),
@@ -230,19 +240,38 @@ impl Describe<ScryptoCustomTypeKind> for OwnerRole {
     }
 }
 
-impl Default for OwnerRole {
-    fn default() -> Self {
-        OwnerRole::None
-    }
-}
-
-impl Into<OwnerRoleEntry> for OwnerRole {
-    fn into(self) -> OwnerRoleEntry {
-        match self {
+impl From<OwnerRole> for OwnerRoleEntry {
+    fn from(val: OwnerRole) -> Self {
+        match val {
             OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
         }
+    }
+}
+
+/// An un-typed alternative to [`OwnerRole`] that implements [`ManifestSbor`]. This is designed to
+/// be used in manifest invocations.
+///
+/// When decoding into a [`ManifestOwnerRole`] the SBOR payload is checked to ensure that it's an
+/// enum. No other checks are performed beyond that as checking that the variant is actually inline
+/// with what [`OwnerRole`] expects or that the values are the same.
+///
+/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
+/// only through the use of [`EnumVariantValue`].
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[sbor(transparent)]
+pub struct ManifestOwnerRole(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
+
+impl From<OwnerRole> for ManifestOwnerRole {
+    fn from(value: OwnerRole) -> Self {
+        manifest_decode(&manifest_encode(&value).unwrap())
+            .map(Self)
+            .unwrap()
     }
 }
 
@@ -265,5 +294,40 @@ impl RoleAssignmentInit {
 
     pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
         self.data.insert(role.into(), access_rule.to_role_entry());
+    }
+}
+
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[sbor(transparent)]
+pub struct ManifestRoleAssignmentInit {
+    pub data: IndexMap<RoleKey, Option<ManifestAccessRule>>,
+}
+
+impl ManifestRoleAssignmentInit {
+    pub fn new() -> Self {
+        ManifestRoleAssignmentInit {
+            data: index_map_new(),
+        }
+    }
+
+    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
+        self.data
+            .insert(role.into(), access_rule.to_role_entry().map(Into::into));
+    }
+}
+
+impl From<RoleAssignmentInit> for ManifestRoleAssignmentInit {
+    fn from(value: RoleAssignmentInit) -> Self {
+        Self {
+            data: value
+                .data
+                .into_iter()
+                .map(|(key, value)| (key, value.map(Into::into)))
+                .collect(),
+        }
     }
 }

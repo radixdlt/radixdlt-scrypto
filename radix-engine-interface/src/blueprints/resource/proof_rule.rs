@@ -299,6 +299,10 @@ impl From<CompositeRequirement> for AccessRule {
 ///
 /// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
 /// only through the use of [`EnumVariantValue`].
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct ManifestAccessRule(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);

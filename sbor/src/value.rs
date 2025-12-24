@@ -370,6 +370,12 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
 // ENUMS
 //==============================================
 
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnumVariantValue<X: CustomValueKind, Y: CustomValue<X>> {
     pub discriminator: u8,
