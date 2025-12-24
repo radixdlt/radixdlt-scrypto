@@ -12,7 +12,7 @@ define_type_marker!(Some(IDENTITY_PACKAGE), Identity);
 pub const IDENTITY_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct IdentityCreateAdvancedInput {
     pub owner_role: OwnerRole,
 }
