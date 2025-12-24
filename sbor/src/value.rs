@@ -370,6 +370,7 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
 // ENUMS
 //==============================================
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnumVariantValue<X: CustomValueKind, Y: CustomValue<X>> {
     pub discriminator: u8,
     pub fields: Vec<Value<X, Y>>,

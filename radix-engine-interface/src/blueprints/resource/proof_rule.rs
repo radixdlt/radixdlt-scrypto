@@ -290,6 +290,33 @@ impl From<CompositeRequirement> for AccessRule {
     }
 }
 
+/// An un-typed alternative to [`AccessRule`] that implements [`ManifestSbor`]. This is designed to
+/// be used in manifest invocations.
+///
+/// When decoding into a [`ManifestAccessRule`] the SBOR payload is checked to ensure that it's an
+/// enum. No other checks are performed beyond that as checking that the variant is actually inline
+/// with what [`AccessRule`] expects or that the values are the same.
+///
+/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
+/// only through the use of [`EnumVariantValue`].
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[sbor(transparent)]
+pub struct ManifestAccessRule(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
+
+impl From<AccessRule> for ManifestAccessRule {
+    fn from(value: AccessRule) -> Self {
+        manifest_decode(&manifest_encode(&value).unwrap())
+            .map(Self)
+            .unwrap()
+    }
+}
+
+impl From<CompositeRequirement> for ManifestAccessRule {
+    fn from(value: CompositeRequirement) -> Self {
+        AccessRule::from(value).into()
+    }
+}
+
 pub trait AccessRuleVisitor {
     type Error;
     fn visit(&mut self, node: &CompositeRequirement, depth: usize) -> Result<(), Self::Error>;
@@ -353,5 +380,53 @@ mod tests {
         let r2 = rule!(require(signature(&public_key)));
 
         assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn access_rule_can_be_converted_to_manifest_access_rule() {
+        let _ = ManifestAccessRule::from(rule!(require(XRD) && require(SYSTEM_EXECUTION_RESOURCE)));
+    }
+
+    #[test]
+    fn sbor_encoding_of_access_rule_and_manifest_access_rule_are_the_same() {
+        // Arrange
+        let rule = rule!(require(XRD) && require(SYSTEM_EXECUTION_RESOURCE));
+
+        // Act
+        let encoded_access_rule = manifest_encode(&rule).unwrap();
+        let encoded_manifest_access_rule =
+            manifest_encode(&ManifestAccessRule::from(rule)).unwrap();
+
+        // Assert
+        assert_eq!(encoded_access_rule, encoded_manifest_access_rule);
+    }
+
+    #[test]
+    fn any_enum_can_be_decoded_as_a_manifest_access_rule() {
+        // Arrange
+        let enum_value = ManifestValue::Enum {
+            discriminator: 10,
+            fields: vec![ManifestValue::U8 { value: 0 }],
+        };
+        let encoded = manifest_encode(&enum_value).unwrap();
+
+        // Act
+        let manifest_access_rule = manifest_decode::<ManifestAccessRule>(&encoded);
+
+        // Assert
+        manifest_access_rule.expect("Must succeed");
+    }
+
+    #[test]
+    fn non_enums_cant_be_decoded_as_a_manifest_access_rule() {
+        // Arrange
+        let enum_value = ManifestValue::U8 { value: 1 };
+        let encoded = manifest_encode(&enum_value).unwrap();
+
+        // Act
+        let manifest_access_rule = manifest_decode::<ManifestAccessRule>(&encoded);
+
+        // Assert
+        manifest_access_rule.expect_err("Expected decoding to fail");
     }
 }
