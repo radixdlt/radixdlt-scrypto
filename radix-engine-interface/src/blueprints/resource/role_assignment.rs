@@ -230,7 +230,17 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 /// Front end data structure for specifying owner role
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
-    Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    ScryptoCategorize,
+    ScryptoDecode,
+    ScryptoEncode,
+    ManifestEncode,
+    ManifestCategorize,
 )]
 pub enum OwnerRole {
     /// No owner role
