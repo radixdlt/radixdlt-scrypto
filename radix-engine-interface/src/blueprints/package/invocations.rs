@@ -19,7 +19,7 @@ pub const PACKAGE_BLUEPRINT: &str = "Package";
 
 pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct PackagePublishWasmInput {
     pub definition: PackageDefinition,
     pub code: Vec<u8>,
