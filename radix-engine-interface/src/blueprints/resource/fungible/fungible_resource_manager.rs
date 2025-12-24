@@ -12,7 +12,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
     pub burn_roles: Option<BurnRoles<RoleDefinition>>,

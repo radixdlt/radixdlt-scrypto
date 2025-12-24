@@ -37,9 +37,7 @@ pub const ROLE_ASSIGNMENT_SET_IDENT: &str = "set";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct RoleAssignmentSetInput {
     pub module: ModuleId,
     pub role_key: RoleKey,
@@ -65,9 +63,7 @@ pub const ROLE_ASSIGNMENT_SET_OWNER_IDENT: &str = "set_owner";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct RoleAssignmentSetOwnerInput {
     pub rule: AccessRule,
 }
@@ -89,9 +85,7 @@ pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentLockOwnerInput {}
 
 pub type RoleAssignmentLockOwnerManifestInput = RoleAssignmentLockOwnerInput;
@@ -104,9 +98,7 @@ pub const ROLE_ASSIGNMENT_GET_IDENT: &str = "get";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentGetInput {
     pub module: ModuleId,
     pub role_key: RoleKey,
@@ -123,9 +115,7 @@ pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT: &str = "get_owner_role";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentGetOwnerRoleInput;
 
 pub type RoleAssignmentGetOwnerRoleManifestInput = RoleAssignmentGetOwnerRoleInput;

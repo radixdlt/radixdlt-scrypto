@@ -164,9 +164,11 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     let code = include_bytes!("../../assets/maya_router.wasm");
-                    let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                    let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                         "../../assets/maya_router.rpd"
                     ))
+                    .unwrap()
+                    .try_into_typed()
                     .unwrap();
 
                     core.next_transaction_with_faucet_lock_fee_fallible(

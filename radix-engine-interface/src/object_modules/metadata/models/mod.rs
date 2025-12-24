@@ -22,7 +22,7 @@ use radix_common::*;
 use sbor::SborEnum;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 #[sbor(categorize_types = "U; O")]
 pub enum GenericMetadataValue<U, O> {
     #[sbor(discriminator(METADATA_VALUE_STRING_DISCRIMINATOR))]

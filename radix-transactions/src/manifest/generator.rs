@@ -2635,7 +2635,7 @@ mod tests {
                     IndexMap::<String, BlueprintStateSchemaInit, _>::new(),
                     IndexMap::<String, PackageRoyaltyConfig, _>::new(),
                     IndexMap::<String, MetadataValue, _>::new(),
-                    RoleAssignmentInit::new()
+                    ManifestRoleAssignmentInit::new()
                 )
                 .into(),
             },

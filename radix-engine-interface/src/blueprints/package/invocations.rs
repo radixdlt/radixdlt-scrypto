@@ -9,6 +9,7 @@ use radix_blueprint_schema_init::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::data::manifest::model::ManifestBlobRef;
+use radix_common::define_untyped_manifest_type_wrapper;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_TYPE;
 use sbor::rust::prelude::*;
@@ -18,7 +19,7 @@ pub const PACKAGE_BLUEPRINT: &str = "Package";
 
 pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishWasmInput {
     pub definition: PackageDefinition,
     pub code: Vec<u8>,
@@ -27,16 +28,7 @@ pub struct PackagePublishWasmInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmManifestInput {
-    // We understand that the `PackageDefinition` type is not 100% compatiable with manifest SBOR
-    // since it makes use of `GlobalAddress` and `AccessRule` rather than their manifest SBOR types.
-    // However, we do accept this and don't have any plans of introducing an equivalent manifest
-    // SBOR type since no user will ever author their own package definition and they will always be
-    // generated when the Scrypto package is compiled. The worst thing that can happen here is that
-    // a `TypedInvocation` decode could possibly fail when doing static analysis if named addresses
-    // are used in the package definition and this only has an effect on the engine toolkit and the
-    // wallet and not on any other parts of the code or anything that lives on ledger. Therefore, it
-    // doesn't pose a security concern in the slightest.
-    pub definition: PackageDefinition,
+    pub definition: ManifestPackageDefinition,
     pub code: ManifestBlobRef,
     pub metadata: ManifestMetadataInit,
 }
@@ -57,16 +49,7 @@ pub struct PackagePublishWasmAdvancedInput {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub owner_role: ManifestOwnerRole,
-    // We understand that the `PackageDefinition` type is not 100% compatiable with manifest SBOR
-    // since it makes use of `GlobalAddress` and `AccessRule` rather than their manifest SBOR types.
-    // However, we do accept this and don't have any plans of introducing an equivalent manifest
-    // SBOR type since no user will ever author their own package definition and they will always be
-    // generated when the Scrypto package is compiled. The worst thing that can happen here is that
-    // a `TypedInvocation` decode could possibly fail when doing static analysis if named addresses
-    // are used in the package definition and this only has an effect on the engine toolkit and the
-    // wallet and not on any other parts of the code or anything that lives on ledger. Therefore, it
-    // doesn't pose a security concern in the slightest.
-    pub definition: PackageDefinition,
+    pub definition: ManifestPackageDefinition,
     pub code: ManifestBlobRef,
     pub metadata: ManifestMetadataInit,
     pub package_address: Option<ManifestAddressReservation>,
@@ -86,7 +69,7 @@ pub struct PackagePublishNativeInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishNativeManifestInput {
-    pub definition: PackageDefinition,
+    pub definition: ManifestPackageDefinition,
     pub native_package_code_id: u64,
     pub metadata: ManifestMetadataInit,
     pub package_address: Option<ManifestAddressReservation>,
@@ -110,15 +93,19 @@ pub type PackageClaimRoyaltiesManifestInput = PackageClaimRoyaltiesInput;
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
 /// The set of blueprints and their associated definitions for a package
-#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct PackageDefinition {
     pub blueprints: IndexMap<String, BlueprintDefinitionInit>,
 }
 
+define_untyped_manifest_type_wrapper!(
+    PackageDefinition => ManifestPackageDefinition(TupleValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
+
 /// A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer
 /// blueprint must be specified and only a component of the outer blueprint may instantiate the inner blueprint.
 /// Inner blueprint components may access the state of its outer blueprint component directly.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub enum BlueprintType {
     Outer,
     Inner { outer_blueprint: String },
@@ -131,7 +118,7 @@ impl Default for BlueprintType {
 }
 
 /// Structure which defines static interface qualities of a Blueprint
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct BlueprintDefinitionInit {
     /// Whether the blueprint is an Outer or Inner Blueprint
     pub blueprint_type: BlueprintType,
@@ -169,13 +156,13 @@ impl Default for BlueprintDefinitionInit {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AuthConfig {
     pub function_auth: FunctionAuth,
     pub method_auth: MethodAuthTemplate,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub enum FunctionAuth {
     /// All functions are accessible
     AllowAll,
@@ -193,7 +180,7 @@ impl Default for FunctionAuth {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub enum MethodAuthTemplate {
     /// All methods are accessible
     AllowAll,
@@ -207,7 +194,7 @@ impl Default for MethodAuthTemplate {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub enum RoleSpecification {
     /// Roles are specified in the current blueprint and defined in the instantiated object.
     /// The map contains keys for all possible roles, mapping to a list of roles which may update
@@ -218,7 +205,7 @@ pub enum RoleSpecification {
     UseOuter,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct StaticRoleDefinition {
     pub roles: RoleSpecification,
     pub methods: IndexMap<MethodKey, MethodAccessibility>,

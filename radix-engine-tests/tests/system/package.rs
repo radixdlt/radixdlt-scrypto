@@ -356,7 +356,7 @@ fn should_not_be_able_to_publish_native_packages() {
             PackagePublishNativeManifestInput {
                 package_address: None,
                 native_package_code_id: 0u64,
-                definition: PackageDefinition::default(),
+                definition: PackageDefinition::default().into(),
                 metadata: metadata_init!().into(),
             },
         )

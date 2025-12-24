@@ -208,9 +208,11 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     let code = include_bytes!("../../assets/radiswap.wasm");
-                    let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                    let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                         "../../assets/radiswap.rpd"
                     ))
+                    .unwrap()
+                    .try_into_typed()
                     .unwrap();
                     let owner_role = radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
                         state.owner_badge.get()?

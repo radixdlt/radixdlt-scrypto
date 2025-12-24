@@ -603,8 +603,8 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                 .call_method(
                     user_account,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: global_caller(account_locker),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: global_caller(account_locker).into(),
                     },
                 )
                 .build(),

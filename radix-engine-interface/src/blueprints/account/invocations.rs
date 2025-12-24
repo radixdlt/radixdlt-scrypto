@@ -452,7 +452,7 @@ pub type AccountBurnNonFungiblesOutput = ();
 
 pub const ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT: &str = "add_authorized_depositor";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountAddAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
@@ -470,7 +470,7 @@ pub type AccountAddAuthorizedDepositorOutput = ();
 
 pub const ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT: &str = "remove_authorized_depositor";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountRemoveAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }

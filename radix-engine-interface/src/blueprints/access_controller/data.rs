@@ -31,7 +31,7 @@ impl From<Proposer> for Role {
 /// A struct with the set of rule associated with each role - used when creating a new access
 /// controller for the initial rules and also used during recovery for proposing a rule set.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RuleSet {
     pub primary_role: AccessRule,
     pub recovery_role: AccessRule,
@@ -56,7 +56,7 @@ impl From<RuleSet> for ManifestRuleSet {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct RecoveryProposal {
     /// The set of rules being proposed for the different roles.
     pub rule_set: RuleSet,

@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use radix_engine::blueprints::package::ManifestPackageDefinition;
 use radix_engine::updates::ProtocolVersion;
-use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
@@ -54,9 +54,11 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                         |builder| {
                             // Load code and schema
                             let code = include_bytes!("../../assets/radiswap.wasm");
-                            let mut schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                            let mut schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                                 "../../assets/radiswap.rpd"
                             ))
+                            .unwrap()
+                            .try_into_typed()
                             .unwrap();
 
                             // Register `RemoveLiquidityEvent` as TestType

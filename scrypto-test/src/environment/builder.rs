@@ -292,10 +292,12 @@ where
         // Publishing the test-environment package.
         let test_environment_package = {
             let code = include_bytes!("../../assets/test_environment.wasm");
-            let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
+            let package_definition = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                 "../../assets/test_environment.rpd"
             ))
-            .expect("Must succeed");
+            .expect("Must succeed")
+            .try_into_typed()
+            .unwrap();
 
             env.with_auth_module_disabled(|env| {
                 PackageFactory::publish_advanced(

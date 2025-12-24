@@ -1191,7 +1191,9 @@ where
             address,
             ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-            RoleAssignmentSetOwnerInput { rule: rule.into() },
+            RoleAssignmentSetOwnerManifestInput {
+                rule: rule.into().into(),
+            },
         )
     }
 
@@ -1224,10 +1226,10 @@ where
             address,
             ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_IDENT,
-            RoleAssignmentSetInput {
+            RoleAssignmentSetManifestInput {
                 module: role_module,
                 role_key: role_key.into(),
-                rule: rule.into(),
+                rule: rule.into().into(),
             },
         )
     }
@@ -1500,7 +1502,7 @@ where
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: code_blob_ref,
-                definition,
+                definition: definition.into(),
                 metadata: metadata.into(),
                 package_address: address_reservation,
                 owner_role: owner_role.into(),
@@ -1518,7 +1520,7 @@ where
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: code_blob_ref,
-                definition,
+                definition: definition.into(),
                 metadata: metadata_init!().into(),
             }),
         })
@@ -1540,7 +1542,7 @@ where
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: code_blob_ref,
-                definition,
+                definition: definition.into(),
                 metadata: metadata_init!().into(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge))).into(),
             }),
@@ -2160,7 +2162,10 @@ where
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-            manifest_args!(bucket, authorized_depositor_badge),
+            manifest_args!(
+                bucket,
+                authorized_depositor_badge.map(ManifestResourceOrNonFungible::from)
+            ),
         )
     }
 
@@ -2212,7 +2217,10 @@ where
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-            manifest_args!(bucket, authorized_depositor_badge),
+            manifest_args!(
+                bucket,
+                authorized_depositor_badge.map(ManifestResourceOrNonFungible::from)
+            ),
         )
     }
 
@@ -2283,10 +2291,10 @@ where
             ACCESS_CONTROLLER_CREATE_IDENT,
             (
                 controlled_asset,
-                RuleSet {
-                    primary_role,
-                    recovery_role,
-                    confirmation_role,
+                ManifestRuleSet {
+                    primary_role: primary_role.into(),
+                    recovery_role: recovery_role.into(),
+                    confirmation_role: confirmation_role.into(),
                 },
                 timed_recovery_delay_in_minutes,
                 Option::<()>::None,

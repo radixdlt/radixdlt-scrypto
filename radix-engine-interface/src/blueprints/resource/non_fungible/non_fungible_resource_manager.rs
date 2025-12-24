@@ -19,7 +19,7 @@ use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
     pub burn_roles: Option<BurnRoles<RoleDefinition>>,

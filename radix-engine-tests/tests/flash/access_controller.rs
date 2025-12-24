@@ -14,9 +14,11 @@ use scrypto_test::prelude::*;
 #[test]
 fn access_controller_package_definition_v1_0_matches_expected() {
     // Arrange
-    let expected_package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
+    let expected_package_definition = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
         "../../assets/access_controller_v1_package_definition.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     // Act

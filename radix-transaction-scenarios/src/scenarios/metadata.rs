@@ -94,9 +94,11 @@ impl ScenarioInstance for MetadataScenario {
                 core.check_start(&previous)?;
 
                 let code = include_bytes!("../../assets/metadata.wasm");
-                let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                     "../../assets/metadata.rpd"
                 ))
+                .unwrap()
+                .try_into_typed()
                 .unwrap();
 
                 core.next_transaction_with_faucet_lock_fee(

@@ -227,10 +227,12 @@ fn newly_created_entities_are_mapped_correctly_in_receipt() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (wasm, definition) = (
         include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
-        manifest_decode(include_workspace_asset_bytes!(
+        manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
             "radix-transaction-scenarios",
             "radiswap.rpd"
         ))
+        .unwrap()
+        .try_into_typed()
         .unwrap(),
     );
     let (_, _, account) = ledger.new_account(false);

@@ -83,11 +83,13 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let package_definition: PackageDefinition = manifest_decode(
+        let package_definition = manifest_decode::<ManifestPackageDefinition>(
             &fs::read(&definition_path)
                 .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
-        .map_err(Error::SborDecodeError)?;
+        .map_err(Error::SborDecodeError)?
+        .try_into_typed()
+        .map_err(Error::PackageDefinitionConversionError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;

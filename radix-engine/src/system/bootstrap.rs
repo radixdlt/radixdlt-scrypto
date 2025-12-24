@@ -41,7 +41,7 @@ lazy_static! {
 //   match the corresponding models in the `genesis_helper` component
 //==========================================================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct GenesisValidator {
     pub key: Secp256k1PublicKey,
     pub accept_delegated_stake: bool,
@@ -113,7 +113,7 @@ pub enum GenesisDataChunk {
 // - These must match the corresponding models in the `genesis_helper` component
 //==========================================================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestEncode, ManifestCategorize)]
 pub enum ManifestGenesisDataChunk {
     Validators(Vec<GenesisValidator>),
     Stakes {
@@ -128,7 +128,7 @@ pub enum ManifestGenesisDataChunk {
     XrdBalances(Vec<(ComponentAddress, Decimal)>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestEncode, ManifestCategorize)]
 pub struct ManifestGenesisResource {
     pub resource_address_reservation: ManifestAddressReservation,
     pub metadata: Vec<(String, MetadataValue)>,
@@ -246,7 +246,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
     let package_flashes = [
         (
             PACKAGE_PACKAGE,
-            PACKAGE_PACKAGE_DEFINITION.clone(),
+            PACKAGE_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::PackageCode1 as u64,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
@@ -262,7 +262,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROYALTY_MODULE_PACKAGE,
-            ROYALTY_PACKAGE_DEFINITION.clone(),
+            ROYALTY_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::RoyaltyCode1 as u64,
             metadata_init! {
                 "name" => "Royalty Package".to_owned(), locked;
@@ -272,7 +272,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             RESOURCE_PACKAGE,
-            RESOURCE_PACKAGE_DEFINITION.clone(),
+            RESOURCE_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::ResourceCode1 as u64,
             metadata_init! {
                 "name" => "Resource Package".to_owned(), locked;
@@ -282,7 +282,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.clone(),
+            TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::TransactionProcessorCode1 as u64,
             metadata_init! {
                 "name" => "Transaction Processor Package".to_owned(), locked;
@@ -292,7 +292,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             METADATA_MODULE_PACKAGE,
-            METADATA_PACKAGE_DEFINITION.clone(),
+            METADATA_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::MetadataCode1 as u64,
             metadata_init! {
                 "name" => "Metadata Package".to_owned(), locked;
@@ -302,7 +302,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
-            ROLE_ASSIGNMENT_PACKAGE_DEFINITION.clone(),
+            ROLE_ASSIGNMENT_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::RoleAssignmentCode1 as u64,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
@@ -312,7 +312,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TEST_UTILS_PACKAGE,
-            TEST_UTILS_PACKAGE_DEFINITION.clone(),
+            TEST_UTILS_PACKAGE_DEFINITION.clone().into(),
             NativeCodeId::TestUtilsCode1 as u64,
             metadata_init! {
                 "name" => "Test Utils Package".to_owned(), locked;
@@ -596,7 +596,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(package_reservation),
-                definition: IDENTITY_PACKAGE_DEFINITION.clone(),
+                definition: IDENTITY_PACKAGE_DEFINITION.clone().into(),
                 native_package_code_id: NativeCodeId::IdentityCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
@@ -619,7 +619,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: CONSENSUS_MANAGER_PACKAGE_DEFINITION.clone(),
+                definition: CONSENSUS_MANAGER_PACKAGE_DEFINITION.clone().into(),
                 native_package_code_id: NativeCodeId::ConsensusManagerCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
@@ -678,7 +678,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(package_reservation),
-                definition: ACCOUNT_PACKAGE_DEFINITION.clone(),
+                definition: ACCOUNT_PACKAGE_DEFINITION.clone().into(),
                 native_package_code_id: NativeCodeId::AccountCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
@@ -701,7 +701,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0.clone(),
+                definition: ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0.clone().into(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
@@ -724,7 +724,7 @@ pub fn create_system_bootstrap_transaction(
             PACKAGE_PUBLISH_NATIVE_IDENT,
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
-                definition: POOL_PACKAGE_DEFINITION_V1_0.clone(),
+                definition: POOL_PACKAGE_DEFINITION_V1_0.clone().into(),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
@@ -834,7 +834,7 @@ pub fn create_system_bootstrap_transaction(
         manifest_builder = manifest_builder.publish_package_advanced(
             reservation,
             include_bytes!("../../assets/faucet.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/faucet.rpd")).unwrap(),
+            manifest_decode::<ManifestPackageDefinition>(include_bytes!("../../assets/faucet.rpd")).unwrap().try_into_typed().unwrap(),
             metadata_init!{
                 "name" => "Faucet Package".to_owned(), locked;
                 "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
@@ -853,7 +853,7 @@ pub fn create_system_bootstrap_transaction(
         manifest_builder = manifest_builder.publish_package_advanced(
             reservation,
             include_bytes!("../../assets/genesis_helper.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/genesis_helper.rpd")).unwrap(),
+            manifest_decode::<ManifestPackageDefinition>(include_bytes!("../../assets/genesis_helper.rpd")).unwrap().try_into_typed().unwrap(),
             metadata_init! {
                 "name" => "Genesis Helper Package".to_owned(), locked;
                 "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
@@ -922,7 +922,7 @@ pub fn create_system_bootstrap_transaction(
             PackagePublishNativeManifestInput {
                 package_address: Some(reservation),
                 native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
-                definition: TRANSACTION_TRACKER_PACKAGE_DEFINITION.clone(),
+                definition: TRANSACTION_TRACKER_PACKAGE_DEFINITION.clone().into(),
                 metadata: metadata_init!().into(),
             },
         );

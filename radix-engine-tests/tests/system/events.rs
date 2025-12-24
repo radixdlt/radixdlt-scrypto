@@ -2291,15 +2291,15 @@ fn account_configuration_emits_expected_events() {
         .call_method(
             account,
             ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-            AccountAddAuthorizedDepositorInput {
-                badge: authorized_depositor_badge.clone(),
+            AccountAddAuthorizedDepositorManifestInput {
+                badge: authorized_depositor_badge.clone().into(),
             },
         )
         .call_method(
             account,
             ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
-            AccountRemoveAuthorizedDepositorInput {
-                badge: authorized_depositor_badge.clone(),
+            AccountRemoveAuthorizedDepositorManifestInput {
+                badge: authorized_depositor_badge.clone().into(),
             },
         )
         .build();

@@ -55,7 +55,7 @@ pub type AccessControllerCreateProofOutput = Proof;
 pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT: &str =
     "initiate_recovery_as_primary";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -76,7 +76,7 @@ pub type AccessControllerInitiateRecoveryAsPrimaryOutput = ();
 pub const ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT: &str =
     "initiate_recovery_as_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -127,7 +127,7 @@ pub type AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput = ();
 pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "quick_confirm_primary_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -148,7 +148,7 @@ pub type AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput = ();
 pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
     "quick_confirm_recovery_role_recovery_proposal";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -198,7 +198,7 @@ pub type AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput = Bu
 
 pub const ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT: &str = "timed_confirm_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerTimedConfirmRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
@@ -304,7 +304,7 @@ pub type AccessControllerUnlockPrimaryRoleOutput = ();
 
 pub const ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT: &str = "stop_timed_recovery";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccessControllerStopTimedRecoveryInput {
     pub rule_set: RuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,

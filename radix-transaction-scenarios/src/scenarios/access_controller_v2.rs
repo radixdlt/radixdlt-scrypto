@@ -122,16 +122,16 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                         .call_method(
                             state.access_controller_component_address.unwrap(),
                             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
-                            AccessControllerInitiateRecoveryAsPrimaryInput {
-                                rule_set: config.rule_set(),
+                            AccessControllerInitiateRecoveryAsPrimaryManifestInput {
+                                rule_set: config.rule_set().into(),
                                 timed_recovery_delay_in_minutes: None,
                             },
                         )
                         .call_method(
                             state.access_controller_component_address.unwrap(),
                             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-                            AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
-                                rule_set: config.rule_set(),
+                            AccessControllerQuickConfirmPrimaryRoleRecoveryProposalManifestInput {
+                                rule_set: config.rule_set().into(),
                                 timed_recovery_delay_in_minutes: None,
                             },
                         )

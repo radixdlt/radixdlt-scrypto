@@ -134,6 +134,10 @@ impl From<ResourceOrNonFungible> for CompositeRequirement {
     }
 }
 
+define_untyped_manifest_type_wrapper!(
+    BasicRequirement => ManifestBasicRequirement(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
+
 #[cfg_attr(
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
@@ -187,6 +191,10 @@ impl CompositeRequirement {
         }
     }
 }
+
+define_untyped_manifest_type_wrapper!(
+    CompositeRequirement => ManifestCompositeRequirement(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 /// A requirement for the immediate caller's package to equal the given package.
 pub fn package_of_direct_caller(package: PackageAddress) -> ResourceOrNonFungible {
@@ -371,12 +379,48 @@ mod tests {
         let rule = rule!(require(XRD) && require(SYSTEM_EXECUTION_RESOURCE));
 
         // Act
-        let encoded_access_rule = manifest_encode(&rule).unwrap();
+        let encoded_access_rule = scrypto_encode(&rule).unwrap();
         let encoded_manifest_access_rule =
             manifest_encode(&ManifestAccessRule::from(rule)).unwrap();
 
         // Assert
-        assert_eq!(encoded_access_rule, encoded_manifest_access_rule);
+        let (local_type_id, versioned_schema) =
+            generate_full_schema_from_single_type::<AccessRule, ScryptoCustomSchema>();
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            &encoded_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            SCRYPTO_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Scrypto access rule payload should match AccessRule schema");
+        validate_payload_against_schema::<ManifestCustomExtension, _>(
+            &encoded_manifest_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Manifest access rule payload should match AccessRule schema");
+
+        let (local_type_id, versioned_schema) =
+            generate_full_schema_from_single_type::<ManifestAccessRule, ScryptoCustomSchema>();
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            &encoded_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            SCRYPTO_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Scrypto access rule payload should match Manifest schema");
+        validate_payload_against_schema::<ManifestCustomExtension, _>(
+            &encoded_manifest_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Manifest access rule payload should match Manifest schema");
     }
 
     #[test]

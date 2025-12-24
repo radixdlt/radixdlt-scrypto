@@ -893,10 +893,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         |lookup| {
                             (
                                 lookup.bucket("owner_badge"),
-                                RuleSet {
-                                    primary_role: access_rule.clone(),
-                                    recovery_role: access_rule.clone(),
-                                    confirmation_role: access_rule.clone(),
+                                ManifestRuleSet {
+                                    primary_role: access_rule.clone().into(),
+                                    recovery_role: access_rule.clone().into(),
+                                    confirmation_role: access_rule.clone().into(),
                                 },
                                 Some(1000u32),
                                 None::<()>,
@@ -1039,7 +1039,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     PACKAGE_BLUEPRINT,
                     PACKAGE_PUBLISH_NATIVE_IDENT,
                     PackagePublishNativeManifestInput {
-                        definition,
+                        definition: definition.into(),
                         native_package_code_id,
                         metadata: MetadataInit::default().into(),
                         package_address: None,
