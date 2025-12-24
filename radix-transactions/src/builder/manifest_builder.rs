@@ -1486,7 +1486,7 @@ where
         address_reservation: impl ConsumedOptionalManifestAddressReservation,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: impl Into<MetadataInit>,
+        metadata: impl Into<ManifestMetadataInit>,
         owner_role: OwnerRole,
     ) -> Self {
         let address_reservation = address_reservation.mark_consumed(&self.registrar);
@@ -1498,7 +1498,7 @@ where
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: code_blob_ref,
-                definition: definition,
+                definition,
                 metadata: metadata.into(),
                 package_address: address_reservation,
                 owner_role,
@@ -1517,7 +1517,7 @@ where
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: code_blob_ref,
                 definition,
-                metadata: metadata_init!(),
+                metadata: metadata_init!().into(),
             }),
         })
     }
@@ -1539,7 +1539,7 @@ where
                 package_address: None,
                 code: code_blob_ref,
                 definition,
-                metadata: metadata_init!(),
+                metadata: metadata_init!().into(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
             }),
         })

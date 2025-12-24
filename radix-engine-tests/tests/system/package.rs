@@ -32,7 +32,7 @@ fn missing_memory_should_cause_error() {
             None,
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -128,7 +128,7 @@ fn test_basic_package() {
             None,
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -189,7 +189,7 @@ fn test_basic_package_missing_export() {
             None,
             code,
             PackageDefinition { blueprints },
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -228,7 +228,13 @@ fn bad_radix_blueprint_schema_init_should_fail() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -253,7 +259,13 @@ fn bad_function_schema_should_fail() {
     let (code, definition) = PackageLoader::get("package_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -345,7 +357,7 @@ fn should_not_be_able_to_publish_native_packages() {
                 package_address: None,
                 native_package_code_id: 0u64,
                 definition: PackageDefinition::default(),
-                metadata: metadata_init!(),
+                metadata: metadata_init!().into(),
             },
         )
         .build();
@@ -411,7 +423,13 @@ fn name_validation_blueprint() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -444,7 +462,13 @@ fn name_validation_feature_set() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -484,7 +508,13 @@ fn well_known_types_in_schema_are_validated() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -1579,7 +1609,7 @@ fn test_long_role_key() {
             None,
             code,
             PackageDefinition { blueprints },
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();

@@ -27,9 +27,18 @@ pub struct PackagePublishWasmInput {
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmManifestInput {
+    // We understand that the `PackageDefinition` type is not 100% compatiable with manifest SBOR
+    // since it makes use of `GlobalAddress` and `AccessRule` rather than their manifest SBOR types.
+    // However, we do accept this and don't have any plans of introducing an equivalent manifest
+    // SBOR type since no user will ever author their own package definition and they will always be
+    // generated when the Scrypto package is compiled. The worst thing that can happen here is that
+    // a `TypedInvocation` decode could possibly fail when doing static analysis if named addresses
+    // are used in the package definition and this only has an effect on the engine toolkit and the
+    // wallet and not on any other parts of the code or anything that lives on ledger. Therefore, it
+    // doesn't pose a security concern in the slightest.
     pub definition: PackageDefinition,
     pub code: ManifestBlobRef,
-    pub metadata: MetadataInit,
+    pub metadata: ManifestMetadataInit,
 }
 
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
@@ -48,9 +57,18 @@ pub struct PackagePublishWasmAdvancedInput {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PackagePublishWasmAdvancedManifestInput {
     pub owner_role: OwnerRole,
+    // We understand that the `PackageDefinition` type is not 100% compatiable with manifest SBOR
+    // since it makes use of `GlobalAddress` and `AccessRule` rather than their manifest SBOR types.
+    // However, we do accept this and don't have any plans of introducing an equivalent manifest
+    // SBOR type since no user will ever author their own package definition and they will always be
+    // generated when the Scrypto package is compiled. The worst thing that can happen here is that
+    // a `TypedInvocation` decode could possibly fail when doing static analysis if named addresses
+    // are used in the package definition and this only has an effect on the engine toolkit and the
+    // wallet and not on any other parts of the code or anything that lives on ledger. Therefore, it
+    // doesn't pose a security concern in the slightest.
     pub definition: PackageDefinition,
     pub code: ManifestBlobRef,
-    pub metadata: MetadataInit,
+    pub metadata: ManifestMetadataInit,
     pub package_address: Option<ManifestAddressReservation>,
 }
 
@@ -70,7 +88,7 @@ pub struct PackagePublishNativeInput {
 pub struct PackagePublishNativeManifestInput {
     pub definition: PackageDefinition,
     pub native_package_code_id: u64,
-    pub metadata: MetadataInit,
+    pub metadata: ManifestMetadataInit,
     pub package_address: Option<ManifestAddressReservation>,
 }
 

@@ -1041,7 +1041,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     PackagePublishNativeManifestInput {
                         definition,
                         native_package_code_id,
-                        metadata: MetadataInit::default(),
+                        metadata: MetadataInit::default().into(),
                         package_address: None,
                     },
                 )
@@ -1089,7 +1089,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .publish_package_advanced(None, code, definition, metadata, owner_role)
+            .publish_package_advanced(
+                None,
+                code,
+                definition,
+                MetadataInit::from(metadata),
+                owner_role,
+            )
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1103,7 +1109,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+            .publish_package_advanced(
+                None,
+                code,
+                definition,
+                MetadataInit::from(BTreeMap::new()),
+                OwnerRole::None,
+            )
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);

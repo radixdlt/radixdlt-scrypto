@@ -529,6 +529,12 @@ fn manifest_to_publish_package_with_transient_blueprints<P: Into<PackagePublishi
     }
     ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .publish_package_advanced(None, code, definition, metadata, owner_role)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::from(metadata),
+            owner_role,
+        )
         .build()
 }

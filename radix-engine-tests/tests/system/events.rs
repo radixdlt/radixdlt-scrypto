@@ -291,7 +291,13 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     // Act
@@ -328,7 +334,13 @@ fn local_type_id_with_misleading_name_fails() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     // Act

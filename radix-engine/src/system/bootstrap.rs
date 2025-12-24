@@ -600,7 +600,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of identity components.".to_owned(), locked;
-                },
+                }.into(),
             },
         );
     }
@@ -623,7 +623,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
                     "description" => "A native package that may be used to get network consensus information.".to_owned(), locked;
-                },
+                }.into(),
             },
         );
     }
@@ -682,7 +682,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of account components.".to_owned(), locked;
-                },
+                }.into(),
             },
         );
     }
@@ -704,7 +704,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
-                },
+                }.into(),
                 native_package_code_id: NativeCodeId::AccessControllerCode1 as u64,
             },
         );
@@ -727,7 +727,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
-                },
+                }.into(),
                 native_package_code_id: NativeCodeId::PoolCode1 as u64,
             },
         );
@@ -922,7 +922,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(reservation),
                 native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
                 definition: TRANSACTION_TRACKER_PACKAGE_DEFINITION.clone(),
-                metadata: metadata_init!(),
+                metadata: metadata_init!().into(),
             },
         );
     }

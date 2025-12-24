@@ -112,7 +112,7 @@ fn test_non_existent_blob_hash() {
                 definition: PackageDefinition {
                     blueprints: indexmap!(),
                 },
-                metadata: metadata_init!(),
+                metadata: metadata_init!().into(),
                 owner_role: OwnerRole::None,
                 package_address: None,
             },

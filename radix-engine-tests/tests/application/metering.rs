@@ -356,7 +356,7 @@ fn run_publish_large_package(mut ledger: DefaultLedgerSimulator) -> TransactionR
             None,
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();

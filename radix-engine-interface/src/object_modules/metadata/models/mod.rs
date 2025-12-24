@@ -94,6 +94,39 @@ pub enum GenericMetadataValue<U, O> {
 pub type MetadataValue = GenericMetadataValue<UncheckedUrl, UncheckedOrigin>;
 pub type CheckedMetadataValue = GenericMetadataValue<CheckedUrl, CheckedOrigin>;
 
+/// An un-typed alternative to [`MetadataValue`] that implements [`ManifestSbor`]. This is designed
+/// to be used in manifest invocations.
+///
+/// When decoding into a [`ManifestMetadataValue`] the SBOR payload is checked to ensure that it's
+/// an enum. No other checks are performed beyond that as checking that the variant is actually
+/// inline with what [`MetadataValue`] expects or that the values are the same.
+///
+/// This is a transparent wrapper around a semi-typed [`ManifestValue`] that's restricted to enums
+/// only through the use of [`EnumVariantValue`].
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[sbor(transparent)]
+pub struct ManifestMetadataValue(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>);
+
+impl From<MetadataValue> for ManifestMetadataValue {
+    fn from(value: MetadataValue) -> Self {
+        manifest_decode(&manifest_encode(&value).unwrap())
+            .map(Self)
+            .unwrap()
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for ManifestMetadataValue {
+    const TYPE_ID: RustTypeId = <MetadataValue as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        <MetadataValue as Describe<ScryptoCustomTypeKind>>::type_data()
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum MetadataConversionError {
     UnexpectedType {
@@ -347,6 +380,7 @@ impl ToMetadataEntry for Option<MetadataValue> {
 }
 
 pub type MetadataInit = KeyValueStoreInit<String, MetadataValue>;
+pub type ManifestMetadataInit = KeyValueStoreInit<String, ManifestMetadataValue>;
 
 impl MetadataInit {
     pub fn set_metadata<S: ToString, V: ToMetadataEntry>(&mut self, key: S, value: V) {
@@ -366,6 +400,25 @@ impl MetadataInit {
             Some(value) => {
                 self.set_and_lock(key.to_string(), value);
             }
+        }
+    }
+}
+
+impl From<MetadataInit> for ManifestMetadataInit {
+    fn from(MetadataInit { data }: MetadataInit) -> Self {
+        Self {
+            data: data
+                .into_iter()
+                .map(|(key, value)| {
+                    (
+                        key,
+                        KeyValueStoreInitEntry {
+                            lock: value.lock,
+                            value: value.value.map(Into::into),
+                        },
+                    )
+                })
+                .collect(),
         }
     }
 }
