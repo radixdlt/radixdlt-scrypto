@@ -2,7 +2,7 @@
 #Requires -RunAsAdministrator
 
 # Versions to install
-$llvmVersion = '18.1.8'
+$llvmVersion = '21.1.8'
 $rustVersion = 'stable'
 $radixCliVersion = '1.3.0'
 

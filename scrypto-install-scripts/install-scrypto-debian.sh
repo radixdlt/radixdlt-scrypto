@@ -4,7 +4,7 @@
 set -e
 
 # Versions to install
-LLVM_VERSION=18
+LLVM_VERSION=21
 RUST_VERSION=stable
 RADIX_CLI_VERSION=1.3.0
 
