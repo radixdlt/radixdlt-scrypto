@@ -13,9 +13,7 @@ pub const ROLE_ASSIGNMENT_CREATE_IDENT: &str = "create";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(
-    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
-)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct RoleAssignmentCreateInput {
     pub owner_role: OwnerRoleEntry,
     pub roles: IndexMap<ModuleId, RoleAssignmentInit>,
