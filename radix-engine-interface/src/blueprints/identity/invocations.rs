@@ -17,7 +17,11 @@ pub struct IdentityCreateAdvancedInput {
     pub owner_role: OwnerRole,
 }
 
-pub type IdentityCreateAdvancedManifestInput = IdentityCreateAdvancedInput;
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct IdentityCreateAdvancedManifestInput {
+    pub owner_role: ManifestOwnerRole,
+}
 
 pub type IdentityCreateAdvancedOutput = Global<IdentityMarker>;
 
