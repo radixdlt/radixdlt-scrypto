@@ -146,7 +146,7 @@ pub enum OwnerRoleUpdater {
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
     pub rule: AccessRule,
     pub updater: OwnerRoleUpdater,

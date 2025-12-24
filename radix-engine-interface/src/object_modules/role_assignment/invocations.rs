@@ -13,7 +13,7 @@ pub const ROLE_ASSIGNMENT_CREATE_IDENT: &str = "create";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentCreateInput {
     pub owner_role: OwnerRoleEntry,
     pub roles: IndexMap<ModuleId, RoleAssignmentInit>,
@@ -37,7 +37,7 @@ pub const ROLE_ASSIGNMENT_SET_IDENT: &str = "set";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentSetInput {
     pub module: ModuleId,
     pub role_key: RoleKey,
@@ -63,7 +63,7 @@ pub const ROLE_ASSIGNMENT_SET_OWNER_IDENT: &str = "set_owner";
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentSetOwnerInput {
     pub rule: AccessRule,
 }
