@@ -289,6 +289,12 @@ macro_rules! define_untyped_manifest_type_wrapper {
                 > {
                     <$scrypto_ty as Describe<$crate::prelude::ScryptoCustomTypeKind>>::type_data()
                 }
+
+                fn add_all_dependencies(
+                    aggregator: &mut $crate::prelude::TypeAggregator<$crate::prelude::ScryptoCustomTypeKind>
+                ) {
+                    <$scrypto_ty as Describe<$crate::prelude::ScryptoCustomTypeKind>>::add_all_dependencies(aggregator)
+                }
             }
         };
     };

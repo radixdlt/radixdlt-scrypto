@@ -239,8 +239,7 @@ impl<const N: usize> From<[&str; N]> for RoleList {
     ScryptoCategorize,
     ScryptoDecode,
     ScryptoEncode,
-    ManifestEncode,
-    ManifestCategorize,
+    ManifestSbor,
 )]
 pub enum OwnerRole {
     /// No owner role
