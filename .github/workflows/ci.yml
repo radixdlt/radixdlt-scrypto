@@ -347,9 +347,10 @@ jobs:
     steps:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
-        run: | 
-          git config --global --add core.symlinks true
-          git config --system core.longpaths true
+        run: git config --global --add core.symlinks true
+      - name: Allow long paths for Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -385,6 +386,9 @@ jobs:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
         run: git config --global --add core.symlinks true
+      - name: Allow long paths for Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
