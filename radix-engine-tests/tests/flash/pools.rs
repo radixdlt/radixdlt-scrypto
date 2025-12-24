@@ -28,8 +28,8 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                     ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
                     OneResourcePoolInstantiateManifestInput {
-                        owner_role: OwnerRole::None,
-                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
+                        owner_role: OwnerRole::None.into(),
+                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())).into(),
                         resource_address: fungible1.into(),
                         address_reservation: None,
                     },
@@ -39,8 +39,8 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                     TwoResourcePoolInstantiateManifestInput {
-                        owner_role: OwnerRole::None,
-                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
+                        owner_role: OwnerRole::None.into(),
+                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())).into(),
                         resource_addresses: (fungible1.into(), fungible2.into()),
                         address_reservation: None,
                     },
@@ -50,8 +50,8 @@ fn database_is_consistent_before_and_after_protocol_update() {
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                     MultiResourcePoolInstantiateManifestInput {
-                        owner_role: OwnerRole::None,
-                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
+                        owner_role: OwnerRole::None.into(),
+                        pool_manager_rule: rule!(require(virtual_signature_badge.clone())).into(),
                         resource_addresses: indexset! {fungible1.into(), fungible2.into()},
                         address_reservation: None,
                     },
@@ -115,8 +115,9 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
                         TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                         TwoResourcePoolInstantiateManifestInput {
-                            owner_role: OwnerRole::None,
-                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
+                            owner_role: OwnerRole::None.into(),
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone()))
+                                .into(),
                             resource_addresses: (fungible1.into(), fungible2.into()),
                             address_reservation: Some(reservation),
                         },
@@ -269,8 +270,9 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
                         MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
                         MultiResourcePoolInstantiateManifestInput {
-                            owner_role: OwnerRole::None,
-                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
+                            owner_role: OwnerRole::None.into(),
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone()))
+                                .into(),
                             resource_addresses: indexset![fungible1.into(), fungible2.into()],
                             address_reservation: Some(reservation),
                         },

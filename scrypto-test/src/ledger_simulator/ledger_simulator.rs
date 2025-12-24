@@ -2054,8 +2054,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
                 OneResourcePoolInstantiateManifestInput {
                     resource_address: resource_address.into(),
-                    pool_manager_rule,
-                    owner_role: OwnerRole::None,
+                    pool_manager_rule: pool_manager_rule.into(),
+                    owner_role: OwnerRole::None.into(),
                     address_reservation: None,
                 },
             )
