@@ -275,6 +275,14 @@ impl From<OwnerRole> for ManifestOwnerRole {
     }
 }
 
+impl Describe<ScryptoCustomTypeKind> for ManifestOwnerRole {
+    const TYPE_ID: RustTypeId = <OwnerRole as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        <OwnerRole as Describe<ScryptoCustomTypeKind>>::type_data()
+    }
+}
+
 #[cfg_attr(
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)

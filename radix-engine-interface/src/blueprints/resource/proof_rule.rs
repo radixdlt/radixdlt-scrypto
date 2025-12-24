@@ -321,6 +321,14 @@ impl From<CompositeRequirement> for ManifestAccessRule {
     }
 }
 
+impl Describe<ScryptoCustomTypeKind> for ManifestAccessRule {
+    const TYPE_ID: RustTypeId = <AccessRule as Describe<ScryptoCustomTypeKind>>::TYPE_ID;
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        <AccessRule as Describe<ScryptoCustomTypeKind>>::type_data()
+    }
+}
+
 pub trait AccessRuleVisitor {
     type Error;
     fn visit(&mut self, node: &CompositeRequirement, depth: usize) -> Result<(), Self::Error>;
