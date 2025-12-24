@@ -1827,7 +1827,7 @@ where
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedManifestInput {
-                owner_role,
+                owner_role: owner_role.into(),
                 address_reservation
             }),
         })
@@ -2261,7 +2261,7 @@ where
             ACCOUNT_CREATE_ADVANCED_IDENT,
             AccountCreateAdvancedManifestInput {
                 address_reservation,
-                owner_role,
+                owner_role: owner_role.into(),
             },
         )
     }

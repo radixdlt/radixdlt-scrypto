@@ -84,7 +84,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         address_reservation: None,
                                         owner_role: OwnerRole::Fixed(rule!(require(
                                             NonFungibleGlobalId::from_public_key(&key.public_key())
-                                        ))),
+                                        )))
+                                        .into(),
                                     },
                                 )
                             })
