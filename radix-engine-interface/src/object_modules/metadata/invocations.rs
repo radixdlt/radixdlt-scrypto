@@ -22,7 +22,10 @@ pub struct MetadataCreateWithDataInput {
     pub data: MetadataInit,
 }
 
-pub type MetadataCreateWithDataManifestInput = MetadataCreateWithDataInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct MetadataCreateWithDataManifestInput {
+    pub data: ManifestMetadataInit,
+}
 
 pub type MetadataCreateWithDataOutput = Own;
 
@@ -34,7 +37,11 @@ pub struct MetadataSetInput {
     pub value: MetadataValue,
 }
 
-pub type MetadataSetManifestInput = MetadataSetInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct MetadataSetManifestInput {
+    pub key: String,
+    pub value: ManifestMetadataValue,
+}
 
 pub type MetadataSetOutput = ();
 

@@ -160,6 +160,25 @@ impl OwnerRoleEntry {
     }
 }
 
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestOwnerRoleEntry {
+    pub rule: ManifestAccessRule,
+    pub updater: OwnerRoleUpdater,
+}
+
+impl From<OwnerRoleEntry> for ManifestOwnerRoleEntry {
+    fn from(value: OwnerRoleEntry) -> Self {
+        Self {
+            rule: value.rule.into(),
+            updater: value.updater,
+        }
+    }
+}
+
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor, Default,
