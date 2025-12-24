@@ -267,7 +267,7 @@ pub enum BlueprintPartitionType {
     SortedIndexCollection,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
     pub blueprint_type: BlueprintType,
     pub is_transient: bool,
@@ -382,13 +382,13 @@ pub enum SystemInstruction {
     },
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, PartialOrd, Ord, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, PartialOrd, Ord, Hash)]
 pub enum PartitionDescription {
     Logical(PartitionOffset),
     Physical(PartitionNumber),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct IndexedStateSchema {
     pub fields: Option<(PartitionDescription, Vec<FieldSchema<BlueprintPayloadDef>>)>,
     pub collections: Vec<(

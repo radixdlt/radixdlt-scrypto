@@ -98,7 +98,7 @@ pub type AuthZoneDrainOutput = Vec<Proof>;
 
 pub const AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT: &str = "assert_access_rule";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AuthZoneAssertAccessRuleInput {
     pub rule: AccessRule,
 }

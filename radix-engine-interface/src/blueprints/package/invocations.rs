@@ -105,7 +105,7 @@ define_untyped_manifest_type_wrapper!(
 /// A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer
 /// blueprint must be specified and only a component of the outer blueprint may instantiate the inner blueprint.
 /// Inner blueprint components may access the state of its outer blueprint component directly.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintType {
     Outer,
     Inner { outer_blueprint: String },

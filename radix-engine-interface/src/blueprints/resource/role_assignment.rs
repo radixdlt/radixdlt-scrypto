@@ -278,7 +278,7 @@ define_untyped_manifest_type_wrapper!(
     feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
-#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct RoleAssignmentInit {
     pub data: IndexMap<RoleKey, Option<AccessRule>>,
