@@ -38,6 +38,24 @@ pub struct RuleSet {
     pub confirmation_role: AccessRule,
 }
 
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestRuleSet {
+    pub primary_role: ManifestAccessRule,
+    pub recovery_role: ManifestAccessRule,
+    pub confirmation_role: ManifestAccessRule,
+}
+
+impl From<RuleSet> for ManifestRuleSet {
+    fn from(value: RuleSet) -> Self {
+        Self {
+            primary_role: value.primary_role.into(),
+            recovery_role: value.recovery_role.into(),
+            confirmation_role: value.confirmation_role.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct RecoveryProposal {
     /// The set of rules being proposed for the different roles.
@@ -45,4 +63,22 @@ pub struct RecoveryProposal {
 
     /// The proposed delay of timed recoveries.
     pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestRecoveryProposal {
+    /// The set of rules being proposed for the different roles.
+    pub rule_set: ManifestRuleSet,
+
+    /// The proposed delay of timed recoveries.
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
+
+impl From<RecoveryProposal> for ManifestRecoveryProposal {
+    fn from(value: RecoveryProposal) -> Self {
+        Self {
+            rule_set: value.rule_set.into(),
+            timed_recovery_delay_in_minutes: value.timed_recovery_delay_in_minutes,
+        }
+    }
 }

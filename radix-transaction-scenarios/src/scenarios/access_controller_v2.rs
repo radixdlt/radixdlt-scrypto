@@ -77,7 +77,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
                                         AccessControllerCreateManifestInput {
                                             address_reservation: None,
                                             timed_recovery_delay_in_minutes: None,
-                                            rule_set: config.rule_set(),
+                                            rule_set: config.rule_set().into(),
                                             controlled_asset: bucket,
                                         },
                                     )

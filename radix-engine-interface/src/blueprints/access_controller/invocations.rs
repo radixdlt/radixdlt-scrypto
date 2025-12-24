@@ -28,7 +28,7 @@ pub struct AccessControllerCreateInput {
 #[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccessControllerCreateManifestInput {
     pub controlled_asset: ManifestBucket,
-    pub rule_set: RuleSet,
+    pub rule_set: ManifestRuleSet,
     pub timed_recovery_delay_in_minutes: Option<u32>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -61,8 +61,11 @@ pub struct AccessControllerInitiateRecoveryAsPrimaryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerInitiateRecoveryAsPrimaryManifestInput =
-    AccessControllerInitiateRecoveryAsPrimaryInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerInitiateRecoveryAsPrimaryManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerInitiateRecoveryAsPrimaryOutput = ();
 
@@ -79,8 +82,11 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerInitiateRecoveryAsRecoveryManifestInput =
-    AccessControllerInitiateRecoveryAsRecoveryInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerInitiateRecoveryAsRecoveryManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerInitiateRecoveryAsRecoveryOutput = ();
 
@@ -127,8 +133,11 @@ pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerQuickConfirmPrimaryRoleRecoveryProposalManifestInput =
-    AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput = ();
 
@@ -145,8 +154,11 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerQuickConfirmRecoveryRoleRecoveryProposalManifestInput =
-    AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput = ();
 
@@ -192,8 +204,11 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerTimedConfirmRecoveryManifestInput =
-    AccessControllerTimedConfirmRecoveryInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerTimedConfirmRecoveryManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerTimedConfirmRecoveryOutput = ();
 
@@ -295,7 +310,11 @@ pub struct AccessControllerStopTimedRecoveryInput {
     pub timed_recovery_delay_in_minutes: Option<u32>,
 }
 
-pub type AccessControllerStopTimedRecoveryManifestInput = AccessControllerStopTimedRecoveryInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccessControllerStopTimedRecoveryManifestInput {
+    pub rule_set: ManifestRuleSet,
+    pub timed_recovery_delay_in_minutes: Option<u32>,
+}
 
 pub type AccessControllerStopTimedRecoveryOutput = ();
 
