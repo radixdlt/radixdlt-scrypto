@@ -49,7 +49,7 @@ pub struct AccountCreateAdvancedInput {
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountCreateAdvancedManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
