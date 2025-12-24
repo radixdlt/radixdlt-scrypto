@@ -444,6 +444,22 @@ impl From<BTreeMap<String, MetadataValue>> for MetadataInit {
     }
 }
 
+impl From<BTreeMap<String, MetadataValue>> for ManifestMetadataInit {
+    fn from(data: BTreeMap<String, MetadataValue>) -> Self {
+        MetadataInit::from(data).into()
+    }
+}
+
+impl From<BTreeMap<String, ManifestMetadataValue>> for ManifestMetadataInit {
+    fn from(data: BTreeMap<String, ManifestMetadataValue>) -> Self {
+        let mut metadata_init = ManifestMetadataInit::new();
+        for (key, value) in data {
+            metadata_init.set(key, value);
+        }
+        metadata_init
+    }
+}
+
 #[macro_export]
 macro_rules! metadata_init_set_entry {
     ($metadata:expr, $key:expr, $value:expr, updatable) => {{
