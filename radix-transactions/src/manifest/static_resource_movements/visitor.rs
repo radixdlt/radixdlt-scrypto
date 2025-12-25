@@ -364,11 +364,17 @@ impl StaticResourceMovementsVisitor {
             ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
                 resource_address,
                 amount,
-            }) => self.worktop.handle_resource_assertion(
-                *resource_address,
-                ResourceBounds::at_least_amount(amount)?,
-                change_source,
-            ),
+            }) => {
+                if amount >= dec!(0) {
+                    self.worktop.handle_resource_assertion(
+                        *resource_address,
+                        ResourceBounds::at_least_amount(amount)?,
+                        change_source,
+                    )
+                } else {
+                    Ok(())
+                }
+            }
             ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
                 resource_address,
                 ids,
