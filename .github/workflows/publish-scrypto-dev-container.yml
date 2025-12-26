@@ -14,9 +14,9 @@ permissions:
 
 jobs:
   build_amd64:
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@fix-docker-build-self-hosted
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: ubuntu-16-cores-selfhosted
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
@@ -38,9 +38,9 @@ jobs:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
   build_arm64:
-    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@fix-docker-build-self-hosted
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-24.04-arm
+      runs_on: selfhosted-ubuntu-22.04-arm
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"
