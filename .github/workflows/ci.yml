@@ -343,7 +343,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
+        os: [ubuntu-16-cores-selfhosted, windows-latest]
     steps:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
@@ -381,7 +381,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
+        os: [ubuntu-16-cores-selfhosted, windows-latest, macos-latest]
     steps:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
