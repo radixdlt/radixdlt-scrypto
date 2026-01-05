@@ -4,6 +4,7 @@ use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use radix_rust::prelude::{IndexMap, IndexSet};
+use rustc_build_sysroot::{rustc_sysroot_src, SysrootBuilder};
 use std::cmp::Ordering;
 use std::error::Error;
 use std::iter;
@@ -50,6 +51,10 @@ lazy_static::lazy_static! {
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
+    /// An invalid sys-root path was encountered.
+    InvalidSysrootPath(String),
+    /// Failed to build the sys-root.
+    SysrootBuildFailure(String),
     /// Returns IO Error which occurred during compilation and optional context information.
     IOError(io::Error, Option<String>),
     /// Returns IO Error which occurred during compilation, path of a file related to that fail and
@@ -119,6 +124,8 @@ pub struct ScryptoCompilerInputParams {
     pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
     /// If set to true then compiler informs about the compilation progress
     pub verbose: bool,
+    /// A flag that's set to true if this is a coverage compilation.
+    pub coverage: bool,
 }
 impl Default for ScryptoCompilerInputParams {
     /// Definition of default `ScryptoCompiler` configuration.
@@ -152,6 +159,7 @@ impl Default for ScryptoCompilerInputParams {
             locked: false,
             wasm_optimization,
             verbose: false,
+            coverage: false,
         };
         // Apply default log level features
         ret.features
@@ -902,7 +910,100 @@ impl ScryptoCompiler {
     ) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
         let package_locks = self.lock_packages()?;
 
+        // If we're building for coverage then there is some post-processing we need to do.
+        //
+        // - We remove the `RUSTC_BOOTSTRAP` environment variable to disable the compiler from
+        //    attempting to build the standard library.
+        // - We need to remove all of the flags that instruct the compiler to rebuild std.
+        // - We need to build a standard library separate of the WASM that we're building. We do
+        //    this because if we instrument the standard library the size of the WASM will be HUGE.
+        //    We're talking about the hello-world WASM being 90 MBs in size which is something that
+        //    we certainly can't have.
+        if self.input_params.coverage {
+            // Remove the instructions to rebuild the standard library.
+            self.input_params.environment_variables.insert(
+                "RUSTC_BOOTSTRAP".to_string(),
+                EnvironmentVariableAction::Unset,
+            );
+
+            // Remove all of the arguments that make us rebuild the standard library.
+            self.input_params.custom_options = self
+                .input_params
+                .custom_options
+                .drain(..)
+                .filter(|value| !value.contains("build-std"))
+                .collect();
+
+            // Building the sys-root for the standard library.
+            let sysroot_src = rustc_sysroot_src(Command::new("rustc"))
+                .map_err(|err| ScryptoCompilerError::InvalidSysrootPath(format!("{err:#?}")))?;
+            if let Err(err) = sysroot_src.metadata() {
+                return Err(
+                    ScryptoCompilerError::IOErrorWithPath(
+                        err,
+                        sysroot_src.clone(),
+                        Some("Could not find the standard library. Are you sure that the `rust-src` component is installed?".into())
+                    )
+                );
+            }
+
+            let sys_root_path = self
+                .main_manifest
+                .target_directory
+                .join(BUILD_TARGET)
+                .join(self.input_params.profile.as_target_directory_name())
+                .join("sysroot");
+            SysrootBuilder::new(sys_root_path.as_path(), BUILD_TARGET)
+                .build_mode(rustc_build_sysroot::BuildMode::Build)
+                .sysroot_config(rustc_build_sysroot::SysrootConfig::WithStd {
+                    std_features: vec!["optimize_for_size".to_string()],
+                })
+                .cargo({
+                    let mut cmd = Command::new("cargo");
+                    cmd.arg("+nightly");
+                    cmd
+                })
+                .rustflags(RustFlags::for_scrypto_compilation().into_iter())
+                .build_from_source(sysroot_src.as_path())
+                .map_err(|err| ScryptoCompilerError::SysrootBuildFailure(format!("{err:#?}")))?;
+            let sys_root_path = sys_root_path
+                .canonicalize()
+                .map_err(|err| ScryptoCompilerError::IOError(err, None))?;
+
+            // Adding the sysroot path to the wasm32-unknown-unknown Rust flags. We only add it to
+            // that target because we don't want all targets (e.g, proc-macros) to make use of this
+            // sysroot.
+            let env_var_value = self
+                .input_params
+                .environment_variables
+                .get("CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS")
+                .and_then(|value| match value {
+                    EnvironmentVariableAction::Set(value) => Some(value),
+                    EnvironmentVariableAction::Unset => None,
+                })
+                .cloned()
+                .unwrap_or_default();
+            let env_var_value_separated = env_var_value.split(' ');
+            let env_var_value_chained = env_var_value_separated
+                .chain(["--sysroot", sys_root_path.as_os_str().to_str().unwrap()]);
+            self.input_params.environment_variables.insert(
+                "CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS".to_owned(),
+                EnvironmentVariableAction::Set(env_var_value_chained.collect::<Vec<_>>().join(" ")),
+            );
+            self.input_params
+                .environment_variables
+                .insert("RUSTFLAGS".to_owned(), EnvironmentVariableAction::Unset);
+            self.input_params.environment_variables.insert(
+                "CARGO_ENCODED_RUSTFLAGS".to_owned(),
+                EnvironmentVariableAction::Unset,
+            );
+        }
+
         let mut command = Command::new("cargo");
+        if self.input_params.coverage {
+            command.arg("+nightly");
+        }
+
         // Stdio streams used only for 1st phase compilation due to lack of Copy trait.
         if let Some(s) = stdin {
             command.stdin(s);
@@ -1401,6 +1502,7 @@ impl ScryptoCompilerBuilder {
         self.input_params
             .features
             .insert(String::from(SCRYPTO_COVERAGE));
+        self.input_params.coverage = true;
         self
     }
 
@@ -1467,6 +1569,7 @@ impl RustFlags {
             "-Ctarget-feature=+mutable-globals,+sign-ext",
             "-Zunstable-options",
             "-Cpanic=abort",
+            "-Awarnings",
         ]
         .into_iter()
         .fold(Self::empty(), Self::with_flag)

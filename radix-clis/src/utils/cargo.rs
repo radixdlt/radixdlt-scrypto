@@ -52,7 +52,7 @@ pub fn build_package<P: AsRef<Path>>(
     disable_wasm_opt: bool,
     log_level: Level,
     coverage: bool,
-    env: &[(String, String)],
+    env: impl IntoIterator<Item = (String, String)>,
 ) -> Result<Vec<(PathBuf, PathBuf)>, BuildError> {
     let mut compiler_builder = ScryptoCompiler::builder();
     compiler_builder
@@ -69,8 +69,8 @@ pub fn build_package<P: AsRef<Path>>(
         target_path.push("coverage");
         compiler_builder.target_directory(target_path);
     }
-    env.iter().for_each(|(name, value)| {
-        compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
+    env.into_iter().for_each(|(name, value)| {
+        compiler_builder.env(name.as_ref(), EnvironmentVariableAction::Set(value));
     });
 
     let build_results = compiler_builder
@@ -100,7 +100,7 @@ where
     S: AsRef<OsStr>,
 {
     if !coverage {
-        build_package(&path, false, Level::Trace, false, &[]).map_err(TestError::BuildError)?;
+        build_package(&path, false, Level::Trace, false, []).map_err(TestError::BuildError)?;
     }
 
     let mut cargo = path.as_ref().to_owned();
