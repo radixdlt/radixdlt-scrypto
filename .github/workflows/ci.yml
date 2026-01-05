@@ -422,6 +422,7 @@ jobs:
           rustup toolchain install nightly
           rustup target add wasm32-unknown-unknown --toolchain nightly
           rustup override set nightly
+          rustup component add rust-src
           rustup show
       - name: Install LLVM 21
         run: |
