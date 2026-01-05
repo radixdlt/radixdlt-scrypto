@@ -15,6 +15,7 @@ serde_json = { workspace = true }
 wasm-opt = { workspace = true }
 cargo_toml = { workspace = true }
 fslock = { workspace = true }
+lazy_static = { workspace = true }
 
 [dev-dependencies]
 tempdir = "0.3.7"

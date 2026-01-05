@@ -121,7 +121,7 @@ impl Coverage {
             true,
             &[(
                 "CARGO_ENCODED_RUSTFLAGS".to_owned(),
-                RustFlags::default_for_compilation()
+                RustFlags::for_scrypto_compilation()
                     .with_flag("-Clto=off")
                     .with_flag("-Cinstrument-coverage")
                     .with_flag("-Zno-profiler-runtime")

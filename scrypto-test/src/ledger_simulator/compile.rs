@@ -25,10 +25,14 @@ impl Compile {
     ) -> (Vec<u8>, PackageDefinition) {
         Self::compile_with_env_vars(
             package_dir,
-            btreemap! {
-                "RUSTFLAGS".to_owned() => RustFlags::default_for_compilation().encode_as_rust_flags(),
-                "CARGO_ENCODED_RUSTFLAGS".to_owned() => RustFlags::default_for_compilation().encode_as_cargo_encoded_rust_flags(),
-            },
+            DEFAULT_ENVIRONMENT_VARIABLES
+                .clone()
+                .into_iter()
+                .filter_map(|(key, value)| match value {
+                    EnvironmentVariableAction::Set(value) => Some((key, value)),
+                    EnvironmentVariableAction::Unset => None,
+                })
+                .collect(),
             compile_profile,
             true,
         )
