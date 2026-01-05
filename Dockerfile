@@ -71,6 +71,7 @@ RUN rustup component add clippy
 FROM base-image AS scrypto-builder
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
+RUN rustup component add rust-src
 WORKDIR /src
 
 ENTRYPOINT ["scrypto", "build", "--path", "/src"]
