@@ -2,6 +2,7 @@ use clap::Parser;
 use radix_engine_interface::types::Level;
 use regex::Regex;
 use scrypto_compiler::is_scrypto_cargo_locked_env_var_active;
+use scrypto_compiler::RustFlags;
 use std::env;
 use std::env::current_dir;
 use std::fs;
@@ -120,8 +121,12 @@ impl Coverage {
             true,
             &[(
                 "CARGO_ENCODED_RUSTFLAGS".to_owned(),
-                "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir"
-                    .to_owned(),
+                RustFlags::default_for_compilation()
+                    .with_flag("-Clto=off")
+                    .with_flag("-Cinstrument-coverage")
+                    .with_flag("-Zno-profiler-runtime")
+                    .with_flag("--emit=llvm-ir")
+                    .encode_as_cargo_encoded_rust_flags(),
             )],
         )
         .map_err(Error::BuildError)?;
