@@ -16,91 +16,17 @@ const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
 
-/// A set of Rust flags to provide for the compilation of a package.
+/// The default [`RustFlags`] defined in [`RustFlags::for_scrypto_compilation`] are sometimes not
+/// enough to prevent the compiler from generating code that contains WASM features that we don't
+/// want. Especially, in cases where crates contain C code that gets compiled into WASM (minicov
+/// is one example). In cases like these, we need to set the `CFLAGS_wasm32_unknown_unknown`
+/// environment variable to this constant to ensure that of the compiled Rust code and C code adhere
+/// to the same set of features that we allow.
 ///
-/// This struct is useful in the encoding of Rust flags into `CARGO_ENCODED_RUSTFLAGS` and
-/// `RUSTFLAGS`.
+/// # Note
 ///
-/// This type doesn't guarantee:
-/// * That the provided RustFlags are valid.
-/// * That the provided RustFlags are unique.
-pub struct RustFlags(Vec<String>);
-
-impl RustFlags {
-    const RUSTFLAGS_SEPARATOR: char = ' ';
-    const CARGO_ENCODED_RUSTFLAGS_SEPARATOR: char = '\x1f';
-
-    fn new() -> Self {
-        Self(Default::default())
-    }
-
-    pub fn default_for_compilation() -> Self {
-        [
-            "-Ctarget-cpu=mvp",
-            "-Ctarget-feature=+mutable-globals,+sign-ext",
-            "-Zunstable-options",
-            "-Cpanic=abort",
-        ]
-        .into_iter()
-        .fold(Self::new(), Self::with_flag)
-    }
-
-    pub fn with_flag(mut self, flag: impl Into<String>) -> Self {
-        self.0.push(flag.into());
-        self
-    }
-
-    pub fn push_flag(&mut self, flag: impl Into<String>) {
-        self.0.push(flag.into());
-    }
-
-    pub fn encode_as_rust_flags(&self) -> String {
-        self.0.join(Self::RUSTFLAGS_SEPARATOR.to_string().as_str())
-    }
-
-    pub fn encode_as_cargo_encoded_rust_flags(&self) -> String {
-        self.0
-            .join(Self::CARGO_ENCODED_RUSTFLAGS_SEPARATOR.to_string().as_str())
-    }
-}
-
-impl IntoIterator for RustFlags {
-    type Item = String;
-    type IntoIter = <Vec<String> as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-// /// A set of Rust flags to provide for the compilation of a package.
-// ///
-// /// This struct is useful in the encoding and decoding of Rust flags into `CARGO_ENCODED_RUSTFLAGS`
-// /// and `RUSTFLAGS`.
-// ///
-// /// This type does not guarantee the uniqueness of the flags and only exists to make the encoding
-// /// and decoding of the flags easier.
-// #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-// pub struct RustFlags(Cow<'static, [Cow<'static, str>]>);
-
-// impl RustFlags {
-//     /// Creates a new empty set of [`RustFlags`].
-//     pub const fn new() -> Self {
-//         Self(Cow::Owned(Vec::new()))
-//     }
-
-//     /// Adds a flag
-//     pub fn with_flag(mut self, flag: impl Into<Cow<'static, str>>) -> Self {
-//         self.0.to_mut().push(flag.into());
-//         self
-//     }
-// }
-
-// impl Default for RustFlags {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
+/// The flags here must match what's set in [`RustFlags::for_scrypto_compilation`].
+pub const DEFAULT_TARGET_CFLAGS: &str = "-mcpu=mvp -mmutable-globals -msign-ext";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -148,7 +74,7 @@ pub struct ScryptoCompilerInputParams {
     /// List of environment variables to set or unset during compilation.
     /// By default it includes compilation flags for C libraries to configure WASM with the same
     /// features as Radix Engine.
-    /// TARGET_CFLAGS="-mcpu=mvp -mmutable-globals -msign-ext"
+    /// CFLAGS_wasm32_unknown_unknown="-mcpu=mvp -mmutable-globals -msign-ext"
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
     /// List of features, used for 'cargo build --features'. Optional field.
     pub features: IndexSet<String>,
@@ -194,15 +120,18 @@ impl Default for ScryptoCompilerInputParams {
             target_directory: None,
             profile: Profile::Release,
             environment_variables: indexmap!(
+                "CFLAGS_wasm32_unknown_unknown".to_string() => EnvironmentVariableAction::Set(
+                    DEFAULT_TARGET_CFLAGS.to_string()
+                ),
                 "RUSTC_BOOTSTRAP".to_string() => EnvironmentVariableAction::Set(
                     "1".to_string()
                 ),
                 "RUSTFLAGS".to_string() => EnvironmentVariableAction::Set(
-                    RustFlags::default_for_compilation().encode_as_rust_flags()
+                    RustFlags::for_scrypto_compilation().encode_as_rust_flags()
                 ),
                 "CARGO_ENCODED_RUSTFLAGS".to_string() => EnvironmentVariableAction::Set(
-                    RustFlags::default_for_compilation().encode_as_cargo_encoded_rust_flags()
-                )
+                    RustFlags::for_scrypto_compilation().encode_as_cargo_encoded_rust_flags()
+                ),
             ),
             features: indexset!(),
             no_default_features: false,
@@ -1503,6 +1432,67 @@ impl ScryptoCompilerBuilder {
         stderr: Option<T>,
     ) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
         self.build()?.compile_with_stdio(stdin, stdout, stderr)
+    }
+}
+
+/// A set of Rust flags to provide for the compilation of a package.
+///
+/// This struct is useful in the encoding of Rust flags into `CARGO_ENCODED_RUSTFLAGS` and
+/// `RUSTFLAGS`.
+///
+/// This type doesn't guarantee:
+/// * That the provided RustFlags are valid.
+/// * That the provided RustFlags are unique.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct RustFlags(Vec<String>);
+
+impl RustFlags {
+    const RUSTFLAGS_SEPARATOR: &str = " ";
+    const CARGO_ENCODED_RUSTFLAGS_SEPARATOR: &str = "\x1f";
+
+    pub fn empty() -> Self {
+        Self(Default::default())
+    }
+
+    pub fn for_scrypto_compilation() -> Self {
+        [
+            "-Ctarget-cpu=mvp",
+            "-Ctarget-feature=+mutable-globals,+sign-ext",
+            "-Zunstable-options",
+            "-Cpanic=abort",
+        ]
+        .into_iter()
+        .fold(Self::empty(), Self::with_flag)
+    }
+
+    pub fn with_flag(mut self, flag: impl Into<String>) -> Self {
+        self.0.push(flag.into());
+        self
+    }
+
+    pub fn push_flag(&mut self, flag: impl Into<String>) {
+        self.0.push(flag.into());
+    }
+
+    pub fn encode_as_rust_flags(&self) -> String {
+        self.0.join(Self::RUSTFLAGS_SEPARATOR)
+    }
+
+    pub fn encode_as_cargo_encoded_rust_flags(&self) -> String {
+        self.0.join(Self::CARGO_ENCODED_RUSTFLAGS_SEPARATOR)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
+    }
+}
+
+impl IntoIterator for RustFlags {
+    type Item = String;
+    type IntoIter = <Vec<String> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
