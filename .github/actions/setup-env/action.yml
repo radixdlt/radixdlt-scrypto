@@ -37,7 +37,7 @@ runs:
       shell: bash
     - name: Setup LLVM
       if: runner.os == 'macOS'
-      # Switch to more recent LLVM/Clang 15.0.7
+      # Switch to more recent LLVM/Clang 21.1.8
       # see: https://github.com/actions/runner-images/blob/macOS-12/20240105.3/images/macos/macos-12-Readme.md
-      run: echo "$(brew --prefix llvm@15)/bin" >> $GITHUB_PATH
+      run: echo "$(brew --prefix llvm@21)/bin" >> $GITHUB_PATH
       shell: bash
