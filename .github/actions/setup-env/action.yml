@@ -40,6 +40,7 @@ runs:
       # Switch to more recent LLVM/Clang 21.1.8
       # see: https://github.com/actions/runner-images/blob/macOS-12/20240105.3/images/macos/macos-12-Readme.md
       run: | 
+        brew install llvm@21
         echo "$(brew --prefix llvm@21)/bin" >> $GITHUB_PATH
         which clang
         which clang-21
