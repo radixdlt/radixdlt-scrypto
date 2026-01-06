@@ -5,6 +5,8 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+export CMAKE_POLICY_VERSION_MINIMUM="3.5"
+
 scrypto="cargo run --bin scrypto $@ --"
 test_pkg="./target/temp/hello-world"
 

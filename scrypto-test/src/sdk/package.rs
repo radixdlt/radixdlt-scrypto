@@ -79,6 +79,6 @@ impl PackageFactory {
     where
         P: AsRef<Path>,
     {
-        Compile::compile_with_env_vars(path, BTreeMap::new(), compile_profile, false)
+        Compile::compile_with_env_vars(path, BTreeMap::new(), compile_profile, true)
     }
 }

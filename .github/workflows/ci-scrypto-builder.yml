@@ -28,7 +28,7 @@ jobs:
     needs: tags
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: gh-runner-scrypto-ubuntu-jammy-16-cores
+      runs_on: ubuntu-latest
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-scrypto-builder"

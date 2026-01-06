@@ -8,10 +8,10 @@ runs:
       uses: RDXWorks-actions/toolchain@master
       with:
         # IMPORTANT: Ensure this aligns with rust-toolchain.toml
-        toolchain: 1.81.0
+        toolchain: stable
         default: true
         target: wasm32-unknown-unknown
-        components: rustfmt
+        components: rustfmt, rust-std
 
     - name: Install nextest
       uses: RDXWorks-actions/install-action@main
@@ -37,7 +37,14 @@ runs:
       shell: bash
     - name: Setup LLVM
       if: runner.os == 'macOS'
-      # Switch to more recent LLVM/Clang 15.0.7
+      # Switch to more recent LLVM/Clang 21.1.8
       # see: https://github.com/actions/runner-images/blob/macOS-12/20240105.3/images/macos/macos-12-Readme.md
-      run: echo "$(brew --prefix llvm@15)/bin" >> $GITHUB_PATH
+      run: | 
+        brew install llvm@21
+        echo "$(brew --prefix llvm@21)/bin" >> $GITHUB_PATH
+      shell: bash
+    - name: Check LLVM installation
+      if: runner.os == 'macOS'
+      run: | 
+        which clang
       shell: bash

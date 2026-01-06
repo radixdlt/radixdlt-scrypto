@@ -36,7 +36,7 @@ pub fn run() -> Result<(), String> {
 
     match cli.command {
         Command::Build(cmd) => cmd.run(),
-        Command::Coverage(cmd) => cmd.run(),
+        Command::Coverage(cmd) => cmd.run().map_err(|error| error.to_string()),
         Command::Fmt(cmd) => cmd.run(),
         Command::NewPackage(cmd) => cmd.run(),
         Command::Test(cmd) => cmd.run(),

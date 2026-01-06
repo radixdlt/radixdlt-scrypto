@@ -65,7 +65,7 @@ impl Publish {
                 self.disable_wasm_opt,
                 self.log_level.unwrap_or(Level::default()),
                 false,
-                &[],
+                [],
             )
             .map_err(Error::BuildError)?;
             if build_artifacts.len() > 1 {
