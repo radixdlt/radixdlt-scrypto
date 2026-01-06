@@ -19,7 +19,7 @@ $scrypto new-package hello-world --path $test_pkg --local
 $scrypto coverage --path $test_pkg
 
 # Check if coverage report was generated
-if [ -f "$test_pkg/coverage/report/index.html" ]; then
+if [ -f "$test_pkg/target/coverage/report/index.html" ]; then
     echo "Coverage report generated successfully."
 else
     echo "Error: Coverage report not found."

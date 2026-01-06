@@ -1046,7 +1046,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_test_bindings_state = generate_test_bindings_state(bp_strut);
 
     let output = quote! {
-        #[automatically_derived]
         pub mod #module_ident {
             #(#use_statements)*
 
@@ -1079,7 +1078,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#registered_type_impls)*
         }
 
-        #[automatically_derived]
         pub mod #test_bindings_mod_ident {
             #(#use_statements)*
 
@@ -1872,7 +1870,6 @@ mod tests {
             output,
             quote! {
 
-                #[automatically_derived]
                 pub mod test {
                     use super::*;
                     use scrypto::prelude::*;
@@ -2421,7 +2418,6 @@ mod tests {
                     }
                 }
 
-                #[automatically_derived]
                 pub mod test_test {
                     use super::*;
                     use scrypto::prelude::*;

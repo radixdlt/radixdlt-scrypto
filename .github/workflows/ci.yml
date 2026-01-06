@@ -343,11 +343,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
+        os: [ubuntu-16-cores-selfhosted, windows-latest]
     steps:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
         run: git config --global --add core.symlinks true
+      - name: Allow long paths for Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -378,11 +381,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
+        os: [ubuntu-16-cores-selfhosted, windows-latest, macos-latest]
     steps:
       - name: Enable symlinks for Windows
         if: runner.os == 'Windows'
         run: git config --global --add core.symlinks true
+      - name: Allow long paths for Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -411,25 +417,26 @@ jobs:
           workspaces: radix-clis
       # Coverage needs a nightly compiler.
       # This should be at or in front of rust-toolchain.toml
-      - name: Install rustc 1.81.0-nightly
+      - name: Install rustc nightly
         run: |
-          rustup toolchain install nightly-2024-07-18
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-18
-          rustup override set nightly-2024-07-18
+          rustup toolchain install nightly
+          rustup target add wasm32-unknown-unknown --toolchain nightly
+          rustup override set nightly
+          rustup component add rust-src
           rustup show
-      - name: Install LLVM 18
+      - name: Install LLVM 21
         run: |
           sudo apt-get install -y lsb-release wget software-properties-common gnupg
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 18
+          sudo ./llvm.sh 21
           # llvm.sh does not explicitly install llvm-18, which is needed here.
           # It shall be installed as a dependency, but it was observed that
           # it is not always installed. Reason unknown, might be related to below, which was also observed:
           #  The following packages have unmet dependencies:
           #   libllvm18 : Breaks: llvm-18-dev (< 1:18.1.8-4) but 1:18.1.8~++20240717051017+3b5b5c1ec4a3-1~exp1~20240717171122.141 is to be installed
           # So, just in case, try to install them here.
-          sudo apt-get install -y llvm-18
+          sudo apt-get install -y llvm-21
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh
