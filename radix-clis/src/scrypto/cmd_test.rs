@@ -1,4 +1,5 @@
 use clap::Parser;
+use sbor::prelude::IndexMap;
 use scrypto_compiler::is_scrypto_cargo_locked_env_var_active;
 use std::env::current_dir;
 use std::path::PathBuf;
@@ -30,6 +31,7 @@ impl Test {
             self.arguments.clone(),
             false,
             is_scrypto_cargo_locked_env_var_active() || self.locked,
+            IndexMap::<&str, &str>::new(),
         )
         .map(|_| ())
         .map_err(|err| Error::TestError(err).into())

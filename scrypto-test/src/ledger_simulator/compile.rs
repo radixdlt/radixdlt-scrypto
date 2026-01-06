@@ -75,8 +75,9 @@ impl Compile {
         if _use_coverage {
             compiler_builder.coverage();
 
-            let mut coverage_dir = std::path::PathBuf::from(package_dir.as_ref());
-            coverage_dir.push("coverage");
+            let coverage_dir = std::path::PathBuf::from(package_dir.as_ref())
+                .join("target")
+                .join("coverage");
             compiler_builder.target_directory(coverage_dir);
         }
 

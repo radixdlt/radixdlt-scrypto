@@ -89,15 +89,19 @@ pub fn build_package<P: AsRef<Path>>(
 }
 
 /// Runs tests within a package.
-pub fn test_package<P: AsRef<Path>, I, S>(
+pub fn test_package<P: AsRef<Path>, I, S, E, K, V>(
     path: P,
     args: I,
     coverage: bool,
     locked: bool,
+    env_vars: E,
 ) -> Result<(), TestError>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
+    E: IntoIterator<Item = (K, V)>,
+    K: AsRef<OsStr>,
+    V: AsRef<OsStr>,
 {
     if !coverage {
         build_package(&path, false, Level::Trace, false, []).map_err(TestError::BuildError)?;
@@ -127,6 +131,7 @@ where
             })
             .arg("--")
             .args(args)
+            .envs(env_vars)
             .status()
             .map_err(TestError::IOError)?;
         if !status.success() {

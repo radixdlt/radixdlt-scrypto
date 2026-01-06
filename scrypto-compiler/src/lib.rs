@@ -256,6 +256,36 @@ pub enum EnvironmentVariableAction {
     Unset,
 }
 
+impl From<String> for EnvironmentVariableAction {
+    fn from(value: String) -> Self {
+        Self::Set(value)
+    }
+}
+
+impl<'a> From<&'a str> for EnvironmentVariableAction {
+    fn from(value: &'a str) -> Self {
+        Self::Set(value.to_string())
+    }
+}
+
+impl EnvironmentVariableAction {
+    pub fn into_set(self) -> Option<String> {
+        if let Self::Set(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_set(&self) -> Option<&str> {
+        if let Self::Set(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BuildArtifacts {
     pub wasm: BuildArtifact<Vec<u8>>,
@@ -935,8 +965,12 @@ impl ScryptoCompiler {
                 .collect();
 
             // Building the sys-root for the standard library.
-            let sysroot_src = rustc_sysroot_src(Command::new("rustc"))
-                .map_err(|err| ScryptoCompilerError::InvalidSysrootPath(format!("{err:#?}")))?;
+            let sysroot_src = rustc_sysroot_src({
+                let mut cmd = Command::new("rustc");
+                cmd.arg("+nightly");
+                cmd
+            })
+            .map_err(|err| ScryptoCompilerError::InvalidSysrootPath(format!("{err:#?}")))?;
             if let Err(err) = sysroot_src.metadata() {
                 return Err(
                     ScryptoCompilerError::IOErrorWithPath(
@@ -1418,6 +1452,18 @@ impl ScryptoCompilerBuilder {
             .environment_variables
             .insert(name.to_string(), action);
         self
+    }
+
+    pub fn envs(
+        &mut self,
+        iterator: impl IntoIterator<Item = (impl Into<String>, impl Into<EnvironmentVariableAction>)>,
+    ) -> &mut Self {
+        iterator.into_iter().fold(self, |this, (k, v)| {
+            this.input_params
+                .environment_variables
+                .insert(k.into(), v.into());
+            this
+        })
     }
 
     pub fn feature(&mut self, name: &str) -> &mut Self {
