@@ -399,7 +399,7 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
       - name: Run tests
-        run: bash ./tests/scrypto.sh
+        run: CMAKE_POLICY_VERSION_MINIMUM="3.5" bash ./tests/scrypto.sh
         working-directory: radix-clis
 
   radix-clis-scrypto-coverage:
