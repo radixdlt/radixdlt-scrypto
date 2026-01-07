@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
 
-
 pub const VALUE_KIND_REFERENCE: u8 = 0x80;
 pub const VALUE_KIND_OWN: u8 = 0x90;
 pub const VALUE_KIND_DECIMAL: u8 = 0xa0;

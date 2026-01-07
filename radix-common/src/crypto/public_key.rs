@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
 
-
 /// Represents any natively supported public key.
 #[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(

@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
 
-
 /// Represents an ED25519 public key.
 #[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]

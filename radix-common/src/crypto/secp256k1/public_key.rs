@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
 
-
 /// Represents an uncompressed ECDSA Secp256k1 public key.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
