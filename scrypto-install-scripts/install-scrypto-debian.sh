@@ -5,7 +5,7 @@ set -e
 
 # Versions to install
 LLVM_VERSION=21
-RUST_VERSION=stable
+RUST_VERSION=1.92.0
 RADIX_CLI_VERSION=1.3.0
 
 # Colors for output

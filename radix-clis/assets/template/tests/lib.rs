@@ -25,7 +25,7 @@ fn test_hello() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}\n", receipt);
     let component = receipt.expect_commit(true).new_component_addresses()[0];
@@ -42,7 +42,7 @@ fn test_hello() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
