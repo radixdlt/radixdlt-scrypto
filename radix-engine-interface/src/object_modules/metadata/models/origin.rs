@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -34,7 +33,7 @@ lazy_static! {
     ).unwrap();
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
     Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
 )]

@@ -291,7 +291,13 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
     let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     // Act
@@ -328,7 +334,13 @@ fn local_type_id_with_misleading_name_fails() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+        .publish_package_advanced(
+            None,
+            code,
+            definition,
+            MetadataInit::default(),
+            OwnerRole::None,
+        )
         .build();
 
     // Act
@@ -2279,15 +2291,15 @@ fn account_configuration_emits_expected_events() {
         .call_method(
             account,
             ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-            AccountAddAuthorizedDepositorInput {
-                badge: authorized_depositor_badge.clone(),
+            AccountAddAuthorizedDepositorManifestInput {
+                badge: authorized_depositor_badge.clone().into(),
             },
         )
         .call_method(
             account,
             ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
-            AccountRemoveAuthorizedDepositorInput {
-                badge: authorized_depositor_badge.clone(),
+            AccountRemoveAuthorizedDepositorManifestInput {
+                badge: authorized_depositor_badge.clone().into(),
             },
         )
         .build();

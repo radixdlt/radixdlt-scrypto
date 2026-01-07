@@ -26,8 +26,6 @@ use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 use radix_common::math::*;
 use radix_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
@@ -52,7 +50,7 @@ macro_rules! resource_roles {
         $updater_field_name:expr,
         $default_rule:expr
     ) => {
-        #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+        #[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
         #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
         pub struct $roles_struct<T> {
             pub $actor_field: T,

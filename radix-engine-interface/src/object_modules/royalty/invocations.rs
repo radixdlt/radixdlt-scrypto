@@ -20,7 +20,7 @@ pub const COMPONENT_ROYALTY_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
@@ -37,7 +37,7 @@ pub const COMPONENT_ROYALTY_SET_ROYALTY_IDENT: &str = "set_royalty";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
@@ -55,7 +55,7 @@ pub const COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT: &str = "lock_royalty";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
@@ -72,7 +72,7 @@ pub const COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT: &str = "claim_royalties";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,

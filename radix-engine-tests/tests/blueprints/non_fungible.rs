@@ -57,11 +57,11 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             NonFungibleResourceManagerCreateManifestInput {
-                owner_role: OwnerRole::None,
+                owner_role: OwnerRole::None.into(),
                 id_type: NonFungibleIdType::Integer,
                 track_total_supply: true,
                 non_fungible_schema,
-                resource_roles: NonFungibleResourceRoles::default(),
+                resource_roles: NonFungibleResourceRoles::default().into(),
                 metadata: ModuleConfig::default(),
                 address_reservation: None,
             },

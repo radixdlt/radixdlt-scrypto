@@ -4,7 +4,7 @@ use super::ast::Instruction;
 use super::ast::InstructionWithSpan;
 use super::ast::ValueKindWithSpan;
 use super::blob_provider::*;
-use crate::data::*;
+use crate::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;
@@ -2635,7 +2635,7 @@ mod tests {
                     IndexMap::<String, BlueprintStateSchemaInit, _>::new(),
                     IndexMap::<String, PackageRoyaltyConfig, _>::new(),
                     IndexMap::<String, MetadataValue, _>::new(),
-                    RoleAssignmentInit::new()
+                    ManifestRoleAssignmentInit::new()
                 )
                 .into(),
             },
@@ -2685,7 +2685,7 @@ mod tests {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema:
@@ -2695,8 +2695,9 @@ mod tests {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
-                        },
-                        resource_roles: NonFungibleResourceRoles::default(),
+                        }
+                        .into(),
+                        resource_roles: NonFungibleResourceRoles::default().into(),
                         address_reservation: None,
                     }
                 ),
@@ -2725,15 +2726,15 @@ mod tests {
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::None,
+                    owner_role: OwnerRole::None.into(),
                     track_total_supply: false,
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema:
                         NonFungibleDataSchema::new_local_without_self_package_replacement::<
                             MyNonFungibleData,
                         >(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata!(),
+                    resource_roles: NonFungibleResourceRoles::default().into(),
+                    metadata: metadata!().into(),
                     address_reservation: None,
                 },
             )
@@ -2794,18 +2795,19 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
                             ),
-                        resource_roles: NonFungibleResourceRoles::default(),
+                        resource_roles: NonFungibleResourceRoles::default().into(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
-                        },
+                        }
+                        .into(),
                         entries: indexmap!(
                             NonFungibleLocalId::integer(1) =>
                             (to_manifest_value_and_unwrap!(&(
@@ -2848,15 +2850,16 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::None,
+                    owner_role: OwnerRole::None.into(),
                     track_total_supply: false,
                     divisibility: 18,
-                    resource_roles: FungibleResourceRoles::default(),
+                    resource_roles: FungibleResourceRoles::default().into(),
                     metadata: metadata! {
                         init {
                             "name" => "Token".to_owned(), updatable;
                         }
-                    },
+                    }
+                    .into(),
                     address_reservation: None,
                 }),
             },
@@ -2894,16 +2897,17 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        resource_roles: FungibleResourceRoles::default(),
+                        resource_roles: FungibleResourceRoles::default().into(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_owned(), updatable;
                             }
-                        },
+                        }
+                        .into(),
                         address_reservation: None,
                     }
                 )

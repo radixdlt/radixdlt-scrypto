@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 /// Represents an ED25519 signature.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 pub struct Ed25519Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],

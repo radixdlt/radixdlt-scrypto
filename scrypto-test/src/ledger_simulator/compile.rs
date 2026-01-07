@@ -106,12 +106,20 @@ impl Compile {
                             &manifest.target_output_binary_rpd_path, err
                         )
                     });
-                let definition = manifest_decode(&definition).unwrap_or_else(|err| {
-                    panic!(
-                        "Failed to parse package definition from path {:?} - {:?}",
-                        &manifest.target_output_binary_rpd_path, err
-                    )
-                });
+                let definition = manifest_decode::<ManifestPackageDefinition>(&definition)
+                    .unwrap_or_else(|err| {
+                        panic!(
+                            "Failed to parse package definition from path {:?} - {:?}",
+                            &manifest.target_output_binary_rpd_path, err
+                        )
+                    })
+                    .try_into_typed()
+                    .unwrap_or_else(|err| {
+                        panic!(
+                            "Failed to parse package definition from path {:?} - {:?}",
+                            &manifest.target_output_binary_rpd_path, err
+                        )
+                    });
                 return (code, definition);
             }
         }

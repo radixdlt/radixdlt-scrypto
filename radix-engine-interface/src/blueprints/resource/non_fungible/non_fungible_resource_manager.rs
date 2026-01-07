@@ -1,7 +1,5 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::data::manifest::ManifestValue;
 use radix_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoValue, VersionedScryptoSchema};
@@ -18,7 +16,7 @@ use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
@@ -28,6 +26,57 @@ pub struct NonFungibleResourceRoles {
     pub withdraw_roles: Option<WithdrawRoles<RoleDefinition>>,
     pub deposit_roles: Option<DepositRoles<RoleDefinition>>,
     pub non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
+}
+
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestNonFungibleResourceRoles {
+    pub mint_roles: Option<MintRoles<ManifestRoleDefinition>>,
+    pub burn_roles: Option<BurnRoles<ManifestRoleDefinition>>,
+    pub freeze_roles: Option<FreezeRoles<ManifestRoleDefinition>>,
+    pub recall_roles: Option<RecallRoles<ManifestRoleDefinition>>,
+    pub withdraw_roles: Option<WithdrawRoles<ManifestRoleDefinition>>,
+    pub deposit_roles: Option<DepositRoles<ManifestRoleDefinition>>,
+    pub non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<ManifestRoleDefinition>>,
+}
+
+impl From<NonFungibleResourceRoles> for ManifestNonFungibleResourceRoles {
+    fn from(value: NonFungibleResourceRoles) -> Self {
+        Self {
+            mint_roles: value.mint_roles.map(|roles| MintRoles {
+                minter: roles.minter.map(Into::into),
+                minter_updater: roles.minter_updater.map(Into::into),
+            }),
+            burn_roles: value.burn_roles.map(|roles| BurnRoles {
+                burner: roles.burner.map(Into::into),
+                burner_updater: roles.burner_updater.map(Into::into),
+            }),
+            freeze_roles: value.freeze_roles.map(|roles| FreezeRoles {
+                freezer: roles.freezer.map(Into::into),
+                freezer_updater: roles.freezer_updater.map(Into::into),
+            }),
+            recall_roles: value.recall_roles.map(|roles| RecallRoles {
+                recaller: roles.recaller.map(Into::into),
+                recaller_updater: roles.recaller_updater.map(Into::into),
+            }),
+            withdraw_roles: value.withdraw_roles.map(|roles| WithdrawRoles {
+                withdrawer: roles.withdrawer.map(Into::into),
+                withdrawer_updater: roles.withdrawer_updater.map(Into::into),
+            }),
+            deposit_roles: value.deposit_roles.map(|roles| DepositRoles {
+                depositor: roles.depositor.map(Into::into),
+                depositor_updater: roles.depositor_updater.map(Into::into),
+            }),
+            non_fungible_data_update_roles: value.non_fungible_data_update_roles.map(|roles| {
+                NonFungibleDataUpdateRoles {
+                    non_fungible_data_updater: roles.non_fungible_data_updater.map(Into::into),
+                    non_fungible_data_updater_updater: roles
+                        .non_fungible_data_updater_updater
+                        .map(Into::into),
+                }
+            }),
+        }
+    }
 }
 
 impl NonFungibleResourceRoles {
@@ -67,7 +116,7 @@ impl NonFungibleResourceRoles {
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
@@ -79,19 +128,19 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateGenericInput<S> {
     pub owner_role: OwnerRole,
@@ -108,7 +157,7 @@ pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -122,16 +171,16 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
@@ -153,7 +202,7 @@ pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddr
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_ruid_non_fungible_with_initial_supply";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -166,20 +215,20 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: Vec<(ManifestValue,)>,
-    pub resource_roles: NonFungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestNonFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 /// For typed value, to skip any codec
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyGenericInput<S, T> {
     pub owner_role: OwnerRole,
@@ -203,7 +252,7 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerUpdateDataManifestInput {
     pub id: NonFungibleLocalId,
@@ -252,7 +301,7 @@ pub struct NonFungibleResourceManagerMintInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: IndexMap<NonFungibleLocalId, (ManifestValue,)>,
@@ -274,7 +323,7 @@ pub struct NonFungibleResourceManagerMintRuidInput {
 }
 
 /// For manifest
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct NonFungibleResourceManagerMintRuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
@@ -415,11 +464,11 @@ impl NonFungibleDataSchema {
 }
 
 #[cfg(feature = "fuzzing")]
-impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
-    // At the moment I see no smart method to derive Arbitrary for type Schema, which is part of
+impl<'a> ::arbitrary::Arbitrary<'a> for NonFungibleDataSchema {
+    // At the moment I see no smart method to derive ::arbitrary::Arbitrary for type Schema, which is part of
     // ScryptoSchema, therefore implementing arbitrary by hand.
-    // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
-    fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
+    // TODO: Introduce a method that generates NonFungibleDataSchema in a truly random manner
+    fn arbitrary(_u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         Ok(Self::Local(LocalNonFungibleDataSchema {
             schema: VersionedScryptoSchema::from_latest_version(SchemaV1 {
                 type_kinds: vec![],

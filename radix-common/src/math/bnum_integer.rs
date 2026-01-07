@@ -1,8 +1,7 @@
 //! Definitions of safe integers and uints.
 
 use crate::math::traits::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use bnum::{BInt, BUint};
 use num_bigint::BigInt;
 use num_integer::Roots;
@@ -18,8 +17,6 @@ use sbor::rust::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
-#[cfg(feature = "fuzzing")]
-use serde::{Deserialize, Serialize};
 
 pub mod bits;
 pub mod convert;
@@ -47,7 +44,10 @@ macro_rules! types {
                 ///
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
-                #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
+                #[cfg_attr(
+                    feature = "fuzzing",
+                    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+                )]
                 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);

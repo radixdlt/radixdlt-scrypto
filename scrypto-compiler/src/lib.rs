@@ -1,6 +1,7 @@
 use cargo_toml::Manifest;
 use fslock::{LockFile, ToOsStr};
 use radix_common::prelude::*;
+use radix_engine::blueprints::package::ManifestPackageDefinition;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
 use radix_rust::prelude::{IndexMap, IndexSet};
@@ -86,6 +87,8 @@ pub enum ScryptoCompilerError {
     SchemaDecodeError(DecodeError),
     /// Returned when trying to compile workspace without any scrypto packages.
     NothingToCompile,
+    /// A conversion error when trying to read the package definition.
+    PackageDefinitionConversionError(ConversionError),
 }
 
 #[derive(Debug, Clone)]
@@ -1323,8 +1326,10 @@ impl ScryptoCompiler {
                 )
             })?;
 
-            let package_definition: PackageDefinition =
-                manifest_decode(&rpd).map_err(ScryptoCompilerError::SchemaDecodeError)?;
+            let package_definition = manifest_decode::<ManifestPackageDefinition>(&rpd)
+                .map_err(ScryptoCompilerError::SchemaDecodeError)?
+                .try_into_typed()
+                .map_err(ScryptoCompilerError::PackageDefinitionConversionError)?;
 
             let wasm = std::fs::read(&wasm_cache_path).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(

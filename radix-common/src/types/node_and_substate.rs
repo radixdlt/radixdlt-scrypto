@@ -2,8 +2,7 @@ use crate::address::{AddressBech32EncodeError, AddressDisplayContext};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use prelude::scrypto_encode;
 use radix_rust::ContextualDisplay;
 use sbor::rust::prelude::*;
@@ -17,7 +16,7 @@ pub const BOOT_LOADER_RESERVED_NODE_ID_FIRST_BYTE: u8 = 0u8;
 /// The unique identifier of a (stored) node.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]

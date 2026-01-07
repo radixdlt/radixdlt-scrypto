@@ -97,7 +97,7 @@ fn publish_test_package(
             None,
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();

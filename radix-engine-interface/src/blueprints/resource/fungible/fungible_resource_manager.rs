@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::types::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
@@ -11,7 +10,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
@@ -20,6 +19,48 @@ pub struct FungibleResourceRoles {
     pub recall_roles: Option<RecallRoles<RoleDefinition>>,
     pub withdraw_roles: Option<WithdrawRoles<RoleDefinition>>,
     pub deposit_roles: Option<DepositRoles<RoleDefinition>>,
+}
+
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestFungibleResourceRoles {
+    pub mint_roles: Option<MintRoles<ManifestRoleDefinition>>,
+    pub burn_roles: Option<BurnRoles<ManifestRoleDefinition>>,
+    pub freeze_roles: Option<FreezeRoles<ManifestRoleDefinition>>,
+    pub recall_roles: Option<RecallRoles<ManifestRoleDefinition>>,
+    pub withdraw_roles: Option<WithdrawRoles<ManifestRoleDefinition>>,
+    pub deposit_roles: Option<DepositRoles<ManifestRoleDefinition>>,
+}
+
+impl From<FungibleResourceRoles> for ManifestFungibleResourceRoles {
+    fn from(value: FungibleResourceRoles) -> Self {
+        Self {
+            mint_roles: value.mint_roles.map(|roles| MintRoles {
+                minter: roles.minter.map(Into::into),
+                minter_updater: roles.minter_updater.map(Into::into),
+            }),
+            burn_roles: value.burn_roles.map(|roles| BurnRoles {
+                burner: roles.burner.map(Into::into),
+                burner_updater: roles.burner_updater.map(Into::into),
+            }),
+            freeze_roles: value.freeze_roles.map(|roles| FreezeRoles {
+                freezer: roles.freezer.map(Into::into),
+                freezer_updater: roles.freezer_updater.map(Into::into),
+            }),
+            recall_roles: value.recall_roles.map(|roles| RecallRoles {
+                recaller: roles.recaller.map(Into::into),
+                recaller_updater: roles.recaller_updater.map(Into::into),
+            }),
+            withdraw_roles: value.withdraw_roles.map(|roles| WithdrawRoles {
+                withdrawer: roles.withdrawer.map(Into::into),
+                withdrawer_updater: roles.withdrawer_updater.map(Into::into),
+            }),
+            deposit_roles: value.deposit_roles.map(|roles| DepositRoles {
+                depositor: roles.depositor.map(Into::into),
+                depositor_updater: roles.depositor_updater.map(Into::into),
+            }),
+        }
+    }
 }
 
 impl FungibleResourceRoles {
@@ -67,7 +108,7 @@ impl FungibleResourceRoles {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
@@ -78,14 +119,14 @@ pub struct FungibleResourceManagerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct FungibleResourceManagerCreateManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub resource_roles: FungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
@@ -94,7 +135,7 @@ pub type FungibleResourceManagerCreateOutput = ResourceAddress;
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -106,15 +147,15 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub initial_supply: Decimal,
-    pub resource_roles: FungibleResourceRoles,
-    pub metadata: ModuleConfig<MetadataInit>,
+    pub resource_roles: ManifestFungibleResourceRoles,
+    pub metadata: ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 

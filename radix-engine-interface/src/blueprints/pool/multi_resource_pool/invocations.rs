@@ -20,8 +20,8 @@ define_invocation! {
     },
     output: type Global<MultiResourcePoolMarker>,
     manifest_input: struct {
-        owner_role: OwnerRole,
-        pool_manager_rule: AccessRule,
+        owner_role: ManifestOwnerRole,
+        pool_manager_rule: ManifestAccessRule,
         resource_addresses: IndexSet<ManifestResourceAddress>,
         address_reservation: Option<ManifestAddressReservation>
     }

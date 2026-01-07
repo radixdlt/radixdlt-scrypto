@@ -1,10 +1,10 @@
 use crate::data::manifest::model::*;
 use crate::internal_prelude::*;
 
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
-
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {
     Address(ManifestAddress),

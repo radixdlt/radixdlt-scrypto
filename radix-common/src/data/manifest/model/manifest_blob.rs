@@ -1,9 +1,9 @@
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
-
 use crate::internal_prelude::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBlobRef(pub [u8; 32]);
 

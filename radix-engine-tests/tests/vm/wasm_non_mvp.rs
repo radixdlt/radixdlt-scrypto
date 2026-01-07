@@ -70,7 +70,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
             None,
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();

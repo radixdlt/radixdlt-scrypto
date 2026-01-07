@@ -885,7 +885,7 @@ impl MutableRolesLedgerSimulator {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new_with_owner",
-                manifest_args!(owner_role),
+                manifest_args!(ManifestOwnerRole::from(owner_role)),
             )
             .build();
         ledger.execute_manifest(manifest, vec![])

@@ -26,11 +26,11 @@ define_invocation! {
     },
     output: type Global<AccountLockerMarker>,
     manifest_input: struct {
-        owner_role: OwnerRole,
-        storer_role: AccessRule,
-        storer_updater_role: AccessRule,
-        recoverer_role: AccessRule,
-        recoverer_updater_role: AccessRule,
+        owner_role: ManifestOwnerRole,
+        storer_role: ManifestAccessRule,
+        storer_updater_role: ManifestAccessRule,
+        recoverer_role: ManifestAccessRule,
+        recoverer_updater_role: ManifestAccessRule,
         address_reservation: Option<ManifestAddressReservation>
     }
 }

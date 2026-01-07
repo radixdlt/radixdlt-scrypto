@@ -417,8 +417,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                         TwoResourcePoolInstantiateManifestInput {
                             resource_addresses: (pool_resource1.into(), pool_resource2.into()),
-                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                            owner_role: OwnerRole::None,
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone()))
+                                .into(),
+                            owner_role: OwnerRole::None.into(),
                             address_reservation: None,
                         },
                     )
@@ -471,8 +472,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                                 .into_iter()
                                 .map(Into::into)
                                 .collect(),
-                            pool_manager_rule: rule!(require(virtual_signature_badge.clone())),
-                            owner_role: OwnerRole::None,
+                            pool_manager_rule: rule!(require(virtual_signature_badge.clone()))
+                                .into(),
+                            owner_role: OwnerRole::None.into(),
                             address_reservation: None,
                         },
                     )

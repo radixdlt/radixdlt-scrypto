@@ -23,7 +23,7 @@ use sbor::*;
 pub const BLS12381_CIPHERSITE_V1: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 /// Represents a BLS12-381 G2 signature (variant with 96-byte signature and 48-byte public key)
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Bls12381G2Signature(
