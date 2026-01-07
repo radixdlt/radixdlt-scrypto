@@ -1,14 +1,13 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use blst::{
     min_pk::{AggregatePublicKey, PublicKey},
     BLST_ERROR,
 };
 
 /// Represents a BLS12-381 G1 public key.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Bls12381G1PublicKey(

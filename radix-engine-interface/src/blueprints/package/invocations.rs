@@ -81,7 +81,7 @@ pub const PACKAGE_CLAIM_ROYALTIES_IDENT: &str = "PackageRoyalty_claim_royalties"
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(arbitrary::Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,

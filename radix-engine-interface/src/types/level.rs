@@ -1,13 +1,12 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use core::str::FromStr;
 use sbor::rust::prelude::*;
 
 /// Represents the level of a log message.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, Ord, PartialOrd, Default)]
 pub enum Level {

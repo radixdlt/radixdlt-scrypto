@@ -2,15 +2,17 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::types::EntityType;
 use crate::types::NodeId;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use sbor::rust::fmt;
 use sbor::*;
 
 /// Any address supported by manifest, both global and local.
 ///
 /// Must start with a supported entity type byte.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[must_use]
 pub enum ManifestAddress {
@@ -40,7 +42,10 @@ impl ManifestAddress {
     as_ref = "&ManifestAddress::Named(*self)",
     from_value = "value.into_named().ok_or(DecodeError::InvalidCustomValue)?"
 )]
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 pub struct ManifestNamedAddress(pub u32);
 
 pub const MANIFEST_ADDRESS_DISCRIMINATOR_STATIC: u8 = 0u8;

@@ -1,11 +1,12 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 use crate::data::manifest::*;
 use crate::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct ManifestBucket(pub u32);

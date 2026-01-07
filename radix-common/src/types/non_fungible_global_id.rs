@@ -1,11 +1,9 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 /// Represents the global id of a non-fungible.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Clone,

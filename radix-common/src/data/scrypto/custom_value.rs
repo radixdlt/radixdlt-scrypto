@@ -1,8 +1,7 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
     Reference(Reference),

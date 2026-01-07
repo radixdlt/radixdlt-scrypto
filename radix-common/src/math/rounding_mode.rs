@@ -1,14 +1,13 @@
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 use core::cmp::Ordering;
 use sbor::Sbor;
-#[cfg(feature = "fuzzing")]
-use serde::{Deserialize, Serialize};
 
 /// Defines the rounding strategy.
 ///
 /// Following the same naming convention as https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum RoundingMode {
     /// The number is always rounded toward positive infinity, e.g. `3.1 -> 4`, `-3.1 -> -3`.

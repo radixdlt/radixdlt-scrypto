@@ -1,7 +1,6 @@
 use crate::api::ModuleId;
 use crate::blueprints::resource::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::prelude::*;
 use sbor::rust::fmt::Debug;
 
@@ -11,7 +10,7 @@ pub const ROLE_ASSIGNMENT_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentCreateInput {
@@ -21,7 +20,7 @@ pub struct RoleAssignmentCreateInput {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct RoleAssignmentCreateManifestInput {
@@ -35,7 +34,7 @@ pub const ROLE_ASSIGNMENT_SET_IDENT: &str = "set";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentSetInput {
@@ -46,7 +45,7 @@ pub struct RoleAssignmentSetInput {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct RoleAssignmentSetManifestInput {
@@ -61,7 +60,7 @@ pub const ROLE_ASSIGNMENT_SET_OWNER_IDENT: &str = "set_owner";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct RoleAssignmentSetOwnerInput {
@@ -70,7 +69,7 @@ pub struct RoleAssignmentSetOwnerInput {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct RoleAssignmentSetOwnerManifestInput {
@@ -83,7 +82,7 @@ pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentLockOwnerInput {}
@@ -96,7 +95,7 @@ pub const ROLE_ASSIGNMENT_GET_IDENT: &str = "get";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentGetInput {
@@ -113,7 +112,7 @@ pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT: &str = "get_owner_role";
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
 pub struct RoleAssignmentGetOwnerRoleInput;

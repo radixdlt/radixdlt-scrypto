@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::ToRoleEntry;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::define_untyped_manifest_type_wrapper;
 
 use super::AccessRule;
@@ -9,7 +8,7 @@ use super::AccessRule;
 pub const SELF_ROLE: &'static str = "_self_";
 pub const OWNER_ROLE: &'static str = "_owner_";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct MethodKey {
@@ -30,7 +29,7 @@ impl From<&str> for MethodKey {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum MethodAccessibility {
     /// Method is accessible to all
@@ -62,7 +61,7 @@ impl From<RoleList> for MethodAccessibility {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct ModuleRoleKey {
     pub module: ModuleId,
@@ -80,7 +79,7 @@ impl ModuleRoleKey {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -129,7 +128,7 @@ impl RoleKey {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRoleUpdater {
@@ -144,7 +143,7 @@ pub enum OwnerRoleUpdater {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
@@ -163,7 +162,7 @@ impl OwnerRoleEntry {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct ManifestOwnerRoleEntry {
@@ -180,7 +179,7 @@ impl From<OwnerRoleEntry> for ManifestOwnerRoleEntry {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor, Default,
 )]
@@ -228,7 +227,7 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 }
 
 /// Front end data structure for specifying owner role
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
     Default,
     Debug,
@@ -276,7 +275,7 @@ define_untyped_manifest_type_wrapper!(
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
@@ -298,7 +297,7 @@ impl RoleAssignmentInit {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]

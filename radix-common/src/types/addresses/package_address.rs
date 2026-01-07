@@ -7,8 +7,6 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -83,8 +81,8 @@ impl PackageAddress {
 #[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that EntityType::GlobalPackage marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
-impl<'a> Arbitrary<'a> for PackageAddress {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for PackageAddress {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         use core::cmp::min;
 
         let mut node_id = [0u8; NodeId::LENGTH];

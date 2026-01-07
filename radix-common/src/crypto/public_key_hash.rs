@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 
 //===============
 // TRAITS + UTILS
@@ -40,7 +39,7 @@ pub fn hash_public_key_bytes<T: AsRef<[u8]>>(key_bytes: T) -> [u8; NodeId::RID_L
 /// The hash of a given public key.
 ///
 /// In particular, it is the last 29 bytes of Blake2b-256 hash of the public key in the Radix canonical encoding.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 pub enum PublicKeyHash {
     Secp256k1(Secp256k1PublicKeyHash),

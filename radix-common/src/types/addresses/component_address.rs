@@ -8,8 +8,6 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -100,8 +98,8 @@ impl ComponentAddress {
 
 #[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that global component address is generated.
-impl<'a> Arbitrary<'a> for ComponentAddress {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for ComponentAddress {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         use core::cmp::min;
         let component_entities: [u8; 14] = [
             EntityType::GlobalConsensusManager as u8,

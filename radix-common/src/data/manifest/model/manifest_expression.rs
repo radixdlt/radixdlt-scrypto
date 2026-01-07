@@ -1,11 +1,12 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 use crate::data::manifest::*;
 use crate::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ManifestExpression {
     /// Can be encoded into [`BucketBatch`]
@@ -18,7 +19,7 @@ pub enum ManifestExpression {
 // Alternative Representations
 //========
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestBucketBatch {
     ManifestBuckets(Vec<ManifestBucket>),
@@ -121,7 +122,7 @@ impl sbor::Describe<ScryptoCustomTypeKind> for ManifestBucketBatch {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestProofBatch {
     ManifestProofs(Vec<ManifestProof>),

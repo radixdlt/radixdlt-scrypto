@@ -1,10 +1,9 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 
 /// Represents an ED25519 public key.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(
     Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Categorize, Encode, Decode, BasicDescribe,
 )]
@@ -62,7 +61,7 @@ impl AsRef<[u8]> for Ed25519PublicKey {
 // hash
 //======
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Categorize, Encode, Decode, BasicDescribe)]
 #[sbor(transparent)]
 pub struct Ed25519PublicKeyHash(pub [u8; Self::LENGTH]);

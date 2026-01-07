@@ -203,7 +203,7 @@ macro_rules! define_untyped_manifest_type_wrapper {
     ) => {
         #[cfg_attr(
             feature = "fuzzing",
-            derive(Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+            derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
         )]
         #[derive(Debug, Clone, PartialEq, Eq, $crate::prelude::ManifestSbor)]
         #[sbor(transparent)]

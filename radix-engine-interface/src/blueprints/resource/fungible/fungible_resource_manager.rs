@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::types::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
@@ -11,7 +10,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceRoles {
     pub mint_roles: Option<MintRoles<RoleDefinition>>,
@@ -22,7 +21,7 @@ pub struct FungibleResourceRoles {
     pub deposit_roles: Option<DepositRoles<RoleDefinition>>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ManifestFungibleResourceRoles {
     pub mint_roles: Option<MintRoles<ManifestRoleDefinition>>,
@@ -109,7 +108,7 @@ impl FungibleResourceRoles {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
@@ -120,7 +119,7 @@ pub struct FungibleResourceManagerCreateInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct FungibleResourceManagerCreateManifestInput {
     pub owner_role: ManifestOwnerRole,
@@ -136,7 +135,7 @@ pub type FungibleResourceManagerCreateOutput = ResourceAddress;
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub owner_role: OwnerRole,
@@ -148,7 +147,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: ManifestOwnerRole,

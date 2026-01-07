@@ -1,12 +1,10 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 /// Represents any value conforming to the SBOR value model.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -370,10 +368,10 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
 // TUPLES
 //==============================================
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -435,10 +433,10 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
 // ENUMS
 //==============================================
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]

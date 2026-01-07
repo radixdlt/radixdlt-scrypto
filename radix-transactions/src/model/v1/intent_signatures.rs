@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 /// Represents any natively supported signature, including public key.
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]

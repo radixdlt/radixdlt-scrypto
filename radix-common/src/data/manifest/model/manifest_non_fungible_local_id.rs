@@ -1,5 +1,3 @@
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -11,6 +9,7 @@ use crate::*;
 
 pub const MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;
 
+#[cfg_attr(feature = "fuzzing", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestNonFungibleLocalId {
     String(String),
@@ -62,8 +61,8 @@ impl ManifestNonFungibleLocalId {
 }
 
 #[cfg(feature = "fuzzing")]
-impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for ManifestNonFungibleLocalId {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         let val = match u.int_in_range(0..=3).unwrap() {
             0 => {
                 let charset: Vec<char> =
