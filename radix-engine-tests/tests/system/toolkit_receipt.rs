@@ -227,10 +227,12 @@ fn newly_created_entities_are_mapped_correctly_in_receipt() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (wasm, definition) = (
         include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
-        manifest_decode(include_workspace_asset_bytes!(
+        manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
             "radix-transaction-scenarios",
             "radiswap.rpd"
         ))
+        .unwrap()
+        .try_into_typed()
         .unwrap(),
     );
     let (_, _, account) = ledger.new_account(false);
@@ -507,7 +509,7 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
                         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                         NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                            owner_role: Default::default(),
+                            owner_role: OwnerRole::default().into(),
                             id_type: NonFungibleIdType::Integer,
                             track_total_supply: Default::default(),
                             non_fungible_schema:
@@ -539,7 +541,8 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
                                     non_fungible_data_updater_updater: Some(rule!(allow_all)),
                                 }),
                                 ..Default::default()
-                            },
+                            }
+                            .into(),
                             metadata: Default::default(),
                             address_reservation: Some(reservation),
                         },

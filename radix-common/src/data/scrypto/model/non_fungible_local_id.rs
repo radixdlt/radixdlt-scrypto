@@ -2,8 +2,6 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Unstructured};
 use radix_rust::copy_u8_array;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -74,7 +72,7 @@ impl From<[u8; 32]> for NonFungibleLocalId {
 /// Represents the local id of a non-fungible.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleLocalId {
@@ -175,7 +173,7 @@ impl From<RUIDNonFungibleLocalId> for NonFungibleLocalId {
 }
 
 /// A string matching `[_0-9a-zA-Z]{1,64}`.
-#[cfg_attr(feature = "fuzzing", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StringNonFungibleLocalId(Cow<'static, str>);
 
@@ -226,8 +224,8 @@ impl StringNonFungibleLocalId {
 }
 
 #[cfg(feature = "fuzzing")]
-impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for StringNonFungibleLocalId {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         let charset: Vec<char> =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ012345678989_"
                 .chars()
@@ -260,7 +258,7 @@ impl TryFrom<&str> for StringNonFungibleLocalId {
 /// Unsigned integers, up to u64.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IntegerNonFungibleLocalId(u64);
@@ -282,7 +280,7 @@ impl From<u64> for IntegerNonFungibleLocalId {
 }
 
 /// Bytes, of length between 1 and 64.
-#[cfg_attr(feature = "fuzzing", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BytesNonFungibleLocalId(Cow<'static, [u8]>);
 
@@ -307,8 +305,8 @@ impl BytesNonFungibleLocalId {
 }
 
 #[cfg(feature = "fuzzing")]
-impl<'a> Arbitrary<'a> for BytesNonFungibleLocalId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for BytesNonFungibleLocalId {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let len: u8 = u
             .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
             .unwrap();
@@ -328,7 +326,7 @@ impl TryFrom<Vec<u8>> for BytesNonFungibleLocalId {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 /// RUID, v4, variant 1, big endian. See https://www.rfc-editor.org/rfc/rfc4122
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

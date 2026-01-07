@@ -261,7 +261,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                     indexmap!( // Entries
                                         NonFungibleLocalId::integer(1) => ((),),
                                     ),
-                                    NonFungibleResourceRoles::default(),
+                                    ManifestNonFungibleResourceRoles::from(NonFungibleResourceRoles::default()),
                                     metadata! {
                                         init {
                                             "name" => "Radiswap - dApp Owner Badge", updatable;
@@ -305,9 +305,11 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
             })
             .successful_transaction(|core, config, state| {
                 let code = include_bytes!("../../assets/radiswap.wasm");
-                let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                     "../../assets/radiswap.rpd"
                 ))
+                .unwrap()
+                .try_into_typed()
                 .unwrap();
                 let owner_role = OwnerRole::Fixed(rule!(require(
                     state.owner_badge.get()?
@@ -338,7 +340,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 (
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_1.resource_1.unwrap(),
                                     state.pool_1.resource_2.unwrap(),
                                 )
@@ -348,7 +350,7 @@ impl ScenarioCreator for RadiswapV2ScenarioCreator {
                                 "Radiswap",
                                 "new",
                                 (
-                                    owner_role.clone(),
+                                    ManifestOwnerRole::from(owner_role.clone()),
                                     state.pool_2.resource_1.unwrap(),
                                     state.pool_2.resource_2.unwrap(),
                                 )

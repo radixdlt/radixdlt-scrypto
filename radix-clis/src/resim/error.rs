@@ -72,6 +72,8 @@ pub enum Error {
     InvalidResourceSpecifier(String),
 
     RemoteGenericSubstitutionNotSupported,
+
+    PackageDefinitionConversionError(ConversionError),
 }
 
 impl fmt::Display for Error {
@@ -137,6 +139,10 @@ impl Debug for Error {
                 .finish(),
             Self::SborDecodeError(err) => f.debug_tuple("SborDecodeError").field(err).finish(),
             Self::SborEncodeError(err) => f.debug_tuple("SborEncodeError").field(err).finish(),
+            Self::PackageDefinitionConversionError(err) => f
+                .debug_tuple("PackageDefinitionConversionError")
+                .field(err)
+                .finish(),
             Self::BuildError(err) => f.debug_tuple("BuildError").field(err).finish(),
             Self::ExtractSchemaError(err) => {
                 f.debug_tuple("ExtractSchemaError").field(err).finish()

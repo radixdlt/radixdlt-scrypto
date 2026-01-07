@@ -1,6 +1,5 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use core::cmp::Ordering;
 use core::ops::*;
 use num_bigint::BigInt;
@@ -31,7 +30,7 @@ use crate::*;
 ///
 /// To create a PreciseDecimal with a certain number of precise `10^(-36)` subunits,
 /// use [`PreciseDecimal::from_precise_subunits`].
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PreciseDecimal(InnerPreciseDecimal);
 

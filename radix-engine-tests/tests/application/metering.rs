@@ -160,10 +160,12 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!(
+            manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
                 "radix-transaction-scenarios",
                 "radiswap.rpd"
             ))
+            .unwrap()
+            .try_into_typed()
             .unwrap(),
         ),
         btreemap!(),
@@ -181,7 +183,7 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
                     package_address,
                     "Radiswap",
                     "new",
-                    manifest_args!(OwnerRole::None, btc, eth),
+                    manifest_args!(ManifestOwnerRole::from(OwnerRole::None), btc, eth),
                 )
                 .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
@@ -265,10 +267,12 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
         (
             include_workspace_asset_bytes!("radix-transaction-scenarios", "flash_loan.wasm")
                 .to_vec(),
-            manifest_decode(include_workspace_asset_bytes!(
+            manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
                 "radix-transaction-scenarios",
                 "flash_loan.rpd"
             ))
+            .unwrap()
+            .try_into_typed()
             .unwrap(),
         ),
         btreemap!(),
@@ -356,7 +360,7 @@ fn run_publish_large_package(mut ledger: DefaultLedgerSimulator) -> TransactionR
             None,
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -501,10 +505,12 @@ fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionRece
     let package_address = ledger.publish_package_simple((
         include_workspace_asset_bytes!("radix-transaction-scenarios", "crypto_scrypto_v2.wasm")
             .to_vec(),
-        manifest_decode(include_workspace_asset_bytes!(
+        manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
             "radix-transaction-scenarios",
             "crypto_scrypto_v2.rpd"
         ))
+        .unwrap()
+        .try_into_typed()
         .unwrap(),
     ));
 
@@ -768,10 +774,12 @@ impl NonFungibleData for TestNonFungibleData {
 fn publish_package_1mib() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let code = include_workspace_asset_bytes!("radix-engine-tests", "large_package.wasm").to_vec();
-    let definition = manifest_decode(include_workspace_asset_bytes!(
+    let definition = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-engine-tests",
         "large_package.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);

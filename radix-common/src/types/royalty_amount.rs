@@ -1,10 +1,8 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, ManifestSbor, ScryptoCategorize, ScryptoEncode, ScryptoDecode,

@@ -111,9 +111,10 @@ fn test_non_existent_blob_hash() {
                 code: ManifestBlobRef([0; 32]),
                 definition: PackageDefinition {
                     blueprints: indexmap!(),
-                },
-                metadata: metadata_init!(),
-                owner_role: OwnerRole::None,
+                }
+                .into(),
+                metadata: metadata_init!().into(),
+                owner_role: ManifestOwnerRole::from(OwnerRole::None),
                 package_address: None,
             },
         )

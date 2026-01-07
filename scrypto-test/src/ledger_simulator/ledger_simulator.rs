@@ -893,10 +893,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         |lookup| {
                             (
                                 lookup.bucket("owner_badge"),
-                                RuleSet {
-                                    primary_role: access_rule.clone(),
-                                    recovery_role: access_rule.clone(),
-                                    confirmation_role: access_rule.clone(),
+                                ManifestRuleSet {
+                                    primary_role: access_rule.clone().into(),
+                                    recovery_role: access_rule.clone().into(),
+                                    confirmation_role: access_rule.clone().into(),
                                 },
                                 Some(1000u32),
                                 None::<()>,
@@ -1039,9 +1039,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     PACKAGE_BLUEPRINT,
                     PACKAGE_PUBLISH_NATIVE_IDENT,
                     PackagePublishNativeManifestInput {
-                        definition,
+                        definition: definition.into(),
                         native_package_code_id,
-                        metadata: MetadataInit::default(),
+                        metadata: MetadataInit::default().into(),
                         package_address: None,
                     },
                 )
@@ -1089,7 +1089,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .publish_package_advanced(None, code, definition, metadata, owner_role)
+            .publish_package_advanced(
+                None,
+                code,
+                definition,
+                MetadataInit::from(metadata),
+                owner_role,
+            )
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1103,7 +1109,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (code, definition) = source.into().code_and_definition();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
+            .publish_package_advanced(
+                None,
+                code,
+                definition,
+                MetadataInit::from(BTreeMap::new()),
+                OwnerRole::None,
+            )
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -2042,8 +2054,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
                 OneResourcePoolInstantiateManifestInput {
                     resource_address: resource_address.into(),
-                    pool_manager_rule,
-                    owner_role: OwnerRole::None,
+                    pool_manager_rule: pool_manager_rule.into(),
+                    owner_role: OwnerRole::None.into(),
                     address_reservation: None,
                 },
             )

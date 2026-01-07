@@ -1,12 +1,9 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use core::cmp::Ordering;
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
-#[cfg(feature = "fuzzing")]
-use serde::{Deserialize, Serialize};
 
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
@@ -35,7 +32,10 @@ use super::CheckedTruncate;
 ///
 /// To create a Decimal with a certain number of `10^(-18)` subunits, use
 /// [`Decimal::from_attos`] or equivalently [`Decimal::from_subunits`].
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(InnerDecimal);
 

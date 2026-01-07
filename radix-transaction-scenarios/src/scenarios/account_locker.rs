@@ -84,7 +84,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                         address_reservation: None,
                                         owner_role: OwnerRole::Fixed(rule!(require(
                                             NonFungibleGlobalId::from_public_key(&key.public_key())
-                                        ))),
+                                        )))
+                                        .into(),
                                     },
                                 )
                             })
@@ -230,8 +231,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                             .call_method(
                                 state.account_rejecting_all_deposits.unwrap(),
                                 ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                                AccountAddAuthorizedDepositorInput {
-                                    badge: global_caller(state.account_locker.unwrap()),
+                                AccountAddAuthorizedDepositorManifestInput {
+                                    badge: global_caller(state.account_locker.unwrap()).into(),
                                 },
                             )
                     },

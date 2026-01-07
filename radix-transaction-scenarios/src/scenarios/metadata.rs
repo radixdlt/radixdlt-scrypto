@@ -94,9 +94,11 @@ impl ScenarioInstance for MetadataScenario {
                 core.check_start(&previous)?;
 
                 let code = include_bytes!("../../assets/metadata.wasm");
-                let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                     "../../assets/metadata.rpd"
                 ))
+                .unwrap()
+                .try_into_typed()
                 .unwrap();
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -152,8 +154,8 @@ impl ScenarioInstance for MetadataScenario {
                                 },
                             );
                         let address = builder.named_address("metadata_component_address");
-                        for (k, v) in create_metadata() {
-                            builder = builder.set_metadata(address, k, v);
+                        for (k, v) in create_metadata().data {
+                            builder = builder.set_metadata(address, k, v.value);
                         }
                         builder.try_deposit_entire_worktop_or_abort(user_account_1.address, None)
                     },
@@ -359,7 +361,7 @@ impl ScenarioInstance for MetadataScenario {
     }
 }
 
-fn create_metadata() -> BTreeMap<String, MetadataValue> {
+fn create_metadata() -> MetadataInit {
     let mut metadata = BTreeMap::<String, MetadataValue>::new();
 
     add(
@@ -427,7 +429,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
             ),
         ],
     );
-    metadata
+    MetadataInit::from(metadata)
 }
 
 fn add<T: SingleMetadataVal + Clone>(

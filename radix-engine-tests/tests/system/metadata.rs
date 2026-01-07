@@ -14,10 +14,12 @@ fn publish_metadata_package(
 ) -> PackageAddress {
     let code =
         include_workspace_asset_bytes!("radix-transaction-scenarios", "metadata.wasm").to_vec();
-    let package_def = manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!(
+    let package_def = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "metadata.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
     ledger.publish_package_simple((code, package_def))
 }

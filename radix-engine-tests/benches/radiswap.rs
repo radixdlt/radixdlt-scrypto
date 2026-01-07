@@ -8,7 +8,7 @@ use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_transactions::prelude::*;
-use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
+use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder, ManifestPackageDefinition};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 
@@ -47,10 +47,12 @@ fn bench_radiswap(c: &mut Criterion) {
     let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!(
+            manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
                 "radix-transaction-scenarios",
                 "radiswap.rpd"
             ))
+            .unwrap()
+            .try_into_typed()
             .unwrap(),
         ),
         btreemap!(),
@@ -70,7 +72,7 @@ fn bench_radiswap(c: &mut Criterion) {
                     package_address,
                     "Radiswap",
                     "new",
-                    manifest_args!(OwnerRole::None, btc, eth),
+                    manifest_args!(ManifestOwnerRole::from(OwnerRole::None), btc, eth),
                 )
                 .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),

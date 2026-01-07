@@ -2,13 +2,12 @@ use crate::data::scrypto::model::Own;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct GlobalAddressReservation(pub Own);

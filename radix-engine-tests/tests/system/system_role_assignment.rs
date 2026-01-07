@@ -55,9 +55,10 @@ fn cannot_define_more_than_50_roles() {
                     definition: PackageDefinition::new_roles_only_test_definition(
                         BLUEPRINT_NAME,
                         roles,
-                    ),
+                    )
+                    .into(),
                     native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
-                    metadata: MetadataInit::default(),
+                    metadata: MetadataInit::default().into(),
                     package_address: None,
                 },
             )
@@ -118,9 +119,10 @@ fn cannot_define_role_name_larger_than_max() {
                     definition: PackageDefinition::new_roles_only_test_definition(
                         BLUEPRINT_NAME,
                         roles,
-                    ),
+                    )
+                    .into(),
                     native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
-                    metadata: MetadataInit::default(),
+                    metadata: MetadataInit::default().into(),
                     package_address: None,
                 },
             )
