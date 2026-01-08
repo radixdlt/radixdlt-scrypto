@@ -22,7 +22,7 @@
 #  => .github/actions/setup-env/action.yml
 # => fuzzer:
 #  => .github/actions/setup-env/action.yml
-channel = "stable"
+channel = "1.92.0"
 components = ["rustfmt", "rust-src"]
 targets = ["wasm32-unknown-unknown"]
 profile = "default"

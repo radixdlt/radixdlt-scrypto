@@ -8,7 +8,7 @@ runs:
       uses: RDXWorks-actions/toolchain@master
       with:
         # IMPORTANT: Ensure this aligns with rust-toolchain.toml
-        toolchain: stable
+        toolchain: 1.92.0
         default: true
         target: wasm32-unknown-unknown
         components: rustfmt, rust-std
