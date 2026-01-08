@@ -321,9 +321,7 @@ impl StoreCommit {
                 size,
                 ..
             } => canonical_substate_key.len() + *size,
-            StoreCommit::Update { size, old_size, .. } => {
-                (*size).saturating_sub(*old_size)
-            }
+            StoreCommit::Update { size, old_size, .. } => (*size).saturating_sub(*old_size),
             StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }

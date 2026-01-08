@@ -63,7 +63,7 @@ impl<X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Box<T> {
     }
 }
 
-impl< X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Box<T> {
+impl<X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Box<T> {
     fn get_discriminator(&self) -> u8 {
         self.as_ref().get_discriminator()
     }

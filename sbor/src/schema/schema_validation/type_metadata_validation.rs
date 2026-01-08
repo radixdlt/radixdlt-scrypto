@@ -2,7 +2,7 @@ use super::*;
 use crate::rust::prelude::*;
 use crate::schema::*;
 
-pub fn validate_type_metadata_with_type_kind< S: CustomSchema>(
+pub fn validate_type_metadata_with_type_kind<S: CustomSchema>(
     context: &SchemaContext,
     type_kind: &LocalTypeKind<S>,
     type_metadata: &TypeMetadata,

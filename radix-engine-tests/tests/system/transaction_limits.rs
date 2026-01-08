@@ -221,9 +221,14 @@ fn test_default_substate_size_limit() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateSizeExceeded(_),
-        ))))
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateSizeExceeded(_),
+            ))
+        )
+    })
 }
 
 #[test]
@@ -274,9 +279,14 @@ fn test_default_invoke_payload_size_limit() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
-        ))))
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
+            ))
+        )
+    })
 }
 
 #[test]

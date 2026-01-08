@@ -85,7 +85,9 @@ impl TransactionRuntimeModule {
             }
 
             // Apply replacements
-            if let EventTypeIdentifier(Emitter::Method(node_id, module_id), _) = &mut type_identifier {
+            if let EventTypeIdentifier(Emitter::Method(node_id, module_id), _) =
+                &mut type_identifier
+            {
                 if let Some((new_node_id, new_module_id)) =
                     self.replacements.get(&(*node_id, *module_id))
                 {
