@@ -7,6 +7,8 @@ resim="cargo run --manifest-path $PWD/radix-clis/Cargo.toml --bin resim $@ --"
 scrypto_bindgen="cargo run --manifest-path $PWD/radix-clis/Cargo.toml --bin scrypto-bindgen $@ --"
 
 file_contents="
+#![allow(clippy::new_ret_no_self)]
+
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
