@@ -1009,7 +1009,7 @@ impl ResourceBounds {
             }
             ResourceTakeAmount::All => {
                 // Taken amount
-                Ok(std::mem::take(self))
+                Ok(core::mem::take(self))
             }
         }
     }

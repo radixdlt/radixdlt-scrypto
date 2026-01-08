@@ -17,7 +17,7 @@ macro_rules! assert_sign_extensions {
                 let slice_len = (
                     1 +                           // prefix byte
                     1 +                           // value kind byte
-                    std::mem::size_of::<$type>()  // value bytes
+                    core::mem::size_of::<$type>()  // value bytes
                 ).to_string();
                 let input = $input as $type;
 

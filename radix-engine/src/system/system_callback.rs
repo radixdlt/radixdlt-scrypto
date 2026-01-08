@@ -1357,6 +1357,7 @@ impl<V: SystemCallbackObject> System<V> {
         )
     }
 
+    #[cfg_attr(feature = "alloc", allow(unused_variables))]
     fn create_receipt_internal(
         print_execution_summary: bool,
         costing_parameters: CostingParameters,

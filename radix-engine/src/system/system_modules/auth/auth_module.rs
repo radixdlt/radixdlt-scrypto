@@ -445,7 +445,7 @@ impl AuthModule {
             .as_typed::<FieldSubstate<AuthZone>>()
             .unwrap()
             .into_payload();
-        let proofs = std::mem::take(&mut auth_zone.proofs);
+        let proofs = core::mem::take(&mut auth_zone.proofs);
         api.kernel_write_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone)),

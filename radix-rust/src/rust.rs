@@ -92,6 +92,8 @@ pub use core::slice;
 #[cfg(not(feature = "alloc"))]
 pub use core::hash;
 #[cfg(not(feature = "alloc"))]
+pub use core::mem;
+#[cfg(not(feature = "alloc"))]
 pub use std::alloc;
 #[cfg(not(feature = "alloc"))]
 pub use std::borrow;
@@ -115,8 +117,6 @@ pub use std::format;
 pub use std::iter;
 #[cfg(not(feature = "alloc"))]
 pub use std::marker;
-#[cfg(not(feature = "alloc"))]
-pub use std::mem;
 #[cfg(not(feature = "alloc"))]
 pub use std::num;
 #[cfg(not(feature = "alloc"))]
