@@ -87,7 +87,7 @@ impl CallMethod {
     ///
     /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn add_call_method_instruction_with_schema<'a>(
+    pub fn add_call_method_instruction_with_schema(
         &self,
         builder: ManifestBuilder,
         address_bech32_decoder: &AddressBech32Decoder,

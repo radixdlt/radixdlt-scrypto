@@ -31,15 +31,15 @@ impl IDAllocation {
                 global,
             } => {
                 if *global {
-                    get_global_entity_type(&blueprint_id)
+                    get_global_entity_type(blueprint_id)
                 } else {
-                    get_internal_entity_type(&blueprint_id)
+                    get_internal_entity_type(blueprint_id)
                 }
             }
             IDAllocation::KeyValueStore => EntityType::InternalKeyValueStore,
             IDAllocation::GlobalAddressReservation => EntityType::InternalGenericComponent,
             IDAllocation::GlobalAddressPhantom { blueprint_id } => {
-                get_global_entity_type(&blueprint_id)
+                get_global_entity_type(blueprint_id)
             }
         }
     }

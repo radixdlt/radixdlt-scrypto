@@ -193,13 +193,13 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                     let child = api.new_simple_object(
                         BLUEPRINT_NAME,
                         indexmap! {
-                            0u8 => FieldValue::new(&Option::<Own>::None),
+                            0u8 => FieldValue::new(Option::<Own>::None),
                         },
                     )?;
                     let parent = api.new_simple_object(
                         BLUEPRINT_NAME,
                         indexmap! {
-                            0u8 => FieldValue::new(&Option::<Own>::Some(Own(child))),
+                            0u8 => FieldValue::new(Option::<Own>::Some(Own(child))),
                         },
                     )?;
 

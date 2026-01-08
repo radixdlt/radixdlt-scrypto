@@ -2,20 +2,20 @@ use crate::internal_prelude::*;
 use crate::value_kind::*;
 use crate::*;
 
-impl<'a, X: CustomValueKind, T: ?Sized + Categorize<X>> Categorize<X> for &T {
+impl<X: CustomValueKind, T: ?Sized + Categorize<X>> Categorize<X> for &T {
     #[inline]
     fn value_kind() -> ValueKind<X> {
         T::value_kind()
     }
 }
 
-impl<'a, X: CustomValueKind, T: ?Sized + SborTuple<X>> SborTuple<X> for &'a T {
+impl<X: CustomValueKind, T: ?Sized + SborTuple<X>> SborTuple<X> for &T {
     fn get_length(&self) -> usize {
         T::get_length(self)
     }
 }
 
-impl<'a, X: CustomValueKind, T: ?Sized + SborEnum<X>> SborEnum<X> for &'a T {
+impl<X: CustomValueKind, T: ?Sized + SborEnum<X>> SborEnum<X> for &T {
     fn get_discriminator(&self) -> u8 {
         T::get_discriminator(self)
     }
@@ -57,13 +57,13 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Box<T> {
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Box<T> {
+impl<X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Box<T> {
     fn get_length(&self) -> usize {
         self.as_ref().get_length()
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Box<T> {
+impl< X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Box<T> {
     fn get_discriminator(&self) -> u8 {
         self.as_ref().get_discriminator()
     }
@@ -80,13 +80,13 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Rc<T> {
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Rc<T> {
+impl<X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Rc<T> {
     fn get_length(&self) -> usize {
         self.as_ref().get_length()
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Rc<T> {
+impl<X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Rc<T> {
     fn get_discriminator(&self) -> u8 {
         self.as_ref().get_discriminator()
     }
@@ -103,13 +103,13 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Arc<T> {
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Arc<T> {
+impl<X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for Arc<T> {
     fn get_length(&self) -> usize {
         self.as_ref().get_length()
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Arc<T> {
+impl<X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for Arc<T> {
     fn get_discriminator(&self) -> u8 {
         self.as_ref().get_discriminator()
     }
@@ -126,13 +126,13 @@ impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for RefCell<T> {
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for RefCell<T> {
+impl<X: CustomValueKind, T: SborTuple<X>> SborTuple<X> for RefCell<T> {
     fn get_length(&self) -> usize {
         self.borrow().get_length()
     }
 }
 
-impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for RefCell<T> {
+impl<X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for RefCell<T> {
     fn get_discriminator(&self) -> u8 {
         self.borrow().get_discriminator()
     }
@@ -142,7 +142,7 @@ impl<'a, X: CustomValueKind, T: SborEnum<X>> SborEnum<X> for RefCell<T> {
     }
 }
 
-impl<'a, X: CustomValueKind, E: Encoder<X>, T: ?Sized + Encode<X, E>> Encode<X, E> for &T {
+impl<X: CustomValueKind, E: Encoder<X>, T: ?Sized + Encode<X, E>> Encode<X, E> for &T {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         (*self).encode_value_kind(encoder)

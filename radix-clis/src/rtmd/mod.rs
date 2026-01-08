@@ -69,7 +69,7 @@ pub fn run() -> Result<(), String> {
     if args.export_blobs {
         let directory = args.output.parent().unwrap();
         for (blob_hash, content) in manifest.get_blobs() {
-            std::fs::write(directory.join(format!("{}.blob", blob_hash)), &content)
+            std::fs::write(directory.join(format!("{}.blob", blob_hash)), content)
                 .map_err(Error::IoError)?;
         }
     }

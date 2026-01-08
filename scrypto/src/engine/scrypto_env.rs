@@ -165,7 +165,7 @@ impl ScryptoVmV1Api {
 
     pub fn kv_store_open_entry(
         node_id: &NodeId,
-        key: &Vec<u8>,
+        key: &[u8],
         flags: LockFlags,
     ) -> KeyValueEntryHandle {
         let handle = unsafe {
@@ -181,7 +181,7 @@ impl ScryptoVmV1Api {
         handle
     }
 
-    pub fn kv_store_remove_entry(node_id: &NodeId, key: &Vec<u8>) -> Vec<u8> {
+    pub fn kv_store_remove_entry(node_id: &NodeId, key: &[u8]) -> Vec<u8> {
         let removed = copy_buffer(unsafe {
             kv_store::kv_store_remove_entry(
                 node_id.as_bytes().as_ptr(),
@@ -194,9 +194,7 @@ impl ScryptoVmV1Api {
     }
 
     pub fn actor_open_field(object_handle: u32, field: u8, flags: LockFlags) -> SubstateHandle {
-        let handle =
-            unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) };
-        handle
+        unsafe { actor::actor_open_field(object_handle, u32::from(field), flags.bits()) }
     }
 
     pub fn actor_get_object_id(actor_ref_handle: ActorRefHandle) -> NodeId {

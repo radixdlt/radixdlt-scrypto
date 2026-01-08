@@ -29,14 +29,9 @@ pub enum PackageRoyalty {
     feature = "fuzzing",
     derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, Default)]
 pub enum PackageRoyaltyConfig {
+    #[default]
     Disabled,
     Enabled(IndexMap<String, RoyaltyAmount>),
-}
-
-impl Default for PackageRoyaltyConfig {
-    fn default() -> Self {
-        PackageRoyaltyConfig::Disabled
-    }
 }

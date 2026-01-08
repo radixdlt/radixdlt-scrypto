@@ -101,15 +101,14 @@ impl TypedSubstateKey {
     /// (See `radix-engine-tests/tests/bootstrap.rs` for an example of how it should be used)
     /// Just a work around for now to filter out "transient" substates we shouldn't really be storing.
     pub fn value_is_mappable(&self) -> bool {
-        match self {
+        !matches!(
+            self,
             TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVault(
                 NonFungibleVaultTypedSubstateKey::Field(NonFungibleVaultField::LockedResource),
-            )) => false,
-            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
+            )) | TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVault(
                 FungibleVaultTypedSubstateKey::Field(FungibleVaultField::LockedBalance),
-            )) => false,
-            _ => true,
-        }
+            ))
+        )
     }
 }
 
@@ -244,10 +243,10 @@ pub fn to_typed_substate_key(
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
             TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(
-                scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
+                scrypto_decode(key).map_err(|_| error("Access Rules key"))?,
             ))
         }
-        partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
+        partition_num if partition_num >= MAIN_BASE_PARTITION => {
             TypedSubstateKey::MainModule(to_typed_object_module_substate_key(
                 entity_type,
                 partition_num.0 - MAIN_BASE_PARTITION.0,
@@ -264,7 +263,7 @@ pub fn to_typed_object_module_substate_key(
     partition_offset: u8,
     substate_key: &SubstateKey,
 ) -> Result<TypedMainModuleSubstateKey, String> {
-    return to_typed_object_substate_key_internal(
+    to_typed_object_substate_key_internal(
         entity_type,
         PartitionOffset(partition_offset),
         substate_key,
@@ -274,7 +273,7 @@ pub fn to_typed_object_module_substate_key(
             "Could not convert {:?} (partition offset {}) {:?} key to TypedObjectSubstateKey",
             entity_type, partition_offset, substate_key
         )
-    });
+    })
 }
 
 fn to_typed_object_substate_key_internal(
@@ -374,14 +373,12 @@ fn to_typed_object_substate_key_internal(
                 TypedMainModuleSubstateKey::TransactionTrackerField(
                     TransactionTrackerField::try_from(substate_key)?,
                 )
+            } else if let Some(key) = substate_key.for_map() {
+                TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
+                    TransactionIntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
+                )
             } else {
-                if let Some(key) = substate_key.for_map() {
-                    TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        TransactionIntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
-                    )
-                } else {
-                    return Err(());
-                }
+                return Err(());
             }
         }
         // These seem to be spread between Object and Virtualized SysModules
@@ -394,6 +391,7 @@ fn to_typed_object_substate_key_internal(
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum TypedSubstateValue {
     BootLoader(BootLoaderSubstateValue),
     ProtocolUpdateStatus(ProtocolUpdateStatusSubstateValue),

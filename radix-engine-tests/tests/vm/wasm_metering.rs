@@ -176,14 +176,7 @@ fn test_grow_memory_beyond_limit() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
-            if e.contains("Unreachable") =>
-        {
-            true
-        }
-        _ => false,
-    })
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e))) if e.contains("Unreachable")))
 }
 
 #[test]
@@ -209,12 +202,5 @@ fn test_grow_memory_by_more_than_65536() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
-            if e.contains("Unreachable") =>
-        {
-            true
-        }
-        _ => false,
-    })
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e))) if e.contains("Unreachable")))
 }

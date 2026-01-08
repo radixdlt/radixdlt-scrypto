@@ -1157,6 +1157,7 @@ fn node_id(entity_type: EntityType, id: u64) -> NodeId {
     NodeId(bytes)
 }
 
+#[allow(clippy::type_complexity, clippy::result_large_err)]
 fn statically_analyze<M: ReadableManifest>(
     manifest: &M,
 ) -> Result<

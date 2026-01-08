@@ -126,7 +126,7 @@ impl ContextualTryFrom<ResourceSpecifier> for RuntimeResourceSpecifier {
                 resource_address,
                 amount,
             } => Ok(RuntimeResourceSpecifier::Amount(
-                RuntimeResourceAddress::try_from_bech32(&context, &resource_address)
+                RuntimeResourceAddress::try_from_bech32(context, &resource_address)
                     .ok_or(ToolkitReceiptError::InvalidResourceAddress)?,
                 amount.into_inner(),
             )),
@@ -134,7 +134,7 @@ impl ContextualTryFrom<ResourceSpecifier> for RuntimeResourceSpecifier {
                 resource_address,
                 ids,
             } => Ok(RuntimeResourceSpecifier::Ids(
-                RuntimeResourceAddress::try_from_bech32(&context, &resource_address)
+                RuntimeResourceAddress::try_from_bech32(context, &resource_address)
                     .ok_or(ToolkitReceiptError::InvalidResourceAddress)?,
                 ids.into_iter().map(|value| value.into_inner()).collect(),
             )),
@@ -219,13 +219,13 @@ impl ContextualTryFrom<MetadataValue> for RuntimeMetadataValue {
             MetadataValue::I64(value) => Self::I64(value.into_inner()),
             MetadataValue::Decimal(value) => Self::Decimal(value.into_inner()),
             MetadataValue::GlobalAddress(value) => {
-                RuntimeGlobalAddress::try_from_bech32(&context, &value)
+                RuntimeGlobalAddress::try_from_bech32(context, &value)
                     .map(Self::GlobalAddress)
                     .ok_or(ToolkitReceiptError::InvalidGlobalAddress)?
             }
             MetadataValue::PublicKey(value) => Self::PublicKey(value.into()),
             MetadataValue::NonFungibleGlobalId(value) => {
-                RuntimeNonFungibleGlobalId::try_from_canonical_string(&context, &value)
+                RuntimeNonFungibleGlobalId::try_from_canonical_string(context, &value)
                     .map(Self::NonFungibleGlobalId)
                     .map_err(|_| ToolkitReceiptError::InvalidNonFungibleGlobalId)?
             }
@@ -259,7 +259,7 @@ impl ContextualTryFrom<MetadataValue> for RuntimeMetadataValue {
             MetadataValue::GlobalAddressArray(value) => value
                 .into_iter()
                 .map(|value| {
-                    RuntimeGlobalAddress::try_from_bech32(&context, &value)
+                    RuntimeGlobalAddress::try_from_bech32(context, &value)
                         .ok_or(ToolkitReceiptError::InvalidGlobalAddress)
                 })
                 .collect::<Result<_, _>>()
@@ -270,7 +270,7 @@ impl ContextualTryFrom<MetadataValue> for RuntimeMetadataValue {
             MetadataValue::NonFungibleGlobalIdArray(value) => value
                 .into_iter()
                 .map(|value| {
-                    RuntimeNonFungibleGlobalId::try_from_canonical_string(&context, &value)
+                    RuntimeNonFungibleGlobalId::try_from_canonical_string(context, &value)
                         .map_err(|_| ToolkitReceiptError::InvalidNonFungibleGlobalId)
                 })
                 .collect::<Result<_, _>>()
@@ -319,7 +319,7 @@ impl ContextualTryFrom<RuntimeMetadataValue> for MetadataValue {
                 .map(Self::GlobalAddress)?,
             RuntimeMetadataValue::PublicKey(value) => Self::PublicKey(value.into()),
             RuntimeMetadataValue::NonFungibleGlobalId(value) => {
-                Self::NonFungibleGlobalId(value.to_canonical_string(&context))
+                Self::NonFungibleGlobalId(value.to_canonical_string(context))
             }
             RuntimeMetadataValue::NonFungibleLocalId(value) => {
                 Self::NonFungibleLocalId(value.into())
@@ -362,7 +362,7 @@ impl ContextualTryFrom<RuntimeMetadataValue> for MetadataValue {
                 Self::NonFungibleGlobalIdArray(
                     value
                         .into_iter()
-                        .map(|item| item.to_canonical_string(&context))
+                        .map(|item| item.to_canonical_string(context))
                         .collect(),
                 )
             }
@@ -644,12 +644,12 @@ impl ContextualTryFrom<StateUpdatesSummary<RuntimeTypeSelector>>
             non_fungible_data_updates: value
                 .non_fungible_data_updates
                 .into_iter()
-                .map(|(key, value)| (key.to_canonical_string(&context), value.into()))
+                .map(|(key, value)| (key.to_canonical_string(context), value.into()))
                 .collect(),
             newly_minted_non_fungibles: value
                 .newly_minted_non_fungibles
                 .into_iter()
-                .map(|value| value.to_canonical_string(&context))
+                .map(|value| value.to_canonical_string(context))
                 .collect(),
         })
     }

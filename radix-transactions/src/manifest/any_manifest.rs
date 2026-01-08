@@ -148,7 +148,7 @@ impl AnyManifest {
     }
 
     pub fn from_raw(raw: &RawManifest) -> Result<Self, DecodeError> {
-        Ok(manifest_decode(raw.as_slice())?)
+        manifest_decode(raw.as_slice())
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -211,9 +211,7 @@ impl AnyManifest {
             });
         }
 
-        Err(format!(
-            "Cannot decode transaction manifest or transaction payload"
-        ))
+        Err("Cannot decode transaction manifest or transaction payload".to_string())
     }
 }
 
@@ -237,7 +235,7 @@ impl ReadableManifestBase for AnyManifest {
         iterator
     }
 
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_> {
         match self {
             AnyManifest::V1(m) => m.get_known_object_names_ref(),
             AnyManifest::SystemV1(m) => m.get_known_object_names_ref(),
@@ -269,7 +267,7 @@ impl ReadableManifestBase for AnyManifest {
 }
 
 impl ReadableManifest for AnyManifest {
-    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect> {
+    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect<'_>> {
         let iterator: Box<dyn Iterator<Item = ManifestInstructionEffect>> = match self {
             AnyManifest::V1(m) => Box::new(m.iter_instruction_effects()),
             AnyManifest::SystemV1(m) => Box::new(m.iter_instruction_effects()),
@@ -298,7 +296,7 @@ impl ReadableManifest for AnyManifest {
         }
     }
 
-    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect {
+    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect<'_> {
         match self {
             AnyManifest::V1(m) => m.instruction_effect(index),
             AnyManifest::SystemV1(m) => m.instruction_effect(index),
@@ -332,20 +330,20 @@ impl TryFrom<&str> for ManifestKind {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let kind = match value.to_ascii_lowercase().as_str() {
-            "v1" => Self::V1,
-            "systemv1" => Self::SystemV1,
-            "v2" => Self::V2,
-            "subintentv2" => Self::SubintentV2,
-            "system" => Self::LATEST_SYSTEM,
-            "transaction" => Self::LATEST_TRANSACTION,
-            "subintent" => Self::LATEST_SUBINTENT,
-            _ => {
-                return Err(format!(
+        let kind =
+            match value.to_ascii_lowercase().as_str() {
+                "v1" => Self::V1,
+                "systemv1" => Self::SystemV1,
+                "v2" => Self::V2,
+                "subintentv2" => Self::SubintentV2,
+                "system" => Self::LATEST_SYSTEM,
+                "transaction" => Self::LATEST_TRANSACTION,
+                "subintent" => Self::LATEST_SUBINTENT,
+                _ => return Err(
                     "Manifest kind not recognized. Try one of: V1 | SystemV1 | V2 | SubintentV2"
-                ))
-            }
-        };
+                        .to_string(),
+                ),
+            };
         Ok(kind)
     }
 }

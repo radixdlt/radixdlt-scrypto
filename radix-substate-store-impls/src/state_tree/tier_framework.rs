@@ -17,6 +17,7 @@ pub const TIER_SEPARATOR: u8 = b'_';
 pub trait StoredNode {
     type Payload;
 
+    #[allow(clippy::wrong_self_convention)]
     fn into_jmt_node(&self, key: &TreeNodeKey) -> Node<Self::Payload>;
     fn from_jmt_node(node: &Node<Self::Payload>, key: &TreeNodeKey) -> Self;
 }
@@ -35,16 +36,14 @@ pub trait ReadableTier: StateTreeTier {
     /// Gets node by key, if it exists.
     fn get_local_node(&self, local_key: &TreeNodeKey) -> Option<Self::StoredNode>;
 
-    fn jmt(&self) -> JellyfishMerkleTree<Self, Self::Payload> {
+    fn jmt(&self) -> JellyfishMerkleTree<'_, Self, Self::Payload> {
         JellyfishMerkleTree::new(self)
     }
 
     fn get_persisted_leaf_payload(&self, key: &Self::TypedLeafKey) -> Option<Self::Payload> {
-        let Some(root_version) = self.root_version() else {
-            return None;
-        };
+        let root_version = self.root_version()?;
 
-        let leaf_key = Self::to_leaf_key(&key);
+        let leaf_key = Self::to_leaf_key(key);
 
         let (leaf_node_data, _proof) = self.jmt().get_with_proof(&leaf_key, root_version).unwrap();
         leaf_node_data.map(|(_hash, payload, _version)| payload)
@@ -104,7 +103,7 @@ where
                 TreeNodeKey::new_empty_path(version),
                 from_key
                     .map(|from| T::to_leaf_key(from).into_path().nibbles().collect())
-                    .unwrap_or_else(|| VecDeque::new()),
+                    .unwrap_or_else(VecDeque::new),
             )
         })
         .unwrap_or_else(|| Box::new(iter::empty()))
@@ -172,7 +171,7 @@ impl<R: ReadableTier + ?Sized> TreeReader<<R::StoredNode as StoredNode>::Payload
     ) -> Result<Option<Node<<R::StoredNode as StoredNode>::Payload>>, StorageError> {
         Ok(self
             .get_local_node(node_key)
-            .map(|tree_node| tree_node.into_jmt_node(&node_key)))
+            .map(|tree_node| tree_node.into_jmt_node(node_key)))
     }
 }
 
@@ -204,7 +203,7 @@ pub trait RwTier: ReadableTier + WriteableTier {
         <Self as StateTreeTier>::TypedLeafKey: 'a,
     {
         let value_set = leaf_updates
-            .map(|(key, option)| (Self::to_leaf_key(&key), option))
+            .map(|(key, option)| (Self::to_leaf_key(key), option))
             .collect();
         let (root_hash, update_batch) = self
             .jmt()
@@ -231,7 +230,7 @@ pub trait RwTier: ReadableTier + WriteableTier {
             new_root_hash: _,
         } = tier_update_batch;
         for (key, node) in update_batch.node_batch.iter().flatten() {
-            self.insert_local_node(key, Self::StoredNode::from_jmt_node(node, &key));
+            self.insert_local_node(key, Self::StoredNode::from_jmt_node(node, key));
         }
         for stale_node in update_batch.stale_node_index_batch.iter().flatten() {
             self.record_stale_local_node(&stale_node.node_key);

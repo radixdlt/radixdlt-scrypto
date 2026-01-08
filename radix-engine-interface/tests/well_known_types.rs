@@ -11,7 +11,7 @@ mod tests {
         // In particular, we only test types here which are only actually fully defined in `radix-engine-interface`.
 
         // MISC
-        let nf_global_id = NonFungibleGlobalId::from_public_key(&PublicKey::Ed25519(
+        let nf_global_id = NonFungibleGlobalId::from_public_key(PublicKey::Ed25519(
             Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]),
         ));
         test_equivalence(NON_FUNGIBLE_GLOBAL_ID_TYPE, nf_global_id.clone());
@@ -62,7 +62,7 @@ mod tests {
 
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             &scrypto_encode(&value).unwrap(),
-            &ScryptoCustomSchema::empty_schema(),
+            ScryptoCustomSchema::empty_schema(),
             id.into(),
             &(),
             10,

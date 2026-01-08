@@ -149,7 +149,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

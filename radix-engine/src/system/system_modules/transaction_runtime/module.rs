@@ -16,6 +16,7 @@ pub struct Event {
 pub const EVENT_FLAGS_LEN: usize = 4;
 
 impl Event {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.type_identifier.len() + self.payload.len() + EVENT_FLAGS_LEN
     }
@@ -45,7 +46,7 @@ impl TransactionRuntimeModule {
 
     pub fn generate_ruid(&mut self) -> [u8; 32] {
         let mut bytes = [0u8; 36];
-        (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());
+        bytes[..32].copy_from_slice(self.tx_hash.as_slice());
         bytes[32..].copy_from_slice(&self.next_id.to_le_bytes());
 
         self.next_id += 1;
@@ -65,6 +66,7 @@ impl TransactionRuntimeModule {
         self.replacements.insert(old, new);
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn finalize(
         self,
         is_success: bool,
@@ -83,16 +85,13 @@ impl TransactionRuntimeModule {
             }
 
             // Apply replacements
-            match &mut type_identifier {
-                EventTypeIdentifier(Emitter::Method(node_id, module_id), _) => {
-                    if let Some((new_node_id, new_module_id)) =
-                        self.replacements.get(&(*node_id, *module_id))
-                    {
-                        *node_id = *new_node_id;
-                        *module_id = *new_module_id;
-                    }
+            if let EventTypeIdentifier(Emitter::Method(node_id, module_id), _) = &mut type_identifier {
+                if let Some((new_node_id, new_module_id)) =
+                    self.replacements.get(&(*node_id, *module_id))
+                {
+                    *node_id = *new_node_id;
+                    *module_id = *new_module_id;
                 }
-                _ => {}
             };
 
             // Add to results

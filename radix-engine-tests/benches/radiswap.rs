@@ -56,7 +56,7 @@ fn bench_radiswap(c: &mut Criterion) {
             .unwrap(),
         ),
         btreemap!(),
-        OwnerRole::Updatable(rule!(require(signature(&pk)))),
+        OwnerRole::Updatable(rule!(require(signature(pk)))),
     );
 
     // Create freely mintable resources
@@ -76,7 +76,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 )
                 .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk)],
+            vec![NonFungibleGlobalId::from_public_key(pk)],
         )
         .expect_commit(true)
         .output(1);
@@ -113,7 +113,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 })
                 .try_deposit_entire_worktop_or_abort(account, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk)],
+            vec![NonFungibleGlobalId::from_public_key(pk)],
         )
         .expect_commit(true);
 
@@ -141,7 +141,7 @@ fn bench_radiswap(c: &mut Criterion) {
                     .mint_fungible(eth, dec!("100"))
                     .try_deposit_entire_worktop_or_abort(account2, None)
                     .build(),
-                vec![NonFungibleGlobalId::from_public_key(&pk)],
+                vec![NonFungibleGlobalId::from_public_key(pk)],
             )
             .expect_commit(true);
         accounts.push((pk2, account2));
@@ -197,7 +197,7 @@ fn do_swap(
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&account.0)],
+            vec![NonFungibleGlobalId::from_public_key(account.0)],
         )
         .expect_commit_success();
 }

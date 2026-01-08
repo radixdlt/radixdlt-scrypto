@@ -35,18 +35,12 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Expression => matches!(
                 type_kind,
                 TypeKind::Array { element_type }
-                    if match schema.resolve_type_kind(*element_type) {
-                        Some(TypeKind::Custom(ScryptoCustomTypeKind::Own)) => true,
-                        _ => false,
-                    }
+                    if matches!(schema.resolve_type_kind(*element_type), Some(TypeKind::Custom(ScryptoCustomTypeKind::Own)))
             ),
             ManifestCustomValueKind::Blob => matches!(
                 type_kind,
                 TypeKind::Array { element_type }
-                    if match schema.resolve_type_kind(*element_type) {
-                        Some(TypeKind::U8) => true,
-                        _ => false,
-                    }
+                    if matches!(schema.resolve_type_kind(*element_type), Some(TypeKind::U8))
             ),
             ManifestCustomValueKind::Decimal => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))

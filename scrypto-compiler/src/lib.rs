@@ -453,10 +453,9 @@ impl ScryptoCompiler {
                     .package
                     .iter()
                     .filter(|package| {
-                        workspace_members
+                        !workspace_members
                             .iter()
-                            .find(|(_, member_package_name, _)| &member_package_name == package)
-                            .is_none()
+                            .any(|(_, member_package_name, _)| &member_package_name == package)
                     })
                     .collect();
                 if let Some(package) = wrong_packages.first() {
@@ -597,11 +596,12 @@ impl ScryptoCompiler {
 
     // If manifest is a workspace this function returns non-empty vector of tuple with workspace members (path),
     // package name and package scrypto metadata (content of section from Cargo.toml [package.metadata.scrypto]).
+    #[allow(clippy::type_complexity)]
     fn is_manifest_workspace(
         manifest_path: &Path,
     ) -> Result<Option<Vec<(PathBuf, String, Option<cargo_toml::Value>)>>, ScryptoCompilerError>
     {
-        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+        let manifest = Manifest::from_path(manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
         if let Some(workspace) = manifest.workspace {
@@ -649,7 +649,7 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<String>, ScryptoCompilerError> {
         // Find the binary name
-        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+        let manifest = Manifest::from_path(manifest_path).map_err(|_| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
         if let Some(w) = manifest.workspace {
@@ -684,11 +684,11 @@ impl ScryptoCompiler {
         } else {
             // If target directory is not specified as compiler parameter then get default
             // target directory basing on manifest file
-            PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
+            PathBuf::from(&Self::get_default_target_directory(manifest_path)?)
         };
 
         let definition = if let Some(target_binary_name) =
-            Self::get_target_binary_name(&manifest_path)?
+            Self::get_target_binary_name(manifest_path)?
         {
             // First in phase 1, we build the package with schema extract facilities
             // This has to be built in the release profile
@@ -782,8 +782,7 @@ impl ScryptoCompiler {
             .input_params
             .package
             .iter()
-            .map(|p| ["--package", p])
-            .flatten()
+            .flat_map(|p| ["--package", p])
             .collect();
 
         command
@@ -885,10 +884,8 @@ impl ScryptoCompiler {
         while !all_locked {
             all_locked = true;
             for package_lock in package_locks.iter_mut() {
-                if !package_lock.is_locked() {
-                    if !package_lock.try_lock()? {
-                        all_locked = false;
-                    }
+                if !package_lock.is_locked() && !package_lock.try_lock()? {
+                    all_locked = false;
                 }
             }
 
@@ -918,7 +915,7 @@ impl ScryptoCompiler {
         Ok(())
     }
 
-    fn iter_manifests<'a>(&self) -> impl Iterator<Item = &CompilerManifestDefinition> {
+    fn iter_manifests(&self) -> impl Iterator<Item = &CompilerManifestDefinition> {
         if self.manifests.is_empty() {
             Either::Left(iter::once(&self.main_manifest))
         } else {
@@ -1082,7 +1079,7 @@ impl ScryptoCompiler {
         self.cargo_command_call(command)?;
 
         for manifest in self.iter_manifests() {
-            self.compile_phase_1_postprocess(&manifest)?;
+            self.compile_phase_1_postprocess(manifest)?;
         }
 
         Ok(())
@@ -1125,10 +1122,9 @@ impl ScryptoCompiler {
         self.prepare_command_phase_2(command);
         self.cargo_command_call(command)?;
 
-        Ok(self
-            .iter_manifests()
-            .map(|manifest| self.compile_phase_2_postprocess(&manifest))
-            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
+        self.iter_manifests()
+            .map(|manifest| self.compile_phase_2_postprocess(manifest))
+            .collect::<Result<Vec<_>, ScryptoCompilerError>>()
     }
 
     // Extract schema, optionally optimize WASM, store artifacts in cache
@@ -1674,18 +1670,16 @@ pub fn is_scrypto_cargo_locked_env_var_active() -> bool {
 fn cmd_to_string(cmd: &Command) -> String {
     let args = cmd
         .get_args()
-        .into_iter()
         .map(|arg| arg.to_str().unwrap())
         .collect::<Vec<_>>()
         .join(" ");
     let envs = cmd
         .get_envs()
-        .into_iter()
         .map(|(name, value)| {
             if let Some(value) = value {
                 format!("{}='{}'", name.to_str().unwrap(), value.to_str().unwrap())
             } else {
-                format!("{}", name.to_str().unwrap())
+                name.to_str().unwrap().to_string()
             }
         })
         .collect::<Vec<_>>()
@@ -2111,8 +2105,7 @@ mod tests {
 
             let wasms: Vec<u8> = artifacts
                 .iter()
-                .map(|item| item.wasm.content.clone())
-                .flatten()
+                .flat_map(|item| item.wasm.content.clone())
                 .collect();
             hash(wasms)
         }

@@ -27,7 +27,7 @@ pub fn create_snippet(
             // Add 1 for '\n' character
             skipped_chars += line.chars().count() + 1;
         } else if (i + 1) <= line_end {
-            source.push_str(line.into());
+            source.push_str(line);
             source.push('\n');
         } else if (i + 1) > line_end {
             break;
@@ -49,11 +49,11 @@ pub fn create_snippet(
     let snippet = Snippet {
         slices: vec![Slice {
             source: source.as_str(),
-            line_start: line_start,
+            line_start,
             origin: None,
             fold: false,
             annotations: vec![SourceAnnotation {
-                label: label,
+                label,
                 annotation_type: AnnotationType::Error,
                 // Range require unicode char indices, which matches indices used in Span
                 range: (annotation_start_index, annotation_end_index),

@@ -25,7 +25,7 @@ impl AuthScenariosEnv {
         ledger: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     ) -> AuthScenariosEnv {
         let (pub_key, _, acco) = ledger.new_account(false);
-        let virtua_sig = NonFungibleGlobalId::from_public_key(&pub_key);
+        let virtua_sig = NonFungibleGlobalId::from_public_key(pub_key);
 
         let cerb_badge_resource = ledger.create_non_fungible_resource_advanced(
             NonFungibleResourceRoles::default(),

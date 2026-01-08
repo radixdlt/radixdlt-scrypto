@@ -76,40 +76,33 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for KernelTrac
     }
 
     fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
-        match event {
-            CreateNodeEvent::Start(node_id, node_module_init) => {
-                let mut module_substate_keys =
-                    BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
-                for (module_id, m) in *node_module_init {
-                    for (substate_key, _) in m {
-                        module_substate_keys
-                            .entry(module_id)
-                            .or_default()
-                            .push(substate_key);
-                    }
+        if let CreateNodeEvent::Start(node_id, node_module_init) = event {
+            let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
+            for (module_id, m) in *node_module_init {
+                for substate_key in m.keys() {
+                    module_substate_keys
+                        .entry(module_id)
+                        .or_default()
+                        .push(substate_key);
                 }
-                let message = format!(
-                    "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
-                    node_id,
-                    node_id.entity_type(),
-                    module_substate_keys,
-                    node_module_init.get(&PartitionNumber(0))
-                )
-                .red();
-                log!(api, "{}", message);
             }
-            _ => {}
+            let message = format!(
+                "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
+                node_id,
+                node_id.entity_type(),
+                module_substate_keys,
+                node_module_init.get(&PartitionNumber(0))
+            )
+            .red();
+            log!(api, "{}", message);
         }
 
         Ok(())
     }
 
     fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
-        match event {
-            DropNodeEvent::Start(node_id) => {
-                log!(api, "Dropping node: id = {:?}", node_id);
-            }
-            _ => {}
+        if let DropNodeEvent::Start(node_id) = event {
+            log!(api, "Dropping node: id = {:?}", node_id);
         }
         Ok(())
     }
@@ -180,16 +173,13 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for KernelTrac
         api: &mut ModuleApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        match event {
-            WriteSubstateEvent::Start { handle, value } => {
-                log!(
-                    api,
-                    "Writing substate: handle = {}, size = {}",
-                    handle,
-                    value.len()
-                );
-            }
-            _ => {}
+        if let WriteSubstateEvent::Start { handle, value } = event {
+            log!(
+                api,
+                "Writing substate: handle = {}, size = {}",
+                handle,
+                value.len()
+            );
         }
 
         Ok(())

@@ -27,7 +27,7 @@ fn can_call_accepts_delegated_stake_in_scrypto() {
     // Assert
     let result = receipt.expect_commit_success();
     let accepts_delegated_stake: bool = result.output(1);
-    assert_eq!(accepts_delegated_stake, false);
+    assert!(!accepts_delegated_stake);
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn can_call_total_stake_xrd_amount_in_scrypto() {
             .stake_validator_as_owner(validator_address, "xrd")
             .deposit_entire_worktop(account)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -94,7 +94,7 @@ fn can_call_total_stake_unit_supply_in_scrypto() {
             .stake_validator_as_owner(validator_address, "xrd")
             .deposit_entire_worktop(account)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -138,7 +138,7 @@ fn can_call_validator_get_redemption_value_in_scrypto() {
             .stake_validator_as_owner(validator_address, "xrd")
             .deposit_entire_worktop(account)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 

@@ -49,12 +49,14 @@ impl Secp256k1PrivateKey {
         hex::encode(self.to_bytes())
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_hex(s: &str) -> Result<Self, ()> {
         hex::decode(s)
             .map_err(|_| ())
             .and_then(|v| Self::from_bytes(&v))
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
         if slice.len() != Secp256k1PrivateKey::LENGTH {
             return Err(());
@@ -64,9 +66,10 @@ impl Secp256k1PrivateKey {
         )))
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_u64(n: u64) -> Result<Self, ()> {
         let mut bytes = [0u8; Secp256k1PrivateKey::LENGTH];
-        (&mut bytes[Secp256k1PrivateKey::LENGTH - 8..Secp256k1PrivateKey::LENGTH])
+        bytes[Secp256k1PrivateKey::LENGTH - 8..Secp256k1PrivateKey::LENGTH]
             .copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKeyWrapper(

@@ -114,7 +114,7 @@ impl MultiResourcePoolBlueprint {
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    MultiResourcePoolField::State.field_index() => FieldValue::new(&MultiResourcePoolStateFieldPayload::from_content_source(substate)),
+                    MultiResourcePoolField::State.field_index() => FieldValue::new(MultiResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -143,17 +143,17 @@ impl MultiResourcePoolBlueprint {
     docs of the [`TwoResourcePool::contribute`] function, but in a more generalized way.
 
     * State 1: If no pool units exist in circulation then consider the pool to be new. All of the
-    resources are accepted and an amount of pool units equivalent to the geometric mean of the non
-    zero contributions is minted.
+      resources are accepted and an amount of pool units equivalent to the geometric mean of the non
+      zero contributions is minted.
     * State 2: If pool units exist in circulation but all of the reserves are empty then this pool
-    is in an invalid state, one that requires external intervention from a protected withdraw or
-    deposit to get out of. This has to do with how we represent the fact that the user owns 100%
-    of the pool.
+      is in an invalid state, one that requires external intervention from a protected withdraw or
+      deposit to get out of. This has to do with how we represent the fact that the user owns 100%
+      of the pool.
     * State 3: If pool units exist in circulation and some but not all of the reserves are empty
-    then contributions will be accepted according to the ratio of resources in the pool and the
-    contribution of any of the resources with zero reserves will be returned as change.
+      then contributions will be accepted according to the ratio of resources in the pool and the
+      contribution of any of the resources with zero reserves will be returned as change.
     * State 4: Pool units exist in circulation and none of the vaults are empty, the pool is in
-    normal operation.
+      normal operation.
 
     In the case when the pool is operating normally an algorithm is needed to determine the
     following:

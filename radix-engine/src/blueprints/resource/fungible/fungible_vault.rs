@@ -519,7 +519,7 @@ impl FungibleVaultBlueprint {
         let proof_evidence = FungibleProofSubstate::new(
             amount,
             indexmap!(
-                LocalRef::Vault(Reference(receiver.clone().into())) => amount
+                LocalRef::Vault(Reference(receiver)) => amount
             ),
         )
         .map_err(|e| {
@@ -529,8 +529,8 @@ impl FungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                FungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
-                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(proof_info),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(proof_evidence),
             },
         )?;
 

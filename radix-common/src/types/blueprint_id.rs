@@ -19,6 +19,7 @@ impl BlueprintId {
         }
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.package_address.as_bytes().len() + self.blueprint_name.len()
     }

@@ -24,7 +24,7 @@ pub trait ProtocolUpdateGenerator: 'static {
     /// Return the list of batch groups for the protocol update.
     ///
     /// Each should be a fixed, conceptual step in the update process.
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>>;
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>>;
 }
 
 /// Each batch group is a logical grouping of batches.
@@ -70,7 +70,7 @@ pub trait ProtocolUpdateBatchGenerator {
 pub(super) struct NoOpGenerator;
 
 impl ProtocolUpdateGenerator for NoOpGenerator {
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_>>> {
         vec![]
     }
 }
@@ -126,6 +126,7 @@ impl<'a> ProtocolUpdateBatchGroupGenerator<'a> for FixedBatchGroupGenerator<'a> 
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub struct BatchGenerator<'a> {
     name: String,
     generator: Box<dyn FnOnce(&dyn SubstateDatabase) -> ProtocolUpdateBatch + 'a>,

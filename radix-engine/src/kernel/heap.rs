@@ -63,7 +63,7 @@ impl Heap {
             Ok(partition)
         } else {
             Err(CallbackError::Error(
-                HeapRemovePartitionError::NodeNotFound(node_id.clone().into()),
+                HeapRemovePartitionError::NodeNotFound((*node_id).into()),
             ))
         }
     }
@@ -93,7 +93,7 @@ impl Heap {
         let entry = self
             .nodes
             .entry(node_id)
-            .or_insert_with(|| NodeSubstates::default())
+            .or_default()
             .entry(partition_number)
             .or_default()
             .entry(substate_key.clone());
@@ -169,9 +169,9 @@ impl Heap {
         let node_substates = self.nodes.get(node_id).and_then(|n| n.get(&partition_num));
         if let Some(substates) = node_substates {
             let substate_keys: Vec<SubstateKey> = substates
-                .iter()
-                .map(|(key, _value)| key.clone())
+                .keys()
                 .take(count.try_into().unwrap())
+                .cloned()
                 .collect();
 
             substate_keys
@@ -195,9 +195,9 @@ impl Heap {
             .and_then(|n| n.get_mut(&partition_number));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
-                .iter()
-                .map(|(key, _)| key.clone())
+                .keys()
                 .take(count.try_into().unwrap())
+                .cloned()
                 .collect();
 
             let mut items = Vec::new();
@@ -239,12 +239,7 @@ impl Heap {
 
         let sizes: IndexMap<PartitionNumber, IndexMap<SubstateKey, usize>> = substates
             .iter()
-            .map(|(k, v)| {
-                (
-                    k.clone(),
-                    v.iter().map(|(k, v)| (k.clone(), v.len())).collect(),
-                )
-            })
+            .map(|(k, v)| (*k, v.iter().map(|(k, v)| (k.clone(), v.len())).collect()))
             .collect();
 
         self.nodes.insert(node_id, substates);
@@ -278,7 +273,7 @@ impl Heap {
         let node_substates = match self.nodes.remove(node_id) {
             Some(node_substates) => node_substates,
             None => Err(CallbackError::Error(HeapRemoveNodeError::NodeNotFound(
-                node_id.clone().into(),
+                (*node_id).into(),
             )))?,
         };
 
@@ -304,6 +299,12 @@ impl Heap {
     }
 }
 
+impl Default for Heap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -314,23 +315,21 @@ mod tests {
         let mut total_size = 0;
 
         let mut on_io_access = |_: &_, io_access| {
-            match io_access {
-                IOAccess::HeapSubstateUpdated {
-                    canonical_substate_key,
-                    old_size,
-                    new_size,
-                } => {
-                    if old_size.is_none() {
-                        total_size += canonical_substate_key.len();
-                    }
-                    if new_size.is_none() {
-                        total_size -= canonical_substate_key.len();
-                    }
-
-                    total_size += new_size.unwrap_or_default();
-                    total_size -= old_size.unwrap_or_default();
+            if let IOAccess::HeapSubstateUpdated {
+                canonical_substate_key,
+                old_size,
+                new_size,
+            } = io_access
+            {
+                if old_size.is_none() {
+                    total_size += canonical_substate_key.len();
                 }
-                _ => {}
+                if new_size.is_none() {
+                    total_size -= canonical_substate_key.len();
+                }
+
+                total_size += new_size.unwrap_or_default();
+                total_size -= old_size.unwrap_or_default();
             }
 
             Result::<(), ()>::Ok(())

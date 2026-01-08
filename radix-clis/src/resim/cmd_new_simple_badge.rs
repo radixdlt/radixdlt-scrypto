@@ -7,9 +7,6 @@ use radix_engine_interface::prelude::*;
 
 use crate::resim::*;
 
-#[derive(ManifestSbor, ScryptoSbor)]
-struct EmptyStruct;
-
 /// Create a non-fungible badge with fixed supply
 #[derive(Parser, Debug)]
 pub struct NewSimpleBadge {

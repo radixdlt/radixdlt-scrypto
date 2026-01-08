@@ -72,7 +72,7 @@ impl NotarizedTransactionV2 {
             .non_root_subintents
             .0
             .iter()
-            .zip(names.subintents.into_iter())
+            .zip(names.subintents)
             .map(|(subintent, names)| {
                 let mut manifest = SubintentManifestV2::from_intent_core(&subintent.intent_core);
                 manifest.set_names_if_known(names);
@@ -152,7 +152,7 @@ impl ResolveAsRawNotarizedTransaction for NotarizedTransactionV2 {
     }
 }
 
-impl<'a> ResolveAsRawNotarizedTransaction for &'a NotarizedTransactionV2 {
+impl ResolveAsRawNotarizedTransaction for &NotarizedTransactionV2 {
     type Intermediate = RawNotarizedTransaction;
 
     fn resolve_raw_notarized_transaction(self) -> Self::Intermediate {

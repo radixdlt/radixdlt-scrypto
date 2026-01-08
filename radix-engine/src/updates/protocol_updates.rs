@@ -292,11 +292,7 @@ impl ProtocolVersion {
     }
 
     pub fn next(&self) -> Option<Self> {
-        Self::VARIANTS
-            .iter()
-            .skip_while(|v| v <= &self)
-            .next()
-            .cloned()
+        Self::VARIANTS.iter().find(|&v| v > self).cloned()
     }
 }
 

@@ -1,5 +1,3 @@
-use core::u32;
-
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
@@ -155,7 +153,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
         let module_id = u8::try_from(module_id)
             .ok()
-            .and_then(|x| AttachedModuleId::from_repr(x))
+            .and_then(AttachedModuleId::from_repr)
             .ok_or(WasmRuntimeError::InvalidAttachedModuleId(module_id))?;
 
         let return_data =

@@ -2,7 +2,7 @@ use super::*;
 use crate::rust::prelude::*;
 use crate::schema::*;
 
-pub fn validate_type_metadata_with_type_kind<'a, S: CustomSchema>(
+pub fn validate_type_metadata_with_type_kind< S: CustomSchema>(
     context: &SchemaContext,
     type_kind: &LocalTypeKind<S>,
     type_metadata: &TypeMetadata,
@@ -50,10 +50,10 @@ pub fn validate_childless_metadata(
         validate_schema_type_name(type_name.as_ref())?;
     }
 
-    if !matches!(type_metadata.child_names, None) {
+    if type_metadata.child_names.is_some() {
         return Err(SchemaValidationError::TypeMetadataContainedUnexpectedChildNames);
     }
-    return Ok(());
+    Ok(())
 }
 
 pub fn validate_tuple_metadata(
@@ -90,7 +90,7 @@ pub fn validate_field_names(
             Ok(())
         }
         Some(ChildNames::EnumVariants(_)) => {
-            return Err(SchemaValidationError::TypeMetadataContainedUnexpectedEnumVariants)
+            Err(SchemaValidationError::TypeMetadataContainedUnexpectedEnumVariants)
         }
     }
 }
@@ -158,7 +158,7 @@ pub fn validate_schema_field_name(name: &str) -> Result<(), SchemaValidationErro
 // For crate dependency regions, this is duplicated in `sbor-derive-common`
 // If you change it here, please change it there as well
 fn validate_schema_ident(ident_name: &str, name: &str) -> Result<(), SchemaValidationError> {
-    if name.len() == 0 {
+    if name.is_empty() {
         return Err(SchemaValidationError::InvalidIdentName {
             message: format!("Ident {} cannot be empty", ident_name),
         });
@@ -171,7 +171,7 @@ fn validate_schema_ident(ident_name: &str, name: &str) -> Result<(), SchemaValid
     }
 
     let first_char = name.chars().next().unwrap();
-    if !matches!(first_char, 'A'..='Z' | 'a'..='z') {
+    if !first_char.is_ascii_alphabetic() {
         return Err(SchemaValidationError::InvalidIdentName {
             message: format!(
                 "At present, {} idents must match [A-Za-z][0-9A-Za-z_]{{0,99}}",

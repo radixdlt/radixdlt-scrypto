@@ -59,7 +59,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         ledger
             .execute_manifest(
                 manifest,
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                btreeset![NonFungibleGlobalId::from_public_key(public_key)],
             )
             .expect_commit_success();
     }
@@ -118,7 +118,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let manifest = builder.build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

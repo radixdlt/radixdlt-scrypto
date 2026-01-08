@@ -277,7 +277,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &address_bech32_decoder,
-                &NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
+                NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );

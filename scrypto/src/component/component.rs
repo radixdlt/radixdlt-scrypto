@@ -300,16 +300,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         // Metadata
         {
-            let metadata_config = self
-                .metadata_config
-                .take()
-                .unwrap_or_else(|| Default::default());
+            let metadata_config = self.metadata_config.take().unwrap_or_default();
 
             let metadata = Metadata::new_with_data(metadata_config.init);
-            modules.insert(
-                AttachedModuleId::Metadata,
-                metadata.handle().as_node_id().clone(),
-            );
+            modules.insert(AttachedModuleId::Metadata, *metadata.handle().as_node_id());
             roles.insert(ModuleId::Metadata, metadata_config.roles);
         };
 
@@ -317,10 +311,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         if let Some(royalty_config) = self.royalty_config {
             roles.insert(ModuleId::Royalty, royalty_config.roles);
             let royalty = Royalty::new(royalty_config.init);
-            modules.insert(
-                AttachedModuleId::Royalty,
-                royalty.handle().as_node_id().clone(),
-            );
+            modules.insert(AttachedModuleId::Royalty, *royalty.handle().as_node_id());
         }
 
         // Role Assignment
@@ -328,12 +319,12 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             let role_assignment = RoleAssignment::new(self.owner_role, roles);
             modules.insert(
                 AttachedModuleId::RoleAssignment,
-                role_assignment.handle().as_node_id().clone(),
+                *role_assignment.handle().as_node_id(),
             );
         }
 
         let address = ScryptoVmV1Api::object_globalize(
-            self.stub.handle().as_node_id().clone(),
+            *self.stub.handle().as_node_id(),
             modules,
             self.address_reservation,
         );
@@ -353,9 +344,10 @@ impl<O: HasStub> core::hash::Hash for Global<O> {
 
 impl<O: HasStub> Copy for Global<O> {}
 
+#[allow(clippy::non_canonical_clone_impl)]
 impl<O: HasStub> Clone for Global<O> {
     fn clone(&self) -> Self {
-        Global(O::Stub::new(self.0.handle().clone()))
+        Global(O::Stub::new(*self.0.handle()))
     }
 }
 
@@ -384,16 +376,16 @@ impl<O: HasStub> Global<O> {
         }
     }
 
-    fn metadata(&self) -> Attached<Metadata> {
+    fn metadata(&self) -> Attached<'_, Metadata> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);
-        Attached(metadata, PhantomData::default())
+        Attached(metadata, PhantomData)
     }
 
-    fn role_assignment(&self) -> Attached<RoleAssignment> {
+    fn role_assignment(&self) -> Attached<'_, RoleAssignment> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let role_assignment = RoleAssignment::attached(address);
-        Attached(role_assignment, PhantomData::default())
+        Attached(role_assignment, PhantomData)
     }
 }
 
@@ -402,10 +394,10 @@ where
     O: HasStub<Stub = S>,
     S: ObjectStub<AddressType = ComponentAddress>,
 {
-    fn component_royalties(&self) -> Attached<Royalty> {
+    fn component_royalties(&self) -> Attached<'_, Royalty> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let royalty = Royalty::attached(address);
-        Attached(royalty, PhantomData::default())
+        Attached(royalty, PhantomData)
     }
 }
 

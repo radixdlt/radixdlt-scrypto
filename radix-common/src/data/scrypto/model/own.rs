@@ -71,6 +71,6 @@ well_known_scrypto_custom_type!(
 
 impl fmt::Debug for Own {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "Own({})", hex::encode(&self.0))
+        write!(f, "Own({})", hex::encode(self.0))
     }
 }

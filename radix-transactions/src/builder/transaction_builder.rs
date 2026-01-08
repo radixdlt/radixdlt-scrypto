@@ -40,6 +40,12 @@ pub struct TransactionV1Builder {
     notary_signature: Option<SignatureV1>,
 }
 
+impl Default for TransactionV1Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransactionV1Builder {
     pub fn new() -> Self {
         Self {
@@ -118,9 +124,7 @@ impl TransactionV1Builder {
     pub fn build(&self) -> NotarizedTransactionV1 {
         NotarizedTransactionV1 {
             signed_intent: self.signed_transaction_intent(),
-            notary_signature: NotarySignatureV1(
-                self.notary_signature.clone().expect("Not notarized"),
-            ),
+            notary_signature: NotarySignatureV1(self.notary_signature.expect("Not notarized")),
         }
     }
 
@@ -151,7 +155,7 @@ impl TransactionV1Builder {
                     .intent_signatures
                     .clone()
                     .into_iter()
-                    .map(|sig| IntentSignatureV1(sig))
+                    .map(IntentSignatureV1)
                     .collect(),
             },
         }
@@ -284,7 +288,7 @@ impl PartialTransactionV2Builder {
             .values()
             .map(|(hash, _, _)| ChildSubintentSpecifier { hash: *hash })
             .collect();
-        if &manifest.children != &known_subintent_hashes {
+        if manifest.children != known_subintent_hashes {
             panic!(
                 "The manifest's children hashes do not match those provided by `add_signed_child`"
             );
@@ -691,7 +695,7 @@ impl TransactionV2Builder {
             .values()
             .map(|(hash, _, _)| ChildSubintentSpecifier { hash: *hash })
             .collect();
-        if &manifest.children != &known_subintent_hashes {
+        if manifest.children != known_subintent_hashes {
             panic!(
                 "The manifest's children hashes do not match those provided by `add_signed_child`"
             );
@@ -897,7 +901,6 @@ impl TransactionV2Builder {
         let (transaction_intent, subintent_signatures) = self
             .transaction_intent_and_non_root_subintent_signatures
             .clone()
-            .take()
             .expect("Intent was created in create_intent_and_subintent_info()");
 
         // Extract the public keys from the subintent signatures for preview purposes.
@@ -1072,14 +1075,13 @@ mod tests {
         let prepared = transaction
             .prepare(PreparationSettings::latest_ref())
             .unwrap();
-        assert_eq!(
+        assert!(
             prepared
                 .signed_intent
                 .intent
                 .header
                 .inner
-                .notary_is_signatory,
-            true
+                .notary_is_signatory
         );
     }
 }

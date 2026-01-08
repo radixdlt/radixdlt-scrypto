@@ -515,7 +515,7 @@ impl NonFungibleResourceManagerBlueprint {
                 type_id,
                 mutable_fields,
             }) => {
-                let (schema, scoped_type_id) = api.resolve_blueprint_type(&type_id)?;
+                let (schema, scoped_type_id) = api.resolve_blueprint_type(type_id)?;
                 let mutable_indices = Self::validate_non_fungible_schema(
                     &schema,
                     scoped_type_id.1,
@@ -622,6 +622,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(mutable_field_index)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn create<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
@@ -664,6 +665,7 @@ impl NonFungibleResourceManagerBlueprint {
         Ok(ResourceAddress::new_or_panic(address.into()))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_with_initial_supply<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
@@ -714,8 +716,8 @@ impl NonFungibleResourceManagerBlueprint {
             metadata,
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             indexmap! {
-                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
-                NonFungibleBucketField::Locked.field_index() => FieldValue::new(&LockedNonFungibleResource::default()),
+                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(LiquidNonFungibleResource::new(ids.clone())),
+                NonFungibleBucketField::Locked.field_index() => FieldValue::new(LockedNonFungibleResource::default()),
             },
             MintNonFungibleResourceEvent::EVENT_NAME,
             MintNonFungibleResourceEvent { ids },
@@ -728,6 +730,7 @@ impl NonFungibleResourceManagerBlueprint {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_ruid_with_initial_supply<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         track_total_supply: bool,
@@ -778,8 +781,8 @@ impl NonFungibleResourceManagerBlueprint {
             metadata,
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             indexmap! {
-                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
-                NonFungibleBucketField::Locked.field_index() => FieldValue::new(&LockedNonFungibleResource::default()),
+                NonFungibleBucketField::Liquid.field_index() => FieldValue::new(LiquidNonFungibleResource::new(ids.clone())),
+                NonFungibleBucketField::Locked.field_index() => FieldValue::new(LockedNonFungibleResource::default()),
             },
             MintNonFungibleResourceEvent::EVENT_NAME,
             MintNonFungibleResourceEvent { ids },
@@ -1000,8 +1003,8 @@ impl NonFungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             indexmap! {
-                NonFungibleBucketField::Liquid.into() => FieldValue::new(&LiquidNonFungibleResource::new(ids)),
-                NonFungibleBucketField::Locked.into() => FieldValue::new(&LockedNonFungibleResource::default()),
+                NonFungibleBucketField::Liquid.into() => FieldValue::new(LiquidNonFungibleResource::new(ids)),
+                NonFungibleBucketField::Locked.into() => FieldValue::new(LockedNonFungibleResource::default()),
             },
         )?;
 
@@ -1086,11 +1089,11 @@ impl NonFungibleResourceManagerBlueprint {
             amount: Decimal::zero(),
         };
         let mut fields = indexmap! {
-            NonFungibleVaultField::Balance.into() => FieldValue::new(&NonFungibleVaultBalanceFieldPayload::from_content_source(
+            NonFungibleVaultField::Balance.into() => FieldValue::new(NonFungibleVaultBalanceFieldPayload::from_content_source(
                     balance,
                 )),
             NonFungibleVaultField::LockedResource.into() => FieldValue::new(
-                    &NonFungibleVaultLockedResourceFieldPayload::from_content_source(
+                    NonFungibleVaultLockedResourceFieldPayload::from_content_source(
                         LockedNonFungibleResource::default(),
                     ),
                 ),
@@ -1103,7 +1106,7 @@ impl NonFungibleResourceManagerBlueprint {
             fields.insert(
                 NonFungibleVaultField::FreezeStatus.into(),
                 FieldValue::new(
-                    &NonFungibleVaultFreezeStatusFieldPayload::from_content_source(
+                    NonFungibleVaultFreezeStatusFieldPayload::from_content_source(
                         VaultFrozenFlag::default(),
                     ),
                 ),
@@ -1200,10 +1203,10 @@ impl NonFungibleResourceManagerBlueprint {
 
         let mut fields = indexmap! {
             NonFungibleResourceManagerField::IdType.into() => FieldValue::immutable(
-                    &NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type),
+                    NonFungibleResourceManagerIdTypeFieldPayload::from_content_source(id_type),
                 ),
             NonFungibleResourceManagerField::MutableFields.into() => FieldValue::immutable(
-                    &NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(
+                    NonFungibleResourceManagerMutableFieldsFieldPayload::from_content_source(
                         mutable_fields,
                     ),
                 )
@@ -1212,11 +1215,11 @@ impl NonFungibleResourceManagerBlueprint {
         if track_total_supply {
             let total_supply_field = if features.mint || features.burn {
                 FieldValue::new(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
+                    NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
                 )
             } else {
                 FieldValue::immutable(
-                    &NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
+                    NonFungibleResourceManagerTotalSupplyFieldPayload::from_content_source(supply),
                 )
             };
 
@@ -1298,7 +1301,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn assert_burnable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
@@ -1317,7 +1320,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn update_total_supply<Y: SystemApi<RuntimeError>>(
@@ -1362,13 +1365,13 @@ impl NonFungibleResourceManagerBlueprint {
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
     ) -> Result<Decimal, RuntimeError> {
-        Ok(amount
+        amount
             .for_withdrawal(0, withdraw_strategy)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::UnexpectedDecimalComputationError,
                 ),
-            ))?)
+            ))
     }
 }
 

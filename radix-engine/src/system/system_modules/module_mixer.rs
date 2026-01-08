@@ -610,31 +610,29 @@ impl SystemModuleMixer {
     }
 
     pub fn assert_can_add_event(&mut self) -> Result<(), RuntimeError> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
-                return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::TransactionLimitsError(
-                        TransactionLimitsError::TooManyEvents,
-                    ),
-                ));
-            }
+        if self.enabled_modules.contains(EnabledModules::LIMITS)
+            && self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events
+        {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyEvents),
+            ));
         }
 
         Ok(())
     }
 
     pub fn add_event_unchecked(&mut self, event: Event) -> Result<(), RuntimeError> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if event.payload.len() > self.limits.config().max_event_size {
-                return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::TransactionLimitsError(
-                        TransactionLimitsError::EventSizeTooLarge {
-                            actual: event.payload.len(),
-                            max: self.limits.config().max_event_size,
-                        },
-                    ),
-                ));
-            }
+        if self.enabled_modules.contains(EnabledModules::LIMITS)
+            && event.payload.len() > self.limits.config().max_event_size
+        {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::EventSizeTooLarge {
+                        actual: event.payload.len(),
+                        max: self.limits.config().max_event_size,
+                    },
+                ),
+            ));
         }
 
         if self
@@ -654,17 +652,17 @@ impl SystemModuleMixer {
     }
 
     pub fn set_panic_message(&mut self, message: String) -> Result<(), RuntimeError> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            if message.len() > self.limits.config().max_panic_message_size {
-                return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::TransactionLimitsError(
-                        TransactionLimitsError::PanicMessageSizeTooLarge {
-                            actual: message.len(),
-                            max: self.limits.config().max_panic_message_size,
-                        },
-                    ),
-                ));
-            }
+        if self.enabled_modules.contains(EnabledModules::LIMITS)
+            && message.len() > self.limits.config().max_panic_message_size
+        {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::PanicMessageSizeTooLarge {
+                        actual: message.len(),
+                        max: self.limits.config().max_panic_message_size,
+                    },
+                ),
+            ));
         }
 
         Ok(())

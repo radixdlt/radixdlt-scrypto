@@ -11,6 +11,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::ExecutableTransaction;
 
+#[allow(clippy::len_without_is_empty)]
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
@@ -161,6 +162,7 @@ pub trait KernelTransactionExecutor: KernelCallbackObject {
     type Receipt: ExecutionReceipt;
 
     /// Create the callback object (system layer) and the initial call frame configuration for each intent
+    #[allow(clippy::type_complexity)]
     fn init(
         store: &mut impl CommitableSubstateStore,
         executable: &Self::Executable,

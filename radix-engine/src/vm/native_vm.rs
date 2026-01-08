@@ -88,7 +88,7 @@ impl<I: VmInvoke> NativeVmInstance<I> {
         match self {
             NativeVmInstance::Native {
                 package_address, ..
-            } => package_address.clone(),
+            } => *package_address,
             _ => panic!("Profiling with NativeVmExtension is not supported."),
         }
     }
@@ -117,8 +117,8 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 package_address,
             } => {
                 api.consume_cost_units(ClientCostingEntry::RunNativeCode {
-                    package_address: package_address,
-                    export_name: export_name,
+                    package_address,
+                    export_name,
                     input_size: input.len(),
                 })?;
 
@@ -289,6 +289,12 @@ pub type DefaultNativeVm = NativeVm<NoExtension>;
 impl DefaultNativeVm {
     pub fn new() -> Self {
         NativeVm::new_with_extension(NoExtension)
+    }
+}
+
+impl Default for DefaultNativeVm {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

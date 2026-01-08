@@ -90,7 +90,7 @@ impl TrackedSubstates {
                     .collect();
 
                 // Filter out empty partition updates, to avoid wasted work downstream (e.g. in the Merkle Tree in the node)
-                if partition_updates.len() > 0 {
+                if !partition_updates.is_empty() {
                     state_updates
                         .of_node(node_id)
                         .of_partition(partition_num)
@@ -111,7 +111,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
             tracked_nodes: index_map_new(),
             deleted_partitions: index_set_new(),
             transient_substates: TransientSubstates::new(),
-            phantom_data: PhantomData::default(),
+            phantom_data: PhantomData,
         }
     }
 
@@ -135,6 +135,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
     }
 
     // TODO cleanup interface to avoid redundant information
+    #[allow(clippy::type_complexity)]
     fn list_entries_from_db<
         'x,
         E: 'x,
@@ -284,7 +285,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
             .entry(partition_num)
-            .or_insert(TrackedPartition::new())
+            .or_default()
     }
 
     fn get_tracked_substate<E, F: FnMut(IOAccess) -> Result<(), E>>(
@@ -301,7 +302,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> MappedTrack<'s, S, M> {
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
             .entry(partition_number)
-            .or_insert(TrackedPartition::new())
+            .or_default()
             .substates;
         let entry = partition.entry(db_sort_key.clone());
 
@@ -495,7 +496,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
             .entry(partition_number)
-            .or_insert(TrackedPartition::new());
+            .or_default();
         let db_sort_key = M::to_db_sort_key(&substate_key);
         let entry = tracked_partition.substates.entry(db_sort_key);
 
@@ -568,10 +569,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
             })
             .tracked_partitions
             .entry(*partition_num)
-            .or_insert(TrackedPartition::new())
+            .or_default()
             .substates
             .insert(
-                M::to_db_sort_key(&substate_key),
+                M::to_db_sort_key(substate_key),
                 TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: cloned_track,
@@ -630,7 +631,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
             node_updates.and_then(|n| n.tracked_partitions.get(&partition_number));
 
         if let Some(tracked_partition) = tracked_partition {
-            for (_db_sort_key, tracked_substate) in &tracked_partition.substates {
+            for tracked_substate in tracked_partition.substates.values() {
                 if items.len() == limit {
                     return Ok(items);
                 }
@@ -812,6 +813,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
         Ok(items)
     }
 
+    #[allow(clippy::type_complexity)]
     fn scan_sorted_substates<E, F: FnMut(IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
@@ -825,12 +827,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> CommitableSubstateStore
         // initialize the track partition, since we will definitely need it: either to read values from it OR to update the `range_read` on it
         let tracked_node = self
             .tracked_nodes
-            .entry(node_id.clone())
+            .entry(*node_id)
             .or_insert(TrackedNode::new(false));
         let tracked_partition = tracked_node
             .tracked_partitions
             .entry(partition_number)
-            .or_insert(TrackedPartition::new());
+            .or_default();
 
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;

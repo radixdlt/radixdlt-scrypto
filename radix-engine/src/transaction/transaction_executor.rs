@@ -318,9 +318,9 @@ impl ExecutionConfig {
     }
 }
 
-pub fn execute_transaction<'v, V: VmInitialize>(
+pub fn execute_transaction<V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
-    vm_modules: &'v V,
+    vm_modules: &V,
     execution_config: &ExecutionConfig,
     executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {
@@ -329,9 +329,9 @@ pub fn execute_transaction<'v, V: VmInitialize>(
     KernelInit::load(substate_db, system_init).execute(executable.as_ref())
 }
 
-pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
+pub fn execute_and_commit_transaction<V: VmInitialize>(
     substate_db: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
-    vm_modules: &'s V,
+    vm_modules: &V,
     execution_config: &ExecutionConfig,
     executable: impl AsRef<ExecutableTransaction>,
 ) -> TransactionReceipt {

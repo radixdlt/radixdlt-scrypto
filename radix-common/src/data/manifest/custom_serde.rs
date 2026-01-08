@@ -65,7 +65,7 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                 (SerializableType::String(text.to_string()), true)
             }
             ManifestCustomValue::Blob(value) => {
-                (SerializableType::String(hex::encode(&value.0)), true)
+                (SerializableType::String(hex::encode(value.0)), true)
             }
             ManifestCustomValue::Decimal(value) => (
                 SerializableType::String(format!("{}", to_decimal(&value))),
@@ -93,15 +93,9 @@ mod tests {
     use super::*;
     use crate::address::test_addresses::*;
     use crate::address::AddressBech32Encoder;
-    use crate::types::*;
     use radix_rust::ContextualSerialize;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
-
-    #[derive(ScryptoSbor)]
-    pub struct Sample {
-        pub a: ResourceAddress,
-    }
 
     pub fn assert_json_eq<T: Serialize>(actual: T, expected: JsonValue) {
         let actual = to_value(&actual).unwrap();
@@ -117,9 +111,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_no_network() {
-        let value = ManifestCustomValue::Address(ManifestAddress::Static(
-            FUNGIBLE_RESOURCE.as_node_id().clone(),
-        ));
+        let value =
+            ManifestCustomValue::Address(ManifestAddress::Static(*FUNGIBLE_RESOURCE.as_node_id()));
 
         let expected_natural = json!({
             "kind": "Address",
@@ -145,9 +138,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
-        let value = ManifestCustomValue::Address(ManifestAddress::Static(
-            FUNGIBLE_RESOURCE.as_node_id().clone(),
-        ));
+        let value =
+            ManifestCustomValue::Address(ManifestAddress::Static(*FUNGIBLE_RESOURCE.as_node_id()));
         let encoder = AddressBech32Encoder::for_simulator();
 
         let expected_natural = json!(FUNGIBLE_RESOURCE_SIM_ADDRESS);
@@ -167,7 +159,7 @@ mod tests {
         let value = (
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
-                    FUNGIBLE_RESOURCE.as_node_id().clone(),
+                    *FUNGIBLE_RESOURCE.as_node_id(),
                 )),
             },
             ManifestValue::Custom {

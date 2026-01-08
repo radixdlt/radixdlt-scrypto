@@ -713,7 +713,7 @@ pub mod owned {
                         .iter()
                         .map(|(key, value)| {
                             (
-                                key.clone(),
+                                *key,
                                 value
                                     .iter()
                                     .map(|(key, value)| {
@@ -741,7 +741,7 @@ pub mod owned {
                         .iter()
                         .map(|(key, value)| {
                             (
-                                key.clone(),
+                                *key,
                                 value
                                     .iter()
                                     .map(|(key, value)| {

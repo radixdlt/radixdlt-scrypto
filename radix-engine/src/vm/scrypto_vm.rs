@@ -58,12 +58,9 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
                 vm_api.get_scrypto_version(),
             ));
 
-            let mut input = Vec::new();
-            input.push(
-                runtime
-                    .allocate_buffer(args.as_slice().to_vec())
-                    .expect("Failed to allocate buffer"),
-            );
+            let input = vec![runtime
+                .allocate_buffer(args.as_slice().to_vec())
+                .expect("Failed to allocate buffer")];
             self.instance
                 .invoke_export(export_name, input, &mut runtime)?
         };
@@ -77,6 +74,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod tests {
     const _: () = {
         fn assert_sync<T: Sync>() {}

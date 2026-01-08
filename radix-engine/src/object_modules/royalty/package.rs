@@ -256,7 +256,7 @@ impl RoyaltyUtil {
                                 ApplicationError::ComponentRoyaltyError(
                                     ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed {
                                         max: RoyaltyAmount::Xrd(max_royalty_in_xrd),
-                                        actual: royalty_amount.clone(),
+                                        actual: *royalty_amount,
                                     },
                                 ),
                             ));
@@ -265,7 +265,7 @@ impl RoyaltyUtil {
                                 ApplicationError::PackageError(
                                     PackageError::RoyaltyAmountIsGreaterThanAllowed {
                                         max: RoyaltyAmount::Xrd(max_royalty_in_xrd),
-                                        actual: royalty_amount.clone(),
+                                        actual: *royalty_amount,
                                     },
                                 ),
                             ));
@@ -279,7 +279,7 @@ impl RoyaltyUtil {
                                 ApplicationError::ComponentRoyaltyError(
                                     ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed {
                                         max: RoyaltyAmount::Usd(max_royalty_in_usd),
-                                        actual: royalty_amount.clone(),
+                                        actual: *royalty_amount,
                                     },
                                 ),
                             ));
@@ -288,7 +288,7 @@ impl RoyaltyUtil {
                                 ApplicationError::PackageError(
                                     PackageError::RoyaltyAmountIsGreaterThanAllowed {
                                         max: RoyaltyAmount::Xrd(max_royalty_in_xrd),
-                                        actual: royalty_amount.clone(),
+                                        actual: *royalty_amount,
                                     },
                                 ),
                             ));
@@ -349,7 +349,7 @@ impl ComponentRoyaltyBlueprint {
             vec![],
             GenericArgs::default(),
             indexmap! {
-                ComponentRoyaltyField::Accumulator.field_index() => FieldValue::immutable(&ComponentRoyaltyAccumulatorFieldPayload::from_content_source(accumulator_substate)),
+                ComponentRoyaltyField::Accumulator.field_index() => FieldValue::immutable(ComponentRoyaltyAccumulatorFieldPayload::from_content_source(accumulator_substate)),
             },
             kv_entries,
         )?;
@@ -362,7 +362,7 @@ impl ComponentRoyaltyBlueprint {
         amount: RoyaltyAmount,
         api: &mut impl SystemApi<RuntimeError>,
     ) -> Result<(), RuntimeError> {
-        RoyaltyUtil::verify_royalty_amounts(vec![amount.clone()].iter(), true, api)?;
+        RoyaltyUtil::verify_royalty_amounts([amount].iter(), true, api)?;
 
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,

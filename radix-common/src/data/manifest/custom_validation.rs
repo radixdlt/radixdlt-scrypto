@@ -4,7 +4,7 @@ use crate::data::scrypto::{
 };
 use crate::internal_prelude::*;
 
-impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
+impl ValidatableCustomExtension<()> for ManifestCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
@@ -89,11 +89,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 let element_type_kind = schema
                     .resolve_type_kind(*element_type)
                     .ok_or(PayloadValidationError::SchemaInconsistency)?;
-                let is_valid = match element_type_kind {
-                    TypeKind::Any => true,
-                    TypeKind::U8 => true,
-                    _ => false,
-                };
+                let is_valid = matches!(element_type_kind, TypeKind::Any | TypeKind::U8);
                 if !is_valid {
                     return Err(PayloadValidationError::ValidationError(
                         ValidationError::CustomError(format!(
@@ -274,9 +270,7 @@ mod tests {
     fn valid_manifest_composite_value_passes_validation_against_radix_blueprint_schema_init() {
         let payload = manifest_encode(&(
             ManifestValue::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress::Static(
-                    XRD.as_node_id().clone(),
-                )),
+                value: ManifestCustomValue::Address(ManifestAddress::Static(*XRD.as_node_id())),
             },
             ManifestValue::Custom {
                 value: ManifestCustomValue::Blob(ManifestBlobRef([0; 32])),
@@ -326,7 +320,7 @@ mod tests {
     #[test]
     fn manifest_address_fails_validation_against_mismatching_radix_blueprint_schema_init() {
         let payload = manifest_encode(&ManifestValue::Custom {
-            value: ManifestCustomValue::Address(ManifestAddress::Static(XRD.as_node_id().clone())),
+            value: ManifestCustomValue::Address(ManifestAddress::Static(*XRD.as_node_id())),
         })
         .unwrap();
 
@@ -388,7 +382,7 @@ mod tests {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
-            &payload,
+            payload,
             schema.v1(),
             type_id,
             &(),
@@ -402,7 +396,7 @@ mod tests {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
         let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
-            &payload,
+            payload,
             schema.v1(),
             type_id,
             &(),

@@ -75,7 +75,7 @@ pub fn build_package<P: AsRef<Path>>(
 
     let build_results = compiler_builder
         .compile()
-        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
+        .map_err(BuildError::ScryptoCompilerError)?;
 
     Ok(build_results
         .iter()

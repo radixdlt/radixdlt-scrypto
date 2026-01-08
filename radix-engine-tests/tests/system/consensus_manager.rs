@@ -16,7 +16,6 @@ use radix_substate_store_queries::typed_substate_layout::{
 };
 use rand::prelude::SliceRandom;
 use rand::Rng;
-use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto::object_modules::*;
@@ -37,7 +36,7 @@ fn genesis_epoch_has_correct_initial_validators() {
         let pub_key = Secp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
-        keys.insert(pub_key.clone(), k);
+        keys.insert(pub_key, k);
         let validator_account_address =
             ComponentAddress::preallocated_account_from_public_key(&pub_key);
         accounts.push(validator_account_address);
@@ -57,7 +56,7 @@ fn genesis_epoch_has_correct_initial_validators() {
         } else if k <= 10 {
             Decimal::from(100000) // All the same
         } else if k <= 100 {
-            Decimal::from(1000000 * ((k + 1) / 2))
+            Decimal::from(1000000 * k.div_ceil(2))
         } else {
             Decimal::from(0)
         };
@@ -417,7 +416,7 @@ fn create_validator_twice() {
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -436,7 +435,7 @@ fn create_validator_twice() {
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -457,7 +456,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -507,7 +506,7 @@ fn create_validator_with_wrong_resource_should_fail() {
             .take_all_from_worktop(resource_address, "creation_fee")
             .create_validator(public_key, Decimal::ONE, "creation_fee")
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -557,7 +556,7 @@ fn register_validator_with_auth_succeeds() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -640,7 +639,7 @@ fn unregister_validator_with_auth_succeeds() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -724,7 +723,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -754,7 +753,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -819,7 +818,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -830,10 +829,10 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch.next().unwrap());
-    assert!(!next_epoch
+    assert!(next_epoch
         .validator_set
         .get_by_address(&validator_address)
-        .is_some());
+        .is_none());
 }
 
 #[test]
@@ -1229,7 +1228,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         .build();
     let receipt1 = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
     receipt1.expect_commit_success();
 
@@ -1397,7 +1396,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     manifest_args!(Decimal::zero()),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .fee_summary
         .expected_reward_if_single_validator();
@@ -1427,7 +1426,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                     manifest_args!(increased_fee_factor),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .fee_summary
         .expected_reward_if_single_validator();
@@ -1569,6 +1568,7 @@ fn create_custom_genesis(
 }
 
 #[derive(Clone, Copy)]
+#[allow(clippy::enum_variant_names)]
 enum RegisterAndStakeTransactionType {
     SingleManifestRegisterFirst,
     SingleManifestStakeFirst,
@@ -1699,7 +1699,7 @@ fn register_and_stake_new_validator(
     for manifest in manifests {
         let receipt = ledger.execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            vec![NonFungibleGlobalId::from_public_key(pub_key)],
         );
         receipt.expect_commit_success();
     }
@@ -1878,7 +1878,7 @@ fn test_registering_and_staking_many_validators() {
         for manifest in manifests {
             let receipt = ledger.execute_manifest(
                 manifest,
-                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+                vec![NonFungibleGlobalId::from_public_key(pub_key)],
             );
             receipt.expect_commit_success();
         }
@@ -1904,7 +1904,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
     let genesis = BabylonSettings::single_validator_and_staker(
-        validator_pub_key.clone(),
+        validator_pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
@@ -1934,7 +1934,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -1961,7 +1961,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
     let genesis = BabylonSettings::single_validator_and_staker(
-        validator_pub_key.clone(),
+        validator_pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
@@ -1996,7 +1996,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -2055,7 +2055,7 @@ fn cannot_claim_unstake_immediately() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     receipt.expect_specific_failure(|e| {
@@ -2103,7 +2103,7 @@ fn can_claim_unstake_after_epochs() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_commit_success();
     ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
@@ -2118,7 +2118,7 @@ fn can_claim_unstake_after_epochs() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -2174,7 +2174,7 @@ fn owner_can_lock_stake_units() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2248,7 +2248,7 @@ fn owner_can_start_unlocking_stake_units() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2268,7 +2268,7 @@ fn owner_can_start_unlocking_stake_units() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2354,7 +2354,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2379,7 +2379,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2443,7 +2443,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2472,7 +2472,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         ledger
             .execute_manifest(
                 manifest,
-                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+                vec![NonFungibleGlobalId::from_public_key(validator_key)],
             )
             .expect_commit_success();
     }
@@ -2564,7 +2564,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2585,7 +2585,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2606,7 +2606,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2691,7 +2691,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2712,7 +2712,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2738,7 +2738,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2819,7 +2819,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2840,7 +2840,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     ledger
         .execute_manifest(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            vec![NonFungibleGlobalId::from_public_key(validator_key)],
         )
         .expect_commit_success();
 
@@ -2861,7 +2861,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert
@@ -2923,7 +2923,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .build();
     let receipt1 = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt1.expect_commit_success();
 
@@ -3041,11 +3041,10 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 }
 
 fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
-    match &event_type_id.0 {
+    *match &event_type_id.0 {
         Emitter::Function(blueprint_id) => blueprint_id.package_address.as_node_id(),
         Emitter::Method(node_id, _) => node_id,
     }
-    .clone()
 }
 
 #[test]
@@ -3297,7 +3296,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         manifest,
         validators_keys
             .iter()
-            .map(|key| NonFungibleGlobalId::from_public_key(key)),
+            .map(NonFungibleGlobalId::from_public_key),
         costing_params,
     );
     receipt.expect_commit_success();
@@ -3356,7 +3355,7 @@ fn cannot_unstake_with_wrong_resource() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -3401,7 +3400,7 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_commit_success();
     ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
@@ -3435,7 +3434,7 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -3510,7 +3509,7 @@ fn can_stake_with_zero_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -3552,7 +3551,7 @@ fn can_unstake_with_zero_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -3594,7 +3593,7 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_commit_success();
     ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
@@ -3608,7 +3607,7 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -3663,7 +3662,7 @@ fn can_lock_owner_stake_with_zero_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        vec![NonFungibleGlobalId::from_public_key(validator_key)],
     );
 
     // Assert

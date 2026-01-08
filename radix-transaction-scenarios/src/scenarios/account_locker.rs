@@ -83,7 +83,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     AccountCreateAdvancedManifestInput {
                                         address_reservation: None,
                                         owner_role: OwnerRole::Fixed(rule!(require(
-                                            NonFungibleGlobalId::from_public_key(&key.public_key())
+                                            NonFungibleGlobalId::from_public_key(key.public_key())
                                         )))
                                         .into(),
                                     },
@@ -209,7 +209,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_rejecting_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.fungible_resource.unwrap().into(),
+                                    resource_address: state.fungible_resource.unwrap(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
@@ -217,7 +217,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                 state.account_rejecting_non_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.non_fungible_resource.unwrap().into(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )

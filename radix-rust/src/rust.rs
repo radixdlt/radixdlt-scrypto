@@ -539,7 +539,7 @@ pub mod collections {
             }
 
             /// Gets the given key's corresponding entry in the map for in-place manipulation.
-            pub fn entry(&mut self, key: K) -> Entry<K, V> {
+            pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
                 self.0.entry(key)
             }
 
@@ -552,27 +552,27 @@ pub mod collections {
             }
 
             /// Returns a reference to the value corresponding to the key.
-            pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+            pub fn get<Q>(&self, key: &Q) -> Option<&V>
             where
-                Q: Hash + Eq,
+                Q: Hash + Eq + ?Sized,
                 K: Borrow<Q>,
             {
                 self.0.get(key)
             }
 
             /// Returns a mutable reference to the value corresponding to the key.
-            pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+            pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
             where
-                Q: Hash + Eq,
+                Q: Hash + Eq + ?Sized,
                 K: Borrow<Q>,
             {
                 self.0.get_mut(key)
             }
 
             /// Returns true if the map contains a value for the specified key.
-            pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+            pub fn contains_key<Q>(&self, key: &Q) -> bool
             where
-                Q: Hash + Eq,
+                Q: Hash + Eq + ?Sized,
                 K: Borrow<Q>,
             {
                 self.0.contains_key(key)
@@ -580,9 +580,9 @@ pub mod collections {
 
             /// Removes a key from the map, returning the value at the key if the key was previously
             /// in the map.
-            pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+            pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
             where
-                Q: Hash + Eq,
+                Q: Hash + Eq + ?Sized,
                 K: Borrow<Q>,
             {
                 self.0.remove(key)
@@ -594,6 +594,7 @@ pub mod collections {
             }
 
             /// Returns the number of elements in the map.
+            #[allow(clippy::len_without_is_empty)]
             pub fn len(&self) -> usize {
                 self.0.len()
             }

@@ -94,8 +94,7 @@ impl StateUpdates {
                         match partition_state_updates {
                             PartitionStateUpdates::Delta { by_substate } => {
                                 for (key, value) in by_substate {
-                                    substate_updates
-                                        .insert((node_id.clone(), partition_num, key), value);
+                                    substate_updates.insert((node_id, partition_num, key), value);
                                 }
                             }
                             PartitionStateUpdates::Batch(batch) => match batch {
@@ -104,7 +103,7 @@ impl StateUpdates {
                                 } => {
                                     for (key, value) in new_substate_values {
                                         substate_updates.insert(
-                                            (node_id.clone(), partition_num, key),
+                                            (node_id, partition_num, key),
                                             DatabaseUpdate::Set(value),
                                         );
                                     }
@@ -215,7 +214,7 @@ impl NodeStateUpdates {
                         Some((partition_num, new_substate))
                     })
                     .collect::<IndexMap<_, _>>();
-                if replaced.len() > 0 {
+                if !replaced.is_empty() {
                     Some(NodeStateUpdates::Delta {
                         by_partition: replaced,
                     })
@@ -265,7 +264,7 @@ impl PartitionStateUpdates {
         self
     }
 
-    pub fn mut_add_updates<'a>(&mut self, other: impl Into<Self>) {
+    pub fn mut_add_updates(&mut self, other: impl Into<Self>) {
         match other.into() {
             PartitionStateUpdates::Delta { by_substate } => {
                 self.mut_update_substates(by_substate);
@@ -364,7 +363,7 @@ impl PartitionStateUpdates {
     pub fn rebuild_without_empty_entries(self) -> Option<Self> {
         match self {
             PartitionStateUpdates::Delta { ref by_substate } => {
-                if by_substate.len() > 0 {
+                if !by_substate.is_empty() {
                     Some(self)
                 } else {
                     None
@@ -377,7 +376,9 @@ impl PartitionStateUpdates {
         }
     }
 
-    pub fn iter_map_entries(&self) -> Box<dyn Iterator<Item = (&MapKey, DatabaseUpdateRef)> + '_> {
+    pub fn iter_map_entries(
+        &self,
+    ) -> Box<dyn Iterator<Item = (&MapKey, DatabaseUpdateRef<'_>)> + '_> {
         match self {
             PartitionStateUpdates::Delta { by_substate } => {
                 Box::new(by_substate.iter().filter_map(|(key, value)| match key {

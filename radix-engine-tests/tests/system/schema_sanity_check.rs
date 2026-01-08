@@ -162,7 +162,7 @@ fn check_payload_defs(
             return result;
         }
     }
-    return CheckResult::Safe;
+    CheckResult::Safe
 }
 
 fn check_payload_def(
@@ -207,15 +207,15 @@ fn check_type_internal(
     }
     visited_indices.insert(type_id);
     match type_id {
-        LocalTypeId::WellKnown(x) => return is_safe_well_known_type(schema, x),
+        LocalTypeId::WellKnown(x) => is_safe_well_known_type(schema, x),
         LocalTypeId::SchemaLocalIndex(i) => {
             let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
-                    return check_type_internal(schema, *element_type, visited_indices);
+                    check_type_internal(schema, *element_type, visited_indices)
                 }
                 ScryptoTypeKind::Tuple { field_types } => {
-                    return check_types_internal(schema, field_types, visited_indices);
+                    check_types_internal(schema, field_types, visited_indices)
                 }
                 ScryptoTypeKind::Enum { variants } => {
                     let mut indices = Vec::<LocalTypeId>::new();
@@ -224,39 +224,25 @@ fn check_type_internal(
                             indices.push(*ty);
                         }
                     }
-                    return check_types_internal(schema, &indices, visited_indices);
+                    check_types_internal(schema, &indices, visited_indices)
                 }
                 ScryptoTypeKind::Map {
                     key_type,
                     value_type,
-                } => {
-                    return check_types_internal(
-                        schema,
-                        &[*key_type, *value_type],
-                        visited_indices,
-                    );
-                }
+                } => check_types_internal(schema, &[*key_type, *value_type], visited_indices),
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
                     match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
-                            OwnValidation::IsTypedObject(_, _) => {
-                                return CheckResult::Safe;
-                            }
-                            OwnValidation::IsKeyValueStore => {
-                                return CheckResult::PossiblyUnsafe {
-                                    type_kind: type_kind.clone(),
-                                    type_validation: schema.v1().type_validations[i].clone(),
-                                };
-                            }
-                            OwnValidation::IsGlobalAddressReservation => {
-                                return CheckResult::Safe;
-                            }
-                            _ => {
-                                return CheckResult::PossiblyUnsafe {
-                                    type_kind: type_kind.clone(),
-                                    type_validation: schema.v1().type_validations[i].clone(),
-                                };
-                            }
+                            OwnValidation::IsTypedObject(_, _) => CheckResult::Safe,
+                            OwnValidation::IsKeyValueStore => CheckResult::PossiblyUnsafe {
+                                type_kind: type_kind.clone(),
+                                type_validation: schema.v1().type_validations[i].clone(),
+                            },
+                            OwnValidation::IsGlobalAddressReservation => CheckResult::Safe,
+                            _ => CheckResult::PossiblyUnsafe {
+                                type_kind: type_kind.clone(),
+                                type_validation: schema.v1().type_validations[i].clone(),
+                            },
                         },
                         _ => panic!("Wrong type validation attached to `Own` type kind"),
                     }
@@ -269,26 +255,20 @@ fn check_type_internal(
                                 | ReferenceValidation::IsInternalTyped(_, _)
                                 | ReferenceValidation::IsGlobalPackage
                                 | ReferenceValidation::IsGlobalResourceManager
-                                | ReferenceValidation::IsGlobalComponent => {
-                                    return CheckResult::Safe;
-                                }
-                                _ => {
-                                    return CheckResult::PossiblyUnsafe {
-                                        type_kind: type_kind.clone(),
-                                        type_validation: schema.v1().type_validations[i].clone(),
-                                    };
-                                }
+                                | ReferenceValidation::IsGlobalComponent => CheckResult::Safe,
+                                _ => CheckResult::PossiblyUnsafe {
+                                    type_kind: type_kind.clone(),
+                                    type_validation: schema.v1().type_validations[i].clone(),
+                                },
                             }
                         }
                         _ => panic!("Wrong type validation attached to `Reference` type kind"),
                     }
                 }
-                _ => {
-                    return CheckResult::Safe;
-                }
+                _ => CheckResult::Safe,
             }
         }
-    };
+    }
 }
 
 fn is_safe_well_known_type(
@@ -431,16 +411,9 @@ pub fn test_fake_bucket() {
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::TypeCheckError(e))
-            if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
-        {
-            true
-        }
-        _ => false,
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::TypeCheckError(e)) if format!("{:?}", e).contains("Expected = Own<IsBucket>")));
 }
 
 #[test]

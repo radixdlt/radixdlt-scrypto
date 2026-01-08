@@ -475,8 +475,7 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let encoded = scrypto_encode(&node).unwrap();
     assert!(encoded
         .windows(direct_bytes.len())
-        .position(|bytes| bytes == direct_bytes)
-        .is_some());
+        .any(|bytes| bytes == direct_bytes));
 }
 
 #[test]
@@ -876,7 +875,7 @@ fn change(
         from_seed(node_key_seed),
         partition_num,
         from_seed(sort_key_seed),
-        value_seed.map(|value_seed| from_seed(value_seed)),
+        value_seed.map(from_seed),
     )
 }
 
@@ -889,7 +888,7 @@ pub fn change_exact(
     (
         (partition_key(node_key, partition_num), DbSortKey(sort_key)),
         value
-            .map(|value| DatabaseUpdate::Set(value))
+            .map(DatabaseUpdate::Set)
             .unwrap_or(DatabaseUpdate::Delete),
     )
 }
@@ -964,7 +963,7 @@ impl<S: TreeStore> StateTreeTester<S> {
         })
     }
 
-    pub fn create_subject(&self) -> EntityTier<S> {
+    pub fn create_subject(&self) -> EntityTier<'_, S> {
         EntityTier::new(&self.tree_store, self.current_version)
     }
 
@@ -1001,14 +1000,14 @@ impl StateTreeTester<TypedInMemoryTreeStore> {
             .into_iter()
             .flat_map(|stale_part| match stale_part {
                 StaleTreePart::Node(key) => vec![key],
-                StaleTreePart::Subtree(key) => JellyfishMerkleTree::new(&mut self.tree_store)
+                StaleTreePart::Subtree(key) => JellyfishMerkleTree::new(&self.tree_store)
                     .get_all_nodes_referenced(TreeNodeKey::new(
                         key.version(),
                         key.nibble_path().clone(),
                     ))
                     .unwrap()
                     .into_iter()
-                    .map(|key| StoredTreeNodeKey::unprefixed(key))
+                    .map(StoredTreeNodeKey::unprefixed)
                     .collect(),
             })
             .collect::<HashSet<_>>();
@@ -1028,10 +1027,9 @@ impl StateTreeTester<TypedInMemoryTreeStore> {
             })
             .filter(|(key, _)| !stale_node_keys.contains(key))
             .filter_map(|(key, node)| match node {
-                TreeNode::Leaf(leaf) => Some((
-                    Self::leaf_key(key, &leaf.key_suffix),
-                    leaf.value_hash.clone(),
-                )),
+                TreeNode::Leaf(leaf) => {
+                    Some((Self::leaf_key(key, &leaf.key_suffix), leaf.value_hash))
+                }
                 _ => None,
             })
             .collect()

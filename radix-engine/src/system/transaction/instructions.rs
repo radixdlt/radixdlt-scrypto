@@ -547,6 +547,7 @@ impl TxnNormalInstruction for DropAuthZoneSignatureProofs {
 }
 
 impl TxnNormalInstruction for BurnResource {
+    #[allow(clippy::let_unit_value)]
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         self,
         worktop: &mut Worktop,
@@ -557,7 +558,7 @@ impl TxnNormalInstruction for BurnResource {
         let rtn = bucket.burn(api)?;
 
         let result = IndexedScryptoValue::from_typed(&rtn);
-        objects.handle_call_return_data(&result, &worktop, api)?;
+        objects.handle_call_return_data(&result, worktop, api)?;
         Ok(InstructionOutput::CallReturn(result.into()))
     }
 }
@@ -609,8 +610,8 @@ fn handle_invocation<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Defau
     let rtn = invocation_handler(api, scrypto_value)?;
 
     let result = IndexedScryptoValue::from_vec(rtn)
-        .map_err(|error| TransactionProcessorError::InvocationOutputDecodeError(error))?;
-    objects.handle_call_return_data(&result, &worktop, api)?;
+        .map_err(TransactionProcessorError::InvocationOutputDecodeError)?;
+    objects.handle_call_return_data(&result, worktop, api)?;
     Ok(InstructionOutput::CallReturn(result.into()))
 }
 

@@ -13,7 +13,7 @@ use scrypto_test::prelude::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where
-    F: Fn(TransactionReceipt) -> (),
+    F: Fn(TransactionReceipt),
 {
     // Arrange
     let initial_epoch = Epoch::of(5);
@@ -52,7 +52,7 @@ where
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -103,7 +103,7 @@ fn check_if_validator_accepts_delegated_stake() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 

@@ -47,9 +47,9 @@ impl From<SubintentHash> for ChildSubintentSpecifier {
 /// This is referenced in the manifest as `NamedIntent`, like `NamedAddress`.
 /// A static intent address is created as e.g. `Intent("subtxid_...")`, like `Address`.
 ///
-/// IMPORTANT: Unlike `Address` and similar, this is NOT its own SBOR manifest value
-/// - because versioning Manifest SBOR was seen as too much work for Cuttlefish.
-/// Instead, we use a ManifestNamedIntentIndex in some places.
+/// IMPORTANT: Unlike `Address` and similar, this is NOT its own SBOR manifest value - because
+/// versioning Manifest SBOR was seen as too much work for Cuttlefish. Instead, we use a
+/// ManifestNamedIntentIndex in some places.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct ManifestNamedIntent(pub u32);
 

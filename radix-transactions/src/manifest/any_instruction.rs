@@ -14,7 +14,7 @@ pub trait ManifestInstructionSet: TryFrom<AnyInstruction> + Into<AnyInstruction>
         self.map_ref(context)
     }
 
-    fn effect(&self) -> ManifestInstructionEffect {
+    fn effect(&self) -> ManifestInstructionEffect<'_> {
         self.map_ref(EffectMapper)
     }
 

@@ -32,7 +32,7 @@ fn generate_schema_from_types<S: CustomSchema>(
     types: IndexMap<TypeHash, AggregatorTypeData<S>>,
 ) -> VersionedSchema<S> {
     let type_count = types.len();
-    let type_indices = IndexSet::from_iter(types.keys().map(|k| k.clone()));
+    let type_indices = IndexSet::from_iter(types.keys().copied());
 
     let mut type_kinds = Vec::with_capacity(type_count);
     let mut type_metadata = Vec::with_capacity(type_count);
@@ -149,6 +149,12 @@ pub struct TypeAggregator<C: CustomTypeKind<RustTypeId>> {
     types: IndexMap<TypeHash, TypeData<C, RustTypeId>>,
 }
 
+impl<C: CustomTypeKind<RustTypeId>> Default for TypeAggregator<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
@@ -233,7 +239,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
 
         T::add_all_dependencies(self);
 
-        return true;
+        true
     }
 
     pub fn generate_type_collection_schema<S: CustomSchema<CustomAggregatorTypeKind = C>>(

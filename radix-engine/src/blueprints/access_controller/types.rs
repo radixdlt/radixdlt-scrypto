@@ -9,6 +9,7 @@ pub enum PrimaryRoleLockingState {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+#[allow(clippy::large_enum_variant)]
 pub enum PrimaryRoleRecoveryAttemptState {
     #[default]
     NoRecoveryAttempt,
@@ -23,6 +24,7 @@ pub enum PrimaryRoleBadgeWithdrawAttemptState {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+#[allow(clippy::large_enum_variant)]
 pub enum RecoveryRoleRecoveryAttemptState {
     #[default]
     NoRecoveryAttempt,

@@ -1,3 +1,5 @@
+#![allow(clippy::match_like_matches_macro)]
+
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
@@ -35,8 +37,7 @@ fn test_events_of_commit_failure() {
         .withdraw_from_account(account, XRD, dec!(100)) // reverted
         .assert_worktop_contains(XRD, dec!(500))
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     let events = &receipt.expect_commit_failure().application_events;
@@ -45,7 +46,7 @@ fn test_events_of_commit_failure() {
         println!("{:?} - {}", event.0, name);
     }
     assert_eq!(events.len(), 4);
-    assert!(match events.get(0) {
+    assert!(match events.first() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
@@ -122,8 +123,7 @@ fn create_proof_emits_correct_events() {
         .lock_fee(FAUCET, dec!(500))
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     let events = &receipt.expect_commit_success().application_events;
@@ -132,7 +132,7 @@ fn create_proof_emits_correct_events() {
         println!("{:?} - {}", event.0, name);
     }
     assert_eq!(events.len(), 4);
-    assert!(match events.get(0) {
+    assert!(match events.first() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
@@ -258,7 +258,7 @@ fn scrypto_can_emit_registered_events() {
         let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
-    assert!(match events.get(0) {
+    assert!(match events.first() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
@@ -323,13 +323,12 @@ fn local_type_id_with_misleading_name_fails() {
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
     blueprint_setup.schema.events.event_schema.insert(
         "HelloHelloEvent".to_string(),
-        blueprint_setup
+        *blueprint_setup
             .schema
             .events
             .event_schema
             .get("RegisteredEvent")
-            .unwrap()
-            .clone(),
+            .unwrap(),
     );
 
     let manifest = ManifestBuilder::new()
@@ -378,7 +377,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -417,7 +416,7 @@ fn vault_fungible_recall_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -497,7 +496,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -573,7 +572,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -665,7 +664,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -753,7 +752,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -845,7 +844,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Act
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -855,7 +854,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -985,7 +984,7 @@ fn consensus_manager_round_update_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1145,7 +1144,7 @@ fn validator_registration_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
 
     // Assert
@@ -1155,7 +1154,7 @@ fn validator_registration_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1204,7 +1203,7 @@ fn validator_unregistration_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
     receipt.expect_commit_success();
 
@@ -1220,7 +1219,7 @@ fn validator_unregistration_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
 
     // Assert
@@ -1230,7 +1229,7 @@ fn validator_unregistration_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1279,7 +1278,7 @@ fn validator_staking_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
     receipt.expect_commit_success();
 
@@ -1298,7 +1297,7 @@ fn validator_staking_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
 
     // Assert
@@ -1308,7 +1307,7 @@ fn validator_staking_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1431,7 +1430,7 @@ fn validator_unstake_emits_correct_events() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_commit_success();
     ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
@@ -1443,7 +1442,7 @@ fn validator_unstake_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1580,7 +1579,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
     receipt.expect_commit_success();
     ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
@@ -1595,7 +1594,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(account_pub_key)],
     );
 
     // Assert
@@ -1605,7 +1604,7 @@ fn validator_claim_xrd_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1685,7 +1684,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -1707,7 +1706,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -1717,7 +1716,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1772,7 +1771,7 @@ fn setting_metadata_emits_correct_events() {
             let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert!(match events.get(0) {
+        assert!(match events.first() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
@@ -1832,7 +1831,7 @@ struct RegisteredEvent {
 }
 
 fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -> bool {
-    scrypto_decode::<T>(&actual).unwrap() == *expected
+    scrypto_decode::<T>(actual).unwrap() == *expected
 }
 
 fn create_all_allowed_resource(ledger: &mut DefaultLedgerSimulator) -> ResourceAddress {
@@ -1885,7 +1884,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
         .deposit_entire_worktop(account)
         .build();
     ledger
-        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
         .expect_commit_success();
 
     // Burn
@@ -1895,7 +1894,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
         .burn_all_from_worktop(resource_address)
         .build();
     ledger
-        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
         .expect_commit_success();
 
     // Assert
@@ -1991,7 +1990,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         .deposit_entire_worktop(account)
         .build();
     ledger
-        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
         .expect_commit_success();
 
     // Burn
@@ -2005,7 +2004,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         .burn_all_from_worktop(resource_address)
         .build();
     ledger
-        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
         .expect_commit_success();
 
     // Assert
@@ -2494,7 +2493,7 @@ fn account_configuration_emits_expected_events() {
             )
             .unwrap(),
             account::RemoveAuthorizedDepositorEvent {
-                authorized_depositor_badge: authorized_depositor_badge
+                authorized_depositor_badge
             }
         )
     }
@@ -2735,7 +2734,7 @@ fn event_replacements_occur_as_expected() {
         )
     );
     assert_eq!(
-        scrypto_decode::<SetMetadataEvent>(&metadata_event_data).unwrap(),
+        scrypto_decode::<SetMetadataEvent>(metadata_event_data).unwrap(),
         SetMetadataEvent {
             key: "Hello".to_owned(),
             value: MetadataValue::String("World".to_owned())

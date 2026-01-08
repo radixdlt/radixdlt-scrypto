@@ -176,9 +176,8 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 // Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpRuntime
 fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
-    let code =
-        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
-            .unwrap();
+    let code = wat2wasm(include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
+        .unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -211,7 +210,7 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
 // There is only one instruction `br` per iteration.
 // It's extremely helpful for stress testing the `consume_wasm_execution_units` host function.
 fn bench_spin_loop_v2(c: &mut Criterion) {
-    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let code = wat2wasm(include_local_wasm_str!("loop_v2.wat")).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -398,7 +397,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
             ledger.publish_package(
                 (code.clone(), package_definition.clone()),
                 btreemap!(),
-                OwnerRole::Updatable(rule!(require(signature(&pk1)))),
+                OwnerRole::Updatable(rule!(require(signature(pk1)))),
             );
         })
     });

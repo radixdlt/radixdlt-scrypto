@@ -41,7 +41,7 @@ pub trait IntoExecutable {
     }
 }
 
-impl<'a, T: IntoExecutable + Clone> IntoExecutable for &'a T {
+impl<T: IntoExecutable + Clone> IntoExecutable for &T {
     type Error = T::Error;
 
     fn into_executable(
@@ -104,20 +104,14 @@ impl ExecutableTransaction {
         let mut references = references;
 
         for proof in &auth_zone_init.initial_non_fungible_id_proofs {
-            references.insert(proof.resource_address().clone().into());
+            references.insert(proof.resource_address().into());
         }
         for resource in &auth_zone_init.simulate_every_proof_under_resources {
-            references.insert(resource.clone().into());
+            references.insert((*resource).into());
         }
 
         for preallocated_address in &context.pre_allocated_addresses {
-            references.insert(
-                preallocated_address
-                    .blueprint_id
-                    .package_address
-                    .clone()
-                    .into(),
-            );
+            references.insert(preallocated_address.blueprint_id.package_address.into());
         }
 
         Self {
@@ -141,22 +135,18 @@ impl ExecutableTransaction {
         {
             let intent = &mut transaction_intent;
             for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
-                intent
-                    .references
-                    .insert(proof.resource_address().clone().into());
+                intent.references.insert(proof.resource_address().into());
             }
             for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
-                intent.references.insert(resource.clone().into());
+                intent.references.insert((*resource).into());
             }
         }
         for intent in &mut subintents {
             for proof in &intent.auth_zone_init.initial_non_fungible_id_proofs {
-                intent
-                    .references
-                    .insert(proof.resource_address().clone().into());
+                intent.references.insert(proof.resource_address().into());
             }
             for resource in &intent.auth_zone_init.simulate_every_proof_under_resources {
-                intent.references.insert(resource.clone().into());
+                intent.references.insert((*resource).into());
             }
         }
 
@@ -164,13 +154,9 @@ impl ExecutableTransaction {
         // Since there's no reason for the protocol to use child subintents, we only assign pre-allocated
         // addresses to the root subintent
         for preallocated_address in &context.pre_allocated_addresses {
-            transaction_intent.references.insert(
-                preallocated_address
-                    .blueprint_id
-                    .package_address
-                    .clone()
-                    .into(),
-            );
+            transaction_intent
+                .references
+                .insert(preallocated_address.blueprint_id.package_address.into());
         }
 
         Self {
@@ -262,7 +248,7 @@ impl ExecutableTransaction {
 
         for intent in self.all_intents() {
             for reference in intent.references.iter() {
-                references.insert(reference.clone());
+                references.insert(*reference);
             }
         }
 

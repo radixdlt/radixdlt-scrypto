@@ -183,33 +183,29 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     match info.object_type {
                         ObjectType::Global { modules } => {
                             for (module_id, _) in modules {
-                                match &module_id {
-                                    AttachedModuleId::Royalty => {
-                                        let royalty = system_db_reader
-                                            .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
-                                                &node_id,
-                                                module_id.into(),
-                                                0u8,
-                                            )
-                                            .expect("Broken database")
-                                            .fully_update_and_into_latest_version();
-                                        Self::traverse_recursive(
-                                            system_db_reader,
-                                            visitor,
-                                            Some(&(
-                                                node_id,
-                                                ROYALTY_BASE_PARTITION,
-                                                SubstateKey::Field(
-                                                    ComponentRoyaltyField::Accumulator
-                                                        .field_index(),
-                                                ),
-                                            )),
-                                            royalty.royalty_vault.0 .0,
-                                            depth + 1,
-                                            max_depth,
-                                        );
-                                    }
-                                    _ => {}
+                                if module_id == AttachedModuleId::Royalty {
+                                    let royalty = system_db_reader
+                                        .read_typed_object_field::<ComponentRoyaltyAccumulatorFieldPayload>(
+                                            &node_id,
+                                            module_id.into(),
+                                            0u8,
+                                        )
+                                        .expect("Broken database")
+                                        .fully_update_and_into_latest_version();
+                                    Self::traverse_recursive(
+                                        system_db_reader,
+                                        visitor,
+                                        Some(&(
+                                            node_id,
+                                            ROYALTY_BASE_PARTITION,
+                                            SubstateKey::Field(
+                                                ComponentRoyaltyField::Accumulator.field_index(),
+                                            ),
+                                        )),
+                                        royalty.royalty_vault.0 .0,
+                                        depth + 1,
+                                        max_depth,
+                                    );
                                 }
                             }
                         }

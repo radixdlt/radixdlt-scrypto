@@ -126,11 +126,8 @@ impl Compile {
 
         // Build
         let mut build_artifacts = compiler.compile().unwrap_or_else(|error| {
-            match &error {
-                ScryptoCompilerError::CargoBuildFailure(exit_code) => {
-                    eprintln!("Package compilation error:\n{:?}", exit_code)
-                }
-                _ => (),
+            if let ScryptoCompilerError::CargoBuildFailure(exit_code) = &error {
+                eprintln!("Package compilation error:\n{:?}", exit_code)
             }
 
             panic!(

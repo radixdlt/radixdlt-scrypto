@@ -707,7 +707,7 @@ fn lock_recovery_fee_is_only_callable_by_primary_recovery_or_confirmation() {
                 .build()
         };
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         if should_succeed {
@@ -813,7 +813,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
                 .build()
         };
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         if should_succeed {
@@ -1100,7 +1100,7 @@ fn fees_can_be_locked_from_an_access_controller_with_a_badge_primary_role() {
                 AccessControllerLockRecoveryFeeInput { amount: dec!(100) },
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk)],
+        vec![NonFungibleGlobalId::from_public_key(pk)],
     );
 
     // Assert

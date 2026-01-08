@@ -149,7 +149,7 @@ impl ScryptoBucket for Bucket {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn put(&mut self, other: Self) -> () {
+    fn put(&mut self, other: Self) {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             BUCKET_PUT_IDENT,
@@ -269,7 +269,7 @@ impl ScryptoBucket for FungibleBucket {
         self.resource_address().into()
     }
 
-    fn put(&mut self, other: Self) -> () {
+    fn put(&mut self, other: Self) {
         self.0.put(other.0)
     }
 
@@ -356,7 +356,7 @@ impl ScryptoBucket for NonFungibleBucket {
         NonFungibleProof(self.0.create_proof_of_all())
     }
 
-    fn put(&mut self, other: Self) -> () {
+    fn put(&mut self, other: Self) {
         self.0.put(other.0)
     }
 

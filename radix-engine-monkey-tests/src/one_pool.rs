@@ -73,7 +73,7 @@ impl OnePoolFuzzAction {
                     one_pool_meta.pool_address,
                     ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     OneResourcePoolProtectedWithdrawManifestInput {
-                        amount: amount.into(),
+                        amount,
                         withdraw_strategy,
                     },
                 );

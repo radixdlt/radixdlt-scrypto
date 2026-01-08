@@ -8,7 +8,7 @@ impl TreeInternalNode {
         let children = internal_node
             .children_sorted()
             .map(|(nibble, child)| TreeChildEntry {
-                nibble: nibble.clone(),
+                nibble: *nibble,
                 version: child.version,
                 hash: child.hash,
                 is_leaf: child.is_leaf(),
@@ -27,7 +27,7 @@ impl TreeLeafNode {
                     .skip(key.nibble_path().num_nibbles()),
             ),
             value_hash: leaf_node.value_hash(),
-            last_hash_change_version: leaf_node.payload().clone(),
+            last_hash_change_version: *leaf_node.payload(),
         }
     }
 }
@@ -62,8 +62,8 @@ impl StoredNode for TreeNode {
 
     fn into_jmt_node(&self, key: &TreeNodeKey) -> Node<Version> {
         match self {
-            TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(&internal_node)),
-            TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, &leaf_node)),
+            TreeNode::Internal(internal_node) => Node::Internal(InternalNode::from(internal_node)),
+            TreeNode::Leaf(leaf_node) => Node::Leaf(LeafNode::from(key, leaf_node)),
             TreeNode::Null => Node::Null,
         }
     }
@@ -71,9 +71,9 @@ impl StoredNode for TreeNode {
     fn from_jmt_node(node: &Node<Self::Payload>, key: &TreeNodeKey) -> Self {
         match node {
             Node::Internal(internal_node) => {
-                TreeNode::Internal(TreeInternalNode::from(&internal_node))
+                TreeNode::Internal(TreeInternalNode::from(internal_node))
             }
-            Node::Leaf(leaf_node) => TreeNode::Leaf(TreeLeafNode::from(key, &leaf_node)),
+            Node::Leaf(leaf_node) => TreeNode::Leaf(TreeLeafNode::from(key, leaf_node)),
             Node::Null => TreeNode::Null,
         }
     }

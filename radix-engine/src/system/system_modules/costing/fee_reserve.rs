@@ -44,7 +44,6 @@ impl CanBeAbortion for FeeReserveError {
 
 /// This is only allowed before a transaction properly begins.
 /// After any other methods are called, this cannot be called again.
-
 pub trait PreExecutionFeeReserve {
     fn consume_deferred_execution(&mut self, cost_units: u32) -> Result<(), FeeReserveError>;
 
@@ -302,10 +301,10 @@ impl SystemLoanFeeReserve {
             .checked_mul(cost_units)
             .ok_or(FeeReserveError::Overflow)?;
         if self.xrd_balance < amount {
-            return Err(FeeReserveError::InsufficientBalance {
+            Err(FeeReserveError::InsufficientBalance {
                 required: amount,
                 remaining: self.xrd_balance,
-            });
+            })
         } else {
             self.xrd_balance -= amount;
             self.execution_cost_units_committed += cost_units;
@@ -321,10 +320,10 @@ impl SystemLoanFeeReserve {
             .checked_mul(cost_units)
             .ok_or(FeeReserveError::Overflow)?;
         if self.xrd_balance < amount {
-            return Err(FeeReserveError::InsufficientBalance {
+            Err(FeeReserveError::InsufficientBalance {
                 required: amount,
                 remaining: self.xrd_balance,
-            });
+            })
         } else {
             self.xrd_balance -= amount;
             self.finalization_cost_units_committed += cost_units;
@@ -346,10 +345,10 @@ impl SystemLoanFeeReserve {
         };
 
         if self.xrd_balance < amount {
-            return Err(FeeReserveError::InsufficientBalance {
+            Err(FeeReserveError::InsufficientBalance {
                 required: amount,
                 remaining: self.xrd_balance,
-            });
+            })
         } else {
             self.xrd_balance -= amount;
             self.royalty_cost_breakdown
@@ -497,10 +496,10 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         .ok_or(FeeReserveError::Overflow)?;
 
         if self.xrd_balance < amount {
-            return Err(FeeReserveError::InsufficientBalance {
+            Err(FeeReserveError::InsufficientBalance {
                 required: amount,
                 remaining: self.xrd_balance,
-            });
+            })
         } else {
             self.xrd_balance -= amount;
             self.storage_cost_committed += amount;
@@ -606,8 +605,10 @@ mod tests {
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
         costing_parameters.usd_price = usd_price;
         costing_parameters.state_storage_price = state_storage_price;
-        let mut transaction_costing_parameters = TransactionCostingParameters::default();
-        transaction_costing_parameters.tip = TipSpecifier::Percentage(tip_percentage);
+        let transaction_costing_parameters = TransactionCostingParameters {
+            tip: TipSpecifier::Percentage(tip_percentage),
+            ..Default::default()
+        };
 
         SystemLoanFeeReserve::new(
             costing_parameters,
@@ -623,7 +624,7 @@ mod tests {
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false);
         fee_reserve.repay_all().unwrap();
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), true);
+        assert!(summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("2"));
         assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.04"));
@@ -643,7 +644,7 @@ mod tests {
         );
         fee_reserve.repay_all().unwrap();
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), true);
+        assert!(summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
@@ -657,7 +658,7 @@ mod tests {
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), true);
+        assert!(summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
@@ -671,7 +672,7 @@ mod tests {
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), true);
+        assert!(summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
         assert_eq!(summary.total_royalty_cost_in_xrd, dec!("0"));
@@ -690,7 +691,7 @@ mod tests {
             })
         );
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), false);
+        assert!(!summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
         assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.1"));
@@ -718,7 +719,7 @@ mod tests {
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
         let (summary, _, _) = fee_reserve.finalize();
-        assert_eq!(summary.loan_fully_repaid(), true);
+        assert!(summary.loan_fully_repaid());
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
         assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.1"));
         assert_eq!(summary.total_royalty_cost_in_xrd, dec!("16"));

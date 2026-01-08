@@ -38,7 +38,7 @@ impl FromStr for SimulatorPackageAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
-            .map(|x| Self(x))
+            .map(Self)
     }
 }
 
@@ -83,7 +83,7 @@ impl FromStr for SimulatorResourceAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
-            .map(|x| Self(x))
+            .map(Self)
     }
 }
 
@@ -128,7 +128,7 @@ impl FromStr for SimulatorComponentAddress {
                 address,
             ))
             .ok_or(AddressError::InvalidAddress(address.to_string()))
-            .map(|x| Self(x))
+            .map(Self)
     }
 }
 

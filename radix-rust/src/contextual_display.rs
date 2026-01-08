@@ -60,7 +60,7 @@ pub trait ContextualDisplay<Context> {
     /// ```
     ///
     /// [`format`]: #method.format
-    fn display<'a, 'b, TContext: Into<Context>>(
+    fn display<'a, TContext: Into<Context>>(
         &'a self,
         context: TContext,
     ) -> ContextDisplayable<'a, Self, Context> {
@@ -75,7 +75,7 @@ pub trait ContextualDisplay<Context> {
     /// Typically you should use [`format`] instead.
     ///
     /// [`format`]: #method.format
-    fn debug_as_display<'a, 'b, TContext: Into<Context>>(
+    fn debug_as_display<'a, TContext: Into<Context>>(
         &'a self,
         context: TContext,
     ) -> ContextDebuggableAsDisplay<'a, Self, Context> {
@@ -85,7 +85,7 @@ pub trait ContextualDisplay<Context> {
         }
     }
 
-    fn to_string<'a, 'b, TContext: Into<Context>>(&'a self, context: TContext) -> String {
+    fn to_string<TContext: Into<Context>>(&self, context: TContext) -> String {
         self.display(context).to_string()
     }
 }
@@ -98,7 +98,7 @@ where
     context: TContext,
 }
 
-impl<'a, 'b, TValue, TContext> fmt::Display for ContextDisplayable<'a, TValue, TContext>
+impl<'a, TValue, TContext> fmt::Display for ContextDisplayable<'a, TValue, TContext>
 where
     TValue: ContextualDisplay<TContext> + ?Sized,
 {
@@ -117,7 +117,7 @@ where
     context: TContext,
 }
 
-impl<'a, 'b, TValue, TContext> fmt::Debug for ContextDebuggableAsDisplay<'a, TValue, TContext>
+impl<'a, TValue, TContext> fmt::Debug for ContextDebuggableAsDisplay<'a, TValue, TContext>
 where
     TValue: ContextualDisplay<TContext> + ?Sized,
 {

@@ -85,7 +85,7 @@ pub fn format_custom_escaped<E: CustomCharEscaper>(
     let mut printable_range = 0..0;
 
     fn could_need_escaping(b: u8) -> bool {
-        b > 0x7E || b < 0x20 || b == b'\\' || b == b'"'
+        !(0x20..=0x7E).contains(&b) || b == b'\\' || b == b'"'
     }
 
     E::format_string_start(f)?;
@@ -93,7 +93,7 @@ pub fn format_custom_escaped<E: CustomCharEscaper>(
     // the loop here first skips over runs of printable ASCII as a fast path.
     // other chars (unicode, or ASCII that needs escaping) are then handled per-`char`.
     let mut rest = input;
-    while rest.len() > 0 {
+    while !rest.is_empty() {
         let Some(non_printable_start) =
             rest.as_bytes().iter().position(|&b| could_need_escaping(b))
         else {
@@ -230,34 +230,34 @@ mod rust_core_1_81_is_printable {
         } else if x < 0x20000 {
             check(lower, SINGLETONS1U, SINGLETONS1L, NORMAL1)
         } else {
-            if 0x2a6e0 <= x && x < 0x2a700 {
+            if (0x2a6e0..0x2a700).contains(&x) {
                 return false;
             }
-            if 0x2b73a <= x && x < 0x2b740 {
+            if (0x2b73a..0x2b740).contains(&x) {
                 return false;
             }
-            if 0x2b81e <= x && x < 0x2b820 {
+            if (0x2b81e..0x2b820).contains(&x) {
                 return false;
             }
-            if 0x2cea2 <= x && x < 0x2ceb0 {
+            if (0x2cea2..0x2ceb0).contains(&x) {
                 return false;
             }
-            if 0x2ebe1 <= x && x < 0x2ebf0 {
+            if (0x2ebe1..0x2ebf0).contains(&x) {
                 return false;
             }
-            if 0x2ee5e <= x && x < 0x2f800 {
+            if (0x2ee5e..0x2f800).contains(&x) {
                 return false;
             }
-            if 0x2fa1e <= x && x < 0x30000 {
+            if (0x2fa1e..0x30000).contains(&x) {
                 return false;
             }
-            if 0x3134b <= x && x < 0x31350 {
+            if (0x3134b..0x31350).contains(&x) {
                 return false;
             }
-            if 0x323b0 <= x && x < 0xe0100 {
+            if (0x323b0..0xe0100).contains(&x) {
                 return false;
             }
-            if 0xe01f0 <= x && x < 0x110000 {
+            if (0xe01f0..0x110000).contains(&x) {
                 return false;
             }
             true

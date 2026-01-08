@@ -17,9 +17,9 @@ pub fn handle_sbor(
     trace!("handle_sbor() starts");
 
     let categorize =
-        crate::categorize::handle_categorize(input.clone(), context_custom_value_kind.clone())?;
-    let encode = crate::encode::handle_encode(input.clone(), context_custom_value_kind.clone())?;
-    let decode = crate::decode::handle_decode(input.clone(), context_custom_value_kind.clone())?;
+        crate::categorize::handle_categorize(input.clone(), context_custom_value_kind)?;
+    let encode = crate::encode::handle_encode(input.clone(), context_custom_value_kind)?;
+    let decode = crate::decode::handle_decode(input.clone(), context_custom_value_kind)?;
     let describe = crate::describe::handle_describe(input, context_custom_type_kind)?;
 
     let output = quote! {

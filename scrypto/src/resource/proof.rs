@@ -449,7 +449,7 @@ impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     }
 
     fn contains_non_fungibles(&self, ids: &IndexSet<NonFungibleLocalId>) -> bool {
-        self.non_fungible_local_ids().is_superset(&ids)
+        self.non_fungible_local_ids().is_superset(ids)
     }
 
     /// Returns all the non-fungible units contained.

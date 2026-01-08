@@ -25,7 +25,7 @@ lazy_static! {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
         include_str!("../../../../assets/native_function_base_costs.csv")
             .split("\n")
-            .filter(|x| x.len() > 0)
+            .filter(|x| !x.is_empty())
             .for_each(|x| {
                 let mut tokens = x.split(",");
                 let package_address =
@@ -213,7 +213,7 @@ impl FeeTable {
                 NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
-                    .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
+                    .map(|value| add(value.1, mul(value.0, cast(*input_size))))
                     .unwrap_or_else(|| {
                         panic!(
                             "Native function not found: {:?}::{}. ",
@@ -714,7 +714,7 @@ fn cast(a: usize) -> u32 {
 
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
-    a.checked_add(b).unwrap_or(u32::MAX)
+    a.saturating_add(b)
 }
 
 #[inline]
@@ -724,5 +724,5 @@ fn sub(a: u32, b: u32) -> u32 {
 
 #[inline]
 fn mul(a: u32, b: u32) -> u32 {
-    a.checked_mul(b).unwrap_or(u32::MAX)
+    a.saturating_mul(b)
 }

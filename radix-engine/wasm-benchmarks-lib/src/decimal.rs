@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use radix_common::math::*;
 
 #[cfg(target_arch = "wasm32")]

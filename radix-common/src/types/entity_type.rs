@@ -211,13 +211,13 @@ impl EntityType {
     }
 
     pub const fn is_global_preallocated(&self) -> bool {
-        match self {
+        matches!(
+            self,
             EntityType::GlobalPreallocatedSecp256k1Account
-            | EntityType::GlobalPreallocatedEd25519Account
-            | EntityType::GlobalPreallocatedSecp256k1Identity
-            | EntityType::GlobalPreallocatedEd25519Identity => true,
-            _ => false,
-        }
+                | EntityType::GlobalPreallocatedEd25519Account
+                | EntityType::GlobalPreallocatedSecp256k1Identity
+                | EntityType::GlobalPreallocatedEd25519Identity
+        )
     }
 
     pub const fn is_internal_kv_store(&self) -> bool {

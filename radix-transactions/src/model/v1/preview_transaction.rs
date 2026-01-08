@@ -47,7 +47,7 @@ impl ValidatedPreviewIntent {
         let mut initial_proofs = AuthAddresses::signer_set(&self.signer_public_keys);
         if header.notary_is_signatory {
             initial_proofs.insert(NonFungibleGlobalId::from_public_key(
-                &header.notary_public_key,
+                header.notary_public_key,
             ));
         }
 

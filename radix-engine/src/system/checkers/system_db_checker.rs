@@ -22,6 +22,7 @@ pub struct SystemNodeCheckerState {
     node_type: SystemNodeType,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SystemNodeType {
     Object {
@@ -250,7 +251,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                         SystemNodeType::Object { object_info, .. } => {
                             NodeInfo::Object(object_info.blueprint_info.blueprint_id.clone())
                         }
-                        SystemNodeType::KeyValueStore {} => NodeInfo::KeyValueStore,
+                        SystemNodeType::KeyValueStore => NodeInfo::KeyValueStore,
                     };
                     SystemDatabaseCheckError::PartitionError(node_info, e)
                 })?;
@@ -291,7 +292,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
             .map_err(SystemNodeCheckError::NoTypeInfo)?;
         let _entity_type = node_id
             .entity_type()
-            .ok_or_else(|| SystemNodeCheckError::NoMappedEntityType)?;
+            .ok_or(SystemNodeCheckError::NoMappedEntityType)?;
         let node_checker_state = match type_info {
             TypeInfoSubstate::Object(object_info) => {
                 let bp_definition = reader
@@ -365,7 +366,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
                             Condition::IfOuterFeature(feature) => {
                                 if outer_object
                                     .as_ref()
-                                    .ok_or_else(|| SystemNodeCheckError::InvalidCondition)?
+                                    .ok_or(SystemNodeCheckError::InvalidCondition)?
                                     .blueprint_info
                                     .features
                                     .contains(feature.as_str())

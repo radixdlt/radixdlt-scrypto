@@ -21,7 +21,7 @@ pub fn handle_sbor_assert_derive(
 
     let parsed: DeriveInput = parse2(input)?;
 
-    if parsed.generics.params.len() > 0 || parsed.generics.where_clause.is_some() {
+    if !parsed.generics.params.is_empty() || parsed.generics.where_clause.is_some() {
         // In future we could support them by allowing concrete type parameters to be provided in attributes,
         // to be used for the purpose of generating the test.
         return Err(Error::new(
@@ -45,14 +45,14 @@ pub fn handle_sbor_assert_derive(
     Ok(output)
 }
 
-const GENERAL_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(..))]` OR `#[sbor_assert(backwards_compatible(..))]`, with optional additional parameters `generate`, `regenerate`, and `settings(..)`. A command such as `#[sbor_assert(fixed(\"FILE:my_schema.bin\"), generate)]` can be used to generate the schema initially.";
+const GENERAL_PARSE_ERROR_MESSAGE: &str = "Expected `#[sbor_assert(fixed(..))]` OR `#[sbor_assert(backwards_compatible(..))]`, with optional additional parameters `generate`, `regenerate`, and `settings(..)`. A command such as `#[sbor_assert(fixed(\"FILE:my_schema.bin\"), generate)]` can be used to generate the schema initially.";
 
 fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, AdvancedSettings)> {
     // When we come to extract fixed named types,
     let inner_attributes = extract_wrapped_root_attributes(attributes, "sbor_assert")?;
     let keyed_inner_attributes =
         extract_wrapped_inner_attributes(&inner_attributes, GENERAL_PARSE_ERROR_MESSAGE)?;
-    if keyed_inner_attributes.len() == 0 {
+    if keyed_inner_attributes.is_empty() {
         return Err(Error::new(Span::call_site(), GENERAL_PARSE_ERROR_MESSAGE));
     }
 
@@ -116,9 +116,9 @@ fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, Advanced
     Ok((assertion_mode, advanced_settings))
 }
 
-const GENERATE_PARSE_ERROR_MESSAGE: &'static str = "Expected just `generate` or `regenerate` without any value, for example: `#[sbor_assert(fixed(..), generate)]` OR `#[sbor_assert(backwards_compatible(..), settings(..), regenerate)]`";
+const GENERATE_PARSE_ERROR_MESSAGE: &str = "Expected just `generate` or `regenerate` without any value, for example: `#[sbor_assert(fixed(..), generate)]` OR `#[sbor_assert(backwards_compatible(..), settings(..), regenerate)]`";
 
-const FIXED_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }";
+const FIXED_PARSE_ERROR_MESSAGE: &str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }";
 
 fn extract_fixed_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
@@ -142,68 +142,61 @@ fn extract_fixed_schema_parameters(
         },
         _ => {}
     }
-    return Err(Error::new(error_span, FIXED_PARSE_ERROR_MESSAGE));
+    Err(Error::new(error_span, FIXED_PARSE_ERROR_MESSAGE))
 }
 
-const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &'static str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded-schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }\nOR `#[sbor_assert(backwards_compatible(\"EXPR:Y\"))]` where `Y` is some expression such as `params_builder()` generating a `SingleTypeSchemaCompatibilityParameters<S>` for `S` the custom schema.";
+const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-encoded-schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }\nOR `#[sbor_assert(backwards_compatible(\"EXPR:Y\"))]` where `Y` is some expression such as `params_builder()` generating a `SingleTypeSchemaCompatibilityParameters<S>` for `S` the custom schema.";
 
 fn extract_backwards_compatible_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
     error_span: Span,
 ) -> Result<BackwardsCompatibleSchemaParameters> {
-    match attribute_value {
-        Some(meta_list) => {
-            if let [NestedMeta::Lit(Lit::Str(lit_str))] = meta_list.as_slice() {
-                if let Some(expression) = extract_prefixed(lit_str, "EXPR:") {
-                    return Ok(BackwardsCompatibleSchemaParameters::FromExpression {
-                        expression: expression.parse()?,
-                    });
-                }
-            } else {
-                // Assume key-value based
-                let named_schemas = meta_list
-                    .iter()
-                    .map(|meta| -> Result<_> {
-                        match meta {
-                            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                                path, lit, ..
-                            })) => {
-                                let Some(ident) = path.get_ident() else {
-                                    return Err(Error::new(
-                                        path.span(),
-                                        BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE,
-                                    ));
-                                };
-                                let Lit::Str(lit_str) = lit else {
-                                    return Err(Error::new(
-                                        path.span(),
-                                        "Only string literals are supported here",
-                                    ));
-                                };
-                                Ok(NamedSchema {
-                                    name: ident.clone(),
-                                    schema: extract_schema_location_from_string(lit_str)?,
-                                })
-                            }
-                            _ => {
-                                return Err(Error::new(
-                                    meta.span(),
-                                    BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE,
-                                ))
-                            }
-                        }
-                    })
-                    .collect::<Result<_>>()?;
-                return Ok(BackwardsCompatibleSchemaParameters::NamedSchemas { named_schemas });
+    if let Some(meta_list) = attribute_value {
+        if let [NestedMeta::Lit(Lit::Str(lit_str))] = meta_list.as_slice() {
+            if let Some(expression) = extract_prefixed(lit_str, "EXPR:") {
+                return Ok(BackwardsCompatibleSchemaParameters::FromExpression {
+                    expression: expression.parse()?,
+                });
             }
+        } else {
+            // Assume key-value based
+            let named_schemas = meta_list
+                .iter()
+                .map(|meta| -> Result<_> {
+                    match meta {
+                        NestedMeta::Meta(Meta::NameValue(MetaNameValue { path, lit, .. })) => {
+                            let Some(ident) = path.get_ident() else {
+                                return Err(Error::new(
+                                    path.span(),
+                                    BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE,
+                                ));
+                            };
+                            let Lit::Str(lit_str) = lit else {
+                                return Err(Error::new(
+                                    path.span(),
+                                    "Only string literals are supported here",
+                                ));
+                            };
+                            Ok(NamedSchema {
+                                name: ident.clone(),
+                                schema: extract_schema_location_from_string(lit_str)?,
+                            })
+                        }
+                        _ => Err(Error::new(
+                            meta.span(),
+                            BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE,
+                        )),
+                    }
+                })
+                .collect::<Result<_>>()?;
+            return Ok(BackwardsCompatibleSchemaParameters::NamedSchemas { named_schemas });
         }
-        _ => {}
     }
 
-    return Err(Error::new(
+    Err(Error::new(
         error_span,
         BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE,
-    ));
+    ))
 }
 
 fn extract_schema_location_from_string(lit_str: &LitStr) -> Result<SchemaLocation> {
@@ -231,7 +224,7 @@ fn extract_schema_location_from_string(lit_str: &LitStr) -> Result<SchemaLocatio
     Ok(schema_definition)
 }
 
-const SETTINGS_PARSE_ERROR_MESSAGE: &'static str = "Expected one of:\n* `settings(allow_name_changes)`\n* `settings(<CONSTANT_NAME>)` or `settings(\"CONST:<CONSTANT_NAME>\")` where `<CONSTANT_NAME>` is the name of a defined constant with type `SchemaComparisonSettings`\n* settings(\"EXPR:<Expression>\") where the expression is `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`\n* settings(comparison_between_current_and_latest = \"EXPR:F1\", comparison_between_versions = \"EXPR:F2\") where `F1`, `F2` are expressions which `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`";
+const SETTINGS_PARSE_ERROR_MESSAGE: &str = "Expected one of:\n* `settings(allow_name_changes)`\n* `settings(<CONSTANT_NAME>)` or `settings(\"CONST:<CONSTANT_NAME>\")` where `<CONSTANT_NAME>` is the name of a defined constant with type `SchemaComparisonSettings`\n* settings(\"EXPR:<Expression>\") where the expression is `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`\n* settings(comparison_between_current_and_latest = \"EXPR:F1\", comparison_between_versions = \"EXPR:F2\") where `F1`, `F2` are expressions which `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`";
 
 struct SettingsOverrides {
     settings_resolution: Option<ComparisonSettingsResolution>,
@@ -245,7 +238,7 @@ fn extract_settings_overrides(
         Some(meta_list) if meta_list.len() == 1 => match meta_list[0] {
             NestedMeta::Meta(Meta::Path(path)) => {
                 let allow_name_changes = if let Some(ident) = path.get_ident() {
-                    ident.to_string() == "allow_name_changes"
+                    *ident == "allow_name_changes"
                 } else {
                     false
                 };
@@ -323,7 +316,7 @@ fn extract_settings_overrides(
         }
         _ => {}
     };
-    return Err(Error::new(error_span, SETTINGS_PARSE_ERROR_MESSAGE));
+    Err(Error::new(error_span, SETTINGS_PARSE_ERROR_MESSAGE))
 }
 
 fn extract_prefixed(lit_str: &LitStr, prefix: &str) -> Option<LitStr> {
@@ -349,6 +342,7 @@ enum GenerationTarget {
     },
 }
 
+#[allow(clippy::large_enum_variant)]
 enum SchemaLocation {
     InlineString { inline: LitStr },
     FromConstant { constant_path: Path },
@@ -374,6 +368,7 @@ enum FixedSchemaParameters {
     SingleSchema { location: SchemaLocation },
 }
 
+#[allow(clippy::large_enum_variant)]
 enum BackwardsCompatibleSchemaParameters {
     FromExpression { expression: Expr },
     NamedSchemas { named_schemas: Vec<NamedSchema> },
@@ -394,6 +389,7 @@ enum GenerateMode {
     Generate { is_regenerate: bool },
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq)]
 enum ComparisonSettingsResolution {
     Default,

@@ -74,7 +74,7 @@ fn validate_instruction_call_arguments_to_native_components(
             MANIFEST_SBOR_V1_MAX_DEPTH,
         )
         .map_err(|error| {
-            InstructionSchemaValidationError::SchemaValidationError(error.error_message(&schema))
+            InstructionSchemaValidationError::SchemaValidationError(error.error_message(schema))
         })?;
     }
 
@@ -92,9 +92,10 @@ fn get_blueprint_schema<'p>(
 }
 
 /// * An `Err` is returned if something is invalid about the arguments given to this method. As an
-/// example: they've specified a method on the account blueprint that does not exist.
+///   example: they've specified a method on the account blueprint that does not exist.
 /// * A `None` is returned if the schema for this type is not well know. As an example: arbitrary
-/// packages.
+///   packages.
+#[allow(clippy::type_complexity)]
 fn get_arguments_schema<'s>(
     invocation: Invocation,
 ) -> Result<
@@ -105,7 +106,7 @@ fn get_arguments_schema<'s>(
 
     let blueprint_schema = match invocation {
         Invocation::Function(package_address @ PACKAGE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(&PACKAGE_PACKAGE_DEFINITION, package_address, &blueprint)
+            get_blueprint_schema(&PACKAGE_PACKAGE_DEFINITION, package_address, blueprint)
                 .map(Some)?
         }
         Invocation::Function(package_address @ RESOURCE_PACKAGE, ref blueprint, _) => {
@@ -254,7 +255,7 @@ fn get_arguments_schema<'s>(
                 || is_function_receiver(&function_schema.receiver) && invocation.is_function()
             {
                 Ok(Some((
-                    function_schema.input.clone(),
+                    function_schema.input,
                     blueprint_schema.schema.schema.v1(),
                 )))
             } else {
@@ -272,10 +273,10 @@ fn get_arguments_schema<'s>(
 
 fn is_self_or_mut_self_receiver(receiver: &Option<ReceiverInfo>) -> bool {
     if let Some(ref receiver) = receiver {
-        match (&receiver.receiver, receiver.ref_types) {
-            (Receiver::SelfRef | Receiver::SelfRefMut, RefTypes::NORMAL) => true,
-            _ => false,
-        }
+        matches!(
+            (&receiver.receiver, receiver.ref_types),
+            (Receiver::SelfRef | Receiver::SelfRefMut, RefTypes::NORMAL)
+        )
     } else {
         false
     }
@@ -283,10 +284,13 @@ fn is_self_or_mut_self_receiver(receiver: &Option<ReceiverInfo>) -> bool {
 
 fn is_direct_access_receiver(receiver: &Option<ReceiverInfo>) -> bool {
     if let Some(ref receiver) = receiver {
-        match (&receiver.receiver, receiver.ref_types) {
-            (Receiver::SelfRef | Receiver::SelfRefMut, RefTypes::DIRECT_ACCESS) => true,
-            _ => false,
-        }
+        matches!(
+            (&receiver.receiver, receiver.ref_types),
+            (
+                Receiver::SelfRef | Receiver::SelfRefMut,
+                RefTypes::DIRECT_ACCESS
+            )
+        )
     } else {
         false
     }

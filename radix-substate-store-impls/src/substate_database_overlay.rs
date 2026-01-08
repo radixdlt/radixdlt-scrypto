@@ -74,7 +74,7 @@ impl<S: BorrowMut<D>, D> SubstateDatabaseOverlay<S, D> {
 
 impl<S: BorrowMut<D>, D: CommittableSubstateDatabase> SubstateDatabaseOverlay<S, D> {
     pub fn commit_overlay_into_root_store(&mut self) {
-        let overlay = mem::replace(&mut self.overlay, StagingDatabaseUpdates::default());
+        let overlay = std::mem::take(&mut self.overlay);
         self.get_writable_root().commit(&overlay.into());
     }
 }

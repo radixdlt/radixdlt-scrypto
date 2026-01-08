@@ -60,7 +60,7 @@ pub fn sbor(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_derive(PermitSborAttributes, attributes(sbor))]
 pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
-    TokenStream::from_str(&"// Empty PermitSborAttributes expansion").unwrap()
+    TokenStream::from_str("// Empty PermitSborAttributes expansion").unwrap()
 }
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";

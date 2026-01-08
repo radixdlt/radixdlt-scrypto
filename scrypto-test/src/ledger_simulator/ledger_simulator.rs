@@ -55,6 +55,12 @@ pub struct LedgerSimulatorBuilder<E, D> {
     with_receipt_substate_check: bool,
 }
 
+impl Default for LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
     pub fn new() -> Self {
         LedgerSimulatorBuilder {
@@ -333,7 +339,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> LedgerSimulatorSnapshot {
         LedgerSimulatorSnapshot {
             database: self.database.clone(),
-            transaction_validator: self.transaction_validator.clone(),
+            transaction_validator: self.transaction_validator,
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             collected_events: self.collected_events.clone(),
@@ -370,7 +376,7 @@ impl<E: NativeVmExtension> LedgerSimulator<E, InMemorySubstateDatabase> {
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
-        FAUCET.clone().into()
+        FAUCET.into()
     }
 
     pub fn substate_db(&self) -> &D {
@@ -428,7 +434,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         (
             key_pair.0,
             key_pair.1,
-            NonFungibleGlobalId::from_public_key(&key_pair.0),
+            NonFungibleGlobalId::from_public_key(key_pair.0),
         )
     }
 
@@ -611,7 +617,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         SubtreeVaults::new(&self.database)
             .get_all(component_address.as_node_id())
             .swap_remove(&resource_address)
-            .unwrap_or_else(|| Vec::new())
+            .unwrap_or_default()
     }
 
     pub fn get_component_balance(
@@ -689,7 +695,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = component_address.as_node_id();
         let mut accounter = ResourceAccounter::new(&self.database);
-        accounter.traverse(node_id.clone());
+        accounter.traverse(*node_id);
         accounter.close().balances
     }
 
@@ -784,9 +790,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::preallocated_account_from_public_key(
-            &PublicKey::Secp256k1(pub_key.clone()),
-        );
+        let account =
+            ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(pub_key));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -795,9 +800,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_ed25519_key_pair();
-        let account = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(
-            pub_key.clone(),
-        ));
+        let account =
+            ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(pub_key));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -831,19 +835,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .unwrap()
             .fully_update_and_into_latest_version();
-        substate
-            .validator_set
-            .get_by_public_key(key)
-            .unwrap()
-            .0
-            .clone()
+        *substate.validator_set.get_by_public_key(key).unwrap().0
     }
 
     pub fn new_allocated_account(
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(signature(&key_pair.0)));
+        let withdraw_auth = rule!(require(signature(key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
@@ -872,10 +871,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             BasicRequirement::CountOf(
                 n_out_of_4,
                 vec![
-                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
-                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
-                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
-                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(pk1)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(pk2)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(pk3)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(pk4)),
                 ],
             ),
         ));
@@ -904,11 +903,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         },
                     )
                     .build(),
-                vec![NonFungibleGlobalId::from_public_key(&pk1)],
+                vec![NonFungibleGlobalId::from_public_key(pk1)],
             )
             .expect_commit_success()
-            .new_component_addresses()[0]
-            .clone();
+            .new_component_addresses()[0];
 
         (
             pk1,
@@ -1020,7 +1018,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 })
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            vec![NonFungibleGlobalId::from_public_key(pub_key)],
         );
         receipt.expect_commit_success();
 
@@ -1118,8 +1116,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .build();
 
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt
+        self.execute_manifest(manifest, vec![])
     }
 
     pub fn publish_package_simple<P: Into<PackagePublishingSource>>(
@@ -1412,7 +1409,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.override_configured_execution_config_properties(execution_config);
 
         execute_transaction(
-            &mut self.database,
+            &self.database,
             &self.vm_modules,
             &execution_config,
             executable,
@@ -1440,7 +1437,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         }
 
         let transaction_receipt = execute_transaction(
-            &mut self.database,
+            &self.database,
             &self.vm_modules,
             &execution_config,
             executable,
@@ -1482,7 +1479,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
         execute_preview(
-            &mut self.database,
+            &self.database,
             &self.vm_modules,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
@@ -2222,7 +2219,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                             }
                         }
                     }
-                    module @ _ => module.static_blueprint().unwrap(),
+                    module => module.static_blueprint().unwrap(),
                 };
                 (blueprint_id, event_name.clone())
             }
@@ -2500,21 +2497,20 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
     notary: &S,
     notary_is_signatory: bool,
 ) -> NotarizedTransactionV1 {
-    let notarized_transaction = TransactionBuilder::new()
+    TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: network.id,
             start_epoch_inclusive: Epoch::zero(),
             end_epoch_exclusive: Epoch::of(99),
             nonce: ledger.next_transaction_nonce(),
-            notary_public_key: notary.public_key().into(),
-            notary_is_signatory: notary_is_signatory,
+            notary_public_key: notary.public_key(),
+            notary_is_signatory,
             tip_percentage: 0,
         })
         .manifest(manifest)
         .multi_sign(&signers)
         .notarize(notary)
-        .build();
-    notarized_transaction
+        .build()
 }
 
 pub fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
@@ -2567,7 +2563,7 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
                 continue
             }
             Emitter::Method(node_id, ..)
-                if node_id.entity_type().map_or(false, |item| {
+                if node_id.entity_type().is_some_and(|item| {
                     matches!(
                         item,
                         EntityType::GlobalGenericComponent | EntityType::InternalGenericComponent

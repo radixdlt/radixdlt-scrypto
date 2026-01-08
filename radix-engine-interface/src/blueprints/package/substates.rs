@@ -308,12 +308,12 @@ impl BlueprintInterface {
 
     pub fn get_function_input_payload_def(&self, ident: &str) -> Option<BlueprintPayloadDef> {
         let schema = self.functions.get(ident)?;
-        Some(schema.input.clone())
+        Some(schema.input)
     }
 
     pub fn get_function_output_payload_def(&self, ident: &str) -> Option<BlueprintPayloadDef> {
         let schema = self.functions.get(ident)?;
-        Some(schema.output.clone())
+        Some(schema.output)
     }
 
     pub fn get_event_payload_def(&self, event_name: &str) -> Option<BlueprintPayloadDef> {
@@ -480,16 +480,14 @@ impl IndexedStateSchema {
 
     pub fn get_field_payload_def(&self, field_index: u8) -> Option<BlueprintPayloadDef> {
         let (_partition, fields) = self.fields.clone()?;
-        let field_schema = fields.get(field_index.clone() as usize)?;
-        Some(field_schema.field.clone())
+        let field_schema = fields.get(field_index as usize)?;
+        Some(field_schema.field)
     }
 
     pub fn get_kv_key_payload_def(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
-                Some(key_value_store.key.clone())
-            }
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => Some(key_value_store.key),
             _ => None,
         }
     }
@@ -498,28 +496,27 @@ impl IndexedStateSchema {
         &self,
         collection_index: u8,
     ) -> Option<(BlueprintPayloadDef, bool)> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::KeyValueStore(key_value_store) => Some((
-                key_value_store.value.clone(),
-                key_value_store.allow_ownership,
-            )),
+            BlueprintCollectionSchema::KeyValueStore(key_value_store) => {
+                Some((key_value_store.value, key_value_store.allow_ownership))
+            }
             _ => None,
         }
     }
 
     pub fn get_index_payload_def_key(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::Index(index) => Some(index.key.clone()),
+            BlueprintCollectionSchema::Index(index) => Some(index.key),
             _ => None,
         }
     }
 
     pub fn get_index_payload_def_value(&self, collection_index: u8) -> Option<BlueprintPayloadDef> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::Index(index) => Some(index.value.clone()),
+            BlueprintCollectionSchema::Index(index) => Some(index.value),
             _ => None,
         }
     }
@@ -528,9 +525,9 @@ impl IndexedStateSchema {
         &self,
         collection_index: u8,
     ) -> Option<BlueprintPayloadDef> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::SortedIndex(index) => Some(index.key.clone()),
+            BlueprintCollectionSchema::SortedIndex(index) => Some(index.key),
             _ => None,
         }
     }
@@ -539,16 +536,16 @@ impl IndexedStateSchema {
         &self,
         collection_index: u8,
     ) -> Option<BlueprintPayloadDef> {
-        let (_partition, schema) = self.collections.get(collection_index.clone() as usize)?;
+        let (_partition, schema) = self.collections.get(collection_index as usize)?;
         match schema {
-            BlueprintCollectionSchema::SortedIndex(index) => Some(index.value.clone()),
+            BlueprintCollectionSchema::SortedIndex(index) => Some(index.value),
             _ => None,
         }
     }
 
     pub fn fields_partition(&self) -> Option<PartitionDescription> {
         match &self.fields {
-            Some((partition, ..)) => Some(partition.clone()),
+            Some((partition, ..)) => Some(*partition),
             _ => None,
         }
     }
@@ -560,10 +557,7 @@ impl IndexedStateSchema {
         match &self.fields {
             Some((partition, fields)) => {
                 let field_index: usize = field_index.into();
-                fields
-                    .get(field_index)
-                    .cloned()
-                    .map(|f| (partition.clone(), f))
+                fields.get(field_index).cloned().map(|f| (*partition, f))
             }
             _ => None,
         }

@@ -27,7 +27,7 @@ pub enum ManifestNonFungibleLocalIdValidationError {
 
 impl ManifestNonFungibleLocalId {
     pub fn string(s: String) -> Result<Self, ManifestNonFungibleLocalIdValidationError> {
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(ManifestNonFungibleLocalIdValidationError::Empty);
         }
         if s.len() > MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
@@ -46,7 +46,7 @@ impl ManifestNonFungibleLocalId {
     }
 
     pub fn bytes(s: Vec<u8>) -> Result<Self, ManifestNonFungibleLocalIdValidationError> {
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(ManifestNonFungibleLocalIdValidationError::Empty);
         }
         if s.len() > MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH {
@@ -56,7 +56,7 @@ impl ManifestNonFungibleLocalId {
     }
 
     pub fn ruid(s: [u8; 32]) -> Self {
-        Self::RUID(s.into())
+        Self::RUID(s)
     }
 }
 
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn manifest_non_fungible_local_id_from_string_fail() {
-        let too_long_string = ['a' as u8; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
+        let too_long_string = [b'a'; MANIFEST_NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH + 1];
 
         assert_matches!(
             ManifestNonFungibleLocalId::string(String::new()).unwrap_err(),

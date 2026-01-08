@@ -238,6 +238,7 @@ impl AuthModule {
         )
     }
 
+    #[allow(clippy::type_complexity)]
     fn copy_global_caller<Y: SystemBasedKernelApi>(
         system: &mut SystemService<Y>,
         direct_caller_auth_zone_id: &NodeId,
@@ -380,10 +381,7 @@ impl AuthModule {
             let auth_zone_parent = if is_global_context_change {
                 None
             } else {
-                system
-                    .current_actor()
-                    .self_auth_zone()
-                    .map(|x| Reference(x))
+                system.current_actor().self_auth_zone().map(Reference)
             };
 
             let auth_zone = AuthZone::new(
@@ -447,7 +445,7 @@ impl AuthModule {
             .as_typed::<FieldSubstate<AuthZone>>()
             .unwrap()
             .into_payload();
-        let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());
+        let proofs = std::mem::take(&mut auth_zone.proofs);
         api.kernel_write_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(auth_zone)),
@@ -478,10 +476,10 @@ impl AuthModule {
         api: &mut SystemService<Y>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
-            ResolvedPermission::AllowAll => return Ok(()),
+            ResolvedPermission::AllowAll => Ok(()),
             ResolvedPermission::AccessRule(rule) => {
                 let result =
-                    Authorization::check_authorization_against_access_rule(api, &auth_zone, &rule)?;
+                    Authorization::check_authorization_against_access_rule(api, auth_zone, &rule)?;
 
                 match result {
                     AuthorizationCheckResult::Authorized => Ok(()),
@@ -503,7 +501,7 @@ impl AuthModule {
                 module_id,
             } => {
                 let result = Authorization::check_authorization_against_role_list(
-                    &auth_zone,
+                    auth_zone,
                     &role_assignment_of,
                     module_id,
                     &role_list,
@@ -553,7 +551,7 @@ impl AuthModule {
         )?
         .method_auth;
 
-        let receiver_object_info = system.get_object_info(&receiver)?;
+        let receiver_object_info = system.get_object_info(receiver)?;
 
         let (role_assignment_of, method_permissions) = match auth_template {
             MethodAuthTemplate::StaticRoleDefinition(static_roles) => {
@@ -591,7 +589,7 @@ impl AuthModule {
                                 global_caller(*outer_object)
                             ))))
                         }
-                        OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+                        OuterObjectInfo::None => Err(RuntimeError::SystemModuleError(
                             SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                         )),
                     }
@@ -604,7 +602,7 @@ impl AuthModule {
                 Ok(ResolvedPermission::RoleList {
                     role_assignment_of,
                     role_list: role_list.clone(),
-                    module_id: module_id.clone(),
+                    module_id: *module_id,
                 })
             }
             None => {
@@ -617,6 +615,12 @@ impl AuthModule {
                 ))
             }
         }
+    }
+}
+
+impl Default for AuthModule {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -350,8 +350,8 @@ mod tests {
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-        let r2 = rule!(require(signature(&public_key)));
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(public_key)));
+        let r2 = rule!(require(signature(public_key)));
 
         assert_eq!(r1, r2);
     }
@@ -361,8 +361,8 @@ mod tests {
         let private_key = Ed25519PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-        let r2 = rule!(require(signature(&public_key)));
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(public_key)));
+        let r2 = rule!(require(signature(public_key)));
 
         assert_eq!(r1, r2);
     }

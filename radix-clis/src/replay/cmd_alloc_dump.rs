@@ -66,7 +66,7 @@ impl TxnAllocDump {
             }
             cur_version
         };
-        let to_version = self.max_version.clone();
+        let to_version = self.max_version;
 
         if self.exclude_user_transaction
             && !self.include_generic_transaction
@@ -84,7 +84,7 @@ impl TxnAllocDump {
             let tar_gz = File::open(&self.source).map_err(Error::IOError)?;
             let tar = GzDecoder::new(tar_gz);
             let archive = Archive::new(tar);
-            TxnReader::TransactionFile(archive)
+            TxnReader::TransactionFile(Box::new(archive))
         } else if self.source.is_dir() {
             TxnReader::StateManagerDatabaseDir(self.source.clone())
         } else {
@@ -97,7 +97,6 @@ impl TxnAllocDump {
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let exists = self.output_file.exists();
         let mut output = OpenOptions::new()
-            .write(true)
             .append(true)
             .create(true)
             .open(&self.output_file)
@@ -137,7 +136,7 @@ impl TxnAllocDump {
 
                 let execution_cost_units = receipt
                     .fee_summary()
-                    .map(|x| x.total_execution_cost_units_consumed.clone());
+                    .map(|x| x.total_execution_cost_units_consumed);
                 let database_updates = receipt.into_state_updates().create_database_updates();
                 database.commit(&database_updates);
                 match kinded_hash {
@@ -201,7 +200,7 @@ impl TxnAllocDump {
 
                 let new_version = database.get_current_version();
 
-                if new_version < 1000 || new_version % 1000 == 0 {
+                if new_version < 1000 || new_version.is_multiple_of(1000) {
                     let new_state_root_hash = database.get_current_root_hash();
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }

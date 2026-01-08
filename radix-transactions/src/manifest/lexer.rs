@@ -58,12 +58,8 @@ pub struct Lexer {
 pub fn tokenize(s: &str) -> Result<Vec<TokenWithSpan>, LexerError> {
     let mut lexer = Lexer::new(s);
     let mut tokens = Vec::new();
-    loop {
-        if let Some(token) = lexer.next_token()? {
-            tokens.push(token);
-        } else {
-            break;
-        }
+    while let Some(token) = lexer.next_token()? {
+        tokens.push(token);
     }
     Ok(tokens)
 }
@@ -263,12 +259,7 @@ impl Lexer {
         <T as FromStr>::Err: Display,
     {
         int.parse::<T>().map(map).map_err(|err| LexerError {
-            error_kind: LexerErrorKind::InvalidInteger(format!(
-                "'{}{}' - {}",
-                int,
-                ty,
-                err.to_string()
-            )),
+            error_kind: LexerErrorKind::InvalidInteger(format!("'{}{}' - {}", int, ty, err)),
             span: Span {
                 start: token_start,
                 end: self.current,

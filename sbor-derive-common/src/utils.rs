@@ -94,7 +94,7 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
         };
         value
             .as_bool()
-            .ok_or_else(|| Error::new(value.span(), format!("Expected bool attribute")))
+            .ok_or_else(|| Error::new(value.span(), "Expected bool attribute".to_string()))
     }
 
     fn get_string_value(&self, name: &str) -> Result<Option<LitStr>> {
@@ -102,7 +102,7 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
             return Ok(None);
         };
         Ok(Some(value.as_string().ok_or_else(|| {
-            Error::new(value.span(), format!("Expected string attribute value"))
+            Error::new(value.span(), "Expected string attribute value".to_string())
         })?))
     }
 }
@@ -124,7 +124,7 @@ pub fn extract_wrapped_root_attributes(
             let Ok(meta) = attribute.parse_meta() else {
                 return Err(Error::new(
                     attribute.span(),
-                    format!("Attribute content is not parsable as meta content"),
+                    "Attribute content is not parsable as meta content".to_string(),
                 ));
             };
 
@@ -156,6 +156,7 @@ pub fn extract_wrapped_root_attributes(
     Ok(inner_attributes)
 }
 
+#[allow(clippy::type_complexity)]
 pub fn extract_wrapped_inner_attributes<'m>(
     inner_attributes: &'m [Meta],
     error_message: &str,
@@ -262,6 +263,7 @@ pub fn extract_wrapped_typed_attributes(
     )
 }
 
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum SourceVariantData {
     Reachable(VariantData),
     Unreachable(UnreachableVariantData),
@@ -282,6 +284,7 @@ pub(crate) struct VariantData {
     pub impl_variant_trait: bool,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub(crate) enum FieldsHandling {
     Standard(FieldsData),
@@ -303,7 +306,7 @@ pub(crate) fn process_enum_variants(
     if variants.len() > 255 {
         return Err(Error::new(
             Span::call_site(),
-            format!("SBOR can only support enums of size <= 255"),
+            "SBOR can only support enums of size <= 255".to_string(),
         ));
     }
 
@@ -324,7 +327,7 @@ pub(crate) fn process_enum_variants(
             let mut variant_attributes = extract_wrapped_typed_attributes(&variant.attrs, "sbor")?;
             let fields_data = process_fields(&variant.fields)?;
             let variant_name = variant.ident.clone();
-            if let Some(_) = variant_attributes.remove("unreachable") {
+            if variant_attributes.remove("unreachable").is_some() {
                 return Ok(SourceVariantData::Unreachable(UnreachableVariantData {
                     variant_name,
                     fields_data,
@@ -439,7 +442,10 @@ fn resolve_discriminator(
     if let Some(attribute) = variant_attributes.remove("discriminator") {
         match attribute {
             AttributeValue::None(span) => {
-                return Err(Error::new(span, format!("No discriminator was provided")));
+                return Err(Error::new(
+                    span,
+                    "No discriminator was provided".to_string(),
+                ));
             }
             AttributeValue::Path(path) => {
                 return Ok(Discriminator::explicit_path(&path));
@@ -457,7 +463,7 @@ fn resolve_discriminator(
                 }
                 return Err(Error::new(
                     literal.span(),
-                    format!("This discriminator is not convertible into a u8; or convertible into both an expression and a pattern. You may want to try using a path to a constant instead for more power."),
+                    "This discriminator is not convertible into a u8; or convertible into both an expression and a pattern. You may want to try using a path to a constant instead for more power.".to_string(),
                 ));
             }
         }
@@ -479,7 +485,7 @@ fn resolve_discriminator(
             let Some(disc) = parsed else {
                 return Err(Error::new(
                     expression.span(),
-                    format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
+                    "This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix.".to_string(),
                 ));
             };
             return Ok(disc);
@@ -487,7 +493,7 @@ fn resolve_discriminator(
     }
 
     let implicit = Discriminator::implicit_u8(variant.span(), index)
-        .ok_or_else(|| Error::new(variant.span(), format!("Too many variants")))?;
+        .ok_or_else(|| Error::new(variant.span(), "Too many variants".to_string()))?;
 
     Ok(implicit)
 }
@@ -539,6 +545,7 @@ pub fn get_sbor_attribute_bool_value(
     extract_sbor_typed_attributes(attributes)?.get_bool_value(attribute_name)
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum DeriveStrategy {
     Normal,
     Transparent,
@@ -660,7 +667,7 @@ pub fn parse_semicolon_separated_types(source_string: &LitStr) -> syn::Result<Ve
         .value()
         .split(';')
         .map(|s| s.trim().to_owned())
-        .filter(|f| f.len() > 0)
+        .filter(|f| !f.is_empty())
         .map(|s| LitStr::new(&s, span).parse())
         .collect()
 }
@@ -1088,7 +1095,7 @@ pub fn build_decode_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes)?;
+    let custom_value_kind = get_custom_value_kind(attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -1107,11 +1114,11 @@ pub fn build_decode_generics<'a>(
     let decoder_label = find_free_generic_name(original_generics, "D")?;
     let decoder_generic: Path = parse_str(&decoder_label)?;
 
-    let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(&attributes)?;
+    let child_types = get_child_types(attributes, &impl_generics)?;
+    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(attributes)?;
 
     let mut where_clause = where_clause.cloned();
-    if child_types.len() > 0 || categorize_types.len() > 0 {
+    if !child_types.is_empty() || !categorize_types.is_empty() {
         let mut new_where_clause = where_clause.unwrap_or(WhereClause {
             where_token: Default::default(),
             predicates: Default::default(),
@@ -1153,7 +1160,7 @@ pub fn build_encode_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes)?;
+    let custom_value_kind = get_custom_value_kind(attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -1172,11 +1179,11 @@ pub fn build_encode_generics<'a>(
     let encoder_label = find_free_generic_name(original_generics, "E")?;
     let encoder_generic: Path = parse_str(&encoder_label)?;
 
-    let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(&attributes)?;
+    let child_types = get_child_types(attributes, &impl_generics)?;
+    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(attributes)?;
 
     let mut where_clause = where_clause.cloned();
-    if child_types.len() > 0 || categorize_types.len() > 0 {
+    if !child_types.is_empty() || !categorize_types.is_empty() {
         let mut new_where_clause = where_clause.unwrap_or(WhereClause {
             where_token: Default::default(),
             predicates: Default::default(),
@@ -1213,6 +1220,7 @@ pub fn build_encode_generics<'a>(
     ))
 }
 
+#[allow(clippy::type_complexity)]
 pub fn build_describe_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
@@ -1229,16 +1237,16 @@ pub fn build_describe_generics<'a>(
         if let Some(path) = custom_type_kind {
             (path.parse()?, false)
         } else if let Some(path) = context_custom_type_kind {
-            (parse_str(&path)?, false)
+            (parse_str(path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "C")?;
             (parse_str(&custom_type_label)?, true)
         };
 
-    let child_types = get_child_types(&attributes, &impl_generics)?;
+    let child_types = get_child_types(attributes, &impl_generics)?;
 
     let mut where_clause = where_clause.cloned();
-    if child_types.len() > 0 {
+    if !child_types.is_empty() {
         let mut new_where_clause = where_clause.unwrap_or(WhereClause {
             where_token: Default::default(),
             predicates: Default::default(),
@@ -1273,7 +1281,7 @@ pub fn build_categorize_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes)?;
+    let custom_value_kind = get_custom_value_kind(attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Unwrap for mutation
@@ -1314,17 +1322,17 @@ fn find_free_generic_name(generics: &Generics, name_prefix: &str) -> syn::Result
         }
     }
 
-    return Err(Error::new(
+    Err(Error::new(
         Span::call_site(),
         format!("Cannot find free generic name with prefix {}!", name_prefix),
-    ));
+    ))
 }
 
 fn generic_already_exists(generics: &Generics, name: &str) -> bool {
     generics
         .params
         .iter()
-        .any(|p| &get_generic_param_name(p) == name)
+        .any(|p| get_generic_param_name(p) == name)
 }
 
 fn get_generic_param_name(generic_param: &GenericParam) -> String {
@@ -1348,13 +1356,10 @@ mod tests {
             #[sbor(skip3)]
         };
         let extracted = extract_wrapped_typed_attributes(&[attr, attr2], "sbor").unwrap();
-        assert_eq!(extracted.get_bool_value("skip").unwrap().value(), true);
-        assert_eq!(extracted.get_bool_value("skip2").unwrap().value(), false);
-        assert_eq!(extracted.get_bool_value("skip3").unwrap().value(), true);
-        assert!(matches!(
-            extracted.get_bool_value("custom_value_kind"),
-            Err(_)
-        ));
+        assert!(extracted.get_bool_value("skip").unwrap().value());
+        assert!(!extracted.get_bool_value("skip2").unwrap().value());
+        assert!(extracted.get_bool_value("skip3").unwrap().value());
+        assert!(extracted.get_bool_value("custom_value_kind").is_err());
         assert_eq!(
             extracted
                 .get_string_value("custom_value_kind")
@@ -1367,6 +1372,6 @@ mod tests {
             extracted.get_string_value("custom_value_kind_2").unwrap(),
             None
         );
-        assert!(matches!(extracted.get_string_value("skip"), Err(_)));
+        assert!(extracted.get_string_value("skip").is_err());
     }
 }

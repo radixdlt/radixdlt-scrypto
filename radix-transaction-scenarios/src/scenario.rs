@@ -388,7 +388,7 @@ pub enum ScenarioError {
 }
 
 impl ScenarioError {
-    pub fn into_full(self, scenario: &Box<dyn ScenarioInstance>) -> FullScenarioError {
+    pub fn into_full(self, scenario: &dyn ScenarioInstance) -> FullScenarioError {
         FullScenarioError {
             scenario: scenario.metadata().logical_name.to_owned(),
             error: self,
@@ -396,6 +396,7 @@ impl ScenarioError {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum NextAction {
     Transaction(NextTransaction),
     Completed(EndState),
@@ -436,7 +437,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for DescribedAddress {
 
 impl From<&PreallocatedAccount> for DescribedAddress {
     fn from(value: &PreallocatedAccount) -> Self {
-        Self::Global(value.address.clone().into())
+        Self::Global(value.address.into())
     }
 }
 
@@ -478,6 +479,12 @@ impl From<NonFungibleGlobalId> for DescribedAddress {
 
 #[derive(Debug)]
 pub struct DescribedAddresses(pub IndexMap<String, DescribedAddress>);
+
+impl Default for DescribedAddresses {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DescribedAddresses {
     pub fn new() -> Self {
@@ -601,11 +608,11 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
         let handler: Box<TransactionResultHandler<Config, State>> =
             match self.next_commit_handler.take() {
                 Some(commit_handler) => Box::new(move |core, config, state, receipt| {
-                    let commit_result = core.check_commit_success(&receipt)?;
+                    let commit_result = core.check_commit_success(receipt)?;
                     commit_handler(core, config, state, commit_result)
                 }),
                 None => Box::new(|core, _, _, receipt| {
-                    core.check_commit_success(&receipt)?;
+                    core.check_commit_success(receipt)?;
                     Ok(())
                 }),
             };
@@ -645,11 +652,11 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
         let handler: Box<TransactionResultHandler<Config, State>> =
             match self.next_error_handler.take() {
                 Some(error_handler) => Box::new(move |core, config, state, receipt| {
-                    let error = core.check_commit_failure(&receipt)?;
+                    let error = core.check_commit_failure(receipt)?;
                     error_handler(core, config, state, error)
                 }),
                 None => Box::new(|core, _, _, receipt| {
-                    core.check_commit_failure(&receipt)?;
+                    core.check_commit_failure(receipt)?;
                     Ok(())
                 }),
             };
@@ -767,16 +774,13 @@ impl<T> State<T> {
 
 impl<T: Clone> State<T> {
     pub fn get(&self) -> Result<T, ScenarioError> {
-        self.0
-            .as_ref()
-            .map(Clone::clone)
-            .ok_or(ScenarioError::StateReadBeforeSet)
+        self.0.clone().ok_or(ScenarioError::StateReadBeforeSet)
     }
 
     // TODO - remove this when we create a better manifest builder which doesn't use callbacks,
     // and so have easier error propagation
     pub fn unwrap(&self) -> T {
-        self.0.as_ref().map(Clone::clone).unwrap()
+        self.0.clone().unwrap()
     }
 }
 

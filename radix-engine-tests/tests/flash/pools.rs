@@ -14,7 +14,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(pk);
 
     let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
     let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);
@@ -84,7 +84,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(pk);
 
     let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
     let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);
@@ -239,7 +239,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(pk);
 
     let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
     let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);

@@ -105,20 +105,17 @@ define_untyped_manifest_type_wrapper!(
 /// A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer
 /// blueprint must be specified and only a component of the outer blueprint may instantiate the inner blueprint.
 /// Inner blueprint components may access the state of its outer blueprint component directly.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor, Default)]
 pub enum BlueprintType {
+    #[default]
     Outer,
-    Inner { outer_blueprint: String },
-}
-
-impl Default for BlueprintType {
-    fn default() -> Self {
-        BlueprintType::Outer
-    }
+    Inner {
+        outer_blueprint: String,
+    },
 }
 
 /// Structure which defines static interface qualities of a Blueprint
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize, Default)]
 pub struct BlueprintDefinitionInit {
     /// Whether the blueprint is an Outer or Inner Blueprint
     pub blueprint_type: BlueprintType,
@@ -142,29 +139,16 @@ pub struct BlueprintDefinitionInit {
     pub auth_config: AuthConfig,
 }
 
-impl Default for BlueprintDefinitionInit {
-    fn default() -> Self {
-        Self {
-            blueprint_type: BlueprintType::default(),
-            is_transient: false,
-            feature_set: IndexSet::default(),
-            dependencies: IndexSet::default(),
-            schema: BlueprintSchemaInit::default(),
-            royalty_config: PackageRoyaltyConfig::default(),
-            auth_config: AuthConfig::default(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AuthConfig {
     pub function_auth: FunctionAuth,
     pub method_auth: MethodAuthTemplate,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize, Default)]
 pub enum FunctionAuth {
     /// All functions are accessible
+    #[default]
     AllowAll,
     /// Functions are protected by an access rule
     AccessRules(IndexMap<String, AccessRule>),
@@ -174,24 +158,13 @@ pub enum FunctionAuth {
     RootOnly,
 }
 
-impl Default for FunctionAuth {
-    fn default() -> Self {
-        FunctionAuth::AllowAll
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize, Default)]
 pub enum MethodAuthTemplate {
     /// All methods are accessible
+    #[default]
     AllowAll,
     /// Methods are protected by a static method to roles mapping
     StaticRoleDefinition(StaticRoleDefinition),
-}
-
-impl Default for MethodAuthTemplate {
-    fn default() -> Self {
-        MethodAuthTemplate::AllowAll
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
@@ -328,7 +301,6 @@ impl PackageDefinition {
                                 (function_name.to_string(), schema)
                             })
                             .collect(),
-                        ..Default::default()
                     },
                     ..Default::default()
                 },
@@ -382,7 +354,6 @@ impl PackageDefinition {
                                 (function_name.to_string(), schema)
                             })
                             .collect(),
-                        ..Default::default()
                     },
                     ..Default::default()
                 },

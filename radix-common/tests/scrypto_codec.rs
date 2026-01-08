@@ -255,7 +255,7 @@ fn encode_ignore_depth<V: ScryptoEncode>(value: &V) -> Vec<u8> {
     buf
 }
 
-fn decode_ignore_depth<'a, T: ScryptoDecode>(payload: &'a [u8]) -> T {
+fn decode_ignore_depth<T: ScryptoDecode>(payload: &[u8]) -> T {
     let decoder = VecDecoder::<ScryptoCustomValueKind>::new(payload, 255);
     decoder
         .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
@@ -289,12 +289,13 @@ fn build_value_of_tuple_of_depth(depth: usize) -> ScryptoValue {
 }
 
 #[derive(Sbor, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[allow(clippy::redundant_allocation)]
 struct NestedType {
     inner: Box<Rc<Option<RefCell<NestedType>>>>,
 }
 
 fn build_nested_struct_of_depth(depth: usize) -> NestedType {
-    assert!(depth % 2 == 0);
+    assert!(depth.is_multiple_of(2));
     assert!(depth >= 2);
 
     // Note - each nesting introduces 2 depth - one for the NestedType, another for the Option (the Box/Rc/RefCell should be transparent)

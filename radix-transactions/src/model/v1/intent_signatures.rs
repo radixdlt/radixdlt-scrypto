@@ -21,8 +21,8 @@ pub enum SignatureWithPublicKeyV1 {
 impl SignatureWithPublicKeyV1 {
     pub fn signature(&self) -> SignatureV1 {
         match &self {
-            Self::Secp256k1 { signature } => signature.clone().into(),
-            Self::Ed25519 { signature, .. } => signature.clone().into(),
+            Self::Secp256k1 { signature } => (*signature).into(),
+            Self::Ed25519 { signature, .. } => (*signature).into(),
         }
     }
 }

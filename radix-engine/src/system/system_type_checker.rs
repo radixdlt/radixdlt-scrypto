@@ -199,7 +199,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
                         (schema, type_id.1, SchemaOrigin::Instance)
                     }
                     GenericSubstitution::Remote(type_id) => {
-                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(type_id)?;
 
                         (
                             schema,
@@ -282,13 +282,13 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
 
         for (key, value) in payloads {
             self.validate_blueprint_payload(
-                &target,
+                target,
                 BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
                 key,
             )?;
 
             self.validate_blueprint_payload(
-                &target,
+                target,
                 BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value),
                 value,
             )?;
@@ -344,6 +344,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn validate_payload<'s>(
         &mut self,
         payload: &[u8],
@@ -400,7 +401,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
 
         self.system()
             .schema_cache
-            .insert(schema_hash.clone(), schema.clone());
+            .insert(*schema_hash, schema.clone());
 
         Ok(schema)
     }
@@ -423,7 +424,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         )?;
         Ok((
             self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
-            scoped_type_id.clone(),
+            *scoped_type_id,
         ))
     }
 }
@@ -431,6 +432,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
 pub struct SystemMapper;
 
 impl SystemMapper {
+    #[allow(clippy::type_complexity)]
     pub fn system_struct_to_node_substates(
         schema: &IndexedStateSchema,
         system_struct: (
@@ -491,18 +493,15 @@ impl SystemMapper {
             for (key, kv_entry) in substates {
                 let kv_entry = if let Some(value) = kv_entry.value {
                     let value: ScryptoRawValue = scrypto_decode(&value).unwrap();
-                    let kv_entry = if kv_entry.locked {
+                    if kv_entry.locked {
                         KeyValueEntrySubstate::locked_entry(value)
                     } else {
                         KeyValueEntrySubstate::unlocked_entry(value)
-                    };
-                    kv_entry
-                } else {
-                    if kv_entry.locked {
-                        KeyValueEntrySubstate::locked_empty_entry()
-                    } else {
-                        continue;
                     }
+                } else if kv_entry.locked {
+                    KeyValueEntrySubstate::locked_empty_entry()
+                } else {
+                    continue;
                 };
 
                 let value = IndexedScryptoValue::from_typed(&kv_entry);

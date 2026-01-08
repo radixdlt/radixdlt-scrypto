@@ -1076,7 +1076,7 @@ impl WasmModule {
                 return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
             }
 
-            if let Some(table) = section.get(0) {
+            if let Some(table) = section.first() {
                 if table.ty.initial > max_initial_table_size {
                     return Err(PrepareError::InvalidTable(
                         InvalidTable::InitialTableSizeLimitExceeded,

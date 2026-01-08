@@ -84,10 +84,7 @@ impl<'e> MultiThreadIntentProcessor<'e> {
                 intent
                     .children_subintent_indices
                     .iter()
-                    .map(|index| {
-                        let thread_index = index.0 + 1;
-                        thread_index
-                    })
+                    .map(|index| index.0 + 1)
                     .collect::<Vec<_>>(),
             ));
         }
@@ -255,16 +252,13 @@ impl<'e> MultiThreadIntentProcessor<'e> {
             let object_info: ObjectInfo = system_service.get_object_info(node_id)?;
 
             let blueprint_id = object_info.blueprint_info.blueprint_id;
-            match (
+            if let (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT | NON_FUNGIBLE_PROOF_BLUEPRINT) = (
                 blueprint_id.package_address,
                 blueprint_id.blueprint_name.as_str(),
             ) {
-                (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT | NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                    return Err(RuntimeError::SystemError(SystemError::IntentError(
-                        IntentError::CannotYieldProof,
-                    )));
-                }
-                _ => {}
+                return Err(RuntimeError::SystemError(SystemError::IntentError(
+                    IntentError::CannotYieldProof,
+                )));
             }
         }
 
@@ -278,7 +272,7 @@ impl<'e> MultiThreadIntentProcessor<'e> {
         let actor = api.kernel_get_system_state().current_call_frame;
         match actor {
             Actor::Function(FunctionActor { auth_zone, .. }) => {
-                let auth_zone = auth_zone.clone();
+                let auth_zone = *auth_zone;
                 let mut system_service = SystemService::new(api);
                 AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
             }

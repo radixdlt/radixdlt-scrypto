@@ -299,8 +299,7 @@ macro_rules! op_impl {
                     /// Raises self to the power of `exp`, using exponentiation by squaring.
                     ///
                     #[inline]
-                    #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
+
                     fn pow(self, exp: u32) -> Self {
                         Self(self.0.checked_pow(exp).expect("Overflow"))
                     }

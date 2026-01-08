@@ -242,6 +242,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::needless_range_loop)]
     fn test_compilation_workspace_with_package() {
         // Arrange
         let (blueprint_manifest_path, target_directory) = prepare();

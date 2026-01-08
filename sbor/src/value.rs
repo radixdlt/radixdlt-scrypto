@@ -500,9 +500,9 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
     }
 }
 
-///==============================================
-/// (DEPRECATED) TRAVERSAL
-///==============================================
+//==============================================
+// (DEPRECATED) TRAVERSAL
+//==============================================
 
 pub fn traverse_any<X: CustomValueKind, Y: CustomValue<X>, V: ValueVisitor<X, Y, Err = E>, E>(
     path: &mut SborPathBuf,
@@ -589,6 +589,7 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
     fn visit_map(
         &mut self,
         _path: &mut SborPathBuf,

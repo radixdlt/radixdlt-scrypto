@@ -23,7 +23,7 @@ impl<'a, V: ScryptoEncode> KeyValueEntryRef<'a, V> {
         KeyValueEntryRef {
             lock_handle,
             value,
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 }
@@ -59,7 +59,7 @@ impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
         KeyValueEntryRefMut {
             handle: lock_handle,
             value,
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 }
@@ -94,10 +94,7 @@ impl<'a, V: Clone + ScryptoEncode + ScryptoDecode> KeyValueEntryCloned<V>
     for Option<KeyValueEntryRef<'a, V>>
 {
     fn cloned(&self) -> Option<V> {
-        match self {
-            Some(value) => Some(value.value.clone()),
-            None => None,
-        }
+        self.as_ref().map(|value| value.value.clone())
     }
 }
 
@@ -105,9 +102,6 @@ impl<'a, V: Clone + ScryptoEncode + ScryptoDecode> KeyValueEntryCloned<V>
     for Option<KeyValueEntryRefMut<'a, V>>
 {
     fn cloned(&self) -> Option<V> {
-        match self {
-            Some(value) => Some(value.value.clone()),
-            None => None,
-        }
+        self.as_ref().map(|value| value.value.clone())
     }
 }

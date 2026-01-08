@@ -63,7 +63,7 @@ impl Publish {
             let build_artifacts = build_package(
                 &self.path,
                 self.disable_wasm_opt,
-                self.log_level.unwrap_or(Level::default()),
+                self.log_level.unwrap_or_default(),
                 false,
                 [],
             )

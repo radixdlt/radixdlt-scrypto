@@ -174,13 +174,14 @@ impl ResourceNativePackage {
         let fungible_bucket_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut fields = Vec::new();
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<LiquidFungibleResource>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
-            ));
+            let fields = vec![
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<LiquidFungibleResource>(),
+                ),
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+                ),
+            ];
 
             let mut functions = index_map_new();
             functions.insert(
@@ -359,13 +360,14 @@ impl ResourceNativePackage {
         let non_fungible_bucket_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut fields = Vec::new();
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
-            ));
+            let fields = vec![
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>(),
+                ),
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+                ),
+            ];
 
             let mut functions = index_map_new();
             functions.insert(
@@ -575,13 +577,14 @@ impl ResourceNativePackage {
         let fungible_proof_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut fields = Vec::new();
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
-            ));
+            let fields = vec![
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+                ),
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<FungibleProofSubstate>(),
+                ),
+            ];
 
             let mut functions = index_map_new();
             functions.insert(
@@ -677,13 +680,14 @@ impl ResourceNativePackage {
         let non_fungible_proof_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut fields = Vec::new();
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
-            ));
-            fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
-            ));
+            let fields = vec![
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>(),
+                ),
+                FieldSchema::static_field(
+                    aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>(),
+                ),
+            ];
 
             let mut functions = index_map_new();
             functions.insert(
@@ -797,10 +801,9 @@ impl ResourceNativePackage {
         let auth_zone_blueprint = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut fields = Vec::new();
-            fields.push(FieldSchema::static_field(
+            let fields = vec![FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<GenesisSchemaAuthZone>(),
-            ));
+            )];
 
             let mut functions = index_map_new();
             functions.insert(

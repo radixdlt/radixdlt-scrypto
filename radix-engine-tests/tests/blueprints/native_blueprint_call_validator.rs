@@ -68,7 +68,7 @@ fn common_manifests_are_all_valid() {
         }
 
         let manifest_string = std::fs::read_to_string(&path)
-            .map(|str| apply_address_replacements(str))
+            .map(apply_address_replacements)
             .unwrap();
         let manifest = compile_manifest_v1(
             &manifest_string,

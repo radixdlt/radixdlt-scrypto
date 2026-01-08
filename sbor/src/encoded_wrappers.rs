@@ -45,9 +45,7 @@ impl<'a, E: CustomExtension> RawPayload<'a, E> {
         if payload_bytes.len() < 2 || payload_bytes[0] != E::PAYLOAD_PREFIX {
             return None;
         }
-        let Some(value_kind) = ValueKind::<E::CustomValueKind>::from_u8(payload_bytes[1]) else {
-            return None;
-        };
+        let value_kind = ValueKind::<E::CustomValueKind>::from_u8(payload_bytes[1])?;
         Some(Self {
             full_payload: Cow::Borrowed(payload_bytes),
             root_value_kind: value_kind,
@@ -81,9 +79,7 @@ impl<'a, E: CustomExtension> RawPayload<'a, E> {
         if payload_bytes.len() < 2 || payload_bytes[0] != E::PAYLOAD_PREFIX {
             return None;
         }
-        let Some(value_kind) = ValueKind::<E::CustomValueKind>::from_u8(payload_bytes[1]) else {
-            return None;
-        };
+        let value_kind = ValueKind::<E::CustomValueKind>::from_u8(payload_bytes[1])?;
         Some(Self {
             full_payload: Cow::Owned(payload_bytes),
             root_value_kind: value_kind,

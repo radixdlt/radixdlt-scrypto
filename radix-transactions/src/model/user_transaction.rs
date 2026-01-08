@@ -122,8 +122,8 @@ impl UserTransaction {
         names: TransactionObjectNames,
     ) -> (UserTransactionManifest, Vec<UserSubintentManifest>) {
         match self {
-            UserTransaction::V1(t) => t.extract_manifests_with_names(names).into(),
-            UserTransaction::V2(t) => t.extract_manifests_with_names(names).into(),
+            UserTransaction::V1(t) => t.extract_manifests_with_names(names),
+            UserTransaction::V2(t) => t.extract_manifests_with_names(names),
         }
     }
 }
@@ -156,6 +156,7 @@ impl IntoExecutable for UserTransaction {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum PreparedUserTransaction {
     V1(PreparedNotarizedTransactionV1),
@@ -270,6 +271,7 @@ impl PreparedTransaction for PreparedUserTransaction {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValidatedUserTransaction {
     V1(ValidatedNotarizedTransactionV1),

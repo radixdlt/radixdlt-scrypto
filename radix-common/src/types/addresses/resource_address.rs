@@ -23,6 +23,12 @@ impl ResourceAddress {
         Self(node_id)
     }
 
+    /// # Safety
+    ///
+    /// This function doesn't check that the provided [`NodeId`] has the correct [`EntityType`] for
+    /// this address type. The result of calling this constructor function is that you may end up
+    /// with an address whose [`NodeId`] is incorrect (e.g., a [`NodeId`] of a resource on a
+    /// [`PackageAddress`])
     pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -139,9 +145,9 @@ impl TryFrom<GlobalAddress> for ResourceAddress {
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0.into()
+impl From<ResourceAddress> for [u8; NodeId::LENGTH] {
+    fn from(val: ResourceAddress) -> Self {
+        val.0.into()
     }
 }
 
@@ -256,8 +262,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ResourceAddress({})", hex::encode(&self.0))
-            .map_err(|err| AddressBech32EncodeError::FormatError(err))
+        write!(f, "ResourceAddress({})", hex::encode(self.0))
+            .map_err(AddressBech32EncodeError::FormatError)
     }
 }
 
@@ -277,7 +283,7 @@ mod tests {
         );
         // validate conversions
         ResourceAddress::try_from_hex(&addr.to_hex()).unwrap();
-        let _ = ManifestAddress::try_from(addr).unwrap();
+        let _ = ManifestAddress::from(addr);
 
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);

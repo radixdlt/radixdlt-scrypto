@@ -111,13 +111,13 @@ mod test {
                         // Write manifest
                         let manifest_string = decompile(
                             &SystemTransactionManifestV1::from_transaction(transaction),
-                            &self.network_definition,
+                            self.network_definition,
                         )
                         .unwrap();
                         // Whilst we're here, let's validate that the manifest can be recompiled
                         compile_manifest::<SystemTransactionManifestV1>(
                             &manifest_string,
-                            &self.network_definition,
+                            self.network_definition,
                             BlobProvider::new_with_blobs(
                                 transaction
                                     .blobs
@@ -134,7 +134,7 @@ mod test {
                 }
 
                 let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
-                    .encoder(&self.address_encoder)
+                    .encoder(self.address_encoder)
                     .schema_lookup_from_db(resultant_store)
                     .display_state_updates(true)
                     .use_ansi_colors(false)
@@ -203,7 +203,7 @@ mod test {
                 .unwrap();
             };
 
-            if testnet_scenario_names.len() > 0 {
+            if !testnet_scenario_names.is_empty() {
                 writeln!(&mut summary).unwrap();
                 writeln!(&mut summary, "==== POST ENACTMENT SCENARIOS ====").unwrap();
                 writeln!(&mut summary, "The following scenarios are set by default to run on testnets after this protocol update.").unwrap();
@@ -436,6 +436,7 @@ mod test {
         }
     }
 
+    #[allow(clippy::unnecessary_literal_unwrap)]
     pub fn run_all_scenarios<'a>(
         mode: AlignerExecutionMode,
         scenarios: impl IntoIterator<Item = &'a dyn ScenarioCreatorObjectSafe>,
@@ -473,9 +474,9 @@ mod test {
                         &vm_modules,
                     )
                     .unwrap_or_else(|err| {
-                        Err(err).expect(&format!(
-                            "Scenario {scenario_logical_name} should execute without error"
-                        ))
+                        Err(err).unwrap_or_else(|_| {
+                            panic!("Scenario {scenario_logical_name} should execute without error")
+                        })
                     });
             }
         }

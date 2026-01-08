@@ -29,7 +29,7 @@ fn bench_transfer(c: &mut Criterion) {
     let accounts = (0..2)
         .map(|_| {
             let owner_role = OwnerRole::Updatable(rule!(require(
-                NonFungibleGlobalId::from_public_key(&public_key)
+                NonFungibleGlobalId::from_public_key(public_key)
             )));
             let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -42,7 +42,7 @@ fn bench_transfer(c: &mut Criterion) {
                 TestTransaction::new_v1_from_nonce(
                     manifest,
                     1,
-                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                    btreeset![NonFungibleGlobalId::from_public_key(public_key)],
                 )
                 .into_executable(&validator)
                 .unwrap(),
@@ -71,7 +71,7 @@ fn bench_transfer(c: &mut Criterion) {
             TestTransaction::new_v1_from_nonce(
                 manifest.clone(),
                 nonce,
-                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                btreeset![NonFungibleGlobalId::from_public_key(public_key)],
             )
             .into_executable(&validator)
             .unwrap(),
@@ -97,7 +97,7 @@ fn bench_transfer(c: &mut Criterion) {
                 TestTransaction::new_v1_from_nonce(
                     manifest.clone(),
                     nonce,
-                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                    btreeset![NonFungibleGlobalId::from_public_key(public_key)],
                 )
                 .into_executable(&validator)
                 .unwrap(),

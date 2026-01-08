@@ -52,13 +52,13 @@ pub trait BuildableManifest:
         let any_manifest = AnyManifest::from_raw(raw)
             .map_err(|err| format!("Could not decode as `AnyManifest`: {err:?}"))?;
         Self::try_from(any_manifest)
-            .map_err(|()| format!("Encoded manifest was not of the correct type"))
+            .map_err(|()| "Encoded manifest was not of the correct type".to_string())
     }
 
     fn decode_arbitrary(bytes: impl AsRef<[u8]>) -> Result<Self, String> {
         let any_manifest = AnyManifest::attempt_decode_from_arbitrary_payload(bytes.as_ref())?;
         Self::try_from(any_manifest)
-            .map_err(|()| format!("Encoded manifest was not of the correct type"))
+            .map_err(|()| "Encoded manifest was not of the correct type".to_string())
     }
 }
 
@@ -94,25 +94,25 @@ pub trait TypedReadableManifest: ReadableManifestBase {
 
 pub trait ReadableManifestBase {
     fn is_subintent(&self) -> bool;
-    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)>;
+    fn get_blobs(&self) -> impl Iterator<Item = (&Hash, &Vec<u8>)>;
     fn get_preallocated_addresses(&self) -> &[PreAllocatedAddress] {
         &NO_PREALLOCATED_ADDRESSES
     }
-    fn get_child_subintent_hashes<'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = &'a ChildSubintentSpecifier> {
+    fn get_child_subintent_hashes(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &ChildSubintentSpecifier> {
         NO_CHILD_SUBINTENTS.iter()
     }
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef;
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_>;
 }
 
 /// An object-safe version of ReadableManifest
 pub trait ReadableManifest: ReadableManifestBase {
-    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect>;
+    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect<'_>>;
     fn iter_cloned_instructions(&self) -> impl Iterator<Item = AnyInstruction>;
     fn instruction_count(&self) -> usize;
     /// Panics if index is out of bounds
-    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect;
+    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect<'_>;
 
     fn validate(&self, ruleset: ValidationRuleset) -> Result<(), ManifestValidationError> {
         StaticManifestInterpreter::new(ruleset, self).validate()
@@ -120,7 +120,7 @@ pub trait ReadableManifest: ReadableManifestBase {
 }
 
 impl<T: TypedReadableManifest + ?Sized> ReadableManifest for T {
-    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect> {
+    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect<'_>> {
         self.get_typed_instructions().iter().map(|i| i.effect())
     }
 
@@ -134,7 +134,7 @@ impl<T: TypedReadableManifest + ?Sized> ReadableManifest for T {
         self.get_typed_instructions().len()
     }
 
-    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect {
+    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect<'_> {
         self.get_typed_instructions()[index].effect()
     }
 }
@@ -185,11 +185,11 @@ impl<'a, I: ManifestInstructionSet> ReadableManifestBase for EphemeralManifest<'
         self.is_subintent
     }
 
-    fn get_blobs<'b>(&'b self) -> impl Iterator<Item = (&'b Hash, &'b Vec<u8>)> {
+    fn get_blobs(&self) -> impl Iterator<Item = (&Hash, &Vec<u8>)> {
         self.blobs.iter()
     }
 
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_> {
         self.known_object_names_ref
     }
 

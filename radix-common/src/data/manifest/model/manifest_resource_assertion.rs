@@ -146,6 +146,7 @@ impl ManifestResourceConstraints {
         self.specified_resources.iter()
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.specified_resources().len()
     }
@@ -229,6 +230,12 @@ impl ManifestResourceConstraints {
 pub struct AggregateResourceBalances {
     fungible_resources: IndexMap<ResourceAddress, Decimal>,
     non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+}
+
+impl Default for AggregateResourceBalances {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AggregateResourceBalances {
@@ -508,8 +515,8 @@ pub enum ResourceConstraintError {
 /// Also, depending on the resource type, further checks must be satisfied:
 ///
 /// * If the constraints are for a fungible resource, then [`required_ids`][Self::required_ids] must be
-/// empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] (or, if the upper bound is
-/// zero, [`AllowedIds::Allowlist`] with an empty list is also acceptable).
+///   empty, and [`allowed_ids`][Self::allowed_ids] must be [`AllowedIds::Any`] (or, if the upper bound is
+///   zero, [`AllowedIds::Allowlist`] with an empty list is also acceptable).
 ///
 /// * If the constraints are for a non-fungible resource, then any decimal balances must be integers.
 ///

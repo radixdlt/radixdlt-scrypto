@@ -25,10 +25,7 @@ pub fn prepare_replacement_map(
     let mut blueprint_replacement_map: BlueprintFunctionSignaturesReplacementMap = hashmap!();
 
     for item in replacement_vec {
-        if blueprint_replacement_map
-            .get(&item.blueprint_name)
-            .is_some()
-        {
+        if blueprint_replacement_map.contains_key(&item.blueprint_name) {
             let function_map = blueprint_replacement_map
                 .get_mut(&item.blueprint_name)
                 .unwrap();
@@ -60,7 +57,7 @@ impl FromStr for FunctionSignatureReplacementsInput {
             .split("=");
 
         let blueprint_name = match blueprint_name_items.next() {
-            Some(val) if val == "blueprint_name" => blueprint_name_items.next(),
+            Some("blueprint_name") => blueprint_name_items.next(),
             Some(_) => None,
             None => None,
         }
@@ -73,7 +70,7 @@ impl FromStr for FunctionSignatureReplacementsInput {
             .split("=");
 
         let func_name = match func_name_items.next() {
-            Some(val) if val == "func_name" => func_name_items.next(),
+            Some("func_name") => func_name_items.next(),
             Some(_) => None,
             None => None,
         }
@@ -86,7 +83,7 @@ impl FromStr for FunctionSignatureReplacementsInput {
         for item in items {
             let mut s = item.split("=");
             match s.next() {
-                Some(val) if val == "r" => {
+                Some("r") => {
                     let ty = s.next().ok_or("Return type not available".to_string())?;
                     output = Some(ty.to_string());
                 }

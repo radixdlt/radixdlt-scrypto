@@ -1,6 +1,153 @@
 use radix_common::prelude::{AddressBech32Encoder, PACKAGE_PACKAGE};
 use radix_rust::ContextualDisplay;
 
+pub fn apply_address_replacements(input: impl ToString) -> String {
+    let mut input = input.to_string();
+    // Can generate some from resim, eg resim new-account, resim publish examples/hello-world etc
+    // For other addresses, uncomment the below:;
+    // {
+    //     // Generate addresses
+    //     use radix_common::address::{AddressBech32Decoder, AddressBech32Encoder};
+    //     use radix_common::types::EntityType;
+    //     use radix_common::constants::*;
+
+    //     // Random address from resim new-account
+    //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
+
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
+
+    //     let (_, mut pseudo_random_bytes) = AddressBech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
+    //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    // };
+    let package_package_address = PACKAGE_PACKAGE.to_string(&AddressBech32Encoder::for_simulator());
+    let replacement_vectors = sbor::prelude::BTreeMap::from([
+        (
+            "${xrd_resource_address}",
+            "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+        ),
+        (
+            "${fungible_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${gumball_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${non_fungible_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${badge_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${account_address}",
+            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
+        ),
+        (
+            "${this_account_address}",
+            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
+        ),
+        (
+            "${other_account_address}",
+            "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
+        ),
+        (
+            "${component_address}",
+            "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
+        ),
+        (
+            "${account_a_component_address}",
+            "account_sim1c8mulhl5yrk6hh4jsyldps5sdrp08r5v9wusupvzxgqvhlp4c4nwjz",
+        ),
+        (
+            "${account_b_component_address}",
+            "account_sim1c8s2hass5g62ckwpv78y8ykdqljtetv4ve6etcz64gveykxznj36tr",
+        ),
+        (
+            "${account_c_component_address}",
+            "account_sim1c8ct6jdcwqrg3gzskyxuy0z933fe55fyjz6p56730r95ulzwl3ppva",
+        ),
+        (
+            "${package_address}",
+            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
+        ),
+        (
+            "${minter_badge_resource_address}",
+            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
+        ),
+        (
+            "${mintable_fungible_resource_address}",
+            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+        ),
+        (
+            "${mintable_non_fungible_resource_address}",
+            "resource_sim1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3wvlhj6",
+        ),
+        (
+            "${vault_address}",
+            "internal_vault_sim1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvevp72ff",
+        ),
+        ("${owner_badge_non_fungible_local_id}", "#1#"),
+        (
+            "${code_blob_hash}",
+            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
+        ),
+        ("${initial_supply}", "12"),
+        ("${mint_amount}", "12"),
+        ("${non_fungible_local_id}", "#12#"),
+        (
+            "${auth_badge_resource_address}",
+            "resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj",
+        ),
+        ("${auth_badge_non_fungible_local_id}", "#1#"),
+        (
+            "${package_address}",
+            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
+        ),
+        (
+            "${consensusmanager_address}",
+            "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
+        ),
+        (
+            "${validator_address}",
+            "validator_sim1svzs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9wr6hj0",
+        ),
+        (
+            "${accesscontroller_address}",
+            "accesscontroller_sim1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvexaj7at",
+        ),
+        (
+            "${faucet_component_address}",
+            "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh",
+        ),
+        (
+            "${second_resource_address}",
+            "resource_sim1thcgx0f3rwaeetl67cmsssv4p748kd3sjhtge9l4m6ns7cucs97tjv",
+        ),
+        (
+            "${package_package_address}",
+            package_package_address.as_str(),
+        ),
+    ]);
+    for (of, with) in replacement_vectors.into_iter() {
+        input = input.replace(of, with);
+    }
+    input
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -1599,7 +1746,7 @@ YIELD_TO_PARENT;
         );
         compile_and_decompile_with_inversion_test_subintent_v2(
             "v2_subintent_commands",
-            &apply_address_replacements(include_str!("../../examples/subintents/child.rtm")),
+            apply_address_replacements(include_str!("../../examples/subintents/child.rtm")),
             &NetworkDefinition::simulator(),
             vec![],
             &canonical_manifest,
@@ -1650,7 +1797,7 @@ CALL_METHOD
         println!("{}", expected_canonical.trim());
 
         let intent = build_intent_v1(
-            expected_canonical.as_ref(),
+            expected_canonical,
             network,
             blob_provider.blobs().into_values().collect(),
         )
@@ -1745,7 +1892,7 @@ CALL_METHOD
     }
 
     pub fn print_blob(name: &str, blob: &[u8]) {
-        std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
+        std::env::var("PRINT_TEST_VECTORS").ok().inspect(|_| {
             print!(
                 "pub const TX_{}: [u8; {}] = [",
                 name.to_uppercase(),
@@ -1770,7 +1917,7 @@ CALL_METHOD
         let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
 
         let (instructions, blobs) =
-            compile_manifest_v1(manifest, &network, blob_provider)?.for_intent();
+            compile_manifest_v1(manifest, network, blob_provider)?.for_intent();
 
         Ok(IntentV1 {
             header: TransactionHeaderV1 {
@@ -1815,151 +1962,4 @@ CALL_METHOD
 
     #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
     struct EmptyStruct {}
-}
-
-pub fn apply_address_replacements(input: impl ToString) -> String {
-    let mut input = input.to_string();
-    // Can generate some from resim, eg resim new-account, resim publish examples/hello-world etc
-    // For other addresses, uncomment the below:;
-    // {
-    //     // Generate addresses
-    //     use radix_common::address::{AddressBech32Decoder, AddressBech32Encoder};
-    //     use radix_common::types::EntityType;
-    //     use radix_common::constants::*;
-
-    //     // Random address from resim new-account
-    //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
-
-    //     println!("{}", AddressBech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
-
-    //     let (_, mut pseudo_random_bytes) = AddressBech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
-    //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
-    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-    //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
-    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-    //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
-    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-    //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
-    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
-    // };
-    let package_package_address = PACKAGE_PACKAGE.to_string(&AddressBech32Encoder::for_simulator());
-    let replacement_vectors = sbor::prelude::BTreeMap::from([
-        (
-            "${xrd_resource_address}",
-            "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
-        ),
-        (
-            "${fungible_resource_address}",
-            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-        ),
-        (
-            "${resource_address}",
-            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-        ),
-        (
-            "${gumball_resource_address}",
-            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-        ),
-        (
-            "${non_fungible_resource_address}",
-            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-        ),
-        (
-            "${badge_resource_address}",
-            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-        ),
-        (
-            "${account_address}",
-            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
-        ),
-        (
-            "${this_account_address}",
-            "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
-        ),
-        (
-            "${other_account_address}",
-            "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
-        ),
-        (
-            "${component_address}",
-            "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
-        ),
-        (
-            "${account_a_component_address}",
-            "account_sim1c8mulhl5yrk6hh4jsyldps5sdrp08r5v9wusupvzxgqvhlp4c4nwjz",
-        ),
-        (
-            "${account_b_component_address}",
-            "account_sim1c8s2hass5g62ckwpv78y8ykdqljtetv4ve6etcz64gveykxznj36tr",
-        ),
-        (
-            "${account_c_component_address}",
-            "account_sim1c8ct6jdcwqrg3gzskyxuy0z933fe55fyjz6p56730r95ulzwl3ppva",
-        ),
-        (
-            "${package_address}",
-            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
-        ),
-        (
-            "${minter_badge_resource_address}",
-            "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
-        ),
-        (
-            "${mintable_fungible_resource_address}",
-            "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
-        ),
-        (
-            "${mintable_non_fungible_resource_address}",
-            "resource_sim1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3wvlhj6",
-        ),
-        (
-            "${vault_address}",
-            "internal_vault_sim1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvevp72ff",
-        ),
-        ("${owner_badge_non_fungible_local_id}", "#1#"),
-        (
-            "${code_blob_hash}",
-            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-        ),
-        ("${initial_supply}", "12"),
-        ("${mint_amount}", "12"),
-        ("${non_fungible_local_id}", "#12#"),
-        (
-            "${auth_badge_resource_address}",
-            "resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj",
-        ),
-        ("${auth_badge_non_fungible_local_id}", "#1#"),
-        (
-            "${package_address}",
-            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
-        ),
-        (
-            "${consensusmanager_address}",
-            "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
-        ),
-        (
-            "${validator_address}",
-            "validator_sim1svzs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9wr6hj0",
-        ),
-        (
-            "${accesscontroller_address}",
-            "accesscontroller_sim1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvexaj7at",
-        ),
-        (
-            "${faucet_component_address}",
-            "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh",
-        ),
-        (
-            "${second_resource_address}",
-            "resource_sim1thcgx0f3rwaeetl67cmsssv4p748kd3sjhtge9l4m6ns7cucs97tjv",
-        ),
-        (
-            "${package_package_address}",
-            package_package_address.as_str(),
-        ),
-    ]);
-    for (of, with) in replacement_vectors.into_iter() {
-        input = input.replace(of, with);
-    }
-    input
 }

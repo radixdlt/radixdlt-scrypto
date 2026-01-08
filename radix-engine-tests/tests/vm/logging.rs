@@ -20,9 +20,8 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
             manifest_args!(message.as_ref().to_owned()),
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![]);
 
-    receipt
+    ledger.execute_manifest(manifest, vec![])
 }
 
 fn call_log_macro<S: AsRef<str>>(
@@ -40,9 +39,8 @@ fn call_log_macro<S: AsRef<str>>(
             manifest_args!(level, message.as_ref().to_owned()),
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![]);
 
-    receipt
+    ledger.execute_manifest(manifest, vec![])
 }
 
 #[test]

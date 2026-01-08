@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod compile;
 mod inject_costing_err;
 mod ledger_simulator;

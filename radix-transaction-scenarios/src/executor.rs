@@ -258,7 +258,7 @@ where
         loop {
             let next = scenario
                 .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
+                .map_err(|err| err.into_full(scenario.as_ref()))
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {

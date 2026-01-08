@@ -52,7 +52,7 @@ fn executing_transactions_with_debug_information_outputs_the_detailed_cost_break
             .get_free_xrd_from_faucet()
             .deposit_entire_worktop(account)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk)],
+        vec![NonFungibleGlobalId::from_public_key(pk)],
         ExecutionConfig::for_debug_transaction(),
     );
 
@@ -135,7 +135,7 @@ where
         manifest,
         signers
             .into_iter()
-            .map(|pk| NonFungibleGlobalId::from_public_key(&pk)),
+            .map(NonFungibleGlobalId::from_public_key),
         ExecutionConfig::for_debug_transaction(),
     );
     receipt.expect_commit_success();

@@ -34,10 +34,7 @@ impl Bls12381G1PublicKey {
         if public_keys.is_empty() {
             return Err(ParseBlsPublicKeyError::NoPublicKeysGiven);
         }
-        let serialized_pks = public_keys
-            .into_iter()
-            .map(|pk| pk.as_ref())
-            .collect::<Vec<_>>();
+        let serialized_pks = public_keys.iter().map(|pk| pk.as_ref()).collect::<Vec<_>>();
 
         let pk = AggregatePublicKey::aggregate_serialized(&serialized_pks, should_validate)?
             .to_public_key();

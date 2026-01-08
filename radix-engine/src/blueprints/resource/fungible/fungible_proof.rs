@@ -42,7 +42,7 @@ impl FungibleProofSubstate {
             )?;
         }
         Ok(Self {
-            total_locked: self.total_locked.clone(),
+            total_locked: self.total_locked,
             evidence: self.evidence.clone(),
         })
     }
@@ -77,7 +77,7 @@ impl FungibleProofBlueprint {
                 LockFlags::read_only(),
             )?;
             let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
-            let moveable = substate_ref.clone();
+            let moveable = substate_ref;
             api.field_close(handle)?;
             moveable
         };
@@ -94,8 +94,8 @@ impl FungibleProofBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                FungibleProofField::Moveable.field_index() => FieldValue::new(&moveable),
-                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&clone),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(moveable),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(clone),
             },
         )?;
 

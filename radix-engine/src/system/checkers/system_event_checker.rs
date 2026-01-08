@@ -42,7 +42,7 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
     pub fn check_all_events<S: SubstateDatabase>(
         &mut self,
         substate_db: &S,
-        events: &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+        events: &[Vec<(EventTypeIdentifier, Vec<u8>)>],
     ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
         let reader = SystemDatabaseReader::new(substate_db);
 
@@ -71,7 +71,7 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
                 .map_err(SystemEventCheckerError::MissingPayloadSchema)?;
 
             reader
-                .validate_payload(&event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
+                .validate_payload(event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
                 .map_err(|_| SystemEventCheckerError::InvalidEvent)?;
 
             self.application_checker.on_event(
@@ -84,5 +84,11 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
         let results = self.application_checker.on_finish();
 
         Ok(results)
+    }
+}
+
+impl<A: ApplicationEventChecker> Default for SystemEventChecker<A> {
+    fn default() -> Self {
+        Self::new()
     }
 }

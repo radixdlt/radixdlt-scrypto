@@ -11,7 +11,7 @@ impl ConcatenatedDigest {
         header: ExpectedHeaderKind,
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
-            .concat(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
+            .concat([TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(
             decoder,
             digest,

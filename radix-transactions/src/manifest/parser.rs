@@ -1070,7 +1070,7 @@ impl Parser {
 
         let mut span_end = self.advance_exact(Token::GreaterThan)?.span.end;
 
-        if value_kinds.len() != 0 {
+        if !value_kinds.is_empty() {
             span_start = value_kinds[0].span.start;
             span_end = value_kinds[value_kinds.len() - 1].span.end;
         }
@@ -1094,7 +1094,7 @@ impl Parser {
     fn parse_value_kind(&mut self) -> Result<ValueKindWithSpan, ParserError> {
         let token = self.advance()?;
         let value_kind = match &token.token {
-            Token::Ident(ident_str) => ValueKind::from_ident(&ident_str).ok_or(
+            Token::Ident(ident_str) => ValueKind::from_ident(ident_str).ok_or(
                 ParserError::unexpected_token(token.clone(), TokenType::ValueKind),
             )?,
             _ => {
@@ -1510,7 +1510,7 @@ mod tests {
         }
         value_string.push_str("0u8");
         for _ in 0..depth {
-            value_string.push_str(")");
+            value_string.push(')');
         }
 
         // Should actually be an error not a panic

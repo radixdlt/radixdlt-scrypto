@@ -77,7 +77,7 @@ impl<'s, 'a, Y: SystemBasedKernelApi> ValidationContext for SystemServiceTypeInf
         let type_info = self
             .system_service
             .borrow_mut()
-            .get_node_type_info(&node_id)?;
+            .get_node_type_info(node_id)?;
         let mapped = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -165,19 +165,17 @@ impl<'a, E: Debug> ValidatableCustomExtension<Lookup<'a, E>> for ScryptoCustomEx
             ScryptoCustomValue::Own(..) => {
                 if !context.allow_ownership() {
                     return Err(PayloadValidationError::ValidationError(
-                        ValidationError::CustomError(format!("Ownership is not allowed")),
+                        ValidationError::CustomError("Ownership is not allowed".to_string()),
                     ));
                 }
             }
             ScryptoCustomValue::Reference(reference) => {
-                if !reference.0.is_global() {
-                    if !context.allow_non_global_ref() {
-                        return Err(PayloadValidationError::ValidationError(
-                            ValidationError::CustomError(format!(
-                                "Non Global Reference is not allowed"
-                            )),
-                        ));
-                    }
+                if !reference.0.is_global() && !context.allow_non_global_ref() {
+                    return Err(PayloadValidationError::ValidationError(
+                        ValidationError::CustomError(
+                            "Non Global Reference is not allowed".to_string(),
+                        ),
+                    ));
                 }
             }
             _ => {}

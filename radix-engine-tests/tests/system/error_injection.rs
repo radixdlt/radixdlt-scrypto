@@ -58,7 +58,7 @@ fn lock_fee_from_faucet_and_account_error_injection() {
             .build();
         let receipt = ledger.execute_manifest_with_injected_error(
             manifest,
-            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            vec![NonFungibleGlobalId::from_public_key(pub_key)],
             inject_err_after_count,
         );
         if receipt.is_commit_success() {
