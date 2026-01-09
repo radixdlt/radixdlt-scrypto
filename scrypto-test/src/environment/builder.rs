@@ -191,6 +191,16 @@ where
         self.protocol_executor
             .commit_each_protocol_update(&mut self.database);
 
+        // Reading the system version from the database after the protocol updates have been enacted
+        let system_version = self
+            .database
+            .get_existing_substate::<SystemBoot>(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BootLoaderField::SystemBoot,
+            )
+            .system_version();
+
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
@@ -220,8 +230,6 @@ where
                 let auth_module = AuthModule::new();
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
-
-                let system_version = SystemVersion::latest();
 
                 let costing_module = CostingModule {
                     current_depth: 0,

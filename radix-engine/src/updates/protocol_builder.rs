@@ -91,6 +91,14 @@ impl ProtocolBuilder {
         self
     }
 
+    pub fn configure_dugong(
+        mut self,
+        creator: impl FnOnce(DugongSettings) -> DugongSettings,
+    ) -> Self {
+        self.settings.dugong = creator(self.settings.dugong);
+        self
+    }
+
     pub fn unbootstrapped(self) -> ProtocolExecutor {
         self.from_to(
             ProtocolVersion::Unbootstrapped,
