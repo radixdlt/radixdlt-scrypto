@@ -149,9 +149,18 @@ mod test {
 
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
             .configure_babylon(|_| BabylonSettings::test_complex())
+            // TODO: In here we're forced to provide the Dugong settings manually because Dugong's
+            // default configuration method is disabled as we wanted to disable that protocol update
+            // for this version of Scrypto. When Dugong is set to be released this should be removed
+            // and the `DugongSettings::all_enabled_as_default_for_network` method should be updated
+            // to reflect that the protocol upgrade is enabled.
+            .configure_dugong(|_| DugongSettings {
+                native_entity_metadata_updates: UpdateSetting::Enabled(Default::default()),
+                system_logic_updates: UpdateSetting::Enabled(Default::default()),
+            })
             .from_bootstrap_to_latest();
-        for protocol_update_exector in protocol_executor.each_protocol_update_executor(&db) {
-            let protocol_version = protocol_update_exector.protocol_version;
+        for protocol_update_executor in protocol_executor.each_protocol_update_executor(&db) {
+            let protocol_version = protocol_update_executor.protocol_version;
             let mut version_folder = FolderContentAligner::new(
                 root_path.join(protocol_version.logical_name()),
                 mode,
@@ -168,7 +177,7 @@ mod test {
                 state_change_hasher: HashAccumulator::new(),
             };
 
-            protocol_update_exector.run_and_commit_advanced(&mut db, &mut hooks, &vm_modules);
+            protocol_update_executor.run_and_commit_advanced(&mut db, &mut hooks, &vm_modules);
 
             let mut summary = String::new();
             let protocol_version_display_name = protocol_version.display_name();

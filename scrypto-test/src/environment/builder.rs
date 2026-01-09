@@ -192,14 +192,17 @@ where
             .commit_each_protocol_update(&mut self.database);
 
         // Reading the system version from the database after the protocol updates have been enacted
+        // and default to SystemVersion::V1 if no `SystemBoot` substate is found in the substate
+        // store at that point.
         let system_version = self
             .database
-            .get_existing_substate::<SystemBoot>(
+            .get_substate::<SystemBoot>(
                 TRANSACTION_TRACKER,
                 BOOT_LOADER_PARTITION,
                 BootLoaderField::SystemBoot,
             )
-            .system_version();
+            .map(|system_boot| system_boot.system_version())
+            .unwrap_or(SystemVersion::V1);
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
