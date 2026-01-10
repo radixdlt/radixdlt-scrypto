@@ -205,7 +205,14 @@ macro_rules! define_untyped_manifest_type_wrapper {
             feature = "fuzzing",
             derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
         )]
-        #[derive(Debug, Clone, PartialEq, Eq, $crate::prelude::ManifestSbor)]
+        #[derive(
+            Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            $crate::prelude::ManifestEncode,
+            $crate::prelude::ManifestCategorize,
+        )]
         #[sbor(transparent)]
         pub struct $manifest_ty_ident($inner_ty);
 
@@ -296,6 +303,81 @@ macro_rules! define_untyped_manifest_type_wrapper {
                     <$scrypto_ty as Describe<$crate::prelude::ScryptoCustomTypeKind>>::add_all_dependencies(aggregator)
                 }
             }
+
+            // Manual implementation of decoding to allow us to check the schema on-decode to mirror
+            // what the Scrypto equivalent types do.
+
+            // The Scrypto types do it a little differently where their schema check is implicit
+            // (e.g., SBOR contains 5 fields but struct has 2) and therefore we need to do an
+            // explicit schema check here so that no types that dont match the schema can be decoded
+            // into this wrapper type.
+            impl<D: $crate::prelude::Decoder<$crate::prelude::ManifestCustomValueKind>> $crate::prelude::Decode<$crate::prelude::ManifestCustomValueKind, D> for $manifest_ty_ident
+            {
+                #[inline]
+                fn decode_body_with_value_kind(
+                    decoder: &mut D,
+                    value_kind: $crate::prelude::ValueKind<$crate::prelude::ManifestCustomValueKind>,
+                ) -> Result<Self, $crate::prelude::DecodeError> {
+                    // Store the schema of this type in a lazy-static. The schema doesn't change and
+                    // we don't want to recreate the schema each time we want to decode it.
+                    ::lazy_static::lazy_static! {
+                        static ref SCHEMA: ($crate::prelude::LocalTypeId, $crate::prelude::VersionedSchema<$crate::prelude::ScryptoCustomSchema>) = $crate::prelude::generate_full_schema_from_single_type::<
+                            $scrypto_ty,
+                            $crate::prelude::ScryptoCustomSchema
+                        >();
+                    }
+
+                    // Start by decoding the value and creating this object.
+                    let inner_value = <$inner_ty
+                        as $crate::prelude::Decode<$crate::prelude::ManifestCustomValueKind, D>
+                    >::decode_body_with_value_kind(decoder, value_kind)?;
+
+                    // Re-encode this type and do the schema check.
+                    let encoded = $crate::prelude::manifest_encode(&inner_value).map_err(|_| $crate::prelude::DecodeError::InvalidCustomValue)?;
+                    $crate::prelude::validate_payload_against_schema::<$crate::prelude::ManifestCustomExtension, _>(
+                        &encoded,
+                        SCHEMA.1.v1(),
+                        SCHEMA.0,
+                        &(),
+                        $crate::prelude::MANIFEST_SBOR_V1_MAX_DEPTH
+                    )
+                    .map_err(|_| $crate::prelude::DecodeError::InvalidCustomValue)?;
+
+                    // All succeeded, return the value
+                    Ok(Self(inner_value))
+                }
+            }
         };
     };
+}
+
+#[cfg(test)]
+mod test {
+    use crate::prelude::*;
+
+    #[test]
+    fn decoding_into_opaque_value_with_incorrect_schema_fails() {
+        // Arrange
+        #[derive(ScryptoSbor)]
+        pub enum MyEnum {
+            Variant(u32),
+        }
+
+        #[derive(ScryptoSbor, ManifestSbor)]
+        pub enum MyOtherEnum {
+            Variant(Decimal),
+        }
+
+        define_untyped_manifest_type_wrapper!(
+            MyEnum => ManifestMyEnum(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+        );
+
+        let encoded = manifest_encode(&MyOtherEnum::Variant(Decimal::ONE)).unwrap();
+
+        // Act
+        let decoded = manifest_decode::<ManifestMyEnum>(&encoded);
+
+        // Assert
+        assert_eq!(decoded, Err(DecodeError::InvalidCustomValue))
+    }
 }
