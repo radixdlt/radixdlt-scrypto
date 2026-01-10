@@ -306,7 +306,7 @@ macro_rules! define_untyped_manifest_type_wrapper {
 
             // Manual implementation of decoding to allow us to check the schema on-decode to mirror
             // what the Scrypto equivalent types do.
-
+            //
             // The Scrypto types do it a little differently where their schema check is implicit
             // (e.g., SBOR contains 5 fields but struct has 2) and therefore we need to do an
             // explicit schema check here so that no types that dont match the schema can be decoded
