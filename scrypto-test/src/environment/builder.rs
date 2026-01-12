@@ -16,7 +16,6 @@ use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
-use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
@@ -24,6 +23,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::interface::*;
+use radix_transactions::model::TransactionCostingParameters;
 
 use crate::sdk::PackageFactory;
 
@@ -183,6 +183,9 @@ where
     }
 
     pub fn build(mut self) -> TestEnvironment<D> {
+        // Network definition used for the test environment is always simulator.
+        let network_definition = NetworkDefinition::simulator();
+
         // Create the various VMs we will use
         let native_vm = NativeVm::new();
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -190,6 +193,21 @@ where
         // Run bootstrap and any protocol updates against the database, if requested.
         self.protocol_executor
             .commit_each_protocol_update(&mut self.database);
+
+        // Reading the system boot substate from the substate store AFTER the protocol updates have
+        // been enacted. If none are set then we assume that we're on the Babylon settings.
+        let system_boot_substate = self
+            .database
+            .get_substate::<SystemBoot>(
+                TRANSACTION_TRACKER,
+                BOOT_LOADER_PARTITION,
+                BootLoaderField::SystemBoot,
+            )
+            .unwrap_or_else(|| {
+                SystemBoot::V1(SystemParameters::babylon_genesis(
+                    network_definition.clone(),
+                ))
+            });
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
@@ -210,26 +228,29 @@ where
             id_allocator,
             |substate_database| Track::new(substate_database),
             |scrypto_vm, database| {
+                let system_version = system_boot_substate.system_version();
+                let system_parameters = system_boot_substate.into_parameters();
+
                 let vm_boot = VmBoot::load(database);
 
-                let transaction_runtime_module = TransactionRuntimeModule::new(
-                    NetworkDefinition::simulator(),
-                    Self::DEFAULT_INTENT_HASH,
-                );
+                let transaction_runtime_module =
+                    TransactionRuntimeModule::new(network_definition, Self::DEFAULT_INTENT_HASH);
 
                 let auth_module = AuthModule::new();
 
-                let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
-
-                let system_version = SystemVersion::latest();
+                let limits_module = LimitsModule::from_params(system_parameters.limit_parameters);
 
                 let costing_module = CostingModule {
                     current_depth: 0,
-                    fee_reserve: SystemLoanFeeReserve::default(),
+                    fee_reserve: SystemLoanFeeReserve::new(
+                        system_parameters.costing_parameters,
+                        TransactionCostingParameters::default(),
+                        false,
+                    ),
                     fee_table: FeeTable::new(system_version),
                     tx_payload_len: 0,
                     tx_num_of_signature_validations: 0,
-                    config: CostingModuleConfig::babylon_genesis(),
+                    config: system_parameters.costing_module_config,
                     cost_breakdown: Some(Default::default()),
                     detailed_cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
