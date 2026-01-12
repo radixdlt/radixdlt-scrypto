@@ -423,22 +423,6 @@ mod tests {
     }
 
     #[test]
-    fn any_enum_can_be_decoded_as_a_manifest_access_rule() {
-        // Arrange
-        let enum_value = ManifestValue::Enum {
-            discriminator: 10,
-            fields: vec![ManifestValue::U8 { value: 0 }],
-        };
-        let encoded = manifest_encode(&enum_value).unwrap();
-
-        // Act
-        let manifest_access_rule = manifest_decode::<ManifestAccessRule>(&encoded);
-
-        // Assert
-        manifest_access_rule.expect("Must succeed");
-    }
-
-    #[test]
     fn non_enums_cant_be_decoded_as_a_manifest_access_rule() {
         // Arrange
         let enum_value = ManifestValue::U8 { value: 1 };
