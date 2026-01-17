@@ -66,14 +66,13 @@ impl ScryptoV1WasmValidator {
 #[cfg(test)]
 mod tests {
     use radix_engine_interface::blueprints::package::PackageDefinition;
-    use wabt::{wasm2wat, wat2wasm};
 
     use super::ScryptoV1WasmValidator;
     use super::ScryptoVmVersion;
 
     #[test]
     fn test_validate() {
-        let code = wat2wasm(
+        let code = wat::parse_str(
             r#"
         (module
 
@@ -106,7 +105,7 @@ mod tests {
         )
         .unwrap();
 
-        let instrumented_code = wasm2wat(
+        let instrumented_code = wasmprinter::print_bytes(
             ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(
                     &code,

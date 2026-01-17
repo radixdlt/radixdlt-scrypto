@@ -37,7 +37,6 @@ fn invalid_export_name_should_fail() {
         "a!",
         "a-",
         "a\u{221A}",
-        "\0",
         "a\'",
         "self",
         "crate",

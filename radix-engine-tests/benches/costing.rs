@@ -14,7 +14,6 @@ use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_test::prelude::*;
-use wabt::wat2wasm;
 
 fn generate_interesting_bytes_of_length(length: usize) -> Vec<u8> {
     include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd")
@@ -176,9 +175,8 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 // Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpRuntime
 fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
-    let code =
-        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
-            .unwrap();
+    let code_wat = &include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string());
+    let code = wat::parse_str(code_wat).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -211,7 +209,8 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
 // There is only one instruction `br` per iteration.
 // It's extremely helpful for stress testing the `consume_wasm_execution_units` host function.
 fn bench_spin_loop_v2(c: &mut Criterion) {
-    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let code_wat = include_local_wasm_str!("loop_v2.wat");
+    let code = wat::parse_str(code_wat).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,

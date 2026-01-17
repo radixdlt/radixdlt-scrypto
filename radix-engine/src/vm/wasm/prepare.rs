@@ -1396,15 +1396,10 @@ mod tests {
     };
     use radix_engine_interface::blueprints::package::BlueprintType;
     use sbor::basic_well_known_types::{ANY_TYPE, UNIT_TYPE};
-    use wabt::{wat2wasm_with_features, Features};
 
     macro_rules! wat2wasm {
         ($wat: expr) => {{
-            let mut features = Features::new();
-            features.enable_sign_extension();
-            features.enable_mutable_globals();
-            let code = wat2wasm_with_features($wat, features).unwrap();
-            code
+            ::wat::parse_str($wat).unwrap()
         }};
     }
 
