@@ -1850,7 +1850,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47b807c72e1bac69382b3a6fb3dbe8ea4c0ed87ff5629b8685ae6b9a611028fe"
 dependencies = [
  "bitflags 2.10.0",
- "indexmap 2.7.0",
+ "indexmap 2.13.0",
  "semver",
 ]
 
