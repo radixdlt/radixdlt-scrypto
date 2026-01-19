@@ -1,6 +1,6 @@
 [package]
 name = "radix-rust"
-version = "1.4.0-dev"
+version = "1.3.1"
 edition = "2021"
 description = "A very thin abstraction over Rust std library for convenience, from the Radix DLT project."
 readme = "README.md"

@@ -1,6 +1,6 @@
 [package]
 name = "radix-clis"
-version = "1.4.0-dev"
+version = "1.3.1"
 edition = "2021"
 description = "A collection of CLIs for developing, building and testing Scrypto code, from the Radix DLT project."
 readme = "README.md"

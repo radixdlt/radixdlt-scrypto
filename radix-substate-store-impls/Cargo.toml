@@ -1,6 +1,6 @@
 [package]
 name = "radix-substate-store-impls"
-version = "1.4.0-dev"
+version = "1.3.1"
 edition = "2021"
 description = "Includes various substate store implementations, from the Radix DLT project."
 readme = "README.md"
