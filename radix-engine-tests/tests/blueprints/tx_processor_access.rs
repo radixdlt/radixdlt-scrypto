@@ -103,7 +103,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
         .build();
     ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert

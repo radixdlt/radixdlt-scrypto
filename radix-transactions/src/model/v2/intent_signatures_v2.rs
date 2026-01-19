@@ -31,6 +31,10 @@ pub struct NonRootSubintentSignaturesV2 {
     pub by_subintent: Vec<IntentSignaturesV2>,
 }
 
+impl TransactionPartialPrepare for NonRootSubintentSignaturesV2 {
+    type Prepared = PreparedNonRootSubintentSignaturesV2;
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedNonRootSubintentSignaturesV2 {
     pub by_subintent: Vec<PreparedIntentSignaturesV2>,

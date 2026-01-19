@@ -120,7 +120,7 @@ fn test_wasm_buffer_read_write_memory_size_success() {
         0u64,
         10 * KB,
         128 * KB,
-        1 * MB,
+        MB,
         (MAX_SUBSTATE_VALUE_SIZE - 17) as u64, // maximum value possible to read and write
     ] {
         // Act
@@ -147,9 +147,9 @@ fn test_wasm_buffer_read_memory_access_error() {
         // Small buffers
         (10 * KB, 0, 10 * KB + 128 * KB),
         (10 * KB, 64 * KB, 74 * KB),
-        (10 * KB, 10 * KB + 127 * KB, 1 * KB),
+        (10 * KB, 10 * KB + 127 * KB, KB),
         // Large buffers
-        (1 * MB, 0, 1 * MB + 128 * KB),
+        (MB, 0, MB + 128 * KB),
     ] {
         // Act
         let receipt = test_wasm_buffer_read!(
@@ -179,10 +179,7 @@ fn test_wasm_buffers_write_memory_access_error() {
             (10 * KB, 0, get_sbor_len(10 * KB)),
             (10 * KB, 10 * KB + 128 * KB),
         ),
-        (
-            (1 * MB, 0, get_sbor_len(1 * MB)),
-            (1 * MB, 1 * MB + 128 * KB),
-        ),
+        ((MB, 0, get_sbor_len(MB)), (MB, MB + 128 * KB)),
     ] {
         // Act
         let receipt = test_wasm_buffer_read_write!(
@@ -342,11 +339,7 @@ fn test_wasm_buffer_invalid_buffer_pointer() {
     // Arrange
     let (mut ledger, component_address) = get_ledger();
     // Write 1KB to KV store
-    test_wasm_buffer_read!(
-        ledger,
-        component_address,
-        read = (1 * KB, 0, get_sbor_len(1 * KB))
-    );
+    test_wasm_buffer_read!(ledger, component_address, read = (KB, 0, get_sbor_len(KB)));
 
     // Act
     let receipt = test_wasm_buffer_consume!(

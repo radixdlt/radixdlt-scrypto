@@ -29,6 +29,25 @@ impl<E, C> CallbackError<E, C> {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+pub(crate) trait NodeSubstatesExt {
+    fn into_node_state_updates(self) -> NodeStateUpdates;
+}
+
+impl NodeSubstatesExt for NodeSubstates {
+    fn into_node_state_updates(self) -> NodeStateUpdates {
+        let mut updates = NodeStateUpdates::empty();
+        for (partition_num, substates) in self {
+            for (substate_key, indexed_scrypto_value) in substates {
+                updates.of_partition(partition_num).mut_update_substate(
+                    substate_key,
+                    DatabaseUpdate::Set(indexed_scrypto_value.unpack().0),
+                );
+            }
+        }
+        updates
+    }
+}
+
 pub enum TrackedSubstateInfo {
     New,
     Updated,
@@ -199,6 +218,7 @@ impl CanonicalSubstateKey {
 }
 
 impl CanonicalSubstateKey {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.node_id.as_bytes().len()
             + 1
@@ -301,13 +321,7 @@ impl StoreCommit {
                 size,
                 ..
             } => canonical_substate_key.len() + *size,
-            StoreCommit::Update { size, old_size, .. } => {
-                if *size > *old_size {
-                    *size - *old_size
-                } else {
-                    0
-                }
-            }
+            StoreCommit::Update { size, old_size, .. } => (*size).saturating_sub(*old_size),
             StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }

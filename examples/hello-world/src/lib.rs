@@ -21,8 +21,7 @@ mod hello {
                         "symbol" => "HT", locked;
                     }
                 })
-                .mint_initial_supply(1000)
-                .into();
+                .mint_initial_supply(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {

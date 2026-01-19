@@ -111,7 +111,7 @@ impl TwoResourcePoolBlueprint {
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(&TwoResourcePoolStateFieldPayload::from_content_source(substate)),
+                    TwoResourcePoolField::State.field_index() => FieldValue::immutable(TwoResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -142,8 +142,8 @@ impl TwoResourcePoolBlueprint {
             // to a deterministic and predictable order. This helps make the code less generalized and
             // simple.
             let ((vault1, vault1_resource_address), (vault2, vault2_resource_address)) = {
-                let vault1 = Vault((&substate.vaults[0].1 .0).clone());
-                let vault2 = Vault((&substate.vaults[1].1 .0).clone());
+                let vault1 = Vault(substate.vaults[0].1 .0);
+                let vault2 = Vault(substate.vaults[1].1 .0);
 
                 let resource_address1 = substate.vaults[0].0;
                 let resource_address2 = substate.vaults[1].0;

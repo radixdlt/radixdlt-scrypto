@@ -103,7 +103,10 @@ pub struct AuthZoneAssertAccessRuleInput {
     pub rule: AccessRule,
 }
 
-pub type AuthZoneAssertAccessRuleManifestInput = AuthZoneAssertAccessRuleInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AuthZoneAssertAccessRuleManifestInput {
+    pub rule: ManifestAccessRule,
+}
 
 pub type AuthZoneAssertAccessRuleOutput = ();
 

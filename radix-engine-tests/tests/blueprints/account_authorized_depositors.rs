@@ -78,10 +78,12 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.into(),
+                    },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -105,7 +107,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
         .deposit_entire_worktop(account2)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -135,12 +137,12 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -161,7 +163,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -190,12 +192,12 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -217,7 +219,7 @@ fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -245,12 +247,12 @@ fn authorized_depositor_can_be_removed_later() {
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -272,7 +274,7 @@ fn authorized_depositor_can_be_removed_later() {
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert 1
     receipt.expect_commit_success();
@@ -283,13 +285,13 @@ fn authorized_depositor_can_be_removed_later() {
         .call_method(
             account1,
             ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
-            AccountRemoveAuthorizedDepositorInput {
-                badge: badge.clone(),
+            AccountRemoveAuthorizedDepositorManifestInput {
+                badge: badge.clone().into(),
             },
         )
         .build();
     ledger
-        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk1)])
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk1)])
         .expect_commit_success();
 
     let manifest = ManifestBuilder::new()
@@ -309,7 +311,7 @@ fn authorized_depositor_can_be_removed_later() {
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert 2
     receipt.expect_specific_failure(is_fungible_resource_manager_drop_non_empty_bucket_error);
@@ -337,10 +339,12 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.into(),
+                    },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -359,7 +363,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
         .deposit_entire_worktop(account2)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -389,12 +393,12 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -404,11 +408,11 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -437,12 +441,12 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -453,11 +457,11 @@ fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_auth
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge.into()))
+            builder.try_deposit_batch_or_refund(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -485,10 +489,12 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.into(),
+                    },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -511,7 +517,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -540,12 +546,12 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -566,7 +572,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -595,12 +601,12 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -622,7 +628,7 @@ fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -650,10 +656,12 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.into(),
+                    },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -671,7 +679,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
@@ -700,12 +708,12 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -715,11 +723,11 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_auth_assertion_failure();
@@ -748,12 +756,12 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                    AccountAddAuthorizedDepositorInput {
-                        badge: badge.clone(),
+                    AccountAddAuthorizedDepositorManifestInput {
+                        badge: badge.clone().into(),
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk1)],
+            vec![NonFungibleGlobalId::from_public_key(pk1)],
         )
         .expect_commit_success();
 
@@ -764,11 +772,11 @@ fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_autho
         .withdraw_from_account(account2, XRD, 1)
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
-            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge.into()))
+            builder.try_deposit_batch_or_abort(account1, [bucket], Some(badge))
         })
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk2)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -798,7 +806,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_batch_is_permitted_without
             )
             .build();
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -832,7 +840,7 @@ fn authorized_depositor_badge_is_ignored_when_deposit_is_permitted_without_it() 
             })
             .build();
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -911,8 +919,8 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
             .call_method(
                 account,
                 ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                AccountAddAuthorizedDepositorInput {
-                    badge: ResourceOrNonFungible::Resource(XRD),
+                AccountAddAuthorizedDepositorManifestInput {
+                    badge: ResourceOrNonFungible::Resource(XRD).into(),
                 },
             )
             .create_proof_from_account_of_amount(account, XRD, 1)
@@ -930,7 +938,7 @@ fn authorized_depositor_badge_permits_caller_to_deposit() {
             })
             .build();
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         receipt.expect_commit_success();
@@ -965,7 +973,7 @@ fn test_depositors_operation_method_auth(
     let (pk, _, account) = ledger.new_account(true);
 
     let initial_proofs = if sign {
-        vec![NonFungibleGlobalId::from_public_key(&pk)]
+        vec![NonFungibleGlobalId::from_public_key(pk)]
     } else {
         vec![]
     };
@@ -977,12 +985,16 @@ fn test_depositors_operation_method_auth(
             DepositorsOperation::Add { badge } => builder.call_method(
                 account,
                 ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT,
-                AccountAddAuthorizedDepositorInput { badge },
+                AccountAddAuthorizedDepositorManifestInput {
+                    badge: badge.into(),
+                },
             ),
             DepositorsOperation::Remove { badge } => builder.call_method(
                 account,
                 ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT,
-                AccountRemoveAuthorizedDepositorInput { badge },
+                AccountRemoveAuthorizedDepositorManifestInput {
+                    badge: badge.into(),
+                },
             ),
         };
         builder.build()

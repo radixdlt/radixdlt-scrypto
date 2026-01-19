@@ -1,6 +1,5 @@
 use crate::blueprints::resource::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::prelude::*;
 
 // Main roles
@@ -19,7 +18,7 @@ pub const FREEZER_UPDATER_ROLE: &str = "freezer_updater";
 pub const NON_FUNGIBLE_DATA_UPDATER_ROLE: &str = "non_fungible_data_updater";
 pub const NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE: &str = "non_fungible_data_updater_updater";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceFeature {
     Mint,
@@ -35,7 +34,7 @@ pub struct ResourceManagerBurnInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerBurnManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -49,7 +48,7 @@ pub struct ResourceManagerPackageBurnInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerPackageBurnManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -81,7 +80,7 @@ pub struct ResourceManagerDropEmptyBucketInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct ResourceManagerDropEmptyBucketManifestInput {
     pub bucket: ManifestBucket,
 }

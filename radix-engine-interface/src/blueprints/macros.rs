@@ -6,7 +6,8 @@ macro_rules! define_invocation {
         blueprint_name: $blueprint_name: ident,
         function_name: $function_name: ident,
         input: struct { $($input_ident: ident: $input_type: ty),* $(,)? },
-        output: struct { $($output_ident: ident: $output_type: ty),* $(,)? } $(,manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? } )?
+        output: struct { $($output_ident: ident: $output_type: ty),* $(,)? },
+        manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? }
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
@@ -14,30 +15,29 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($input_ident: $input_type),*
             }
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($output_ident: $output_type),*
             }
 
-            $(
-                $crate::blueprints::macros::resolve_struct_definition! {
-                    [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
-                    $($manifest_input_ident: $manifest_input_type),*
-                }
-            )?
+            $crate::blueprints::macros::resolve_struct_definition! {
+                [< $blueprint_name:camel $function_name:camel ManifestInput >],
+                [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
+                $($manifest_input_ident: $manifest_input_type),*
+            }
         }
     };
     (
         blueprint_name: $blueprint_name: ident,
         function_name: $function_name: ident,
         input: struct { $($input_ident: ident: $input_type: ty),* $(,)? },
-        output: type $output_type:ty $(,manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? } )?
+        output: type $output_type:ty,
+        manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? }
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
@@ -45,7 +45,7 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($input_ident: $input_type),*
             }
 
@@ -54,20 +54,19 @@ macro_rules! define_invocation {
                 $output_type
             }
 
-            $(
-                $crate::blueprints::macros::resolve_struct_definition! {
-                    [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
-                    $($manifest_input_ident: $manifest_input_type),*
-                }
-            )?
+            $crate::blueprints::macros::resolve_struct_definition! {
+                [< $blueprint_name:camel $function_name:camel ManifestInput >],
+                [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
+                $($manifest_input_ident: $manifest_input_type),*
+            }
         }
     };
     (
         blueprint_name: $blueprint_name: ident,
         function_name: $function_name: ident,
         input: type $input_type:ty,
-        output: struct { $($output_ident: ident: $output_type: ty),* $(,)? } $(,manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? } )?
+        output: struct { $($output_ident: ident: $output_type: ty),* $(,)? },
+        manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? }
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
@@ -80,24 +79,23 @@ macro_rules! define_invocation {
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Output >],
-                radix_common::ScryptoSbor,
+                [radix_common::ScryptoSbor],
                 $($output_ident: $output_type),*
             }
 
-            $(
-                $crate::blueprints::macros::resolve_struct_definition! {
-                    [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
-                    $($manifest_input_ident: $manifest_input_type),*
-                }
-            )?
+            $crate::blueprints::macros::resolve_struct_definition! {
+                [< $blueprint_name:camel $function_name:camel ManifestInput >],
+                [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
+                $($manifest_input_ident: $manifest_input_type),*
+            }
         }
     };
     (
         blueprint_name: $blueprint_name: ident,
         function_name: $function_name: ident,
         input: type $input_type:ty,
-        output: type $output_type:ty $(,manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? } )?
+        output: type $output_type:ty,
+        manifest_input: struct { $($manifest_input_ident: ident: $manifest_input_type: ty),* $(,)? }
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
@@ -113,24 +111,24 @@ macro_rules! define_invocation {
                 $output_type
             }
 
-            $(
-                $crate::blueprints::macros::resolve_struct_definition! {
-                    [< $blueprint_name:camel $function_name:camel ManifestInput >],
-                    radix_common::ManifestSbor,
-                    $($manifest_input_ident: $manifest_input_type),*
-                }
-            )?
+            $crate::blueprints::macros::resolve_struct_definition! {
+                [< $blueprint_name:camel $function_name:camel ManifestInput >],
+                [radix_common::ManifestSbor, $crate::internal_prelude::ScryptoDescribe],
+                $($manifest_input_ident: $manifest_input_type),*
+            }
         }
     };
 }
 
 macro_rules! resolve_struct_definition {
-    ($name: ident, $derive: ty$(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+    ($name: ident, [$($derive: ty),* $(,)?] $(,)?) => {
+        #[derive( $($derive),* )]
+        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq)]
         pub struct $name;
     };
-    ($name: ident, $derive: ty, $($ident: ident: $type: ty),* $(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+    ($name: ident, [$($derive: ty),* $(,)?], $($ident: ident: $type: ty),* $(,)?) => {
+        #[derive( $($derive),* )]
+        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq)]
         pub struct $name {
             $(
                 pub $ident: $type,

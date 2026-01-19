@@ -52,6 +52,7 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>, const N
     }
 }
 
+#[allow(clippy::forget_non_drop)]
 impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X>, const N: usize>
     Decode<X, D> for [T; N]
 {

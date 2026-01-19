@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod native_vm;
 mod scrypto_vm;
 mod versions;

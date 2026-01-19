@@ -123,7 +123,7 @@ impl TransactionValidator {
         } = signatures.validate_all()?;
 
         let root_intent_info = ValidatedIntentInformationV2 {
-            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?.into(),
+            encoded_instructions: manifest_encode(&root_intent_core.instructions.inner.0)?,
             children_subintent_indices: intent_relationships.root_intent.children,
             signer_keys: root_signer_keys,
         };
@@ -137,8 +137,7 @@ impl TransactionValidator {
                     Ok(ValidatedIntentInformationV2 {
                         encoded_instructions: manifest_encode(
                             &subintent.intent_core.instructions.inner.0,
-                        )?
-                        .into(),
+                        )?,
                         signer_keys,
                         children_subintent_indices: info.children,
                     })
@@ -200,16 +199,13 @@ impl TransactionValidator {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
 
-        match (
+        if let (Some(min_timestamp_inclusive), Some(max_timestamp_exclusive)) = (
             header.min_proposer_timestamp_inclusive.as_ref(),
             header.max_proposer_timestamp_exclusive.as_ref(),
         ) {
-            (Some(min_timestamp_inclusive), Some(max_timestamp_exclusive)) => {
-                if min_timestamp_inclusive >= max_timestamp_exclusive {
-                    return Err(HeaderValidationError::InvalidTimestampRange);
-                }
+            if min_timestamp_inclusive >= max_timestamp_exclusive {
+                return Err(HeaderValidationError::InvalidTimestampRange);
             }
-            _ => {}
         };
 
         aggregation.update_headers(
@@ -253,7 +249,7 @@ impl TransactionValidator {
                         permitted: validation.max_encrypted_message_length,
                     });
                 }
-                if decryptors_by_curve.len() == 0 {
+                if decryptors_by_curve.is_empty() {
                     return Err(InvalidMessageError::NoDecryptors);
                 }
                 let mut total_decryptors = 0;
@@ -364,9 +360,7 @@ impl IntentTreeStructure for PreparedTransactionIntentV2 {
         self
     }
 
-    fn non_root_subintents<'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = &'a Self::SubintentStructure> {
+    fn non_root_subintents(&self) -> impl ExactSizeIterator<Item = &Self::SubintentStructure> {
         self.non_root_subintents.subintents.iter()
     }
 }
@@ -379,9 +373,7 @@ impl IntentTreeStructure for PreparedPartialTransactionV2 {
         &self.root_subintent
     }
 
-    fn non_root_subintents<'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = &'a Self::SubintentStructure> {
+    fn non_root_subintents(&self) -> impl ExactSizeIterator<Item = &Self::SubintentStructure> {
         self.non_root_subintents.subintents.iter()
     }
 }
@@ -389,7 +381,7 @@ impl IntentTreeStructure for PreparedPartialTransactionV2 {
 impl SignedIntentTreeStructure for PreparedNotarizedTransactionV2 {
     type IntentTree = PreparedTransactionIntentV2;
 
-    fn root_signatures(&self) -> PendingIntentSignatureValidations {
+    fn root_signatures(&self) -> PendingIntentSignatureValidations<'_> {
         let transaction_intent = &self.signed_intent.transaction_intent;
         PendingIntentSignatureValidations::TransactionIntent {
             notary_is_signatory: transaction_intent
@@ -414,7 +406,7 @@ impl SignedIntentTreeStructure for PreparedNotarizedTransactionV2 {
 
     fn non_root_subintent_signatures(
         &self,
-    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations> {
+    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations<'_>> {
         self.signed_intent
             .non_root_subintent_signatures
             .by_subintent
@@ -438,7 +430,7 @@ impl SignedIntentTreeStructure for PreparedNotarizedTransactionV2 {
 impl SignedIntentTreeStructure for PreparedSignedPartialTransactionV2 {
     type IntentTree = PreparedPartialTransactionV2;
 
-    fn root_signatures(&self) -> PendingIntentSignatureValidations {
+    fn root_signatures(&self) -> PendingIntentSignatureValidations<'_> {
         PendingIntentSignatureValidations::Subintent {
             intent_signatures: self.root_subintent_signatures.inner.signatures.as_slice(),
             signed_hash: self.intent_tree().subintent_hash(),
@@ -447,7 +439,7 @@ impl SignedIntentTreeStructure for PreparedSignedPartialTransactionV2 {
 
     fn non_root_subintent_signatures(
         &self,
-    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations> {
+    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations<'_>> {
         self.non_root_subintent_signatures
             .by_subintent
             .iter()
@@ -470,7 +462,7 @@ impl SignedIntentTreeStructure for PreparedSignedPartialTransactionV2 {
 impl SignedIntentTreeStructure for PreparedPreviewTransactionV2 {
     type IntentTree = PreparedTransactionIntentV2;
 
-    fn root_signatures(&self) -> PendingIntentSignatureValidations {
+    fn root_signatures(&self) -> PendingIntentSignatureValidations<'_> {
         let transaction_intent = &self.transaction_intent;
         PendingIntentSignatureValidations::PreviewTransactionIntent {
             notary_is_signatory: transaction_intent
@@ -487,7 +479,7 @@ impl SignedIntentTreeStructure for PreparedPreviewTransactionV2 {
 
     fn non_root_subintent_signatures(
         &self,
-    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations> {
+    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations<'_>> {
         self.non_root_subintent_signatures
             .inner
             .iter()
@@ -1078,7 +1070,7 @@ mod tests {
 
                     builder.yield_to_parent(())
                 })
-                .sign(&Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
+                .sign(Secp256k1PrivateKey::from_u64(1000 + subintent_index as u64).unwrap())
                 .build_minimal()
         }
 
@@ -1095,7 +1087,7 @@ mod tests {
                         }),
                 )
                 .add_manifest_calling_each_child_once()
-                .sign(&Secp256k1PrivateKey::from_u64(1).unwrap())
+                .sign(Secp256k1PrivateKey::from_u64(1).unwrap())
                 .default_notarize_and_validate()
         }
 
@@ -1127,7 +1119,7 @@ mod tests {
         let simulator_validator = TransactionValidator::new_for_latest_simulator();
         let network_agnostic_validator =
             TransactionValidator::new_with_latest_config_network_agnostic();
-        let config = simulator_validator.config().clone();
+        let config = *simulator_validator.config();
 
         // InvalidEpochRange
         {

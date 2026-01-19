@@ -117,7 +117,7 @@ impl Authorization {
         ) -> Result<bool, RuntimeError>,
     ) -> Result<bool, RuntimeError> {
         let handle = api.kernel_open_substate(
-            &auth_zone,
+            auth_zone,
             MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
@@ -136,10 +136,10 @@ impl Authorization {
 
             // Check local implicit non fungible proofs
             let local_implicit_non_fungible_proofs = auth_zone.local_implicit_non_fungible_proofs();
-            if !local_implicit_non_fungible_proofs.is_empty() {
-                if check(&[], &btreeset!(), local_implicit_non_fungible_proofs, api)? {
-                    return Ok(true);
-                }
+            if !local_implicit_non_fungible_proofs.is_empty()
+                && check(&[], &btreeset!(), local_implicit_non_fungible_proofs, api)?
+            {
+                return Ok(true);
             }
 
             // Check global caller's full auth zone
@@ -271,7 +271,7 @@ impl Authorization {
                     return Ok(true);
                 }
 
-                let mut left = count.clone();
+                let mut left = *count;
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         left -= 1;
@@ -315,7 +315,7 @@ impl Authorization {
                     }
                 }
 
-                return Ok(AuthorizationCheckResult::Authorized);
+                Ok(AuthorizationCheckResult::Authorized)
             }
         }
     }
@@ -330,7 +330,7 @@ impl Authorization {
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.key.eq(SELF_ROLE) {
-            rule!(require(global_caller(role_assignment_of.clone())))
+            rule!(require(global_caller(*role_assignment_of)))
         } else {
             let handle = api.kernel_open_substate_with_default(
                 role_assignment_of.as_node_id(),
@@ -416,7 +416,7 @@ impl Authorization {
         for key in &role_list.list {
             let module_role_key = ModuleRoleKey::new(module, key.key.as_str());
             let result = Self::check_authorization_against_role_key_internal(
-                &auth_zone,
+                auth_zone,
                 role_assignment_of,
                 &module_role_key,
                 api,

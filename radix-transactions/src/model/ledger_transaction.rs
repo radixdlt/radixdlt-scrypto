@@ -279,6 +279,7 @@ impl AcceptedLedgerTransactionKind {
 
 impl_has_summary!(PreparedLedgerTransaction);
 
+#[allow(clippy::large_enum_variant)]
 pub enum PreparedLedgerTransactionInner {
     Genesis(PreparedGenesisTransaction),
     User(PreparedUserTransaction),
@@ -389,6 +390,7 @@ fn unknown_discriminator(discriminator: u8) -> PrepareError {
     PrepareError::DecodeError(DecodeError::UnknownDiscriminator(discriminator))
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum PreparedGenesisTransaction {
     Flash(Summary),
     Transaction(PreparedSystemTransactionV1),
@@ -463,6 +465,7 @@ pub struct ValidatedLedgerTransaction {
     pub summary: Summary,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum ValidatedLedgerTransactionInner {
     Genesis(PreparedGenesisTransaction),
     User(ValidatedUserTransaction),
@@ -544,6 +547,7 @@ pub struct IdentifiedLedgerExecutable {
     pub hashes: LedgerTransactionHashes,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LedgerExecutable {
     /// Should be resolved as create_system_bootstrap_flash() but due to crate issues it can't be

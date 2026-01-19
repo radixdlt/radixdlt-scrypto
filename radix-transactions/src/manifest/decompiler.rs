@@ -209,7 +209,7 @@ pub fn output_instruction<F: fmt::Write>(
     let value_display_context = context.for_value_display();
     write!(f, "{}", command)?;
     for argument in arguments.iter() {
-        write!(f, "\n")?;
+        writeln!(f)?;
         match argument {
             DecompiledInstructionField::Value(value) => {
                 format_manifest_value(f, value, &value_display_context, true, 0)?;
@@ -220,10 +220,10 @@ pub fn output_instruction<F: fmt::Write>(
             }
         }
     }
-    if arguments.len() > 0 {
+    if !arguments.is_empty() {
         write!(f, "\n;\n")?;
     } else {
-        write!(f, ";\n")?;
+        writeln!(f, ";")?;
     }
 
     Ok(())

@@ -21,7 +21,7 @@ impl TransactionValidationConfig {
                 BootLoaderField::TransactionValidationConfiguration,
             )
             .map(|s| s.fully_update_and_into_latest_version())
-            .unwrap_or_else(|| Self::babylon())
+            .unwrap_or_else(Self::babylon)
     }
 
     pub(crate) fn allow_notary_to_duplicate_signer(&self, version: TransactionVersion) -> bool {

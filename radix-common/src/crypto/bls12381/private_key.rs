@@ -20,6 +20,7 @@ impl Bls12381G1PrivateKey {
         self.0.to_bytes().to_vec()
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
         if slice.len() != Self::LENGTH {
             return Err(());
@@ -27,9 +28,10 @@ impl Bls12381G1PrivateKey {
         Ok(Self(SecretKey::from_bytes(slice).map_err(|_| ())?))
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_u64(n: u64) -> Result<Self, ()> {
         let mut bytes = [0u8; Self::LENGTH];
-        (&mut bytes[Self::LENGTH - 8..Self::LENGTH]).copy_from_slice(&n.to_be_bytes());
+        bytes[Self::LENGTH - 8..Self::LENGTH].copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKey::from_bytes(&bytes).map_err(|_| ())?))
     }
@@ -167,10 +169,7 @@ mod tests {
             pks.iter().zip(msgs_rev).map(|(pk, sk)| (*pk, sk)).collect();
 
         // Verify the messages in reversed order against public keys and aggregated signature
-        assert_eq!(
-            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
-            false
-        );
+        assert!(!aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
     }
 
     #[test]
@@ -190,10 +189,7 @@ mod tests {
 
         // Verify the incomplete messages against public keys and aggregated
         // signature from all messages
-        assert_eq!(
-            aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig),
-            false
-        );
+        assert!(!aggregate_verify_bls12381_v1(&pub_keys_msgs, &agg_sig));
 
         // Aggregate the signatures from incomplete messages
         let agg_sig = Bls12381G2Signature::aggregate(&sigs[0..9], true).unwrap();

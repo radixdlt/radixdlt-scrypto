@@ -246,7 +246,7 @@ fn test_set_role_of_role_assignment_v2() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                RoleAssignmentError::UsedReservedSpace { .. }
+                RoleAssignmentError::UsedReservedSpace
             ))
         )
     });

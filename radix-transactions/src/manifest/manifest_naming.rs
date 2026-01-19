@@ -17,6 +17,7 @@ impl TransactionObjectNames {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Default, Clone, Debug, ManifestSbor, ScryptoDescribe, PartialEq, Eq)]
 pub enum ManifestObjectNames {
     #[default]

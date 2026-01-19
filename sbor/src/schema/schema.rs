@@ -3,7 +3,7 @@ use crate::*;
 
 define_single_versioned!(
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-    #[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+    #[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
     pub VersionedSchema(SchemaVersions)<S: CustomSchema> => Schema<S> = SchemaV1::<S>
 );
 
@@ -32,7 +32,7 @@ impl<S: CustomSchema> Default for VersionedSchema<S> {
 /// A serializable record of the schema of a single type.
 /// Intended for historical backwards compatibility checking of a single type.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct SingleTypeSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_id: LocalTypeId,
@@ -58,7 +58,7 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
 ///
 /// For example, traits, or blueprint interfaces.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct TypeCollectionSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_ids: IndexMap<String, LocalTypeId>,
@@ -84,7 +84,7 @@ impl<S: CustomSchema> TypeCollectionSchema<S> {
 // * Via TypeKind, S::CustomLocalTypeKind gets embedded
 // * Via TypeValidation, S::CustomTypeValidation gets embedded
 // So theses are the child types which need to be registered with the sbor macro for it to compile
-#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind; S::CustomTypeValidation")]
 pub struct SchemaV1<S: CustomSchema> {
     pub type_kinds: Vec<LocalTypeKind<S>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
@@ -128,7 +128,7 @@ impl<S: CustomSchema> SchemaV1<S> {
             .unwrap_or_default()
     }
 
-    pub fn resolve_matching_enum_metadata<'s>(
+    pub fn resolve_matching_enum_metadata(
         &self,
         type_id: LocalTypeId,
         variant_id: u8,
@@ -191,6 +191,7 @@ impl<S: CustomSchema> SchemaV1<S> {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn resolve_type_data(
         &self,
         type_id: LocalTypeId,
@@ -201,21 +202,13 @@ impl<S: CustomSchema> SchemaV1<S> {
     )> {
         match type_id {
             LocalTypeId::WellKnown(index) => {
-                let Some(type_data) = S::resolve_well_known_type(index) else {
-                    return None;
-                };
+                let type_data = S::resolve_well_known_type(index)?;
                 Some((&type_data.kind, &type_data.metadata, &type_data.validation))
             }
             LocalTypeId::SchemaLocalIndex(index) => {
-                let Some(type_kind) = self.type_kinds.get(index) else {
-                    return None;
-                };
-                let Some(type_metadata) = self.type_metadata.get(index) else {
-                    return None;
-                };
-                let Some(type_validation) = self.type_validations.get(index) else {
-                    return None;
-                };
+                let type_kind = self.type_kinds.get(index)?;
+                let type_metadata = self.type_metadata.get(index)?;
+                let type_validation = self.type_validations.get(index)?;
                 Some((type_kind, type_metadata, type_validation))
             }
         }

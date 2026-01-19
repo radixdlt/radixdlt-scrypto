@@ -30,6 +30,12 @@ impl WasmValidatorConfigV1 {
     }
 }
 
+impl Default for WasmValidatorConfigV1 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Rules for WasmValidatorConfigV1 {
     fn instruction_cost(&self, instruction: &Operator) -> Option<u32> {
         match instruction {

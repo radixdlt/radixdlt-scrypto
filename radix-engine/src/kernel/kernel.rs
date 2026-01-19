@@ -49,7 +49,7 @@ impl KernelBoot {
                 BOOT_LOADER_PARTITION,
                 BootLoaderField::KernelBoot,
             )
-            .unwrap_or_else(|| KernelBoot::babylon())
+            .unwrap_or_else(KernelBoot::babylon)
     }
 
     pub fn babylon() -> Self {
@@ -151,7 +151,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
         // Upper Layer Initialization
         let system_init_result = E::init(
             &mut self.track,
-            &executable,
+            executable,
             callback_init,
             kernel_boot.always_visible_global_nodes(),
         );
@@ -188,7 +188,7 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
 
             Ok(output)
         }()
-        .map_err(|e| TransactionExecutionError::RuntimeError(e));
+        .map_err(TransactionExecutionError::RuntimeError);
 
         // Create receipt representing the result of a transaction
         system.create_receipt(self.track, result)
@@ -262,6 +262,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn current_frame_mut_in_this_and_other_stack(
         &mut self,
         other_stack: usize,
@@ -274,7 +275,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
             .iter_mut()
             .enumerate()
             .filter(|(id, _)| (*id).eq(&self.current_stack_index) || (*id).eq(&other_stack))
-            .map(|stack| Some(stack))
+            .map(Some)
             .collect();
 
         let (id0, stack0) = mut_stacks[0].take().unwrap();
@@ -286,6 +287,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn current_frame_and_previous_frame(
         &self,
     ) -> (
@@ -296,6 +298,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         (&stack.current_frame, stack.prev_frames.last())
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn mut_current_frame_and_previous_frame(
         &mut self,
     ) -> (
@@ -306,6 +309,7 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         (&mut stack.current_frame, stack.prev_frames.last())
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn mut_current_frame_and_mut_previous_frame(
         &mut self,
     ) -> (
@@ -664,7 +668,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
             }
         };
         SystemState {
-            system: &mut self.callback,
+            system: self.callback,
             current_call_frame: cur.data(),
             caller_call_frame: caller_actor,
         }
@@ -768,7 +772,7 @@ where
     ) -> Result<SubstateHandle, RuntimeError> {
         M::on_open_substate(
             OpenSubstateEvent::Start {
-                node_id: &node_id,
+                node_id,
                 partition_num: &partition_num,
                 substate_key,
                 flags: &flags,
@@ -801,8 +805,7 @@ where
             Ok((lock_handle, value_size)) => (*lock_handle, *value_size),
             Err(CallbackError::CallbackError(e)) => return Err(e.clone()),
             Err(CallbackError::Error(OpenSubstateError::SubstateFault)) => {
-                let retry =
-                    M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
+                let retry = M::on_substate_lock_fault(*node_id, partition_num, substate_key, self)?;
 
                 if retry {
                     let (cur_frame, prev_frame) =
@@ -819,9 +822,9 @@ where
                     cur_frame
                         .open_substate(
                             &mut self.substate_io,
-                            &node_id,
+                            node_id,
                             partition_num,
-                            &substate_key,
+                            substate_key,
                             flags,
                             None::<fn() -> IndexedScryptoValue>,
                             M::LockData::default(),
@@ -859,7 +862,7 @@ where
         M::on_open_substate(
             OpenSubstateEvent::End {
                 handle: lock_handle,
-                node_id: &node_id,
+                node_id,
                 size: value_size,
             },
             &mut read_only,
@@ -1034,7 +1037,7 @@ where
                 &mut self.substate_io,
                 node_id,
                 partition_num,
-                &substate_key,
+                substate_key,
                 &mut handler,
             )
             .map_err(|e| match e {
@@ -1174,7 +1177,7 @@ where
         // Before push call frame
         let callee = invocation.call_frame_data;
         let args = &invocation.args;
-        let message = CallFrameMessage::from_input(&args, &callee);
+        let message = CallFrameMessage::from_input(args, &callee);
 
         // Push call frame
         {
@@ -1350,7 +1353,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     pub fn kernel_current_frame_mut(
         &mut self,
     ) -> (
-        &SubstateIO<S>,
+        &SubstateIO<'_, S>,
         &mut CallFrame<
             <M as KernelCallbackObject>::CallFrameData,
             <M as KernelCallbackObject>::LockData,
@@ -1379,7 +1382,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     }
 
     pub fn kernel_id_allocator(&self) -> &IdAllocator {
-        &self.id_allocator
+        self.id_allocator
     }
 
     pub fn kernel_id_allocator_mut(&mut self) -> &mut &'g mut IdAllocator {
@@ -1387,10 +1390,10 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     }
 
     pub fn kernel_callback(&self) -> &M {
-        &self.callback
+        self.callback
     }
 
     pub fn kernel_callback_mut(&mut self) -> &mut M {
-        &mut self.callback
+        self.callback
     }
 }

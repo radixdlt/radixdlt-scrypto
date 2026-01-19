@@ -177,13 +177,13 @@ impl ProposalStatistic {
         if total == 0 {
             return Ok(Decimal::one());
         }
-        Ok(Decimal::from(self.made)
+        Decimal::from(self.made)
             .checked_div(total)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::UnexpectedDecimalComputationError,
                 ),
-            ))?)
+            ))
     }
 }
 
@@ -545,7 +545,7 @@ impl ConsensusManagerBlueprint {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
                     "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
-                    "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
+                    "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png"), locked;
                 },
                 Some(validator_token_address_reservation),
                 api,
@@ -590,13 +590,13 @@ impl ConsensusManagerBlueprint {
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
                 indexmap! {
-                    ConsensusManagerField::Configuration.field_index() => FieldValue::immutable(&ConsensusManagerConfigurationFieldPayload::from_content_source(config)),
-                    ConsensusManagerField::State.field_index() => FieldValue::new(&ConsensusManagerStateFieldPayload::from_content_source(consensus_manager)),
-                    ConsensusManagerField::ValidatorRewards.field_index() => FieldValue::new(&ConsensusManagerValidatorRewardsFieldPayload::from_content_source(validator_rewards)),
-                    ConsensusManagerField::CurrentValidatorSet.field_index() => FieldValue::new(&ConsensusManagerCurrentValidatorSetFieldPayload::from_content_source(current_validator_set)),
-                    ConsensusManagerField::CurrentProposalStatistic.field_index() => FieldValue::new(&ConsensusManagerCurrentProposalStatisticFieldPayload::from_content_source(current_proposal_statistic)),
-                    ConsensusManagerField::ProposerMinuteTimestamp.field_index() => FieldValue::new(&ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(minute_timestamp)),
-                    ConsensusManagerField::ProposerMilliTimestamp.field_index() => FieldValue::new(&ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(milli_timestamp)),
+                    ConsensusManagerField::Configuration.field_index() => FieldValue::immutable(ConsensusManagerConfigurationFieldPayload::from_content_source(config)),
+                    ConsensusManagerField::State.field_index() => FieldValue::new(ConsensusManagerStateFieldPayload::from_content_source(consensus_manager)),
+                    ConsensusManagerField::ValidatorRewards.field_index() => FieldValue::new(ConsensusManagerValidatorRewardsFieldPayload::from_content_source(validator_rewards)),
+                    ConsensusManagerField::CurrentValidatorSet.field_index() => FieldValue::new(ConsensusManagerCurrentValidatorSetFieldPayload::from_content_source(current_validator_set)),
+                    ConsensusManagerField::CurrentProposalStatistic.field_index() => FieldValue::new(ConsensusManagerCurrentProposalStatisticFieldPayload::from_content_source(current_proposal_statistic)),
+                    ConsensusManagerField::ProposerMinuteTimestamp.field_index() => FieldValue::new(ConsensusManagerProposerMinuteTimestampFieldPayload::from_content_source(minute_timestamp)),
+                    ConsensusManagerField::ProposerMilliTimestamp.field_index() => FieldValue::new(ConsensusManagerProposerMilliTimestampFieldPayload::from_content_source(milli_timestamp)),
                 },
             )?
         };
@@ -771,7 +771,7 @@ impl ConsensusManagerBlueprint {
                 let other_epoch_minute = other_arbitrary_precision_instant
                     .seconds_since_unix_epoch
                     .checked_mul(MILLIS_IN_SECOND)
-                    .and_then(|result| Self::milli_to_minute(result))
+                    .and_then(Self::milli_to_minute)
                     .unwrap_or_else(|| {
                         // This is to deal with overflows, i32 MAX and MIN values should work with current time
                         if other_arbitrary_precision_instant
@@ -817,7 +817,7 @@ impl ConsensusManagerBlueprint {
                 let other_epoch_minute = other_arbitrary_precision_instant
                     .seconds_since_unix_epoch
                     .checked_mul(MILLIS_IN_SECOND)
-                    .and_then(|result| Self::milli_to_minute(result))
+                    .and_then(Self::milli_to_minute)
                     .unwrap_or_else(|| {
                         // This is to deal with overflows, i32 MAX and MIN values should work with current time
                         if other_arbitrary_precision_instant
@@ -1591,13 +1591,13 @@ impl ValidatorInfo {
                 return Ok(Decimal::zero());
             }
         }
-        Ok(reliability_reserve
+        reliability_reserve
             .checked_div(max_allowed_unreliability)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
                     ConsensusManagerError::UnexpectedDecimalComputationError,
                 ),
-            ))?)
+            ))
     }
 }
 

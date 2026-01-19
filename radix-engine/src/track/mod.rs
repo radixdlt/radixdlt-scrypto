@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub mod interface;
 pub mod state_updates;
 pub mod track;

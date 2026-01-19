@@ -31,7 +31,7 @@ fn test_balance_changes_when_success() {
             )
             .build(),
         vec![
-            NonFungibleGlobalId::from_public_key(&public_key),
+            NonFungibleGlobalId::from_public_key(public_key),
             owner_badge_addr,
         ],
     );
@@ -51,7 +51,7 @@ fn test_balance_changes_when_success() {
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     let result = receipt.expect_commit_success();
@@ -115,7 +115,7 @@ fn test_balance_changes_when_failure() {
             )
             .build(),
         vec![
-            NonFungibleGlobalId::from_public_key(&public_key),
+            NonFungibleGlobalId::from_public_key(public_key),
             owner_badge_addr,
         ],
     );
@@ -135,7 +135,7 @@ fn test_balance_changes_when_failure() {
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     let result = receipt.expect_commit_failure();
@@ -220,8 +220,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .withdraw_from_account(account, resource_address, dec!("1.0"))
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     let result = receipt.expect_commit_success();

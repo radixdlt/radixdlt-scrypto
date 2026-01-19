@@ -62,6 +62,12 @@ pub type SingleTypeSchemaCompatibilityParameters<S> =
 pub type TypeCollectionSchemaCompatibilityParameters<S> =
     TypeCompatibilityParameters<S, TypeCollectionSchema<S>>;
 
+impl<S: CustomSchema, C: ComparableSchema<S>> Default for TypeCompatibilityParameters<S, C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: CustomSchema, C: ComparableSchema<S>> TypeCompatibilityParameters<S, C> {
     pub fn new() -> Self {
         Self {
@@ -231,7 +237,7 @@ fn assert_schema_compatibility<S: CustomSchema, C: ComparableSchema<S>>(
 
     // Part 1 - Check that latest is equal to the last historic schema version
     let result = latest_schema_version
-        .compare_with(&current, &parameters.comparison_between_current_and_latest);
+        .compare_with(current, &parameters.comparison_between_current_and_latest);
 
     if let Some(error_message) = result.error_message(latest_version_name, "current") {
         let mut error = String::new();
@@ -265,6 +271,6 @@ fn assert_schema_compatibility<S: CustomSchema, C: ComparableSchema<S>>(
 
         previous_schema
             .compare_with(next_schema, &parameters.comparison_between_versions)
-            .assert_valid(previous_version_name, &next_version_name);
+            .assert_valid(previous_version_name, next_version_name);
     }
 }

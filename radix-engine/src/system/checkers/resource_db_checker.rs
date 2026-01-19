@@ -60,16 +60,12 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         match info.blueprint_id.blueprint_name.as_str() {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
                 let field: FungibleResourceManagerField = field_index.try_into().unwrap();
-                match field {
-                    FungibleResourceManagerField::TotalSupply => {
-                        let total_supply: FungibleResourceManagerTotalSupplyFieldPayload =
-                            scrypto_decode(value).unwrap();
-                        let address = ResourceAddress::new_or_panic(node_id.0);
-                        let tracker = self.resources.entry(address).or_default();
-                        tracker.expected =
-                            Some(total_supply.fully_update_and_into_latest_version());
-                    }
-                    _ => {}
+                if field == FungibleResourceManagerField::TotalSupply {
+                    let total_supply: FungibleResourceManagerTotalSupplyFieldPayload =
+                        scrypto_decode(value).unwrap();
+                    let address = ResourceAddress::new_or_panic(node_id.0);
+                    let tracker = self.resources.entry(address).or_default();
+                    tracker.expected = Some(total_supply.fully_update_and_into_latest_version());
                 }
             }
             FUNGIBLE_VAULT_BLUEPRINT => {
@@ -95,49 +91,43 @@ impl ApplicationChecker for ResourceDatabaseChecker {
 
                         self.fungible_vaults.insert(node_id, amount);
                     }
-                    _ => {}
+                    FungibleVaultField::LockedBalance => todo!(),
+                    FungibleVaultField::FreezeStatus => todo!(),
                 }
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT => {
                 let field: NonFungibleResourceManagerField = field_index.try_into().unwrap();
-                match field {
-                    NonFungibleResourceManagerField::TotalSupply => {
-                        let total_supply: NonFungibleResourceManagerTotalSupplyFieldPayload =
-                            scrypto_decode(value).unwrap();
-                        let address = ResourceAddress::new_or_panic(node_id.0);
-                        let tracker = self.resources.entry(address).or_default();
-                        tracker.expected =
-                            Some(total_supply.fully_update_and_into_latest_version());
-                    }
-                    _ => {}
+                if let NonFungibleResourceManagerField::TotalSupply = field {
+                    let total_supply: NonFungibleResourceManagerTotalSupplyFieldPayload =
+                        scrypto_decode(value).unwrap();
+                    let address = ResourceAddress::new_or_panic(node_id.0);
+                    let tracker = self.resources.entry(address).or_default();
+                    tracker.expected = Some(total_supply.fully_update_and_into_latest_version());
                 }
             }
             NON_FUNGIBLE_VAULT_BLUEPRINT => {
                 let field: NonFungibleVaultField = field_index.try_into().unwrap();
-                match field {
-                    NonFungibleVaultField::Balance => {
-                        let vault_balance: NonFungibleVaultBalanceFieldPayload =
-                            scrypto_decode(value).unwrap();
-                        let address = ResourceAddress::new_or_panic(
-                            info.outer_obj_info.expect().into_node_id().0,
-                        );
-                        let tracker = self.resources.entry(address).or_default();
-                        let vault_balance = vault_balance.fully_update_and_into_latest_version();
-                        tracker.tracking_supply = tracker
-                            .tracking_supply
-                            .checked_add(vault_balance.amount)
-                            .unwrap();
+                if field == NonFungibleVaultField::Balance {
+                    let vault_balance: NonFungibleVaultBalanceFieldPayload =
+                        scrypto_decode(value).unwrap();
+                    let address = ResourceAddress::new_or_panic(
+                        info.outer_obj_info.expect().into_node_id().0,
+                    );
+                    let tracker = self.resources.entry(address).or_default();
+                    let vault_balance = vault_balance.fully_update_and_into_latest_version();
+                    tracker.tracking_supply = tracker
+                        .tracking_supply
+                        .checked_add(vault_balance.amount)
+                        .unwrap();
 
-                        let non_fungible_vault_tracker =
-                            self.non_fungible_vaults.entry(node_id).or_default();
+                    let non_fungible_vault_tracker =
+                        self.non_fungible_vaults.entry(node_id).or_default();
 
-                        if vault_balance.amount.is_negative() {
-                            panic!("Found Non Fungible Vault negative balance");
-                        }
-
-                        non_fungible_vault_tracker.expected = Some(vault_balance.amount);
+                    if vault_balance.amount.is_negative() {
+                        panic!("Found Non Fungible Vault negative balance");
                     }
-                    _ => {}
+
+                    non_fungible_vault_tracker.expected = Some(vault_balance.amount);
                 }
             }
             CONSENSUS_MANAGER_BLUEPRINT => {
@@ -194,21 +184,18 @@ impl ApplicationChecker for ResourceDatabaseChecker {
             return;
         }
 
-        match info.blueprint_id.blueprint_name.as_str() {
-            NON_FUNGIBLE_VAULT_BLUEPRINT => {
-                let collection: NonFungibleVaultCollection = collection_index.try_into().unwrap();
-                match collection {
-                    NonFungibleVaultCollection::NonFungibleIndex => {
-                        let non_fungible_vault_tracker =
-                            self.non_fungible_vaults.entry(node_id).or_default();
-                        non_fungible_vault_tracker.tracking_supply = non_fungible_vault_tracker
-                            .tracking_supply
-                            .checked_add(Decimal::one())
-                            .unwrap();
-                    }
+        if let NON_FUNGIBLE_VAULT_BLUEPRINT = info.blueprint_id.blueprint_name.as_str() {
+            let collection: NonFungibleVaultCollection = collection_index.try_into().unwrap();
+            match collection {
+                NonFungibleVaultCollection::NonFungibleIndex => {
+                    let non_fungible_vault_tracker =
+                        self.non_fungible_vaults.entry(node_id).or_default();
+                    non_fungible_vault_tracker.tracking_supply = non_fungible_vault_tracker
+                        .tracking_supply
+                        .checked_add(Decimal::one())
+                        .unwrap();
                 }
             }
-            _ => {}
         }
     }
 

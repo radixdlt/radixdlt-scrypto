@@ -40,6 +40,6 @@ pub fn from_non_fungible_local_id(id: NonFungibleLocalId) -> ManifestNonFungible
         NonFungibleLocalId::Bytes(i) => {
             ManifestNonFungibleLocalId::bytes(i.value().to_owned()).unwrap()
         }
-        NonFungibleLocalId::RUID(i) => ManifestNonFungibleLocalId::ruid(i.value().clone()),
+        NonFungibleLocalId::RUID(i) => ManifestNonFungibleLocalId::ruid(*i.value()),
     }
 }

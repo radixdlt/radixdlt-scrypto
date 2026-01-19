@@ -1,7 +1,6 @@
 use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::math::Decimal;
 use radix_common::prelude::*;
 use sbor::rust::collections::IndexSet;
@@ -39,17 +38,17 @@ define_type_marker!(Some(ACCOUNT_PACKAGE), Account);
 
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AccountCreateAdvancedInput {
     pub owner_role: OwnerRole,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountCreateAdvancedManifestInput {
-    pub owner_role: OwnerRole,
+    pub owner_role: ManifestOwnerRole,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
@@ -61,7 +60,7 @@ pub type AccountCreateAdvancedOutput = Global<AccountMarker>;
 
 pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 
@@ -123,7 +122,7 @@ pub struct AccountDepositInput {
     pub bucket: Bucket,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountDepositManifestInput {
     pub bucket: ManifestBucket,
 }
@@ -141,7 +140,7 @@ pub struct AccountDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountDepositBatchManifestInput {
     pub buckets: ManifestBucketBatch,
 }
@@ -154,13 +153,13 @@ pub type AccountDepositBatchOutput = ();
 
 pub const ACCOUNT_WITHDRAW_IDENT: &str = "withdraw";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountWithdrawInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountWithdrawManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
@@ -174,13 +173,13 @@ pub type AccountWithdrawOutput = Bucket;
 
 pub const ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT: &str = "withdraw_non_fungibles";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountWithdrawNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountWithdrawNonFungiblesManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
@@ -194,14 +193,14 @@ pub type AccountWithdrawNonFungiblesOutput = Bucket;
 
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT: &str = "lock_fee_and_withdraw";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountLockFeeAndWithdrawInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountLockFeeAndWithdrawManifestInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ManifestResourceAddress,
@@ -217,14 +216,14 @@ pub type AccountLockFeeAndWithdrawOutput = Bucket;
 pub const ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT: &str =
     "lock_fee_and_withdraw_non_fungibles";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountLockFeeAndWithdrawNonFungiblesManifestInput {
     pub amount_to_lock: Decimal,
     pub resource_address: ManifestResourceAddress,
@@ -239,13 +238,13 @@ pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
 
 pub const ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountCreateProofOfAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountCreateProofOfAmountManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
@@ -259,13 +258,13 @@ pub type AccountCreateProofOfAmountOutput = Proof;
 
 pub const ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountCreateProofOfNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountCreateProofOfNonFungiblesManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
@@ -294,13 +293,13 @@ pub type AccountSetDefaultDepositRuleOutput = ();
 
 pub const ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT: &str = "set_resource_preference";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountSetResourcePreferenceInput {
     pub resource_address: ResourceAddress,
     pub resource_preference: ResourcePreference,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountSetResourcePreferenceManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub resource_preference: ResourcePreference,
@@ -314,12 +313,12 @@ pub type AccountSetResourcePreferenceOutput = ();
 
 pub const ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT: &str = "remove_resource_preference";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountRemoveResourcePreferenceInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountRemoveResourcePreferenceManifestInput {
     pub resource_address: ManifestResourceAddress,
 }
@@ -338,7 +337,7 @@ pub struct AccountTryDepositOrRefundInput {
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountTryDepositOrRefundManifestInput {
     pub bucket: ManifestBucket,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
@@ -358,7 +357,7 @@ pub struct AccountTryDepositBatchOrRefundInput {
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountTryDepositBatchOrRefundManifestInput {
     pub buckets: ManifestBucketBatch,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
@@ -378,7 +377,7 @@ pub struct AccountTryDepositOrAbortInput {
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountTryDepositOrAbortManifestInput {
     pub bucket: ManifestBucket,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
@@ -398,7 +397,7 @@ pub struct AccountTryDepositBatchOrAbortInput {
     pub authorized_depositor_badge: Option<ResourceOrNonFungible>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountTryDepositBatchOrAbortManifestInput {
     pub buckets: ManifestBucketBatch,
     pub authorized_depositor_badge: Option<ManifestResourceOrNonFungible>,
@@ -412,13 +411,13 @@ pub type AccountTryDepositBatchOrAbortOutput = ();
 
 pub const ACCOUNT_BURN_IDENT: &str = "burn";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountBurnInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountBurnManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub amount: Decimal,
@@ -432,13 +431,13 @@ pub type AccountBurnOutput = ();
 
 pub const ACCOUNT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungibles";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountBurnNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountBurnNonFungiblesManifestInput {
     pub resource_address: ManifestResourceAddress,
     pub ids: IndexSet<NonFungibleLocalId>,
@@ -452,12 +451,12 @@ pub type AccountBurnNonFungiblesOutput = ();
 
 pub const ACCOUNT_ADD_AUTHORIZED_DEPOSITOR_IDENT: &str = "add_authorized_depositor";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountAddAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountAddAuthorizedDepositorManifestInput {
     pub badge: ManifestResourceOrNonFungible,
 }
@@ -470,12 +469,12 @@ pub type AccountAddAuthorizedDepositorOutput = ();
 
 pub const ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR_IDENT: &str = "remove_authorized_depositor";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountRemoveAuthorizedDepositorInput {
     pub badge: ResourceOrNonFungible,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct AccountRemoveAuthorizedDepositorManifestInput {
     pub badge: ManifestResourceOrNonFungible,
 }
@@ -488,13 +487,13 @@ pub type AccountRemoveAuthorizedDepositorOutput = ();
 
 pub const ACCOUNT_BALANCE_IDENT: &str = "balance";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountBalanceInput {
     pub resource_address: ResourceAddress,
 }
 
-#[derive(Debug, Eq, PartialEq, ManifestSbor)]
-pub struct AccountBalanceDynamicInput {
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccountBalanceManifestInput {
     pub resource_address: ManifestResourceAddress,
 }
 
@@ -506,13 +505,17 @@ pub type AccountBalanceOutput = Decimal;
 
 pub const ACCOUNT_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "non_fungible_local_ids";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountNonFungibleLocalIdsInput {
     pub resource_address: ResourceAddress,
     pub limit: u32,
 }
 
-pub type AccountNonFungibleLocalIdsManifestInput = AccountNonFungibleLocalIdsInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccountNonFungibleLocalIdsManifestInput {
+    pub resource_address: ManifestResourceAddress,
+    pub limit: u32,
+}
 
 pub type AccountNonFungibleLocalIdsOutput = IndexSet<NonFungibleLocalId>;
 
@@ -522,12 +525,16 @@ pub type AccountNonFungibleLocalIdsOutput = IndexSet<NonFungibleLocalId>;
 
 pub const ACCOUNT_HAS_NON_FUNGIBLE_IDENT: &str = "has_non_fungible";
 
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct AccountHasNonFungibleInput {
     pub resource_address: ResourceAddress,
     pub local_id: NonFungibleLocalId,
 }
 
-pub type AccountHasNonFungibleManifestInput = AccountHasNonFungibleInput;
+#[derive(Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct AccountHasNonFungibleManifestInput {
+    pub resource_address: ManifestResourceAddress,
+    pub local_id: NonFungibleLocalId,
+}
 
 pub type AccountHasNonFungibleOutput = bool;

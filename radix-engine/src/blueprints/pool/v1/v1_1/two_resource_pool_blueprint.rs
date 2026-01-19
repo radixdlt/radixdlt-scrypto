@@ -172,11 +172,11 @@ impl TwoResourcePoolBlueprint {
     /// There are common patterns that can be seen from the states above:
     ///
     /// * State 1: When PU = 0 the pool is considered new, the amount of reserves do not really
-    /// matter as the amount of pool units that the pool mins is the same.
+    ///   matter as the amount of pool units that the pool mins is the same.
     /// * State 2: When PU = 1 and *all* reserves are empty then this is an illegal state that the
-    /// pool can't really do anything about.
+    ///   pool can't really do anything about.
     /// * State 3: When PU = 1 and _some but not all_ of the reserves are empty then the resources
-    /// with the empty reserves are not contributed to the pool and are returned as change.
+    ///   with the empty reserves are not contributed to the pool and are returned as change.
     /// * State 4: When all is 1 then the pool is in normal operations.
     ///
     /// The above state names will be used in tests as its better than calling them out by name or

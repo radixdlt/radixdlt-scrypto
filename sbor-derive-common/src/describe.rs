@@ -85,7 +85,7 @@ fn handle_describe_as(
         ..
     } = &parsed;
     let (impl_generics, ty_generics, where_clause, _, custom_type_kind_generic) =
-        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
+        build_describe_generics(generics, attrs, context_custom_type_kind)?;
 
     // Prepare base conditions before any overrides
     let mut is_fully_transparent = true;
@@ -199,7 +199,7 @@ fn handle_normal_describe(
             fields_data_to_type_data(&custom_type_kind_generic, &type_name, &fields_data)?
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
+            let EnumVariantsData { sbor_variants, .. } = process_enum_variants(attrs, variants)?;
 
             let match_arms = sbor_variants
                 .iter()
@@ -214,7 +214,7 @@ fn handle_normal_describe(
                             fields_data_to_type_data(
                                 &custom_type_kind_generic,
                                 &variant_name_str,
-                                &fields_data,
+                                fields_data,
                             )?
                         }
                         FieldsHandling::Flatten { unique_field, .. } => {
@@ -344,7 +344,7 @@ fn validate_schema_ident(
     ident_category_name: &str,
     name: &str,
 ) -> core::result::Result<(), String> {
-    if name.len() == 0 {
+    if name.is_empty() {
         return Err(format!("{ident_category_name} cannot be empty"));
     }
 
@@ -355,7 +355,7 @@ fn validate_schema_ident(
     }
 
     let first_char = name.chars().next().unwrap();
-    if !matches!(first_char, 'A'..='Z' | 'a'..='z') {
+    if !first_char.is_ascii_alphabetic() {
         return Err(format!(
             "{ident_category_name} must match [A-Za-z][0-9A-Za-z_]{{0,99}}"
         ));

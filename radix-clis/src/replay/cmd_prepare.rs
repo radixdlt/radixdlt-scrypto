@@ -42,12 +42,12 @@ impl TxnPrepare {
         let enc = GzEncoder::new(tar_gz, Compression::default());
         let mut tar = tar::Builder::new(enc);
 
-        let mut txn_iter = db.iterator_cf(
+        let txn_iter = db.iterator_cf(
             &db.cf_handle(TRANSACTION_COLUMN).unwrap(),
             IteratorMode::From(&[], Direction::Forward),
         );
         let mut last_version = 0u64;
-        while let Some(txn) = txn_iter.next() {
+        for txn in txn_iter {
             // read transaction
             let txn = txn.map_err(Error::DatabaseError)?;
             let version = u64::from_be_bytes(txn.0.to_vec().try_into().unwrap());

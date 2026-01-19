@@ -49,9 +49,9 @@ pub use config::*;
 pub use dumper::*;
 pub use error::*;
 
-pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
-pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
-pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
+pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &str = ".scrypto";
+pub const ENV_DATA_DIR: &str = "DATA_DIR";
+pub const ENV_DISABLE_MANIFEST_OUTPUT: &str = "DISABLE_MANIFEST_OUTPUT";
 
 use crate::prelude::*;
 use clap::{Parser, Subcommand};
@@ -183,7 +183,7 @@ pub fn handle_manifest<O: std::io::Write>(
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, String> {
     let network = match network {
-        Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+        Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
     };
 
@@ -193,7 +193,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
     match write_manifest {
         Some(path) => {
-            if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
+            if env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_err() {
                 let manifest_str =
                     decompile_any(&manifest, &network).map_err(Error::DecompileError)?;
                 write_ensuring_folder_exists(path, manifest_str).map_err(Error::IOError)?;
@@ -216,7 +216,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
                 .into_iter()
-                .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
+                .map(|e| NonFungibleGlobalId::from_public_key(e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
             let validator = TransactionValidator::new(&db, &NetworkDefinition::simulator());
@@ -468,18 +468,16 @@ mod tests {
         .unwrap();
         let public_key = private_key.public_key().to_string();
 
-        let make_cmd = |key_string: String| {
-            return SetDefaultAccount {
-                component_address: SimulatorComponentAddress::from_str(
-                    "account_sim1c9yeaya6pehau0fn7vgavuggeev64gahsh05dauae2uu25njk224xz",
-                )
-                .unwrap(),
-                private_key: key_string,
-                owner_badge: SimulatorNonFungibleGlobalId::from_str(
-                    "resource_sim1ngvrads4uj3rgq2v9s78fzhvry05dw95wzf3p9r8skhqusf44dlvmr:#1#",
-                )
-                .unwrap(),
-            };
+        let make_cmd = |key_string: String| SetDefaultAccount {
+            component_address: SimulatorComponentAddress::from_str(
+                "account_sim1c9yeaya6pehau0fn7vgavuggeev64gahsh05dauae2uu25njk224xz",
+            )
+            .unwrap(),
+            private_key: key_string,
+            owner_badge: SimulatorNonFungibleGlobalId::from_str(
+                "resource_sim1ngvrads4uj3rgq2v9s78fzhvry05dw95wzf3p9r8skhqusf44dlvmr:#1#",
+            )
+            .unwrap(),
         };
 
         assert!(make_cmd(private_key.to_hex()).run(&mut out).is_ok());

@@ -80,6 +80,7 @@ pub trait SystemActorIndexApi<E> {
     }
 
     /// Removes and returns arbitrary elements of count from an index
+    #[allow(clippy::type_complexity)]
     fn actor_index_drain(
         &mut self,
         object_handle: ActorStateHandle,

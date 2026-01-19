@@ -3,7 +3,7 @@ use crate::schema::*;
 
 pub const MAX_NUMBER_OF_FIELDS: usize = 1024;
 
-pub fn validate_type_kind<'a, S: CustomSchema>(
+pub fn validate_type_kind<S: CustomSchema>(
     context: &SchemaContext,
     type_kind: &LocalTypeKind<S>,
 ) -> Result<(), SchemaValidationError> {

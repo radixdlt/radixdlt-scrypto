@@ -23,7 +23,7 @@ impl<T: NonFungibleData> From<NonFungibleGlobalId> for NonFungible<T> {
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        self.non_fungible_global_id.resource_address().clone()
+        self.non_fungible_global_id.resource_address()
     }
 
     /// Returns a reference to the non-fungible address.

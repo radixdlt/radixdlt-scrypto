@@ -1,3 +1,9 @@
+#![allow(
+    // Allowed since many of the result types we use are quite large and fixing them one by one is 
+    // not something we can easily do.
+    // TODO: Remove this in the future.
+    clippy::result_large_err
+)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(any(feature = "std", feature = "alloc")))]
@@ -35,6 +41,7 @@ pub mod prelude {}
 pub(crate) mod internal_prelude {
     pub use crate::accounts::*;
     pub use crate::scenario::*;
+    pub use crate::utils::*;
     pub use radix_common::prelude::*;
     pub use radix_engine::errors::*;
     pub use radix_engine::transaction::*;

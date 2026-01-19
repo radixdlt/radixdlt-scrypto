@@ -37,6 +37,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
+#[allow(clippy::upper_case_acronyms)]
 enum ActorStateRef {
     SELF,
     OuterObject,
@@ -55,6 +56,7 @@ impl TryFrom<ActorStateHandle> for ActorStateRef {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 enum ActorObjectRef {
     SELF,
     Outer,
@@ -116,6 +118,7 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
 impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
+    #[allow(clippy::too_many_arguments)]
     fn validate_new_object(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -290,9 +293,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
             MAIN_BASE_PARTITION,
         );
 
-        let schema_partition = node_substates
-            .entry(SCHEMAS_PARTITION)
-            .or_insert(BTreeMap::new());
+        let schema_partition = node_substates.entry(SCHEMAS_PARTITION).or_default();
 
         for (schema_hash, schema) in additional_schemas {
             let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
@@ -309,7 +310,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         blueprint_id: BlueprintId,
     ) -> Result<Rc<BlueprintDefinition>, RuntimeError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name);
-        Ok(self.load_blueprint_definition(blueprint_id.package_address, &bp_version_key)?)
+        self.load_blueprint_definition(blueprint_id.package_address, &bp_version_key)
     }
 
     pub fn load_blueprint_definition(
@@ -320,7 +321,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         let canonical_bp_id = CanonicalBlueprintId {
             address: package_address,
             blueprint: bp_version_key.blueprint.to_string(),
-            version: bp_version_key.version.clone(),
+            version: bp_version_key.version,
         };
 
         // TODO: Use internment to cache blueprint interface rather than object cache?
@@ -378,7 +379,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         // Create global address phantom
 
         self.api.kernel_create_node(
-            global_address.as_node_id().clone(),
+            *global_address.as_node_id(),
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom {
@@ -396,7 +397,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
             global_address_reservation,
             btreemap!(
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                    TypeInfoSubstate::GlobalAddressReservation(global_address.clone())
+                    TypeInfoSubstate::GlobalAddressReservation(global_address)
                 )
             ),
         )?;
@@ -531,7 +532,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
             }
         }
 
-        Ok(node_id.into())
+        Ok(node_id)
     }
 
     fn emit_event_internal(
@@ -1010,7 +1011,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
                         .modules
                         .add_replacement(
                             (*node_id, ModuleId::Main),
-                            (*global_address.as_node_id(), module_id.clone().into()),
+                            (*global_address.as_node_id(), (*module_id).into()),
                         );
 
                     // Move and drop
@@ -1021,7 +1022,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
                         .state
                         .num_logical_partitions();
 
-                    let module_id: ModuleId = module_id.clone().into();
+                    let module_id: ModuleId = (*module_id).into();
                     let module_base_partition = module_id.base_partition_num();
                     for offset in 0u8..num_logical_partitions {
                         let src = MAIN_BASE_PARTITION
@@ -1043,7 +1044,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         {
             let mut module_versions = index_map_new();
             for module_id in modules.keys() {
-                module_versions.insert(module_id.clone(), BlueprintVersion::default());
+                module_versions.insert(*module_id, BlueprintVersion::default());
             }
             object_info.object_type = ObjectType::Global {
                 modules: module_versions,
@@ -1061,7 +1062,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         {
             self.kernel_drop_node(&node_id)?;
             for (_module_id, node_id) in &modules {
-                self.kernel_drop_node(&node_id)?;
+                self.kernel_drop_node(node_id)?;
             }
         }
 
@@ -1077,7 +1078,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
             _ => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
@@ -1319,7 +1320,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
         )?;
 
         self.emit_event_internal(
-            EmitterActor::AsObject(global_address.as_node_id().clone(), None),
+            EmitterActor::AsObject(*global_address.as_node_id(), None),
             event_name.to_string(),
             event_data,
             EventFlags::empty(),
@@ -1335,7 +1336,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let object_info = self.get_object_info(&receiver)?;
+        let object_info = self.get_object_info(receiver)?;
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1355,9 +1356,9 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
                     method_type: MethodType::Main,
-                    node_id: receiver.clone(),
+                    node_id: *receiver,
                     ident: method_name.to_string(),
-                    auth_zone: auth_actor_info.clone(),
+                    auth_zone: auth_actor_info,
                     object_info,
                 }),
                 args,
@@ -1376,7 +1377,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let object_info = self.get_object_info(&receiver)?;
+        let object_info = self.get_object_info(receiver)?;
 
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1396,10 +1397,10 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
                     method_type: MethodType::Direct,
-                    node_id: receiver.clone(),
+                    node_id: *receiver,
                     ident: method_name.to_string(),
 
-                    auth_zone: auth_actor_info.clone(),
+                    auth_zone: auth_actor_info,
                     object_info,
                 }),
                 args,
@@ -1421,7 +1422,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Key Value Stores do not have methods so we remove that possibility here
-        let object_info = self.get_object_info(&receiver)?;
+        let object_info = self.get_object_info(receiver)?;
         match &object_info.object_type {
             ObjectType::Owned => {
                 return Err(RuntimeError::SystemError(
@@ -1455,10 +1456,10 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
             .kernel_invoke(Box::new(KernelInvocation {
                 call_frame_data: Actor::Method(MethodActor {
                     method_type: MethodType::Module(module_id),
-                    node_id: receiver.clone(),
+                    node_id: *receiver,
                     ident: method_name.to_string(),
 
-                    auth_zone: auth_actor_info.clone(),
+                    auth_zone: auth_actor_info,
                     object_info,
                 }),
                 args,
@@ -1491,7 +1492,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
     // Costing through kernel
     #[trace_resources]
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let address = match type_info {
             TypeInfoSubstate::GlobalAddressReservation(address) => address,
             _ => {
@@ -1559,12 +1560,12 @@ impl<'a, Y: SystemBasedKernelApi> SystemObjectApi<RuntimeError> for SystemServic
             }
         }
 
-        let mut dropped_node = self.api.kernel_drop_node(&node_id)?;
+        let mut dropped_node = self.api.kernel_drop_node(node_id)?;
         let fields =
             if let Some(user_substates) = dropped_node.substates.remove(&MAIN_BASE_PARTITION) {
                 user_substates
-                    .into_iter()
-                    .map(|(_key, v)| {
+                    .into_values()
+                    .map(|v| {
                         let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
                         scrypto_encode(&substate.into_payload()).unwrap()
                     })
@@ -1768,7 +1769,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemKeyValueStoreApi<RuntimeError> for Syste
         let generic_substitutions = KeyValueStoreGenericSubstitutions {
             key_generic_substitution: key_type,
             value_generic_substitution: value_type,
-            allow_ownership: allow_ownership,
+            allow_ownership,
         };
 
         let node_id = self
@@ -1799,7 +1800,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemKeyValueStoreApi<RuntimeError> for Syste
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
 
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
@@ -1815,7 +1816,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemKeyValueStoreApi<RuntimeError> for Syste
             meta: *node_id,
         };
 
-        self.validate_kv_store_payload(&target, KeyOrValue::Key, &key)?;
+        self.validate_kv_store_payload(&target, KeyOrValue::Key, key)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {
@@ -1826,7 +1827,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemKeyValueStoreApi<RuntimeError> for Syste
         };
 
         let handle = self.api.kernel_open_substate_with_default(
-            &node_id,
+            node_id,
             MAIN_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
@@ -2133,7 +2134,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemBlueprintApi<RuntimeError> for SystemSer
                 call_frame_data: Actor::Function(FunctionActor {
                     blueprint_id,
                     ident: function_name.to_string(),
-                    auth_zone: auth_zone.clone(),
+                    auth_zone,
                 }),
                 args,
             }))
@@ -2555,13 +2556,13 @@ impl<'a, Y: SystemBasedKernelApi> SystemActorApi<RuntimeError> for SystemService
             self.get_actor_field_info(actor_object_type, field_index)?;
 
         // TODO: Remove
-        if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(blueprint_info.blueprint_id.eq(&BlueprintId::new(
+        if (flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE))
+            && !(blueprint_info.blueprint_id.eq(&BlueprintId::new(
                 &RESOURCE_PACKAGE,
                 FUNGIBLE_VAULT_BLUEPRINT,
-            ))) {
-                return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
-            }
+            )))
+        {
+            return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
         }
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -2693,7 +2694,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemActorKeyValueEntryApi<RuntimeError>
         self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
-            &key,
+            key,
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -2816,7 +2817,7 @@ impl<'a, Y: SystemBasedKernelApi> SystemTransactionRuntimeApi<RuntimeError>
             .transaction_runtime
             .network_definition;
 
-        AddressBech32Encoder::new(&network_definition)
+        AddressBech32Encoder::new(network_definition)
             .encode(&address.into_node_id().0)
             .map_err(|_| RuntimeError::SystemError(SystemError::AddressBech32EncodeError))
     }

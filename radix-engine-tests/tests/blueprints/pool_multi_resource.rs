@@ -29,7 +29,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     // Arrange
     let (owner_role, virtual_signature_badge) = {
         let public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
         let rule = rule!(require(virtual_signature_badge.clone()));
         (OwnerRole::Fixed(rule), virtual_signature_badge)
     };
@@ -420,8 +420,8 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
             MultiResourcePoolInstantiateManifestInput {
                 resource_addresses: indexset!(non_fungible_resource.into()),
-                pool_manager_rule: rule!(allow_all),
-                owner_role: OwnerRole::None,
+                pool_manager_rule: rule!(allow_all).into(),
+                owner_role: OwnerRole::None.into(),
                 address_reservation: None,
             },
         )
@@ -791,17 +791,15 @@ fn get_redemption_value_should_not_panic_on_large_values() {
 }
 
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
-    match event_type_identifier.0 {
-        Emitter::Method(node_id, ModuleId::Main) => match node_id.entity_type() {
-            Some(
-                EntityType::GlobalOneResourcePool
-                | EntityType::GlobalTwoResourcePool
-                | EntityType::GlobalMultiResourcePool,
-            ) => true,
-            _ => false,
-        },
-        _ => false,
-    }
+    matches!(
+        event_type_identifier,
+        EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), _)
+        if matches!(node_id.entity_type(), Some(
+            EntityType::GlobalOneResourcePool
+            | EntityType::GlobalTwoResourcePool
+            | EntityType::GlobalMultiResourcePool
+        ))
+    )
 }
 
 struct TestEnvironment<const N: usize> {
@@ -824,7 +822,7 @@ impl<const N: usize> TestEnvironment<N> {
     pub fn new_with_owner(divisibility: [u8; N], owner_role: OwnerRole) -> Self {
         let mut ledger = LedgerSimulatorBuilder::new().build();
         let (public_key, _, account) = ledger.new_account(false);
-        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
 
         let resource_addresses = divisibility.map(|divisibility| {
             ledger.create_freely_mintable_and_burnable_fungible_resource(
@@ -847,8 +845,8 @@ impl<const N: usize> TestEnvironment<N> {
                             .into_iter()
                             .map(Into::into)
                             .collect(),
-                        pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_role,
+                        pool_manager_rule: rule!(require(virtual_signature_badge)).into(),
+                        owner_role: owner_role.into(),
                         address_reservation: None,
                     },
                 )
@@ -970,7 +968,7 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     fn virtual_signature_badge(&self) -> NonFungibleGlobalId {
-        NonFungibleGlobalId::from_public_key(&self.account_public_key)
+        NonFungibleGlobalId::from_public_key(self.account_public_key)
     }
 
     fn initial_proofs(&self, sign: bool) -> Vec<NonFungibleGlobalId> {

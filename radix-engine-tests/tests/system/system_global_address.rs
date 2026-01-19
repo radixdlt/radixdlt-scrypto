@@ -98,7 +98,10 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     struct ResourceOverride(HashSet<String>);
     impl VmInvoke for ResourceOverride {
         fn invoke<
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError>
+                + KernelNodeApi
+                + KernelSubstateApi<SystemLockData>
+                + SystemBasedKernelInternalApi,
             V: VmApi,
         >(
             &mut self,
@@ -146,7 +149,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

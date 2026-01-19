@@ -40,7 +40,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
         .call_method(
             component_address,
             "read_non_existent_entries_from_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -105,7 +105,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
         .call_method(
             component_address,
             "write_entries_to_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -155,7 +155,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
             package_address,
             "TransactionLimitTest",
             "write_entries_to_heap_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -221,11 +221,13 @@ fn test_default_substate_size_limit() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateSizeExceeded(_),
-        )) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxSubstateSizeExceeded(_),
+            ))
+        )
     })
 }
 
@@ -277,11 +279,13 @@ fn test_default_invoke_payload_size_limit() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert #2
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
-        )) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
+            ))
+        )
     })
 }
 
@@ -388,7 +392,7 @@ fn test_allocating_buffers_exceeding_limit() {
         .call_method(
             component_address,
             "allocate_buffers",
-            manifest_args!(100 as u32),
+            manifest_args!(100_u32),
         )
         .build();
 

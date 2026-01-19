@@ -239,7 +239,7 @@ impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
 
     #[inline]
     pub fn get_input_slice(&self) -> &'de [u8] {
-        &self.input
+        self.input
     }
 
     #[inline]
@@ -387,7 +387,7 @@ mod tests {
 
     fn assert_decoding(dec: &mut BasicDecoder) {
         dec.decode::<()>().unwrap();
-        assert_eq!(true, dec.decode::<bool>().unwrap());
+        assert!(dec.decode::<bool>().unwrap());
         assert_eq!(1, dec.decode::<i8>().unwrap());
         assert_eq!(1, dec.decode::<i16>().unwrap());
         assert_eq!(1, dec.decode::<i32>().unwrap());
@@ -540,6 +540,7 @@ mod tests {
     }
 
     #[derive(sbor::Categorize, sbor::Encode, sbor::Decode, PartialEq, Eq, Debug)]
+    #[allow(clippy::upper_case_acronyms)]
     struct NFA {
         a: [u8; 32],
         b: Vec<u8>,

@@ -38,7 +38,7 @@ impl AddressBech32Encoder {
         // Decode the entity type
         let entity_type = EntityType::from_repr(
             *full_data
-                .get(0)
+                .first()
                 .ok_or(AddressBech32EncodeError::MissingEntityTypeByte)?,
         )
         .ok_or_else(|| AddressBech32EncodeError::InvalidEntityTypeId(full_data[0]))?;
@@ -56,7 +56,7 @@ impl AddressBech32Encoder {
     }
 }
 
-/**
+/*
  * NOTE:
  * The below code is copied with minor alterations from the bech32 crate.
  * These alterations are to avoid using std for allocations, and fit with the sbor no-alloc options.
@@ -141,9 +141,9 @@ fn bech32_check_hrp(hrp: &str) -> Result<Bech32Case, bech32::Error> {
             return Err(bech32::Error::InvalidChar(b as char));
         }
 
-        if (b'a'..=b'z').contains(&b) {
+        if b.is_ascii_lowercase() {
             has_lower = true;
-        } else if (b'A'..=b'Z').contains(&b) {
+        } else if b.is_ascii_uppercase() {
             has_upper = true;
         };
 

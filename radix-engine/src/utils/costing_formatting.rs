@@ -180,7 +180,7 @@ mod std_only {
 
         let folder = folder.into();
         let file_path = folder.join(file);
-        let _ = std::fs::create_dir_all(&file_path.parent().unwrap());
+        let _ = std::fs::create_dir_all(file_path.parent().unwrap());
         let mut f = File::create(&file_path).unwrap_or_else(|err| {
             panic!("Failed to create file for costing breakdown: {file_path:?} ({err:?})");
         });

@@ -232,6 +232,12 @@ impl TrackedPartition {
     }
 }
 
+impl Default for TrackedPartition {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub struct TrackedNode {
     pub tracked_partitions: IndexMap<PartitionNumber, TrackedPartition>,
@@ -256,6 +262,7 @@ impl TrackedNode {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub struct IterationCountedIter<'a, E> {
     pub iter:
         Box<dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'a>,
@@ -263,6 +270,7 @@ pub struct IterationCountedIter<'a, E> {
 }
 
 impl<'a, E> IterationCountedIter<'a, E> {
+    #[allow(clippy::type_complexity)]
     pub fn new(
         iter: Box<
             dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'a,
@@ -279,7 +287,7 @@ impl<'a, E> Iterator for IterationCountedIter<'a, E> {
     type Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.num_iterations = self.num_iterations + 1;
+        self.num_iterations += 1;
         self.iter.next()
     }
 }

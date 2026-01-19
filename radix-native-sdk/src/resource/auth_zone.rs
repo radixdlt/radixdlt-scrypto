@@ -65,7 +65,8 @@ impl NativeAuthZone for AuthZoneRef {
             AUTH_ZONE_DROP_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn drop_regular_proofs<Y: SystemApi<E>, E: SystemApiError>(
@@ -77,7 +78,8 @@ impl NativeAuthZone for AuthZoneRef {
             AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn drop_signature_proofs<Y: SystemApi<E>, E: SystemApiError>(
@@ -89,7 +91,8 @@ impl NativeAuthZone for AuthZoneRef {
             AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
             scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn pop<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Option<Proof>, E> {

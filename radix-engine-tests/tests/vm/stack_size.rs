@@ -34,10 +34,10 @@ use radix_engine::system::system_modules::auth::AuthError;
 macro_rules! check_size {
     ($type:ident, $size:expr) => {
         assert!(
-            std::mem::size_of::<$type>() < $size,
+            core::mem::size_of::<$type>() < $size,
             "Size of {} {} greater than {} bytes",
             stringify!($type),
-            std::mem::size_of::<$type>(),
+            core::mem::size_of::<$type>(),
             $size
         )
     };
@@ -47,7 +47,7 @@ macro_rules! print_size {
         println!(
             "{:35} : {:-3}",
             stringify!($type),
-            std::mem::size_of::<$type>()
+            core::mem::size_of::<$type>()
         );
     };
 }

@@ -21,7 +21,7 @@ pub trait ManifestInstruction: Into<AnyInstruction> {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError>;
 
-    fn effect(&self) -> Effect;
+    fn effect(&self) -> Effect<'_>;
 
     fn into_any(self) -> AnyInstruction {
         self.into()
@@ -49,13 +49,13 @@ impl ManifestInstruction for TakeFromWorktop {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(&self.amount)
+            .add_argument(self.resource_address)
+            .add_argument(self.amount)
             .add_argument(context.new_bucket());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateBucket {
             source_amount: BucketSourceAmount::AmountFromWorktop {
                 resource_address: &self.resource_address,
@@ -82,13 +82,13 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
+            .add_argument(self.resource_address)
             .add_argument(&self.ids)
             .add_argument(context.new_bucket());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateBucket {
             source_amount: BucketSourceAmount::NonFungiblesFromWorktop {
                 resource_address: &self.resource_address,
@@ -114,12 +114,12 @@ impl ManifestInstruction for TakeAllFromWorktop {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
+            .add_argument(self.resource_address)
             .add_argument(context.new_bucket());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateBucket {
             source_amount: BucketSourceAmount::AllOnWorktop {
                 resource_address: &self.resource_address,
@@ -142,11 +142,11 @@ impl ManifestInstruction for ReturnToWorktop {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(self.bucket_id);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ConsumeBucket {
             consumed_bucket: self.bucket_id,
             destination: BucketDestination::Worktop,
@@ -168,11 +168,11 @@ impl ManifestInstruction for BurnResource {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.bucket_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(self.bucket_id);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ConsumeBucket {
             consumed_bucket: self.bucket_id,
             destination: BucketDestination::Burned,
@@ -199,11 +199,11 @@ impl ManifestInstruction for AssertWorktopContainsAny {
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction =
-            DecompiledInstruction::new(Self::IDENT).add_argument(&self.resource_address);
+            DecompiledInstruction::new(Self::IDENT).add_argument(self.resource_address);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceNonZeroAmount {
                 resource_address: &self.resource_address,
@@ -228,12 +228,12 @@ impl ManifestInstruction for AssertWorktopContains {
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(&self.amount);
+            .add_argument(self.resource_address)
+            .add_argument(self.amount);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastAmount {
                 resource_address: &self.resource_address,
@@ -259,12 +259,12 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
+            .add_argument(self.resource_address)
             .add_argument(&self.ids);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourceAtLeastNonFungibles {
                 resource_address: &self.resource_address,
@@ -290,7 +290,7 @@ impl ManifestInstruction for AssertWorktopResourcesOnly {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = if self.constraints.specified_resources().len() == 0 {
+        let instruction = if self.constraints.specified_resources().is_empty() {
             DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY")
         } else {
             DecompiledInstruction::new(Self::IDENT).add_argument(&self.constraints)
@@ -299,7 +299,7 @@ impl ManifestInstruction for AssertWorktopResourcesOnly {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesOnly {
                 constraints: &self.constraints,
@@ -329,7 +329,7 @@ impl ManifestInstruction for AssertWorktopResourcesInclude {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Worktop(WorktopAssertion::ResourcesInclude {
                 constraints: &self.constraints,
@@ -362,7 +362,7 @@ impl ManifestInstruction for AssertNextCallReturnsOnly {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsOnly {
                 constraints: &self.constraints,
@@ -396,7 +396,7 @@ impl ManifestInstruction for AssertNextCallReturnsInclude {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::NextCall(NextCallAssertion::ReturnsInclude {
                 constraints: &self.constraints,
@@ -421,12 +421,12 @@ impl ManifestInstruction for AssertBucketContents {
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.bucket_id)
+            .add_argument(self.bucket_id)
             .add_argument(&self.constraint);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ResourceAssertion {
             assertion: ResourceAssertion::Bucket(BucketAssertion::Contents {
                 bucket: self.bucket_id,
@@ -458,13 +458,13 @@ impl ManifestInstruction for CreateProofFromBucketOfAmount {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.bucket_id)
-            .add_argument(&self.amount)
+            .add_argument(self.bucket_id)
+            .add_argument(self.amount)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::BucketAmount {
                 bucket: self.bucket_id,
@@ -492,13 +492,13 @@ impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.bucket_id)
+            .add_argument(self.bucket_id)
             .add_argument(&self.ids)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::BucketNonFungibles {
                 bucket: self.bucket_id,
@@ -525,12 +525,12 @@ impl ManifestInstruction for CreateProofFromBucketOfAll {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.bucket_id)
+            .add_argument(self.bucket_id)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::BucketAllOf {
                 bucket: self.bucket_id,
@@ -556,13 +556,13 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
-            .add_argument(&self.amount)
+            .add_argument(self.resource_address)
+            .add_argument(self.amount)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::AuthZoneAmount {
                 resource_address: &self.resource_address,
@@ -589,13 +589,13 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
+            .add_argument(self.resource_address)
             .add_argument(&self.ids)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::AuthZoneNonFungibles {
                 resource_address: &self.resource_address,
@@ -621,12 +621,12 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.resource_address)
+            .add_argument(self.resource_address)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::AuthZoneAllOf {
                 resource_address: &self.resource_address,
@@ -650,12 +650,12 @@ impl ManifestInstruction for CloneProof {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.proof_id)
+            .add_argument(self.proof_id)
             .add_argument(context.new_proof());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CloneProof {
             cloned_proof: self.proof_id,
         }
@@ -676,11 +676,11 @@ impl ManifestInstruction for DropProof {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(self.proof_id);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ConsumeProof {
             consumed_proof: self.proof_id,
             destination: ProofDestination::Drop,
@@ -702,11 +702,11 @@ impl ManifestInstruction for PushToAuthZone {
         &self,
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
-        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(&self.proof_id);
+        let instruction = DecompiledInstruction::new(Self::IDENT).add_argument(self.proof_id);
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::ConsumeProof {
             consumed_proof: self.proof_id,
             destination: ProofDestination::AuthZone,
@@ -730,7 +730,7 @@ impl ManifestInstruction for PopFromAuthZone {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::AuthZonePopLastAddedProof,
         }
@@ -755,7 +755,7 @@ impl ManifestInstruction for DropAuthZoneProofs {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::DropManyProofs {
             drop_all_named_proofs: false,
             drop_all_authzone_signature_proofs: true,
@@ -782,7 +782,7 @@ impl ManifestInstruction for DropAuthZoneRegularProofs {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::DropManyProofs {
             drop_all_named_proofs: false,
             drop_all_authzone_signature_proofs: false,
@@ -809,7 +809,7 @@ impl ManifestInstruction for DropAuthZoneSignatureProofs {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::DropManyProofs {
             drop_all_named_proofs: false,
             drop_all_authzone_signature_proofs: true,
@@ -836,7 +836,7 @@ impl ManifestInstruction for DropNamedProofs {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::DropManyProofs {
             drop_all_named_proofs: true,
             drop_all_authzone_signature_proofs: false,
@@ -861,7 +861,7 @@ impl ManifestInstruction for DropAllProofs {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::DropManyProofs {
             drop_all_named_proofs: true,
             drop_all_authzone_signature_proofs: true,
@@ -951,7 +951,7 @@ impl CallFunction {
             }
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.package_address)
+            .add_argument(self.package_address)
             .add_argument(&self.blueprint_name)
             .add_argument(&self.function_name)
     }
@@ -969,7 +969,7 @@ impl ManifestInstruction for CallFunction {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::Function {
                 address: &self.package_address,
@@ -1023,7 +1023,7 @@ impl CallMethod {
             }
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.address)
+            .add_argument(self.address)
             .add_argument(&self.method_name)
     }
 }
@@ -1040,7 +1040,7 @@ impl ManifestInstruction for CallMethod {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
@@ -1064,20 +1064,20 @@ impl CallRoyaltyMethod {
         match self.method_name.as_str() {
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT => {
                 return DecompiledInstruction::new("SET_COMPONENT_ROYALTY")
-                    .add_argument(&self.address);
+                    .add_argument(self.address);
             }
             COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT => {
                 return DecompiledInstruction::new("LOCK_COMPONENT_ROYALTY")
-                    .add_argument(&self.address);
+                    .add_argument(self.address);
             }
             COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT => {
                 return DecompiledInstruction::new("CLAIM_COMPONENT_ROYALTIES")
-                    .add_argument(&self.address);
+                    .add_argument(self.address);
             }
             _ => {}
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.address)
+            .add_argument(self.address)
             .add_argument(&self.method_name)
     }
 }
@@ -1094,7 +1094,7 @@ impl ManifestInstruction for CallRoyaltyMethod {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
@@ -1117,18 +1117,18 @@ impl CallMetadataMethod {
     fn decompile_header(&self) -> DecompiledInstruction {
         match self.method_name.as_str() {
             METADATA_SET_IDENT => {
-                return DecompiledInstruction::new("SET_METADATA").add_argument(&self.address);
+                return DecompiledInstruction::new("SET_METADATA").add_argument(self.address);
             }
             METADATA_REMOVE_IDENT => {
-                return DecompiledInstruction::new("REMOVE_METADATA").add_argument(&self.address);
+                return DecompiledInstruction::new("REMOVE_METADATA").add_argument(self.address);
             }
             METADATA_LOCK_IDENT => {
-                return DecompiledInstruction::new("LOCK_METADATA").add_argument(&self.address);
+                return DecompiledInstruction::new("LOCK_METADATA").add_argument(self.address);
             }
             _ => {}
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.address)
+            .add_argument(self.address)
             .add_argument(&self.method_name)
     }
 }
@@ -1145,7 +1145,7 @@ impl ManifestInstruction for CallMetadataMethod {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
@@ -1168,18 +1168,18 @@ impl CallRoleAssignmentMethod {
     fn decompile_header(&self) -> DecompiledInstruction {
         match self.method_name.as_str() {
             ROLE_ASSIGNMENT_SET_OWNER_IDENT => {
-                return DecompiledInstruction::new("SET_OWNER_ROLE").add_argument(&self.address);
+                return DecompiledInstruction::new("SET_OWNER_ROLE").add_argument(self.address);
             }
             ROLE_ASSIGNMENT_LOCK_OWNER_IDENT => {
-                return DecompiledInstruction::new("LOCK_OWNER_ROLE").add_argument(&self.address);
+                return DecompiledInstruction::new("LOCK_OWNER_ROLE").add_argument(self.address);
             }
             ROLE_ASSIGNMENT_SET_IDENT => {
-                return DecompiledInstruction::new("SET_ROLE").add_argument(&self.address);
+                return DecompiledInstruction::new("SET_ROLE").add_argument(self.address);
             }
             _ => {}
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.address)
+            .add_argument(self.address)
             .add_argument(&self.method_name)
     }
 }
@@ -1196,7 +1196,7 @@ impl ManifestInstruction for CallRoleAssignmentMethod {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
@@ -1219,22 +1219,22 @@ impl CallDirectVaultMethod {
     fn decompile_header(&self) -> DecompiledInstruction {
         match self.method_name.as_str() {
             VAULT_RECALL_IDENT => {
-                return DecompiledInstruction::new("RECALL_FROM_VAULT").add_argument(&self.address);
+                return DecompiledInstruction::new("RECALL_FROM_VAULT").add_argument(self.address);
             }
             VAULT_FREEZE_IDENT => {
-                return DecompiledInstruction::new("FREEZE_VAULT").add_argument(&self.address);
+                return DecompiledInstruction::new("FREEZE_VAULT").add_argument(self.address);
             }
             VAULT_UNFREEZE_IDENT => {
-                return DecompiledInstruction::new("UNFREEZE_VAULT").add_argument(&self.address);
+                return DecompiledInstruction::new("UNFREEZE_VAULT").add_argument(self.address);
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 return DecompiledInstruction::new("RECALL_NON_FUNGIBLES_FROM_VAULT")
-                    .add_argument(&self.address);
+                    .add_argument(self.address);
             }
             _ => {}
         }
         DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.address)
+            .add_argument(self.address)
             .add_argument(&self.method_name)
     }
 }
@@ -1251,7 +1251,7 @@ impl ManifestInstruction for CallDirectVaultMethod {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::DirectMethod {
                 address: &self.address,
@@ -1289,14 +1289,14 @@ impl ManifestInstruction for AllocateGlobalAddress {
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction = DecompiledInstruction::new(Self::IDENT)
-            .add_argument(&self.package_address)
+            .add_argument(self.package_address)
             .add_argument(&self.blueprint_name)
             .add_argument(context.new_address_reservation())
             .add_argument(context.new_address());
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::CreateAddressAndReservation {
             package_address: &self.package_address,
             blueprint_name: &self.blueprint_name,
@@ -1346,7 +1346,7 @@ impl ManifestInstruction for YieldToParent {
         DecompiledInstruction::new(Self::IDENT).add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::YieldToParent,
             args: &self.args,
@@ -1374,6 +1374,15 @@ pub struct YieldToChild {
     pub args: ManifestValue,
 }
 
+impl YieldToChild {
+    pub fn empty(index: u32) -> Self {
+        Self {
+            child_index: ManifestNamedIntentIndex(index),
+            args: ManifestValue::unit(),
+        }
+    }
+}
+
 impl ManifestInstruction for YieldToChild {
     const IDENT: &'static str = "YIELD_TO_CHILD";
     const ID: u8 = INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR;
@@ -1388,7 +1397,7 @@ impl ManifestInstruction for YieldToChild {
             .add_separated_tuple_value_arguments(&self.args)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Invocation {
             kind: InvocationKind::YieldToChild {
                 child_index: self.child_index.into(),
@@ -1421,7 +1430,7 @@ impl ManifestInstruction for VerifyParent {
         Ok(instruction)
     }
 
-    fn effect(&self) -> Effect {
+    fn effect(&self) -> Effect<'_> {
         Effect::Verification {
             verification: VerificationKind::Parent,
             access_rule: &self.access_rule,

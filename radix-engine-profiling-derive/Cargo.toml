@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-profiling-derive"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "Macros for profiling to any function inside engine implementation, from the Radix DLT project."
 readme = "README.md"

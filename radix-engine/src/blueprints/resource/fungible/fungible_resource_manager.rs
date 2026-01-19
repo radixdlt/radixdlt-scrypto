@@ -420,6 +420,7 @@ impl FungibleResourceManagerBlueprint {
         Ok(ResourceAddress::new_or_panic(address.into()))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_with_initial_supply<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         track_total_supply: bool,
@@ -450,8 +451,8 @@ impl FungibleResourceManagerBlueprint {
                 metadata,
                 FUNGIBLE_BUCKET_BLUEPRINT,
                 indexmap! {
-                    FungibleBucketField::Liquid.field_index() => FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
-                    FungibleBucketField::Locked.field_index() => FieldValue::new(&LockedFungibleResource::default()),
+                    FungibleBucketField::Liquid.field_index() => FieldValue::new(LiquidFungibleResource::new(initial_supply)),
+                    FungibleBucketField::Locked.field_index() => FieldValue::new(LockedFungibleResource::default()),
                 },
                 MintFungibleResourceEvent::EVENT_NAME,
                 MintFungibleResourceEvent {
@@ -498,7 +499,7 @@ impl FungibleResourceManagerBlueprint {
 
         let mut fields = indexmap! {
             FungibleResourceManagerField::Divisibility.into() => FieldValue::immutable(
-                    &FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
+                    FungibleResourceManagerDivisibilityFieldPayload::from_content_source(
                         divisibility,
                     ),
                 )
@@ -509,13 +510,13 @@ impl FungibleResourceManagerBlueprint {
         if features.track_total_supply {
             let total_supply_field = if features.mint || features.burn {
                 FieldValue::new(
-                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                    FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
                         initial_supply,
                     ),
                 )
             } else {
                 FieldValue::immutable(
-                    &FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
+                    FungibleResourceManagerTotalSupplyFieldPayload::from_content_source(
                         initial_supply,
                     ),
                 )
@@ -693,8 +694,8 @@ impl FungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             indexmap! {
-                FungibleBucketField::Liquid.into() => FieldValue::new(&LiquidFungibleResource::new(amount)),
-                FungibleBucketField::Locked.into() => FieldValue::new(&LockedFungibleResource::default()),
+                FungibleBucketField::Liquid.into() => FieldValue::new(LiquidFungibleResource::new(amount)),
+                FungibleBucketField::Locked.into() => FieldValue::new(LockedFungibleResource::default()),
             },
         )?;
 
@@ -705,10 +706,10 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<Own, RuntimeError> {
         let mut fields: IndexMap<FieldIndex, FieldValue> = indexmap! {
-            FungibleVaultField::Balance.into() => FieldValue::new(&FungibleVaultBalanceFieldPayload::from_content_source(
+            FungibleVaultField::Balance.into() => FieldValue::new(FungibleVaultBalanceFieldPayload::from_content_source(
                     LiquidFungibleResource::default(),
                 )),
-            FungibleVaultField::LockedBalance.into() => FieldValue::new(&FungibleVaultLockedBalanceFieldPayload::from_content_source(LockedFungibleResource::default())),
+            FungibleVaultField::LockedBalance.into() => FieldValue::new(FungibleVaultLockedBalanceFieldPayload::from_content_source(LockedFungibleResource::default())),
         };
 
         if api.actor_is_feature_enabled(
@@ -717,7 +718,7 @@ impl FungibleResourceManagerBlueprint {
         )? {
             fields.insert(
                 FungibleVaultField::FreezeStatus.into(),
-                FieldValue::new(&FungibleVaultFreezeStatusFieldPayload::from_content_source(
+                FieldValue::new(FungibleVaultFreezeStatusFieldPayload::from_content_source(
                     VaultFrozenFlag::default(),
                 )),
             );
@@ -789,13 +790,13 @@ impl FungibleResourceManagerBlueprint {
             )?
             .fully_update_and_into_latest_version();
 
-        Ok(amount
+        amount
             .for_withdrawal(divisibility, withdraw_strategy)
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::UnexpectedDecimalComputationError,
                 ),
-            ))?)
+            ))
     }
 
     fn assert_mintable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
@@ -814,7 +815,7 @@ impl FungibleResourceManagerBlueprint {
             ));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn assert_burnable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
@@ -833,6 +834,6 @@ impl FungibleResourceManagerBlueprint {
             ));
         }
 
-        return Ok(());
+        Ok(())
     }
 }

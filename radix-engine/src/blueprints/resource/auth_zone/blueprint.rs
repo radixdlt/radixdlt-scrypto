@@ -3,6 +3,7 @@ use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
+use crate::system::system_callback::SystemBasedKernelInternalApi;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::system::type_info::TypeInfoSubstate;
@@ -263,11 +264,24 @@ impl AuthZoneBlueprint {
         Ok(proofs)
     }
 
-    pub fn assert_access_rule<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
+    pub fn assert_access_rule<
+        Y: SystemApi<RuntimeError> + KernelSubstateApi<L> + SystemBasedKernelInternalApi,
+        L: Default,
+    >(
         access_rule: AccessRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
+
+        let system = api.kernel_get_system();
+        if system
+            .versioned_system_logic
+            .assert_access_rule_is_noop_when_auth_module_disabled()
+            && !system.modules.is_auth_enabled()
+        {
+            return Ok(());
+        }
+
         let auth_result =
             Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;
 

@@ -32,7 +32,7 @@ fn test_preview_invalid_direct_access() {
 
     sim.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 }
 
@@ -141,7 +141,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     let network = NetworkDefinition::simulator();
 
     let public_key = Secp256k1PrivateKey::from_u64(99).unwrap().public_key();
-    let withdraw_auth = rule!(require(signature(&public_key)));
+    let withdraw_auth = rule!(require(signature(public_key)));
     let account = ledger.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
     let (_, _, other_account) = ledger.new_allocated_account();
 

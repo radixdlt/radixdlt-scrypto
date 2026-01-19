@@ -28,7 +28,7 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                     }
                 }
                 ManifestAddress::Named(value) => {
-                    if let Some(name) = context.get_address_name(&value) {
+                    if let Some(name) = context.get_address_name(value) {
                         write!(f, "\"{}\"", name)?;
                     } else {
                         write!(f, "\"{}\"", value.0)?;
@@ -36,14 +36,14 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                 }
             },
             ManifestCustomValue::Bucket(value) => {
-                if let Some(name) = context.get_bucket_name(&value) {
+                if let Some(name) = context.get_bucket_name(value) {
                     write!(f, "\"{}\"", name)?;
                 } else {
                     write!(f, "\"{}\"", value.0)?;
                 }
             }
             ManifestCustomValue::Proof(value) => {
-                if let Some(name) = context.get_proof_name(&value) {
+                if let Some(name) = context.get_proof_name(value) {
                     write!(f, "\"{}\"", name)?;
                 } else {
                     write!(f, "\"{}\"", value.0)?;
@@ -59,7 +59,7 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                 };
             }
             ManifestCustomValue::Blob(value) => {
-                write!(f, "\"{}\"", hex::encode(&value.0))?;
+                write!(f, "\"{}\"", hex::encode(value.0))?;
             }
             ManifestCustomValue::Decimal(value) => {
                 write!(f, "\"{}\"", to_decimal(value))?;
@@ -111,7 +111,7 @@ mod tests {
         let payload = manifest_encode(&(
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
-                    FUNGIBLE_RESOURCE.as_node_id().clone(),
+                    *FUNGIBLE_RESOURCE.as_node_id(),
                 )),
             },
             ManifestValue::Custom {

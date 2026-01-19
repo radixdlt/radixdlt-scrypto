@@ -1,0 +1,26 @@
+Name: radiswap_v2
+
+== SUMMARY HASHES ==
+These Dugong hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: f7b7d9b661ceec2c (allowed to change if not deployed to any network)
+Events       : 38589a1d2f911ed4 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- radiswap_dapp_definition_account: account_sim1c9encd7rpek568jyxappxn0y2qyhrdxg2c072evtjcvrpvq5uee8m0
+- radiswap_dapp_owner_badge: resource_sim1ntv8pseux6ahzlmjvh2trcmmnuh32r05qurfrhqr0mjhvp68f9jdha:#1#
+- storing_account: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce
+- user_account_1: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53
+- user_account_2: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8
+- user_account_3: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh
+- radiswap_package: package_sim1pkpwhtl8frp4f7euzce484jrfwzzgzgp9sejfzg3kg0tak256tyzmc
+- pool_1_radiswap: component_sim1cqtqmkqdvdtys3jd2nag9kk09gq9v46cd753cpst6uwdvr2qfkrjh7
+- pool_1_pool: pool_sim1chhckqrgnqg90h833rz8vku98mnffafgkkn27pnsz0fr6qry7fn5v6
+- pool_1_resource_1: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+- pool_1_resource_2: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6
+- pool_1_pool_unit: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av
+- pool_2_radiswap: component_sim1cqzh29hhh5fey5re6kn2hkvdcg9hypr6yh6r5w698m434vdkcc3zdk
+- pool_2_pool: pool_sim1ckg35lyx5wrwxud900w4kyhdrdywnrz5397mhrs7asp6970jdy2ymz
+- pool_2_resource_1: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r
+- pool_2_resource_2: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg
+- pool_2_pool_unit: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh
+

@@ -14,9 +14,11 @@ use scrypto_test::prelude::*;
 #[test]
 fn access_controller_package_definition_v1_0_matches_expected() {
     // Arrange
-    let expected_package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
+    let expected_package_definition = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
         "../../assets/access_controller_v1_package_definition.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     // Act
@@ -705,7 +707,7 @@ fn lock_recovery_fee_is_only_callable_by_primary_recovery_or_confirmation() {
                 .build()
         };
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         if should_succeed {
@@ -811,7 +813,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
                 .build()
         };
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
         // Assert
         if should_succeed {
@@ -1098,7 +1100,7 @@ fn fees_can_be_locked_from_an_access_controller_with_a_badge_primary_role() {
                 AccessControllerLockRecoveryFeeInput { amount: dec!(100) },
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk)],
+        vec![NonFungibleGlobalId::from_public_key(pk)],
     );
 
     // Assert

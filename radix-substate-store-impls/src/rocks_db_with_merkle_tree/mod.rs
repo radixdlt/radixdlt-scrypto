@@ -68,7 +68,7 @@ impl RocksDBWithMerkleTreeSubstateStore {
 
     pub fn get_current_version(&self) -> u64 {
         self.db
-            .get_cf(self.cf(META_CF), &[])
+            .get_cf(self.cf(META_CF), [])
             .unwrap()
             .map(|bytes| {
                 scrypto_decode::<Metadata>(&bytes)
@@ -80,7 +80,7 @@ impl RocksDBWithMerkleTreeSubstateStore {
 
     pub fn get_current_root_hash(&self) -> Hash {
         self.db
-            .get_cf(self.cf(META_CF), &[])
+            .get_cf(self.cf(META_CF), [])
             .unwrap()
             .map(|bytes| {
                 scrypto_decode::<Metadata>(&bytes)
@@ -92,7 +92,7 @@ impl RocksDBWithMerkleTreeSubstateStore {
 
     pub fn overwrite_metadata(&mut self, meta: &Metadata) {
         self.db
-            .put_cf(self.cf(META_CF), &[], scrypto_encode(meta).unwrap())
+            .put_cf(self.cf(META_CF), [], scrypto_encode(meta).unwrap())
             .unwrap();
     }
 }
@@ -301,7 +301,7 @@ impl ListableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
 impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
     fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.db
-            .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
+            .get_cf(self.cf(MERKLE_NODES_CF), encode_key(key))
             .unwrap()
             .map(|bytes| scrypto_decode::<VersionedTreeNode>(&bytes).unwrap())
             .map(|versioned| versioned.fully_update_and_into_latest_version())

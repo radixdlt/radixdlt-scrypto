@@ -1,0 +1,120 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")
+    "Account"
+    AddressReservation("parent_account")
+    NamedAddress("parent_account")
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<1u8>(
+        AddressReservation("parent_account")
+    )
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("free_xrd")
+;
+CALL_METHOD
+    NamedAddress("parent_account")
+    "deposit"
+    Bucket("free_xrd")
+;
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[d28b92b6e84499b83b0797ef5235553eeb7edaa0cea243c1128c2fe737]")
+                    )
+                )
+            )
+        )
+    )
+    true
+    18u8
+    Decimal("1000")
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<0u8>(),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<0u8>(),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Example Scenario Tokens"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")
+    "Account"
+    AddressReservation("child_account")
+    NamedAddress("child_account")
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[d28b92b6e84499b83b0797ef5235553eeb7edaa0cea243c1128c2fe737]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<1u8>(
+        AddressReservation("child_account")
+    )
+;
+CALL_METHOD
+    NamedAddress("child_account")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

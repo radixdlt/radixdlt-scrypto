@@ -23,11 +23,11 @@ fn bench_ed25519_validation(c: &mut Criterion) {
     let message_hash = hash("This is a long message".repeat(100));
     let signer = Ed25519PrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
-    let signature = signer.sign(&message_hash);
+    let signature = signer.sign(message_hash);
 
     c.bench_function("transaction_validation::verify_ed25519", |b| {
         b.iter(|| {
-            verify_ed25519(&message_hash, &public_key, &signature);
+            verify_ed25519(message_hash, &public_key, &signature);
         })
     });
 }

@@ -70,7 +70,7 @@ fn test_static_component_address() {
         )
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -155,18 +155,18 @@ fn static_resource_should_be_callable() {
                 "FungibleResourceManager",
                 "create_with_initial_supply",
                 FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    owner_role: OwnerRole::None,
+                    owner_role: OwnerRole::None.into(),
                     track_total_supply: true,
                     divisibility: 0u8,
-                    resource_roles: FungibleResourceRoles::default(),
-                    metadata: metadata!(),
+                    resource_roles: FungibleResourceRoles::default().into(),
+                    metadata: metadata!().into(),
                     initial_supply: Decimal::from(10),
                     address_reservation: Some(reservation),
                 },
             )
             .deposit_entire_worktop(account)
             .build(),
-        btreeset!(NonFungibleGlobalId::from_public_key(&key)),
+        btreeset!(NonFungibleGlobalId::from_public_key(key)),
     );
     receipt.expect_commit_success();
 

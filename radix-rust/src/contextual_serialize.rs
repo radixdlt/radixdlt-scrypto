@@ -42,7 +42,7 @@ pub trait ContextualSerialize<Context> {
     }
 
     /// Returns an object implementing `serde::Serialize`, which can be passed to `serde` functions.
-    fn serializable<'a, 'b, TContext: Into<Context>>(
+    fn serializable<'a, TContext: Into<Context>>(
         &'a self,
         context: TContext,
     ) -> ContextSerializable<'a, Self, Context> {

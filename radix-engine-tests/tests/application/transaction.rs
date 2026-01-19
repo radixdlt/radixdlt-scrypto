@@ -22,7 +22,7 @@ fn test_manifest_with_non_existent_resource() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -56,7 +56,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -83,7 +83,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -111,16 +111,17 @@ fn test_non_existent_blob_hash() {
                 code: ManifestBlobRef([0; 32]),
                 definition: PackageDefinition {
                     blueprints: indexmap!(),
-                },
-                metadata: metadata_init!(),
-                owner_role: OwnerRole::None,
+                }
+                .into(),
+                metadata: metadata_init!().into(),
+                owner_role: ManifestOwnerRole::from(OwnerRole::None),
                 package_address: None,
             },
         )
         .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -158,7 +159,7 @@ fn test_entire_auth_zone() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -184,7 +185,7 @@ fn test_faucet_drain_attempt_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",

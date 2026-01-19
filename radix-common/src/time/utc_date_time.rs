@@ -84,7 +84,7 @@ impl fmt::Display for DateTimeError {
 /// * Months and days of month are 1-based (i.e. `Dec 15th 2022` corresponds to `2022-12-15`).
 /// * Hour, minute and second are 0-based, based on the 24-hour clock.
 ///   Midnight is represented as `00:00:00` and `23:59:59` is the last second before midnight.
-///   Following Unix timstamp conventions, leap seconds are not supported.
+///   Following Unix timestamp conventions, leap seconds are not supported.
 ///
 /// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
 /// can be queried from the Radix Engine.
@@ -147,7 +147,7 @@ impl UtcDateTime {
             return Err(DateTimeError::InvalidYear);
         }
 
-        if month < 1 || month > 12 {
+        if !(1..=12).contains(&month) {
             return Err(DateTimeError::InvalidMonth);
         }
 
@@ -239,7 +239,7 @@ impl UtcDateTime {
                 400 * num_400_year_cycles
                 + 2000 /* Add the base year (after shifting) */;
 
-        let mut days_in_months_starting_on_march = LEAP_YEAR_DAYS_IN_MONTHS.clone();
+        let mut days_in_months_starting_on_march = LEAP_YEAR_DAYS_IN_MONTHS;
         days_in_months_starting_on_march.rotate_left(2);
 
         let mut month = 0;
@@ -373,7 +373,7 @@ impl UtcDateTime {
     }
 
     fn is_leap_year(year: u32) -> bool {
-        year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+        year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400))
     }
 
     pub fn year(&self) -> u32 {
@@ -434,7 +434,7 @@ impl TryFrom<Instant> for UtcDateTime {
 
 impl From<UtcDateTime> for Instant {
     fn from(dt: UtcDateTime) -> Self {
-        (&dt).to_instant()
+        dt.to_instant()
     }
 }
 
@@ -482,7 +482,7 @@ impl FromStr for UtcDateTime {
     type Err = ParseUtcDateTimeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let chars: Vec<char> = s.chars().into_iter().collect();
+        let chars: Vec<char> = s.chars().collect();
         if chars.len() == 20
             && chars[4] == '-'
             && chars[7] == '-'
@@ -536,7 +536,7 @@ mod tests {
             (-5233420801, [1804, 2, 28, 23, 59, 59]),
             (-2147483648, [1901, 12, 13, 20, 45, 52]),
             (-58147200, [1968, 2, 28, 00, 00, 00]),
-            (-58147199, [1968, 2, 28, 00, 00, 01]),
+            (-58147199, [1968, 2, 28, 00, 00, 1]),
             (-58060801, [1968, 2, 28, 23, 59, 59]),
             (-58060800, [1968, 2, 29, 00, 00, 00]),
             (-1, [1969, 12, 31, 23, 59, 59]),
@@ -593,13 +593,13 @@ mod tests {
         assert_dates(
             [1968, 2, 29, 00, 00, 00],
             |dt| dt.add_days(2).and_then(|dt| dt.add_hours(2)),
-            [1968, 3, 2, 02, 00, 00],
+            [1968, 3, 2, 2, 00, 00],
         );
 
         assert_dates(
             [2028, 2, 29, 23, 59, 59],
             |dt| dt.add_hours(49).and_then(|dt| dt.add_seconds(1)),
-            [2028, 3, 3, 01, 00, 00],
+            [2028, 3, 3, 1, 00, 00],
         );
 
         assert_dates(
@@ -666,7 +666,7 @@ mod tests {
     impl From<[u32; 6]> for UtcDateTime {
         fn from(dt: [u32; 6]) -> UtcDateTime {
             UtcDateTime::new(
-                dt[0] as u32,
+                dt[0],
                 dt[1] as u8,
                 dt[2] as u8,
                 dt[3] as u8,

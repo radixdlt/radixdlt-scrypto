@@ -1,3 +1,10 @@
+#![allow(
+    // Allowed since many of the result types we use are quite large and fixing them one by one is 
+    // not something we can easily do.
+    // TODO: Remove this in the future.
+    clippy::result_large_err
+)]
+
 pub mod builder;
 pub mod data;
 pub mod errors;

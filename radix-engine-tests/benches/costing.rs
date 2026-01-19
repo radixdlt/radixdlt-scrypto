@@ -14,7 +14,6 @@ use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use sbor::rust::iter;
 use scrypto_test::prelude::*;
-use wabt::wat2wasm;
 
 fn generate_interesting_bytes_of_length(length: usize) -> Vec<u8> {
     include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd")
@@ -112,10 +111,11 @@ fn bench_decode_encoded_tuple_array_to_manifest_raw_value(c: &mut Criterion) {
 }
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
-    let package_definition = manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!(
-        "radix-transaction-scenarios",
-        "radiswap.rpd"
-    ))
+    let package_definition = manifest_decode::<ManifestPackageDefinition>(
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd"),
+    )
+    .unwrap()
+    .try_into_typed()
     .unwrap();
     let payload = scrypto_encode(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
@@ -175,9 +175,8 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 // Note that this benchmark replaces the `spin_loop` before this commit, which uses NoOpRuntime
 fn bench_spin_loop_v1(c: &mut Criterion) {
     // Prepare code
-    let code =
-        wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string()))
-            .unwrap();
+    let code_wat = &include_local_wasm_str!("loop.wat").replace("${n}", &i32::MAX.to_string());
+    let code = wat::parse_str(code_wat).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -210,7 +209,8 @@ fn bench_spin_loop_v1(c: &mut Criterion) {
 // There is only one instruction `br` per iteration.
 // It's extremely helpful for stress testing the `consume_wasm_execution_units` host function.
 fn bench_spin_loop_v2(c: &mut Criterion) {
-    let code = wat2wasm(&include_local_wasm_str!("loop_v2.wat")).unwrap();
+    let code_wat = include_local_wasm_str!("loop_v2.wat");
+    let code = wat::parse_str(code_wat).unwrap();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackagePublishingSource::PublishExisting(
         code,
@@ -353,10 +353,12 @@ bench_instantiate!("flash_loan");
 
 fn bench_validate_wasm(c: &mut Criterion) {
     let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
-    let definition: PackageDefinition = manifest_decode(include_workspace_asset_bytes!(
+    let definition = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "radiswap.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     c.bench_function("costing::validate_wasm", |b| {
@@ -382,10 +384,11 @@ fn bench_prepare_wasm(c: &mut Criterion) {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let code =
         include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec();
-    let package_definition: PackageDefinition = manifest_decode(include_workspace_asset_bytes!(
-        "radix-transaction-scenarios",
-        "radiswap.rpd"
-    ))
+    let package_definition = manifest_decode::<ManifestPackageDefinition>(
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd"),
+    )
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
@@ -394,7 +397,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
             ledger.publish_package(
                 (code.clone(), package_definition.clone()),
                 btreemap!(),
-                OwnerRole::Updatable(rule!(require(signature(&pk1)))),
+                OwnerRole::Updatable(rule!(require(signature(pk1)))),
             );
         })
     });

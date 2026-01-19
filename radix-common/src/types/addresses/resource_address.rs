@@ -7,15 +7,13 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
 
 /// Address to a global resource
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "fuzzing", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct ResourceAddress(NodeId); // private to ensure entity type check
 
 impl ResourceAddress {
@@ -25,6 +23,12 @@ impl ResourceAddress {
         Self(node_id)
     }
 
+    /// # Safety
+    ///
+    /// This function doesn't check that the provided [`NodeId`] has the correct [`EntityType`] for
+    /// this address type. The result of calling this constructor function is that you may end up
+    /// with an address whose [`NodeId`] is incorrect (e.g., a [`NodeId`] of a resource on a
+    /// [`PackageAddress`])
     pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -71,8 +75,8 @@ impl ResourceAddress {
 #[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that resource entity type marker is present.
 // Otherwise 'InvalidCustomValue' error is returned
-impl<'a> Arbitrary<'a> for ResourceAddress {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for ResourceAddress {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         use core::cmp::min;
         let resource_entities: [u8; 2] = [
             EntityType::GlobalFungibleResourceManager as u8,
@@ -141,9 +145,9 @@ impl TryFrom<GlobalAddress> for ResourceAddress {
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for ResourceAddress {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0.into()
+impl From<ResourceAddress> for [u8; NodeId::LENGTH] {
+    fn from(val: ResourceAddress) -> Self {
+        val.0.into()
     }
 }
 
@@ -248,9 +252,9 @@ impl fmt::Debug for ResourceAddress {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
     type Error = AddressBech32EncodeError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
@@ -258,8 +262,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ResourceAddress({})", hex::encode(&self.0))
-            .map_err(|err| AddressBech32EncodeError::FormatError(err))
+        write!(f, "ResourceAddress({})", hex::encode(self.0))
+            .map_err(AddressBech32EncodeError::FormatError)
     }
 }
 
@@ -279,7 +283,7 @@ mod tests {
         );
         // validate conversions
         ResourceAddress::try_from_hex(&addr.to_hex()).unwrap();
-        let _ = ManifestAddress::try_from(addr).unwrap();
+        let _ = ManifestAddress::from(addr);
 
         // pass wrong length array to generate an error
         let v = Vec::from([0u8; NodeId::LENGTH + 1]);

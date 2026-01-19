@@ -1,0 +1,24 @@
+USE_CHILD
+    NamedIntent("complex_subintent")
+    Intent("subtxid_sim1vr2gpjvdc3ahtmwd7cp5qrh5qkre0tgere702sg8s5xu4wwh6cqq9hqw5t")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "lock_fee"
+    Decimal("5000")
+;
+YIELD_TO_CHILD
+    NamedIntent("complex_subintent")
+;
+ASSERT_WORKTOP_RESOURCES_ONLY
+    Map<Address, Enum>(
+        Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8") => Enum<1u8>(
+            Decimal("10")
+        )
+    )
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;

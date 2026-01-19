@@ -8,7 +8,7 @@ pub type AggregatorTypeKind<S> =
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-#[sbor(child_types = "T, L", categorize_types = "L")]
+#[sbor(child_types = "T; L", categorize_types = "L")]
 pub enum TypeKind<T: CustomTypeKind<L>, L: SchemaTypeLink> {
     Any,
 

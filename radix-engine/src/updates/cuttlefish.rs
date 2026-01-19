@@ -147,7 +147,7 @@ pub struct CuttlefishPart1Generator {
 }
 
 impl ProtocolUpdateGenerator for CuttlefishPart1Generator {
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         vec![FixedBatchGroupGenerator::named("principal")
             .add_batch("primary", |store| {
                 generate_part1_batch(store, &self.settings)
@@ -161,7 +161,7 @@ pub struct CuttlefishPart2Generator {
 }
 
 impl ProtocolUpdateGenerator for CuttlefishPart2Generator {
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         vec![FixedBatchGroupGenerator::named("principal")
             .add_batch("primary", |store| {
                 generate_part2_batch(store, &self.settings)

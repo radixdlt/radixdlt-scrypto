@@ -112,8 +112,7 @@ fn test_create_non_fungible_proof_with_large_amount() {
         .drop_proof("proof")
         .drop_all_proofs()
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -144,10 +143,10 @@ fn compose_proof(amount: Decimal) -> u32 {
     let receipt = ledger.execute_manifest(
         manifest,
         vec![
-            NonFungibleGlobalId::from_public_key(&pk1),
-            NonFungibleGlobalId::from_public_key(&pk2),
-            NonFungibleGlobalId::from_public_key(&pk3),
-            NonFungibleGlobalId::from_public_key(&pk4),
+            NonFungibleGlobalId::from_public_key(pk1),
+            NonFungibleGlobalId::from_public_key(pk2),
+            NonFungibleGlobalId::from_public_key(pk3),
+            NonFungibleGlobalId::from_public_key(pk4),
         ],
     );
     receipt.fee_summary.total_execution_cost_units_consumed

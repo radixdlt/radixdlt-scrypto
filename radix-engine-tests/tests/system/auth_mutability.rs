@@ -91,7 +91,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     rule!(require(admin_auth)),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success();
 
@@ -120,7 +120,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     rule!(require(admin_auth)),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success();
 
@@ -138,7 +138,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     )
                     .set_role(token_address, ModuleId::Main, role_key, AccessRule::DenyAll)
                     .build(),
-                vec![NonFungibleGlobalId::from_public_key(&public_key)],
+                vec![NonFungibleGlobalId::from_public_key(public_key)],
             )
             .expect_commit_success();
     }
@@ -161,7 +161,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     rule!(require(admin_auth)),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_auth_failure();
 
@@ -182,7 +182,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                     rule!(require(admin_auth)),
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_auth_failure();
 }

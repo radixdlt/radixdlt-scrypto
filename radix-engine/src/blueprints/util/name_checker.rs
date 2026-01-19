@@ -9,7 +9,7 @@ pub fn check_name(name: &str) -> Result<(), InvalidNameError> {
                     return Err(InvalidNameError::InvalidChar {
                         name: name.to_owned(),
                         violating_char: char.to_string(),
-                        index: index,
+                        index,
                     });
                 }
             }

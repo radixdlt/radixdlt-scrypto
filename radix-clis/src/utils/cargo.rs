@@ -52,7 +52,7 @@ pub fn build_package<P: AsRef<Path>>(
     disable_wasm_opt: bool,
     log_level: Level,
     coverage: bool,
-    env: &[(String, String)],
+    env: impl IntoIterator<Item = (String, String)>,
 ) -> Result<Vec<(PathBuf, PathBuf)>, BuildError> {
     let mut compiler_builder = ScryptoCompiler::builder();
     compiler_builder
@@ -69,13 +69,13 @@ pub fn build_package<P: AsRef<Path>>(
         target_path.push("coverage");
         compiler_builder.target_directory(target_path);
     }
-    env.iter().for_each(|(name, value)| {
-        compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
+    env.into_iter().for_each(|(name, value)| {
+        compiler_builder.env(name.as_ref(), EnvironmentVariableAction::Set(value));
     });
 
     let build_results = compiler_builder
         .compile()
-        .map_err(|e| BuildError::ScryptoCompilerError(e))?;
+        .map_err(BuildError::ScryptoCompilerError)?;
 
     Ok(build_results
         .iter()
@@ -89,18 +89,22 @@ pub fn build_package<P: AsRef<Path>>(
 }
 
 /// Runs tests within a package.
-pub fn test_package<P: AsRef<Path>, I, S>(
+pub fn test_package<P: AsRef<Path>, I, S, E, K, V>(
     path: P,
     args: I,
     coverage: bool,
     locked: bool,
+    env_vars: E,
 ) -> Result<(), TestError>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
+    E: IntoIterator<Item = (K, V)>,
+    K: AsRef<OsStr>,
+    V: AsRef<OsStr>,
 {
     if !coverage {
-        build_package(&path, false, Level::Trace, false, &[]).map_err(TestError::BuildError)?;
+        build_package(&path, false, Level::Trace, false, []).map_err(TestError::BuildError)?;
     }
 
     let mut cargo = path.as_ref().to_owned();
@@ -127,6 +131,7 @@ where
             })
             .arg("--")
             .args(args)
+            .envs(env_vars)
             .status()
             .map_err(TestError::IOError)?;
         if !status.success() {

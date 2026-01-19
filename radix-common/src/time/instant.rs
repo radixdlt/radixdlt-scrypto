@@ -1,13 +1,12 @@
 use crate::internal_prelude::*;
 use crate::time::constants::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use sbor::*;
 
 /// Represents a Unix timestamp, capturing the seconds since the unix epoch.
 ///
 /// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
     Copy,
     Clone,

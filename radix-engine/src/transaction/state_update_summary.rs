@@ -42,7 +42,7 @@ impl StateUpdateSummary {
             }
         }
 
-        let vault_balance_changes = BalanceAccounter::new(substate_db, &updates).run();
+        let vault_balance_changes = BalanceAccounter::new(substate_db, updates).run();
 
         StateUpdateSummary {
             new_packages,
@@ -79,7 +79,7 @@ impl StateUpdateSummary {
                 let node_previously_existed = base_substate_db
                     .get_raw_substate(node_id, type_id_partition_number, type_id_substate_key)
                     .is_some();
-                return !node_previously_existed;
+                !node_previously_existed
             })
             .map(|(node_id, _)| node_id);
 
@@ -98,7 +98,7 @@ impl StateUpdateSummary {
             }
         }
 
-        let vault_balance_changes = BalanceAccounter::new(base_substate_db, &updates).run();
+        let vault_balance_changes = BalanceAccounter::new(base_substate_db, updates).run();
 
         StateUpdateSummary {
             new_packages,
@@ -158,7 +158,7 @@ impl BalanceChange {
             BalanceChange::Fungible(x) => x.is_zero(),
             BalanceChange::NonFungible { added, removed } => {
                 let cancelled_out = added
-                    .intersection(&removed)
+                    .intersection(removed)
                     .cloned()
                     .collect::<BTreeSet<_>>();
                 added.retain(|id| !cancelled_out.contains(id));
@@ -261,7 +261,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 new_balance.checked_sub(old_balance).unwrap()
             })
             .filter(|change| change != &Decimal::ZERO) // prune
-            .map(|change| BalanceChange::Fungible(change))
+            .map(BalanceChange::Fungible)
     }
 
     fn calculate_non_fungible_vault_balance_change(

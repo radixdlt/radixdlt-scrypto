@@ -51,6 +51,7 @@ impl ResourceManager {
         Ok(ResourceManager(resource_address))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_fungible_with_initial_supply<
         Y: SystemBlueprintApi<E>,
         E: SystemApiError,
@@ -234,7 +235,8 @@ impl ResourceManager {
             RESOURCE_MANAGER_BURN_IDENT,
             scrypto_encode(&ResourceManagerBurnInput { bucket }).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     pub fn package_burn<Y: SystemObjectApi<E>, E: SystemApiError>(
@@ -248,7 +250,8 @@ impl ResourceManager {
             RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
             scrypto_encode(&ResourceManagerPackageBurnInput { bucket }).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     pub fn total_supply<Y: SystemObjectApi<E>, E: SystemApiError>(
@@ -267,14 +270,14 @@ impl ResourceManager {
         &self,
         api: &mut Y,
     ) -> Result<FungibleBucket, E> {
-        Ok(FungibleBucket(self.new_empty_bucket(api)?.into()))
+        Ok(FungibleBucket(self.new_empty_bucket(api)?))
     }
 
     pub fn new_empty_non_fungible_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
     ) -> Result<NonFungibleBucket, E> {
-        Ok(NonFungibleBucket(self.new_empty_bucket(api)?.into()))
+        Ok(NonFungibleBucket(self.new_empty_bucket(api)?))
     }
 
     pub fn new_empty_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(

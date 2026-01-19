@@ -83,7 +83,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                                         FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                                         FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                                            owner_role: OwnerRole::None,
+                                            owner_role: OwnerRole::None.into(),
                                             track_total_supply: true,
                                             divisibility: 18,
                                             initial_supply: 1.into(),

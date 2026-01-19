@@ -53,17 +53,12 @@ where
 
         let collection_index =
             PackageCollection::from_repr(collection_index).expect("Impossible case!");
-        match collection_index {
-            PackageCollection::BlueprintVersionRoyaltyConfigKeyValue => {
-                let _key = scrypto_decode::<PackageBlueprintVersionRoyaltyConfigKeyPayload>(&key)
-                    .expect("Impossible Case.");
-                let value =
-                    scrypto_decode::<PackageBlueprintVersionRoyaltyConfigEntryPayload>(&value)
-                        .expect("Impossible Case.");
-                self.check_package_royalty_config(value, location);
-            }
-            /* Nothing else to check in the package substates. */
-            _ => return,
+        if collection_index == PackageCollection::BlueprintVersionRoyaltyConfigKeyValue {
+            let _key = scrypto_decode::<PackageBlueprintVersionRoyaltyConfigKeyPayload>(key)
+                .expect("Impossible Case.");
+            let value = scrypto_decode::<PackageBlueprintVersionRoyaltyConfigEntryPayload>(value)
+                .expect("Impossible Case.");
+            self.check_package_royalty_config(value, location);
         }
     }
 

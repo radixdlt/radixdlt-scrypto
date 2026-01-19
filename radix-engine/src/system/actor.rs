@@ -17,7 +17,7 @@ pub enum MethodType {
 impl MethodType {
     pub fn module_id(&self) -> ModuleId {
         match self {
-            MethodType::Module(module_id) => module_id.clone().into(),
+            MethodType::Module(module_id) => (*module_id).into(),
             MethodType::Main | MethodType::Direct => ModuleId::Main,
         }
     }
@@ -67,7 +67,8 @@ pub struct BlueprintHookActor {
     pub blueprint_id: BlueprintId,
 }
 
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Default, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum Actor {
     /// In System V1, there was an explicit call to initialize the transaction processor.
     /// This call has to have an actor making the call, which is the Root.
@@ -77,17 +78,12 @@ pub enum Actor {
     /// This is used to set up the initial AuthZone in [`MultiThreadIntentProcessor::init`].
     ///
     /// [`MultiThreadIntentProcessor::init`]: crate::system::transaction::multithread_intent_processor::MultiThreadIntentProcessor::init
+    // Default is only used by `kernel_create_kernel_for_testing` in the testing framework.
+    #[default]
     Root,
     Method(MethodActor),
     Function(FunctionActor),
     BlueprintHook(BlueprintHookActor),
-}
-
-// This is only used by `kernel_create_kernel_for_testing` in the testing framework.
-impl Default for Actor {
-    fn default() -> Self {
-        Self::Root
-    }
 }
 
 impl CallFrameReferences for Actor {
@@ -107,11 +103,11 @@ impl CallFrameReferences for Actor {
             if let OuterObjectInfo::Some { outer_object } =
                 object_info.blueprint_info.outer_obj_info
             {
-                global_refs.push(outer_object.clone().into_node_id());
+                global_refs.push(outer_object.into_node_id());
             }
 
             if node_id.is_global() {
-                global_refs.push(node_id.clone());
+                global_refs.push(*node_id);
             }
         }
 
@@ -189,9 +185,9 @@ impl Actor {
                 } else {
                     match &method_actor.object_info.blueprint_info.outer_obj_info {
                         OuterObjectInfo::Some { outer_object } => Some(InstanceContext {
-                            outer_object: outer_object.clone(),
+                            outer_object: *outer_object,
                         }),
-                        OuterObjectInfo::None { .. } => None,
+                        OuterObjectInfo::None => None,
                     }
                 }
             }
@@ -218,7 +214,7 @@ impl Actor {
             Actor::Method(MethodActor { object_info, .. }) => object_info.is_global(),
             Actor::Function { .. } => true,
             Actor::BlueprintHook { .. } => true,
-            Actor::Root { .. } => false,
+            Actor::Root => false,
         }
     }
 
@@ -227,7 +223,7 @@ impl Actor {
             Actor::Method(MethodActor { node_id, .. }) => Some(*node_id),
             Actor::BlueprintHook(BlueprintHookActor {
                 receiver: node_id, ..
-            }) => node_id.clone(),
+            }) => *node_id,
             _ => None,
         }
     }

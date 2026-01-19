@@ -60,7 +60,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
 
         match typed_field_index {
             RoleAssignmentField::Owner => {
-                let owner_role = scrypto_decode::<RoleAssignmentOwnerFieldPayload>(&value)
+                let owner_role = scrypto_decode::<RoleAssignmentOwnerFieldPayload>(value)
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
                 Self::check_owner_role_entry(owner_role, &mut add_error)
             }
@@ -106,9 +106,9 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
 
         match typed_collection_index {
             RoleAssignmentCollection::AccessRuleKeyValue => {
-                let module_role_key = scrypto_decode::<RoleAssignmentAccessRuleKeyPayload>(&key)
+                let module_role_key = scrypto_decode::<RoleAssignmentAccessRuleKeyPayload>(key)
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
-                let access_rule = scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(&value)
+                let access_rule = scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(value)
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
 
                 Self::check_role_assignment(
@@ -244,7 +244,7 @@ impl RoleAssignmentDatabaseChecker {
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
         if let Some(ref initial_role_keys) = initial_role_keys {
-            if !initial_role_keys.contains(&role_key) {
+            if !initial_role_keys.contains(role_key) {
                 add_error(
                     RoleAssignmentDatabaseCheckerError::RoleKeyWasCreatedAfterInitialization {
                         initial_role_keys: initial_role_keys.clone(),

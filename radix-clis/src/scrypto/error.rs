@@ -1,3 +1,4 @@
+use crate::scrypto::*;
 use crate::utils::*;
 use std::fmt;
 use std::io;

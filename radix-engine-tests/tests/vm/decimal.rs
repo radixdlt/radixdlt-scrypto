@@ -5,8 +5,6 @@ use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 use std::env;
 
-use trybuild;
-
 #[test]
 fn test_dec_macro_try_compile() {
     // Change CARGO_MANIFEST_DIR to tests/dec_macros, where the dec_macros test crate is located.
@@ -49,13 +47,13 @@ fn test_dec_macro_valid() {
     assert_eq!(X1, Decimal::try_from("111111.10").unwrap());
 
     const X2: Decimal = dec!(-111);
-    assert_eq!(X2, Decimal::try_from(-111).unwrap());
+    assert_eq!(X2, Decimal::from(-111));
 
     const X3: Decimal = dec!(129);
-    assert_eq!(X3, Decimal::try_from(129).unwrap());
+    assert_eq!(X3, Decimal::from(129));
 
     const X4: Decimal = dec!(-1_000_000);
-    assert_eq!(X4, Decimal::try_from(-1_000_000).unwrap());
+    assert_eq!(X4, Decimal::from(-1_000_000));
 
     static X5: Decimal = dec!(1);
     assert_eq!(X5, Decimal::ONE);
@@ -111,13 +109,13 @@ fn test_pdec_macro_valid() {
     assert_eq!(X1, PreciseDecimal::try_from("111111.10").unwrap());
 
     const X2: PreciseDecimal = pdec!(-111);
-    assert_eq!(X2, PreciseDecimal::try_from(-111).unwrap());
+    assert_eq!(X2, PreciseDecimal::from(-111));
 
     const X3: PreciseDecimal = pdec!(129);
-    assert_eq!(X3, PreciseDecimal::try_from(129u128).unwrap());
+    assert_eq!(X3, PreciseDecimal::from(129u128));
 
     const X4: PreciseDecimal = pdec!(-1_000_000);
-    assert_eq!(X4, PreciseDecimal::try_from(-1_000_000_i64).unwrap());
+    assert_eq!(X4, PreciseDecimal::from(-1_000_000_i64));
 
     static X5: PreciseDecimal = pdec!(1);
     assert_eq!(X5, PreciseDecimal::ONE);

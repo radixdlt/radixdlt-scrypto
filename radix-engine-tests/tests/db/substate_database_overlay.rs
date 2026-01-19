@@ -389,7 +389,7 @@ fn substates_written_on_a_staging_database_from_transactions_can_be_read_later()
             .deposit_entire_worktop(account2)
             .build(),
         [public_key1, public_key2]
-            .map(|pk| NonFungibleGlobalId::from_public_key(&pk))
+            .map(NonFungibleGlobalId::from_public_key)
             .to_vec(),
     );
 
@@ -523,7 +523,7 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
                         ProtocolUpdateStatusField::Summary,
                         ProtocolUpdateStatusSummarySubstate::from_latest_version(
                             ProtocolUpdateStatusSummaryV1 {
-                                protocol_version: protocol_version,
+                                protocol_version,
                                 update_status: ProtocolUpdateStatus::InProgress {
                                     latest_commit: LatestProtocolUpdateCommitBatch {
                                         batch_group_index,
@@ -554,7 +554,7 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
                         ProtocolUpdateStatusField::Summary,
                         ProtocolUpdateStatusSummarySubstate::from_latest_version(
                             ProtocolUpdateStatusSummaryV1 {
-                                protocol_version: protocol_version,
+                                protocol_version,
                                 update_status: ProtocolUpdateStatus::Complete,
                             },
                         ),
@@ -601,7 +601,7 @@ fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseCompariso
             // Check that everything matches.
             self.check_callback.check(
                 database,
-                &receipt,
+                receipt,
                 self.ledger_with_overlay.borrow().substate_db(),
                 &receipt_from_overlay,
             );

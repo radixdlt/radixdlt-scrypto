@@ -12,6 +12,7 @@ impl Buffer {
         (self.0 >> 32) as u32
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u32 {
         (self.0 & 0xffffffff) as u32
     }
@@ -37,6 +38,7 @@ impl Slice {
         (self.0 >> 32) as u32
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u32 {
         (self.0 & 0xffffffff) as u32
     }

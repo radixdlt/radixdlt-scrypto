@@ -14,6 +14,7 @@ pub struct ProtocolSettings {
     pub bottlenose: BottlenoseSettings,
     pub cuttlefish_part1: CuttlefishPart1Settings,
     pub cuttlefish_part2: CuttlefishPart2Settings,
+    pub dugong: DugongSettings,
 }
 
 impl ProtocolSettings {
@@ -28,6 +29,7 @@ impl ProtocolSettings {
             ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_generator()),
             ProtocolVersion::CuttlefishPart1 => Box::new(self.cuttlefish_part1.create_generator()),
             ProtocolVersion::CuttlefishPart2 => Box::new(self.cuttlefish_part2.create_generator()),
+            ProtocolVersion::Dugong => Box::new(self.dugong.create_generator()),
         }
     }
 }
@@ -52,6 +54,7 @@ impl ProtocolBuilder {
                 cuttlefish_part2: CuttlefishPart2Settings::all_enabled_as_default_for_network(
                     network_definition,
                 ),
+                dugong: DugongSettings::all_enabled_as_default_for_network(network_definition),
             },
         }
     }
@@ -85,6 +88,14 @@ impl ProtocolBuilder {
         creator: impl FnOnce(CuttlefishPart1Settings) -> CuttlefishPart1Settings,
     ) -> Self {
         self.settings.cuttlefish_part1 = creator(self.settings.cuttlefish_part1);
+        self
+    }
+
+    pub fn configure_dugong(
+        mut self,
+        creator: impl FnOnce(DugongSettings) -> DugongSettings,
+    ) -> Self {
+        self.settings.dugong = creator(self.settings.dugong);
         self
     }
 

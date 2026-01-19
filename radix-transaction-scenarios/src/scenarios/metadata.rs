@@ -94,9 +94,11 @@ impl ScenarioInstance for MetadataScenario {
                 core.check_start(&previous)?;
 
                 let code = include_bytes!("../../assets/metadata.wasm");
-                let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                     "../../assets/metadata.rpd"
                 ))
+                .unwrap()
+                .try_into_typed()
                 .unwrap();
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -116,9 +118,7 @@ impl ScenarioInstance for MetadataScenario {
                                 schema,
                                 create_metadata(),
                                 radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
-                                    NonFungibleGlobalId::from_public_key(
-                                        &user_account_1.public_key
-                                    )
+                                    NonFungibleGlobalId::from_public_key(user_account_1.public_key)
                                 ))),
                             )
                             .try_deposit_entire_worktop_or_abort(user_account_1.address, None)
@@ -152,8 +152,8 @@ impl ScenarioInstance for MetadataScenario {
                                 },
                             );
                         let address = builder.named_address("metadata_component_address");
-                        for (k, v) in create_metadata() {
-                            builder = builder.set_metadata(address, k, v);
+                        for (k, v) in create_metadata().data {
+                            builder = builder.set_metadata(address, k, v.value);
                         }
                         builder.try_deposit_entire_worktop_or_abort(user_account_1.address, None)
                     },
@@ -185,7 +185,7 @@ impl ScenarioInstance for MetadataScenario {
                                     ..Default::default()
                                 },
                                 ModuleConfig {
-                                    init: create_metadata().into(),
+                                    init: create_metadata(),
                                     roles: RoleAssignmentInit::default(),
                                 },
                                 Some(100_000_000_000u64.into()),
@@ -206,9 +206,7 @@ impl ScenarioInstance for MetadataScenario {
                             .get_free_xrd_from_faucet()
                             .create_fungible_resource(
                                 radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
-                                    NonFungibleGlobalId::from_public_key(
-                                        &user_account_1.public_key
-                                    )
+                                    NonFungibleGlobalId::from_public_key(user_account_1.public_key)
                                 ))),
                                 false,
                                 18,
@@ -359,7 +357,7 @@ impl ScenarioInstance for MetadataScenario {
     }
 }
 
-fn create_metadata() -> BTreeMap<String, MetadataValue> {
+fn create_metadata() -> MetadataInit {
     let mut metadata = BTreeMap::<String, MetadataValue>::new();
 
     add(
@@ -427,7 +425,7 @@ fn create_metadata() -> BTreeMap<String, MetadataValue> {
             ),
         ],
     );
-    metadata
+    MetadataInit::from(metadata)
 }
 
 fn add<T: SingleMetadataVal + Clone>(

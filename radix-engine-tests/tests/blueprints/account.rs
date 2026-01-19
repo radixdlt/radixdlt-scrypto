@@ -37,7 +37,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
         .try_deposit_entire_worktop_or_refund(storing_account, None)
         .build();
     let initial_proofs = if use_key {
-        vec![NonFungibleGlobalId::from_public_key(&key)]
+        vec![NonFungibleGlobalId::from_public_key(key)]
     } else {
         vec![]
     };
@@ -90,7 +90,7 @@ where
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -119,7 +119,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -150,7 +150,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Act
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -198,7 +198,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Act
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -271,8 +271,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
         .call_method(account, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput {})
         .try_deposit_entire_worktop_or_refund(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     let balance_change = ledger
@@ -303,11 +302,7 @@ fn account_created_with_create_advanced_has_an_empty_owner_badge() {
 }
 
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
-    if let None = metadata_value {
-        true
-    } else {
-        false
-    }
+    metadata_value.is_none()
 }
 
 #[test]
@@ -320,7 +315,7 @@ fn cannot_lock_fee_if_not_enough_funds() {
     let manifest = ManifestBuilder::new().lock_fee(account, 1000000000).build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -345,7 +340,7 @@ fn cannot_lock_contingent_fee_if_not_enough_funds() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

@@ -9,7 +9,7 @@ use radix_common::prelude::*;
 
 /// A list of the packages that we generate bindings for. This must match the list in the
 /// update-bindings.sh script.
-const PACKAGES_WITH_BINDINGS: &'static [PackageAddress] = &[
+const PACKAGES_WITH_BINDINGS: &[PackageAddress] = &[
     FAUCET_PACKAGE,
     CONSENSUS_MANAGER_PACKAGE,
     IDENTITY_PACKAGE,

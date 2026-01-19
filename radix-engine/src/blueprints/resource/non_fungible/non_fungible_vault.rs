@@ -585,7 +585,7 @@ impl NonFungibleVaultBlueprint {
         let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
             indexmap!(
-                LocalRef::Vault(Reference(receiver.into()))=> ids
+                LocalRef::Vault(Reference(receiver))=> ids
             ),
         )
         .map_err(|e| {
@@ -594,8 +594,8 @@ impl NonFungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                NonFungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
-                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
+                NonFungibleProofField::Moveable.field_index() => FieldValue::new(proof_info),
+                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(proof_evidence),
             },
         )?;
         Ok(Proof(Own(proof_id)))
@@ -641,8 +641,8 @@ impl NonFungibleVaultBlueprint {
         // Take from liquid if needed
         let delta: IndexSet<NonFungibleLocalId> = ids
             .iter()
+            .filter(|&id| !locked.ids.contains_key(id))
             .cloned()
-            .filter(|id| !locked.ids.contains_key(id))
             .collect();
         Self::internal_take_non_fungibles(&delta, api)?;
 

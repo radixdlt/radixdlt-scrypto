@@ -88,9 +88,9 @@ pub fn set_up_panic_hook() {
         // parse location
         if let Some(l) = info.location() {
             message.push_str(l.file());
-            message.push_str(":");
+            message.push(':');
             message.push_str(&l.line().to_string());
-            message.push_str(":");
+            message.push(':');
             message.push_str(&l.column().to_string());
         } else {
             message.push_str("<unknown>");
@@ -100,7 +100,7 @@ pub fn set_up_panic_hook() {
     }));
 }
 
-#[cfg(all(feature = "coverage"))]
+#[cfg(feature = "coverage")]
 #[no_mangle]
 pub unsafe extern "C" fn dump_coverage() -> types::Slice {
     let mut coverage = vec![];

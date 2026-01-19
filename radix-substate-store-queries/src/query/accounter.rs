@@ -32,6 +32,12 @@ pub struct Accounting {
     pub non_fungibles: HashMap<ResourceAddress, HashSet<NonFungibleLocalId>>,
 }
 
+impl Default for Accounting {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Accounting {
     pub fn new() -> Self {
         Accounting {

@@ -8,8 +8,7 @@ pub use origin::*;
 
 use crate::internal_prelude::*;
 use crate::types::KeyValueStoreInit;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::crypto::PublicKey;
 use radix_common::crypto::PublicKeyHash;
 use radix_common::data::scrypto::model::NonFungibleLocalId;
@@ -18,11 +17,12 @@ use radix_common::math::Decimal;
 use radix_common::time::Instant;
 use radix_common::types::GlobalAddress;
 use radix_common::types::NonFungibleGlobalId;
+use radix_common::*;
 use sbor::SborEnum;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-#[sbor(categorize_types = "U, O")]
+#[sbor(categorize_types = "U; O")]
 pub enum GenericMetadataValue<U, O> {
     #[sbor(discriminator(METADATA_VALUE_STRING_DISCRIMINATOR))]
     String(String),
@@ -93,6 +93,10 @@ pub enum GenericMetadataValue<U, O> {
 
 pub type MetadataValue = GenericMetadataValue<UncheckedUrl, UncheckedOrigin>;
 pub type CheckedMetadataValue = GenericMetadataValue<CheckedUrl, CheckedOrigin>;
+
+define_untyped_manifest_type_wrapper!(
+    MetadataValue => ManifestMetadataValue(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum MetadataConversionError {
@@ -347,6 +351,7 @@ impl ToMetadataEntry for Option<MetadataValue> {
 }
 
 pub type MetadataInit = KeyValueStoreInit<String, MetadataValue>;
+pub type ManifestMetadataInit = KeyValueStoreInit<String, ManifestMetadataValue>;
 
 impl MetadataInit {
     pub fn set_metadata<S: ToString, V: ToMetadataEntry>(&mut self, key: S, value: V) {
@@ -370,9 +375,55 @@ impl MetadataInit {
     }
 }
 
+impl From<MetadataInit> for ManifestMetadataInit {
+    fn from(MetadataInit { data }: MetadataInit) -> Self {
+        Self {
+            data: data
+                .into_iter()
+                .map(|(key, value)| {
+                    (
+                        key,
+                        KeyValueStoreInitEntry {
+                            lock: value.lock,
+                            value: value.value.map(Into::into),
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl From<ModuleConfig<MetadataInit>>
+    for ModuleConfig<ManifestMetadataInit, ManifestRoleAssignmentInit>
+{
+    fn from(value: ModuleConfig<MetadataInit>) -> Self {
+        Self {
+            init: value.init.into(),
+            roles: value.roles.into(),
+        }
+    }
+}
+
 impl From<BTreeMap<String, MetadataValue>> for MetadataInit {
     fn from(data: BTreeMap<String, MetadataValue>) -> Self {
         let mut metadata_init = MetadataInit::new();
+        for (key, value) in data {
+            metadata_init.set(key, value);
+        }
+        metadata_init
+    }
+}
+
+impl From<BTreeMap<String, MetadataValue>> for ManifestMetadataInit {
+    fn from(data: BTreeMap<String, MetadataValue>) -> Self {
+        MetadataInit::from(data).into()
+    }
+}
+
+impl From<BTreeMap<String, ManifestMetadataValue>> for ManifestMetadataInit {
+    fn from(data: BTreeMap<String, ManifestMetadataValue>) -> Self {
+        let mut metadata_init = ManifestMetadataInit::new();
         for (key, value) in data {
             metadata_init.set(key, value);
         }

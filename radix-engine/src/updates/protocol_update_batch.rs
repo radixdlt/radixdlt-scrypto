@@ -26,7 +26,7 @@ impl ProtocolUpdateTransaction {
             panic!("Protocol transaction names should be in kebab-case for consistency");
         }
         Self::FlashTransactionV1(FlashTransactionV1 {
-            name: name.into(),
+            name,
             state_updates,
         })
     }
@@ -37,7 +37,7 @@ impl ProtocolUpdateTransaction {
             panic!("Protocol transaction names should be in kebab-case for consistency");
         }
         Self::SystemTransactionV1(ProtocolSystemTransactionV1 {
-            name: name.into(),
+            name,
             disable_auth: true,
             transaction,
         })
@@ -90,6 +90,7 @@ impl ProtocolUpdateBatch {
         self.mut_add(ProtocolUpdateTransaction::flash(name, updates))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, transaction: ProtocolUpdateTransaction) -> Self {
         self.mut_add(transaction);
         self

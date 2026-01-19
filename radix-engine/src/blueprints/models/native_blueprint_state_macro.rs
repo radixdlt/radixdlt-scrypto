@@ -1,5 +1,3 @@
-use crate::internal_prelude::*;
-
 /// Generates types and typed-interfaces for native blueprints, their
 /// state models, features, and schemas.
 ///
@@ -213,19 +211,20 @@ macro_rules! declare_native_blueprint_state {
                                 transience: optional_or_fallback!($({ $field_transience})?, { FieldTransience::NotTransient }),
                             });
                         )*
-                        let mut collections = vec![];
-                        $(
-                            collections.push(map_collection_schema!(
-                                $collection_type,
-                                $blueprint_ident,
-                                type_aggregator,
-                                $collection_key_type,
-                                [<$blueprint_ident $collection_ident KeyContent>],
-                                $collection_value_type,
-                                [<$blueprint_ident $collection_ident EntryPayload>],
-                                $collection_allow_ownership
-                            ));
-                        )*
+                        let collections = vec![
+                            $(
+                                map_collection_schema!(
+                                    $collection_type,
+                                    $blueprint_ident,
+                                    type_aggregator,
+                                    $collection_key_type,
+                                    [<$blueprint_ident $collection_ident KeyContent>],
+                                    $collection_value_type,
+                                    [<$blueprint_ident $collection_ident EntryPayload>],
+                                    $collection_allow_ownership
+                                )
+                            ),*
+                        ];
                         BlueprintStateSchemaInit {
                             fields,
                             collections,
@@ -306,6 +305,7 @@ macro_rules! declare_native_blueprint_state {
                     [[
                         #[repr(u8)]
                         #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+                        #[allow(clippy::enum_variant_names)]
                         pub enum [<$blueprint_ident Collection>] {
                             $([<$collection_ident $collection_type>],)*
                         }
@@ -413,6 +413,7 @@ macro_rules! declare_native_blueprint_state {
                             /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
                             /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
                             #[derive(Debug, Clone)]
+                            #[allow(clippy::large_enum_variant)]
                             pub enum [<$blueprint_ident TypedSubstateKey>]
                             {
                                 [[
@@ -432,6 +433,7 @@ macro_rules! declare_native_blueprint_state {
                             /// All the SubstateKeys for all logical partitions for the $blueprint_ident blueprint.
                             /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
                             #[derive(Debug, Clone)]
+                            #[allow(clippy::large_enum_variant)]
                             pub enum [<$blueprint_ident TypedSubstateKey>]
                             {
                                 $(
@@ -448,6 +450,7 @@ macro_rules! declare_native_blueprint_state {
 
 
                 impl [<$blueprint_ident TypedSubstateKey>] {
+                    #[allow(clippy::result_unit_err)]
                     pub fn for_key_at_partition_offset(partition_offset: PartitionOffset, substate_key: &SubstateKey) -> Result<Self, ()> {
                         Self::for_key_in_partition(
                             &[<$blueprint_ident PartitionOffset>]::try_from(partition_offset)?,
@@ -458,6 +461,7 @@ macro_rules! declare_native_blueprint_state {
                     if_exists!(
                         TEST: [[$($field_ident)*]],
                         [[
+                            #[allow(clippy::result_unit_err)]
                             pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
                                 let key = match_filter_out_ignored!(match partition {
                                     [[
@@ -482,6 +486,7 @@ macro_rules! declare_native_blueprint_state {
                             }
                         ]],
                         [[
+                            #[allow(clippy::result_unit_err)]
                             pub fn for_key_in_partition(partition: &[<$blueprint_ident PartitionOffset>], substate_key: &SubstateKey) -> Result<Self, ()> {
                                 let key = match_filter_out_ignored!(match partition {
                                     $(
@@ -502,6 +507,7 @@ macro_rules! declare_native_blueprint_state {
                 }
 
                 #[derive(Debug)]
+                #[allow(clippy::large_enum_variant)]
                 pub enum [<$blueprint_ident TypedFieldSubstateValue>] {
                     $($field_ident([<$blueprint_ident $field_ident FieldSubstate>]),)*
                 }
@@ -510,6 +516,7 @@ macro_rules! declare_native_blueprint_state {
                     /// All the Substate values for all logical partitions for the $blueprint_ident blueprint.
                     /// Does not include mapped partitions, as these substates are mapped via their canonical partition.
                     #[derive(Debug)]
+                    #[allow(clippy::large_enum_variant)]
                     pub enum [<$blueprint_ident TypedSubstateValue>]
                     {
                         [[
@@ -1072,7 +1079,7 @@ mod helper_macros {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::internal_prelude::*;
 
     // Types and Impls required by the macro:
     #[derive(Debug, PartialEq, Eq, Sbor, Copy, Clone)]
@@ -1482,10 +1489,10 @@ mod tests {
         // ----------
         // Content v1 is used by both TestBlueprint and TestBlueprintV2 - it's actually the same type
         let content_v1 = TestBlueprintRoyaltyV1;
-        let v1_versioned_content_v1 = VersionedTestBlueprintRoyalty::from(content_v1.clone());
-        let v1_payload_v1 = TestBlueprintRoyaltyFieldPayload::of(content_v1.clone().into());
-        let v2_versioned_content_v1 = VersionedTestBlueprintV2Royalty::from(content_v1.clone());
-        let v2_payload_v1 = TestBlueprintV2RoyaltyFieldPayload::of(content_v1.clone().into());
+        let v1_versioned_content_v1 = VersionedTestBlueprintRoyalty::from(content_v1);
+        let v1_payload_v1 = TestBlueprintRoyaltyFieldPayload::of(content_v1.into());
+        let v2_versioned_content_v1 = VersionedTestBlueprintV2Royalty::from(content_v1);
+        let v2_payload_v1 = TestBlueprintV2RoyaltyFieldPayload::of(content_v1.into());
 
         // These should all be the same:
         let encoded_v1_versioned_content_v1 = scrypto_encode(&v1_versioned_content_v1).unwrap();
@@ -1521,7 +1528,7 @@ mod tests {
 
         // And we can check that upgrading it works:
         let v2_payload_v1_updated =
-            TestBlueprintV2RoyaltyFieldPayload::of(content_v1.clone().into()).fully_update();
+            TestBlueprintV2RoyaltyFieldPayload::of(content_v1.into()).fully_update();
         assert_eq!(&v2_payload_v1_updated, &v2_payload_v2);
 
         // And deserializing into a v2_payload works:

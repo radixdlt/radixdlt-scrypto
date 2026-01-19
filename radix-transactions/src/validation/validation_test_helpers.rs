@@ -260,7 +260,7 @@ pub(crate) fn create_leaf_partial_transaction(
     PartialTransactionV2Builder::new_with_test_defaults()
         .intent_discriminator(intent_discriminator)
         .add_trivial_manifest()
-        .multi_sign((0..num_signatures).into_iter().map(|i| {
+        .multi_sign((0..num_signatures).map(|i| {
             Secp256k1PrivateKey::from_u64((intent_discriminator + 1) * 1000 + (i as u64)).unwrap()
         }))
         .build()

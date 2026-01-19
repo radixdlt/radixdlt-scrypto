@@ -10,6 +10,7 @@ use crate::blueprints::locker::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::*;
+use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::*;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::object_modules::metadata::*;
@@ -46,4 +47,6 @@ lazy_static! {
         RoyaltyNativePackage::definition();
     pub static ref ROLE_ASSIGNMENT_PACKAGE_DEFINITION: PackageDefinition =
         RoleAssignmentNativePackage::definition();
+    pub static ref TEST_UTILS_PACKAGE_DEFINITION: PackageDefinition =
+        TestUtilsNativePackage::definition();
 }

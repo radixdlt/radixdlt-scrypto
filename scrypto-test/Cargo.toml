@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-test"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "A library for testing Scrypto blueprints, from the Radix DLT project."
 readme = "README.md"
@@ -23,7 +23,7 @@ scrypto-compiler = { workspace = true }
 # Included to re-export some useful things into the scrypto-test prelude
 scrypto = { workspace = true }
 
-wabt = { workspace = true }
+wat = { workspace = true }
 ouroboros = { workspace = true }
 paste = { workspace = true }
 serde_json = { workspace = true }

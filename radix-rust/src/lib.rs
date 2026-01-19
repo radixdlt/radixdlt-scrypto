@@ -49,4 +49,5 @@ pub mod prelude {
     pub use crate::slice::*;
 
     pub use crate::assert_matches;
+    pub use preinterpret::preinterpret;
 }

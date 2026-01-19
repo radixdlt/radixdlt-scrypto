@@ -21,7 +21,7 @@ impl ReadableManifestBase for SystemTransactionManifestV1 {
         false
     }
 
-    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+    fn get_blobs(&self) -> impl Iterator<Item = (&Hash, &Vec<u8>)> {
         self.blobs.iter()
     }
 
@@ -29,7 +29,7 @@ impl ReadableManifestBase for SystemTransactionManifestV1 {
         &self.preallocated_addresses
     }
 
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_> {
         self.object_names.as_ref()
     }
 }
@@ -80,7 +80,7 @@ impl BuildableManifest for SystemTransactionManifestV1 {
         let unique_hash = hash(format!("System txn: {}", nonce));
         self.into_transaction(unique_hash)
             .with_proofs_ref(initial_proofs)
-            .into_executable(&validator)
+            .into_executable(validator)
             .map_err(|err| format!("Could not prepare: {err:?}"))
     }
 }

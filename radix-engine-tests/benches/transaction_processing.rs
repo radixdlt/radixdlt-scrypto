@@ -93,7 +93,6 @@ fn compile_large_notarized_transaction(
                 metadata! {},
                 Some(
                     (0u64..10_000u64)
-                        .into_iter()
                         .map(|id| (NonFungibleLocalId::integer(id), EmptyStruct {}))
                         .collect::<BTreeMap<NonFungibleLocalId, EmptyStruct>>(),
                 ),

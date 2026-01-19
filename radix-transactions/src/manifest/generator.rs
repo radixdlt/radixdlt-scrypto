@@ -4,7 +4,7 @@ use super::ast::Instruction;
 use super::ast::InstructionWithSpan;
 use super::ast::ValueKindWithSpan;
 use super::blob_provider::*;
-use crate::data::*;
+use crate::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::manifest::ast;
@@ -236,7 +236,7 @@ impl NameResolver {
                 return Some(name.to_string());
             }
         }
-        return None;
+        None
     }
 
     pub fn resove_proof_name(&self, proof: ManifestProof) -> Option<String> {
@@ -245,7 +245,7 @@ impl NameResolver {
                 return Some(name.to_string());
             }
         }
-        return None;
+        None
     }
 
     pub fn resolve_address_reservation_name(
@@ -257,7 +257,7 @@ impl NameResolver {
                 return Some(name.to_string());
             }
         }
-        return None;
+        None
     }
 
     pub fn resolve_named_address_name(&self, address: ManifestNamedAddress) -> Option<String> {
@@ -266,7 +266,7 @@ impl NameResolver {
                 return Some(name.to_string());
             }
         }
-        return None;
+        None
     }
 
     pub fn resolve_intent_name(&self, address: ManifestNamedIntent) -> Option<String> {
@@ -275,7 +275,7 @@ impl NameResolver {
                 return Some(name.to_string());
             }
         }
-        return None;
+        None
     }
 
     pub fn into_known_names(self) -> KnownManifestObjectNames {
@@ -594,7 +594,7 @@ where
             }
             .into()
         }
-        ast::Instruction::AssertWorktopIsEmpty {} => AssertWorktopResourcesOnly {
+        ast::Instruction::AssertWorktopIsEmpty => AssertWorktopResourcesOnly {
             constraints: Default::default(),
         }
         .into(),
@@ -666,7 +666,7 @@ where
             let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -680,7 +680,7 @@ where
             let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -689,7 +689,7 @@ where
         ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
             let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -802,7 +802,7 @@ where
             args,
         } => {
             let package_address = generate_dynamic_package_address(
-                &package_address,
+                package_address,
                 address_bech32_decoder,
                 resolver,
             )?;
@@ -1186,7 +1186,7 @@ where
     let mut fields = Vec::new();
     for v in values {
         fields.push(generate_value(
-            &v,
+            v,
             None,
             resolver,
             address_bech32_decoder,
@@ -1207,7 +1207,7 @@ fn generate_string(value: &ast::ValueWithSpan) -> Result<String, GeneratorError>
 fn generate_decimal(value: &ast::ValueWithSpan) -> Result<Decimal, GeneratorError> {
     match &value.value {
         ast::Value::Decimal(inner) => match &inner.value {
-            ast::Value::String(s) => Decimal::from_str(&s).map_err(|err| GeneratorError {
+            ast::Value::String(s) => Decimal::from_str(s).map_err(|err| GeneratorError {
                 error_kind: GeneratorErrorKind::InvalidDecimal {
                     actual: s.to_string(),
                     err: format!("{:?}", err),
@@ -1251,10 +1251,10 @@ fn generate_global_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1276,10 +1276,10 @@ fn generate_package_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidPackageAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1299,10 +1299,10 @@ fn generate_resource_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidResourceAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
             v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
@@ -1323,26 +1323,26 @@ fn generate_dynamic_global_address(
                         return Ok(ManifestGlobalAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
-            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => {
-            match &inner.value {
-                ast::Value::U32(n) => Ok(ManifestGlobalAddress::Named(ManifestNamedAddress(*n))),
-                ast::Value::String(s) => resolver
-                    .resolve_named_address(&s)
+        ast::Value::NamedAddress(inner) => match &inner.value {
+            ast::Value::U32(n) => Ok(ManifestGlobalAddress::Named(ManifestNamedAddress(*n))),
+            ast::Value::String(s) => {
+                resolver
+                    .resolve_named_address(s)
                     .map(Into::into)
                     .map_err(|err| GeneratorError {
                         error_kind: GeneratorErrorKind::NameResolverError(err),
                         span: inner.span,
-                    }),
-                v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+                    })
             }
-        }
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
         v => invalid_type!(
             value.span,
             v,
@@ -1364,12 +1364,12 @@ fn generate_internal_address(
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidInternalAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
-            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
@@ -1388,26 +1388,26 @@ fn generate_dynamic_package_address(
                         return Ok(ManifestPackageAddress::Static(address));
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidPackageAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
-            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
-        ast::Value::NamedAddress(inner) => {
-            match &inner.value {
-                ast::Value::U32(n) => Ok(ManifestPackageAddress::Named(ManifestNamedAddress(*n))),
-                ast::Value::String(s) => resolver
-                    .resolve_named_address(&s)
+        ast::Value::NamedAddress(inner) => match &inner.value {
+            ast::Value::U32(n) => Ok(ManifestPackageAddress::Named(ManifestNamedAddress(*n))),
+            ast::Value::String(s) => {
+                resolver
+                    .resolve_named_address(s)
                     .map(Into::into)
                     .map_err(|err| GeneratorError {
                         error_kind: GeneratorErrorKind::NameResolverError(err),
                         span: inner.span,
-                    }),
-                v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+                    })
             }
-        }
+            v => invalid_type!(value.span, v, ast::ValueKind::U32, ast::ValueKind::String),
+        },
         v => invalid_type!(
             value.span,
             v,
@@ -1444,12 +1444,10 @@ fn generate_bucket(
         ast::Value::Bucket(inner) => {
             let bucket = match &inner.value {
                 ast::Value::U32(n) => Ok(ManifestBucket(*n)),
-                ast::Value::String(s) => {
-                    resolver.resolve_bucket(&s).map_err(|err| GeneratorError {
-                        error_kind: GeneratorErrorKind::NameResolverError(err),
-                        span: inner.span,
-                    })
-                }
+                ast::Value::String(s) => resolver.resolve_bucket(s).map_err(|err| GeneratorError {
+                    error_kind: GeneratorErrorKind::NameResolverError(err),
+                    span: inner.span,
+                }),
                 v => invalid_type!(inner.span, v, ast::ValueKind::U32, ast::ValueKind::String),
             }?;
             Ok((bucket, inner.span))
@@ -1546,7 +1544,7 @@ fn generate_named_intent(
                 // Don't support U32 for new types like this
                 ast::Value::String(s) => {
                     resolver
-                        .resolve_named_intent(&s)
+                        .resolve_named_intent(s)
                         .map_err(|err| GeneratorError {
                             error_kind: GeneratorErrorKind::NameResolverError(err),
                             span: inner.span,
@@ -1568,7 +1566,7 @@ fn generate_proof(
         ast::Value::Proof(inner) => {
             let proof = match &inner.value {
                 ast::Value::U32(n) => Ok(ManifestProof(*n)),
-                ast::Value::String(s) => resolver.resolve_proof(&s).map_err(|err| GeneratorError {
+                ast::Value::String(s) => resolver.resolve_proof(s).map_err(|err| GeneratorError {
                     error_kind: GeneratorErrorKind::NameResolverError(err),
                     span: inner.span,
                 }),
@@ -1589,7 +1587,7 @@ fn generate_address_reservation(
             ast::Value::U32(n) => Ok(ManifestAddressReservation(*n)),
             ast::Value::String(s) => {
                 resolver
-                    .resolve_address_reservation(&s)
+                    .resolve_address_reservation(s)
                     .map_err(|err| GeneratorError {
                         error_kind: GeneratorErrorKind::NameResolverError(err),
                         span: inner.span,
@@ -1617,12 +1615,12 @@ fn generate_static_address(
                         )));
                     }
                 }
-                return Err(GeneratorError {
+                Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
                     span: inner.span,
-                });
+                })
             }
-            v => return invalid_type!(inner.span, v, ast::ValueKind::String),
+            v => invalid_type!(inner.span, v, ast::ValueKind::String),
         },
         v => invalid_type!(value.span, v, ast::ValueKind::Address),
     }
@@ -1636,8 +1634,8 @@ fn generate_named_address(
         ast::Value::NamedAddress(inner) => match &inner.value {
             ast::Value::U32(n) => Ok(ManifestAddress::Named(ManifestNamedAddress(*n))),
             ast::Value::String(s) => resolver
-                .resolve_named_address(&s)
-                .map(|x| ManifestAddress::Named(x))
+                .resolve_named_address(s)
+                .map(ManifestAddress::Named)
                 .map_err(|err| GeneratorError {
                     error_kind: GeneratorErrorKind::NameResolverError(err),
                     span: inner.span,
@@ -1729,16 +1727,13 @@ fn generate_non_fungible_local_ids(
                 return Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidAstType {
                         expected_value_kind: ast::ValueKind::NonFungibleLocalId,
-                        actual: kind.value_kind.clone(),
+                        actual: kind.value_kind,
                     },
                     span: kind.span,
                 });
             }
 
-            values
-                .iter()
-                .map(|v| generate_non_fungible_local_id(v))
-                .collect()
+            values.iter().map(generate_non_fungible_local_id).collect()
         }
         v => invalid_type!(value.span, v, ast::ValueKind::Array),
     }
@@ -1850,18 +1845,18 @@ where
             value: value.clone(),
         }),
         ast::Value::Tuple(fields) => Ok(Value::Tuple {
-            fields: generate_singletons(&fields, None, resolver, address_bech32_decoder, blobs)?,
+            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Enum(discriminator, fields) => Ok(Value::Enum {
-            discriminator: discriminator.clone(),
-            fields: generate_singletons(&fields, None, resolver, address_bech32_decoder, blobs)?,
+            discriminator: *discriminator,
+            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Array(element_type, elements) => {
             let element_value_kind = element_type.sbor_value_kind()?;
             Ok(Value::Array {
                 element_value_kind,
                 elements: generate_singletons(
-                    &elements,
+                    elements,
                     Some(element_type),
                     resolver,
                     address_bech32_decoder,
@@ -1876,9 +1871,9 @@ where
                 key_value_kind,
                 value_value_kind,
                 entries: generate_kv_entries(
-                    &entries,
-                    &key_type,
-                    &value_type,
+                    entries,
+                    key_type,
+                    value_type,
                     resolver,
                     address_bech32_decoder,
                     blobs,
@@ -1891,7 +1886,7 @@ where
         ast::Value::Some(value) => Ok(Value::Enum {
             discriminator: OPTION_VARIANT_SOME,
             fields: vec![generate_value(
-                &value,
+                value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1905,7 +1900,7 @@ where
         ast::Value::Ok(value) => Ok(Value::Enum {
             discriminator: RESULT_VARIANT_OK,
             fields: vec![generate_value(
-                &value,
+                value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1915,7 +1910,7 @@ where
         ast::Value::Err(value) => Ok(Value::Enum {
             discriminator: RESULT_VARIANT_ERR,
             fields: vec![generate_value(
-                &value,
+                value,
                 None,
                 resolver,
                 address_bech32_decoder,
@@ -1923,7 +1918,7 @@ where
             )?],
         }),
         ast::Value::Bytes(value) => {
-            let bytes = generate_byte_vec_from_hex(&value)?;
+            let bytes = generate_byte_vec_from_hex(value)?;
             Ok(Value::Array {
                 element_value_kind: ValueKind::U8,
                 elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
@@ -2002,18 +1997,14 @@ where
                 value: ManifestCustomValue::AddressReservation(v),
             })
         }
-        ast::Value::NamedIntent(_) => {
-            return Err(GeneratorError {
-                error_kind: GeneratorErrorKind::NamedIntentCannotBeUsedInValue,
-                span: value_with_span.span,
-            });
-        }
-        ast::Value::Intent(_) => {
-            return Err(GeneratorError {
-                error_kind: GeneratorErrorKind::IntentCannotBeUsedInValue,
-                span: value_with_span.span,
-            });
-        }
+        ast::Value::NamedIntent(_) => Err(GeneratorError {
+            error_kind: GeneratorErrorKind::NamedIntentCannotBeUsedInValue,
+            span: value_with_span.span,
+        }),
+        ast::Value::Intent(_) => Err(GeneratorError {
+            error_kind: GeneratorErrorKind::IntentCannotBeUsedInValue,
+            span: value_with_span.span,
+        }),
     }
 }
 
@@ -2142,7 +2133,7 @@ pub fn generator_error_diagnostics(
             (title, "invalid non-fungible local id".to_string())
         }
         GeneratorErrorKind::InvalidNonFungibleGlobalId => {
-            let title = format!("invalid non-fungible global id");
+            let title = "invalid non-fungible global id".to_string();
             (title, "invalid non-fungible global id".to_string())
         }
         GeneratorErrorKind::InvalidExpression(string) => {
@@ -2252,45 +2243,46 @@ pub fn generator_error_diagnostics(
             (title, "invalid sub transaction id".to_string())
         }
         GeneratorErrorKind::InstructionNotSupportedInManifestVersion => {
-            let title = format!("unsupported instruction for this manifest version");
+            let title = "unsupported instruction for this manifest version".to_string();
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::ManifestBuildError(ManifestBuildError::DuplicateChildSubintentHash) => {
-            let title = format!("child subintents cannot have the same hash");
+            let title = "child subintents cannot have the same hash".to_string();
             (title, "duplicate hash".to_string())
         }
         GeneratorErrorKind::ManifestBuildError(
             ManifestBuildError::PreallocatedAddressesUnsupportedByManifestType,
         ) => {
-            let title = format!("preallocated addresses are not supported in this manifest type");
+            let title =
+                "preallocated addresses are not supported in this manifest type".to_string();
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::ManifestBuildError(
             ManifestBuildError::ChildSubintentsUnsupportedByManifestType,
         ) => {
-            let title = format!("child subintents are not supported in this manifest type");
+            let title = "child subintents are not supported in this manifest type".to_string();
             (title, "unsupported instruction".to_string())
         }
         GeneratorErrorKind::HeaderInstructionMustComeFirst => {
-            let title = format!(
+            let title =
                 "a psuedo-instruction such as USE_CHILD must come before all other instructions"
-            );
+                    .to_string();
             (title, "must be at the start of the manifest".to_string())
         }
         GeneratorErrorKind::IntentCannotBeUsedInValue => {
-            let title = format!("an Intent(...) cannot currently be used inside a value");
+            let title = "an Intent(...) cannot currently be used inside a value".to_string();
             (title, "cannot be used inside a value".to_string())
         }
         GeneratorErrorKind::NamedIntentCannotBeUsedInValue => {
-            let title = format!("a NamedIntent(...) cannot currently be used inside a value");
+            let title = "a NamedIntent(...) cannot currently be used inside a value".to_string();
             (title, "cannot be used inside a value".to_string())
         }
         GeneratorErrorKind::IntentCannotBeUsedAsValueKind => {
-            let title = format!("an Intent cannot be used as a value kind");
+            let title = "an Intent cannot be used as a value kind".to_string();
             (title, "cannot be used as a value kind".to_string())
         }
         GeneratorErrorKind::NamedIntentCannotBeUsedAsValueKind => {
-            let title = format!("a NamedIntent cannot be used as a value kind");
+            let title = "a NamedIntent cannot be used as a value kind".to_string();
             (title, "cannot be used as a value kind".to_string())
         }
         GeneratorErrorKind::ArgumentCouldNotBeReadAsExpectedType {
@@ -2556,7 +2548,7 @@ mod tests {
         let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
         let package_address = PackageAddress::try_from_bech32(
             &address_bech32_decoder,
-            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk".into(),
+            "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
         )
         .unwrap();
         let component = ComponentAddress::try_from_bech32(
@@ -2635,7 +2627,7 @@ mod tests {
                     IndexMap::<String, BlueprintStateSchemaInit, _>::new(),
                     IndexMap::<String, PackageRoyaltyConfig, _>::new(),
                     IndexMap::<String, MetadataValue, _>::new(),
-                    RoleAssignmentInit::new()
+                    ManifestRoleAssignmentInit::new()
                 )
                 .into(),
             },
@@ -2685,7 +2677,7 @@ mod tests {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema:
@@ -2695,8 +2687,9 @@ mod tests {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
-                        },
-                        resource_roles: NonFungibleResourceRoles::default(),
+                        }
+                        .into(),
+                        resource_roles: NonFungibleResourceRoles::default().into(),
                         address_reservation: None,
                     }
                 ),
@@ -2725,15 +2718,15 @@ mod tests {
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::None,
+                    owner_role: OwnerRole::None.into(),
                     track_total_supply: false,
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema:
                         NonFungibleDataSchema::new_local_without_self_package_replacement::<
                             MyNonFungibleData,
                         >(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata!(),
+                    resource_roles: NonFungibleResourceRoles::default().into(),
+                    metadata: metadata!().into(),
                     address_reservation: None,
                 },
             )
@@ -2794,18 +2787,19 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
                             ),
-                        resource_roles: NonFungibleResourceRoles::default(),
+                        resource_roles: NonFungibleResourceRoles::default().into(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
-                        },
+                        }
+                        .into(),
                         entries: indexmap!(
                             NonFungibleLocalId::integer(1) =>
                             (to_manifest_value_and_unwrap!(&(
@@ -2848,15 +2842,16 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::None,
+                    owner_role: OwnerRole::None.into(),
                     track_total_supply: false,
                     divisibility: 18,
-                    resource_roles: FungibleResourceRoles::default(),
+                    resource_roles: FungibleResourceRoles::default().into(),
                     metadata: metadata! {
                         init {
                             "name" => "Token".to_owned(), updatable;
                         }
-                    },
+                    }
+                    .into(),
                     address_reservation: None,
                 }),
             },
@@ -2894,16 +2889,17 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        resource_roles: FungibleResourceRoles::default(),
+                        resource_roles: FungibleResourceRoles::default().into(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_owned(), updatable;
                             }
-                        },
+                        }
+                        .into(),
                         address_reservation: None,
                     }
                 )
@@ -2996,7 +2992,7 @@ mod tests {
                 &mut id_validator,
                 &mut resolver,
                 &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
-                &MockBlobProvider::default()
+                &MockBlobProvider
             ),
             Ok(CallMethod {
                 address: CONSENSUS_MANAGER.into(),

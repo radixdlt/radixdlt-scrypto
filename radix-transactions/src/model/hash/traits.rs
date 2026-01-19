@@ -2,7 +2,7 @@ use crate::internal_prelude::*;
 use radix_common::prelude::*;
 
 pub trait IsTransactionHashWithStaticHrp: IsHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str;
+    fn static_hrp(hrp_set: &HrpSet) -> &str;
 }
 
 pub enum HashCreationError {
@@ -42,19 +42,19 @@ impl<H: IsTransactionHashWithStaticHrp> IsTransactionHash for H {
 }
 
 impl IsTransactionHashWithStaticHrp for TransactionIntentHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.transaction_intent
     }
 }
 
 impl IsTransactionHashWithStaticHrp for SignedTransactionIntentHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.signed_transaction_intent
     }
 }
 
 impl IsTransactionHashWithStaticHrp for SubintentHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.subintent
     }
 }
@@ -90,13 +90,13 @@ impl IsTransactionHash for IntentHash {
 }
 
 impl IsTransactionHashWithStaticHrp for NotarizedTransactionHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.notarized_transaction
     }
 }
 
 impl IsTransactionHashWithStaticHrp for SystemTransactionHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.system_transaction
     }
 }

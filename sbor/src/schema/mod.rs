@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod custom_traits;
 mod describe;
 mod macros;

@@ -14,10 +14,10 @@ use crate::prelude::*;
 ///
 /// ## Implementers
 /// * You should prefer to implement [`ResolveFrom`] as it is easier to implement
-/// due to trait coherence rules. Sometimes you can only implement [`Resolve`]
-/// however.
+///   due to trait coherence rules. Sometimes you can only implement [`Resolve`]
+///   however.
 /// * If requiring a labelled resolution in your bounds, prefer [`Resolve`]
-/// because slightly more types can implement it.
+///   because slightly more types can implement it.
 pub trait Resolve<X: Resolvable> {
     fn resolve(self) -> X;
 }
@@ -97,10 +97,10 @@ impl<'a, X: ResolveFrom<X> + Clone> ResolveFrom<&'a X> for X {
 ///
 /// ## Implementers
 /// * You should prefer to implement [`LabelledResolveFrom`] as it is easier to implement
-/// due to trait coherence rules. Sometimes you can only implement [`LabelledResolve`]
-/// however.
+///   due to trait coherence rules. Sometimes you can only implement [`LabelledResolve`]
+///   however.
 /// * If requiring a labelled resolution in your bounds, prefer [`LabelledResolve`]
-/// because slightly more types can implement it.
+///   because slightly more types can implement it.
 pub trait LabelledResolve<Y: LabelledResolvable> {
     fn labelled_resolve(self, resolver: &impl LabelResolver<Y::ResolverOutput>) -> Y;
 }
@@ -266,7 +266,7 @@ impl<'a, X: LabelledResolvable> LabelledResolveFrom<&'a String> for Option<X> {
     }
 }
 
-impl<'a, X: LabelledResolvable> LabelledResolveFrom<String> for Option<X> {
+impl<X: LabelledResolvable> LabelledResolveFrom<String> for Option<X> {
     fn labelled_resolve_from(value: String, resolver: &impl LabelResolver<X>) -> Option<X> {
         Some(resolver.resolve_label_into(value.as_str()))
     }

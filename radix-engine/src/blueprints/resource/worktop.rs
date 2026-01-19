@@ -20,6 +20,12 @@ impl WorktopSubstate {
     }
 }
 
+impl Default for WorktopSubstate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WorktopError {
     /// This is now unused, but kept in for backwards compatibility
@@ -40,10 +46,9 @@ impl WorktopBlueprint {
     pub fn get_definition() -> BlueprintDefinitionInit {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut fields = vec![];
-        fields.push(FieldSchema::static_field(
+        let fields = vec![FieldSchema::static_field(
             aggregator.add_child_type_and_descendents::<WorktopSubstate>(),
-        ));
+        )];
 
         let mut functions = index_map_new();
         functions.insert(
@@ -473,7 +478,7 @@ impl WorktopBlueprint {
         )?;
         let worktop: WorktopSubstate = api.field_read_typed(worktop_handle)?;
         let bucket_ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
-            let bucket = Bucket(bucket.clone());
+            let bucket = Bucket(*bucket);
             bucket.non_fungible_local_ids(api)?
         } else {
             index_set_new()
@@ -610,7 +615,7 @@ impl WorktopBlueprintCuttlefishExtension {
         let mut aggregated_balances = AggregateResourceBalances::new();
 
         for (resource, bucket) in worktop.resources {
-            let bucket = Bucket(bucket.clone());
+            let bucket = Bucket(bucket);
             if resource.is_fungible() {
                 let amount = bucket.amount(api)?;
                 aggregated_balances.add_fungible(resource, amount);

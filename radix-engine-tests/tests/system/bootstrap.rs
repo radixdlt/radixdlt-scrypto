@@ -31,7 +31,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -138,7 +138,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -242,8 +242,8 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let genesis_data_chunks = vec![
         GenesisDataChunk::Resources(vec![genesis_resource]),
         GenesisDataChunk::ResourceBalances {
-            accounts: vec![token_holder.clone()],
-            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
+            accounts: vec![token_holder],
+            allocations: vec![(resource_address, vec![resource_allocation])],
         },
     ];
 
@@ -410,10 +410,7 @@ fn test_genesis_stake_allocation() {
         xrd_amount: dec!(1),
     }];
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![
-            validator_0_key.clone().into(),
-            validator_1_key.clone().into(),
-        ]),
+        GenesisDataChunk::Validators(vec![validator_0_key.into(), validator_1_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_0, staker_1],
             allocations: vec![
@@ -479,7 +476,7 @@ fn test_genesis_stake_allocation() {
         {
             let validator_url_entry = reader
                 .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
-                    &new_validators[index].as_node_id(),
+                    new_validators[index].as_node_id(),
                     ModuleId::Metadata,
                     ObjectCollectionKey::KeyValue(
                         MetadataCollection::EntryKeyValue.collection_index(),
@@ -516,7 +513,7 @@ fn test_genesis_time() {
         .only_babylon()
         .commit_each_protocol_update(&mut substate_db);
 
-    let reader = SystemDatabaseReader::new(&mut substate_db);
+    let reader = SystemDatabaseReader::new(&substate_db);
     let timestamp = reader
         .read_typed_object_field::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
             CONSENSUS_MANAGER.as_node_id(),
@@ -607,10 +604,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         xrd_amount: dec!(2),
     }];
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![
-            validator_0_key.clone().into(),
-            validator_1_key.clone().into(),
-        ]),
+        GenesisDataChunk::Validators(vec![validator_0_key.into(), validator_1_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_0, staker_1],
             allocations: vec![
@@ -709,7 +703,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
         xrd_amount: stake_xrd,
     };
     let validator_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake_allocation])],

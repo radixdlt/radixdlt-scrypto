@@ -5,49 +5,22 @@
 target/
 **/*.rs.bk
 
-# CARGO.LOCK - Source controlling strategy
+# Lock files...
 #
-# We have multiple workspaces/crates in this repository, with different Cargo.lock strategies.
+# As of August 2024, and a change in the Rust guidance around lock files for libraries
+# (see https://blog.rust-lang.org/2023/08/29/committing-lockfiles.html), we now source control our
+# Cargo.lock file.
 #
-# First off - let's blanket ignore all Cargo.lock files, so any old/historic ones stay ignored,
-# to try to limit the amount of git breakage which will occur when we start to source control
-# these
+# This allows our builds to be more reducible, and is a partial mitigation against supply chain attacks.
+#
+# We also use --locked for all CI builds to ensure these lock files are actually used.
+#
+# However, this is possibly at the expense of Scrypto users who will have their own Cargo.locks...
+# But our Scrypto template now comes with a Cargo.lock template, which should mitigate thi need.
+#
+# In future, we may wish to add a CI job to build against the latest versions, as per:
+# https://doc.rust-lang.org/cargo/guide/continuous-integration.html#verifying-latest-dependencies
 !Cargo.lock
-
-# TYPE 1:
-# - The root workspace of libraries.
-#   As of August 2024, and a change in the Rust guidance around lock files for libraries
-#   (see https://blog.rust-lang.org/2023/08/29/committing-lockfiles.html), we now source control our
-#   Cargo.lock file.
-#   This allows our builds to be more reducible, and is a partial mitigation against supply chain attacks.
-#   However, this is possibly at the expense of Scrypto users who will have their own Cargo.locks.
-#   So we may wish to add a CI job to build against the latest versions, as per:
-#   https://doc.rust-lang.org/cargo/guide/continuous-integration.html#verifying-latest-dependencies
-!/Cargo.lock
-
-# TYPE 3:
-# - Examples should have their own Cargo.lock files to show good practice
-!examples/**/Cargo.lock
-
-# TYPE 4:
-# - The asset scrypto packages. These need to be built deterministically, so include a Cargo.lock (at a shared workspace layer)
-!radix-engine/assets/blueprints/Cargo.lock
-!radix-transaction-scenarios/assets/blueprints/Cargo.lock
-
-# TYPE 5:
-# - Various test scrypto packages. We don't care too much about either way - but we do want CI to run without a lock, so let's git ignore these.
-#   Also make sure to blanket ignore all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
-!scrypto-test/assets/blueprints/Cargo.lock
-!scrypto-test/tests/blueprints/Cargo.lock
-!radix-engine-tests/assets/blueprints/Cargo.lock
-!radix-clis/tests/blueprints/Cargo.lock
-
-# FURTHER DETAILS:
-# Our CI tests ensure that libraries can build and have their tests run with an empty lock file (ie, with the latest semver
-# crates available on crates.io).
-#
-# In the future, we leave the option open to including more Cargo.locks for more of the repository, to speed up our local
-# builds and provide a consistent set of dependencies developers can use to get-up-and-running.
 
 # Flamegraph profiles
 flamegraph.svg

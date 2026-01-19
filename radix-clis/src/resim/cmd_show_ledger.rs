@@ -31,13 +31,8 @@ impl ShowLedger {
 
         let instant = Self::get_current_time(out, TimePrecisionV1::Minute)?;
         let date_time = UtcDateTime::from_instant(&instant).unwrap();
-        writeln!(
-            out,
-            "{}: {}",
-            "Current Time".green().bold(),
-            date_time.to_string()
-        )
-        .map_err(Error::IOError)?;
+        writeln!(out, "{}: {}", "Current Time".green().bold(), date_time)
+            .map_err(Error::IOError)?;
 
         Ok(())
     }

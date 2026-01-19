@@ -58,6 +58,7 @@ impl<'a> NameChange<'a> {
         }
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn into_owned(&self) -> OwnedNameChange {
         match *self {
             NameChange::Unchanged => OwnedNameChange::Unchanged,
@@ -113,7 +114,7 @@ pub struct SchemaComparisonResult<'s, S: CustomSchema> {
 
 impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
     pub fn is_valid(&self) -> bool {
-        self.errors.len() == 0
+        self.errors.is_empty()
     }
 
     pub fn error_message(
@@ -121,7 +122,7 @@ impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
         base_schema_name: &str,
         compared_schema_name: &str,
     ) -> Option<String> {
-        if self.errors.len() == 0 {
+        if self.errors.is_empty() {
             return None;
         }
         let mut output = String::new();
@@ -136,7 +137,7 @@ impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
         for error in &self.errors {
             write!(&mut output, "- ").unwrap();
             error
-                .write_against_schemas(&mut output, &self.base_schema, &self.compared_schema)
+                .write_against_schemas(&mut output, self.base_schema, self.compared_schema)
                 .unwrap();
             writeln!(&mut output).unwrap();
         }
@@ -219,7 +220,7 @@ fn combine_type_names<S: CustomSchema>(
     }
 }
 
-impl<'s, 'a, S: CustomSchema> PathAnnotate
+impl<'a, S: CustomSchema> PathAnnotate
     for (
         &'a TypeFullPath,
         &'a Schema<S>,

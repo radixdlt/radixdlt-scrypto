@@ -64,6 +64,12 @@ macro_rules! labelled_resolvable_address {
     };
 }
 
+pub trait IntoManifestAddress {
+    type ManifestAddress;
+
+    fn into_manifest_address(self) -> Self::ManifestAddress;
+}
+
 // Alias for backwards-compatibility
 pub type DynamicGlobalAddress = ManifestGlobalAddress;
 
@@ -71,6 +77,14 @@ pub type DynamicGlobalAddress = ManifestGlobalAddress;
 pub enum ManifestGlobalAddress {
     Static(GlobalAddress),
     Named(ManifestNamedAddress),
+}
+
+impl IntoManifestAddress for GlobalAddress {
+    type ManifestAddress = ManifestGlobalAddress;
+
+    fn into_manifest_address(self) -> Self::ManifestAddress {
+        Self::ManifestAddress::Static(self)
+    }
 }
 
 scrypto_describe_for_manifest_type!(
@@ -253,6 +267,14 @@ pub enum ManifestPackageAddress {
     Named(ManifestNamedAddress),
 }
 
+impl IntoManifestAddress for PackageAddress {
+    type ManifestAddress = ManifestPackageAddress;
+
+    fn into_manifest_address(self) -> Self::ManifestAddress {
+        Self::ManifestAddress::Static(self)
+    }
+}
+
 scrypto_describe_for_manifest_type!(
     ManifestPackageAddress,
     PACKAGE_ADDRESS_TYPE,
@@ -343,7 +365,7 @@ impl ManifestPackageAddress {
 
 impl From<PackageAddress> for ManifestPackageAddress {
     fn from(value: PackageAddress) -> Self {
-        Self::Static(value.into())
+        Self::Static(value)
     }
 }
 
@@ -408,6 +430,14 @@ pub type DynamicComponentAddress = ManifestComponentAddress;
 pub enum ManifestComponentAddress {
     Static(ComponentAddress),
     Named(ManifestNamedAddress),
+}
+
+impl IntoManifestAddress for ComponentAddress {
+    type ManifestAddress = ManifestComponentAddress;
+
+    fn into_manifest_address(self) -> Self::ManifestAddress {
+        Self::ManifestAddress::Static(self)
+    }
 }
 
 scrypto_describe_for_manifest_type!(
@@ -515,6 +545,14 @@ pub type DynamicResourceAddress = ManifestResourceAddress;
 pub enum ManifestResourceAddress {
     Static(ResourceAddress),
     Named(ManifestNamedAddress),
+}
+
+impl IntoManifestAddress for ResourceAddress {
+    type ManifestAddress = ManifestResourceAddress;
+
+    fn into_manifest_address(self) -> Self::ManifestAddress {
+        Self::ManifestAddress::Static(self)
+    }
 }
 
 scrypto_describe_for_manifest_type!(

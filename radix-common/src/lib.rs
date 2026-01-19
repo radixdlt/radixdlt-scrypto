@@ -72,6 +72,7 @@ pub mod prelude {
     pub use super::address::*;
     pub use super::constants::*;
     pub use super::crypto::*;
+    pub use super::data::conversions::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
     pub use super::math::*;
@@ -87,6 +88,7 @@ pub mod prelude {
 
 pub(crate) mod internal_prelude {
     pub use super::prelude::*;
+    pub use crate::manifest_type;
     pub use sbor::representations::*;
     pub use sbor::traversal::*;
 }

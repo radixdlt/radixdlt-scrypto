@@ -208,10 +208,10 @@ impl<
     }
 }
 
-////////////////////////////////////////////////////////////
-/// PUBLIC TRAITS AND METHODS
-/// All public methods first - these all need good rust docs
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
+//  PUBLIC TRAITS AND METHODS
+//  All public methods first - these all need good rust docs
+// //////////////////////////////////////////////////////////
 
 pub trait UpdateMetadataBuilder: private::CanSetMetadata {
     fn metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
@@ -558,7 +558,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     ///     .create_with_no_initial_supply();
     /// ```
     pub fn create_with_no_initial_supply(self) -> FungibleResourceManager {
-        let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -610,7 +610,7 @@ impl<
     ///         .into();
     /// ```
     pub fn create_with_no_initial_supply(self) -> NonFungibleResourceManager {
-        let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -668,10 +668,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> FungibleBucket {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -721,10 +718,7 @@ impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -776,10 +770,7 @@ impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -831,10 +822,7 @@ impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -890,10 +878,7 @@ impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
         T: IntoIterator<Item = D>,
         D: ScryptoEncode,
     {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = ScryptoVmV1Api::blueprint_call(
             RESOURCE_PACKAGE,
@@ -918,10 +903,10 @@ impl<D: NonFungibleData, S: ScryptoCategorize + ScryptoEncode + ScryptoDecode>
     }
 }
 
-///////////////////////////////////
-/// PRIVATE TRAIT IMPLEMENTATIONS
-/// These don't need good rust docs
-///////////////////////////////////
+// /////////////////////////////////
+//  PRIVATE TRAIT IMPLEMENTATIONS
+//  These don't need good rust docs
+// /////////////////////////////////
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,

@@ -27,14 +27,11 @@ fn call_method_with_owned_actor_should_fail() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError> {
-            match export_name {
-                "new" => {
-                    let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;
-                    let args = scrypto_encode(&Own(node_id)).unwrap();
+            if export_name == "new" {
+                let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;
+                let args = scrypto_encode(&Own(node_id)).unwrap();
 
-                    let _ = api.call_method(&node_id, "test", args)?;
-                }
-                _ => {}
+                let _ = api.call_method(&node_id, "test", args)?;
             }
 
             Ok(IndexedScryptoValue::from_typed(&()))

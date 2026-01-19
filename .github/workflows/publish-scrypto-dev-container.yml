@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build-amd:
+  build_amd64:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-16-cores-selfhosted
@@ -30,5 +30,49 @@ jobs:
       scan_image: true
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: amd64
+      flavor: |
+        suffix=-amd64
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_arm64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "scrypto-dev-container"
+      tag: ${{ inputs.docker_tag }}
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "scrypto-dev-container"
+      platforms: "linux/arm64"
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: arm64
+      flavor: |
+        suffix=-arm64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  join_multiarch_image:
+    name: Join multiarch image
+    needs:
+      - build_amd64
+      - build_arm64
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
+      amd_meta_data_json: ${{needs.build_amd64.outputs.json}}
+    secrets:
+      role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}

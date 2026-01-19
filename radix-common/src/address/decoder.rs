@@ -26,8 +26,8 @@ impl AddressBech32Decoder {
         address: &str,
     ) -> Result<(String, EntityType, Vec<u8>), AddressBech32DecodeError> {
         // Decode the address string
-        let (hrp, data, variant) = bech32::decode(address)
-            .map_err(|err| AddressBech32DecodeError::Bech32mDecodingError(err))?;
+        let (hrp, data, variant) =
+            bech32::decode(address).map_err(AddressBech32DecodeError::Bech32mDecodingError)?;
 
         // Validate the Bech32 variant to ensure that is is Bech32m
         match variant {
@@ -37,10 +37,10 @@ impl AddressBech32Decoder {
 
         // Convert the data to u8 from u5.
         let data = Vec::<u8>::from_base32(&data)
-            .map_err(|err| AddressBech32DecodeError::Bech32mDecodingError(err))?;
+            .map_err(AddressBech32DecodeError::Bech32mDecodingError)?;
 
         // Obtain the HRP based on the entity byte in the data
-        let entity_type = if let Some(entity_type_id) = data.get(0) {
+        let entity_type = if let Some(entity_type_id) = data.first() {
             EntityType::from_repr(*entity_type_id).ok_or(
                 AddressBech32DecodeError::InvalidEntityTypeId(*entity_type_id),
             )?

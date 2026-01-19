@@ -48,7 +48,7 @@ impl TxnSync {
             }
             cur_version
         };
-        let to_version = self.max_version.clone();
+        let to_version = self.max_version;
 
         let start = std::time::Instant::now();
         let (tx, rx) = flume::bounded(10);
@@ -93,7 +93,7 @@ impl TxnSync {
                 database.commit(&database_updates);
 
                 // print progress
-                if new_version < 1000 || new_version % 1000 == 0 {
+                if new_version < 1000 || new_version.is_multiple_of(1000) {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
             }
@@ -152,7 +152,7 @@ impl CommittedTxnReader {
                 loop {
                     db.try_catch_up_with_primary()
                         .expect("DB catch up with primary failed");
-                    let mut txn_iter = db.iterator_cf(
+                    let txn_iter = db.iterator_cf(
                         &db.cf_handle("raw_ledger_transactions").unwrap(),
                         IteratorMode::From(
                             &iter_start_state_version.to_be_bytes(),
@@ -166,7 +166,7 @@ impl CommittedTxnReader {
                             Direction::Forward,
                         ),
                     );
-                    while let Some(next_txn) = txn_iter.next() {
+                    for next_txn in txn_iter {
                         let next_txn = next_txn.unwrap();
                         let next_state_version =
                             u64::from_be_bytes(next_txn.0.as_ref().try_into().unwrap());
@@ -185,7 +185,7 @@ impl CommittedTxnReader {
                             .0;
 
                         tx.send((
-                            RawLedgerTransaction::from_slice(next_txn.1.to_vec()),
+                            RawLedgerTransaction::from_slice(&next_txn.1),
                             expected_state_root_hash,
                         ))
                         .unwrap();

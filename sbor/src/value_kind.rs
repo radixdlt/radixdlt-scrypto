@@ -1,12 +1,10 @@
 use crate::rust::fmt::Debug;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/rust/tags
-FROM rust:1.81.0-slim-bookworm AS base-image
+FROM rust:1.92.0-slim-bookworm AS base-image
 
 RUN apt update && apt install -y \
     cmake=3.25.1-1 \
@@ -64,12 +64,14 @@ COPY --from=builder /app/target/release/rtmc /usr/local/bin/rtmc
 COPY --from=builder /app/target/release/rtmd /usr/local/bin/rtmd
 COPY --from=builder /app/target/release/scrypto-bindgen /usr/local/bin/scrypto-bindgen
 RUN rustup target add wasm32-unknown-unknown
+RUN rustup component add rust-src
 RUN rustup component add rustfmt
 RUN rustup component add clippy
 
 FROM base-image AS scrypto-builder
 COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
+RUN rustup component add rust-src
 WORKDIR /src
 
 ENTRYPOINT ["scrypto", "build", "--path", "/src"]

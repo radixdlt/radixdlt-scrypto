@@ -53,11 +53,10 @@ impl MultiPoolFuzzAction {
                 (builder, false)
             }
             MultiPoolFuzzAction::ProtectedDeposit => {
-                let resource_address = multi_pool_meta
+                let resource_address = *multi_pool_meta
                     .pool_resources
                     .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
-                    .unwrap()
-                    .clone();
+                    .unwrap();
                 let amount = fuzzer.next_amount();
 
                 let builder = builder
@@ -75,11 +74,10 @@ impl MultiPoolFuzzAction {
                 (builder, amount.is_zero())
             }
             MultiPoolFuzzAction::ProtectedWithdraw => {
-                let resource_address = multi_pool_meta
+                let resource_address = *multi_pool_meta
                     .pool_resources
                     .get(fuzzer.next_usize(multi_pool_meta.pool_resources.len()))
-                    .unwrap()
-                    .clone();
+                    .unwrap();
                 let amount = fuzzer.next_amount();
                 let withdraw_strategy = fuzzer.next_withdraw_strategy();
 

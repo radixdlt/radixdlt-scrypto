@@ -24,7 +24,7 @@ impl<T: ManifestDecode> TransactionPreparableFromValue for SummarizedRawFullValu
         let summary = Summary {
             effective_length: end_offset - start_offset,
             total_bytes_hashed: end_offset - start_offset,
-            hash: hash(&decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
+            hash: hash(decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
         };
         Ok(Self { inner, summary })
     }
@@ -136,7 +136,7 @@ impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
         let summary = Summary {
             effective_length: end_offset - start_offset,
             total_bytes_hashed: end_offset - start_offset,
-            hash: hash(&decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
+            hash: hash(decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
         };
         Ok(Self { inner, summary })
     }

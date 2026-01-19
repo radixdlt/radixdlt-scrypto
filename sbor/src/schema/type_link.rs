@@ -127,7 +127,7 @@ impl SchemaTypeLink for LocalTypeId {}
 
 impl LocalTypeId {
     pub fn any() -> Self {
-        Self::WellKnown(basic_well_known_types::ANY_TYPE.into())
+        Self::WellKnown(basic_well_known_types::ANY_TYPE)
     }
 }
 
@@ -137,7 +137,7 @@ pub struct WellKnownTypeId(u8);
 
 impl WellKnownTypeId {
     pub const fn of(x: u8) -> Self {
-        Self(x as u8)
+        Self(x)
     }
 
     pub const fn as_index(&self) -> usize {

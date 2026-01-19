@@ -1,3 +1,5 @@
+#![allow(clippy::test_attr_in_doctest)]
+
 //! This module defines and implements the [`TestEnvironment`] struct.
 
 use super::*;
@@ -99,9 +101,9 @@ use crate::prelude::*;
 /// * A method to enable the kernel module (e.g., [`TestEnvironment::enable_costing_module`]).
 /// * A method to disable the kernel module (e.g., [`TestEnvironment::disable_costing_module`]).
 /// * A method to perform some action in a callback with the module enabled (e.g.,
-/// [`TestEnvironment::with_costing_module_enabled`]).
+///   [`TestEnvironment::with_costing_module_enabled`]).
 /// * A method to perform some action in a callback with the module disabled (e.g.,
-/// [`TestEnvironment::with_costing_module_disabled`]).
+///   [`TestEnvironment::with_costing_module_disabled`]).
 ///
 /// The simple enable and disable methods are quite straightforward: call them to enable or disable
 /// a kernel module. The `with_*` methods are a little bit more intricate, they allow you to perform
@@ -200,27 +202,27 @@ where
     /// # Arguments
     ///
     /// * `package_address`: [`PackageAddress`] - The address of the package that contains the
-    /// blueprint.
+    ///   blueprint.
     /// * `blueprint_name`: [`&str`] - The name of the blueprint.
     /// * `function_name`: [`&str`] - The nae of the function.
     /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
-    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///   is fulfilled by any type that implements [`ScryptoEncode`].
     ///
     /// # Returns
     ///
     /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
-    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
-    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
-    /// [`ScryptoDecode`].
+    ///   was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    ///   [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    ///   [`ScryptoDecode`].
     ///
     /// # Panics
     ///
     /// This method panics in the following two cases:
     ///
     /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
-    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    ///   the SBOR documentation on more information on why SBOR encoding may fail.
     /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
-    /// could be decoded as the desired output type.
+    ///   could be decoded as the desired output type.
     pub fn call_function_typed<I, O>(
         &mut self,
         package_address: PackageAddress,
@@ -247,26 +249,26 @@ where
     /// # Arguments
     ///
     /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
-    /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
+    ///   fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
     /// * `method_name`: [`&str`] - The name of the method to invoke.
     /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
-    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///   is fulfilled by any type that implements [`ScryptoEncode`].
     ///
     /// # Returns
     ///
     /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
-    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
-    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
-    /// [`ScryptoDecode`].
+    ///   was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    ///   [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    ///   [`ScryptoDecode`].
     ///
     /// # Panics
     ///
     /// This method panics in the following two cases:
     ///
     /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
-    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    ///   the SBOR documentation on more information on why SBOR encoding may fail.
     /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
-    /// could be decoded as the desired output type.
+    ///   could be decoded as the desired output type.
     pub fn call_method_typed<N, I, O>(
         &mut self,
         node_id: N,
@@ -293,26 +295,26 @@ where
     /// # Arguments
     ///
     /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
-    /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
+    ///   fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
     /// * `method_name`: [`&str`] - The name of the method to invoke.
     /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
-    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///   is fulfilled by any type that implements [`ScryptoEncode`].
     ///
     /// # Returns
     ///
     /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
-    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
-    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
-    /// [`ScryptoDecode`].
+    ///   was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    ///   [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    ///   [`ScryptoDecode`].
     ///
     /// # Panics
     ///
     /// This method panics in the following two cases:
     ///
     /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
-    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    ///   the SBOR documentation on more information on why SBOR encoding may fail.
     /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
-    /// could be decoded as the desired output type.
+    ///   could be decoded as the desired output type.
     pub fn call_direct_access_method_typed<N, I, O>(
         &mut self,
         node_id: N,
@@ -339,27 +341,27 @@ where
     /// # Arguments
     ///
     /// * `node_id`: `T` - The node to invoke the method on. This is a generic argument that's
-    /// fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
+    ///   fulfilled by any type that implements [`Into<NodeId>`], thus, any address type can be used.
     /// * `module`: [`AttachedModuleId`] - The module id.
     /// * `method_name`: [`&str`] - The name of the method to invoke.
     /// * `args`: `&I` - The arguments to invoke the method with. This is a generic arguments that
-    /// is fulfilled by any type that implements [`ScryptoEncode`].
+    ///   is fulfilled by any type that implements [`ScryptoEncode`].
     ///
     /// # Returns
     ///
     /// * [`Result<O, RuntimeError>`] - The returns from the method invocation. If the invocation
-    /// was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
-    /// [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
-    /// [`ScryptoDecode`].
+    ///   was successful a [`Result::Ok`] is returned, otherwise a [`Result::Err`] is returned. The
+    ///   [`Result::Ok`] variant is a generic that's fulfilled by any type that implements
+    ///   [`ScryptoDecode`].
     ///
     /// # Panics
     ///
     /// This method panics in the following two cases:
     ///
     /// * Through an unwrap when calling [`scrypto_encode`] on the method arguments. Please consult
-    /// the SBOR documentation on more information on why SBOR encoding may fail.
+    ///   the SBOR documentation on more information on why SBOR encoding may fail.
     /// * Through an unwrap when calling [`scrypto_decode`] on the returns. This panics if the type
-    /// could be decoded as the desired output type.
+    ///   could be decoded as the desired output type.
     pub fn call_module_method_typed<N, I, O>(
         &mut self,
         node_id: N,
@@ -664,16 +666,16 @@ where
     /// # Arguments
     ///
     /// * `node_id`: [`N`] - The address of the component to read the state of. This is a generic
-    /// type parameter that's satisfied by any type that implements [`Into<NodeId>`].
+    ///   type parameter that's satisfied by any type that implements [`Into<NodeId>`].
     /// * `callback`: [`F`] - A callback function to call after the component state has been read
-    /// and decoded into the type specified by the generic parameter [`S`]. Anything returned from
-    /// this callback is returned from this method unless an error happens after the callback is
-    /// executed.
+    ///   and decoded into the type specified by the generic parameter [`S`]. Anything returned from
+    ///   this callback is returned from this method unless an error happens after the callback is
+    ///   executed.
     ///
     /// # Returns
     ///
     /// * [`Result<O, RuntimeError>`] - The output of the callback function passed in or a runtime
-    /// error if one of the steps failed.
+    ///   error if one of the steps failed.
     ///
     /// # Panics
     ///

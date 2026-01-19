@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 #[cfg(windows)]
 use colored::*;
 use radix_clis::scrypto_bindgen;

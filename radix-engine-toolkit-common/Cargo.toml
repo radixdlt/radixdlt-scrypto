@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-toolkit-common"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "Types and functions added to this repository to be shared between the radix-engine-toolkit-common and consumers of the engine, from the Radix DLT project."
 readme = "README.md"

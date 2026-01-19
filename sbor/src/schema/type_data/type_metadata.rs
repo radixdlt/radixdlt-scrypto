@@ -77,14 +77,14 @@ impl TypeMetadata {
         self.type_name.as_ref().map(|c| c.to_string())
     }
 
-    pub fn get_field_names<'a>(&'a self) -> Option<&'a [Cow<'static, str>]> {
+    pub fn get_field_names(&self) -> Option<&[Cow<'static, str>]> {
         match &self.child_names {
             Some(ChildNames::NamedFields(field_names)) => Some(field_names.as_slice()),
             _ => None,
         }
     }
 
-    pub fn get_field_name<'a>(&'a self, field_index: usize) -> Option<&'a str> {
+    pub fn get_field_name(&self, field_index: usize) -> Option<&str> {
         match &self.child_names {
             Some(ChildNames::NamedFields(field_names)) => {
                 Some(field_names.get(field_index)?.borrow())
@@ -93,14 +93,14 @@ impl TypeMetadata {
         }
     }
 
-    pub fn get_enum_variant_data<'a>(&'a self, discriminator: u8) -> Option<&'a TypeMetadata> {
+    pub fn get_enum_variant_data(&self, discriminator: u8) -> Option<&TypeMetadata> {
         match &self.child_names {
             Some(ChildNames::EnumVariants(variants)) => variants.get(&discriminator),
             _ => None,
         }
     }
 
-    pub fn get_matching_tuple_data(&self, fields_length: usize) -> TupleData {
+    pub fn get_matching_tuple_data(&self, fields_length: usize) -> TupleData<'_> {
         TupleData {
             name: self.get_name(),
             field_names: self
@@ -113,7 +113,7 @@ impl TypeMetadata {
         &self,
         variant_id: u8,
         fields_length: usize,
-    ) -> EnumVariantData {
+    ) -> EnumVariantData<'_> {
         let enum_name = self.get_name();
         let Some(ChildNames::EnumVariants(variants)) = &self.child_names else {
             return EnumVariantData {
