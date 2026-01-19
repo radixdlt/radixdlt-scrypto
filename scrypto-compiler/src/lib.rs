@@ -601,7 +601,7 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<Vec<(PathBuf, String, Option<cargo_toml::Value>)>>, ScryptoCompilerError>
     {
-        let manifest = Manifest::from_path(&manifest_path).map_err(|error| {
+        let manifest = Manifest::from_path(manifest_path).map_err(|error| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.to_path_buf(), error)
         })?;
         if let Some(workspace) = manifest.workspace {
@@ -650,7 +650,7 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<String>, ScryptoCompilerError> {
         // Find the binary name
-        let manifest = Manifest::from_path(&manifest_path).map_err(|error| {
+        let manifest = Manifest::from_path(manifest_path).map_err(|error| {
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.to_path_buf(), error)
         })?;
         if let Some(w) = manifest.workspace {

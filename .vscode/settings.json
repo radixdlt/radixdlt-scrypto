@@ -73,18 +73,7 @@
         "Validatable",
         "virtualizable",
         "Wasmer",
-        "Wasmi"
-    ],
-    "rust-analyzer.cargo.extraEnv": {
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
-    },
-    "rust-analyzer.runnables.extraEnv": {
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
-    },
-    "rust-analyzer.check.extraEnv": {
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
-    },
-    "rust-analyzer.server.extraEnv": {
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
-    },
+        "Wasmi",
+        "wasmprinter"
+    ]
 }
