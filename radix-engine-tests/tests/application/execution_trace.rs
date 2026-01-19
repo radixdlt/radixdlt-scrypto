@@ -35,7 +35,7 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         .build();
     let receipt = ledger.preview_manifest(
         manifest,
-        vec![public_key.clone().into()],
+        vec![public_key.into()],
         0,
         PreviewFlags::default(),
     );
@@ -83,8 +83,7 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
     assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == account.into()
-            && r.amount == Decimal::from(total_fee_paid).checked_neg().unwrap()));
+        .any(|r| r.node_id == account.into() && r.amount == total_fee_paid.checked_neg().unwrap()));
 }
 
 #[test]
@@ -107,7 +106,7 @@ fn test_trace_non_fungible_resource_transfers_within_blueprint() {
         .build();
     let receipt = ledger.preview_manifest(
         manifest,
-        vec![public_key.clone().into()],
+        vec![public_key.into()],
         0,
         PreviewFlags::default(),
     );
@@ -155,8 +154,7 @@ fn test_trace_non_fungible_resource_transfers_within_blueprint() {
     assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == account.into()
-            && r.amount == Decimal::from(total_fee_paid).checked_neg().unwrap()));
+        .any(|r| r.node_id == account.into() && r.amount == total_fee_paid.checked_neg().unwrap()));
 }
 
 #[test]
@@ -178,20 +176,19 @@ fn test_trace_fee_payments() {
         .drop_auth_zone_proofs()
         .build();
 
-    let funded_component = ledger
+    let funded_component = *ledger
         .execute_manifest(manifest_prepare, vec![])
         .expect_commit(true)
         .new_component_addresses()
         .into_iter()
-        .nth(0)
-        .unwrap()
-        .clone();
+        .next()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            funded_component.clone(),
+            funded_component,
             "test_lock_contingent_fee",
             manifest_args!(),
         )
@@ -264,7 +261,7 @@ fn test_instruction_traces() {
         // Expecting two traces: an output bucket from the "free" call
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
-        let free_trace = traces.get(0).unwrap();
+        let free_trace = traces.first().unwrap();
         if let TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
@@ -279,7 +276,7 @@ fn test_instruction_traces() {
         assert!(free_trace.input.is_empty());
         assert!(free_trace.output.proofs.is_empty());
         assert_eq!(1, free_trace.output.buckets.len());
-        let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
+        let output_resource = free_trace.output.buckets.values().next().unwrap();
         assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
 
@@ -294,7 +291,7 @@ fn test_instruction_traces() {
         assert!(worktop_put_trace.output.is_empty());
         assert!(worktop_put_trace.input.proofs.is_empty());
         assert_eq!(1, worktop_put_trace.input.buckets.len());
-        let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = worktop_put_trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -305,7 +302,7 @@ fn test_instruction_traces() {
         // Take from worktop is just a single sys call with a single bucket output
         assert_eq!(1, traces.len());
 
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -318,7 +315,7 @@ fn test_instruction_traces() {
         assert!(trace.output.proofs.is_empty());
         assert_eq!(1, trace.output.buckets.len());
 
-        let output_resource = trace.output.buckets.values().nth(0).unwrap();
+        let output_resource = trace.output.buckets.values().next().unwrap();
         assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
     }
@@ -327,7 +324,7 @@ fn test_instruction_traces() {
         // CREATE_PROOF_FROM_BUCKET
         let traces = traces_for_instruction(&traces, 3);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT),
@@ -340,7 +337,7 @@ fn test_instruction_traces() {
         assert!(trace.output.buckets.is_empty());
         assert_eq!(1, trace.output.proofs.len());
 
-        let output_proof = trace.output.proofs.values().nth(0).unwrap();
+        let output_proof = trace.output.proofs.values().next().unwrap();
         assert_eq!(XRD, output_proof.resource_address());
         assert_eq!(dec!(10000), output_proof.amount());
     }
@@ -349,7 +346,7 @@ fn test_instruction_traces() {
         // DROP_PROOF
         let traces = traces_for_instruction(&traces, 4);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
@@ -362,7 +359,7 @@ fn test_instruction_traces() {
         assert!(trace.input.buckets.is_empty());
         assert_eq!(1, trace.input.proofs.len());
 
-        let input_proof = trace.input.proofs.values().nth(0).unwrap();
+        let input_proof = trace.input.proofs.values().next().unwrap();
         assert_eq!(XRD, input_proof.resource_address());
         assert_eq!(dec!(10000), input_proof.amount());
     }
@@ -371,7 +368,7 @@ fn test_instruction_traces() {
         // RETURN_TO_WORKTOP
         let traces = traces_for_instruction(&traces, 5);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -383,7 +380,7 @@ fn test_instruction_traces() {
         assert!(trace.input.proofs.is_empty());
         assert_eq!(1, trace.input.buckets.len());
 
-        let input_resource = trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -394,7 +391,7 @@ fn test_instruction_traces() {
         // Expected two traces: take from worktop and call scrypto function
         assert_eq!(2, traces.len());
 
-        let take_trace = traces.get(0).unwrap();
+        let take_trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -416,7 +413,7 @@ fn test_instruction_traces() {
         assert!(call_trace.output.is_empty());
         assert!(call_trace.input.proofs.is_empty());
         assert_eq!(1, call_trace.input.buckets.len());
-        let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = call_trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -463,12 +460,7 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket5")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = ledger.preview_manifest(
-        manifest,
-        vec![pk.clone().into()],
-        0,
-        PreviewFlags::default(),
-    );
+    let receipt = ledger.preview_manifest(manifest, vec![pk.into()], 0, PreviewFlags::default());
 
     // Assert
     {
@@ -625,7 +617,7 @@ fn test_worktop_changes() {
 }
 
 fn traces_for_instruction(
-    traces: &Vec<ExecutionTrace>,
+    traces: &[ExecutionTrace],
     instruction_index: usize,
 ) -> Vec<&ExecutionTrace> {
     traces
@@ -1098,7 +1090,7 @@ fn test_trace_non_fungible_resource_transfers_using_manifest() {
 
     let receipt = ledger.preview_manifest(
         manifest,
-        vec![from_public_key.clone().into()],
+        vec![from_public_key.into()],
         0,
         PreviewFlags::default(),
     );

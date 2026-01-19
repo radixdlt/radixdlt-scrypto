@@ -53,6 +53,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
 }
 
 impl EventTypeIdentifier {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         let emitter_size = match &self.0 {
             Emitter::Function(blueprint_id) => blueprint_id.len(),

@@ -44,7 +44,7 @@ mod tests {
             custom_context: Default::default(),
             depth_limit: 64,
         };
-        let actual = ManifestRawPayload::new_from_valid_slice_with_checks(&payload)
+        let actual = ManifestRawPayload::new_from_valid_slice_with_checks(payload)
             .unwrap()
             .to_string(display_context);
         let actual_clean: String = actual
@@ -179,7 +179,7 @@ Enum<3u8>(
                 hash_encoded_sbor_value(&transaction.signed_intent.intent.header).as_slice(),
                 hash_encoded_sbor_value(&transaction.signed_intent.intent.instructions).as_slice(),
                 hash(
-                    hash(&[1, 2]), // one blob only
+                    hash([1, 2]), // one blob only
                 )
                 .as_slice(),
                 hash_encoded_sbor_value(&transaction.signed_intent.intent.message).as_slice(),
@@ -191,8 +191,8 @@ Enum<3u8>(
             ExecutableTransaction::new_v1(
                 manifest_encode(&manifest.instructions).unwrap(),
                 AuthZoneInit::proofs(btreeset!(
-                    NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
-                    NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
+                    NonFungibleGlobalId::from_public_key(sig_1_private_key.public_key()),
+                    NonFungibleGlobalId::from_public_key(sig_2_private_key.public_key())
                 )),
                 indexset!(
                     Reference(FAUCET.into_node_id()),
@@ -201,7 +201,7 @@ Enum<3u8>(
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
                 indexmap!(
-                    hash(&[1, 2]) => vec![1, 2]
+                    hash([1, 2]) => vec![1, 2]
                 ),
                 ExecutionContext {
                     unique_hash: expected_intent_hash.0,

@@ -32,8 +32,8 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
     let code_hash = CodeHash(Hash([0u8; 32]));
     let instrumented_code = validator
-        .validate(&code, iter::empty())
-        .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
+        .validate(code, iter::empty())
+        .map_err(ExtractSchemaError::InvalidWasm)?
         .0;
 
     // Execute with empty state (with default cost unit limit)

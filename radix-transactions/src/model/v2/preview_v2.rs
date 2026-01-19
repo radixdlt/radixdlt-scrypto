@@ -121,7 +121,7 @@ impl ValidatedPreviewTransactionV2 {
 
         let executable_subintents = subintents
             .into_iter()
-            .zip(self.non_root_subintents_info.into_iter())
+            .zip(self.non_root_subintents_info)
             .map(|(subintent, info)| create_executable_intent(subintent.intent_core, info, &flags))
             .collect();
 

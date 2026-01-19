@@ -224,6 +224,12 @@ impl TypedInMemoryTreeStore {
     }
 }
 
+impl Default for TypedInMemoryTreeStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // This implementation allows interpreting the TypedInMemoryTreeStore as a single store
 impl TreeReader<Version> for TypedInMemoryTreeStore {
     fn get_node_option(
@@ -232,7 +238,7 @@ impl TreeReader<Version> for TypedInMemoryTreeStore {
     ) -> Result<Option<Node<Version>>, StorageError> {
         Ok(
             ReadableTreeStore::get_node(self, &StoredTreeNodeKey::unprefixed(node_key.clone()))
-                .map(|tree_node| tree_node.into_jmt_node(&node_key)),
+                .map(|tree_node| tree_node.into_jmt_node(node_key)),
         )
     }
 }
@@ -317,8 +323,14 @@ impl SerializedInMemoryTreeStore {
         }
     }
 
-    pub fn memory(&self) -> Ref<HashMap<Vec<u8>, Vec<u8>>> {
+    pub fn memory(&self) -> Ref<'_, HashMap<Vec<u8>, Vec<u8>>> {
         self.memory.borrow()
+    }
+}
+
+impl Default for SerializedInMemoryTreeStore {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -383,7 +395,7 @@ impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for NibblePath {
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let even = self.num_nibbles() % 2 == 0;
+        let even = self.num_nibbles().is_multiple_of(2);
         (even, self.bytes()).encode_body(encoder)
     }
 }

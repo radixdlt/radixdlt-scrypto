@@ -192,7 +192,7 @@ fn can_mint_non_fungible_with_global() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -219,7 +219,7 @@ fn create_non_fungible_mutable() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -269,7 +269,7 @@ fn can_burn_non_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -341,7 +341,7 @@ fn can_update_non_fungible_when_mutable() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -363,7 +363,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -392,7 +392,7 @@ fn cannot_update_non_fungible_when_field_does_not_exist() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -421,7 +421,7 @@ fn cannot_update_non_fungible_when_id_does_not_exist() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -450,7 +450,7 @@ fn cannot_get_non_fungible_when_id_does_not_exist() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -471,7 +471,7 @@ fn can_call_non_fungible_data_reference() {
         account.into(),
         "test_key",
         "test_value",
-        NonFungibleGlobalId::from_public_key(&public_key),
+        NonFungibleGlobalId::from_public_key(public_key),
     );
     let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
@@ -486,7 +486,7 @@ fn can_call_non_fungible_data_reference() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let resource_address = receipt.expect_commit_success().new_resource_addresses()[1];
 
@@ -525,7 +525,7 @@ fn cannot_have_non_fungible_data_ownership() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -554,7 +554,7 @@ fn can_update_and_get_non_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -576,7 +576,7 @@ fn can_update_and_get_non_fungible_reference() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -601,7 +601,7 @@ fn can_check_if_contains_non_fungible_in_vault() {
     // Act
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -628,7 +628,7 @@ fn can_check_if_contains_non_fungible_in_bucket() {
     // Act
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -671,7 +671,7 @@ fn test_non_fungible_part_1() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -706,7 +706,7 @@ fn test_non_fungible_part_2() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -729,7 +729,7 @@ fn test_singleton_non_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -755,7 +755,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let badge_resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let nft_resource_address = receipt.expect_commit(true).new_resource_addresses()[1];
@@ -781,7 +781,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 
@@ -800,7 +800,7 @@ fn test_mint_update_and_withdraw() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -825,7 +825,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -900,7 +900,7 @@ fn create_ruid_non_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -973,7 +973,7 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1000,7 +1000,7 @@ fn cannot_create_ruid_non_fungible_and_mint_non_ruid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1135,7 +1135,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1274,7 +1274,7 @@ fn create_non_fungible_with_integer_address_reservation() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1301,7 +1301,7 @@ fn create_non_fungible_integer() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1328,7 +1328,7 @@ fn create_non_fungible_ruid_with_address_reservation() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1355,7 +1355,7 @@ fn create_non_fungible_ruid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -1382,7 +1382,7 @@ fn cant_create_non_fungible_with_id_type_does_not_match() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

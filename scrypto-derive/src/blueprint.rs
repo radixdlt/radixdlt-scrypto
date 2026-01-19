@@ -233,14 +233,12 @@ pub fn derive_sensible_identifier_from_path(path: &Path) -> Result<String> {
         let mut with_underscore = false;
 
         for c in quote! { #segment }.to_string().chars() {
-            if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
+            if c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() {
                 result.push(c);
                 with_underscore = false;
-            } else {
-                if !with_underscore {
-                    result.push('_');
-                    with_underscore = true;
-                }
+            } else if !with_underscore {
+                result.push('_');
+                with_underscore = true;
             }
         }
 
@@ -269,7 +267,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let bp_semi_token = &bp_strut.semi_token;
     let bp_impl = &mut bp.implementation;
     let bp_ident = &bp_strut.ident;
-    validate_type_ident(&bp_ident)?;
+    validate_type_ident(bp_ident)?;
     let bp_items = &mut bp_impl.items;
     let bp_name = bp_ident.to_string();
 
@@ -342,33 +340,30 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 || type_string.contains("PackageAddress")
                 || type_string.contains("GlobalAddress")
             {
-                match item.expr.as_mut() {
-                    Expr::Macro(m) => {
-                        if !m
-                            .mac
-                            .path
-                            .get_ident()
-                            .unwrap()
-                            .eq(&Ident::new("address", Span::call_site()))
-                        {
-                            continue;
-                        }
-
-                        let tokens = &m.mac.tokens;
-                        let lit_str: LitStr = parse_quote!( #tokens );
-
-                        let (_hrp, _entity_type, address) =
-                            AddressBech32Decoder::validate_and_decode_ignore_hrp(
-                                lit_str.value().as_str(),
-                            )
-                            .unwrap();
-
-                        let expr: Expr = parse_quote! {
-                            #ty :: new_or_panic([ #(#address),* ])
-                        };
-                        item.expr = Box::new(expr);
+                if let Expr::Macro(m) = item.expr.as_mut() {
+                    if !m
+                        .mac
+                        .path
+                        .get_ident()
+                        .unwrap()
+                        .eq(&Ident::new("address", Span::call_site()))
+                    {
+                        continue;
                     }
-                    _ => {}
+
+                    let tokens = &m.mac.tokens;
+                    let lit_str: LitStr = parse_quote!( #tokens );
+
+                    let (_hrp, _entity_type, address) =
+                        AddressBech32Decoder::validate_and_decode_ignore_hrp(
+                            lit_str.value().as_str(),
+                        )
+                        .unwrap();
+
+                    let expr: Expr = parse_quote! {
+                        #ty :: new_or_panic([ #(#address),* ])
+                    };
+                    *item.expr = expr;
                 }
 
                 let expr: Expr = parse_quote! { #ident };
@@ -467,8 +462,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         .sig
                         .inputs
                         .iter()
-                        .find(|arg| matches!(arg, FnArg::Receiver(..)))
-                        .is_some();
+                        .any(|arg| matches!(&arg, FnArg::Receiver(..)));
                     if is_method {
                         methods.push(function.sig);
                     } else {
@@ -679,7 +673,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     });
                 }
 
-                if let Some(..) = registered_type_paths.insert(type_name, path.clone()) {
+                if registered_type_paths
+                    .insert(type_name, path.clone())
+                    .is_some()
+                {
                     return Err(Error::new(
                         path.span(),
                         "A type with an identical name has already been registered",
@@ -748,8 +745,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 if attribute.path.is_ident("events") {
                     let events_inner = parse2::<ast::EventsInner>(attribute.tokens.clone())?;
                     for path in events_inner.paths.iter() {
-                        let type_name = derive_sensible_identifier_from_path(&path)?;
-                        if let Some(..) = event_type_paths.insert(type_name, path.clone()) {
+                        let type_name = derive_sensible_identifier_from_path(path)?;
+                        if event_type_paths.insert(type_name, path.clone()).is_some() {
                             return Err(Error::new(
                                 path.span(),
                                 "An event with an identical name has already been named",
@@ -764,31 +761,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 else {
                     return Err(Error::new(
                         attribute.path.span(),
-                        format!("Attribute is invalid for blueprints."),
+                        "Attribute is invalid for blueprints.".to_string(),
                     ));
                 }
             }
             (
-                event_type_paths
-                    .keys()
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>(),
-                event_type_paths
-                    .values()
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>(),
-                registered_type_paths
-                    .keys()
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>(),
-                registered_type_paths
-                    .values()
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<_>>(),
+                event_type_paths.keys().cloned().collect::<Vec<_>>(),
+                event_type_paths.values().cloned().collect::<Vec<_>>(),
+                registered_type_paths.keys().cloned().collect::<Vec<_>>(),
+                registered_type_paths.values().cloned().collect::<Vec<_>>(),
             )
         };
 

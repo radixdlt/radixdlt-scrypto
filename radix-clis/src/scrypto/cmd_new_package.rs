@@ -1,7 +1,7 @@
 use clap::Parser;
 use regex::Regex;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::scrypto::*;
 
@@ -100,7 +100,7 @@ impl NewPackage {
     fn insert_own_entry_into_cargo_lock(lock_file_contents: &str, package_name: &str) -> String {
         let name_regex = Regex::new(r#"name = "([^"]+)""#).unwrap();
         let name_line_to_inject_before = name_regex
-            .captures_iter(&lock_file_contents)
+            .captures_iter(lock_file_contents)
             .find(|captures| {
                 let dependency_name = captures.get(1).unwrap();
                 dependency_name.as_str() > package_name
@@ -140,8 +140,6 @@ dependencies = [
     }
 }
 
-fn child_of(path: &PathBuf, name: &str) -> PathBuf {
-    let mut p = path.clone();
-    p.push(name);
-    p
+fn child_of(path: &Path, name: &str) -> PathBuf {
+    path.join(name)
 }

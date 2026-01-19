@@ -301,6 +301,7 @@ impl<'a, R: 'a + TreeReader<P> + ?Sized, P: Clone> JellyfishMerkleTree<'a, R, P>
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn insert_at_child(
         &self,
         node_key: &TreeNodeKey,
@@ -338,6 +339,7 @@ impl<'a, R: 'a + TreeReader<P> + ?Sized, P: Clone> JellyfishMerkleTree<'a, R, P>
         Ok((child_index, new_child_node_option))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn batch_update_subtree_with_existing_leaf(
         &self,
         node_key: &TreeNodeKey,
@@ -495,6 +497,7 @@ impl<'a, R: 'a + TreeReader<P> + ?Sized, P: Clone> JellyfishMerkleTree<'a, R, P>
     }
 
     /// Returns the value (if applicable) and the corresponding merkle proof.
+    #[allow(clippy::type_complexity)]
     pub fn get_with_proof(
         &self,
         key: &LeafKey,
@@ -504,6 +507,7 @@ impl<'a, R: 'a + TreeReader<P> + ?Sized, P: Clone> JellyfishMerkleTree<'a, R, P>
             .map(|(value, proof_ext)| (value, proof_ext.into()))
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn get_with_proof_ext(
         &self,
         key: &LeafKey,
@@ -519,9 +523,8 @@ impl<'a, R: 'a + TreeReader<P> + ?Sized, P: Clone> JellyfishMerkleTree<'a, R, P>
             let next_node = self.reader.get_node(&next_node_key)?;
             match next_node {
                 Node::Internal(internal_node) => {
-                    let queried_child_index = nibble_iter
-                        .next()
-                        .ok_or_else(|| StorageError::InconsistentState)?;
+                    let queried_child_index =
+                        nibble_iter.next().ok_or(StorageError::InconsistentState)?;
                     let (child_node_key, mut siblings_in_internal) = internal_node
                         .get_child_with_siblings(
                             &next_node_key,

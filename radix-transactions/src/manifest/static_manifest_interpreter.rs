@@ -1,3 +1,5 @@
+#![allow(clippy::double_must_use)]
+
 use crate::internal_prelude::*;
 use core::ops::ControlFlow;
 
@@ -131,12 +133,12 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         blobs: impl Iterator<Item = (&'b Hash, &'b Vec<u8>)>,
     ) -> ControlFlow<V::Output> {
         for (hash, content) in blobs {
-            if !self.registered_blobs.insert(ManifestBlobRef(hash.0)) {
-                if self.validation_ruleset.validate_no_duplicate_blobs {
-                    return ControlFlow::Break(
-                        ManifestValidationError::DuplicateBlob(ManifestBlobRef(hash.0)).into(),
-                    );
-                }
+            if !self.registered_blobs.insert(ManifestBlobRef(hash.0))
+                && self.validation_ruleset.validate_no_duplicate_blobs
+            {
+                return ControlFlow::Break(
+                    ManifestValidationError::DuplicateBlob(ManifestBlobRef(hash.0)).into(),
+                );
             }
             visitor.on_register_blob(OnRegisterBlob {
                 blob_ref: ManifestBlobRef(hash.0),
@@ -426,13 +428,12 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                                 })?;
                             }
                             ManifestCustomValue::Blob(blob_ref) => {
-                                if self.validation_ruleset.validate_blob_refs {
-                                    if !self.registered_blobs.contains(&blob_ref) {
-                                        return ControlFlow::Break(
-                                            ManifestValidationError::BlobNotRegistered(blob_ref)
-                                                .into(),
-                                        );
-                                    }
+                                if self.validation_ruleset.validate_blob_refs
+                                    && !self.registered_blobs.contains(&blob_ref)
+                                {
+                                    return ControlFlow::Break(
+                                        ManifestValidationError::BlobNotRegistered(blob_ref).into(),
+                                    );
                                 }
                                 visitor.on_pass_blob(OnPassBlob {
                                     blob_ref,
@@ -620,7 +621,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         state.consumed_at = Some(location);
         visitor.on_consume_bucket(OnConsumeBucket {
             bucket,
-            state: &state,
+            state,
             destination,
         })
     }
@@ -697,7 +698,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         state.consumed_at = Some(location);
         visitor.on_consume_proof(OnConsumeProof {
             proof,
-            state: &state,
+            state,
             destination,
         })?;
         let source_amount = state.source_amount;
@@ -780,7 +781,7 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
         state.consumed_at = Some(location);
         visitor.on_consume_address_reservation(OnConsumeAddressReservation {
             address_reservation,
-            state: &state,
+            state,
             destination,
         })
     }

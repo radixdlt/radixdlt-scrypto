@@ -92,7 +92,7 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -122,7 +122,7 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -161,7 +161,7 @@ fn test_auth_zone_try_to_steal_from_account() {
                 manifest_args!(account),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

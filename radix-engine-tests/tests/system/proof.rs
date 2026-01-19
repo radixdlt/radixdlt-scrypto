@@ -17,7 +17,7 @@ fn test_clone_fungible_proof() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -43,7 +43,7 @@ fn test_clone_non_fungible_proof() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -68,7 +68,7 @@ fn test_drop_named_proofs() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

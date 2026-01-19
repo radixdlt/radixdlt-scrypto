@@ -234,7 +234,7 @@ impl TransactionValidator {
                         permitted: validation.max_encrypted_message_length,
                     });
                 }
-                if decryptors_by_curve.len() == 0 {
+                if decryptors_by_curve.is_empty() {
                     return Err(InvalidMessageError::NoDecryptors);
                 }
                 let mut total_decryptors = 0;
@@ -633,7 +633,7 @@ mod tests {
             .manifest(manifest);
 
         for signer in signers {
-            builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());
+            builder = builder.sign(Secp256k1PrivateKey::from_u64(signer).unwrap());
         }
         builder = builder.notarize(&sk_notary);
 

@@ -142,10 +142,10 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourc
     }
 }
 
-////////////////////////////////////////////////////////////
-/// PUBLIC TRAITS AND METHODS
-/// All public methods first - these all need good rust docs
-////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
+// PUBLIC TRAITS AND METHODS
+// All public methods first - these all need good rust docs
+// //////////////////////////////////////////////////////////
 
 pub trait UpdateMetadataBuilder: private::CanSetMetadata {
     fn metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
@@ -481,7 +481,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 metadata,
                 address_reservation,
             } => {
-                let metadata = metadata.unwrap_or_else(|| Default::default());
+                let metadata = metadata.unwrap_or_else(Default::default);
 
                 let bytes = env.call_function(
                     RESOURCE_PACKAGE,
@@ -507,7 +507,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 metadata,
                 address_reservation,
             } => {
-                let metadata = metadata.unwrap_or_else(|| Default::default());
+                let metadata = metadata.unwrap_or_else(Default::default);
 
                 let bytes = env.call_function(
                     RESOURCE_PACKAGE,
@@ -577,10 +577,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
         amount: impl Into<Decimal>,
         env: &mut Y,
     ) -> Result<FungibleBucket, E> {
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = env.call_function(
             RESOURCE_PACKAGE,
@@ -642,10 +639,7 @@ impl<D: NonFungibleData>
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = env.call_function(
             RESOURCE_PACKAGE,
@@ -709,10 +703,7 @@ impl<D: NonFungibleData>
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = env.call_function(
             RESOURCE_PACKAGE,
@@ -775,10 +766,7 @@ impl<D: NonFungibleData>
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = env.call_function(
             RESOURCE_PACKAGE,
@@ -844,10 +832,7 @@ impl<D: NonFungibleData>
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
-        let metadata = self
-            .metadata_config
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_default();
 
         let bytes = env.call_function(
             RESOURCE_PACKAGE,
@@ -881,10 +866,10 @@ impl<D: NonFungibleData>
     }
 }
 
-///////////////////////////////////
-/// PRIVATE TRAIT IMPLEMENTATIONS
-/// These don't need good rust docs
-///////////////////////////////////
+// /////////////////////////////////
+//  PRIVATE TRAIT IMPLEMENTATIONS
+//  These don't need good rust docs
+// /////////////////////////////////
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
@@ -986,6 +971,7 @@ mod private {
         fn into_create_with_no_supply_invocation(self) -> CreateWithNoSupply;
     }
 
+    #[allow(clippy::large_enum_variant)]
     pub enum CreateWithNoSupply {
         Fungible {
             owner_role: OwnerRole,

@@ -50,6 +50,30 @@ jobs:
       github_repository: ${{ github.repository }}
       add_report_comment_to_pull_request: true
 
+  check-code-lints:
+    name: Clippy Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Clippy Check (std)
+        run: cargo clippy --keep-going --all-targets --workspace --no-default-features --features std -- --deny warnings
+      - name: Clippy Check (alloc)
+        run: cargo clippy --keep-going --lib --workspace --no-default-features --features alloc --exclude radix-clis --exclude scrypto-compiler -- --deny warnings
+
+  check-new-package-lints:
+    name: Clippy Check New Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Create a New Package
+        run: cargo run --package radix-clis --bin scrypto -- new-package example-package -l
+      - name: Clippy Check
+        run: cargo clippy --keep-going --all-targets --no-deps --manifest-path ./example-package/Cargo.toml -- --deny warnings
+
   check-code-format:
     name: Check code format
     runs-on: ubuntu-latest

@@ -5,7 +5,7 @@ use scrypto_test::prelude::*;
 
 #[test]
 fn test_large_data() {
-    let code = wat2wasm(&include_local_wasm_str!("large_data.wat"));
+    let code = wat2wasm(include_local_wasm_str!("large_data.wat"));
     let definition = single_function_package_definition("Test", "f");
     let result = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
         .validate(&code, definition.blueprints.values());
@@ -15,7 +15,7 @@ fn test_large_data() {
 
 #[test]
 fn test_large_memory() {
-    let code = wat2wasm(&include_local_wasm_str!("large_memory.wat"));
+    let code = wat2wasm(include_local_wasm_str!("large_memory.wat"));
     let definition = single_function_package_definition("Test", "f");
     let result = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
         .validate(&code, definition.blueprints.values());

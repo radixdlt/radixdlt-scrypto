@@ -58,7 +58,7 @@ fn test_globalize_with_unflushed_invalid_own() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_failure();
 }
@@ -81,7 +81,7 @@ fn test_globalize_with_unflushed_kv_store_self_own() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_failure();
 }
@@ -106,7 +106,7 @@ fn test_globalize_with_unflushed_another_transient_own() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -142,7 +142,7 @@ fn test_globalize_with_unflushed_another_own() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -178,7 +178,7 @@ fn test_globalize_with_unflushed_another_own_v2() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -206,7 +206,7 @@ fn test_call() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -358,7 +358,7 @@ fn test_insert_not_visible_global_refs_in_substate_key() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(

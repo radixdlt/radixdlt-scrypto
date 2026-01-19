@@ -277,10 +277,9 @@ impl AuthZoneBlueprint {
         if system
             .versioned_system_logic
             .assert_access_rule_is_noop_when_auth_module_disabled()
+            && !system.modules.is_auth_enabled()
         {
-            if !system.modules.is_auth_enabled() {
-                return Ok(());
-            }
+            return Ok(());
         }
 
         let auth_result =

@@ -106,7 +106,8 @@ impl NativeBucket for Bucket {
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerDropEmptyBucketInput { bucket: self }).unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn create<Y: SystemObjectApi<E>, E: SystemApiError>(
@@ -351,7 +352,7 @@ impl NativeFungibleBucket for FungibleBucket {
         amount: Decimal,
         api: &mut Y,
     ) -> Result<FungibleProof, E> {
-        Ok(self.as_ref().create_proof_of_amount(amount, api)?.into())
+        self.as_ref().create_proof_of_amount(amount, api)
     }
 }
 

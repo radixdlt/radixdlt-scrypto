@@ -30,6 +30,6 @@ impl CustomTraversal for ManifestCustomTraversal {
             reader,
             ValueKind::Custom(custom_value_kind),
         )
-        .map(|v| ManifestCustomTerminalValueRef(v))
+        .map(ManifestCustomTerminalValueRef)
     }
 }

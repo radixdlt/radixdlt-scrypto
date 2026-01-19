@@ -37,7 +37,7 @@ impl Run {
     pub fn pre_process_manifest(manifest: &str) -> String {
         let re = Regex::new(r"\$\{(.+?)\}").unwrap();
         re.replace_all(manifest, |caps: &Captures| {
-            env::var(&caps[1].trim()).unwrap_or_default()
+            env::var(caps[1].trim()).unwrap_or_default()
         })
         .into()
     }
@@ -46,7 +46,7 @@ impl Run {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let network = match &self.network {
-            Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+            Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::simulator(),
         };
         let mut blobs = Vec::new();
@@ -56,7 +56,7 @@ impl Run {
             }
         }
 
-        let manifest_kind = ManifestKind::parse_or_latest(self.kind.as_ref().map(|x| x.as_str()))?;
+        let manifest_kind = ManifestKind::parse_or_latest(self.kind.as_deref())?;
         let manifest = compile_any_manifest_with_pretty_error(
             &pre_processed_manifest,
             manifest_kind,
@@ -78,6 +78,5 @@ impl Run {
             out,
         )
         .map(|_| ())
-        .map_err(|err| err.into())
     }
 }

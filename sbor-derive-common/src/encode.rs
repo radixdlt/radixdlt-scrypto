@@ -203,7 +203,7 @@ pub fn handle_normal_encode(
                         }) => {
                             let empty_fields_unpacking = fields_data.empty_fields_unpacking();
                             let panic_message =
-                                format!("Variant {} ignored as unreachable", variant_name.to_string());
+                                format!("Variant {} ignored as unreachable", variant_name);
                             quote! {
                                 Self::#variant_name #empty_fields_unpacking => panic!(#panic_message),
                             }
@@ -212,7 +212,7 @@ pub fn handle_normal_encode(
                 })
                 .collect::<Result<Vec<_>>>()?;
 
-            let encode_content = if match_arms.len() == 0 {
+            let encode_content = if match_arms.is_empty() {
                 quote! {}
             } else {
                 quote! {

@@ -6,9 +6,12 @@ use radix_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_interface::api::AttachedModuleId;
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub enum OuterObjectInfo {
-    Some { outer_object: GlobalAddress },
+    Some {
+        outer_object: GlobalAddress,
+    },
+    #[default]
     None,
 }
 
@@ -18,12 +21,6 @@ impl OuterObjectInfo {
             OuterObjectInfo::Some { outer_object } => *outer_object,
             OuterObjectInfo::None => panic!("Object has no outer object"),
         }
-    }
-}
-
-impl Default for OuterObjectInfo {
-    fn default() -> Self {
-        OuterObjectInfo::None
     }
 }
 
@@ -62,8 +59,8 @@ impl ObjectInfo {
 
     pub fn get_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info.outer_obj_info {
-            OuterObjectInfo::Some { outer_object } => outer_object.clone(),
-            OuterObjectInfo::None { .. } => {
+            OuterObjectInfo::Some { outer_object } => *outer_object,
+            OuterObjectInfo::None => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
             }
         }
@@ -75,8 +72,8 @@ impl ObjectInfo {
 
     pub fn try_get_outer_object(&self) -> Option<GlobalAddress> {
         match &self.blueprint_info.outer_obj_info {
-            OuterObjectInfo::Some { outer_object } => Some(outer_object.clone()),
-            OuterObjectInfo::None { .. } => None,
+            OuterObjectInfo::Some { outer_object } => Some(*outer_object),
+            OuterObjectInfo::None => None,
         }
     }
 }

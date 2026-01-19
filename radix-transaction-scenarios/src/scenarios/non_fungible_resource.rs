@@ -478,7 +478,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     // Make the Owner the same as the public key for the main account
                                     // In reality, this should probably be a concrete badge, not a virtual badge, but for tests
                                     // this is okay
-                                    OwnerRole::Fixed(rule!(require(signature(&config.main_account.public_key)))),
+                                    OwnerRole::Fixed(rule!(require(signature(config.main_account.public_key)))),
                                     NonFungibleIdType::Integer,
                                     true,
                                     NonFungibleResourceRoles {
@@ -596,6 +596,7 @@ struct NestedFungibleData {
     c: AnotherObject,
 }
 
+#[allow(clippy::type_complexity)]
 #[derive(ScryptoSbor, ManifestSbor)]
 struct AnotherObject {
     f1: BTreeMap<String, (u8, (u16, Vec<Vec<u8>>))>,
@@ -639,6 +640,7 @@ pub struct InnerStruct {
 }
 
 #[derive(ScryptoSbor, ManifestSbor)]
+#[allow(clippy::enum_variant_names)]
 pub enum InnerEnum {
     None,
     InnerEnum(Box<InnerEnum>),

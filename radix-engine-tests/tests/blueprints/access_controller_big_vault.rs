@@ -10,7 +10,6 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::prelude::*;
 use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
-use std::iter;
 
 #[test]
 pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
@@ -34,7 +33,7 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
             )
             .deposit_entire_worktop(account)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&key)],
+        vec![NonFungibleGlobalId::from_public_key(key)],
     );
 
     // Assert
@@ -78,51 +77,49 @@ impl VmInvoke for TestInvoke {
         api: &mut Y,
         _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        match export_name {
-            "new" => {
-                let size: (usize,) = input.as_typed().unwrap();
-                let entries = iter::repeat((ScryptoValue::Tuple { fields: vec![] },))
-                    .take(size.0)
-                    .collect();
-                let result = api.call_function(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
-                    scrypto_encode(
-                        &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
-                            entries,
-                            owner_role: Default::default(),
-                            track_total_supply: Default::default(),
-                            non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                            resource_roles: Default::default(),
-                            metadata: Default::default(),
-                            address_reservation: Default::default(),
-                        },
-                    )
-                    .unwrap(),
-                )?;
-                let result: NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput =
-                    scrypto_decode(&result).unwrap();
-                let bucket = result.1;
+        if export_name == "new" {
+            let size: (usize,) = input.as_typed().unwrap();
+            let entries =
+                std::iter::repeat_n((ScryptoValue::Tuple { fields: vec![] },), size.0).collect();
+            let result = api.call_function(
+                RESOURCE_PACKAGE,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                        entries,
+                        owner_role: Default::default(),
+                        track_total_supply: Default::default(),
+                        non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
+                            ),
+                        resource_roles: Default::default(),
+                        metadata: Default::default(),
+                        address_reservation: Default::default(),
+                    },
+                )
+                .unwrap(),
+            )?;
+            let result: NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput =
+                scrypto_decode(&result).unwrap();
+            let bucket = result.1;
 
-                api.call_function(
-                    ACCESS_CONTROLLER_PACKAGE,
-                    ACCESS_CONTROLLER_BLUEPRINT,
-                    ACCESS_CONTROLLER_CREATE_IDENT,
-                    scrypto_encode(&AccessControllerCreateInput {
-                        controlled_asset: bucket,
-                        rule_set: RuleSet {
-                            primary_role: AccessRule::AllowAll,
-                            recovery_role: AccessRule::AllowAll,
-                            confirmation_role: AccessRule::AllowAll,
-                        },
-                        timed_recovery_delay_in_minutes: None,
-                        address_reservation: None,
-                    })
-                    .unwrap(),
-                )?;
-            }
-            _ => {}
+            api.call_function(
+                ACCESS_CONTROLLER_PACKAGE,
+                ACCESS_CONTROLLER_BLUEPRINT,
+                ACCESS_CONTROLLER_CREATE_IDENT,
+                scrypto_encode(&AccessControllerCreateInput {
+                    controlled_asset: bucket,
+                    rule_set: RuleSet {
+                        primary_role: AccessRule::AllowAll,
+                        recovery_role: AccessRule::AllowAll,
+                        confirmation_role: AccessRule::AllowAll,
+                    },
+                    timed_recovery_delay_in_minutes: None,
+                    address_reservation: None,
+                })
+                .unwrap(),
+            )?;
         }
 
         Ok(IndexedScryptoValue::from_typed(&()))

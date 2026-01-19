@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod auth_zone;
 mod bucket;
 mod fungible;
@@ -35,6 +37,7 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
         && amount.attos() % I192::from(10i128.pow((18 - divisibility).into())) == I192::from(0)
 }
 
+#[allow(clippy::result_unit_err)]
 pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
     // Integers between [0..u32::MAX]
     u32::try_from(amount).map_err(|_| ())
@@ -184,8 +187,9 @@ macro_rules! non_fungible_data_update_roles {
 
 /// Define the withdraw strategy when request amount does not match underlying
 /// resource divisibility.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, Default)]
 pub enum WithdrawStrategy {
+    #[default]
     Exact,
     Rounded(RoundingMode),
 }
@@ -205,14 +209,8 @@ impl ForWithdrawal for Decimal {
         withdraw_strategy: WithdrawStrategy,
     ) -> Option<Decimal> {
         match withdraw_strategy {
-            WithdrawStrategy::Exact => Some(self.clone()),
+            WithdrawStrategy::Exact => Some(*self),
             WithdrawStrategy::Rounded(mode) => self.checked_round(divisibility, mode),
         }
-    }
-}
-
-impl Default for WithdrawStrategy {
-    fn default() -> Self {
-        Self::Exact
     }
 }

@@ -246,7 +246,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
     let package_flashes = [
         (
             PACKAGE_PACKAGE,
-            PACKAGE_PACKAGE_DEFINITION.clone().into(),
+            PACKAGE_PACKAGE_DEFINITION.clone(),
             NativeCodeId::PackageCode1 as u64,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
@@ -262,7 +262,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROYALTY_MODULE_PACKAGE,
-            ROYALTY_PACKAGE_DEFINITION.clone().into(),
+            ROYALTY_PACKAGE_DEFINITION.clone(),
             NativeCodeId::RoyaltyCode1 as u64,
             metadata_init! {
                 "name" => "Royalty Package".to_owned(), locked;
@@ -272,7 +272,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             RESOURCE_PACKAGE,
-            RESOURCE_PACKAGE_DEFINITION.clone().into(),
+            RESOURCE_PACKAGE_DEFINITION.clone(),
             NativeCodeId::ResourceCode1 as u64,
             metadata_init! {
                 "name" => "Resource Package".to_owned(), locked;
@@ -282,7 +282,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.clone().into(),
+            TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.clone(),
             NativeCodeId::TransactionProcessorCode1 as u64,
             metadata_init! {
                 "name" => "Transaction Processor Package".to_owned(), locked;
@@ -292,7 +292,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             METADATA_MODULE_PACKAGE,
-            METADATA_PACKAGE_DEFINITION.clone().into(),
+            METADATA_PACKAGE_DEFINITION.clone(),
             NativeCodeId::MetadataCode1 as u64,
             metadata_init! {
                 "name" => "Metadata Package".to_owned(), locked;
@@ -302,7 +302,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
-            ROLE_ASSIGNMENT_PACKAGE_DEFINITION.clone().into(),
+            ROLE_ASSIGNMENT_PACKAGE_DEFINITION.clone(),
             NativeCodeId::RoleAssignmentCode1 as u64,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
@@ -312,7 +312,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
         ),
         (
             TEST_UTILS_PACKAGE,
-            TEST_UTILS_PACKAGE_DEFINITION.clone().into(),
+            TEST_UTILS_PACKAGE_DEFINITION.clone(),
             NativeCodeId::TestUtilsCode1 as u64,
             metadata_init! {
                 "name" => "Test Utils Package".to_owned(), locked;
@@ -352,7 +352,7 @@ pub fn create_system_bootstrap_flash_state_updates() -> StateUpdates {
                 .collect();
 
             // To avoid creating wasted structure in StateUpdates, only create this partition if a change exists.
-            if partition_updates.len() > 0 {
+            if !partition_updates.is_empty() {
                 to_flash
                     .of_node(address)
                     .of_partition(partition_num)
@@ -430,8 +430,8 @@ pub fn create_system_bootstrap_transaction(
                         "symbol" => "XRD".to_owned(), locked;
                         "name" => "Radix".to_owned(), locked;
                         "description" => "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(), locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
-                        "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png"), locked;
+                        "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com"), locked;
                         "tags" => Vec::<String>::new(), locked;
                     }
                 }.into(),
@@ -469,7 +469,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "Package Virtual Badges".to_owned(), locked;
                         "description" => "Virtual badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png"), locked;
                     }
                 }
                 .into(),
@@ -506,7 +506,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "Global Caller Virtual Badges".to_owned(), locked;
                         "description" => "Virtual badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(reservation),
@@ -542,7 +542,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "Package Owner Badges".to_owned(), locked;
                         "description" => "Badges created by the Radix system that provide individual control over blueprint packages deployed by developers.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned(), "package".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(reservation),
@@ -578,7 +578,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "Identity Owner Badges".to_owned(), locked;
                         "description" => "Badges created by the Radix system that provide individual control over identity components.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned(), "identity".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(badge_reservation),
@@ -660,7 +660,7 @@ pub fn create_system_bootstrap_transaction(
                             "badge".to_owned(),
                             "account".to_owned(),
                         ], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(badge_reservation),
@@ -756,7 +756,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
                         "description" => "Virtual badges generated automatically by the Radix system to represent ECDSA secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(reservation),
@@ -786,7 +786,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
                         "description" => "Virtual badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(reservation),
@@ -816,7 +816,7 @@ pub fn create_system_bootstrap_transaction(
                         "name" => "System Transaction Badge".to_owned(), locked;
                         "description" => "Virtual badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
-                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png"), locked;
                     }
                 }.into(),
                 address_reservation: Some(reservation),
@@ -839,7 +839,7 @@ pub fn create_system_bootstrap_transaction(
                 "name" => "Faucet Package".to_owned(), locked;
                 "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
             },
-            OwnerRole::None.into()
+            OwnerRole::None
         );
     }
 
@@ -858,7 +858,7 @@ pub fn create_system_bootstrap_transaction(
                 "name" => "Genesis Helper Package".to_owned(), locked;
                 "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
             },
-            OwnerRole::None.into(),
+            OwnerRole::None,
         );
     }
 
@@ -964,7 +964,7 @@ pub fn create_system_bootstrap_transaction(
 
     manifest_builder
         .build()
-        .into_transaction(hash(format!("Genesis Bootstrap")))
+        .into_transaction(hash("Genesis Bootstrap"))
 }
 
 pub fn create_genesis_data_ingestion_transaction(
@@ -1022,5 +1022,5 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
         .call_method(GENESIS_HELPER, "wrap_up", ())
         .build();
 
-    manifest.into_transaction(hash(format!("Genesis Wrap Up")))
+    manifest.into_transaction(hash("Genesis Wrap Up"))
 }

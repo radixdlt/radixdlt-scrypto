@@ -25,7 +25,7 @@ fn cannot_burn_frozen_burn_fungible_vault() {
         .burn_in_account(account, token_address, 1)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -58,7 +58,7 @@ fn cannot_deposit_into_frozen_deposit_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -91,7 +91,7 @@ fn cannot_withdraw_from_frozen_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -125,7 +125,7 @@ fn can_recall_from_frozen_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -150,7 +150,7 @@ fn can_withdraw_from_unfrozen_fungible_vault() {
         .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
     receipt.expect_commit_success();
 
     // Act
@@ -160,7 +160,7 @@ fn can_withdraw_from_unfrozen_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -187,7 +187,7 @@ fn cannot_burn_frozen_burn_non_fungible_vault() {
         .burn_non_fungibles_in_account(account, token_address, [NonFungibleLocalId::integer(1)])
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -224,7 +224,7 @@ fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -261,7 +261,7 @@ fn cannot_withdraw_from_frozen_non_fungible_vault() {
         .deposit_entire_worktop(account)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -329,7 +329,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
         .unfreeze_withdraw(internal_address)
         .build();
     let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_commit_success();

@@ -16,23 +16,23 @@ pub struct DroppedNonFungibleBucket {
     pub locked: LockedNonFungibleResource,
 }
 
-impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedFungibleBucket {
+impl From<Vec<Vec<u8>>> for DroppedFungibleBucket {
+    fn from(val: Vec<Vec<u8>>) -> Self {
         let liquid: LiquidFungibleResource =
-            scrypto_decode(&self[FungibleBucketField::Liquid as usize]).unwrap();
+            scrypto_decode(&val[FungibleBucketField::Liquid as usize]).unwrap();
         let locked: LockedFungibleResource =
-            scrypto_decode(&self[FungibleBucketField::Locked as usize]).unwrap();
+            scrypto_decode(&val[FungibleBucketField::Locked as usize]).unwrap();
 
         DroppedFungibleBucket { liquid, locked }
     }
 }
 
-impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedNonFungibleBucket {
+impl From<Vec<Vec<u8>>> for DroppedNonFungibleBucket {
+    fn from(val: Vec<Vec<u8>>) -> Self {
         let liquid: LiquidNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketField::Liquid as usize]).unwrap();
+            scrypto_decode(&val[NonFungibleBucketField::Liquid as usize]).unwrap();
         let locked: LockedNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketField::Locked as usize]).unwrap();
+            scrypto_decode(&val[NonFungibleBucketField::Locked as usize]).unwrap();
 
         DroppedNonFungibleBucket { liquid, locked }
     }
@@ -61,7 +61,7 @@ pub fn drop_fungible_bucket<Y: SystemApi<RuntimeError>>(
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone().into())),
+            ApplicationError::BucketError(BucketError::Locked((*bucket_node_id).into())),
         ));
     }
 
@@ -76,7 +76,7 @@ pub fn drop_non_fungible_bucket<Y: SystemApi<RuntimeError>>(
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::BucketError(BucketError::Locked(bucket_node_id.clone().into())),
+            ApplicationError::BucketError(BucketError::Locked((*bucket_node_id).into())),
         ));
     }
 

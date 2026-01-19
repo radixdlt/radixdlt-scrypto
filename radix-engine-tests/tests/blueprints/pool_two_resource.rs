@@ -25,7 +25,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     // Arrange
     let (owner_role, virtual_signature_badge) = {
         let public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
         let rule = rule!(require(virtual_signature_badge.clone()));
         (OwnerRole::Fixed(rule), virtual_signature_badge)
     };
@@ -338,7 +338,7 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
         if expected_change2 == Decimal::ZERO {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(BalanceChange::Fungible(expected_change2))
         }
     );
 }
@@ -962,17 +962,15 @@ fn contributing_to_a_pool_with_very_large_difference_in_reserves_succeeds() {
 }
 
 fn is_pool_emitter(event_type_identifier: &EventTypeIdentifier) -> bool {
-    match event_type_identifier.0 {
-        Emitter::Method(node_id, ModuleId::Main) => match node_id.entity_type() {
-            Some(
-                EntityType::GlobalOneResourcePool
-                | EntityType::GlobalTwoResourcePool
-                | EntityType::GlobalMultiResourcePool,
-            ) => true,
-            _ => false,
-        },
-        _ => false,
-    }
+    matches!(
+        event_type_identifier,
+        EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), _)
+        if matches!(node_id.entity_type(), Some(
+            EntityType::GlobalOneResourcePool
+            | EntityType::GlobalTwoResourcePool
+            | EntityType::GlobalMultiResourcePool
+        ))
+    )
 }
 
 struct TestEnvironment {
@@ -996,7 +994,7 @@ impl TestEnvironment {
     pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
         let mut ledger = LedgerSimulatorBuilder::new().build();
         let (public_key, _, account) = ledger.new_account(false);
-        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
 
         let pool_resource1 = ledger.create_freely_mintable_and_burnable_fungible_resource(
             OwnerRole::None,
@@ -1156,7 +1154,7 @@ impl TestEnvironment {
     }
 
     fn virtual_signature_badge(&self) -> NonFungibleGlobalId {
-        NonFungibleGlobalId::from_public_key(&self.account_public_key)
+        NonFungibleGlobalId::from_public_key(self.account_public_key)
     }
 
     fn initial_proofs(&self, sign: bool) -> Vec<NonFungibleGlobalId> {

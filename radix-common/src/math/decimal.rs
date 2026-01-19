@@ -278,7 +278,7 @@ impl Decimal {
 
     /// Nth root of a Decimal
     pub fn checked_nth_root(&self, n: u32) -> Option<Self> {
-        if (self.is_negative() && n % 2 == 0) || n == 0 {
+        if (self.is_negative() && n.is_multiple_of(2)) || n == 0 {
             None
         } else if n == 1 {
             Some(*self)

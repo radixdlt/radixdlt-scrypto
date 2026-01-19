@@ -805,7 +805,7 @@ mod tests {
                 .resolve_type_metadata(type_id2)
                 .unwrap()
                 .clone()
-                .with_name(name.map(|name| Cow::Borrowed(name)))
+                .with_name(name.map(Cow::Borrowed))
         );
         assert_eq!(
             schema1.v1().resolve_type_validation(type_id1),

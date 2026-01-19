@@ -553,11 +553,11 @@ fn is_canonically_formatted_integer(digits: &str) -> bool {
     }
     // The remaining chars must be digits
     for char in chars {
-        if !matches!(char, '0'..='9') {
+        if !char.is_ascii_digit() {
             return false;
         }
     }
-    return true;
+    true
 }
 
 impl FromStr for NonFungibleLocalId {
@@ -573,7 +573,8 @@ impl FromStr for NonFungibleLocalId {
                 return Err(ParseNonFungibleLocalIdError::InvalidInteger);
             }
             NonFungibleLocalId::integer(
-                u64::from_str_radix(&s[1..s.len() - 1], 10)
+                s[1..s.len() - 1]
+                    .parse::<u64>()
                     .map_err(|_| ParseNonFungibleLocalIdError::InvalidInteger)?,
             )
         } else if s.starts_with('[') && s.ends_with(']') {
@@ -614,7 +615,7 @@ impl fmt::Display for NonFungibleLocalId {
             NonFungibleLocalId::String(v) => write!(f, "<{}>", v.value()),
             NonFungibleLocalId::Integer(IntegerNonFungibleLocalId(v)) => write!(f, "#{}#", v),
             NonFungibleLocalId::Bytes(BytesNonFungibleLocalId(v)) => {
-                write!(f, "[{}]", hex::encode(&v))
+                write!(f, "[{}]", hex::encode(v))
             }
             NonFungibleLocalId::RUID(RUIDNonFungibleLocalId(v)) => {
                 let hex = hex::encode(v.as_slice());

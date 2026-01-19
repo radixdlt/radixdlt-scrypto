@@ -122,7 +122,7 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn put(&mut self, bucket: Self::BucketType) -> () {
+    fn put(&mut self, bucket: Self::BucketType) {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             VAULT_PUT_IDENT,
@@ -239,7 +239,7 @@ impl ScryptoVault for FungibleVault {
         Self(Vault::new(resource_address))
     }
 
-    fn put(&mut self, bucket: Self::BucketType) -> () {
+    fn put(&mut self, bucket: Self::BucketType) {
         self.0.put(bucket.0)
     }
 
@@ -353,7 +353,7 @@ impl ScryptoVault for NonFungibleVault {
         Self(Vault::new(resource_address))
     }
 
-    fn put(&mut self, bucket: Self::BucketType) -> () {
+    fn put(&mut self, bucket: Self::BucketType) {
         self.0.put(bucket.0)
     }
 

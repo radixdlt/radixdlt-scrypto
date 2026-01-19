@@ -76,8 +76,7 @@ fn usd_price_costing_after_protocol_update() {
         .fee_details
         .unwrap()
         .execution_cost_breakdown
-        .get(&ExecutionCostingEntry::QueryFeeReserve.to_trace_key())
-        .is_some());
+        .contains_key(&ExecutionCostingEntry::QueryFeeReserve.to_trace_key()));
     assert_eq!(
         cost_before_update + // usd_price() call cost includes also
             80024 +          // RefCheck

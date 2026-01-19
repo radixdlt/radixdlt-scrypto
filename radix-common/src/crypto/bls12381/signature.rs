@@ -19,6 +19,7 @@ use sbor::*;
 ///    - signature variant: G2 minimal pubkey size
 ///  - scheme:
 ///    - proof-of-possession
+///
 /// More details: https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature-04
 pub const BLS12381_CIPHERSITE_V1: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
@@ -51,7 +52,7 @@ impl Bls12381G2Signature {
             return Err(ParseBlsSignatureError::NoSignatureGiven);
         }
         let serialized_sigs = signatures
-            .into_iter()
+            .iter()
             .map(|sig| sig.as_ref())
             .collect::<Vec<_>>();
 

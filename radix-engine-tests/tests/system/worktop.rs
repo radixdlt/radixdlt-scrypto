@@ -18,7 +18,7 @@ fn test_worktop_resource_leak() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -49,7 +49,7 @@ fn test_many_current_auth_zone_call() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -78,7 +78,7 @@ fn test_many_worktop_call() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

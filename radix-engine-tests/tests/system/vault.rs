@@ -34,7 +34,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -43,8 +43,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
         .application_events
         .iter()
         .map(|event| ledger.event_name(&event.0))
-        .filter(|name| name.eq("DepositEvent"))
-        .next()
+        .find(|name| name.eq("DepositEvent"))
         .expect("Missing deposit event");
 }
 
@@ -622,8 +621,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
         .withdraw_from_account(account, resource_address, dec!("5.55555"))
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -648,8 +646,7 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, dec!("5.55555"))
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -758,8 +755,7 @@ fn withdraw_with_invalid_amount_from_non_fungible() {
         .withdraw_from_account(account, resource_address, dec!("-1")) // [0-u32::MAX] is expected
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

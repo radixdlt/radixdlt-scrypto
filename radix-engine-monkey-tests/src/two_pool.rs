@@ -98,7 +98,7 @@ impl TwoPoolFuzzAction {
                     TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                     TwoResourcePoolProtectedWithdrawManifestInput {
                         resource_address: two_pool_meta.resource_address1.into(),
-                        amount: amount.into(),
+                        amount,
                         withdraw_strategy,
                     },
                 );

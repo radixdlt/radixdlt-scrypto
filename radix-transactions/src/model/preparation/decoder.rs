@@ -59,7 +59,7 @@ impl PreparationSettings {
     }
 
     pub const fn babylon() -> Self {
-        let max_user_payload_length = 1 * 1024 * 1024;
+        let max_user_payload_length = 1024 * 1024;
         Self {
             v2_transactions_permitted: false,
             max_user_payload_length,
@@ -119,7 +119,7 @@ impl<'a> TransactionDecoder<'a> {
         settings: &'a PreparationSettings,
     ) -> Result<Self, PrepareError> {
         settings.check_len(kind, payload.len())?;
-        let mut decoder = ManifestDecoder::new(&payload, MANIFEST_SBOR_V1_MAX_DEPTH);
+        let mut decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
         decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
         Ok(Self { decoder, settings })
     }
@@ -128,13 +128,13 @@ impl<'a> TransactionDecoder<'a> {
         payload: &'a [u8],
         settings: &'a PreparationSettings,
     ) -> Result<Self, PrepareError> {
-        let mut decoder = ManifestDecoder::new(&payload, MANIFEST_SBOR_V1_MAX_DEPTH);
+        let mut decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
         decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
         Ok(Self { decoder, settings })
     }
 
     pub fn settings(&self) -> &PreparationSettings {
-        &self.settings
+        self.settings
     }
 
     /// Should be called before any manual call to read_X_header
@@ -222,7 +222,7 @@ impl<'a> TransactionDecoder<'a> {
     }
 
     pub fn get_input_slice(&self) -> &[u8] {
-        &self.decoder.get_input_slice()
+        self.decoder.get_input_slice()
     }
 
     pub fn check_complete(self) -> Result<(), PrepareError> {

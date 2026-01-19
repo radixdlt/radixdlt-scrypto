@@ -149,10 +149,10 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         let substate_structure =
             self.resolve_substate_structure(node_id, partition_descriptors, key);
         self.substate_structures
-            .entry(node_id.clone())
-            .or_insert_with(|| index_map_new())
-            .entry(partition_num.clone())
-            .or_insert_with(|| index_map_new())
+            .entry(*node_id)
+            .or_insert_with(index_map_new)
+            .entry(*partition_num)
+            .or_insert_with(index_map_new)
             .insert(key.clone(), substate_structure);
     }
 
@@ -314,11 +314,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 let payload_identifier = BlueprintPayloadIdentifier::Field(*field_index);
                 let type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &payload_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &payload_identifier)
                     .expect("Could not resolve to type reference");
-                return SubstateSystemStructure::ObjectField(FieldStructure {
+                SubstateSystemStructure::ObjectField(FieldStructure {
                     value_schema: type_reference,
-                });
+                })
             }
 
             ObjectPartitionDescriptor::KeyValueCollection(collection_index) => {
@@ -328,11 +328,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     BlueprintPayloadIdentifier::KeyValueEntry(*collection_index, KeyOrValue::Value);
                 let key_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &key_identifier)
                     .expect("Could not resolve to type reference");
                 let value_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &value_identifier)
                     .expect("Could not resolve to type reference");
                 SubstateSystemStructure::ObjectKeyValuePartitionEntry(
                     KeyValuePartitionEntryStructure {
@@ -349,11 +349,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                     BlueprintPayloadIdentifier::IndexEntry(*collection_index, KeyOrValue::Value);
                 let key_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &key_identifier)
                     .expect("Could not resolve to type reference");
                 let value_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &value_identifier)
                     .expect("Could not resolve to type reference");
                 SubstateSystemStructure::ObjectIndexPartitionEntry(IndexPartitionEntryStructure {
                     key_schema: key_type_reference,
@@ -372,11 +372,11 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                 );
                 let key_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &key_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &key_identifier)
                     .expect("Could not resolve to type reference");
                 let value_type_reference = self
                     .system_reader
-                    .get_blueprint_payload_schema_pointer(&bp_type_target, &value_identifier)
+                    .get_blueprint_payload_schema_pointer(bp_type_target, &value_identifier)
                     .expect("Could not resolve to type reference");
                 SubstateSystemStructure::ObjectSortedIndexPartitionEntry(
                     SortedIndexPartitionEntryStructure {

@@ -45,7 +45,7 @@ impl ResolveAsRawNotarizedTransaction for NotarizedTransactionV1 {
     }
 }
 
-impl<'a> ResolveAsRawNotarizedTransaction for &'a NotarizedTransactionV1 {
+impl ResolveAsRawNotarizedTransaction for &NotarizedTransactionV1 {
     type Intermediate = RawNotarizedTransaction;
 
     fn resolve_raw_notarized_transaction(self) -> Self::Intermediate {

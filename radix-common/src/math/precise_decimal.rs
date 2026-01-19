@@ -289,7 +289,7 @@ impl PreciseDecimal {
 
     /// Nth root of a PreciseDecimal
     pub fn checked_nth_root(&self, n: u32) -> Option<Self> {
-        if (self.is_negative() && n % 2 == 0) || n == 0 {
+        if (self.is_negative() && n.is_multiple_of(2)) || n == 0 {
             None
         } else if n == 1 {
             Some(*self)
@@ -925,7 +925,7 @@ impl fmt::Display for ParsePreciseDecimalError {
 
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(I256::try_from(val.attos()).unwrap() * I256::TEN.pow(Self::SCALE - Decimal::SCALE))
+        Self(I256::from(val.attos()) * I256::TEN.pow(Self::SCALE - Decimal::SCALE))
     }
 }
 
@@ -1026,7 +1026,7 @@ mod tests {
             PreciseDecimal::MAX.to_string(),
             "57896044618658097711785492504343953926634.992332820282019728792003956564819967"
         );
-        assert_eq!(PreciseDecimal::MIN.is_negative(), true);
+        assert!(PreciseDecimal::MIN.is_negative());
         assert_eq!(
             PreciseDecimal::MIN.to_string(),
             "-57896044618658097711785492504343953926634.992332820282019728792003956564819968"

@@ -17,7 +17,7 @@ macro_rules! assert_sign_extensions {
                 let slice_len = (
                     1 +                           // prefix byte
                     1 +                           // value kind byte
-                    std::mem::size_of::<$type>()  // value bytes
+                    core::mem::size_of::<$type>()  // value bytes
                 ).to_string();
                 let input = $input as $type;
 
@@ -60,7 +60,7 @@ assert_sign_extensions!(i64, "extend32_s", 0x665544332211, 0x44332211);
 #[test]
 fn test_wasm_non_mvp_mutable_globals_import() {
     // Arrange
-    let code = wat2wasm(&include_local_wasm_str!("mutable_globals_import.wat"));
+    let code = wat2wasm(include_local_wasm_str!("mutable_globals_import.wat"));
 
     // Act
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -83,7 +83,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
 #[test]
 fn test_wasm_non_mvp_mutable_globals_export() {
     // Arrange
-    let code = wat2wasm(&include_local_wasm_str!("mutable_globals_export.wat"));
+    let code = wat2wasm(include_local_wasm_str!("mutable_globals_export.wat"));
 
     // Act
     let mut ledger = LedgerSimulatorBuilder::new().build();

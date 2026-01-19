@@ -451,7 +451,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
     /// Returns the built transaction manifest, without further validation.
     /// If you also wish to validate the manifest, use [`build`][Self::build] instead.
     pub fn build_no_validate(mut self) -> M {
-        self.manifest.set_names(self.object_names().into());
+        self.manifest.set_names(self.object_names());
         #[cfg(feature = "dump_manifest_to_file")]
         {
             let bytes = manifest_encode(&self.manifest).unwrap();
@@ -1246,7 +1246,7 @@ where
             ROLE_ASSIGNMENT_GET_IDENT,
             RoleAssignmentGetInput {
                 module: role_module,
-                role_key: role_key.into(),
+                role_key,
             },
         )
     }
@@ -1442,7 +1442,7 @@ where
         let address = address.resolve_referenced(&self.registrar);
         match value.to_metadata_entry() {
             Some(value) => self.add_v1_instruction(CallMetadataMethod {
-                address: address.into(),
+                address,
                 method_name: METADATA_SET_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&MetadataSetInput {
                     key: key.into(),
@@ -1450,7 +1450,7 @@ where
                 }),
             }),
             None => self.add_v1_instruction(CallMetadataMethod {
-                address: address.into(),
+                address,
                 method_name: METADATA_REMOVE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&MetadataRemoveInput { key: key.into() }),
             }),
@@ -1465,7 +1465,7 @@ where
         let address = address.resolve_referenced(&self.registrar);
         let key = key.into();
         self.add_v1_instruction(CallMetadataMethod {
-            address: address.into(),
+            address,
             method_name: METADATA_LOCK_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataLockInput { key }),
         })
@@ -1478,7 +1478,7 @@ where
     ) -> Self {
         let address = address.resolve_referenced(&self.registrar);
         self.add_v1_instruction(CallMetadataMethod {
-            address: address.into(),
+            address,
             method_name: METADATA_LOCK_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataLockInput { key: key.into() }),
         })

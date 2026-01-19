@@ -28,7 +28,7 @@ fn non_existing_vault_should_cause_error() {
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionReason::BootloadingError(
             BootloadingError::ReferencedNodeDoesNotExist(
-                non_existing_address.as_node_id().clone().into(),
+                (*non_existing_address.as_node_id()).into(),
             ),
         ))
     });
@@ -123,7 +123,7 @@ fn test_recall_on_internal_vault() {
             .lock_standard_test_fee(account)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let (component_address, _): (ComponentAddress, ResourceAddress) =
         receipt.expect_commit(true).output(1);
@@ -139,7 +139,7 @@ fn test_recall_on_internal_vault() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -174,7 +174,7 @@ fn test_recall_on_received_direct_access_reference() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -217,7 +217,7 @@ fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
                 ),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

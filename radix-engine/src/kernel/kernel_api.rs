@@ -157,6 +157,7 @@ pub struct KernelInvocation<C> {
 }
 
 impl<C: CallFrameReferences> KernelInvocation<C> {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.call_frame_data.len() + self.args.len()
     }

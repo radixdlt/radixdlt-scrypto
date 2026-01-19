@@ -24,7 +24,7 @@ fn test_fee_states() {
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     let (

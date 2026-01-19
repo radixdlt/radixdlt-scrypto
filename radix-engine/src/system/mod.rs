@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub mod actor;
 pub mod bootstrap;
 #[cfg(feature = "db_checker")]

@@ -82,7 +82,7 @@ impl BabylonSettings {
     ) -> Self {
         let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
             .iter()
-            .map(|(key, _)| key.clone().into())
+            .map(|(key, _)| (*key).into())
             .collect();
         let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
             validators_and_stakes
@@ -167,7 +167,7 @@ impl BabylonSettings {
             amount: dec!("10"),
         };
         let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+            GenesisDataChunk::Validators(vec![validator_key.into()]),
             GenesisDataChunk::Stakes {
                 accounts: vec![staker_address],
                 allocations: vec![(validator_key, vec![stake])],
@@ -175,8 +175,8 @@ impl BabylonSettings {
             GenesisDataChunk::XrdBalances(xrd_balances),
             GenesisDataChunk::Resources(vec![genesis_resource]),
             GenesisDataChunk::ResourceBalances {
-                accounts: vec![token_holder.clone()],
-                allocations: vec![(resource_address.clone(), vec![resource_allocation])],
+                accounts: vec![token_holder],
+                allocations: vec![(resource_address, vec![resource_allocation])],
             },
         ];
         Self {
@@ -240,7 +240,7 @@ impl ProtocolUpdateGenerator for BabylonGenerator {
         false
     }
 
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         let bootstrap = FixedBatchGroupGenerator::named("bootstrap")
             .add_batch("flash", |_| {
                 ProtocolUpdateBatch::single(ProtocolUpdateTransaction::flash(
@@ -272,7 +272,7 @@ impl ProtocolUpdateGenerator for BabylonGenerator {
             };
             chunks = chunks.add_batch(chunk_name, move |_| {
                 ProtocolUpdateBatch::single(ProtocolUpdateTransaction::genesis_transaction(
-                    &format!("chunk-{chunk_index:04}"),
+                    format!("chunk-{chunk_index:04}"),
                     create_genesis_data_ingestion_transaction(chunk.clone(), chunk_index),
                 ))
             });

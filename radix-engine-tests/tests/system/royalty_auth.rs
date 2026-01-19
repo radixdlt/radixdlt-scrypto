@@ -27,7 +27,7 @@ fn package_owner_can_claim_royalty() {
             .claim_package_royalties(package_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -53,7 +53,7 @@ fn non_package_owner_cannot_claim_royalty() {
             .claim_package_royalties(package_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -87,7 +87,7 @@ fn component_owner_can_set_royalty() {
                 RoyaltyAmount::Free,
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -110,7 +110,7 @@ fn non_component_owner_cannot_set_royalty() {
                 RoyaltyAmount::Free,
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -141,7 +141,7 @@ fn component_owner_can_claim_royalty() {
             .claim_component_royalties(component_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -161,7 +161,7 @@ fn non_component_owner_cannot_claim_royalty() {
             .claim_component_royalties(component_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -190,7 +190,7 @@ fn set_up_package_and_component() -> (
             .lock_standard_test_fee(account)
             .publish_package_with_owner(code, definition, owner_badge_addr.clone())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
@@ -211,7 +211,7 @@ fn set_up_package_and_component() -> (
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 

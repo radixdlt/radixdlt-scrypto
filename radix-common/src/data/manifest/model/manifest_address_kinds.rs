@@ -365,7 +365,7 @@ impl ManifestPackageAddress {
 
 impl From<PackageAddress> for ManifestPackageAddress {
     fn from(value: PackageAddress) -> Self {
-        Self::Static(value.into())
+        Self::Static(value)
     }
 }
 

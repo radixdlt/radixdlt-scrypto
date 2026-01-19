@@ -27,15 +27,12 @@ pub struct NewAccount {
     pub trace: bool,
 }
 
-#[derive(ScryptoSbor, ManifestSbor)]
-struct EmptyStruct;
-
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = Secp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
-        let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+        let auth_global_id = NonFungibleGlobalId::from_public_key(public_key);
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

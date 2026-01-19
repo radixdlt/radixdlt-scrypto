@@ -121,7 +121,7 @@ impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
     fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) =
             self.api_ref().kernel_read_substate_uncosted(
-                &bucket_id,
+                bucket_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             ) {
@@ -187,7 +187,7 @@ impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
 
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         let is_fungible = if let Some(substate) = self.api_ref().kernel_read_substate_uncosted(
-            &proof_id,
+            proof_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         ) {
@@ -285,15 +285,15 @@ impl BucketSnapshot {
         match self {
             BucketSnapshot::Fungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
             BucketSnapshot::NonFungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
         }
     }
     pub fn amount(&self) -> Decimal {
         match self {
-            BucketSnapshot::Fungible { liquid, .. } => liquid.clone(),
+            BucketSnapshot::Fungible { liquid, .. } => *liquid,
             BucketSnapshot::NonFungible { liquid, .. } => liquid.len().into(),
         }
     }
@@ -316,15 +316,15 @@ impl ProofSnapshot {
         match self {
             ProofSnapshot::Fungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
             ProofSnapshot::NonFungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
         }
     }
     pub fn amount(&self) -> Decimal {
         match self {
-            ProofSnapshot::Fungible { total_locked, .. } => total_locked.clone(),
+            ProofSnapshot::Fungible { total_locked, .. } => *total_locked,
             ProofSnapshot::NonFungible { total_locked, .. } => total_locked.len().into(),
         }
     }
@@ -346,7 +346,7 @@ pub enum TraceActor {
 impl TraceActor {
     pub fn from_actor(actor: &Actor) -> TraceActor {
         match actor {
-            Actor::Method(MethodActor { node_id, .. }) => TraceActor::Method(node_id.clone()),
+            Actor::Method(MethodActor { node_id, .. }) => TraceActor::Method(*node_id),
             _ => TraceActor::NonMethod,
         }
     }
@@ -416,7 +416,7 @@ impl ExecutionTrace {
 }
 
 impl ResourceSummary {
-    pub fn default() -> Self {
+    pub fn new_empty() -> Self {
         Self {
             buckets: index_map_new(),
             proofs: index_map_new(),
@@ -457,6 +457,12 @@ impl ResourceSummary {
             proofs.insert(*node_id, x);
         }
         Self { buckets, proofs }
+    }
+}
+
+impl Default for ResourceSummary {
+    fn default() -> Self {
+        Self::new_empty()
     }
 }
 
@@ -758,7 +764,7 @@ impl ExecutionTraceModule {
                                 };
                                 self.vault_ops.push((
                                     caller.clone(),
-                                    node_id.clone(),
+                                    *node_id,
                                     op,
                                     self.instruction_index(),
                                 ));
@@ -859,7 +865,7 @@ impl ExecutionTraceModule {
         self.current_instruction_index
     }
 
-    fn handle_vault_put_input<'s>(
+    fn handle_vault_put_input(
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Actor,
@@ -869,14 +875,14 @@ impl ExecutionTraceModule {
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
-                vault_id.clone(),
+                *vault_id,
                 VaultOp::Put(resource.resource_address(), resource.amount()),
                 self.instruction_index(),
             ));
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(
+    fn handle_vault_lock_fee_input(
         &mut self,
         caller: &Actor,
         vault_id: &NodeId,
@@ -886,7 +892,7 @@ impl ExecutionTraceModule {
         let FungibleVaultLockFeeInput { amount, contingent } = args.as_typed().unwrap();
         self.vault_ops.push((
             actor,
-            vault_id.clone(),
+            *vault_id,
             VaultOp::LockFee(amount, contingent),
             self.instruction_index(),
         ));

@@ -42,7 +42,7 @@ pub struct DugongGenerator {
 }
 
 impl ProtocolUpdateGenerator for DugongGenerator {
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         vec![FixedBatchGroupGenerator::named("principal")
             .add_batch("primary", |store| {
                 generate_main_batch(store, &self.settings)

@@ -17,9 +17,7 @@ pub trait IntentTreeStructure {
     type RootIntentStructure: IntentStructure;
     type SubintentStructure: IntentStructure + HasSubintentHash;
     fn root(&self) -> &Self::RootIntentStructure;
-    fn non_root_subintents<'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = &'a Self::SubintentStructure>;
+    fn non_root_subintents(&self) -> impl ExactSizeIterator<Item = &Self::SubintentStructure>;
 }
 
 pub struct ValidatedIntentTreeInformation {
@@ -117,7 +115,10 @@ impl TransactionValidator {
             let subintent_hash = subintent.subintent_hash();
             let index = SubintentIndex(index);
             let details = SubintentRelationshipDetails::default_for(index);
-            if let Some(_) = non_root_subintent_details.insert(subintent_hash, details) {
+            if non_root_subintent_details
+                .insert(subintent_hash, details)
+                .is_some()
+            {
                 return Err(SubintentStructureError::DuplicateSubintent
                     .for_subintent(index, subintent_hash));
             }
@@ -348,16 +349,13 @@ impl AcrossIntentAggregation {
                 self.overall_end_timestamp_exclusive = Some(*end_timestamp_exclusive);
             }
         }
-        match (
+        if let (Some(start_inclusive), Some(end_exclusive)) = (
             self.overall_start_timestamp_inclusive.as_ref(),
             self.overall_end_timestamp_exclusive.as_ref(),
         ) {
-            (Some(start_inclusive), Some(end_exclusive)) => {
-                if start_inclusive >= end_exclusive {
-                    return Err(HeaderValidationError::NoValidTimestampRangeAcrossAllIntents);
-                }
+            if start_inclusive >= end_exclusive {
+                return Err(HeaderValidationError::NoValidTimestampRangeAcrossAllIntents);
             }
-            _ => {}
         }
         Ok(())
     }

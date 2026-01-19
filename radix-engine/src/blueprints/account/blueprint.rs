@@ -48,7 +48,7 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
-pub const SECURIFY_ROLE: &'static str = "securify";
+pub const SECURIFY_ROLE: &str = "securify";
 
 struct SecurifiedAccount;
 
@@ -708,7 +708,7 @@ impl AccountBlueprint {
             vec![],
             GenericArgs::default(),
             indexmap! {
-                AccountField::DepositRule.field_index() => FieldValue::new(&AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
+                AccountField::DepositRule.field_index() => FieldValue::new(AccountDepositRuleFieldPayload::from_content_source(AccountDepositRuleV1 {
                     default_deposit_rule: DefaultDepositRule::Accept,
                 }))
             },
@@ -889,7 +889,7 @@ impl AccountBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let buckets = Self::try_deposit_batch_or_refund(buckets, authorized_depositor_badge, api)?;
-        if let Some(_) = buckets {
+        if buckets.is_some() {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
         } else {
             Ok(())
@@ -1112,7 +1112,7 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(
             kv_store_entry_lock_handle,
-            &AccountResourcePreferenceVersions::V1(resource_preference).into_versioned(),
+            AccountResourcePreferenceVersions::V1(resource_preference).into_versioned(),
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
@@ -1157,7 +1157,7 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(
             kv_store_entry_lock_handle,
-            &AccountAuthorizedDepositorEntryPayload::from_content_source(()),
+            AccountAuthorizedDepositorEntryPayload::from_content_source(()),
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
@@ -1249,7 +1249,7 @@ impl AccountBlueprint {
                         let own = vault.0;
                         api.key_value_entry_set_typed(
                             kv_store_entry_lock_handle,
-                            &AccountResourceVaultEntryPayload::from_content_source(vault),
+                            AccountResourceVaultEntryPayload::from_content_source(vault),
                         )?;
                         Ok(Vault(own))
                     } else {

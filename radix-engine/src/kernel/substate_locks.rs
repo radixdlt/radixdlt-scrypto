@@ -21,7 +21,7 @@ impl SubstateLockState {
         match self {
             SubstateLockState::Read(n) => {
                 if read_only {
-                    *n = *n + 1;
+                    *n += 1;
                 } else {
                     if *n != 0 {
                         return Err(SubstateLockError);
@@ -40,7 +40,7 @@ impl SubstateLockState {
     fn unlock(&mut self) {
         match self {
             SubstateLockState::Read(n) => {
-                *n = *n - 1;
+                *n -= 1;
             }
             SubstateLockState::Write => {
                 *self = SubstateLockState::no_lock();
@@ -97,7 +97,7 @@ impl<D> SubstateLocks<D> {
     ) -> bool {
         if let Some(state) =
             self.substate_lock_states
-                .get(&(node_id.clone(), partition_num, substate_key.clone()))
+                .get(&(*node_id, partition_num, substate_key.clone()))
         {
             state.is_locked()
         } else {
@@ -115,7 +115,7 @@ impl<D> SubstateLocks<D> {
     ) -> Option<u32> {
         let lock_state = self
             .substate_lock_states
-            .entry((node_id.clone(), partition_num, substate_key.clone()))
+            .entry((*node_id, partition_num, substate_key.clone()))
             .or_insert(SubstateLockState::no_lock());
         match lock_state.try_lock(read_only) {
             Ok(()) => {}
@@ -125,7 +125,7 @@ impl<D> SubstateLocks<D> {
         }
 
         let count = self.node_num_locked.entry(*node_id).or_insert(0);
-        *count = *count + 1;
+        *count += 1;
 
         let handle = self.new_lock_handle(node_id, partition_num, substate_key, data);
         Some(handle)
@@ -147,8 +147,14 @@ impl<D> SubstateLocks<D> {
         lock_state.unlock();
 
         let count = self.node_num_locked.entry(node_id).or_insert(0);
-        *count = *count - 1;
+        *count -= 1;
 
         (full_key.0, full_key.1, full_key.2, data)
+    }
+}
+
+impl<D> Default for SubstateLocks<D> {
+    fn default() -> Self {
+        Self::new()
     }
 }

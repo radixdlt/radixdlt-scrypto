@@ -34,7 +34,7 @@ impl<'t, 's, 'de, E: CustomExtension> TypedLocatedTraversalEvent<'t, 's, 'de, E>
             error_display,
             full_location.start_offset,
             full_location.end_offset,
-            full_location.path_to_string(&schema)
+            full_location.path_to_string(schema)
         )
     }
 }

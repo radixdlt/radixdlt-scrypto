@@ -67,9 +67,9 @@ impl From<Option<AttachedModuleId>> for ModuleId {
     }
 }
 
-impl Into<Option<AttachedModuleId>> for ModuleId {
-    fn into(self) -> Option<AttachedModuleId> {
-        match self {
+impl From<ModuleId> for Option<AttachedModuleId> {
+    fn from(val: ModuleId) -> Self {
+        match val {
             ModuleId::Main => None,
             ModuleId::Metadata => Some(AttachedModuleId::Metadata),
             ModuleId::Royalty => Some(AttachedModuleId::Royalty),
@@ -160,9 +160,9 @@ impl AttachedModuleId {
     }
 }
 
-impl Into<ModuleId> for AttachedModuleId {
-    fn into(self) -> ModuleId {
-        match self {
+impl From<AttachedModuleId> for ModuleId {
+    fn from(val: AttachedModuleId) -> Self {
+        match val {
             AttachedModuleId::Metadata => ModuleId::Metadata,
             AttachedModuleId::Royalty => ModuleId::Royalty,
             AttachedModuleId::RoleAssignment => ModuleId::RoleAssignment,
@@ -266,6 +266,7 @@ pub trait SystemObjectApi<E> {
     ) -> Result<GlobalAddress, E>;
 
     /// Globalizes with a new inner object and emits an event
+    #[allow(clippy::too_many_arguments)]
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,

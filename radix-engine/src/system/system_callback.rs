@@ -178,7 +178,7 @@ impl SystemVersion {
         let auth_module = if self <= SystemVersion::V1 {
             // This isn't exactly a necessary check as node logic should protect against this
             // but keep it here for sanity
-            if executable.subintents().len() > 0 {
+            if !executable.subintents().is_empty() {
                 return Err(RejectionReason::SubintentsNotYetSupported);
             }
             let intent = executable.transaction_intent();
@@ -260,17 +260,12 @@ impl SystemVersion {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum SystemLockData {
     KeyValueEntry(KeyValueEntryLockData),
     Field(FieldLockData),
+    #[default]
     Default,
-}
-
-impl Default for SystemLockData {
-    fn default() -> Self {
-        SystemLockData::Default
-    }
 }
 
 #[derive(Clone)]
@@ -286,6 +281,7 @@ pub enum KeyValueEntryLockData {
 }
 
 #[derive(Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum FieldLockData {
     Read,
     Write {
@@ -300,11 +296,11 @@ impl SystemLockData {
     }
 
     pub fn is_kv_entry_with_write(&self) -> bool {
-        match self {
+        matches!(
+            self,
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVCollectionWrite { .. })
-            | SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite { .. }) => true,
-            _ => false,
-        }
+                | SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite { .. })
+        )
     }
 }
 
@@ -327,7 +323,7 @@ pub trait SystemBasedKernelInternalApi:
 {
     type SystemCallback: SystemCallbackObject;
 
-    fn system_module_api(&mut self) -> SystemModuleApiImpl<Self> {
+    fn system_module_api(&mut self) -> SystemModuleApiImpl<'_, Self> {
         SystemModuleApiImpl::new(self)
     }
 }
@@ -459,7 +455,7 @@ impl<V: SystemCallbackObject> System<V> {
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
 
         match type_info {
             TypeInfoSubstate::Object(object_info) => {
@@ -478,7 +474,7 @@ impl<V: SystemCallbackObject> System<V> {
                 if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
+                            receiver: Some(*node_id),
                             blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnMove,
                         }),
@@ -583,27 +579,19 @@ impl<V: SystemCallbackObject> System<V> {
             &SubstateKey::Map(scrypto_encode(intent_hash.as_hash()).unwrap()),
         );
 
-        match substate {
-            Some(value) => {
-                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
-                match substate.into_value() {
-                    Some(status) => match status.into_v1() {
-                        TransactionStatusV1::CommittedSuccess
-                        | TransactionStatusV1::CommittedFailure => {
-                            return Err(RejectionReason::IntentHashPreviouslyCommitted(
-                                intent_hash,
-                            ));
-                        }
-                        TransactionStatusV1::Cancelled => {
-                            return Err(RejectionReason::IntentHashPreviouslyCancelled(
-                                intent_hash,
-                            ));
-                        }
-                    },
-                    None => {}
+        if let Some(value) = substate {
+            let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+            if let Some(status) = substate.into_value() {
+                match status.into_v1() {
+                    TransactionStatusV1::CommittedSuccess
+                    | TransactionStatusV1::CommittedFailure => {
+                        return Err(RejectionReason::IntentHashPreviouslyCommitted(intent_hash));
+                    }
+                    TransactionStatusV1::Cancelled => {
+                        return Err(RejectionReason::IntentHashPreviouslyCancelled(intent_hash));
+                    }
                 }
             }
-            None => {}
         }
 
         Ok(())
@@ -638,20 +626,19 @@ impl<V: SystemCallbackObject> System<V> {
                 TransactionExecutionError::RuntimeError(e) => {
                     if let Some(abort_reason) = e.abortion() {
                         TransactionResultType::Abort(abort_reason.clone())
+                    } else if fee_reserve.fully_repaid() {
+                        TransactionResultType::Commit(Err(e))
                     } else {
-                        if fee_reserve.fully_repaid() {
-                            TransactionResultType::Commit(Err(e))
-                        } else {
-                            TransactionResultType::Reject(
-                                RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(e),
-                            )
-                        }
+                        TransactionResultType::Reject(
+                            RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(e),
+                        )
                     }
                 }
             },
         }
     }
 
+    #[allow(clippy::type_complexity)]
     fn finalize_fees_for_commit<S: SubstateDatabase>(
         track: &mut Track<S>,
         fee_reserve: SystemLoanFeeReserve,
@@ -1104,7 +1091,7 @@ impl<V: SystemCallbackObject> System<V> {
 
             if node_id.is_global_preallocated() {
                 // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                global_addresses.insert(GlobalAddress::new_or_panic((*node_id).into()));
                 continue;
             }
 
@@ -1118,10 +1105,10 @@ impl<V: SystemCallbackObject> System<V> {
 
             match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
                 StableReferenceType::Global => {
-                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                    global_addresses.insert(GlobalAddress::new_or_panic((*node_id).into()));
                 }
                 StableReferenceType::DirectAccess => {
-                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                    direct_accesses.insert(InternalAddress::new_or_panic((*node_id).into()));
                 }
             }
         }
@@ -1177,11 +1164,11 @@ impl<V: SystemCallbackObject> System<V> {
                 .apply_deferred_execution_cost(ExecutionCostingEntry::CheckReference {
                     event: &event,
                 })
-                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+                .map_err(BootloadingError::FailedToApplyDeferredCosts)?;
         }
 
         let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
-        return match &type_substate {
+        match &type_substate {
             TypeInfoSubstate::Object(
                 info @ ObjectInfo {
                     blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -1204,7 +1191,7 @@ impl<V: SystemCallbackObject> System<V> {
             _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
                 (*node_id).into(),
             )),
-        };
+        }
     }
 
     fn create_non_commit_receipt(
@@ -1370,6 +1357,7 @@ impl<V: SystemCallbackObject> System<V> {
         )
     }
 
+    #[cfg_attr(feature = "alloc", allow(unused_variables))]
     fn create_receipt_internal(
         print_execution_summary: bool,
         costing_parameters: CostingParameters,
@@ -1441,11 +1429,11 @@ impl<V: SystemCallbackObject> System<V> {
         // Override system configuration
         if let Some(system_overrides) = &init_input.system_overrides {
             if let Some(costing_override) = &system_overrides.costing_parameters {
-                system_parameters.costing_parameters = costing_override.clone();
+                system_parameters.costing_parameters = *costing_override;
             }
 
             if let Some(limits_override) = &system_overrides.limit_parameters {
-                system_parameters.limit_parameters = limits_override.clone();
+                system_parameters.limit_parameters = *limits_override;
             }
 
             if let Some(network_definition) = &system_overrides.network_definition {
@@ -1494,7 +1482,7 @@ impl<V: SystemCallbackObject> System<V> {
         };
 
         let auth_module = system_logic_version
-            .create_auth_module(&executable)
+            .create_auth_module(executable)
             .map_err(|reason| {
                 let print_execution_summary =
                     enabled_modules.contains(EnabledModules::KERNEL_TRACE);
@@ -1704,11 +1692,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             callback,
             modules,
             SystemFinalization {
-                intent_nullifications: executable
-                    .intent_hash_nullifications()
-                    .iter()
-                    .cloned()
-                    .collect(),
+                intent_nullifications: executable.intent_hash_nullifications().to_vec(),
             },
         );
 
@@ -1729,7 +1713,7 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
         } in executable.pre_allocated_addresses()
         {
             let global_address_reservation =
-                system_service.prepare_global_address(blueprint_id.clone(), address.clone())?;
+                system_service.prepare_global_address(blueprint_id.clone(), *address)?;
             global_address_reservations.push(global_address_reservation);
         }
 
@@ -1758,18 +1742,18 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
                 .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
                     store_commit,
                 })
-                .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+                .map_err(RuntimeError::FinalizationCostingError)?;
         }
         self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
                 events: &self.modules.events().clone(),
             })
-            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+            .map_err(RuntimeError::FinalizationCostingError)?;
         self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                 logs: &self.modules.logs().clone(),
             })
-            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+            .map_err(RuntimeError::FinalizationCostingError)?;
         let num_of_intent_statuses = executable
             .intent_hash_nullifications()
             .iter()
@@ -1793,25 +1777,25 @@ impl<V: SystemCallbackObject> KernelTransactionExecutor for System<V> {
             .apply_finalization_cost(FinalizationCostingEntry::CommitIntentStatus {
                 num_of_intent_statuses,
             })
-            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+            .map_err(RuntimeError::FinalizationCostingError)?;
 
         /* state storage costs */
         for store_commit in &info {
             self.modules
                 .apply_storage_cost(StorageType::State, store_commit.len_increase())
-                .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+                .map_err(RuntimeError::FinalizationCostingError)?;
         }
 
         /* archive storage costs */
         let total_event_size = self.modules.events().iter().map(|x| x.len()).sum();
         self.modules
             .apply_storage_cost(StorageType::Archive, total_event_size)
-            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+            .map_err(RuntimeError::FinalizationCostingError)?;
 
         let total_log_size = self.modules.logs().iter().map(|x| x.1.len()).sum();
         self.modules
             .apply_storage_cost(StorageType::Archive, total_log_size)
-            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+            .map_err(RuntimeError::FinalizationCostingError)?;
 
         Ok(())
     }
@@ -2087,7 +2071,7 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
                         .hook_exports
                         .get(hook)
                         .ok_or(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::HookNotFound(hook.clone()),
+                            SystemUpstreamError::HookNotFound(*hook),
                         ))?;
 
                 // Input is not validated as they're created by system.
@@ -2096,7 +2080,7 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
                 let output = V::invoke(
                     &blueprint_id.package_address,
                     export.clone(),
-                    &input,
+                    input,
                     &mut system,
                 )?;
 
@@ -2130,45 +2114,43 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
         for node_id in nodes {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
-            match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    ..
-                }) => {
-                    match (
-                        blueprint_id.package_address,
-                        blueprint_id.blueprint_name.as_str(),
-                    ) {
-                        (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
-                            let mut system = SystemService::new(api);
-                            system.call_function(
-                                RESOURCE_PACKAGE,
-                                FUNGIBLE_PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                            let mut system = SystemService::new(api);
-                            system.call_function(
-                                RESOURCE_PACKAGE,
-                                NON_FUNGIBLE_PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        _ => {
-                            // no-op
-                        }
+            if let TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_info: BlueprintInfo { blueprint_id, .. },
+                ..
+            }) = type_info
+            {
+                match (
+                    blueprint_id.package_address,
+                    blueprint_id.blueprint_name.as_str(),
+                ) {
+                    (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
+                        let mut system = SystemService::new(api);
+                        system.call_function(
+                            RESOURCE_PACKAGE,
+                            FUNGIBLE_PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(Own(node_id)),
+                            })
+                            .unwrap(),
+                        )?;
+                    }
+                    (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                        let mut system = SystemService::new(api);
+                        system.call_function(
+                            RESOURCE_PACKAGE,
+                            NON_FUNGIBLE_PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(Own(node_id)),
+                            })
+                            .unwrap(),
+                        )?;
+                    }
+                    _ => {
+                        // no-op
                     }
                 }
-                _ => {}
             }
         }
 
@@ -2335,7 +2317,7 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
         node_id: &NodeId,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+        let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
 
         match type_info {
             TypeInfoSubstate::Object(node_object_info) => {
@@ -2356,7 +2338,7 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
                         call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
-                            receiver: Some(node_id.clone()),
+                            receiver: Some(*node_id),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))

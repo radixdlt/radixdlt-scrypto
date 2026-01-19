@@ -583,17 +583,15 @@ impl ValidatorBlueprint {
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
             .fully_update_and_into_latest_version();
 
-        if !is_owner {
-            if !validator.accepts_delegated_stake {
-                api.field_close(handle)?;
+        if !is_owner && !validator.accepts_delegated_stake {
+            api.field_close(handle)?;
 
-                // TODO: Should this be an Option returned instead similar to Account?
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ValidatorError(
-                        ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
-                    ),
-                ));
-            }
+            // TODO: Should this be an Option returned instead similar to Account?
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                ),
+            ));
         }
 
         let xrd_bucket_amount = xrd_bucket.amount(api)?;
@@ -823,7 +821,7 @@ impl ValidatorBlueprint {
             Runtime::emit_event(api, UnregisterValidatorEvent)?;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn index_update<Y: SystemApi<RuntimeError>>(
@@ -850,15 +848,13 @@ impl ValidatorBlueprint {
                 })
             }
         } else {
-            if let Some(new_index_key) = &new_sorted_key {
-                Some(UpdateSecondaryIndex::Create {
+            new_sorted_key
+                .as_ref()
+                .map(|new_index_key| UpdateSecondaryIndex::Create {
                     index_key: new_index_key.clone(),
                     stake: new_stake_amount,
                     key: validator.key,
                 })
-            } else {
-                None
-            }
         };
 
         if let Some(update) = update {
@@ -1321,7 +1317,7 @@ impl ValidatorBlueprint {
         let available_withdrawal_epochs = substate
             .pending_owner_stake_unit_withdrawals
             .range(..=current_epoch)
-            .map(|(epoch, _available_amount)| epoch.clone())
+            .map(|(epoch, _available_amount)| *epoch)
             .collect::<Vec<_>>();
         for available_withdrawal_epoch in available_withdrawal_epochs {
             // no batch delete in a BTree
@@ -1709,8 +1705,8 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
-                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
-                "validator" => GlobalAddress::from(validator_address), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png"), locked;
+                "validator" => validator_address, locked;
                 "tags" => Vec::<String>::new(), locked;
             },
             None,
@@ -1742,8 +1738,8 @@ impl ValidatorCreator {
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
-                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
-                "validator" => GlobalAddress::from(validator_address), locked;
+                "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png"), locked;
+                "validator" => validator_address, locked;
                 "tags" => Vec::<String>::new(), locked;
             },
             None,
@@ -1784,7 +1780,7 @@ impl ValidatorCreator {
             validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
-            claim_nft: claim_nft,
+            claim_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
             pending_xrd_withdraw_vault_id: pending_xrd_withdraw_vault.0,
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
@@ -1800,8 +1796,8 @@ impl ValidatorCreator {
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             indexmap! {
-                ValidatorField::State.field_index() => FieldValue::new(&ValidatorStateFieldPayload::from_content_source(substate)),
-                ValidatorField::ProtocolUpdateReadinessSignal.field_index() => FieldValue::new(&ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(protocol_update_readiness_signal)),
+                ValidatorField::State.field_index() => FieldValue::new(ValidatorStateFieldPayload::from_content_source(substate)),
+                ValidatorField::ProtocolUpdateReadinessSignal.field_index() => FieldValue::new(ValidatorProtocolUpdateReadinessSignalFieldPayload::from_content_source(protocol_update_readiness_signal)),
             },
         )?;
 

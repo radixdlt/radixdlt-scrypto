@@ -29,10 +29,8 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -48,7 +46,7 @@ fn test_add_direct_access_ref_to_stored_substate_external_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -79,10 +77,8 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -98,7 +94,7 @@ fn test_add_direct_access_ref_to_heap_substate_external_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -129,10 +125,8 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -148,7 +142,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_external_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -181,10 +175,8 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
             )
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -206,7 +198,7 @@ fn test_add_direct_access_ref_to_stored_substate_internal_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -239,10 +231,8 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
             )
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -264,7 +254,7 @@ fn test_add_direct_access_ref_to_heap_substate_internal_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -297,10 +287,8 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
             )
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -322,7 +310,7 @@ fn test_add_direct_access_ref_to_kv_store_substate_internal_vault() {
                 manifest_args!(InternalAddress::try_from(vault_id).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -350,7 +338,7 @@ fn test_create_global_node_with_local_ref() {
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -378,10 +366,8 @@ fn test_add_local_ref_to_stored_substate() {
             .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -397,7 +383,7 @@ fn test_add_local_ref_to_stored_substate() {
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -433,7 +419,7 @@ fn test_internal_typed_reference() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

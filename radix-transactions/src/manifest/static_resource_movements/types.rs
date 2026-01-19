@@ -80,11 +80,11 @@ impl TrackedResources {
                 return false;
             }
         }
-        return true;
+        true
     }
 
     /// Works for any resource, specified and unspecified.
-    fn resource_status(&self, resource: &ResourceAddress) -> Cow<TrackedResource> {
+    fn resource_status(&self, resource: &ResourceAddress) -> Cow<'_, TrackedResource> {
         match self.specified_resources.get(resource) {
             Some(bound) => Cow::Borrowed(bound),
             None => Cow::Owned(self.unspecified_resources.resource_status()),
@@ -351,6 +351,7 @@ impl UnspecifiedResources {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, other: Self) -> Self {
         self.mut_add(other);
         self
@@ -560,7 +561,7 @@ impl TrackedResource {
             ResourceTakeAmount::All => {
                 // In the case of a "take all" we just return the existing contents and history,
                 // without changing it - and we replace with a blank slate.
-                return Ok(core::mem::replace(self, Self::zero()));
+                Ok(core::mem::replace(self, Self::zero()))
             }
             _ => {
                 let taken_amount = self.bounds.mut_take(take_amount.clone())?;
@@ -860,11 +861,11 @@ impl ResourceBounds {
     }
 
     pub fn is_valid_for_fungible_use(&self) -> bool {
-        return self.constraints.is_valid_for_fungible_use();
+        self.constraints.is_valid_for_fungible_use()
     }
 
     pub fn is_valid_for_non_fungible_use(&self) -> bool {
-        return self.constraints.is_valid_for_non_fungible_use();
+        self.constraints.is_valid_for_non_fungible_use()
     }
 
     /// Returns true if the bound is known to be zero
@@ -910,6 +911,7 @@ impl ResourceBounds {
         self.constraints.allowed_ids = AllowedIds::Any;
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, other: Self) -> Result<Self, StaticResourceMovementsError> {
         self.mut_add(other)?;
         Ok(self)
@@ -1007,7 +1009,7 @@ impl ResourceBounds {
             }
             ResourceTakeAmount::All => {
                 // Taken amount
-                Ok(core::mem::replace(self, Self::zero()))
+                Ok(core::mem::take(self))
             }
         }
     }
@@ -1172,7 +1174,7 @@ impl ResourceChangeHistory {
                 self.mut_record(single_history_item);
             }
             _ => {
-                if self.0.len() == 0 {
+                if self.0.is_empty() {
                     *self = change_history
                 } else {
                     self.0.push(ResourceChange::AddWithForkedHistory {
@@ -1268,6 +1270,7 @@ pub struct StaticResourceMovementsOutput {
 }
 
 impl StaticResourceMovementsOutput {
+    #[allow(clippy::type_complexity)]
     pub fn resolve_account_changes(
         &self,
     ) -> Result<
@@ -1492,7 +1495,7 @@ impl AllBalanceChanges {
             }
         }
 
-        let net_withdraws = if withdraws.len() > 0 {
+        let net_withdraws = if !withdraws.is_empty() {
             Some(NetWithdraws {
                 resources: withdraws,
             })
@@ -1501,7 +1504,7 @@ impl AllBalanceChanges {
         };
 
         let new_deposits =
-            if deposits.len() > 0 || self.unspecified_resource_deposits.may_be_present() {
+            if !deposits.is_empty() || self.unspecified_resource_deposits.may_be_present() {
                 Some(NetDeposits {
                     specified_resources: deposits,
                     unspecified_resources: self.unspecified_resource_deposits,
@@ -1590,7 +1593,7 @@ impl AggregatedBalanceChange {
             .intersection(debited.required_ids())
             .cloned()
             .collect::<IndexSet<_>>();
-        if shared_ids.len() > 0 {
+        if !shared_ids.is_empty() {
             partial_balance.mut_take(ResourceTakeAmount::NonFungibles(shared_ids.clone()))?;
             debited.mut_take(ResourceTakeAmount::NonFungibles(shared_ids))?;
         }
@@ -1823,7 +1826,7 @@ pub(crate) enum OwnedNextCallAssertion {
 }
 
 impl OwnedNextCallAssertion {
-    pub fn as_ref(&self) -> NextCallAssertion {
+    pub fn as_ref(&self) -> NextCallAssertion<'_> {
         match self {
             OwnedNextCallAssertion::ReturnsOnly { constraints } => {
                 NextCallAssertion::ReturnsOnly { constraints }
@@ -1997,7 +2000,7 @@ impl From<ResourceBounds> for SimpleNonFungibleResourceBounds {
 /// [`DynamicGlobalAddress`], [`DynamicPackageAddress`], and so on but with the [`Named`] variant
 /// resolved from a [`ManifestNamedAddress`] to a particular [`BlueprintId`] that is known.
 ///
-/// * [`Named`]: ResolvedDynamicAddress::Named
+/// [`Named`]: ResolvedDynamicAddress::Named
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResolvedDynamicAddress<T: AsRef<NodeId>> {
     StaticAddress(T),
@@ -2012,8 +2015,8 @@ impl<T: AsRef<NodeId>> ResolvedDynamicAddress<T> {
     /// case that the address is [`Static`] this method attempts to determine the [`BlueprintId`]
     /// from from the entity type of the address.
     ///
-    /// * [`Named`]: ResolvedDynamicAddress::Named
-    /// * [`Static`]: ResolvedDynamicAddress::Static
+    /// [`Named`]: ResolvedDynamicAddress::Named
+    /// [`Static`]: ResolvedDynamicAddress::Static
     pub fn main_module_blueprint_id(&self) -> Option<&BlueprintId> {
         match self {
             Self::StaticAddress(global_address) => global_address

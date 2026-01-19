@@ -155,7 +155,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 
@@ -196,7 +196,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

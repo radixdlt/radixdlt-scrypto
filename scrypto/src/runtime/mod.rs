@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod clock;
 mod data;
 mod local_auth_zone;

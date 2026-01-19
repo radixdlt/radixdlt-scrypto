@@ -45,6 +45,7 @@ macro_rules! define_manifest_typed_invocation {
         paste::paste! {
             /* The TypedManifestNativeInvocation enum */
             #[derive(Debug, ManifestSbor, ScryptoDescribe)]
+            #[allow(clippy::large_enum_variant)]
             pub enum TypedManifestNativeInvocation {
                 $(
                     [< $blueprint_ident BlueprintInvocation >]([< $blueprint_ident BlueprintInvocation >])
@@ -226,6 +227,7 @@ macro_rules! define_manifest_typed_invocation {
             /* The Method and Function types for each blueprint */
             $(
                 #[derive(Debug, ManifestSbor, ScryptoDescribe)]
+                #[allow(clippy::large_enum_variant)]
                 pub enum [< $blueprint_ident BlueprintInvocation >] {
                     Method([< $blueprint_ident BlueprintMethod >]),
                     DirectMethod([< $blueprint_ident BlueprintDirectMethod >]),

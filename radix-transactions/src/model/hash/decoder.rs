@@ -23,8 +23,8 @@ impl TransactionHashBech32Decoder {
         T: IsTransactionHash,
     {
         // Decode the hash string
-        let (hrp, data, variant) = bech32::decode(hash)
-            .map_err(|err| TransactionHashBech32DecodeError::Bech32mDecodingError(err))?;
+        let (hrp, data, variant) =
+            bech32::decode(hash).map_err(TransactionHashBech32DecodeError::Bech32mDecodingError)?;
 
         // Validate the Bech32 variant to ensure that is is Bech32m
         match variant {
@@ -34,7 +34,7 @@ impl TransactionHashBech32Decoder {
 
         // Convert the data to u8 from u5.
         let data = Vec::<u8>::from_base32(&data)
-            .map_err(|err| TransactionHashBech32DecodeError::Bech32mDecodingError(err))?;
+            .map_err(TransactionHashBech32DecodeError::Bech32mDecodingError)?;
 
         // Validate the length
         let hash = data

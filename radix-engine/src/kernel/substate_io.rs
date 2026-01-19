@@ -103,13 +103,13 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     ) -> Result<NodeSubstates, CallbackError<DropNodeError, E>> {
         if self.substate_locks.node_is_locked(node_id) {
             return Err(CallbackError::Error(DropNodeError::SubstateBorrowed(
-                node_id.clone().into(),
+                (*node_id).into(),
             )));
         }
 
         if self.non_global_node_refs.node_is_referenced(node_id) {
             return Err(CallbackError::Error(DropNodeError::NodeBorrowed(
-                node_id.clone().into(),
+                (*node_id).into(),
             )));
         }
 
@@ -145,18 +145,18 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         // open a substate of an owned node
 
         let mut queue = LinkedList::new();
-        queue.push_back(node_id.clone());
+        queue.push_back(*node_id);
 
         while let Some(node_id) = queue.pop_front() {
             if self.non_global_node_refs.node_is_referenced(&node_id) {
                 return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
-                    node_id.clone().into(),
+                    node_id.into(),
                 )));
             }
 
             if self.pinned_to_heap.contains(&node_id) {
                 return Err(CallbackError::Error(
-                    PersistNodeError::CannotPersistPinnedNode(node_id.clone().into()),
+                    PersistNodeError::CannotPersistPinnedNode(node_id.into()),
                 ));
             }
 
@@ -172,12 +172,12 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                 }
             };
 
-            for (_partition_num, module_substates) in &node_substates {
-                for (_substate_key, substate_value) in module_substates {
+            for module_substates in node_substates.values() {
+                for substate_value in module_substates.values() {
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                PersistNodeError::ContainsNonGlobalRef(reference.clone().into()),
+                                PersistNodeError::ContainsNonGlobalRef((*reference).into()),
                             ));
                         }
                     }
@@ -200,7 +200,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             }
 
             self.store
-                .create_node(node_id.clone(), node_substates, &mut |io_access| {
+                .create_node(node_id, node_substates, &mut |io_access| {
                     handler.on_io_access(&self.heap, io_access)
                 })
                 .map_err(CallbackError::CallbackError)?;
@@ -209,7 +209,8 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn move_partition<'f, E>(
+    #[allow(clippy::too_many_arguments)]
+    pub fn move_partition<E>(
         &mut self,
         src_device: SubstateDevice,
         src_node_id: &NodeId,
@@ -222,12 +223,12 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         // TODO: Use more granular partition lock checks?
         if self.substate_locks.node_is_locked(src_node_id) {
             return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
-                src_node_id.clone().into(),
+                (*src_node_id).into(),
             )));
         }
         if self.substate_locks.node_is_locked(dest_node_id) {
             return Err(CallbackError::Error(MovePartitionError::SubstateBorrowed(
-                dest_node_id.clone().into(),
+                (*dest_node_id).into(),
             )));
         }
 
@@ -284,15 +285,13 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                     // Recursively move nodes to store
                     for own in substate_value.owned_nodes() {
                         self.move_node_from_heap_to_store(own, handler)
-                            .map_err(|e| e.map(|e| MovePartitionError::PersistNodeError(e)))?;
+                            .map_err(|e| e.map(MovePartitionError::PersistNodeError))?;
                     }
 
                     for reference in substate_value.references() {
                         if !reference.is_global() {
                             return Err(CallbackError::Error(
-                                MovePartitionError::NonGlobalRefNotAllowed(
-                                    reference.clone().into(),
-                                ),
+                                MovePartitionError::NonGlobalRefNotAllowed((*reference).into()),
                             ));
                         }
                     }
@@ -313,6 +312,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn open_substate<E, D: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         device: SubstateDevice,
@@ -341,7 +341,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                         TrackedSubstateInfo::New => {
                             return Err(CallbackError::Error(
                                 OpenSubstateError::LockUnmodifiedBaseOnNewSubstate(
-                                    node_id.clone().into(),
+                                    (*node_id).into(),
                                     partition_num,
                                     substate_key.clone(),
                                 ),
@@ -350,7 +350,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
                         TrackedSubstateInfo::Updated => {
                             return Err(CallbackError::Error(
                                 OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                                    node_id.clone().into(),
+                                    (*node_id).into(),
                                     partition_num,
                                     substate_key.clone(),
                                 ),
@@ -366,7 +366,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
         let substate_value = Self::get_substate_internal(
             &mut self.heap,
-            &mut self.store,
+            self.store,
             device,
             node_id,
             partition_num,
@@ -409,7 +409,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
             Some(handle) => handle,
             None => {
                 return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(
-                    node_id.clone().into(),
+                    (*node_id).into(),
                     partition_num,
                     substate_key.clone(),
                 )));
@@ -470,8 +470,8 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         // Remove any virtualized state if it exists
         let _ = lock_data.virtualized.take();
 
-        let node_id = node_id.clone();
-        let partition_num = partition_num.clone();
+        let node_id = *node_id;
+        let partition_num = *partition_num;
         let substate_key = substate_key.clone();
 
         match lock_data.device {
@@ -510,7 +510,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         (node_id, partition_num, substate_key, lock_data.flags)
     }
 
-    pub fn set_substate<'f, E>(
+    pub fn set_substate<E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -525,7 +525,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         {
             return Err(CallbackError::Error(
                 CallFrameSetSubstateError::SubstateLocked(
-                    node_id.clone().into(),
+                    (*node_id).into(),
                     partition_num,
                     substate_key,
                 ),
@@ -553,7 +553,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn remove_substate<'f, E>(
+    pub fn remove_substate<E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -564,7 +564,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
                 CallFrameRemoveSubstateError::SubstateLocked(
-                    node_id.clone().into(),
+                    (*node_id).into(),
                     partition_num,
                     key.clone(),
                 ),
@@ -645,7 +645,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn scan_sorted<'f, E>(
+    pub fn scan_sorted<E>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,

@@ -62,7 +62,7 @@ pub fn run() -> Result<(), String> {
         }
     }
 
-    let manifest_kind = ManifestKind::parse_or_latest(args.kind.as_ref().map(|x| x.as_str()))?;
+    let manifest_kind = ManifestKind::parse_or_latest(args.kind.as_deref())?;
     let manifest = compile_any_manifest_with_pretty_error(
         &content,
         manifest_kind,

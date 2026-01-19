@@ -127,7 +127,7 @@ fn can_withdraw_from_my_complex_account() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, true);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, true);
         }
     }
 }
@@ -149,7 +149,7 @@ fn cannot_withdraw_from_my_complex_account() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, false);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, false);
         }
     }
 }
@@ -172,7 +172,7 @@ fn can_withdraw_from_my_complex_account_2() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, true);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, true);
         }
     }
 }
@@ -201,7 +201,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, false);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, false);
         }
     }
 }
@@ -348,8 +348,7 @@ fn can_call_function_requiring_count_of_zero() {
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_function(package_address, "CountOfZero", "hi", manifest_args!())
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_commit_success();

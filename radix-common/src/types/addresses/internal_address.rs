@@ -22,6 +22,12 @@ impl InternalAddress {
         Self(node_id)
     }
 
+    /// # Safety
+    ///
+    /// This function doesn't check that the provided [`NodeId`] has the correct [`EntityType`] for
+    /// this address type. The result of calling this constructor function is that you may end up
+    /// with an address whose [`NodeId`] is incorrect (e.g., a [`NodeId`] of a resource on a
+    /// [`PackageAddress`])
     pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -128,9 +134,9 @@ impl TryFrom<&[u8]> for InternalAddress {
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for InternalAddress {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0.into()
+impl From<InternalAddress> for [u8; NodeId::LENGTH] {
+    fn from(val: InternalAddress) -> Self {
+        val.0.into()
     }
 }
 
@@ -239,8 +245,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for InternalAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "Address({})", hex::encode(&self.0))
-            .map_err(AddressBech32EncodeError::FormatError)
+        write!(f, "Address({})", hex::encode(self.0)).map_err(AddressBech32EncodeError::FormatError)
     }
 }
 
@@ -250,6 +255,7 @@ mod tests {
     use crate::internal_prelude::*;
 
     #[test]
+    #[allow(clippy::unnecessary_fallible_conversions)]
     fn internal_address_initialization() {
         let node_id = [0; NodeId::LENGTH];
         let addr = unsafe { InternalAddress::new_unchecked(node_id) };
@@ -262,8 +268,8 @@ mod tests {
         // validate conversions
         InternalAddress::try_from_hex(&addr.to_hex()).unwrap();
         Reference::try_from(addr).unwrap();
-        let _ = ManifestAddress::try_from(addr).unwrap();
-        let _: [u8; NodeId::LENGTH] = addr.try_into().unwrap();
+        let _ = ManifestAddress::from(addr);
+        let _: [u8; NodeId::LENGTH] = addr.into();
 
         #[cfg(not(feature = "alloc"))]
         println!("Address: {:?}", addr);

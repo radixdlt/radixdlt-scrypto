@@ -91,7 +91,7 @@ impl<'a, I: TxnInstruction + ManifestDecode + ManifestCategorize> IntentProcesso
 
         let worktop = Worktop(Own(worktop_node_id));
         let instructions =
-            manifest_decode::<Vec<I>>(&manifest_encoded_instructions).map_err(|e| {
+            manifest_decode::<Vec<I>>(manifest_encoded_instructions).map_err(|e| {
                 // This error should never occur if being called from root since this is constructed
                 // by the transaction executor. This error is more to protect against application
                 // space calling this function if/when possible
@@ -312,13 +312,13 @@ impl<'a> IntentProcessorObjects<'a> {
 
     pub fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id();
-        self.bucket_mapping.insert(new_id.clone(), bucket.0.into());
+        self.bucket_mapping.insert(new_id, bucket.0.into());
         Ok(())
     }
 
     pub fn create_manifest_proof(&mut self, proof: Proof) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_proof_id();
-        self.proof_mapping.insert(new_id.clone(), proof.0.into());
+        self.proof_mapping.insert(new_id, proof.0.into());
         Ok(())
     }
 
@@ -392,7 +392,7 @@ impl<'a> IntentProcessorObjects<'a> {
                     info.blueprint_info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT) => {
-                        let bucket = Bucket(Own(node_id.clone()));
+                        let bucket = Bucket(Own(*node_id));
                         if let Some(checker) = &mut resource_constraint_checker {
                             let resource_address = info
                                 .blueprint_info
@@ -407,7 +407,7 @@ impl<'a> IntentProcessorObjects<'a> {
                         worktop.put(bucket, api)?;
                     }
                     (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
-                        let bucket = Bucket(Own(node_id.clone()));
+                        let bucket = Bucket(Own(*node_id));
                         if let Some(checker) = &mut resource_constraint_checker {
                             let resource_address = info
                                 .blueprint_info
@@ -424,7 +424,7 @@ impl<'a> IntentProcessorObjects<'a> {
                     }
                     (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                        let proof = Proof(Own(node_id.clone()));
+                        let proof = Proof(Own(*node_id));
                         LocalAuthZone::push(proof, api)?;
                     }
                     _ => {
@@ -476,7 +476,7 @@ impl<'a, 'e, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
         &mut self,
         a: ManifestNamedAddress,
     ) -> Result<Reference, RuntimeError> {
-        self.objects.get_address(&a).map(|x| Reference(x))
+        self.objects.get_address(&a).map(Reference)
     }
 
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {

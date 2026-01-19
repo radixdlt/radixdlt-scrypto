@@ -16,7 +16,7 @@ fn cannot_securify_in_advanced_mode() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), false);
+    let component_address = ledger.new_identity(pk, false);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -28,8 +28,7 @@ fn cannot_securify_in_advanced_mode() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -47,7 +46,7 @@ fn can_securify_from_virtual_identity() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -59,8 +58,7 @@ fn can_securify_from_virtual_identity() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -71,7 +69,7 @@ fn can_securify_from_virtual_identity_ed25519() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_ed25519_preallocated_account();
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -83,8 +81,7 @@ fn can_securify_from_virtual_identity_ed25519() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -95,7 +92,7 @@ fn cannot_securify_twice() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -105,8 +102,7 @@ fn cannot_securify_twice() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -119,8 +115,7 @@ fn cannot_securify_twice() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -138,7 +133,7 @@ fn can_set_metadata_after_securify() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let identity_address = ledger.new_identity(pk.clone(), true);
+    let identity_address = ledger.new_identity(pk, true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -148,8 +143,7 @@ fn can_set_metadata_after_securify() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
     receipt.expect_commit_success();
 
     // Act
@@ -166,8 +160,7 @@ fn can_set_metadata_after_securify() {
             MetadataValue::String("best package ever!".to_string()),
         )
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -201,8 +194,7 @@ fn can_set_metadata_on_securified_identity() {
             MetadataValue::String("best package ever!".to_string()),
         )
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -233,8 +225,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
         )
         .try_deposit_entire_worktop_or_refund(account, None)
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
 
     // Assert
     let balance_change = ledger
@@ -281,11 +272,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
 }
 
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
-    if let None = metadata_value {
-        true
-    } else {
-        false
-    }
+    metadata_value.is_none()
 }
 
 #[test]
@@ -325,7 +312,7 @@ fn identity_created_before_cuttlefish_has_royalty_module() {
             .deposit_entire_worktop(account)
             .build();
         let identity = ledger
-            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
             .expect_commit_success()
             .new_component_addresses()[0];
 
@@ -372,7 +359,7 @@ fn identity_created_after_cuttlefish_has_no_royalty_module() {
             .deposit_entire_worktop(account)
             .build();
         let identity = ledger
-            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)])
             .expect_commit_success()
             .new_component_addresses()[0];
 

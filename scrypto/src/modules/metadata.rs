@@ -108,9 +108,7 @@ impl Metadata {
             .unwrap();
         decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
         match decoder.read_discriminator().unwrap() {
-            OPTION_VARIANT_NONE => {
-                return Ok(None);
-            }
+            OPTION_VARIANT_NONE => Ok(None),
             OPTION_VARIANT_SOME => {
                 decoder.read_and_check_size(1).unwrap();
                 decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
@@ -118,12 +116,12 @@ impl Metadata {
                 if id == V::DISCRIMINATOR {
                     decoder.read_and_check_size(1).unwrap();
                     let v: V = decoder.decode().unwrap();
-                    return Ok(Some(v));
+                    Ok(Some(v))
                 } else {
-                    return Err(MetadataConversionError::UnexpectedType {
+                    Err(MetadataConversionError::UnexpectedType {
                         expected_type_id: V::DISCRIMINATOR,
                         actual_type_id: id,
-                    });
+                    })
                 }
             }
             _ => unreachable!(),
@@ -138,14 +136,12 @@ impl Metadata {
     }
 
     pub fn remove<K: ToString>(&self, name: K) -> bool {
-        let rtn = self.call(
+        self.call(
             METADATA_REMOVE_IDENT,
             &MetadataRemoveInput {
                 key: name.to_string(),
             },
-        );
-
-        rtn
+        )
     }
 
     pub fn lock<K: ToString>(&self, name: K) {

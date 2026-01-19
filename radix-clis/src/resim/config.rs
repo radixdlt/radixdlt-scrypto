@@ -82,7 +82,7 @@ pub fn get_configs_path() -> Result<PathBuf, Error> {
 pub fn get_configs() -> Result<Configs, Error> {
     let path = get_configs_path()?;
     if path.exists() {
-        scrypto_decode(&fs::read(path).map_err(Error::IOError)?.as_ref())
+        scrypto_decode(fs::read(path).map_err(Error::IOError)?.as_ref())
             .map_err(Error::SborDecodeError)
     } else {
         Ok(Configs::default())

@@ -11,6 +11,12 @@ pub struct VaultFinder {
     vaults: IndexMap<ResourceAddress, Vec<NodeId>>,
 }
 
+impl Default for VaultFinder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VaultFinder {
     pub fn new() -> Self {
         VaultFinder {
@@ -30,10 +36,7 @@ impl StateTreeVisitor for VaultFinder {
         address: &ResourceAddress,
         _resource: &LiquidFungibleResource,
     ) {
-        self.vaults
-            .entry(*address)
-            .or_insert_with(|| Vec::new())
-            .push(vault_id);
+        self.vaults.entry(*address).or_default().push(vault_id);
     }
 
     fn visit_non_fungible_vault(
@@ -42,9 +45,6 @@ impl StateTreeVisitor for VaultFinder {
         address: &ResourceAddress,
         _resource: &LiquidNonFungibleVault,
     ) {
-        self.vaults
-            .entry(*address)
-            .or_insert_with(|| Vec::new())
-            .push(vault_id);
+        self.vaults.entry(*address).or_default().push(vault_id);
     }
 }

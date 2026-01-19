@@ -40,7 +40,7 @@ impl<'a, O> Deref for Attached<'a, O> {
 
 impl<'a, O> Attached<'a, O> {
     pub fn new(o: O) -> Self {
-        Attached(o, PhantomData::default())
+        Attached(o, PhantomData)
     }
 }
 
@@ -73,7 +73,7 @@ pub trait Attachable: Sized {
             ModuleHandle::Attached(address, module_id) => {
                 let output = ScryptoVmV1Api::object_call_module(
                     address.as_node_id(),
-                    module_id.clone(),
+                    *module_id,
                     method,
                     args,
                 );
@@ -81,8 +81,8 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 let id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_SELF);
-                let output = ScryptoVmV1Api::object_call_module(&id, *module_id, method, args);
-                output
+
+                ScryptoVmV1Api::object_call_module(&id, *module_id, method, args)
             }
         }
     }
@@ -94,12 +94,7 @@ pub trait Attachable: Sized {
                 ScryptoVmV1Api::object_call(own.as_node_id(), method, args);
             }
             ModuleHandle::Attached(address, module_id) => {
-                ScryptoVmV1Api::object_call_module(
-                    address.as_node_id(),
-                    module_id.clone(),
-                    method,
-                    args,
-                );
+                ScryptoVmV1Api::object_call_module(address.as_node_id(), *module_id, method, args);
             }
             ModuleHandle::SELF(module_id) => {
                 let id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_SELF);

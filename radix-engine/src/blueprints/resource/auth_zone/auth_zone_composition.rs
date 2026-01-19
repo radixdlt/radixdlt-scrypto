@@ -103,13 +103,11 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + SystemApi<Run
     let resource_type = ResourceManager(resource_address).resource_type(api)?;
 
     match resource_type {
-        ResourceType::Fungible { .. } => {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::AuthZoneError(super::AuthZoneError::ComposeProofError(
-                    ComposeProofError::NonFungibleOperationNotSupported,
-                )),
-            ));
-        }
+        ResourceType::Fungible { .. } => Err(RuntimeError::ApplicationError(
+            ApplicationError::AuthZoneError(super::AuthZoneError::ComposeProofError(
+                ComposeProofError::NonFungibleOperationNotSupported,
+            )),
+        )),
         ResourceType::NonFungible { .. } => compose_non_fungible_proof(
             proofs,
             resource_address,
@@ -154,9 +152,9 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeErr
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
                 for (container, locked_amount) in &proof.into_payload().evidence {
                     if let Some(existing) = max.get_mut(container) {
-                        *existing = Decimal::max(*existing, locked_amount.clone());
+                        *existing = Decimal::max(*existing, *locked_amount);
                     } else {
-                        max.insert(container.clone(), locked_amount.clone());
+                        max.insert(*container, *locked_amount);
                     }
                 }
                 api.kernel_close_substate(handle)?;
@@ -176,6 +174,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeErr
     Ok((total, per_container))
 }
 
+#[allow(clippy::type_complexity)]
 fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
@@ -210,7 +209,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>
                     if let Some(ids) = per_container.get_mut(container) {
                         ids.extend(locked_ids.clone());
                     } else {
-                        per_container.insert(container.clone(), locked_ids.clone());
+                        per_container.insert(*container, locked_ids.clone());
                     }
                 }
             }
@@ -238,7 +237,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<Runti
     }
 
     let mut evidence = index_map_new();
-    let mut remaining = amount.clone();
+    let mut remaining = amount;
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
         let handle = api.kernel_open_substate(
@@ -273,7 +272,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<Runti
                             ComposeProofError::UnexpectedDecimalComputationError,
                         )),
                     ))?;
-                evidence.insert(container.clone(), amount);
+                evidence.insert(*container, amount);
             }
         }
         lock_handles.push(handle);
@@ -302,7 +301,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<R
     let ids = match ids {
         NonFungiblesSpecification::All => max_locked.clone(),
         NonFungiblesSpecification::Some(n) => {
-            let ids: IndexSet<NonFungibleLocalId> = max_locked.iter().cloned().take(n).collect();
+            let ids: IndexSet<NonFungibleLocalId> = max_locked.iter().take(n).cloned().collect();
             if ids.len() != n {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::AuthZoneError(AuthZoneError::ComposeProofError(
@@ -364,7 +363,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<R
                 for id in &ids {
                     remaining.swap_remove(id);
                 }
-                evidence.insert(container.clone(), ids);
+                evidence.insert(*container, ids);
             }
         }
         lock_handles.push(handle);

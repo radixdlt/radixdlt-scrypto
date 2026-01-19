@@ -124,8 +124,7 @@ mod tests {
     fn hash_contatenated_hashes<H: Into<Hash>>(hashes: impl IntoIterator<Item = H>) -> Hash {
         let concatenated_hashes: Vec<u8> = hashes
             .into_iter()
-            .map(|h| Into::<Hash>::into(h).0)
-            .flatten()
+            .flat_map(|h| Into::<Hash>::into(h).0)
             .collect();
         hash(concatenated_hashes)
     }
@@ -299,7 +298,7 @@ mod tests {
         //======================
         // NOTARIZED TRANSACTION
         //======================
-        let notary_signature = notary_private_key.sign(&signed_intent_hash);
+        let notary_signature = notary_private_key.sign(signed_intent_hash);
 
         let notary_signature_v1 = NotarySignatureV1(notary_signature.into());
         let expected_notary_signature_v1_hash = hash_encoded_sbor_value(&notary_signature_v1);
@@ -440,7 +439,7 @@ mod tests {
         network: &NetworkDefinition,
     ) -> (SignedTransactionIntentV2, SignedTransactionIntentHash) {
         let (transaction_intent, transaction_intent_hash, subintent_hash) =
-            create_transaction_intent_v2(&network);
+            create_transaction_intent_v2(network);
         let (transaction_intent_signatures, transaction_intent_signatures_hash) =
             create_intent_signatures_v2(vec![2313], transaction_intent_hash);
         let (non_root_subintent_signatures, non_root_subintent_signatures_hash) =
@@ -526,7 +525,7 @@ mod tests {
     fn create_transaction_intent_v2(
         network: &NetworkDefinition,
     ) -> (TransactionIntentV2, TransactionIntentHash, SubintentHash) {
-        let (subintent_1, subintent_1_hash) = create_checked_childless_subintent_v2(&network);
+        let (subintent_1, subintent_1_hash) = create_checked_childless_subintent_v2(network);
         let (non_root_subintents, non_root_subintents_hash) =
             create_non_root_subintents_v2(vec![subintent_1], vec![subintent_1_hash]);
 
@@ -765,13 +764,13 @@ mod tests {
         let expected_preallocated_addresses_hash =
             hash_encoded_sbor_value(&pre_allocated_addresses_v1);
 
-        let hash_for_execution = hash(format!("Pretend genesis transaction"));
+        let hash_for_execution = hash("Pretend genesis transaction");
 
         let system_transaction_v1 = SystemTransactionV1 {
             instructions: instructions_v1.clone(),
             blobs: blobs_v1.clone(),
             pre_allocated_addresses: pre_allocated_addresses_v1.clone(),
-            hash_for_execution: hash_for_execution.clone(),
+            hash_for_execution,
         };
         let expected_system_transaction_hash = SystemTransactionHash::from_hash(hash(
             [
@@ -792,7 +791,7 @@ mod tests {
         SystemTransactionV1::from_raw(&raw_system_transaction)
             .expect("SystemTransaction can be decoded");
         let system_transaction_as_versioned =
-            manifest_decode::<AnyTransaction>(&raw_system_transaction.as_slice()).unwrap();
+            manifest_decode::<AnyTransaction>(raw_system_transaction.as_slice()).unwrap();
         assert_eq!(
             system_transaction_as_versioned,
             AnyTransaction::SystemTransactionV1(system_transaction_v1)

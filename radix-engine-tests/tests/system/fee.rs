@@ -41,7 +41,7 @@ fn setup_ledger() -> (DefaultLedgerSimulator, ComponentAddress) {
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let commit_result = receipt1.expect_commit(true);
     let component_address = commit_result.new_component_addresses()[0];
@@ -144,11 +144,13 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             .build()
     });
 
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::LockUnmodifiedBaseOnHeapNode),
-        )) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::LockUnmodifiedBaseOnHeapNode),
+            ))
+        )
     });
 }
 
@@ -181,13 +183,15 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
             .build()
     });
 
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(
-                OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
-            ),
-        )) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(
+                    OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
+                ),
+            ))
+        )
     });
 }
 
@@ -232,7 +236,7 @@ fn test_fee_accounting_success() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -287,7 +291,7 @@ fn test_fee_accounting_failure() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -342,7 +346,7 @@ fn test_fee_accounting_rejection() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -380,8 +384,8 @@ fn test_contingent_fee_accounting_success() {
     let receipt = ledger.execute_manifest(
         manifest,
         vec![
-            NonFungibleGlobalId::from_public_key(&public_key1),
-            NonFungibleGlobalId::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(public_key1),
+            NonFungibleGlobalId::from_public_key(public_key2),
         ],
     );
 
@@ -452,8 +456,8 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = ledger.execute_manifest(
         manifest,
         vec![
-            NonFungibleGlobalId::from_public_key(&public_key1),
-            NonFungibleGlobalId::from_public_key(&public_key2),
+            NonFungibleGlobalId::from_public_key(public_key1),
+            NonFungibleGlobalId::from_public_key(public_key2),
         ],
     );
 

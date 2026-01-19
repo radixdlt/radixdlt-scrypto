@@ -93,7 +93,7 @@ impl TransactionReceipt {
         // Putting use in here so it doesn't cause unused import compile warning in no-std
         use crate::system::actor::*;
 
-        let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
+        let address_bech32m_encoder = AddressBech32Encoder::new(network_definition);
 
         let mut lines = Vec::<String>::new();
         let mut path_stack = vec![];
@@ -218,6 +218,7 @@ pub struct TransactionFeeDetails {
 
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -429,7 +430,7 @@ impl CommitResult {
             };
 
             if is_consensus_manager {
-                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data) {
+                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(event_data) {
                     return Some(epoch_change_event);
                 }
             }
@@ -787,7 +788,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
                 .get_schema(full_type_id.0.as_ref(), &full_type_id.1)
                 .unwrap();
 
-            (full_type_id.2.clone(), schema)
+            (full_type_id.2, schema)
         })
     }
 
@@ -939,6 +940,12 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
     }
 }
 
+impl<'a> Default for TransactionReceiptDisplayContextBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for TransactionReceipt {
     type Error = fmt::Error;
 
@@ -1033,7 +1040,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
+                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(x)
                                 .expect("Impossible case! Instruction output can't be decoded")
                                 .to_string(ValueDisplayParameters::Schemaless {
                                     display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
@@ -1210,6 +1217,7 @@ impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn display_substate_change<'a, F: fmt::Write>(
     f: &mut F,
     prefix: &str,
@@ -1256,7 +1264,7 @@ fn format_receipt_substate_key<'a, F: fmt::Write>(
         }
         SubstateSystemStructure::SystemSchema => {
             let key_contents = substate_key.for_map().unwrap();
-            let hash: SchemaHash = scrypto_decode(&*key_contents).unwrap();
+            let hash: SchemaHash = scrypto_decode(key_contents).unwrap();
             write!(f, "SchemaHash({})", hash.0)
         }
         SubstateSystemStructure::KeyValueStoreEntry(structure) => {
@@ -1299,7 +1307,7 @@ fn format_receipt_substate_key<'a, F: fmt::Write>(
             let (sort_bytes, key_contents) = substate_key.for_sorted().unwrap();
             let value = scrypto_decode(key_contents).unwrap();
             let full_type_id = extract_object_type_id(&structure.key_schema);
-            write!(f, "SortKey({}, ", u16::from_be_bytes(sort_bytes.clone()))?;
+            write!(f, "SortKey({}, ", u16::from_be_bytes(*sort_bytes))?;
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
@@ -1360,7 +1368,7 @@ pub fn format_receipt_substate_value<'a, F: fmt::Write>(
                 let payload =
                     scrypto_decode::<KeyValueEntrySubstate<ScryptoRawValue>>(substate_value)
                         .unwrap();
-                (payload.into_value(), structure.value_full_type_id.clone())
+                (payload.into_value(), structure.value_full_type_id)
             }
             SubstateSystemStructure::ObjectField(structure) => {
                 let payload =
@@ -1421,8 +1429,8 @@ fn write_lock_status<F: fmt::Write>(f: &mut F, lock_status: LockStatus) -> Resul
 
 fn extract_object_type_id(structure: &ObjectSubstateTypeReference) -> FullyScopedTypeId<NodeId> {
     match structure {
-        ObjectSubstateTypeReference::Package(r) => r.full_type_id.clone().into_general(),
-        ObjectSubstateTypeReference::ObjectInstance(r) => r.resolved_full_type_id.clone(),
+        ObjectSubstateTypeReference::Package(r) => r.full_type_id.into_general(),
+        ObjectSubstateTypeReference::ObjectInstance(r) => r.resolved_full_type_id,
     }
 }
 
@@ -1448,7 +1456,7 @@ fn display_event<'a, F: fmt::Write>(
         first_line_indent: 0,
     };
     let raw_value = scrypto_decode::<ScryptoRawValue>(event_data).unwrap();
-    if let Some(_) = schema_lookup {
+    if schema_lookup.is_some() {
         write!(
             f,
             "\n{} Emitter: {}\n   Event: ",

@@ -27,7 +27,7 @@ fn test_component_royalty() {
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
@@ -39,7 +39,7 @@ fn test_component_royalty() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -83,7 +83,7 @@ fn test_component_royalty_in_usd() {
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
@@ -94,7 +94,7 @@ fn test_component_royalty_in_usd() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_usd", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     receipt.expect_commit(true);
@@ -136,7 +136,7 @@ fn test_package_royalty() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     receipt.expect_commit(true);
@@ -173,7 +173,7 @@ fn test_royalty_accumulation_when_success() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     receipt.expect_commit(true);
@@ -203,7 +203,7 @@ fn test_royalty_accumulation_when_failure() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_panic", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     receipt.expect_commit_failure();
@@ -227,7 +227,7 @@ fn test_claim_royalty() {
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit(true);
     receipt.expect_commit(true);
@@ -252,7 +252,7 @@ fn test_claim_royalty() {
             .claim_package_royalties(package_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit(true);
 
@@ -263,7 +263,7 @@ fn test_claim_royalty() {
             .claim_component_royalties(component_address)
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit(true);
 
@@ -292,7 +292,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
     match &mut blueprint_def.royalty_config {
         PackageRoyaltyConfig::Enabled(royalties) => {
             for royalty in royalties.values_mut() {
-                *royalty = royalty_amount.clone();
+                *royalty = royalty_amount;
             }
         }
         PackageRoyaltyConfig::Disabled => {}
@@ -356,7 +356,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
                 manifest_args!(max_royalty_allowed.checked_add(dec!(1)).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -398,7 +398,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
                 RoyaltyAmount::Xrd(max_royalty_allowed.checked_add(dec!(1)).unwrap()),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -433,7 +433,7 @@ fn cannot_set_royalty_after_locking() {
             )
             .lock_component_royalty(component_address, "paid_method")
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 
@@ -452,7 +452,7 @@ fn cannot_set_royalty_after_locking() {
                 RoyaltyAmount::Free,
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -493,7 +493,7 @@ fn set_up_package_and_component() -> (
                 [NonFungibleLocalId::integer(1)],
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit(true);
 
@@ -508,7 +508,7 @@ fn set_up_package_and_component() -> (
                 manifest_args!(),
             )
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 

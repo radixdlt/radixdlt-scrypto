@@ -47,7 +47,7 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         self
     }
 
-    pub fn get_object_names(&self) -> ManifestObjectNamesRef {
+    pub fn get_object_names(&self) -> ManifestObjectNamesRef<'_> {
         self.object_names
     }
 
@@ -68,15 +68,15 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for &'a AddressBech32Encoder {
-    fn into(self) -> ManifestDecompilationDisplayContext<'a> {
-        ManifestDecompilationDisplayContext::with_optional_bech32(Some(self))
+impl<'a> From<&'a AddressBech32Encoder> for ManifestDecompilationDisplayContext<'a> {
+    fn from(val: &'a AddressBech32Encoder) -> Self {
+        ManifestDecompilationDisplayContext::with_optional_bech32(Some(val))
     }
 }
 
-impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
-    fn into(self) -> ManifestDecompilationDisplayContext<'a> {
-        ManifestDecompilationDisplayContext::with_optional_bech32(self)
+impl<'a> From<Option<&'a AddressBech32Encoder>> for ManifestDecompilationDisplayContext<'a> {
+    fn from(val: Option<&'a AddressBech32Encoder>) -> Self {
+        ManifestDecompilationDisplayContext::with_optional_bech32(val)
     }
 }
 
@@ -431,7 +431,7 @@ pub fn format_custom_value<F: fmt::Write>(
                 indent_start,
                 depth,
                 "Blob(\"{}\")",
-                hex::encode(&value.0)
+                hex::encode(value.0)
             )?;
         }
         ManifestCustomValue::Decimal(value) => {
@@ -500,7 +500,7 @@ pub fn format_value_kind(value_kind: &ManifestValueKind) -> &str {
     }
 }
 
-pub fn display_value_kind(value_kind: &ManifestValueKind) -> DisplayableManifestValueKind {
+pub fn display_value_kind(value_kind: &ManifestValueKind) -> DisplayableManifestValueKind<'_> {
     DisplayableManifestValueKind(value_kind)
 }
 
@@ -508,7 +508,7 @@ pub struct DisplayableManifestValueKind<'a>(&'a ManifestValueKind);
 
 impl<'a> fmt::Display for DisplayableManifestValueKind<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", format_value_kind(&self.0))
+        write!(f, "{}", format_value_kind(self.0))
     }
 }
 

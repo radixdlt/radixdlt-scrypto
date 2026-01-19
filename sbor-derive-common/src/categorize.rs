@@ -141,7 +141,7 @@ fn handle_normal_categorize(
                         },
                         SourceVariantData::Unreachable(UnreachableVariantData { variant_name, fields_data, ..}) => {
                             let empty_fields_unpacking = fields_data.empty_fields_unpacking();
-                            let panic_message = format!("Variant {} ignored as unreachable", variant_name.to_string());
+                            let panic_message = format!("Variant {} ignored as unreachable", variant_name);
                             (
                                 quote! { Self::#variant_name #empty_fields_unpacking => panic!(#panic_message), },
                                 quote! { Self::#variant_name #empty_fields_unpacking => panic!(#panic_message), },
@@ -154,7 +154,7 @@ fn handle_normal_categorize(
                 .into_iter()
                 .unzip();
 
-            let discriminator_match = if discriminator_match_arms.len() > 0 {
+            let discriminator_match = if !discriminator_match_arms.is_empty() {
                 quote! {
                     match self {
                         #(#discriminator_match_arms)*
@@ -164,7 +164,7 @@ fn handle_normal_categorize(
                 quote! { 0 }
             };
 
-            let field_count_match = if field_count_match_arms.len() > 0 {
+            let field_count_match = if !field_count_match_arms.is_empty() {
                 quote! {
                     match self {
                         #(#field_count_match_arms)*
@@ -203,6 +203,7 @@ fn handle_normal_categorize(
     Ok(output)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_impl_variant_trait(
     enum_name: &Ident,
     impl_generics: &Generics,

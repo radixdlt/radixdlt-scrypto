@@ -41,7 +41,6 @@ fn multiple_flat_subintents_should_work() {
     let mut builder = TestTransaction::new_v2_builder(ledger.next_transaction_nonce());
 
     let children = (0..4)
-        .into_iter()
         .map(|_| {
             builder.add_subintent(
                 ManifestBuilder::new_subintent_v2()

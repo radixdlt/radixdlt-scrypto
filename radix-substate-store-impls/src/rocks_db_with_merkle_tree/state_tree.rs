@@ -54,6 +54,12 @@ pub struct StateTreeDiff {
     pub stale_tree_parts: RefCell<Vec<StaleTreePart>>,
 }
 
+impl Default for StateTreeDiff {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StateTreeDiff {
     pub fn new() -> Self {
         Self {
@@ -68,9 +74,9 @@ pub fn compute_state_tree_update<S: ReadableTreeStore>(
     parent_state_version: u64,
     database_updates: &DatabaseUpdates,
 ) -> (StateTreeDiff, Hash) {
-    let mut collector = CollectingTreeStore::new(store);
+    let collector = CollectingTreeStore::new(store);
     let root_hash = put_at_next_version(
-        &mut collector,
+        &collector,
         Some(parent_state_version).filter(|v| *v > 0),
         database_updates,
     );

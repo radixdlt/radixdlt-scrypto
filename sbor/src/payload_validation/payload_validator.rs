@@ -111,10 +111,11 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     context: &T,
     depth_limit: usize,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let traverser = traverse_payload_with_types::<E>(payload, &schema, id, depth_limit);
+    let traverser = traverse_payload_with_types::<E>(payload, schema, id, depth_limit);
     run_validation(traverser, schema, context)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn validate_partial_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     partial_payload: &[u8],
     expected_start: ExpectedStart<E::CustomValueKind>,
@@ -130,7 +131,7 @@ pub fn validate_partial_payload_against_schema<'s, E: ValidatableCustomExtension
         expected_start,
         check_exact_end,
         current_depth,
-        &schema,
+        schema,
         type_id,
         depth_limit,
     );
@@ -144,7 +145,7 @@ fn run_validation<'s, E: ValidatableCustomExtension<T>, T>(
 ) -> Result<(), LocatedValidationError<'s, E>> {
     loop {
         let typed_event = traverser.next_event();
-        if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
+        if validate_event_with_type::<E, T>(schema, &typed_event.event, context).map_err(
             |error| LocatedValidationError {
                 error,
                 location: typed_event.full_location(),
@@ -223,16 +224,8 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomExtension<T>, T>(
     type_id: LocalTypeId,
     context: &T,
 ) -> Result<(), PayloadValidationError<E>> {
-    match value {
-        TerminalValueRef::Custom(custom_value) => {
-            return Ok(E::apply_validation_for_custom_value(
-                schema,
-                custom_value,
-                type_id,
-                context,
-            )?);
-        }
-        _ => {}
+    if let TerminalValueRef::Custom(custom_value) = value {
+        return E::apply_validation_for_custom_value(schema, custom_value, type_id, context);
     }
 
     match schema
@@ -365,7 +358,7 @@ mod tests {
             &payload,
             schema.v1(),
             type_id,
-            &mut (),
+            &(),
             64,
         );
         assert!(result.is_ok())
@@ -384,7 +377,7 @@ mod tests {
             &payload,
             schema.v1(),
             type_id,
-            &mut (),
+            &(),
             64,
         );
         assert_matches!(
@@ -468,7 +461,7 @@ mod tests {
             &bytes,
             schema.v1(),
             type_id,
-            &mut (),
+            &(),
             64,
         );
         assert!(result.is_ok())
@@ -505,7 +498,7 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
+                &(),
                 64
             ),
             Ok(())
@@ -516,7 +509,7 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
+                &(),
                 64
             )
             .map_err(|e| e.error),
@@ -536,7 +529,7 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
+                &(),
                 64
             )
             .map_err(|e| e.error),
@@ -598,10 +591,10 @@ mod tests {
         let (type_id, schema) = generate_full_schema_from_single_type::<MyStruct, NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &cut_off_payload,
+            cut_off_payload,
             schema.v1(),
             type_id,
-            &mut (),
+            &(),
             64,
         ) else {
             panic!("Validation did not error with too short a payload");
@@ -645,7 +638,7 @@ mod tests {
             &payload,
             schema.v1(),
             type_id,
-            &mut (),
+            &(),
             depth_limit,
         ) else {
             panic!("Validation did not error with too short a payload");

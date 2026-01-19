@@ -38,12 +38,8 @@ impl LiquidFungibleResource {
         Self { amount }
     }
 
-    pub fn default() -> Self {
-        Self::new(Decimal::zero())
-    }
-
     pub fn amount(&self) -> Decimal {
-        self.amount.clone()
+        self.amount
     }
 
     pub fn is_empty(&self) -> bool {
@@ -81,6 +77,12 @@ impl LiquidFungibleResource {
     }
 }
 
+impl Default for LiquidFungibleResource {
+    fn default() -> Self {
+        Self::new(Decimal::zero())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
@@ -90,10 +92,6 @@ pub struct LiquidNonFungibleResource {
 impl LiquidNonFungibleResource {
     pub fn new(ids: IndexSet<NonFungibleLocalId>) -> Self {
         Self { ids }
-    }
-
-    pub fn default() -> Self {
-        Self::new(IndexSet::default())
     }
 
     pub fn ids(&self) -> &IndexSet<NonFungibleLocalId> {
@@ -147,6 +145,12 @@ impl LiquidNonFungibleResource {
     }
 }
 
+impl Default for LiquidNonFungibleResource {
+    fn default() -> Self {
+        Self::new(IndexSet::default())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LockedFungibleResource {
     /// The locked amounts and the corresponding times of being locked.
@@ -154,12 +158,6 @@ pub struct LockedFungibleResource {
 }
 
 impl LockedFungibleResource {
-    pub fn default() -> Self {
-        Self {
-            amounts: index_map_new(),
-        }
-    }
-
     pub fn is_locked(&self) -> bool {
         !self.amounts.is_empty()
     }
@@ -168,10 +166,18 @@ impl LockedFungibleResource {
         let mut max = Decimal::ZERO;
         for amount in self.amounts.keys() {
             if amount > &max {
-                max = amount.clone()
+                max = *amount
             }
         }
         max
+    }
+}
+
+impl Default for LockedFungibleResource {
+    fn default() -> Self {
+        Self {
+            amounts: index_map_new(),
+        }
     }
 }
 
@@ -182,12 +188,6 @@ pub struct LockedNonFungibleResource {
 }
 
 impl LockedNonFungibleResource {
-    pub fn default() -> Self {
-        Self {
-            ids: index_map_new(),
-        }
-    }
-
     pub fn is_locked(&self) -> bool {
         !self.ids.is_empty()
     }
@@ -198,6 +198,14 @@ impl LockedNonFungibleResource {
 
     pub fn ids(&self) -> IndexSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
+    }
+}
+
+impl Default for LockedNonFungibleResource {
+    fn default() -> Self {
+        Self {
+            ids: index_map_new(),
+        }
     }
 }
 

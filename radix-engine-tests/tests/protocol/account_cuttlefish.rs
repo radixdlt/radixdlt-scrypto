@@ -266,7 +266,7 @@ fn has_non_fungible_returns_false_if_the_non_fungibles_have_been_withdrawn() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk)],
+        vec![NonFungibleGlobalId::from_public_key(pk)],
     );
 
     // Assert

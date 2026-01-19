@@ -5,8 +5,8 @@ use radix_common::define_untyped_manifest_type_wrapper;
 
 use super::AccessRule;
 
-pub const SELF_ROLE: &'static str = "_self_";
-pub const OWNER_ROLE: &'static str = "_owner_";
+pub const SELF_ROLE: &str = "_self_";
+pub const OWNER_ROLE: &str = "_owner_";
 
 #[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -205,7 +205,7 @@ impl RoleList {
 impl From<Vec<&str>> for RoleList {
     fn from(value: Vec<&str>) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }
@@ -213,7 +213,7 @@ impl From<Vec<&str>> for RoleList {
 impl From<Vec<String>> for RoleList {
     fn from(value: Vec<String>) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }
@@ -221,7 +221,7 @@ impl From<Vec<String>> for RoleList {
 impl<const N: usize> From<[&str; N]> for RoleList {
     fn from(value: [&str; N]) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }

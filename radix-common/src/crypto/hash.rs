@@ -31,7 +31,7 @@ pub trait IsHash: AsRef<[u8]> + Sized + From<Hash> + Into<Hash> + AsRef<Hash> {
     }
 
     fn as_hash(&self) -> &Hash {
-        &<Self as AsRef<Hash>>::as_ref(self)
+        <Self as AsRef<Hash>>::as_ref(self)
     }
 
     fn into_bytes(self) -> [u8; Hash::LENGTH] {

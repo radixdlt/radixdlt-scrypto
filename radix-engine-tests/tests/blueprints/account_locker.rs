@@ -171,7 +171,7 @@ fn store_can_only_be_called_by_storer_role() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -203,7 +203,7 @@ fn store_can_only_be_called_by_storer_role() {
                 })
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -249,7 +249,7 @@ fn airdrop_can_only_be_called_by_storer_role() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -281,7 +281,7 @@ fn airdrop_can_only_be_called_by_storer_role() {
                 })
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -327,7 +327,7 @@ fn recover_can_only_be_called_by_recoverer_role() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -356,7 +356,7 @@ fn recover_can_only_be_called_by_recoverer_role() {
                 )
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -402,7 +402,7 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -431,7 +431,7 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
                 )
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -500,13 +500,13 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD.into(),
+                        resource_address: XRD,
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &user_account_public_key,
+                user_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -535,7 +535,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_public_key,
+            badge_holder_public_key,
         )],
     );
 
@@ -596,7 +596,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                     user_account,
                     ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                     AccountSetResourcePreferenceInput {
-                        resource_address: XRD.into(),
+                        resource_address: XRD,
                         resource_preference: ResourcePreference::Disallowed,
                     },
                 )
@@ -609,7 +609,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &user_account_public_key,
+                user_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -638,7 +638,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_public_key,
+            badge_holder_public_key,
         )],
     );
 
@@ -677,7 +677,7 @@ fn claim_is_public_and_callable_by_all() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -706,7 +706,7 @@ fn claim_is_public_and_callable_by_all() {
                 )
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -752,7 +752,7 @@ fn claim_non_fungibles_is_public_and_callable_by_all() {
                     },
                 )
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         )
         .expect_commit_success()
         .new_component_addresses()
@@ -781,7 +781,7 @@ fn claim_non_fungibles_is_public_and_callable_by_all() {
                 )
                 .deposit_entire_worktop(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            vec![NonFungibleGlobalId::from_public_key(public_key)],
         );
 
         // Assert
@@ -865,7 +865,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -886,7 +886,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
             .deposit_entire_worktop(user_account1)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &user_account1_public_key,
+            user_account1_public_key,
         )],
     );
 
@@ -964,7 +964,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -985,7 +985,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
             .deposit_entire_worktop(user_account1)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &user_account2_public_key,
+            user_account2_public_key,
         )],
     );
 
@@ -1063,7 +1063,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -1085,7 +1085,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
             .deposit_entire_worktop(badge_holder_account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -1162,7 +1162,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -1184,7 +1184,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
             .deposit_entire_worktop(badge_holder_account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -1264,7 +1264,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -1358,7 +1358,7 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
                 })
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(
-                &badge_holder_account_public_key,
+                badge_holder_account_public_key,
             )],
         )
         .expect_commit_success();
@@ -1435,7 +1435,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 account,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
-                    resource_address: resource.into(),
+                    resource_address: resource,
                     resource_preference: ResourcePreference::Disallowed,
                 },
             )
@@ -1498,7 +1498,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Store {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1510,7 +1510,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Store {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1554,7 +1554,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //===============
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1576,7 +1576,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1596,7 +1596,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1616,7 +1616,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1636,7 +1636,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1658,7 +1658,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1678,7 +1678,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: fungible_resource1,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1698,7 +1698,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: fungible_resource2,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1718,7 +1718,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: fungible_resource3,
                 items_to_mint: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1825,7 +1825,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=========
         Item {
             action: LockerAction::Recover {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_recover: fungible_resource1,
                 items_to_recover: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1849,7 +1849,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Claim {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_claim: fungible_resource2,
                 items_to_claim: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -1873,7 +1873,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Store {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -1905,7 +1905,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //===============
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -1934,7 +1934,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -1963,7 +1963,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: non_fungible_resource1,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(7),
@@ -1999,7 +1999,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -2033,7 +2033,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -2074,7 +2074,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: non_fungible_resource2,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -2113,7 +2113,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account1.into(),
+                claimant: user_account1,
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(1),
@@ -2159,7 +2159,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account2.into(),
+                claimant: user_account2,
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(3),
@@ -2203,7 +2203,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::SendOrStore {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_mint: non_fungible_resource3,
                 items_to_mint: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(5),
@@ -2388,7 +2388,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=========
         Item {
             action: LockerAction::Recover {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_recover: non_fungible_resource1,
                 items_to_recover: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(7),
@@ -2441,7 +2441,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Recover {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_recover: non_fungible_resource1,
                 items_to_recover: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -2493,7 +2493,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         //=======
         Item {
             action: LockerAction::Claim {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_claim: non_fungible_resource1,
                 items_to_claim: ResourceSpecifier::NonFungible(indexset!(
                     NonFungibleLocalId::integer(20)
@@ -2543,7 +2543,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         },
         Item {
             action: LockerAction::Claim {
-                claimant: user_account3.into(),
+                claimant: user_account3,
                 resource_to_claim: non_fungible_resource1,
                 items_to_claim: ResourceSpecifier::Fungible(dec!(1)),
             },
@@ -2627,7 +2627,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::Store {
@@ -2657,7 +2657,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::SendOrStore {
@@ -2687,7 +2687,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::SendOrStore {
@@ -2717,7 +2717,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::StoreBatch {
@@ -2759,7 +2759,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::SendOrStoreBatch {
@@ -2801,7 +2801,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     })
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::Recover {
@@ -2828,7 +2828,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::Recover {
@@ -2855,7 +2855,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(
-                    &badge_holder_account_public_key,
+                    badge_holder_account_public_key,
                 )],
             ),
             LockerAction::Claim {
@@ -3003,6 +3003,7 @@ pub enum LockerAction {
 }
 
 #[derive(Clone, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum AccountLockerEvent {
     StoreEvent(StoreEvent),
     RecoveryEvent(RecoverEvent),
@@ -3135,7 +3136,7 @@ fn send_does_not_accept_an_address_that_is_not_an_account() {
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -3220,7 +3221,7 @@ fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -3299,7 +3300,7 @@ fn claim_does_not_accept_an_address_that_is_not_an_account() {
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -3378,7 +3379,7 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
-            &badge_holder_account_public_key,
+            badge_holder_account_public_key,
         )],
     );
 
@@ -3490,7 +3491,7 @@ fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
         if receipt.is_commit_failure() {
             receipt.expect_specific_failure(|error| {
                 matches!(

@@ -28,6 +28,7 @@ pub enum RoundingMode {
 }
 
 /// The resolved rounding strategy internal to the round method
+#[allow(clippy::enum_variant_names)]
 pub(crate) enum ResolvedRoundingStrategy {
     RoundUp,
     RoundDown,

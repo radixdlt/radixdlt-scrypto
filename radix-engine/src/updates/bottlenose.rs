@@ -108,7 +108,7 @@ impl ProtocolUpdateGenerator for BottlenoseGenerator {
         false
     }
 
-    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn ProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         vec![FixedBatchGroupGenerator::named("principal")
             .add_batch("primary", |store| generate_batch(store, &self.settings))
             .build()]
@@ -523,9 +523,7 @@ fn generate_access_controller_state_updates<S: SubstateDatabase + ?Sized>(db: &S
 
     // Creating the original code substates for extension.
     let old_code_hash = CodeHash::from_hash(hash(
-        (NativeCodeId::AccessControllerCode1 as u64)
-            .to_be_bytes()
-            .to_vec(),
+        (NativeCodeId::AccessControllerCode1 as u64).to_be_bytes(),
     ));
     let (new_code_hash, (new_code_substate, new_vm_type_substate)) = {
         let original_code = (NativeCodeId::AccessControllerCode2 as u64)

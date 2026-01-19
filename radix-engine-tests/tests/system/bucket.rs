@@ -26,7 +26,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -55,7 +55,7 @@ fn test_bucket_internal2<F: FnOnce(TransactionReceipt)>(
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     on_receipt(receipt);
@@ -187,7 +187,7 @@ fn test_bucket_of_badges() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     receipt.expect_commit_success();
 }
@@ -216,7 +216,7 @@ fn test_take_with_invalid_granularity() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -255,7 +255,7 @@ fn test_take_with_negative_amount() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -288,7 +288,7 @@ fn create_empty_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -319,7 +319,7 @@ fn test_drop_locked_fungible_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -354,7 +354,7 @@ fn create_proof_of_invalid_amount_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -388,7 +388,7 @@ fn create_proof_of_zero_amount_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -422,7 +422,7 @@ fn create_vault_proof_of_invalid_amount_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -456,7 +456,7 @@ fn create_vault_proof_of_zero_amount_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -490,7 +490,7 @@ fn test_drop_locked_non_fungible_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!("{:?}", receipt);
 
@@ -524,7 +524,7 @@ fn test_bucket_combine_fungible_invalid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -555,7 +555,7 @@ fn test_bucket_combine_non_fungible_invalid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -586,7 +586,7 @@ fn test_vault_combine_fungible_invalid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -617,7 +617,7 @@ fn test_vault_combine_non_fungible_invalid() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -648,7 +648,7 @@ fn burn_invalid_fungible_bucket_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -679,7 +679,7 @@ fn burn_invalid_non_fungible_bucket_should_fail() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -691,7 +691,7 @@ fn burn_invalid_non_fungible_bucket_should_fail() {
     });
 }
 
-fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> ()>(
+fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt)>(
     contingent: bool,
     amount: Decimal,
     on_receipt: F,
@@ -706,7 +706,7 @@ fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> 
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let result = receipt.expect_commit_success();
     let component = result.new_component_addresses()[0];
@@ -726,7 +726,7 @@ fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> 
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

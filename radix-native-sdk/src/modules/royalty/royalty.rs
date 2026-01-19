@@ -40,8 +40,8 @@ impl ComponentRoyalty {
             })
             .unwrap(),
         )?;
-        let rtn = scrypto_decode::<ComponentRoyaltySetOutput>(&rtn).unwrap();
-        Ok(rtn)
+        scrypto_decode::<ComponentRoyaltySetOutput>(&rtn).unwrap();
+        Ok(())
     }
 
     pub fn lock_royalty<Y: SystemApi<E>, E: SystemApiError>(
@@ -57,8 +57,8 @@ impl ComponentRoyalty {
             })
             .unwrap(),
         )?;
-        let rtn = scrypto_decode::<ComponentRoyaltyLockOutput>(&rtn).unwrap();
-        Ok(rtn)
+        scrypto_decode::<ComponentRoyaltyLockOutput>(&rtn).unwrap();
+        Ok(())
     }
 
     pub fn claim_royalty<Y: SystemApi<E>, E: SystemApiError>(

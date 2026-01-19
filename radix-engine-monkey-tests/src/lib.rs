@@ -126,7 +126,6 @@ impl SystemTestFuzzer {
                 ))
             }
             _ => (0u64..self.rng.gen_range(0u64..4u64))
-                .into_iter()
                 .map(|_| self.next_integer_non_fungible_id())
                 .collect(),
         }
@@ -189,6 +188,7 @@ pub enum FuzzAction {
 }
 
 impl FuzzAction {
+    #[allow(clippy::too_many_arguments)]
     pub fn add_to_manifest(
         &self,
         uuid: u64,
@@ -351,7 +351,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let validator_set = epoch_change.unwrap().validator_set;
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let account = ComponentAddress::preallocated_account_from_public_key(&public_key);
-        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
 
         fuzzer.add_resource(XRD);
 
@@ -646,7 +646,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             account_address: account,
             account_public_key: public_key.into(),
             cur_round: Round::of(1u64),
-            txn_fuzzer: PhantomData::default(),
+            txn_fuzzer: PhantomData,
         }
     }
 
@@ -739,7 +739,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     self.ledger.execute_manifest_with_injected_error(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
-                            &self.account_public_key,
+                            self.account_public_key,
                         )],
                         error_after_count,
                     )
@@ -747,7 +747,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     self.ledger.execute_manifest(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
-                            &self.account_public_key,
+                            self.account_public_key,
                         )],
                     )
                 };
@@ -818,7 +818,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             .into_iter()
             .next();
 
-        if let Some(..) = epoch_change_event {
+        if epoch_change_event.is_some() {
             self.cur_round = Round::of(1u64);
         } else {
             self.cur_round = Round::of(self.cur_round.number() + num_rounds);

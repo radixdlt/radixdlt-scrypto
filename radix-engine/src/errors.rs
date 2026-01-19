@@ -408,25 +408,25 @@ impl SystemApiError for RuntimeError {}
 
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
-        RuntimeError::KernelError(error.into())
+        RuntimeError::KernelError(error)
     }
 }
 
 impl From<SystemUpstreamError> for RuntimeError {
     fn from(error: SystemUpstreamError) -> Self {
-        RuntimeError::SystemUpstreamError(error.into())
+        RuntimeError::SystemUpstreamError(error)
     }
 }
 
 impl From<SystemModuleError> for RuntimeError {
     fn from(error: SystemModuleError) -> Self {
-        RuntimeError::SystemModuleError(error.into())
+        RuntimeError::SystemModuleError(error)
     }
 }
 
 impl From<ApplicationError> for RuntimeError {
     fn from(error: ApplicationError) -> Self {
-        RuntimeError::ApplicationError(error.into())
+        RuntimeError::ApplicationError(error)
     }
 }
 

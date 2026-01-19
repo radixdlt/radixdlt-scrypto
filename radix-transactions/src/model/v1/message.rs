@@ -2,17 +2,12 @@ use super::*;
 use crate::internal_prelude::*;
 
 /// Transaction messages as per REP-70
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe, Default)]
 pub enum MessageV1 {
+    #[default]
     None,
     Plaintext(PlaintextMessageV1),
     Encrypted(EncryptedMessageV1),
-}
-
-impl Default for MessageV1 {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 //============================================================================
@@ -45,6 +40,7 @@ pub enum MessageContentsV1 {
 }
 
 impl MessageContentsV1 {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         match self {
             MessageContentsV1::String(message) => message.len(),

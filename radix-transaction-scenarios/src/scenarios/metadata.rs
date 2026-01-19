@@ -118,9 +118,7 @@ impl ScenarioInstance for MetadataScenario {
                                 schema,
                                 create_metadata(),
                                 radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
-                                    NonFungibleGlobalId::from_public_key(
-                                        &user_account_1.public_key
-                                    )
+                                    NonFungibleGlobalId::from_public_key(user_account_1.public_key)
                                 ))),
                             )
                             .try_deposit_entire_worktop_or_abort(user_account_1.address, None)
@@ -187,7 +185,7 @@ impl ScenarioInstance for MetadataScenario {
                                     ..Default::default()
                                 },
                                 ModuleConfig {
-                                    init: create_metadata().into(),
+                                    init: create_metadata(),
                                     roles: RoleAssignmentInit::default(),
                                 },
                                 Some(100_000_000_000u64.into()),
@@ -208,9 +206,7 @@ impl ScenarioInstance for MetadataScenario {
                             .get_free_xrd_from_faucet()
                             .create_fungible_resource(
                                 radix_engine_interface::prelude::OwnerRole::Fixed(rule!(require(
-                                    NonFungibleGlobalId::from_public_key(
-                                        &user_account_1.public_key
-                                    )
+                                    NonFungibleGlobalId::from_public_key(user_account_1.public_key)
                                 ))),
                                 false,
                                 18,

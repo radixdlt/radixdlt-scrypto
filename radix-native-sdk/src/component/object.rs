@@ -76,6 +76,7 @@ pub fn globalize_object<Y: SystemApi<E>, E: SystemApiError>(
     Ok(address)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn globalize_object_with_inner_object_and_event<
     Y: SystemApi<E>,
     E: SystemApiError,

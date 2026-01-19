@@ -115,7 +115,7 @@ fn test_create_signature_proof() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        vec![NonFungibleGlobalId::from_public_key(pub_key)],
     );
 
     // Assert
@@ -148,9 +148,11 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(..)) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(..))
+        )
     });
 }
 
@@ -182,11 +184,13 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)),
-        )) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)),
+            ))
+        )
     });
 }
 

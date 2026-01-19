@@ -36,7 +36,7 @@ mod multi_threaded_test {
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .new_account_advanced(
-                        OwnerRole::Fixed(rule!(require(signature(&public_key)))),
+                        OwnerRole::Fixed(rule!(require(signature(public_key)))),
                         None,
                     )
                     .build();
@@ -47,7 +47,7 @@ mod multi_threaded_test {
                     TestTransaction::new_v1(
                         manifest,
                         hash(format!("Account creation: {i}")),
-                        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
                     )
                     .into_executable_unwrap(),
                 )
@@ -74,7 +74,7 @@ mod multi_threaded_test {
                 TestTransaction::new_v1(
                     manifest.clone(),
                     hash(format!("Fill account: {}", nonce)),
-                    btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+                    btreeset![NonFungibleGlobalId::from_public_key(public_key)],
                 )
                 .into_executable_unwrap(),
             )
@@ -100,8 +100,8 @@ mod multi_threaded_test {
                         &ExecutionConfig::for_test_transaction(),
                         TestTransaction::new_v1(
                             manifest.clone(),
-                            hash(format!("Transfer")),
-                            btreeset![NonFungibleGlobalId::from_public_key(&public_key,)],
+                            hash("Transfer"),
+                            btreeset![NonFungibleGlobalId::from_public_key(public_key,)],
                         )
                         .into_executable_unwrap(),
                     );

@@ -77,6 +77,6 @@ manifest_type!(Reference, ManifestCustomValueKind::Address, NodeId::LENGTH);
 
 impl fmt::Debug for Reference {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "Reference({})", hex::encode(&self.0))
+        write!(f, "Reference({})", hex::encode(self.0))
     }
 }

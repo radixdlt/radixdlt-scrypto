@@ -75,7 +75,7 @@ impl ManifestNamerCore {
 
     pub fn resolve_named_bucket(&self, name: impl AsRef<str>) -> ManifestBucket {
         match self.named_buckets.get(name.as_ref()) {
-            Some(ManifestObjectState::Present(bucket)) => bucket.clone(),
+            Some(ManifestObjectState::Present(bucket)) => *bucket,
             Some(ManifestObjectState::Consumed) => panic!("Bucket with name \"{}\" has already been consumed", name.as_ref()),
             _ => panic!("You cannot use a bucket with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
         }
@@ -158,7 +158,7 @@ impl ManifestNamerCore {
 
     pub fn resolve_named_proof(&self, name: impl AsRef<str>) -> ManifestProof {
         match self.named_proofs.get(name.as_ref()) {
-            Some(ManifestObjectState::Present(proof)) => proof.clone(),
+            Some(ManifestObjectState::Present(proof)) => *proof,
             Some(ManifestObjectState::Consumed) => panic!("Proof with name \"{}\" has already been consumed", name.as_ref()),
             _ => panic!("You cannot use a proof with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
         }
@@ -247,7 +247,7 @@ impl ManifestNamerCore {
         name: impl AsRef<str>,
     ) -> ManifestAddressReservation {
         match self.named_address_reservations.get(name.as_ref()) {
-            Some(ManifestObjectState::Present(address_reservation)) => address_reservation.clone(),
+            Some(ManifestObjectState::Present(address_reservation)) => *address_reservation,
             Some(ManifestObjectState::Consumed) => panic!("Address reservation with name \"{}\" has already been consumed", name.as_ref()),
             _ => panic!("You cannot use an address reservation with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
         }
@@ -325,7 +325,7 @@ impl ManifestNamerCore {
 
     pub fn resolve_named_address(&self, name: impl AsRef<str>) -> ManifestNamedAddress {
         match self.named_addresses.get(name.as_ref()) {
-            Some(ManifestObjectState::Present(address)) => address.clone(),
+            Some(ManifestObjectState::Present(address)) => *address,
             Some(ManifestObjectState::Consumed) => unreachable!("Address not consumable"),
             _ => panic!("You cannot use a named address with name \"{}\" before it has been created with a relevant instruction in the manifest builder", name.as_ref()),
         }
@@ -440,6 +440,12 @@ impl ManifestNameLookup {
 
     pub fn intent(&self, name: impl AsRef<str>) -> ManifestNamedIntent {
         self.core.borrow().resolve_intent(name)
+    }
+}
+
+impl Default for ManifestNameRegistrar {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

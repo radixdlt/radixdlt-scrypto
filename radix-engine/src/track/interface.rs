@@ -218,6 +218,7 @@ impl CanonicalSubstateKey {
 }
 
 impl CanonicalSubstateKey {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.node_id.as_bytes().len()
             + 1
@@ -320,13 +321,7 @@ impl StoreCommit {
                 size,
                 ..
             } => canonical_substate_key.len() + *size,
-            StoreCommit::Update { size, old_size, .. } => {
-                if *size > *old_size {
-                    *size - *old_size
-                } else {
-                    0
-                }
-            }
+            StoreCommit::Update { size, old_size, .. } => (*size).saturating_sub(*old_size),
             StoreCommit::Delete { .. } => 0, // TODO: refund?
         }
     }

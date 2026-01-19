@@ -356,7 +356,7 @@ impl KernelFuzzAction {
     where
         S: CommitableSubstateStore,
     {
-        return match self {
+        match self {
             KernelFuzzAction::Allocate => {
                 if (fuzzer.nodes.len() + fuzzer.allocated_nodes.len()) < 4 {
                     let node_id = kernel.kernel_allocate_node_id(fuzzer.next_entity_type())?;
@@ -490,7 +490,7 @@ impl KernelFuzzAction {
 
                 Ok(true)
             }
-        };
+        }
     }
 }
 

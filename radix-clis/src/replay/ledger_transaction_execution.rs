@@ -10,9 +10,9 @@ use radix_transactions::prelude::*;
 use radix_transactions::validation::*;
 
 pub enum LedgerTransactionReceipt {
-    Flash(FlashReceipt),
-    Standard(TransactionReceipt),
-    ProtocolUpdateFlash(StateUpdates),
+    Flash(Box<FlashReceipt>),
+    Standard(Box<TransactionReceipt>),
+    ProtocolUpdateFlash(Box<StateUpdates>),
 }
 
 impl LedgerTransactionReceipt {
@@ -22,7 +22,7 @@ impl LedgerTransactionReceipt {
             LedgerTransactionReceipt::Standard(receipt) => {
                 receipt.into_commit_ignore_outcome().state_updates
             }
-            LedgerTransactionReceipt::ProtocolUpdateFlash(state_updates) => state_updates,
+            LedgerTransactionReceipt::ProtocolUpdateFlash(state_updates) => *state_updates,
         }
     }
 
@@ -74,7 +74,7 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
             match prepared_genesis_tx {
                 PreparedGenesisTransaction::Flash(_) => {
                     let receipt = create_substate_flash_for_genesis();
-                    LedgerTransactionReceipt::Flash(receipt)
+                    LedgerTransactionReceipt::Flash(receipt.into())
                 }
                 PreparedGenesisTransaction::Transaction(tx) => {
                     let receipt = execute_transaction(
@@ -87,7 +87,7 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                             SystemExecution::Protocol
                         ))),
                     );
-                    LedgerTransactionReceipt::Standard(receipt)
+                    LedgerTransactionReceipt::Standard(receipt.into())
                 }
             }
         }
@@ -100,7 +100,7 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                     .with_cost_breakdown(trace),
                 tx.create_executable(),
             );
-            LedgerTransactionReceipt::Standard(receipt)
+            LedgerTransactionReceipt::Standard(receipt.into())
         }
         ValidatedLedgerTransactionInner::Validator(tx) => {
             let receipt = execute_transaction(
@@ -111,10 +111,10 @@ pub fn execute_ledger_transaction<S: SubstateDatabase>(
                     .with_cost_breakdown(trace),
                 tx.create_executable(),
             );
-            LedgerTransactionReceipt::Standard(receipt)
+            LedgerTransactionReceipt::Standard(receipt.into())
         }
         ValidatedLedgerTransactionInner::ProtocolUpdate(tx) => {
-            LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates)
+            LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates.into())
         }
     };
 
