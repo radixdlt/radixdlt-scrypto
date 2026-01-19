@@ -73,7 +73,7 @@ fn can_call_protected_function_with_auth() {
             manifest_args!(),
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(&key)]);
+    let receipt = ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -105,7 +105,7 @@ fn role_assignment_method_auth_cant_be_mutated_when_required_proofs_are_not_pres
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
     let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id
     )));
@@ -127,7 +127,7 @@ fn role_assignment_method_auth_can_be_mutated_when_required_proofs_are_present()
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
     let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
@@ -144,7 +144,7 @@ fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
     let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
@@ -237,10 +237,8 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         receipt.expect_commit(true).new_component_addresses()[0]
@@ -257,10 +255,8 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         .build();
 
     // Act
-    let receipt = ledger.execute_manifest(
-        manifest,
-        [NonFungibleGlobalId::from_public_key(&public_key)],
-    );
+    let receipt =
+        ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
 
     // Assert
     receipt.expect_commit_success();
@@ -271,7 +267,7 @@ fn update_rule() {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
     let mut ledger = MutableRolesLedgerSimulator::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
@@ -440,7 +436,7 @@ fn setting_any_role_in_reserved_space_before_attachment_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                RoleAssignmentError::UsedReservedSpace { .. },
+                RoleAssignmentError::UsedReservedSpace,
             ),)
         )
     })
@@ -475,7 +471,7 @@ fn setting_a_reserved_role_in_reserved_space_before_attachment_fails() {
         matches!(
             error,
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(
-                RoleAssignmentError::UsedReservedSpace { .. },
+                RoleAssignmentError::UsedReservedSpace,
             ),)
         )
     })
@@ -885,7 +881,7 @@ impl MutableRolesLedgerSimulator {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new_with_owner",
-                manifest_args!(owner_role),
+                manifest_args!(ManifestOwnerRole::from(owner_role)),
             )
             .build();
         ledger.execute_manifest(manifest, vec![])

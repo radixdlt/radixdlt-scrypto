@@ -97,7 +97,7 @@ impl OneResourcePoolBlueprint {
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    OneResourcePoolField::State.field_index() => FieldValue::immutable(&OneResourcePoolStateFieldPayload::from_content_source(substate)),
+                    OneResourcePoolField::State.field_index() => FieldValue::immutable(OneResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };

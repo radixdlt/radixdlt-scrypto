@@ -43,7 +43,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
                 None,
                 code.clone(),
                 single_function_package_definition("Test", "f"),
-                BTreeMap::new(),
+                MetadataInit::default(),
                 OwnerRole::None,
             )
             .build();

@@ -65,14 +65,14 @@ impl<'a> ManifestValueDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for &'a AddressBech32Encoder {
-    fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_optional_bech32(Some(self))
+impl<'a> From<&'a AddressBech32Encoder> for ManifestValueDisplayContext<'a> {
+    fn from(val: &'a AddressBech32Encoder) -> Self {
+        ManifestValueDisplayContext::with_optional_bech32(Some(val))
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
-    fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_optional_bech32(self)
+impl<'a> From<Option<&'a AddressBech32Encoder>> for ManifestValueDisplayContext<'a> {
+    fn from(val: Option<&'a AddressBech32Encoder>) -> Self {
+        ManifestValueDisplayContext::with_optional_bech32(val)
     }
 }

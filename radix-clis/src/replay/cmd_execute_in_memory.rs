@@ -60,7 +60,7 @@ impl TxnExecuteInMemory {
         }
 
         let cur_version = 0;
-        let to_version = self.max_version.clone();
+        let to_version = self.max_version;
 
         let start = std::time::Instant::now();
         let (tx, rx) = flume::bounded(10);
@@ -70,7 +70,7 @@ impl TxnExecuteInMemory {
             let tar_gz = File::open(&self.source).map_err(Error::IOError)?;
             let tar = GzDecoder::new(tar_gz);
             let archive = Archive::new(tar);
-            TxnReader::TransactionFile(archive)
+            TxnReader::TransactionFile(Box::new(archive))
         } else if self.source.is_dir() {
             TxnReader::StateManagerDatabaseDir(self.source.clone())
         } else {
@@ -110,7 +110,7 @@ impl TxnExecuteInMemory {
                     }
                 }
 
-                if new_version < 1000 || new_version % 1000 == 0 {
+                if new_version < 1000 || new_version.is_multiple_of(1000) {
                     print_progress(start.elapsed(), new_version, new_state_root_hash);
                 }
             }

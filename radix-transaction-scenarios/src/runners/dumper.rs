@@ -40,10 +40,7 @@ mod test {
     #[test]
     #[ignore = "Run this test manually to update a single scenario"]
     pub fn update_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Write,
-            [get_scenario("basic_subintents")],
-        )
+        run_all_scenarios(AlignerExecutionMode::Write, [get_scenario("radiswap_v2")])
     }
 
     #[test]
@@ -54,10 +51,7 @@ mod test {
     #[test]
     #[ignore = "Run this test manually to validate a single scenario"]
     pub fn validate_single_scenario() {
-        run_all_scenarios(
-            AlignerExecutionMode::Assert,
-            [get_scenario("basic_subintents")],
-        )
+        run_all_scenarios(AlignerExecutionMode::Assert, [get_scenario("radiswap_v2")])
     }
 
     //=============================
@@ -117,13 +111,13 @@ mod test {
                         // Write manifest
                         let manifest_string = decompile(
                             &SystemTransactionManifestV1::from_transaction(transaction),
-                            &self.network_definition,
+                            self.network_definition,
                         )
                         .unwrap();
                         // Whilst we're here, let's validate that the manifest can be recompiled
                         compile_manifest::<SystemTransactionManifestV1>(
                             &manifest_string,
-                            &self.network_definition,
+                            self.network_definition,
                             BlobProvider::new_with_blobs(
                                 transaction
                                     .blobs
@@ -140,7 +134,7 @@ mod test {
                 }
 
                 let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
-                    .encoder(&self.address_encoder)
+                    .encoder(self.address_encoder)
                     .schema_lookup_from_db(resultant_store)
                     .display_state_updates(true)
                     .use_ansi_colors(false)
@@ -155,9 +149,18 @@ mod test {
 
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
             .configure_babylon(|_| BabylonSettings::test_complex())
+            // TODO: In here we're forced to provide the Dugong settings manually because Dugong's
+            // default configuration method is disabled as we wanted to disable that protocol update
+            // for this version of Scrypto. When Dugong is set to be released this should be removed
+            // and the `DugongSettings::all_enabled_as_default_for_network` method should be updated
+            // to reflect that the protocol upgrade is enabled.
+            .configure_dugong(|_| DugongSettings {
+                native_entity_metadata_updates: UpdateSetting::Enabled(Default::default()),
+                system_logic_updates: UpdateSetting::Enabled(Default::default()),
+            })
             .from_bootstrap_to_latest();
-        for protocol_update_exector in protocol_executor.each_protocol_update_executor(&db) {
-            let protocol_version = protocol_update_exector.protocol_version;
+        for protocol_update_executor in protocol_executor.each_protocol_update_executor(&db) {
+            let protocol_version = protocol_update_executor.protocol_version;
             let mut version_folder = FolderContentAligner::new(
                 root_path.join(protocol_version.logical_name()),
                 mode,
@@ -174,7 +177,7 @@ mod test {
                 state_change_hasher: HashAccumulator::new(),
             };
 
-            protocol_update_exector.run_and_commit_advanced(&mut db, &mut hooks, &vm_modules);
+            protocol_update_executor.run_and_commit_advanced(&mut db, &mut hooks, &vm_modules);
 
             let mut summary = String::new();
             let protocol_version_display_name = protocol_version.display_name();
@@ -209,7 +212,7 @@ mod test {
                 .unwrap();
             };
 
-            if testnet_scenario_names.len() > 0 {
+            if !testnet_scenario_names.is_empty() {
                 writeln!(&mut summary).unwrap();
                 writeln!(&mut summary, "==== POST ENACTMENT SCENARIOS ====").unwrap();
                 writeln!(&mut summary, "The following scenarios are set by default to run on testnets after this protocol update.").unwrap();
@@ -442,6 +445,7 @@ mod test {
         }
     }
 
+    #[allow(clippy::unnecessary_literal_unwrap)]
     pub fn run_all_scenarios<'a>(
         mode: AlignerExecutionMode,
         scenarios: impl IntoIterator<Item = &'a dyn ScenarioCreatorObjectSafe>,
@@ -479,9 +483,9 @@ mod test {
                         &vm_modules,
                     )
                     .unwrap_or_else(|err| {
-                        Err(err).expect(&format!(
-                            "Scenario {scenario_logical_name} should execute without error"
-                        ))
+                        Err(err).unwrap_or_else(|_| {
+                            panic!("Scenario {scenario_logical_name} should execute without error")
+                        })
                     });
             }
         }

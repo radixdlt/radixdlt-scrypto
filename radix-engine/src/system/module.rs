@@ -26,12 +26,12 @@ impl<'a, K: KernelInternalApi + ?Sized> SystemModuleApiImpl<'a, K> {
 
     #[inline]
     pub fn api_ref(&self) -> &K {
-        &self.api
+        self.api
     }
 
     #[inline]
     pub fn api(&mut self) -> &mut K {
-        &mut self.api
+        self.api
     }
 }
 

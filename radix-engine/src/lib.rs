@@ -1,3 +1,9 @@
+#![allow(
+    // Allowed since many of the result types we use are quite large and fixing them one by one is 
+    // not something we can easily do.
+    // TODO: Remove this in the future.
+    clippy::result_large_err
+)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate core;
@@ -43,6 +49,7 @@ pub(crate) mod internal_prelude {
     pub use crate::init::*;
     pub use crate::kernel::kernel_api::*;
     pub use crate::system::system_substates::*;
+    pub(crate) use crate::track::NodeSubstatesExt;
     pub use crate::vm::*;
     pub use crate::{
         dispatch, event_schema, function_schema, method_auth_template, roles_template,

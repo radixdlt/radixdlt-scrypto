@@ -678,7 +678,7 @@ impl AccountDepositModesLedgerSimulator {
     }
 
     pub fn virtual_signature_badge(&self) -> NonFungibleGlobalId {
-        NonFungibleGlobalId::from_public_key(&self.public_key)
+        NonFungibleGlobalId::from_public_key(self.public_key)
     }
 
     pub fn freely_mintable_resource(&mut self) -> ResourceAddress {

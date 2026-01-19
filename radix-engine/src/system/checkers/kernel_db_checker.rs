@@ -24,6 +24,12 @@ impl KernelDatabaseChecker {
     }
 }
 
+impl Default for KernelDatabaseChecker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KernelDatabaseChecker {
     pub fn check_db<S: SubstateDatabase + ListableSubstateDatabase>(
         &mut self,

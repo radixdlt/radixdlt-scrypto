@@ -102,7 +102,7 @@ pub trait Encoder<X: CustomValueKind>: Sized {
         }
         loop {
             let seven_bits = size & 0x7F;
-            size = size >> 7;
+            size >>= 7;
             if size == 0 {
                 self.write_byte(seven_bits as u8)?;
                 break;

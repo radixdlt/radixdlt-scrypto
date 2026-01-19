@@ -31,6 +31,7 @@ pub mod prelude {
     pub use super::model::*;
 
     // Private modules to include in prelude
+    pub use super::converter::*;
     pub use super::custom_extension::*;
     pub use super::custom_payload_wrappers::*;
     pub use super::custom_traversal::*;

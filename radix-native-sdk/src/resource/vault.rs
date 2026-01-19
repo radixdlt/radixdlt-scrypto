@@ -127,7 +127,8 @@ impl NativeVault for Vault {
             scrypto_encode(&VaultPutInput { bucket }).unwrap(),
         )?;
 
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn take<Y: SystemApi<E>, E: SystemApiError>(
@@ -204,7 +205,8 @@ impl NativeVault for Vault {
             scrypto_encode(&VaultBurnInput { amount }).unwrap(),
         )?;
 
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 }
 
@@ -223,7 +225,8 @@ impl NativeFungibleVault for Vault {
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn lock_contingent_fee<Y: SystemApi<E>, E: SystemApiError>(
@@ -240,7 +243,8 @@ impl NativeFungibleVault for Vault {
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn create_proof_of_amount<Y: SystemApi<E>, E: SystemApiError>(
@@ -304,7 +308,8 @@ impl NativeNonFungibleVault for Vault {
             .unwrap(),
         )?;
 
-        Ok(scrypto_decode(&rtn).unwrap())
+        let _: () = scrypto_decode(&rtn).unwrap();
+        Ok(())
     }
 
     fn non_fungible_local_ids<Y: SystemApi<E>, E: SystemApiError>(

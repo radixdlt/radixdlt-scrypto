@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use radix_engine::blueprints::package::ManifestPackageDefinition;
 use radix_engine::updates::ProtocolVersion;
-use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
@@ -54,9 +54,11 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                         |builder| {
                             // Load code and schema
                             let code = include_bytes!("../../assets/radiswap.wasm");
-                            let mut schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                            let mut schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                                 "../../assets/radiswap.rpd"
                             ))
+                            .unwrap()
+                            .try_into_typed()
                             .unwrap();
 
                             // Register `RemoveLiquidityEvent` as TestType
@@ -107,7 +109,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                                     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                                        owner_role: OwnerRole::None,
+                                        owner_role: OwnerRole::None.into(),
                                         id_type: NonFungibleIdType::Integer,
                                         track_total_supply: true,
                                         non_fungible_schema: NonFungibleDataSchema::Remote(RemoteNonFungibleDataSchema {
@@ -118,8 +120,8 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                             },
                                             mutable_fields: index_set_new()
                                         }),
-                                        resource_roles: NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
-                                        metadata: metadata! {},
+                                        resource_roles: NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)).into(),
+                                        metadata: metadata! {}.into(),
                                         address_reservation: None,
                                         entries: indexmap!(
                                             NonFungibleLocalId::integer(1) => (manifest_decode(&manifest_encode(&RemoveLiquidityEvent {

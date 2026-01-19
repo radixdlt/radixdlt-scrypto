@@ -32,9 +32,11 @@ fn test_allocate_address_and_call_it() {
         );
         (manifest, vec![code_blob])
     })
-    .expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..)) => true,
-        _ => false,
+    .expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..))
+        )
     });
 }
 
@@ -332,7 +334,7 @@ where
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = ledger.new_account(false);
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -368,7 +370,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = ledger.new_account(false);
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
@@ -416,7 +418,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     };
     let result = ledger.execute_manifest(manifest, vec![]);
     let mintable_non_fungible_resource_address =
-        result.expect_commit(true).new_resource_addresses()[0].clone();
+        result.expect_commit(true).new_resource_addresses()[0];
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(
@@ -446,7 +448,7 @@ where
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = ledger.new_account(false);
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(public_key);
 
     // Creating the required accounts
     let accounts = (0..accounts_required)

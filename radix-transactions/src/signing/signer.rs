@@ -33,7 +33,7 @@ pub trait Signer {
     fn sign_with_public_key(&self, message_hash: &impl IsHash) -> SignatureWithPublicKeyV1;
 }
 
-impl<'a, S: Signer> Signer for &'a S {
+impl<S: Signer> Signer for &S {
     fn public_key(&self) -> PublicKey {
         (*self).public_key()
     }

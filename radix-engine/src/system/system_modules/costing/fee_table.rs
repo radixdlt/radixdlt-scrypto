@@ -25,7 +25,7 @@ lazy_static! {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
         include_str!("../../../../assets/native_function_base_costs.csv")
             .split("\n")
-            .filter(|x| x.len() > 0)
+            .filter(|x| !x.is_empty())
             .for_each(|x| {
                 let mut tokens = x.split(",");
                 let package_address =
@@ -71,12 +71,12 @@ pub struct FeeTable {
 
 impl FeeTable {
     pub fn new(version: SystemVersion) -> Self {
-        let wasm_execution_units_divider = match version {
+        let wasm_execution_units_divider = if version <= SystemVersion::V1 {
             // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
             // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
             // 1 / 0.00028877714 = 3462 rounded down gives 3000
-            SystemVersion::V1 => 3000,
-
+            3000
+        } else {
             // W - WASM execution units
             // C - cost units
             // c - single cost unit
@@ -99,7 +99,7 @@ impl FeeTable {
             //
             // With divider set to 4500 it takes 543 ms (measured at GH benchmark, git rev c591c4003a,
             // EC2 instance type c6a.4xlarge) which is fine.
-            SystemVersion::V2 | SystemVersion::V3 => 4500,
+            4500
         };
 
         Self {
@@ -213,7 +213,7 @@ impl FeeTable {
                 NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
-                    .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
+                    .map(|value| add(value.1, mul(value.0, cast(*input_size))))
                     .unwrap_or_else(|| {
                         panic!(
                             "Native function not found: {:?}::{}. ",
@@ -714,7 +714,7 @@ fn cast(a: usize) -> u32 {
 
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
-    a.checked_add(b).unwrap_or(u32::MAX)
+    a.saturating_add(b)
 }
 
 #[inline]
@@ -724,5 +724,5 @@ fn sub(a: u32, b: u32) -> u32 {
 
 #[inline]
 fn mul(a: u32, b: u32) -> u32 {
-    a.checked_mul(b).unwrap_or(u32::MAX)
+    a.saturating_mul(b)
 }

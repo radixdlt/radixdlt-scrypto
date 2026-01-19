@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 // which does requires creating the lookup, and checks package/blueprint names of objects.
 //=======================================================================================================
 
-impl<'a> ValidatableCustomExtension<()> for ScryptoCustomExtension {
+impl ValidatableCustomExtension<()> for ScryptoCustomExtension {
     fn apply_validation_for_custom_value<'de>(
         schema: &Schema<Self::CustomSchema>,
         custom_value: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,

@@ -458,8 +458,8 @@ fn create_pool(
                 TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
                 TwoResourcePoolInstantiateManifestInput {
                     resource_addresses: (pool_resource1.into(), pool_resource2.into()),
-                    pool_manager_rule: AccessRule::AllowAll,
-                    owner_role: OwnerRole::None,
+                    pool_manager_rule: AccessRule::AllowAll.into(),
+                    owner_role: OwnerRole::None.into(),
                     address_reservation: None,
                 },
             )

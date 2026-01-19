@@ -7,12 +7,12 @@ use radix_transactions::{model::PreviewFlags, validation::TransactionValidator};
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_trace_resource_transfers_using_take() {
+fn test_trace_fungible_resource_transfers_within_blueprint_using_take() {
     run_resource_transfers_trace_test(false);
 }
 
 #[test]
-fn test_trace_resource_transfers_using_take_advanced() {
+fn test_trace_fungible_resource_transfers_within_blueprint_using_take_advanced() {
     run_resource_transfers_trace_test(true);
 }
 
@@ -29,13 +29,13 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         .call_function(
             package_address,
             "ExecutionTraceBp",
-            "transfer_resource_between_two_components",
+            "transfer_fungible_resource_between_two_components",
             manifest_args!(transfer_amount, use_take_advanced),
         )
         .build();
     let receipt = ledger.preview_manifest(
         manifest,
-        vec![public_key.clone().into()],
+        vec![public_key.into()],
         0,
         PreviewFlags::default(),
     );
@@ -47,74 +47,32 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         ComponentAddress,
     ) = receipt.expect_commit(true).output(1);
 
+    let resource_changes = &receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap()
+        .resource_changes;
+
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
-    println!(
-        "{:?}",
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-    );
-    assert_eq!(
-        2,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .len()
-    ); // Two instructions
-    assert_eq!(
-        1,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .get(&0)
-            .unwrap()
-            .len()
-    ); // One resource change in the first instruction (lock fee)
-    assert_eq!(
-        2,
-        receipt
-            .expect_commit_success()
-            .execution_trace
-            .as_ref()
-            .unwrap()
-            .resource_changes
-            .get(&1)
-            .unwrap()
-            .len()
-    ); // One resource change in the first instruction (lock fee)
+    println!("{:?}", resource_changes);
+    assert_eq!(2, resource_changes.len()); // Two instructions
+    assert_eq!(1, resource_changes.get(&0).unwrap().len()); // One resource change in the first instruction (lock fee)
+    assert_eq!(2, resource_changes.get(&1).unwrap().len()); // Two resource changes in the second instruction (transfer_fungible_resource_between_two_components)
 
     let fee_summary = receipt.fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
-    assert!(receipt
-        .expect_commit_success()
-        .execution_trace
-        .as_ref()
-        .unwrap()
-        .resource_changes
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(|r| r.node_id == source_component.into()
             && r.amount == Decimal::from(transfer_amount).checked_neg().unwrap()));
 
     // Target vault deposit
-    assert!(receipt
-        .expect_commit_success()
-        .execution_trace
-        .as_ref()
-        .unwrap()
-        .resource_changes
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
         .any(
@@ -122,16 +80,81 @@ fn run_resource_transfers_trace_test(use_take_advanced: bool) {
         ));
 
     // Fee withdrawal
-    assert!(receipt
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == account.into() && r.amount == total_fee_paid.checked_neg().unwrap()));
+}
+
+#[test]
+fn test_trace_non_fungible_resource_transfers_within_blueprint() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("execution_trace"));
+    let transfer_amount = 10u8;
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 500)
+        .call_function(
+            package_address,
+            "ExecutionTraceBp",
+            "transfer_non_fungible_resource_between_two_components",
+            manifest_args!(transfer_amount),
+        )
+        .build();
+    let receipt = ledger.preview_manifest(
+        manifest,
+        vec![public_key.into()],
+        0,
+        PreviewFlags::default(),
+    );
+
+    // Assert
+    let (_resource_address, source_component, target_component): (
+        ResourceAddress,
+        ComponentAddress,
+        ComponentAddress,
+    ) = receipt.expect_commit(true).output(1);
+
+    let resource_changes = &receipt
         .expect_commit_success()
         .execution_trace
         .as_ref()
         .unwrap()
-        .resource_changes
+        .resource_changes;
+
+    /* There should be three resource changes: withdrawal from the source vault,
+    deposit to the target vault and withdrawal for the fee */
+    println!("{:?}", resource_changes);
+    assert_eq!(2, resource_changes.len()); // Two instructions
+    assert_eq!(1, resource_changes.get(&0).unwrap().len()); // One resource change in the first instruction (lock fee)
+    assert_eq!(2, resource_changes.get(&1).unwrap().len()); // Two resource changes in the second instruction (transfer_non_fungible_resource_between_two_components)
+
+    let fee_summary = receipt.fee_summary.clone();
+    let total_fee_paid = fee_summary.total_cost();
+
+    // Source vault withdrawal
+    assert!(resource_changes
         .iter()
         .flat_map(|(_, rc)| rc)
-        .any(|r| r.node_id == account.into()
-            && r.amount == Decimal::from(total_fee_paid).checked_neg().unwrap()));
+        .any(|r| r.node_id == source_component.into()
+            && r.amount == Decimal::from(transfer_amount).checked_neg().unwrap()));
+
+    // Target vault deposit
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(
+            |r| r.node_id == target_component.into() && r.amount == Decimal::from(transfer_amount)
+        ));
+
+    // Fee withdrawal
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == account.into() && r.amount == total_fee_paid.checked_neg().unwrap()));
 }
 
 #[test]
@@ -153,20 +176,19 @@ fn test_trace_fee_payments() {
         .drop_auth_zone_proofs()
         .build();
 
-    let funded_component = ledger
+    let funded_component = *ledger
         .execute_manifest(manifest_prepare, vec![])
         .expect_commit(true)
         .new_component_addresses()
         .into_iter()
-        .nth(0)
-        .unwrap()
-        .clone();
+        .next()
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
-            funded_component.clone(),
+            funded_component,
             "test_lock_contingent_fee",
             manifest_args!(),
         )
@@ -239,7 +261,7 @@ fn test_instruction_traces() {
         // Expecting two traces: an output bucket from the "free" call
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
-        let free_trace = traces.get(0).unwrap();
+        let free_trace = traces.first().unwrap();
         if let TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
@@ -254,7 +276,7 @@ fn test_instruction_traces() {
         assert!(free_trace.input.is_empty());
         assert!(free_trace.output.proofs.is_empty());
         assert_eq!(1, free_trace.output.buckets.len());
-        let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
+        let output_resource = free_trace.output.buckets.values().next().unwrap();
         assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
 
@@ -269,7 +291,7 @@ fn test_instruction_traces() {
         assert!(worktop_put_trace.output.is_empty());
         assert!(worktop_put_trace.input.proofs.is_empty());
         assert_eq!(1, worktop_put_trace.input.buckets.len());
-        let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = worktop_put_trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -280,7 +302,7 @@ fn test_instruction_traces() {
         // Take from worktop is just a single sys call with a single bucket output
         assert_eq!(1, traces.len());
 
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -293,7 +315,7 @@ fn test_instruction_traces() {
         assert!(trace.output.proofs.is_empty());
         assert_eq!(1, trace.output.buckets.len());
 
-        let output_resource = trace.output.buckets.values().nth(0).unwrap();
+        let output_resource = trace.output.buckets.values().next().unwrap();
         assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
     }
@@ -302,7 +324,7 @@ fn test_instruction_traces() {
         // CREATE_PROOF_FROM_BUCKET
         let traces = traces_for_instruction(&traces, 3);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT),
@@ -315,7 +337,7 @@ fn test_instruction_traces() {
         assert!(trace.output.buckets.is_empty());
         assert_eq!(1, trace.output.proofs.len());
 
-        let output_proof = trace.output.proofs.values().nth(0).unwrap();
+        let output_proof = trace.output.proofs.values().next().unwrap();
         assert_eq!(XRD, output_proof.resource_address());
         assert_eq!(dec!(10000), output_proof.amount());
     }
@@ -324,7 +346,7 @@ fn test_instruction_traces() {
         // DROP_PROOF
         let traces = traces_for_instruction(&traces, 4);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
@@ -337,7 +359,7 @@ fn test_instruction_traces() {
         assert!(trace.input.buckets.is_empty());
         assert_eq!(1, trace.input.proofs.len());
 
-        let input_proof = trace.input.proofs.values().nth(0).unwrap();
+        let input_proof = trace.input.proofs.values().next().unwrap();
         assert_eq!(XRD, input_proof.resource_address());
         assert_eq!(dec!(10000), input_proof.amount());
     }
@@ -346,7 +368,7 @@ fn test_instruction_traces() {
         // RETURN_TO_WORKTOP
         let traces = traces_for_instruction(&traces, 5);
         assert_eq!(1, traces.len());
-        let trace = traces.get(0).unwrap();
+        let trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -358,7 +380,7 @@ fn test_instruction_traces() {
         assert!(trace.input.proofs.is_empty());
         assert_eq!(1, trace.input.buckets.len());
 
-        let input_resource = trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -369,7 +391,7 @@ fn test_instruction_traces() {
         // Expected two traces: take from worktop and call scrypto function
         assert_eq!(2, traces.len());
 
-        let take_trace = traces.get(0).unwrap();
+        let take_trace = traces.first().unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
@@ -391,7 +413,7 @@ fn test_instruction_traces() {
         assert!(call_trace.output.is_empty());
         assert!(call_trace.input.proofs.is_empty());
         assert_eq!(1, call_trace.input.buckets.len());
-        let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
+        let input_resource = call_trace.input.buckets.values().next().unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
@@ -438,12 +460,7 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket5")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = ledger.preview_manifest(
-        manifest,
-        vec![pk.clone().into()],
-        0,
-        PreviewFlags::default(),
-    );
+    let receipt = ledger.preview_manifest(manifest, vec![pk.into()], 0, PreviewFlags::default());
 
     // Assert
     {
@@ -600,7 +617,7 @@ fn test_worktop_changes() {
 }
 
 fn traces_for_instruction(
-    traces: &Vec<ExecutionTrace>,
+    traces: &[ExecutionTrace],
     instruction_index: usize,
 ) -> Vec<&ExecutionTrace> {
     traces
@@ -1046,4 +1063,61 @@ fn test_execution_trace_for_transaction_v2() {
     },
 )"#;
     assert_eq!(format!("{:#?}", trace), expected_trace);
+}
+
+#[test]
+fn test_trace_non_fungible_resource_transfers_using_manifest() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+
+    let (from_public_key, _from_private_key, from_address) = ledger.new_allocated_account();
+    let (_to_public_key, _to_private_key, to_address) = ledger.new_allocated_account();
+
+    let nf_resource_address = ledger.create_non_fungible_resource_advanced(
+        NonFungibleResourceRoles::default(),
+        from_address,
+        4,
+    );
+    let nf_global_id =
+        NonFungibleGlobalId::new(nf_resource_address, NonFungibleLocalId::integer(1));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(from_address, 100)
+        .withdraw_non_fungible_from_account(from_address, nf_global_id)
+        .take_all_from_worktop(nf_resource_address, "nf_bucket")
+        .try_deposit_or_abort(to_address, None, "nf_bucket")
+        .build();
+
+    let receipt = ledger.preview_manifest(
+        manifest,
+        vec![from_public_key.into()],
+        0,
+        PreviewFlags::default(),
+    );
+    let fee_summary = receipt.fee_summary.clone();
+    let total_fee_paid = fee_summary.total_cost();
+
+    // Act & Assert: Execute the preview, followed by a normal execution.
+    let resource_changes = &receipt
+        .expect_commit_success()
+        .execution_trace
+        .as_ref()
+        .unwrap()
+        .resource_changes;
+
+    println!("{:?}", resource_changes);
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == from_address.into() && r.amount == -total_fee_paid));
+
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == from_address.into() && r.amount == dec!(-1)));
+
+    assert!(resource_changes
+        .iter()
+        .flat_map(|(_, rc)| rc)
+        .any(|r| r.node_id == to_address.into() && r.amount == dec!(1)));
 }

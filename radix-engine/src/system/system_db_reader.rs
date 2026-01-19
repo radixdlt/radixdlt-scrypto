@@ -118,7 +118,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         )
-        .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)
+        .ok_or(SystemReaderError::NodeIdDoesNotExist)
     }
 
     pub fn get_package_definition(
@@ -174,7 +174,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .state
             .fields
             .as_ref()
-            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .ok_or(SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -192,7 +192,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         let substate: FieldSubstate<ScryptoValue> = self
             .substate_db
             .get_substate(node_id, partition_number, SubstateKey::Field(field_index))
-            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
+            .ok_or(SystemReaderError::FieldDoesNotExist)?;
 
         Ok((
             IndexedScryptoValue::from_scrypto_value(substate.into_payload()),
@@ -227,7 +227,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .state
             .fields
             .as_ref()
-            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .ok_or(SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -245,7 +245,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         let substate: FieldSubstate<V> = self
             .substate_db
             .get_substate(node_id, partition_number, SubstateKey::Field(field_index))
-            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?;
+            .ok_or(SystemReaderError::FieldDoesNotExist)?;
 
         Ok(substate.into_payload())
     }
@@ -264,7 +264,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .state
             .collections
             .get(collection_index as usize)
-            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?;
+            .ok_or(SystemReaderError::CollectionDoesNotExist)?;
 
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {
@@ -318,6 +318,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         Ok(entry)
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn key_value_store_iter(
         &self,
         node_id: &NodeId,
@@ -349,6 +350,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         Ok(Box::new(iterable))
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn collection_iter(
         &self,
         node_id: &NodeId,
@@ -359,6 +361,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .map(|x| x.0)
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn collection_iter_advanced<'s, 'x>(
         &'s self,
         node_id: &'x NodeId,
@@ -384,7 +387,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .state
             .collections
             .get(collection_index as usize)
-            .ok_or_else(|| SystemReaderError::CollectionDoesNotExist)?
+            .ok_or(SystemReaderError::CollectionDoesNotExist)?
             .clone();
 
         let partition_number = match partition_description {
@@ -458,7 +461,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
-            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
+            .ok_or(SystemReaderError::NodeIdDoesNotExist)?;
 
         match type_info {
             TypeInfoSubstate::Object(object_info) => Ok(object_info),
@@ -477,7 +480,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
-            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
+            .ok_or(SystemReaderError::NodeIdDoesNotExist)?;
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
@@ -527,7 +530,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             )
-            .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?
+            .ok_or(SystemReaderError::BlueprintDoesNotExist)?
             .into_value()
             .unwrap()
             .fully_update_and_into_latest_version(),
@@ -550,7 +553,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
-            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
+            .ok_or(SystemReaderError::NodeIdDoesNotExist)?;
 
         let kv_store_info = match type_info {
             TypeInfoSubstate::KeyValueStore(kv_store_info) => kv_store_info,
@@ -574,7 +577,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
-            .ok_or_else(|| SystemReaderError::NodeIdDoesNotExist)?;
+            .ok_or(SystemReaderError::NodeIdDoesNotExist)?;
 
         let object_info = match type_info {
             TypeInfoSubstate::Object(object_info) => object_info,
@@ -593,7 +596,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 ObjectType::Owned => return Err(SystemReaderError::ModuleDoesNotExist),
             }
 
-            let target = BlueprintTypeTarget {
+            BlueprintTypeTarget {
                 blueprint_info: BlueprintInfo {
                     blueprint_id,
                     blueprint_version: Default::default(),
@@ -604,8 +607,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 meta: SchemaValidationMeta::ExistingObject {
                     additional_schemas: *node_id,
                 },
-            };
-            target
+            }
         } else {
             BlueprintTypeTarget {
                 blueprint_info: object_info.blueprint_info,
@@ -645,8 +647,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 })
             }
             GenericSubstitution::Remote(blueprint_type_id) => {
-                let (schema, scoped_type_id) =
-                    self.get_blueprint_type_schema(&blueprint_type_id)?;
+                let (schema, scoped_type_id) = self.get_blueprint_type_schema(blueprint_type_id)?;
 
                 Ok(ResolvedPayloadSchema {
                     schema,
@@ -670,7 +671,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
 
         let (payload_def, ..) = blueprint_interface
             .get_payload_def(payload_identifier)
-            .ok_or_else(|| SystemReaderError::PayloadDoesNotExist)?;
+            .ok_or(SystemReaderError::PayloadDoesNotExist)?;
 
         let obj_type_reference = match payload_def {
             BlueprintPayloadDef::Static(type_identifier) => {
@@ -703,7 +704,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                         })
                     }
                     GenericSubstitution::Remote(type_id) => {
-                        let (_, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        let (_, scoped_type_id) = self.get_blueprint_type_schema(type_id)?;
                         ObjectSubstateTypeReference::Package(PackageTypeReference {
                             full_type_id: scoped_type_id.under_node(type_id.package_address),
                         })
@@ -729,7 +730,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
 
         let (payload_def, allow_ownership, allow_non_global_refs) = blueprint_interface
             .get_payload_def(payload_identifier)
-            .ok_or_else(|| SystemReaderError::PayloadDoesNotExist)?;
+            .ok_or(SystemReaderError::PayloadDoesNotExist)?;
 
         // Given the payload definition, retrieve the info to be able to do schema validation on a payload
         let (schema, index, schema_origin) = match payload_def {
@@ -770,7 +771,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                         (schema, type_id.1, SchemaOrigin::Instance)
                     }
                     GenericSubstitution::Remote(type_id) => {
-                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(&type_id)?;
+                        let (schema, scoped_type_id) = self.get_blueprint_type_schema(type_id)?;
                         (
                             schema,
                             scoped_type_id.1,
@@ -810,14 +811,14 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                 SCHEMAS_PARTITION,
                 &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
             )
-            .ok_or_else(|| SystemReaderError::SchemaDoesNotExist)?
+            .ok_or(SystemReaderError::SchemaDoesNotExist)?
             .into_value()
             .expect("Schema should exist if substate exists"),
         );
 
         self.schema_cache
             .borrow_mut()
-            .insert(schema_hash.clone(), schema.clone());
+            .insert(*schema_hash, schema.clone());
 
         Ok(schema)
     }
@@ -842,7 +843,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
             .ok_or(SystemReaderError::BlueprintTypeNotFound(type_name.clone()))?;
         Ok((
             self.get_schema(package_address.as_node_id(), &scoped_type_id.0)?,
-            scoped_type_id.clone(),
+            *scoped_type_id,
         ))
     }
 
@@ -859,7 +860,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
             )
-            .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
+            .ok_or(SystemReaderError::BlueprintDoesNotExist)?;
 
         Ok(definition
             .into_value()
@@ -872,7 +873,7 @@ impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
         payload: &[u8],
         payload_schema: &'b ResolvedPayloadSchema,
         depth_limit: usize,
-    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
+    ) -> Result<(), LocatedValidationError<'b, ScryptoCustomExtension>> {
         let validation_context: Box<dyn ValidationContext<Error = String>> =
             Box::new(ValidationPayloadCheckerContext {
                 reader: self,
@@ -1041,19 +1042,17 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 let definition = self.get_blueprint_definition(&blueprint_id).unwrap();
 
                 let state_schema = &definition.interface.state;
-                match (&state_schema.fields, &partition_offset) {
-                    (
-                        Some((PartitionDescription::Logical(offset), _fields)),
-                        Some(partition_offset),
-                    ) => {
-                        if offset.eq(partition_offset) {
-                            descriptors.push(SystemPartitionDescriptor::Object(
-                                module_id,
-                                ObjectPartitionDescriptor::Fields,
-                            ));
-                        }
+                if let (
+                    Some((PartitionDescription::Logical(offset), _fields)),
+                    Some(partition_offset),
+                ) = (&state_schema.fields, &partition_offset)
+                {
+                    if offset.eq(partition_offset) {
+                        descriptors.push(SystemPartitionDescriptor::Object(
+                            module_id,
+                            ObjectPartitionDescriptor::Fields,
+                        ));
                     }
-                    _ => {}
                 }
 
                 for (index, (partition_description, schema)) in
@@ -1081,7 +1080,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                             ))
                         }
                         (PartitionDescription::Physical(physical_partition), None)
-                            if physical_partition.eq(&partition_num) =>
+                            if physical_partition.eq(partition_num) =>
                         {
                             descriptors.push(SystemPartitionDescriptor::Object(
                                 module_id,
@@ -1221,7 +1220,7 @@ impl<'a, S: SubstateDatabase + CommittableSubstateDatabase> SystemDatabaseWriter
             .state
             .fields
             .as_ref()
-            .ok_or_else(|| SystemReaderError::FieldDoesNotExist)?
+            .ok_or(SystemReaderError::FieldDoesNotExist)?
             .0;
         let partition_number = match partition_description {
             PartitionDescription::Logical(offset) => {

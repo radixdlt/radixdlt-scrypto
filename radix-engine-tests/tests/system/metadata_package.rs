@@ -16,7 +16,7 @@ fn cannot_set_package_metadata_with_no_owner() {
             None,
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -77,7 +77,7 @@ fn can_set_package_metadata_with_owner() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

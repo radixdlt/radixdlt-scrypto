@@ -264,6 +264,7 @@ impl MetadataNativePackage {
     }
 
     /// This method assumes that the data has been pre-checked.
+    #[allow(clippy::type_complexity)]
     pub(crate) fn init_system_struct(
         data: IndexMap<Vec<u8>, (Option<Vec<u8>>, bool)>,
     ) -> Result<
@@ -403,6 +404,7 @@ pub enum MetadataValueValidationError {
     InvalidLength { max: usize, actual: usize },
 }
 
+#[allow(clippy::type_complexity)]
 pub fn validate_metadata_init(
     metadata_init: MetadataInit,
 ) -> Result<IndexMap<Vec<u8>, (Option<Vec<u8>>, bool)>, RuntimeError> {
@@ -415,7 +417,7 @@ pub fn validate_metadata_init(
         })?;
 
         if let Some(v) = &value.value {
-            let value_sbor = validate_metadata_value(&v).map_err(|e| {
+            let value_sbor = validate_metadata_value(v).map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::MetadataError(
                     MetadataError::MetadataValueValidationError(e),
                 ))

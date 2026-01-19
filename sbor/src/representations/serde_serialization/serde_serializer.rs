@@ -83,6 +83,7 @@ pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomExtension>(
     Ok(success)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     partial_payload: &[u8],
@@ -129,7 +130,7 @@ fn map_unexpected_event<S: Serializer, E: SerializableCustomExtension>(
     expected: &'static str,
     typed_event: TypedLocatedTraversalEvent<E>,
 ) -> S::Error {
-    S::Error::custom(typed_event.display_as_unexpected_event(expected, &context.schema))
+    S::Error::custom(typed_event.display_as_unexpected_event(expected, context.schema))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -476,12 +477,9 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomExtension>(
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
 
     if !map_aggregator.should_embed_value_in_contextual_json_map() {
-        let result_ok = SerializableFields::new(
-            traverser,
-            tuple_metadata.field_names.into(),
-            tuple_header.length,
-        )
-        .serialize(serializer, *context)?;
+        let result_ok =
+            SerializableFields::new(traverser, tuple_metadata.field_names, tuple_header.length)
+                .serialize(serializer, *context)?;
         consume_container_end_event::<S, E>(traverser)?;
         return Ok(result_ok);
     }
@@ -490,7 +488,7 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomExtension>(
         "fields",
         SerializableType::SerializableFields(SerializableFields::new(
             traverser,
-            tuple_metadata.field_names.into(),
+            tuple_metadata.field_names,
             tuple_header.length,
         )),
     );
@@ -810,6 +808,7 @@ mod tests {
     }
 
     #[derive(Sbor, Hash, Eq, PartialEq)]
+    #[allow(clippy::enum_variant_names)]
     enum TestEnum {
         UnitVariant,
         SingleFieldVariant { field: u8 },

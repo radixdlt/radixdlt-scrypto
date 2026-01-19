@@ -110,9 +110,9 @@ impl From<ResourceAddress> for ResourceManager {
     }
 }
 
-impl Into<GlobalAddress> for ResourceManager {
-    fn into(self) -> GlobalAddress {
-        GlobalAddress::new_or_panic(self.0 .0 .0.as_node_id().0)
+impl From<ResourceManager> for GlobalAddress {
+    fn from(val: ResourceManager) -> Self {
+        GlobalAddress::new_or_panic(val.0 .0 .0.as_node_id().0)
     }
 }
 
@@ -319,8 +319,7 @@ impl ResourceManagerStub {
     /// Mints ruid non-fungible resources
     #[deprecated = "Use NonFungibleResourceManagerStub::mint_ruid_non_fungible instead"]
     pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
-        let mut entries = Vec::new();
-        entries.push((data,));
+        let entries = vec![(data,)];
 
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
@@ -415,9 +414,9 @@ impl From<ResourceAddress> for FungibleResourceManager {
     }
 }
 
-impl Into<GlobalAddress> for FungibleResourceManager {
-    fn into(self) -> GlobalAddress {
-        GlobalAddress::new_or_panic(self.0 .0 .0 .0.as_node_id().0)
+impl From<FungibleResourceManager> for GlobalAddress {
+    fn from(val: FungibleResourceManager) -> Self {
+        GlobalAddress::new_or_panic(val.0 .0 .0 .0.as_node_id().0)
     }
 }
 
@@ -628,9 +627,9 @@ impl From<ResourceAddress> for NonFungibleResourceManager {
     }
 }
 
-impl Into<GlobalAddress> for NonFungibleResourceManager {
-    fn into(self) -> GlobalAddress {
-        GlobalAddress::new_or_panic(self.0 .0 .0 .0.as_node_id().0)
+impl From<NonFungibleResourceManager> for GlobalAddress {
+    fn from(val: NonFungibleResourceManager) -> Self {
+        GlobalAddress::new_or_panic(val.0 .0 .0 .0.as_node_id().0)
     }
 }
 
@@ -854,8 +853,7 @@ impl NonFungibleResourceManagerStub {
     /// );
     /// ```
     pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> NonFungibleBucket {
-        let mut entries = Vec::new();
-        entries.push((data,));
+        let entries = vec![(data,)];
 
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,

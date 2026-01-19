@@ -16,14 +16,11 @@ pub fn handle_manifest_sbor(input: TokenStream) -> Result<TokenStream> {
 
     let categorize = sbor_derive_common::categorize::handle_categorize(
         input.clone(),
-        context_custom_value_kind.clone(),
+        context_custom_value_kind,
     )?;
-    let encode = sbor_derive_common::encode::handle_encode(
-        input.clone(),
-        context_custom_value_kind.clone(),
-    )?;
-    let decode =
-        sbor_derive_common::decode::handle_decode(input, context_custom_value_kind.clone())?;
+    let encode =
+        sbor_derive_common::encode::handle_encode(input.clone(), context_custom_value_kind)?;
+    let decode = sbor_derive_common::decode::handle_decode(input, context_custom_value_kind)?;
 
     let output = quote! {
         #categorize

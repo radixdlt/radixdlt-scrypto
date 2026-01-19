@@ -35,7 +35,7 @@ impl<D> StateTreeUpdatingDatabase<D> {
 
     fn update_with(&mut self, db_updates: &DatabaseUpdates) {
         self.current_hash = put_at_next_version(
-            &mut self.tree_store,
+            &self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),
             db_updates,
         );

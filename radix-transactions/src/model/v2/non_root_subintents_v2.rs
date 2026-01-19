@@ -41,7 +41,7 @@ impl TransactionPreparableFromValueBody for PreparedNonRootSubintentsV2 {
             )?;
 
         Ok(Self {
-            subintents: subintents.into(),
+            subintents,
             summary,
         })
     }

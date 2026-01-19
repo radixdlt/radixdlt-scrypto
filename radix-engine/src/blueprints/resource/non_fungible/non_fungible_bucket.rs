@@ -133,8 +133,8 @@ impl NonFungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                NonFungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
-                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
+                NonFungibleProofField::Moveable.field_index() => FieldValue::new(proof_info),
+                NonFungibleProofField::ProofRefs.field_index() => FieldValue::new(proof_evidence),
             },
         )?;
         Ok(Proof(Own(proof_id)))
@@ -164,8 +164,8 @@ impl NonFungibleBucketBlueprint {
         // Take from liquid if needed
         let delta: IndexSet<NonFungibleLocalId> = ids
             .iter()
+            .filter(|&id| !locked.ids.contains_key(id))
             .cloned()
-            .filter(|id| !locked.ids.contains_key(id))
             .collect();
         Self::internal_take(&delta, api)?;
 

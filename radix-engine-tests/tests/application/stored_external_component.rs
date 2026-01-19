@@ -46,7 +46,7 @@ fn stored_component_addresses_are_invocable() {
         .build();
     let receipt2 = ledger.execute_manifest(
         manifest2,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -59,7 +59,7 @@ fn stored_component_addresses_are_invocable() {
         .build();
     let receipt2 = ledger.execute_manifest(
         manifest2,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

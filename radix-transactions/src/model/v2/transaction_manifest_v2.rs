@@ -21,17 +21,17 @@ impl ReadableManifestBase for TransactionManifestV2 {
         false
     }
 
-    fn get_blobs<'a>(&'a self) -> impl Iterator<Item = (&'a Hash, &'a Vec<u8>)> {
+    fn get_blobs(&self) -> impl Iterator<Item = (&Hash, &Vec<u8>)> {
         self.blobs.iter()
     }
 
-    fn get_child_subintent_hashes<'a>(
-        &'a self,
-    ) -> impl ExactSizeIterator<Item = &'a ChildSubintentSpecifier> {
+    fn get_child_subintent_hashes(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &ChildSubintentSpecifier> {
         self.children.iter()
     }
 
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_> {
         self.object_names.as_ref()
     }
 }

@@ -1,14 +1,14 @@
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::ToRoleEntry;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
+use radix_common::define_untyped_manifest_type_wrapper;
 
 use super::AccessRule;
 
-pub const SELF_ROLE: &'static str = "_self_";
-pub const OWNER_ROLE: &'static str = "_owner_";
+pub const SELF_ROLE: &str = "_self_";
+pub const OWNER_ROLE: &str = "_owner_";
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct MethodKey {
@@ -29,7 +29,7 @@ impl From<&str> for MethodKey {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum MethodAccessibility {
     /// Method is accessible to all
@@ -61,7 +61,7 @@ impl From<RoleList> for MethodAccessibility {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct ModuleRoleKey {
     pub module: ModuleId,
@@ -79,7 +79,7 @@ impl ModuleRoleKey {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -128,7 +128,7 @@ impl RoleKey {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRoleUpdater {
@@ -143,7 +143,7 @@ pub enum OwnerRoleUpdater {
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct OwnerRoleEntry {
@@ -160,7 +160,26 @@ impl OwnerRoleEntry {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct ManifestOwnerRoleEntry {
+    pub rule: ManifestAccessRule,
+    pub updater: OwnerRoleUpdater,
+}
+
+impl From<OwnerRoleEntry> for ManifestOwnerRoleEntry {
+    fn from(value: OwnerRoleEntry) -> Self {
+        Self {
+            rule: value.rule.into(),
+            updater: value.updater,
+        }
+    }
+}
+
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor, Default,
 )]
@@ -186,7 +205,7 @@ impl RoleList {
 impl From<Vec<&str>> for RoleList {
     fn from(value: Vec<&str>) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }
@@ -194,7 +213,7 @@ impl From<Vec<&str>> for RoleList {
 impl From<Vec<String>> for RoleList {
     fn from(value: Vec<String>) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }
@@ -202,18 +221,28 @@ impl From<Vec<String>> for RoleList {
 impl<const N: usize> From<[&str; N]> for RoleList {
     fn from(value: [&str; N]) -> Self {
         Self {
-            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+            list: value.into_iter().map(RoleKey::new).collect(),
         }
     }
 }
 
 /// Front end data structure for specifying owner role
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    ScryptoCategorize,
+    ScryptoDecode,
+    ScryptoEncode,
+    ManifestSbor,
 )]
 pub enum OwnerRole {
     /// No owner role
+    #[default]
     None,
     /// Rule protected Owner role which may not be updated
     Fixed(AccessRule),
@@ -230,15 +259,9 @@ impl Describe<ScryptoCustomTypeKind> for OwnerRole {
     }
 }
 
-impl Default for OwnerRole {
-    fn default() -> Self {
-        OwnerRole::None
-    }
-}
-
-impl Into<OwnerRoleEntry> for OwnerRole {
-    fn into(self) -> OwnerRoleEntry {
-        match self {
+impl From<OwnerRole> for OwnerRoleEntry {
+    fn from(val: OwnerRole) -> Self {
+        match val {
             OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
@@ -246,9 +269,13 @@ impl Into<OwnerRoleEntry> for OwnerRole {
     }
 }
 
+define_untyped_manifest_type_wrapper!(
+    OwnerRole => ManifestOwnerRole(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
+
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
@@ -265,5 +292,40 @@ impl RoleAssignmentInit {
 
     pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
         self.data.insert(role.into(), access_rule.to_role_entry());
+    }
+}
+
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+#[sbor(transparent)]
+pub struct ManifestRoleAssignmentInit {
+    pub data: IndexMap<RoleKey, Option<ManifestAccessRule>>,
+}
+
+impl ManifestRoleAssignmentInit {
+    pub fn new() -> Self {
+        ManifestRoleAssignmentInit {
+            data: index_map_new(),
+        }
+    }
+
+    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
+        self.data
+            .insert(role.into(), access_rule.to_role_entry().map(Into::into));
+    }
+}
+
+impl From<RoleAssignmentInit> for ManifestRoleAssignmentInit {
+    fn from(value: RoleAssignmentInit) -> Self {
+        Self {
+            data: value
+                .data
+                .into_iter()
+                .map(|(key, value)| (key, value.map(Into::into)))
+                .collect(),
+        }
     }
 }

@@ -10,7 +10,6 @@ use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::prelude::*;
 use scrypto::{crypto::hash, data::manifest::model::ManifestBlobRef, types::PackageAddress};
 use scrypto_test::prelude::*;
-use wabt::wat2wasm;
 
 #[test]
 fn test_blob_replacement_beyond_blob_size_limit() {
@@ -90,14 +89,15 @@ fn test_blob_replacement_within_blob_size_limit() {
 fn publish_test_package(
     sim: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
 ) -> PackageAddress {
-    let code = wat2wasm(include_local_wasm_str!("basic_package.wat")).unwrap();
+    let code_wat = include_local_wasm_str!("basic_package.wat");
+    let code = wat::parse_str(code_wat).unwrap();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
             single_function_package_definition("Test", "f"),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();

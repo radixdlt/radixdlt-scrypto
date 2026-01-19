@@ -49,10 +49,10 @@ impl PreAllocatedAddress {
     ) -> Result<DecompiledInstruction, DecompileError> {
         // This aligns with AllocateGlobalAddress
         let instruction = DecompiledInstruction::new("USE_PREALLOCATED_ADDRESS")
-            .add_argument(&self.blueprint_id.package_address)
+            .add_argument(self.blueprint_id.package_address)
             .add_argument(&self.blueprint_id.blueprint_name)
             .add_argument(context.new_address_reservation())
-            .add_argument(&self.address);
+            .add_argument(self.address);
         Ok(instruction)
     }
 }
@@ -151,8 +151,9 @@ pub struct TransactionCostingParameters {
     pub free_credit_in_xrd: Decimal,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ScryptoSbor, ManifestSbor, Default)]
 pub enum TipSpecifier {
+    #[default]
     None,
     Percentage(u16),
     BasisPoints(u32),
@@ -190,17 +191,8 @@ impl TipSpecifier {
         match self {
             TipSpecifier::None => 0,
             TipSpecifier::Percentage(percentage) => *percentage as u32,
-            TipSpecifier::BasisPoints(basis_points) => {
-                let truncated_percentage = *basis_points / 100;
-                truncated_percentage
-            }
+            TipSpecifier::BasisPoints(basis_points) => *basis_points / 100,
         }
-    }
-}
-
-impl Default for TipSpecifier {
-    fn default() -> Self {
-        TipSpecifier::None
     }
 }
 

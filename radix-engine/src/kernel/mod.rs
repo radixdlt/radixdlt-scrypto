@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub mod call_frame;
 pub mod heap;
 pub mod id_allocator;

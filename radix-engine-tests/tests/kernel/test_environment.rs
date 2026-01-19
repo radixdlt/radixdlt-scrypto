@@ -141,10 +141,12 @@ fn references_read_from_state_are_visible_in_tests() {
     .unwrap();
 
     let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
-    let definition = manifest_decode(include_workspace_asset_bytes!(
+    let definition = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "radiswap.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     let (radiswap_package, _) =
@@ -203,10 +205,12 @@ fn references_read_from_state_are_visible_in_tests1() {
     .unwrap();
 
     let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
-    let definition = manifest_decode(include_workspace_asset_bytes!(
+    let definition = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "radiswap.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
 
     let (radiswap_package, _) =

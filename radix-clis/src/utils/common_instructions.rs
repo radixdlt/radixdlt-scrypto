@@ -72,7 +72,7 @@ impl From<RustToManifestValueError> for BuildCallArgumentsError {
 }
 
 /// Creates resource proof from an account.
-pub fn create_proof_from_account<'a>(
+pub fn create_proof_from_account(
     builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     account: ComponentAddress,
@@ -94,7 +94,7 @@ pub fn create_proof_from_account<'a>(
     Ok(builder)
 }
 
-pub fn build_call_arguments<'a>(
+pub fn build_call_arguments(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     schema: &VersionedScryptoSchema,
@@ -171,7 +171,7 @@ macro_rules! matches_bucket {
     };
 }
 
-fn build_call_argument<'a>(
+fn build_call_argument(
     mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     type_kind: &ScryptoTypeKind<LocalTypeId>,
@@ -230,7 +230,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = PackageAddress::try_from_bech32(&address_bech32_decoder, &argument)
+            let value = PackageAddress::try_from_bech32(address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -247,7 +247,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = ComponentAddress::try_from_bech32(&address_bech32_decoder, &argument)
+            let value = ComponentAddress::try_from_bech32(address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -264,7 +264,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = ResourceAddress::try_from_bech32(&address_bech32_decoder, &argument)
+            let value = ResourceAddress::try_from_bech32(address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -281,7 +281,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = GlobalAddress::try_from_bech32(&address_bech32_decoder, &argument)
+            let value = GlobalAddress::try_from_bech32(address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -298,7 +298,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = GlobalAddress::try_from_bech32(&address_bech32_decoder, &argument)
+            let value = GlobalAddress::try_from_bech32(address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -781,7 +781,7 @@ mod test {
 
             // Assert
             assert_eq!(
-                instructions.get(0).unwrap(),
+                instructions.first().unwrap(),
                 &InstructionV1::TakeFromWorktop(TakeFromWorktop {
                     resource_address: XRD,
                     amount: amount.into()
@@ -830,7 +830,7 @@ mod test {
 
             // Assert
             assert_eq!(
-                instructions.get(0).unwrap(),
+                instructions.first().unwrap(),
                 &InstructionV1::TakeNonFungiblesFromWorktop(TakeNonFungiblesFromWorktop {
                     resource_address,
                     ids
@@ -874,6 +874,7 @@ mod test {
 
     #[allow(dead_code)] // As it's used for displaying the error messages
     #[derive(Debug, Clone)]
+    #[allow(clippy::enum_variant_names)]
     pub enum BuildAndDecodeArgError {
         BuildCallArgumentError(BuildCallArgumentError),
         EncodeError(EncodeError),

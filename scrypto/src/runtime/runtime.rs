@@ -134,6 +134,7 @@ impl Runtime {
         ScryptoVmV1Api::sys_bech32_encode_address(address.into())
     }
 
+    #[allow(clippy::empty_loop)]
     pub fn panic(message: String) -> ! {
         ScryptoVmV1Api::sys_panic(message);
         loop {}

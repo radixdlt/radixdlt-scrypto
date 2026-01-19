@@ -1,7 +1,7 @@
 use super::*;
 use crate::schema::*;
 
-pub fn validate_custom_type_validation<'a, S: CustomSchema>(
+pub fn validate_custom_type_validation<S: CustomSchema>(
     context: &SchemaContext,
     type_kind: &LocalTypeKind<S>,
     type_validation: &TypeValidation<S::CustomTypeValidation>,

@@ -39,9 +39,9 @@ impl ApplicationChecker for ComponentRoyaltyDatabaseChecker {
             ComponentRoyaltyCollection::from_repr(collection_index).expect("Impossible case!");
         match collection_index {
             ComponentRoyaltyCollection::MethodAmountKeyValue => {
-                let _key = scrypto_decode::<ComponentRoyaltyMethodAmountKeyPayload>(&key)
+                let _key = scrypto_decode::<ComponentRoyaltyMethodAmountKeyPayload>(key)
                     .expect("Impossible Case.");
-                let value = scrypto_decode::<ComponentRoyaltyMethodAmountEntryPayload>(&value)
+                let value = scrypto_decode::<ComponentRoyaltyMethodAmountEntryPayload>(value)
                     .expect("Impossible Case.");
 
                 self.check_royalty_amount(value, location);

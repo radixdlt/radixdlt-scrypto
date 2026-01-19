@@ -34,7 +34,7 @@ impl ValidatorFuzzAction {
         _uuid: u64,
         builder: ManifestBuilder,
         fuzzer: &mut SystemTestFuzzer,
-        meta: &Vec<ValidatorMeta>,
+        meta: &[ValidatorMeta],
         _account_address: ComponentAddress,
     ) -> (ManifestBuilder, bool) {
         match self {

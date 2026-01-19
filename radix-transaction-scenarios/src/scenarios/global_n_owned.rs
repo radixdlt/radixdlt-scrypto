@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
-use radix_engine::updates::ProtocolVersion;
-use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
+use radix_engine::{blueprints::package::ManifestPackageDefinition, updates::ProtocolVersion};
+use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
 
 #[derive(Default)]
 pub struct GlobalNOwnedScenarioState(Option<(PackageAddress, ComponentAddress)>);
@@ -30,9 +30,11 @@ impl ScenarioCreator for GlobalNOwnedScenarioCreator {
             .successful_transaction_with_result_handler(
                 |core, state, _| {
                     let code = include_bytes!("../../assets/global_n_owned.wasm");
-                    let schema = manifest_decode::<PackageDefinition>(include_bytes!(
+                    let schema = manifest_decode::<ManifestPackageDefinition>(include_bytes!(
                         "../../assets/global_n_owned.rpd"
                     ))
+                    .unwrap()
+                    .try_into_typed()
                     .unwrap();
 
                     core.next_transaction_with_faucet_lock_fee(

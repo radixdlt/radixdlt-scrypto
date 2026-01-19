@@ -1,4 +1,7 @@
 use super::substates::*;
+use crate::blueprints::native_schema::{
+    METADATA_PACKAGE_DEFINITION, PACKAGE_PACKAGE_DEFINITION, ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
+};
 use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
 use crate::object_modules::metadata::{validate_metadata_init, MetadataNativePackage};
@@ -176,8 +179,7 @@ fn validate_package_schema(
             BlueprintType::Inner { .. } => Err(PackageError::MissingOuterBlueprint),
         }?;
 
-        validate_schema(bp_schema.schema.v1())
-            .map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
+        validate_schema(bp_schema.schema.v1()).map_err(PackageError::InvalidBlueprintSchema)?;
 
         if bp_schema.state.fields.len() > MAX_NUMBER_OF_BLUEPRINT_FIELDS {
             return Err(PackageError::TooManySubstateSchemas);
@@ -221,7 +223,7 @@ fn validate_package_schema(
                             default_value,
                             bp_schema.schema.v1(),
                             local_index,
-                            &mut (),
+                            &(),
                             TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH,
                         )
                         .map_err(|_| PackageError::InvalidTransientField)?;
@@ -321,10 +323,10 @@ fn validate_event_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
                 extract_package_event_static_type_id(radix_blueprint_schema_init, *type_ref)?;
 
             // Checking that the event is either a struct or an enum
-            let type_kind = schema.v1().resolve_type_kind(local_type_id).map_or(
-                Err(PackageError::FailedToResolveLocalSchema { local_type_id }),
-                Ok,
-            )?;
+            let type_kind = schema
+                .v1()
+                .resolve_type_kind(local_type_id)
+                .ok_or(PackageError::FailedToResolveLocalSchema { local_type_id })?;
             match type_kind {
                 // Structs and Enums are allowed
                 TypeKind::Enum { .. } | TypeKind::Tuple { .. } => Ok(()),
@@ -333,9 +335,7 @@ fn validate_event_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
 
             // Checking that the event name is indeed what the user claims it to be
             let actual_event_name = schema.v1().resolve_type_metadata(local_type_id).map_or(
-                Err(PackageError::FailedToResolveLocalSchema {
-                    local_type_id: local_type_id,
-                }),
+                Err(PackageError::FailedToResolveLocalSchema { local_type_id }),
                 |metadata| Ok(metadata.get_name_string()),
             )?;
 
@@ -678,7 +678,7 @@ impl SecurifiedRoleAssignment for SecurifiedPackage {
 }
 
 fn blueprint_state_schema(
-    package: PackageDefinition,
+    package: &PackageDefinition,
     blueprint_name: &str,
     system_mappings: IndexMap<usize, PartitionNumber>,
 ) -> IndexedStateSchema {
@@ -707,9 +707,8 @@ pub fn create_package_partition_substates(
 
     {
         // Note: We don't include royalty field because it's been disabled
-
         let package_schema = blueprint_state_schema(
-            PackageNativePackage::definition(),
+            &PACKAGE_PACKAGE_DEFINITION,
             PACKAGE_BLUEPRINT,
             indexmap!(PackageCollection::SchemaKeyValue.collection_index() as usize => SCHEMAS_PARTITION),
         );
@@ -729,27 +728,12 @@ pub fn create_package_partition_substates(
 
     // Metadata
     {
-        let metadata_schema = blueprint_state_schema(
-            MetadataNativePackage::definition(),
-            METADATA_BLUEPRINT,
-            indexmap!(),
-        );
-        // Additional validation has been added as part of this commit.
-        // The logic is backward compatible, as it's used by protocol updates only.
-        let metadata_system_struct =
-            MetadataNativePackage::init_system_struct(validate_metadata_init(metadata).unwrap())
-                .unwrap();
-        let metadata_substates = SystemMapper::system_struct_to_node_substates(
-            &metadata_schema,
-            metadata_system_struct,
-            METADATA_BASE_PARTITION,
-        );
-        node_substates.extend(metadata_substates);
+        node_substates.extend(create_metadata_substates(metadata));
     }
 
     {
         let role_assignment_schema = blueprint_state_schema(
-            RoleAssignmentNativePackage::definition(),
+            &ROLE_ASSIGNMENT_PACKAGE_DEFINITION,
             ROLE_ASSIGNMENT_BLUEPRINT,
             indexmap!(),
         );
@@ -789,6 +773,24 @@ pub fn create_package_partition_substates(
     }
 
     node_substates
+}
+
+pub fn create_metadata_substates(metadata: MetadataInit) -> NodeSubstates {
+    let metadata_schema = blueprint_state_schema(
+        &METADATA_PACKAGE_DEFINITION,
+        METADATA_BLUEPRINT,
+        indexmap!(),
+    );
+    // Additional validation has been added as part of this commit.
+    // The logic is backward compatible, as it's used by protocol updates only.
+    let metadata_system_struct =
+        MetadataNativePackage::init_system_struct(validate_metadata_init(metadata).unwrap())
+            .unwrap();
+    SystemMapper::system_struct_to_node_substates(
+        &metadata_schema,
+        metadata_system_struct,
+        METADATA_BASE_PARTITION,
+    )
 }
 
 fn globalize_package<Y: SystemApi<RuntimeError>>(
@@ -1020,6 +1022,7 @@ impl PackageNativePackage {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub(crate) fn init_system_struct(
         royalty_vault: Option<Vault>,
         package_structure: PackageStructure,
@@ -1033,7 +1036,7 @@ impl PackageNativePackage {
                 royalty_vault: vault,
             }
             .into_payload();
-            fields.insert(0u8, FieldValue::immutable(&royalty));
+            fields.insert(0u8, FieldValue::immutable(royalty));
         }
 
         let mut kv_entries: IndexMap<u8, IndexMap<Vec<u8>, KVEntry>> = index_map_new();
@@ -1430,6 +1433,7 @@ impl PackageNativePackage {
         Ok((address, bucket))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn publish_wasm_advanced<Y: SystemApi<RuntimeError>, V: VmApi>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
@@ -1598,7 +1602,7 @@ impl PackageAuthNativeBlueprint {
                 if let Some(access_rule) = access_rule {
                     Ok(ResolvedPermission::AccessRule(access_rule.clone()))
                 } else {
-                    let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+                    let package_address = PackageAddress::new_or_panic(receiver.0);
                     let blueprint_id =
                         BlueprintId::new(&package_address, &bp_version_key.blueprint);
                     Err(RuntimeError::SystemModuleError(
@@ -1618,9 +1622,9 @@ impl PackageAuthNativeBlueprint {
         api: &mut impl SystemBasedKernelApi,
     ) -> Result<AuthConfig, RuntimeError> {
         let package_bp_version_id = CanonicalBlueprintId {
-            address: PackageAddress::new_or_panic(receiver.0.clone()),
+            address: PackageAddress::new_or_panic(receiver.0),
             blueprint: bp_version_key.blueprint.to_string(),
-            version: bp_version_key.version.clone(),
+            version: bp_version_key.version,
         };
 
         let auth_template = api

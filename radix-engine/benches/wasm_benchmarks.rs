@@ -114,7 +114,7 @@ fn wasmi_get_instance(
     mut store: wasmi::StoreContextMut<HostState>,
     code: &[u8],
 ) -> wasmi::Instance {
-    let module = wasmi::Module::new(&engine, code).unwrap();
+    let module = wasmi::Module::new(engine, code).unwrap();
     let mut linker = <wasmi::Linker<HostState>>::new(engine);
 
     macro_rules! linker_define {

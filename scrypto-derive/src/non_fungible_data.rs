@@ -22,10 +22,10 @@ pub fn extract_attributes(
         }
 
         let mut fields = BTreeMap::new();
-        if let Ok(meta) = attr.parse_meta() {
-            if let Meta::List(MetaList { nested, .. }) = meta {
-                nested.into_iter().for_each(|m| match m {
-                    NestedMeta::Meta(m) => match m {
+        if let Ok(Meta::List(MetaList { nested, .. })) = attr.parse_meta() {
+            nested.into_iter().for_each(|m| {
+                if let NestedMeta::Meta(m) = m {
+                    match m {
                         Meta::NameValue(name_value) => {
                             if let Some(ident) = name_value.path.get_ident() {
                                 if let Lit::Str(s) = name_value.lit {
@@ -39,10 +39,9 @@ pub fn extract_attributes(
                             }
                         }
                         _ => {}
-                    },
-                    _ => {}
-                })
-            }
+                    }
+                }
+            })
         }
         return Some(fields);
     }

@@ -1,11 +1,11 @@
 use crate::blueprints::resource::CompositeRequirement::{AllOf, AnyOf};
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
+use radix_common::define_untyped_manifest_type_wrapper;
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -83,7 +83,7 @@ where
 /// Resource Proof Rules
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -133,9 +133,13 @@ impl From<ResourceOrNonFungible> for CompositeRequirement {
     }
 }
 
+define_untyped_manifest_type_wrapper!(
+    BasicRequirement => ManifestBasicRequirement(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
+
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -187,6 +191,10 @@ impl CompositeRequirement {
     }
 }
 
+define_untyped_manifest_type_wrapper!(
+    CompositeRequirement => ManifestCompositeRequirement(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
+
 /// A requirement for the immediate caller's package to equal the given package.
 pub fn package_of_direct_caller(package: PackageAddress) -> ResourceOrNonFungible {
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::package_of_direct_caller_badge(package))
@@ -200,7 +208,7 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
 }
 
 /// A requirement for the transaction to be signed using a specific key.
-pub fn signature(public_key: &impl HasPublicKeyHash) -> ResourceOrNonFungible {
+pub fn signature(public_key: impl HasPublicKeyHash) -> ResourceOrNonFungible {
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(public_key))
 }
 
@@ -254,7 +262,7 @@ where
 
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -289,6 +297,10 @@ impl From<CompositeRequirement> for AccessRule {
         AccessRule::Protected(value)
     }
 }
+
+define_untyped_manifest_type_wrapper!(
+    AccessRule => ManifestAccessRule(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+);
 
 pub trait AccessRuleVisitor {
     type Error;
@@ -338,8 +350,8 @@ mod tests {
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-        let r2 = rule!(require(signature(&public_key)));
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(public_key)));
+        let r2 = rule!(require(signature(public_key)));
 
         assert_eq!(r1, r2);
     }
@@ -349,9 +361,77 @@ mod tests {
         let private_key = Ed25519PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
-        let r2 = rule!(require(signature(&public_key)));
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(public_key)));
+        let r2 = rule!(require(signature(public_key)));
 
         assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn access_rule_can_be_converted_to_manifest_access_rule() {
+        let _ = ManifestAccessRule::from(rule!(require(XRD) && require(SYSTEM_EXECUTION_RESOURCE)));
+    }
+
+    #[test]
+    fn sbor_encoding_of_access_rule_and_manifest_access_rule_are_the_same() {
+        // Arrange
+        let rule = rule!(require(XRD) && require(SYSTEM_EXECUTION_RESOURCE));
+
+        // Act
+        let encoded_access_rule = scrypto_encode(&rule).unwrap();
+        let encoded_manifest_access_rule =
+            manifest_encode(&ManifestAccessRule::from(rule)).unwrap();
+
+        // Assert
+        let (local_type_id, versioned_schema) =
+            generate_full_schema_from_single_type::<AccessRule, ScryptoCustomSchema>();
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            &encoded_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            SCRYPTO_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Scrypto access rule payload should match AccessRule schema");
+        validate_payload_against_schema::<ManifestCustomExtension, _>(
+            &encoded_manifest_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Manifest access rule payload should match AccessRule schema");
+
+        let (local_type_id, versioned_schema) =
+            generate_full_schema_from_single_type::<ManifestAccessRule, ScryptoCustomSchema>();
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            &encoded_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            SCRYPTO_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Scrypto access rule payload should match Manifest schema");
+        validate_payload_against_schema::<ManifestCustomExtension, _>(
+            &encoded_manifest_access_rule,
+            versioned_schema.v1(),
+            local_type_id,
+            &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
+        )
+        .expect("Manifest access rule payload should match Manifest schema");
+    }
+
+    #[test]
+    fn non_enums_cant_be_decoded_as_a_manifest_access_rule() {
+        // Arrange
+        let enum_value = ManifestValue::U8 { value: 1 };
+        let encoded = manifest_encode(&enum_value).unwrap();
+
+        // Act
+        let manifest_access_rule = manifest_decode::<ManifestAccessRule>(&encoded);
+
+        // Assert
+        manifest_access_rule.expect_err("Expected decoding to fail");
     }
 }

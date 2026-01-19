@@ -201,7 +201,7 @@ impl ProtocolUpdateExecutor {
                         batch_group_index,
                         batch_group_name,
                         batch_index,
-                        batch_name: &batch_name,
+                        batch_name,
                         status_update_committed: add_status_update,
                         resultant_store: store,
                     });
@@ -233,12 +233,12 @@ pub fn generate_update_status_flash_transaction(
 
     let status = if is_last_batch {
         ProtocolUpdateStatusSummary {
-            protocol_version: protocol_version,
+            protocol_version,
             update_status: ProtocolUpdateStatus::Complete,
         }
     } else {
         ProtocolUpdateStatusSummary {
-            protocol_version: protocol_version,
+            protocol_version,
             update_status: ProtocolUpdateStatus::InProgress {
                 latest_commit: LatestProtocolUpdateCommitBatch {
                     batch_group_index,

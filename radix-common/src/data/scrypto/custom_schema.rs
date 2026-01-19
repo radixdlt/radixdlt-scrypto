@@ -301,14 +301,14 @@ impl CustomSchema for ScryptoCustomSchema {
                 if let ScryptoCustomTypeValidation::Reference(_) = custom_type_validation {
                     Ok(())
                 } else {
-                    return Err(SchemaValidationError::TypeValidationMismatch);
+                    Err(SchemaValidationError::TypeValidationMismatch)
                 }
             }
             ScryptoCustomTypeKind::Own => {
                 if let ScryptoCustomTypeValidation::Own(_) = custom_type_validation {
                     Ok(())
                 } else {
-                    return Err(SchemaValidationError::TypeValidationMismatch);
+                    Err(SchemaValidationError::TypeValidationMismatch)
                 }
             }
             ScryptoCustomTypeKind::Decimal
@@ -317,7 +317,7 @@ impl CustomSchema for ScryptoCustomSchema {
                 // All these custom type kinds only support `SchemaTypeValidation::None`.
                 // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
                 // - which isn't valid.
-                return Err(SchemaValidationError::TypeValidationMismatch);
+                Err(SchemaValidationError::TypeValidationMismatch)
             }
         }
     }

@@ -8,7 +8,6 @@ use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::model::*;
 use radix_transactions::prelude::*;
 use rand::Rng;
-use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
@@ -81,10 +80,8 @@ impl TransactionFuzzer {
 #[test]
 fn simple_transaction_fuzz_test() {
     let mut fuzzer = TransactionFuzzer::new();
-    let transactions: Vec<NotarizedTransactionV1> = (0..50)
-        .into_iter()
-        .map(|_| fuzzer.next_transaction())
-        .collect();
+    let transactions: Vec<NotarizedTransactionV1> =
+        (0..50).map(|_| fuzzer.next_transaction()).collect();
     transactions.into_iter().for_each(|transaction| {
         fuzzer.execute_single_transaction(transaction);
     });

@@ -52,7 +52,7 @@ impl DatabaseUpdates {
     pub fn node_ids(&self) -> impl Iterator<Item = NodeId> + '_ {
         self.node_updates
             .keys()
-            .map(|key| SpreadPrefixKeyMapper::from_db_node_key(key))
+            .map(SpreadPrefixKeyMapper::from_db_node_key)
     }
 }
 
@@ -124,7 +124,7 @@ impl PartitionDatabaseUpdates {
     ///
     /// This method is useful for index-updating logic which does not care about the nature of the
     /// Partition update (i.e. delta vs reset).
-    pub fn get_substate_change(&self, sort_key: &DbSortKey) -> Option<DatabaseUpdateRef> {
+    pub fn get_substate_change(&self, sort_key: &DbSortKey) -> Option<DatabaseUpdateRef<'_>> {
         match self {
             Self::Delta { substate_updates } => {
                 substate_updates.get(sort_key).map(|update| match update {
@@ -137,7 +137,7 @@ impl PartitionDatabaseUpdates {
             } => new_substate_values
                 .get(sort_key)
                 .map(|value| DatabaseUpdateRef::Set(value))
-                .or_else(|| Some(DatabaseUpdateRef::Delete)),
+                .or(Some(DatabaseUpdateRef::Delete)),
         }
     }
 }
@@ -623,7 +623,7 @@ fn optional_db_sort_key<'a>(
 }
 
 fn decode_key<K: ScryptoDecode>(raw: &[u8]) -> K {
-    scrypto_decode::<K>(&raw).unwrap_or_else(|err| {
+    scrypto_decode::<K>(raw).unwrap_or_else(|err| {
         panic!(
             "Expected key to be decodable as {}. Error: {:?}.",
             core::any::type_name::<K>(),
@@ -633,7 +633,7 @@ fn decode_key<K: ScryptoDecode>(raw: &[u8]) -> K {
 }
 
 fn decode_value<V: ScryptoDecode>(raw: &[u8]) -> V {
-    scrypto_decode::<V>(&raw).unwrap_or_else(|err| {
+    scrypto_decode::<V>(raw).unwrap_or_else(|err| {
         panic!(
             "Expected value to be decodable as {}. Error: {:?}.",
             core::any::type_name::<V>(),

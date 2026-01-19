@@ -12,8 +12,8 @@ pub fn verify_and_recover(
             public_key,
             signature,
         } => {
-            if verify_ed25519(&signed_hash, public_key, signature) {
-                Some(public_key.clone().into())
+            if verify_ed25519(signed_hash, public_key, signature) {
+                Some((*public_key).into())
             } else {
                 None
             }
@@ -24,10 +24,10 @@ pub fn verify_and_recover(
 pub fn verify(signed_hash: &Hash, public_key: &PublicKey, signature: &SignatureV1) -> bool {
     match (public_key, signature) {
         (PublicKey::Secp256k1(public_key), SignatureV1::Secp256k1(signature)) => {
-            verify_secp256k1(&signed_hash, public_key, signature)
+            verify_secp256k1(signed_hash, public_key, signature)
         }
         (PublicKey::Ed25519(public_key), SignatureV1::Ed25519(signature)) => {
-            verify_ed25519(&signed_hash, public_key, signature)
+            verify_ed25519(signed_hash, public_key, signature)
         }
         _ => false,
     }
@@ -35,10 +35,10 @@ pub fn verify(signed_hash: &Hash, public_key: &PublicKey, signature: &SignatureV
 
 pub trait SignedIntentTreeStructure {
     type IntentTree: IntentTreeStructure;
-    fn root_signatures(&self) -> PendingIntentSignatureValidations;
+    fn root_signatures(&self) -> PendingIntentSignatureValidations<'_>;
     fn non_root_subintent_signatures(
         &self,
-    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations>;
+    ) -> impl ExactSizeIterator<Item = PendingSubintentSignatureValidations<'_>>;
     fn intent_tree(&self) -> &Self::IntentTree;
     fn transaction_version(&self) -> TransactionVersion;
 
@@ -263,14 +263,13 @@ impl<'a> AllPendingSignatureValidations<'a> {
                     return Err(SignatureValidationError::InvalidNotarySignature);
                 }
 
-                if notary_is_signatory {
-                    if !intent_public_keys.insert(notary_public_key)
-                        && !config.allow_notary_to_duplicate_signer(transaction_version)
-                    {
-                        return Err(
-                            SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
-                        );
-                    }
+                if notary_is_signatory
+                    && !intent_public_keys.insert(notary_public_key)
+                    && !config.allow_notary_to_duplicate_signer(transaction_version)
+                {
+                    return Err(
+                        SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
+                    );
                 }
 
                 intent_public_keys
@@ -282,18 +281,17 @@ impl<'a> AllPendingSignatureValidations<'a> {
             } => {
                 let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
                 for key in intent_public_keys {
-                    if !checked_intent_public_keys.insert(key.clone()) {
+                    if !checked_intent_public_keys.insert(*key) {
                         return Err(SignatureValidationError::DuplicateSigner);
                     }
                 }
-                if notary_is_signatory {
-                    if !checked_intent_public_keys.insert(notary_public_key)
-                        && !config.allow_notary_to_duplicate_signer(transaction_version)
-                    {
-                        return Err(
-                            SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
-                        );
-                    }
+                if notary_is_signatory
+                    && !checked_intent_public_keys.insert(notary_public_key)
+                    && !config.allow_notary_to_duplicate_signer(transaction_version)
+                {
+                    return Err(
+                        SignatureValidationError::NotaryIsSignatorySoShouldNotAlsoBeASigner,
+                    );
                 }
                 checked_intent_public_keys
             }
@@ -315,7 +313,7 @@ impl<'a> AllPendingSignatureValidations<'a> {
             PendingIntentSignatureValidations::PreviewSubintent { intent_public_keys } => {
                 let mut checked_intent_public_keys: IndexSet<PublicKey> = Default::default();
                 for key in intent_public_keys {
-                    if !checked_intent_public_keys.insert(key.clone()) {
+                    if !checked_intent_public_keys.insert(*key) {
                         return Err(SignatureValidationError::DuplicateSigner);
                     }
                 }
@@ -442,7 +440,7 @@ mod tests {
 
     impl<'a, S: Signer> Signer for FakeSigner<'a, S> {
         fn public_key(&self) -> PublicKey {
-            self.signer.public_key().into()
+            self.signer.public_key()
         }
 
         fn sign_without_public_key(&self, message_hash: &impl IsHash) -> SignatureV1 {
@@ -494,7 +492,7 @@ mod tests {
         ) -> Result<IndexSet<PublicKey>, TransactionValidationError> {
             let signer_keys = match version {
                 TransactionVersion::V1 => {
-                    unsigned_v1_builder(notary.public_key().into())
+                    unsigned_v1_builder(notary.public_key())
                         .sign(signer)
                         .notarize(notary)
                         .build()
@@ -604,7 +602,6 @@ mod tests {
                 .add_manifest_calling_each_child_once()
                 .multi_sign(
                     (0..root_signature_count)
-                        .into_iter()
                         .map(|i| Secp256k1PrivateKey::from_u64((100 + i) as u64).unwrap()),
                 )
                 .default_notarize_and_validate()

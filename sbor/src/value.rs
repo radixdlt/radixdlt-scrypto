@@ -1,12 +1,10 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 /// Represents any value conforming to the SBOR value model.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,6 +82,10 @@ impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
             discriminator,
             fields: fields.into_iter().collect(),
         }
+    }
+
+    pub fn custom(value: Y) -> Self {
+        Value::Custom { value }
     }
 }
 
@@ -363,9 +365,81 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
 }
 
 //==============================================
+// TUPLES
+//==============================================
+
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TupleValue<X: CustomValueKind, Y: CustomValue<X>> {
+    pub fields: Vec<Value<X, Y>>,
+}
+
+impl<X: CustomValueKind, Y: CustomValue<X>> Categorize<X> for TupleValue<X, Y> {
+    fn value_kind() -> ValueKind<X> {
+        ValueKind::Tuple
+    }
+}
+
+impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode<X, E>
+    for TupleValue<X, Y>
+{
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_size(self.fields.len())?;
+        for field in &self.fields {
+            encoder.encode(field)?;
+        }
+        Ok(())
+    }
+}
+
+impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode<X, D>
+    for TupleValue<X, Y>
+{
+    #[inline]
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<X>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        let length = decoder.read_size()?;
+        let mut fields = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+        for _ in 0..length {
+            fields.push(decoder.decode()?);
+        }
+        Ok(Self { fields })
+    }
+}
+
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Describe<C>
+    for TupleValue<X, Y>
+{
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(basic_well_known_types::ANY_TYPE);
+
+    fn type_data() -> TypeData<C, RustTypeId> {
+        basic_well_known_types::any_type_data()
+    }
+}
+
+//==============================================
 // ENUMS
 //==============================================
 
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnumVariantValue<X: CustomValueKind, Y: CustomValue<X>> {
     pub discriminator: u8,
     pub fields: Vec<Value<X, Y>>,
@@ -426,9 +500,9 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<RustTypeId>> Descr
     }
 }
 
-///==============================================
-/// (DEPRECATED) TRAVERSAL
-///==============================================
+//==============================================
+// (DEPRECATED) TRAVERSAL
+//==============================================
 
 pub fn traverse_any<X: CustomValueKind, Y: CustomValue<X>, V: ValueVisitor<X, Y, Err = E>, E>(
     path: &mut SborPathBuf,
@@ -515,6 +589,7 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
     fn visit_map(
         &mut self,
         _path: &mut SborPathBuf,

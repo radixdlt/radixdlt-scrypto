@@ -225,7 +225,7 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
                 })
                 .unwrap_or_else(|| AssociatedSubstateValue::Unchanged);
             self.base_store.associate_substate(
-                &self.stored_node_key(&key),
+                &self.stored_node_key(key),
                 &self.partition_key,
                 &sort_key,
                 substate_value,

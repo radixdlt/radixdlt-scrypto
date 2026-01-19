@@ -63,9 +63,9 @@ impl Publish {
             let build_artifacts = build_package(
                 &self.path,
                 self.disable_wasm_opt,
-                self.log_level.unwrap_or(Level::default()),
+                self.log_level.unwrap_or_default(),
                 false,
-                &[],
+                [],
             )
             .map_err(Error::BuildError)?;
             if build_artifacts.len() > 1 {
@@ -83,11 +83,13 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let package_definition: PackageDefinition = manifest_decode(
+        let package_definition = manifest_decode::<ManifestPackageDefinition>(
             &fs::read(&definition_path)
                 .map_err(|err| Error::IOErrorAtPath(err, definition_path))?,
         )
-        .map_err(Error::SborDecodeError)?;
+        .map_err(Error::SborDecodeError)?
+        .try_into_typed()
+        .map_err(Error::PackageDefinitionConversionError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let SimulatorEnvironment { mut db, .. } = SimulatorEnvironment::new()?;

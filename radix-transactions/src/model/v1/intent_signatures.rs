@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 /// Represents any natively supported signature, including public key.
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
@@ -21,8 +21,8 @@ pub enum SignatureWithPublicKeyV1 {
 impl SignatureWithPublicKeyV1 {
     pub fn signature(&self) -> SignatureV1 {
         match &self {
-            Self::Secp256k1 { signature } => signature.clone().into(),
-            Self::Ed25519 { signature, .. } => signature.clone().into(),
+            Self::Secp256k1 { signature } => (*signature).into(),
+            Self::Ed25519 { signature, .. } => (*signature).into(),
         }
     }
 }

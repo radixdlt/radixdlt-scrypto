@@ -7,6 +7,7 @@ define_single_versioned! {
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
             cuttlefish = "FILE:protocol_update_status_substate_cuttlefish_schema.bin",
+            dugong = "FILE:protocol_update_status_substate_dugong_schema.bin",
         ))]
     ]
 }
@@ -252,6 +253,11 @@ define_protocol_version_and_updates! {
             variant_name: CuttlefishPart2,
             logical_name: "cuttlefish-part2",
             display_name: "Cuttlefish (Part 2)",
+        },
+        {
+            variant_name: Dugong,
+            logical_name: "dugong",
+            display_name: "Dugong",
         }
     ]
 }
@@ -286,11 +292,7 @@ impl ProtocolVersion {
     }
 
     pub fn next(&self) -> Option<Self> {
-        Self::VARIANTS
-            .iter()
-            .skip_while(|v| v <= &self)
-            .next()
-            .cloned()
+        Self::VARIANTS.iter().find(|&v| v > self).cloned()
     }
 }
 
@@ -300,7 +302,7 @@ mod tests {
 
     #[test]
     fn assert_latest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::CuttlefishPart2);
+        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Dugong);
     }
 
     #[test]
@@ -334,6 +336,7 @@ mod tests {
                 ProtocolVersion::Bottlenose,
                 ProtocolVersion::CuttlefishPart1,
                 ProtocolVersion::CuttlefishPart2,
+                ProtocolVersion::Dugong,
             ],
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))

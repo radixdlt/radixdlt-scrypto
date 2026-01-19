@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod error;
 mod receipt;
 mod serialization_modifiers;

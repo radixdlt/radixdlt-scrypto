@@ -2,13 +2,12 @@ use crate::data::scrypto::model::Own;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct GlobalAddressReservation(pub Own);
@@ -41,7 +40,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
+        Own::decode_body_with_value_kind(decoder, value_kind).map(Self)
     }
 }
 

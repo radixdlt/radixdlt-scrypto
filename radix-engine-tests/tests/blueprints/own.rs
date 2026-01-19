@@ -23,7 +23,7 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert

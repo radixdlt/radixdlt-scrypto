@@ -1,5 +1,3 @@
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
 use sbor::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
@@ -13,7 +11,10 @@ use crate::*;
 
 pub const DECIMAL_SIZE: usize = Decimal::BITS / 8;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestDecimal(pub [u8; DECIMAL_SIZE]);
 

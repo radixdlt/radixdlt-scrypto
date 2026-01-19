@@ -30,6 +30,6 @@ impl CustomTraversal for ScryptoCustomTraversal {
             reader,
             ValueKind::Custom(custom_value_kind),
         )
-        .map(|v| ScryptoCustomTerminalValueRef(v))
+        .map(ScryptoCustomTerminalValueRef)
     }
 }

@@ -27,9 +27,9 @@ pub enum Emitter {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
@@ -53,6 +53,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Emitter {
 }
 
 impl EventTypeIdentifier {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         let emitter_size = match &self.0 {
             Emitter::Function(blueprint_id) => blueprint_id.len(),

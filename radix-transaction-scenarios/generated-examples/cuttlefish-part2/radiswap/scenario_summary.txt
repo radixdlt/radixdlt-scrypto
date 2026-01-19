@@ -1,9 +1,9 @@
 Name: radiswap
 
 == SUMMARY HASHES ==
-These Cuttlefish (Part 2) hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 87d15699fcc8b850 (allowed to change if not deployed to any network)
-Events       : f551c456fde9a0cf (allowed to change if not deployed to any network)
+These Cuttlefish (Part 2) hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 87d15699fcc8b850 (should never change)
+Events       : f551c456fde9a0cf (should never change)
 
 == INTERESTING ADDRESSES ==
 - radiswap_dapp_definition_account: account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd

@@ -2,14 +2,13 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_rust::copy_u8_array;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Reference(pub NodeId);
 
@@ -78,6 +77,6 @@ manifest_type!(Reference, ManifestCustomValueKind::Address, NodeId::LENGTH);
 
 impl fmt::Debug for Reference {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "Reference({})", hex::encode(&self.0))
+        write!(f, "Reference({})", hex::encode(self.0))
     }
 }

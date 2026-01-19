@@ -13,7 +13,7 @@ use std::time::Duration;
 use tar::Archive;
 
 pub enum TxnReader {
-    TransactionFile(Archive<GzDecoder<File>>),
+    TransactionFile(Box<Archive<GzDecoder<File>>>),
     StateManagerDatabaseDir(PathBuf),
 }
 
@@ -28,7 +28,7 @@ impl TxnReader {
             TxnReader::TransactionFile(archive) => {
                 for entry in archive.entries().map_err(Error::IOError)? {
                     // read the entry
-                    let mut entry = entry.map_err(|e| Error::IOError(e))?;
+                    let mut entry = entry.map_err(Error::IOError)?;
                     let tx_version = entry
                         .header()
                         .path()
@@ -37,9 +37,7 @@ impl TxnReader {
                         .and_then(|s| u64::from_str(&s).ok())
                         .ok_or(Error::InvalidTransactionArchive)?;
                     let mut tx_payload = Vec::new();
-                    entry
-                        .read_to_end(&mut tx_payload)
-                        .map_err(|e| Error::IOError(e))?;
+                    entry.read_to_end(&mut tx_payload).map_err(Error::IOError)?;
 
                     if tx_version <= from_version {
                         continue;
@@ -72,14 +70,14 @@ impl TxnReader {
                 loop {
                     db.try_catch_up_with_primary()
                         .expect("DB catch up with primary failed");
-                    let mut txn_iter = db.iterator_cf(
+                    let txn_iter = db.iterator_cf(
                         &db.cf_handle("raw_ledger_transactions").unwrap(),
                         IteratorMode::From(
                             &iter_start_state_version.to_be_bytes(),
                             Direction::Forward,
                         ),
                     );
-                    while let Some(next_txn) = txn_iter.next() {
+                    for next_txn in txn_iter {
                         let next_txn = next_txn.unwrap();
                         tx.send(RawLedgerTransaction::from_vec(next_txn.1.to_vec()))
                             .unwrap();

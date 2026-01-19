@@ -135,10 +135,10 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
         if self.should_embed_value_in_contextual_json_map() {
             self.fields
                 .push(("kind", SerializableType::String(value_kind.to_string())));
-            type_name.map(|type_name| {
+            if let Some(type_name) = type_name {
                 self.fields
                     .push(("type_name", SerializableType::Str(type_name)))
-            });
+            }
         }
         if let ValueContext::IncludeFieldName { field_name: key } = self.value_context {
             self.fields.push(("field_name", SerializableType::Str(key)));
@@ -155,10 +155,10 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
                 "kind",
                 SerializableType::String(value_kind_name.to_string()),
             ));
-            type_name.map(|type_name| {
+            if let Some(type_name) = type_name {
                 self.fields
                     .push(("type_name", SerializableType::Str(type_name)))
-            });
+            }
         }
         if let ValueContext::IncludeFieldName { field_name: key } = self.value_context {
             self.fields.push(("field_name", SerializableType::Str(key)));
@@ -175,10 +175,10 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
                 "element_kind",
                 SerializableType::String(element_value_kind.to_string()),
             ));
-            element_type_name.map(|element_name| {
+            if let Some(element_name) = element_type_name {
                 self.fields
                     .push(("element_name", SerializableType::Str(element_name)))
-            });
+            }
         }
     }
 
@@ -193,28 +193,28 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
                 "key_kind",
                 SerializableType::String(key_value_kind.to_string()),
             ));
-            map_data.key_name.map(|key_name| {
+            if let Some(key_name) = map_data.key_name {
                 self.fields
                     .push(("key_type_name", SerializableType::Str(key_name)))
-            });
+            }
             self.fields.push((
                 "value_kind",
                 SerializableType::String(value_value_kind.to_string()),
             ));
-            map_data.value_name.map(|value_name| {
+            if let Some(value_name) = map_data.value_name {
                 self.fields
                     .push(("value_type_name", SerializableType::Str(value_name)))
-            });
+            }
         }
     }
 
     pub fn add_enum_variant_details(&mut self, variant_id: u8, variant_name: Option<&'a str>) {
         self.fields
             .push(("variant_id", SerializableType::U8(variant_id)));
-        variant_name.map(|variant_name| {
+        if let Some(variant_name) = variant_name {
             self.fields
                 .push(("variant_name", SerializableType::Str(variant_name)))
-        });
+        }
     }
 
     pub fn add_field(

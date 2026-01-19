@@ -10,10 +10,10 @@ use crate::internal_prelude::*;
 ///
 /// It includes two parts:
 /// * The [`TransactionIntentV2`] which contains a representention of an intent tree
-/// with a root transaction intent, and other subintent descendents. These subintents are
-/// flattened into an array in the model.
+///   with a root transaction intent, and other subintent descendents. These subintents are
+///   flattened into an array in the model.
 /// * It also includes intent signatures, some for this transaction intent, and separately,
-/// an array of signatures for each each flattened subintents.
+///   an array of signatures for each each flattened subintents.
 ///
 /// ## Similar models
 ///

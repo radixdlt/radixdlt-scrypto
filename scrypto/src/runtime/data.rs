@@ -98,6 +98,12 @@ pub struct ComponentStatePointer<V: 'static + ScryptoEncode + ScryptoDecode> {
     phantom_data: PhantomData<V>,
 }
 
+impl<V: 'static + ScryptoEncode + ScryptoDecode> Default for ComponentStatePointer<V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     pub fn new() -> Self {
         Self {

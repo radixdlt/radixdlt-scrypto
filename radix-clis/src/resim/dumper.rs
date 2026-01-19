@@ -87,7 +87,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let blueprint_id = object_info.blueprint_info.blueprint_id;
 
         let mut accounter = ResourceAccounter::new(substate_db);
-        accounter.traverse(component_address.as_node_id().clone());
+        accounter.traverse(*component_address.as_node_id());
         let resources = accounter.close();
 
         (
@@ -216,12 +216,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             )
             .map_err(|_| EntityDumpError::InvalidStore("Missing NonFungible IdType".to_string()))?;
 
-        writeln!(
-            output,
-            "{}: {}",
-            "Resource Type".green().bold(),
-            "Non-fungible"
-        );
+        writeln!(output, "{}: Non-fungible", "Resource Type".green().bold());
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
         if info
@@ -254,7 +249,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
             .fully_update_and_into_latest_version();
 
-        writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
+        writeln!(output, "{}: Fungible", "Resource Type".green().bold());
         writeln!(
             output,
             "{}: {:?}",

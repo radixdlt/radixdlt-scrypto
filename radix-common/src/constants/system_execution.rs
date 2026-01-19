@@ -15,11 +15,11 @@ impl SystemExecution {
     }
 }
 
-impl Into<NonFungibleGlobalId> for SystemExecution {
-    fn into(self) -> NonFungibleGlobalId {
+impl From<SystemExecution> for NonFungibleGlobalId {
+    fn from(val: SystemExecution) -> Self {
         NonFungibleGlobalId::new(
             SYSTEM_EXECUTION_RESOURCE,
-            NonFungibleLocalId::integer(self as u64),
+            NonFungibleLocalId::integer(val as u64),
         )
     }
 }

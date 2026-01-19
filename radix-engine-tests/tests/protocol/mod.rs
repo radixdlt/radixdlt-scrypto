@@ -4,6 +4,7 @@ mod account_cuttlefish;
 mod always_visible_global_nodes;
 mod consensus_manager;
 mod cuttlefish_transaction_changes;
+mod dugong_no_auth_changes;
 mod metadata;
 mod protocol_updates;
 mod transaction;

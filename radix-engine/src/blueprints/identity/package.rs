@@ -174,7 +174,7 @@ impl IdentityNativePackage {
     }
 }
 
-const SECURIFY_ROLE: &'static str = "securify";
+const SECURIFY_ROLE: &str = "securify";
 
 struct SecurifiedIdentity;
 

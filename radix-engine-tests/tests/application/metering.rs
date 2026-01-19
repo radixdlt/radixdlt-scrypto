@@ -45,7 +45,7 @@ fn run_all(mode: CostingTaskMode) {
             let receipt = run(ledger);
             let relative_file_path = format!("{}/{}", protocol_version.logical_name(), file);
             mode.run(
-                &base_path,
+                base_path,
                 &relative_file_path,
                 &receipt.fee_summary,
                 &receipt.fee_details.unwrap(),
@@ -117,7 +117,7 @@ fn run_basic_transfer(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt 
     let (receipt, _) = execute_with_time_logging(
         &mut ledger,
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key1)],
+        vec![NonFungibleGlobalId::from_public_key(public_key1)],
     );
     receipt.expect_commit(true);
     receipt
@@ -142,7 +142,7 @@ fn run_basic_transfer_to_preallocated_account(
     let (receipt, _) = execute_with_time_logging(
         &mut ledger,
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key1)],
+        vec![NonFungibleGlobalId::from_public_key(public_key1)],
     );
     receipt.expect_commit(true);
     receipt
@@ -160,14 +160,16 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     let package_address = ledger.publish_package(
         (
             include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!(
+            manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
                 "radix-transaction-scenarios",
                 "radiswap.rpd"
             ))
+            .unwrap()
+            .try_into_typed()
             .unwrap(),
         ),
         btreemap!(),
-        OwnerRole::Fixed(rule!(require(signature(&pk1)))),
+        OwnerRole::Fixed(rule!(require(signature(pk1)))),
     );
 
     // Instantiate Radiswap
@@ -181,11 +183,11 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
                     package_address,
                     "Radiswap",
                     "new",
-                    manifest_args!(OwnerRole::None, btc, eth),
+                    manifest_args!(ManifestOwnerRole::from(OwnerRole::None), btc, eth),
                 )
                 .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(pk2)],
         )
         .expect_commit(true)
         .output(1);
@@ -210,7 +212,7 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
                 })
                 .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(pk2)],
         )
         .expect_commit(true);
 
@@ -223,7 +225,7 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .try_deposit_entire_worktop_or_abort(account3, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(pk2)],
         )
         .expect_commit_success();
     assert_eq!(ledger.get_component_balance(account3, btc), btc_amount);
@@ -241,7 +243,7 @@ fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
             })
             .try_deposit_entire_worktop_or_abort(account3, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk3)],
+        vec![NonFungibleGlobalId::from_public_key(pk3)],
     );
     let remaining_btc = ledger.get_component_balance(account3, btc);
     let eth_received = ledger.get_component_balance(account3, eth);
@@ -265,14 +267,16 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
         (
             include_workspace_asset_bytes!("radix-transaction-scenarios", "flash_loan.wasm")
                 .to_vec(),
-            manifest_decode(include_workspace_asset_bytes!(
+            manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
                 "radix-transaction-scenarios",
                 "flash_loan.rpd"
             ))
+            .unwrap()
+            .try_into_typed()
             .unwrap(),
         ),
         btreemap!(),
-        OwnerRole::Fixed(rule!(require(signature(&pk1)))),
+        OwnerRole::Fixed(rule!(require(signature(pk1)))),
     );
 
     // Instantiate flash_loan
@@ -293,7 +297,7 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
                 })
                 .try_deposit_entire_worktop_or_abort(account2, None)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(pk2)],
         )
         .expect_commit(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
@@ -318,7 +322,7 @@ fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
             })
             .try_deposit_entire_worktop_or_abort(account3, None)
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&pk3)],
+        vec![NonFungibleGlobalId::from_public_key(pk3)],
     );
     receipt.expect_commit(true);
     let new_balance = ledger.get_component_balance(account3, XRD);
@@ -356,7 +360,7 @@ fn run_publish_large_package(mut ledger: DefaultLedgerSimulator) -> TransactionR
             None,
             code,
             PackageDefinition::default(),
-            BTreeMap::new(),
+            MetadataInit::default(),
             OwnerRole::None,
         )
         .build();
@@ -501,10 +505,12 @@ fn run_crypto_utils_tests(mut ledger: DefaultLedgerSimulator) -> TransactionRece
     let package_address = ledger.publish_package_simple((
         include_workspace_asset_bytes!("radix-transaction-scenarios", "crypto_scrypto_v2.wasm")
             .to_vec(),
-        manifest_decode(include_workspace_asset_bytes!(
+        manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
             "radix-transaction-scenarios",
             "crypto_scrypto_v2.rpd"
         ))
+        .unwrap()
+        .try_into_typed()
         .unwrap(),
     ));
 
@@ -664,7 +670,7 @@ fn can_run_large_manifest() {
     let (receipt, _) = execute_with_time_logging(
         &mut ledger,
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -688,7 +694,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let (receipt, _) = execute_with_time_logging(
         &mut ledger,
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -716,7 +722,7 @@ fn setup_ledger_with_fee_blueprint_component() -> (DefaultLedgerSimulator, Compo
                 )
             })
             .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     let commit_result = receipt1.expect_commit(true);
     let component_address = commit_result.new_component_addresses()[0];
@@ -768,10 +774,12 @@ impl NonFungibleData for TestNonFungibleData {
 fn publish_package_1mib() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let code = include_workspace_asset_bytes!("radix-engine-tests", "large_package.wasm").to_vec();
-    let definition = manifest_decode(include_workspace_asset_bytes!(
+    let definition = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-engine-tests",
         "large_package.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);
@@ -926,8 +934,7 @@ fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejecte
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("0.2"))
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
     receipt.expect_commit_success();
 
     let manifest = ManifestBuilder::new()
@@ -943,8 +950,7 @@ fn transaction_with_large_payload_but_insufficient_fee_payment_should_be_rejecte
             builder
         })
         .build();
-    let receipt =
-        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+    let receipt = ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(pk)]);
     receipt.expect_specific_rejection(|e| {
         matches!(e, RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_))
     })

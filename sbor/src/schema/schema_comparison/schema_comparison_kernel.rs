@@ -260,18 +260,16 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         compared_type_id: LocalTypeId,
     ) -> ShallowTypeComparisonResult {
         // Quick short-circuit when comparing equal well-known types
-        match (base_type_id, compared_type_id) {
-            (
-                LocalTypeId::WellKnown(base_well_known),
-                LocalTypeId::WellKnown(compared_well_known),
-            ) => {
-                if base_well_known == compared_well_known {
-                    return ShallowTypeComparisonResult::no_child_checks_required(
-                        TypeComparisonStatus::Pass,
-                    );
-                }
+        if let (
+            LocalTypeId::WellKnown(base_well_known),
+            LocalTypeId::WellKnown(compared_well_known),
+        ) = (base_type_id, compared_type_id)
+        {
+            if base_well_known == compared_well_known {
+                return ShallowTypeComparisonResult::no_child_checks_required(
+                    TypeComparisonStatus::Pass,
+                );
             }
-            _ => {}
         }
 
         // Load type data from each schema
@@ -295,7 +293,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                 children_needing_checking,
             } = self.compare_type_kind_internal(base_type_kind, compared_type_kind);
 
-            if errors.len() > 0 {
+            if !errors.is_empty() {
                 for error in errors {
                     self.errors.record_error(
                         error,
@@ -344,14 +342,14 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             }
         }
 
-        return ShallowTypeComparisonResult {
+        ShallowTypeComparisonResult {
             shallow_status: if error_recorded {
                 TypeComparisonStatus::Failure
             } else {
                 TypeComparisonStatus::Pass
             },
             child_checks_required: further_checks_required,
-        };
+        }
     }
 
     fn compare_type_kind_internal(
@@ -374,7 +372,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             // * In case they fail other checks (e.g. ancestor types on the base side required particular type names,
             //   which have now disappeared because the Compared side is Any)
             // * To ensure we pass completeness checks on the base side
-            visit_type_kind_children(&base_type_kind, |child_type_locator, child_type_kind| {
+            visit_type_kind_children(base_type_kind, |child_type_locator, child_type_kind| {
                 result.add_child_to_check(
                     child_type_locator,
                     child_type_kind,
@@ -468,8 +466,8 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     .cloned()
                     .collect();
 
-                if base_variants_missing_in_compared.len() > 0
-                    || (compared_variants_missing_in_base.len() > 0
+                if !base_variants_missing_in_compared.is_empty()
+                    || (!compared_variants_missing_in_base.is_empty()
                         && !settings.allow_new_enum_variants)
                 {
                     result.add_error(SchemaComparisonErrorDetail::EnumSupportedVariantsMismatch {
@@ -727,25 +725,21 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             .settings
             .completeness
             .allow_root_unreachable_types_in_base_schema
-        {
-            if self.base_local_types_reachable_from_a_root.len()
+            && self.base_local_types_reachable_from_a_root.len()
                 < self.base_schema.type_metadata.len()
-            {
-                for (local_type_index, metadata) in
-                    self.base_schema.type_metadata.iter().enumerate()
+        {
+            for (local_type_index, metadata) in self.base_schema.type_metadata.iter().enumerate() {
+                if !self
+                    .base_local_types_reachable_from_a_root
+                    .contains_key(&local_type_index)
                 {
-                    if !self
-                        .base_local_types_reachable_from_a_root
-                        .contains_key(&local_type_index)
-                    {
-                        let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
-                        self.errors.record_error_with_unvisited_location(
-                            SchemaComparisonErrorDetail::TypeUnreachableFromRootInBaseSchema {
-                                local_type_index,
-                                type_name,
-                            },
-                        )
-                    }
+                    let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
+                    self.errors.record_error_with_unvisited_location(
+                        SchemaComparisonErrorDetail::TypeUnreachableFromRootInBaseSchema {
+                            local_type_index,
+                            type_name,
+                        },
+                    )
                 }
             }
         }
@@ -753,25 +747,23 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             .settings
             .completeness
             .allow_root_unreachable_types_in_compared_schema
-        {
-            if self.compared_local_types_reachable_from_a_root.len()
+            && self.compared_local_types_reachable_from_a_root.len()
                 < self.compared_schema.type_metadata.len()
+        {
+            for (local_type_index, metadata) in
+                self.compared_schema.type_metadata.iter().enumerate()
             {
-                for (local_type_index, metadata) in
-                    self.compared_schema.type_metadata.iter().enumerate()
+                if !self
+                    .compared_local_types_reachable_from_a_root
+                    .contains_key(&local_type_index)
                 {
-                    if !self
-                        .compared_local_types_reachable_from_a_root
-                        .contains_key(&local_type_index)
-                    {
-                        let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
-                        self.errors.record_error_with_unvisited_location(
-                            SchemaComparisonErrorDetail::TypeUnreachableFromRootInComparedSchema {
-                                local_type_index,
-                                type_name,
-                            },
-                        )
-                    }
+                    let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
+                    self.errors.record_error_with_unvisited_location(
+                        SchemaComparisonErrorDetail::TypeUnreachableFromRootInComparedSchema {
+                            local_type_index,
+                            type_name,
+                        },
+                    )
                 }
             }
         }
@@ -790,7 +782,7 @@ fn visit_type_kind_children<T: CustomTypeKind<LocalTypeId>>(
     type_kind: &TypeKind<T, LocalTypeId>,
     mut visitor: impl FnMut(ChildTypeLocator, LocalTypeId),
 ) {
-    return match type_kind {
+    match type_kind {
         TypeKind::Any
         | TypeKind::Bool
         | TypeKind::I8
@@ -844,7 +836,7 @@ fn visit_type_kind_children<T: CustomTypeKind<LocalTypeId>>(
         }
         // At present, assume that custom types are leaf types.
         TypeKind::Custom(_) => {}
-    };
+    }
 }
 
 struct ErrorsAggregator<S: CustomSchema> {

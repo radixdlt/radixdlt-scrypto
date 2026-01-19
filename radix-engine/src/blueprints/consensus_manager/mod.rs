@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod consensus_manager;
 mod events;
 mod package;

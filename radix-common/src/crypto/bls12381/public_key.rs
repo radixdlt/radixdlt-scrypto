@@ -1,14 +1,13 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use blst::{
     min_pk::{AggregatePublicKey, PublicKey},
     BLST_ERROR,
 };
 
 /// Represents a BLS12-381 G1 public key.
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct Bls12381G1PublicKey(
@@ -35,10 +34,7 @@ impl Bls12381G1PublicKey {
         if public_keys.is_empty() {
             return Err(ParseBlsPublicKeyError::NoPublicKeysGiven);
         }
-        let serialized_pks = public_keys
-            .into_iter()
-            .map(|pk| pk.as_ref())
-            .collect::<Vec<_>>();
+        let serialized_pks = public_keys.iter().map(|pk| pk.as_ref()).collect::<Vec<_>>();
 
         let pk = AggregatePublicKey::aggregate_serialized(&serialized_pks, should_validate)?
             .to_public_key();

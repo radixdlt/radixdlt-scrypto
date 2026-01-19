@@ -117,7 +117,7 @@ pub fn parse_resource_specifier(
             .parse()
             .map_err(ParseResourceSpecifierError::InvalidAmount)?;
         let resource_address =
-            ResourceAddress::try_from_bech32(&address_bech32_decoder, resource_address_string)
+            ResourceAddress::try_from_bech32(address_bech32_decoder, resource_address_string)
                 .ok_or(ParseResourceSpecifierError::InvalidResourceAddress(
                     resource_address_string.to_string(),
                 ))?;
@@ -128,7 +128,7 @@ pub fn parse_resource_specifier(
         // lookup
         let resource_address_string = tokens[0];
         let resource_address =
-            ResourceAddress::try_from_bech32(&address_bech32_decoder, resource_address_string)
+            ResourceAddress::try_from_bech32(address_bech32_decoder, resource_address_string)
                 .ok_or(ParseResourceSpecifierError::InvalidResourceAddress(
                     resource_address_string.to_string(),
                 ))?;

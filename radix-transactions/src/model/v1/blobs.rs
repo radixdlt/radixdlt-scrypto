@@ -19,11 +19,7 @@ impl BlobsV1 {
 
 impl From<IndexMap<Hash, Vec<u8>>> for BlobsV1 {
     fn from(blobs: IndexMap<Hash, Vec<u8>>) -> Self {
-        let blobs = blobs
-            .into_values()
-            .into_iter()
-            .map(|blob| BlobV1(blob))
-            .collect();
+        let blobs = blobs.into_values().map(BlobV1).collect();
         Self { blobs }
     }
 }

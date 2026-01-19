@@ -36,7 +36,7 @@ impl MultiResourcePoolBlueprint {
 
         // A multi-resource pool can not be created with no resources - at minimum there should be
         // one resource.
-        if resource_addresses.len() < 1 {
+        if resource_addresses.is_empty() {
             return Err(Error::CantCreatePoolWithLessThanOneResource.into());
         }
 
@@ -141,9 +141,9 @@ impl MultiResourcePoolBlueprint {
 
     Note that this function checks to ensure that:
     - Some amount of resources were provided for each of the resources in the pool, otherwise the
-    operation errors out.
+      operation errors out.
     - No buckets are provided which do not belong to the liquidity pool. If this happens then the
-    contribution logic will fail and abort the transaction.
+      contribution logic will fail and abort the transaction.
 
     Note: it is acceptable for two buckets to contain the same resource, as long as the above checks
     pass then this is acceptable and the pool can account for it accordingly.
@@ -155,14 +155,14 @@ impl MultiResourcePoolBlueprint {
     There are three operation modes that a pool can be in:
 
     - **Pool units total supply is zero:** regardless of whether there are some reserves or not,
-    the pool is considered to be back to its initial state. The first contributor is able to
-    determine the amount that they wish to contribute and they get minted an amount of pool units
-    that is equal to the geometric average of their contribution.
-    - **Pool units total supply is not zero, but some reserves are empty:** In this case, the pool is
-    said to be in an illegal state. Some people out there are holding pool units that equate to some
-    percentage of zero, which is an illegal state for the pool to be in.
+      the pool is considered to be back to its initial state. The first contributor is able to
+      determine the amount that they wish to contribute and they get minted an amount of pool units
+      that is equal to the geometric average of their contribution.
+    - **Pool units total supply is not zero, but some reserves are empty:** In this case, the pool
+      is said to be in an illegal state. Some people out there are holding pool units that equate to
+      some percentage of zero, which is an illegal state for the pool to be in.
     - **Pool units total supply is not zero, none of the reserves are empty:** The pool is operating
-    normally and is governed by the antilogarithm discussed below.
+      normally and is governed by the antilogarithm discussed below.
 
     In the case when the pool is operating normally an antilogarithm is needed to determine the
     following:
@@ -238,7 +238,7 @@ impl MultiResourcePoolBlueprint {
                 })
                 .collect::<IndexSet<ResourceAddress>>();
 
-            if resources_with_missing_buckets.len() != 0 {
+            if !resources_with_missing_buckets.is_empty() {
                 Err(Error::MissingOrEmptyBuckets {
                     resource_addresses: resources_with_missing_buckets,
                 })
@@ -263,17 +263,13 @@ impl MultiResourcePoolBlueprint {
             let pool_units_to_mint = amounts_of_resources_provided
                 .values()
                 .copied()
-                .fold(
-                    Ok(None),
-                    |acc: Result<Option<Decimal>, Error>, item| match acc? {
-                        None => Ok(Some(item)),
-                        Some(acc) => {
-                            let result =
-                                acc.checked_mul(item).ok_or(Error::DecimalOverflowError)?;
-                            Ok(Some(result))
-                        }
-                    },
-                )?
+                .try_fold(Option::<Decimal>::None, |acc, item| match acc {
+                    None => Ok(Some(item)),
+                    Some(acc) => acc
+                        .checked_mul(item)
+                        .ok_or(Error::DecimalOverflowError)
+                        .map(Some),
+                })?
                 .and_then(|d| d.checked_sqrt())
                 .ok_or(Error::DecimalOverflowError)?;
 
@@ -326,7 +322,7 @@ impl MultiResourcePoolBlueprint {
                         Err(Error::ResourceDoesNotBelongToPool {
                             resource_address: bucket_resource_address,
                         }),
-                        |vault| Ok(Vault(vault.0.clone())),
+                        |vault| Ok(Vault(vault.0)),
                     )?;
 
                     vaults_and_buckets.insert(bucket_resource_address, (vault, bucket));

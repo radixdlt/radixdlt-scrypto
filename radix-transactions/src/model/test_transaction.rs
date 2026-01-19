@@ -173,9 +173,9 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
             children_subintent_indices: vec![],
             initial_proofs: intent.initial_proofs,
@@ -188,9 +188,9 @@ impl PreparedTestIntent {
     ) -> Result<Self, PrepareError> {
         let prepared_instructions = intent.instructions.prepare_partial(settings)?;
         Ok(PreparedTestIntent {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?.into(),
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
-            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash.into(),
+            blobs: intent.blobs.prepare_partial(settings)?.blobs_by_hash,
             hash: intent.hash,
             children_subintent_indices: intent.children_subintent_indices,
             initial_proofs: intent.initial_proofs,
@@ -233,15 +233,15 @@ impl TestTransaction {
             AnyManifest::V1(manifest) => {
                 Ok(Self::new_v1_from_nonce(manifest, nonce, initial_proofs))
             }
-            AnyManifest::SystemV1(_) => Err(format!(
-                "Cannot convert a system manifest to a test transaction"
-            )),
+            AnyManifest::SystemV1(_) => {
+                Err("Cannot convert a system manifest to a test transaction".to_string())
+            }
             AnyManifest::V2(manifest) => {
                 Ok(Self::new_v2_builder(nonce).finish_with_root_intent(manifest, initial_proofs))
             }
-            AnyManifest::SubintentV2(_) => Err(format!(
-                "Cannot convert a subintent manifest to a test transaction"
-            )),
+            AnyManifest::SubintentV2(_) => {
+                Err("Cannot convert a subintent manifest to a test transaction".to_string())
+            }
         }
     }
 

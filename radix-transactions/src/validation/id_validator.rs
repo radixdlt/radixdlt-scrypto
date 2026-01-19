@@ -33,7 +33,7 @@ impl BasicManifestValidator {
 
     pub fn new_bucket(&mut self) -> ManifestBucket {
         let bucket_id = self.id_allocator.new_bucket_id();
-        self.bucket_ids.insert(bucket_id.clone(), 0);
+        self.bucket_ids.insert(bucket_id, 0);
         bucket_id
     }
 
@@ -46,10 +46,10 @@ impl BasicManifestValidator {
                 self.bucket_ids.remove(bucket_id);
                 Ok(())
             } else {
-                Err(ManifestIdValidationError::BucketLocked(bucket_id.clone()))
+                Err(ManifestIdValidationError::BucketLocked(*bucket_id))
             }
         } else {
-            Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()))
+            Err(ManifestIdValidationError::BucketNotFound(*bucket_id))
         }
     }
 
@@ -62,14 +62,14 @@ impl BasicManifestValidator {
                 if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
                 } else {
-                    return Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()));
+                    return Err(ManifestIdValidationError::BucketNotFound(*bucket_id));
                 }
             }
             ProofKind::AuthZoneProof => {}
         }
 
         let proof_id = self.id_allocator.new_proof_id();
-        self.proof_ids.insert(proof_id.clone(), kind);
+        self.proof_ids.insert(proof_id, kind);
         Ok(proof_id)
     }
 
@@ -86,10 +86,10 @@ impl BasicManifestValidator {
                 }
             }
             let proof_id = self.id_allocator.new_proof_id();
-            self.proof_ids.insert(proof_id.clone(), kind);
+            self.proof_ids.insert(proof_id, kind);
             Ok(proof_id)
         } else {
-            Err(ManifestIdValidationError::ProofNotFound(proof_id.clone()))
+            Err(ManifestIdValidationError::ProofNotFound(*proof_id))
         }
     }
 
@@ -107,7 +107,7 @@ impl BasicManifestValidator {
             }
             Ok(())
         } else {
-            Err(ManifestIdValidationError::ProofNotFound(proof_id.clone()))
+            Err(ManifestIdValidationError::ProofNotFound(*proof_id))
         }
     }
 
@@ -121,8 +121,7 @@ impl BasicManifestValidator {
 
     pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
         let address_reservation_id = self.id_allocator.new_address_reservation_id();
-        self.address_reservation_ids
-            .insert(address_reservation_id.clone());
+        self.address_reservation_ids.insert(address_reservation_id);
         address_reservation_id
     }
 
@@ -137,14 +136,14 @@ impl BasicManifestValidator {
             Ok(())
         } else {
             Err(ManifestIdValidationError::AddressReservationNotFound(
-                address_reservation_id.clone(),
+                *address_reservation_id,
             ))
         }
     }
 
     pub fn new_named_address(&mut self) -> ManifestNamedAddress {
         let address_id = self.id_allocator.new_address_id();
-        self.address_ids.insert(address_id.clone());
+        self.address_ids.insert(address_id);
         address_id
     }
 
@@ -155,7 +154,7 @@ impl BasicManifestValidator {
         if self.bucket_ids.contains_key(bucket_id) {
             Ok(())
         } else {
-            Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()))
+            Err(ManifestIdValidationError::BucketNotFound(*bucket_id))
         }
     }
 
@@ -166,15 +165,13 @@ impl BasicManifestValidator {
         if self.address_ids.contains(address_id) {
             Ok(())
         } else {
-            Err(ManifestIdValidationError::AddressNotFound(
-                address_id.clone(),
-            ))
+            Err(ManifestIdValidationError::AddressNotFound(*address_id))
         }
     }
 
     pub fn new_intent(&mut self) -> ManifestNamedIntent {
         let intent_id = self.id_allocator.new_named_intent_id();
-        self.intent_ids.insert(intent_id.clone());
+        self.intent_ids.insert(intent_id);
         intent_id
     }
 

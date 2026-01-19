@@ -233,10 +233,8 @@ pub trait PathAnnotate {
 
         if let Some(leaf) = self.annotated_leaf() {
             leaf.write(f, is_start_of_path)?;
-        } else {
-            if is_start_of_path {
-                write!(f, "[Root]")?;
-            }
+        } else if is_start_of_path {
+            write!(f, "[Root]")?;
         }
 
         Ok(())

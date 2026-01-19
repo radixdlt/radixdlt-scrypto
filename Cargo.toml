@@ -44,30 +44,30 @@ members = [
 ]
 
 [workspace.dependencies]
-radix-blueprint-schema-init = { version = "1.3.0", path = "./radix-blueprint-schema-init", default-features = false }
-radix-common = { version = "1.3.0", path = "./radix-common", default-features = false }
-radix-common-derive = { version = "1.3.0", path = "./radix-common-derive", default-features = false }
-radix-engine = { version = "1.3.0", path = "./radix-engine", default-features = false }
-radix-engine-toolkit-common = { version = "1.3.0", path = "./radix-engine-toolkit-common", default-features = false }
-radix-engine-interface = { version = "1.3.0", path = "./radix-engine-interface", default-features = false }
-radix-engine-profiling = { version = "1.3.0", path = "./radix-engine-profiling", default-features = false }
-radix-engine-profiling-derive = { version = "1.3.0", path = "./radix-engine-profiling-derive", default-features = false }
-radix-native-sdk = { version = "1.3.0", path = "./radix-native-sdk", default-features = false }
-radix-rust = { version = "1.3.0", path = "./radix-rust", default-features = false }
-radix-sbor-derive = { version = "1.3.0", path = "./radix-sbor-derive", default-features = false }
-radix-substate-store-impls = { version = "1.3.0", path = "./radix-substate-store-impls", default-features = false }
-radix-substate-store-interface = { version = "1.3.0", path = "./radix-substate-store-interface", default-features = false }
-radix-substate-store-queries = { version = "1.3.0", path = "./radix-substate-store-queries", default-features = false }
-radix-transaction-scenarios = { version = "1.3.0", path = "./radix-transaction-scenarios", default-features = false }
-radix-transactions = { version = "1.3.0", path = "./radix-transactions", default-features = false }
-sbor = { version = "1.3.0", path = "./sbor", default-features = false }
-sbor-derive = { version = "1.3.0", path = "./sbor-derive", default-features = false }
-sbor-derive-common = { version = "1.3.0", path = "./sbor-derive-common", default-features = false }
-scrypto = { version = "1.3.0", path = "./scrypto", default-features = false }
-scrypto-bindgen = { version = "1.3.0", path = "./scrypto-bindgen", default-features = false }
-scrypto-compiler = { version = "1.3.0", path = "./scrypto-compiler", default-features = false }
-scrypto-derive = { version = "1.3.0", path = "./scrypto-derive", default-features = false }
-scrypto-test = { version = "1.3.0", path = "./scrypto-test", default-features = false }
+radix-blueprint-schema-init = { version = "1.3.1", path = "./radix-blueprint-schema-init", default-features = false }
+radix-common = { version = "1.3.1", path = "./radix-common", default-features = false }
+radix-common-derive = { version = "1.3.1", path = "./radix-common-derive", default-features = false }
+radix-engine = { version = "1.3.1", path = "./radix-engine", default-features = false }
+radix-engine-toolkit-common = { version = "1.3.1", path = "./radix-engine-toolkit-common", default-features = false }
+radix-engine-interface = { version = "1.3.1", path = "./radix-engine-interface", default-features = false }
+radix-engine-profiling = { version = "1.3.1", path = "./radix-engine-profiling", default-features = false }
+radix-engine-profiling-derive = { version = "1.3.1", path = "./radix-engine-profiling-derive", default-features = false }
+radix-native-sdk = { version = "1.3.1", path = "./radix-native-sdk", default-features = false }
+radix-rust = { version = "1.3.1", path = "./radix-rust", default-features = false }
+radix-sbor-derive = { version = "1.3.1", path = "./radix-sbor-derive", default-features = false }
+radix-substate-store-impls = { version = "1.3.1", path = "./radix-substate-store-impls", default-features = false }
+radix-substate-store-interface = { version = "1.3.1", path = "./radix-substate-store-interface", default-features = false }
+radix-substate-store-queries = { version = "1.3.1", path = "./radix-substate-store-queries", default-features = false }
+radix-transaction-scenarios = { version = "1.3.1", path = "./radix-transaction-scenarios", default-features = false }
+radix-transactions = { version = "1.3.1", path = "./radix-transactions", default-features = false }
+sbor = { version = "1.3.1", path = "./sbor", default-features = false }
+sbor-derive = { version = "1.3.1", path = "./sbor-derive", default-features = false }
+sbor-derive-common = { version = "1.3.1", path = "./sbor-derive-common", default-features = false }
+scrypto = { version = "1.3.1", path = "./scrypto", default-features = false }
+scrypto-bindgen = { version = "1.3.1", path = "./scrypto-bindgen", default-features = false }
+scrypto-compiler = { version = "1.3.1", path = "./scrypto-compiler", default-features = false }
+scrypto-derive = { version = "1.3.1", path = "./scrypto-derive", default-features = false }
+scrypto-test = { version = "1.3.1", path = "./scrypto-test", default-features = false }
 
 arbitrary = { version = "1.3.0", features = ["derive"] }
 bech32 = { version = "0.9.0", default-features = false }
@@ -77,7 +77,7 @@ bitflags = { version = "1.3" }
 blake2 = { version = "0.10.6", default-features = false }
 blst = { version = "0.3.11", default-features = false, features = ["portable"], optional = false }
 bnum = { version = "0.11.0", default-features = false, features = ["numtraits"] }
-cargo_toml = { version = "0.15.3" }
+cargo_toml = { version = "0.22.3" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] } # Used in radix-clis for parsing
 colored = { version = "2.0.0", default-features = false } # Used for transaction receipts + radix-clis
 const-sha1 = { version = "0.3.0", default-features = false }
@@ -86,17 +86,20 @@ crossbeam = { version = "0.8.2" }
 dirs = { version = "4.0.0" } # Used in radix-clis
 ed25519-dalek = { version = "2.1.1", default-features = false, features = ["fast", "zeroize"] }
 ethnum = {version = "1.3.2", default-features = false }
+extend = { version = "1.2.0" }
 fixedstr = { version = "0.2.9" }
 flate2 = { version = "1.0.27" } # Used in radix-clis for GzDecoder
 flume = { version = "0.11.0" } # Used in radix-clis for multi-threaded channels
-hashbrown = { version = "0.13.2" }
+fslock = { version = "0.2.1" }
+hashbrown = { version = "0.15.1" }
 hex = { version = "0.4.3", default-features = false }
-indexmap = { version = "2.2.5", default-features = false }
+indexmap = { version = "2.7.0", default-features = false }
+inferno = { version = "0.11.19" }
 itertools = { version = "0.10.3" }
 lazy_static = { version = "1.4.0" }
 linreg = { version = "0.2.0" }
 lru = { version = "0.8.1", default-features = false }
-minicov = { version = "=0.3.5" }
+minicov = { version = "=0.3.8" } # Used for scrypto coverage. Has to be fixed for compatibility with the rust version we use.
 moka = { version = "0.9.9", features = ["sync"], default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
 num-integer = { version = "0.1.45", default-features = false }
@@ -105,6 +108,7 @@ ouroboros = { version = "0.17.2" }
 paste = { version = "1.0.13" }
 perfcnt = { version = "0.8.0" }
 plotters = { version = "0.3.4" }
+preinterpret = { version = "0.2.0" }
 proc-macro2 = { version = "1.0.38" }
 quote = { version = "1.0.18" }
 radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
@@ -112,7 +116,7 @@ rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon =  { version = "1.5.3" }
 regex = { version = "=1.9.3", default-features = false, features = [] }
-rocksdb = { version = "0.21.0" }
+rocksdb = { version = "0.24.0" }
 rug = { version = "1.18" }
 secp256k1 = { version = "0.28.0", default-features = false, features = ["recovery"] }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
@@ -124,17 +128,18 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 tar = { version = "0.4.40" } # Used in radix-clis
 temp-env = { version = "0.2.0" } # Used in radix-clis
+tempfile = { version = "3.8.0" }
 trybuild = { version = "1.0.85" }
-wabt = { version = "0.10.0" }
+wat = { version = "1.244.0" }
+wasmprinter = { version = "0.224.0" }
 walkdir = { version = "2.3.3", default-features = false }
-wasmi = { version = "=0.39.1" }
+wasmi = { version = "=0.39.1" } # Used for WASM Execution in the Engine. Requires explicit upgrades for testing non-determinism.
 wasm-opt = { version = "0.114.1" }
 wasmparser = { version = "0.107.0", default-features = false }
-extend = { version = "1.2.0" }
 zeroize = { version = "1.3.0" }
-inferno = { version = "0.11.19" }
-tempfile = { version = "3.8.0" }
-fslock = { version = "0.2.1" }
+rustc-build-sysroot = { version = "0.5.11" }
+cargo_metadata = { version = "0.23.1" }
+thiserror = { version = "2.0.17" }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch

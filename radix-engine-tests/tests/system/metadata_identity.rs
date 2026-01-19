@@ -8,8 +8,8 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-    let component_address = ledger.new_identity(pk.clone(), is_virtual);
+    let owner_id = NonFungibleGlobalId::from_public_key(pk);
+    let component_address = ledger.new_identity(pk, is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -47,7 +47,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let component_address = ledger.new_identity(pk.clone(), is_virtual);
+    let component_address = ledger.new_identity(pk, is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()

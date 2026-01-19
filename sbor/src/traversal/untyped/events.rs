@@ -21,10 +21,7 @@ pub enum TraversalEvent<'de, T: CustomTraversal> {
 
 impl<'de, T: CustomTraversal> TraversalEvent<'de, T> {
     pub fn is_error(&self) -> bool {
-        match self {
-            TraversalEvent::DecodeError(_) => true,
-            _ => false,
-        }
+        matches!(self, TraversalEvent::DecodeError(_))
     }
 }
 
@@ -153,7 +150,7 @@ impl<T: CustomTraversal> ContainerHeader<T> {
                 value_value_kind,
                 ..
             }) => {
-                if index % 2 == 0 {
+                if index.is_multiple_of(2) {
                     Some(*key_value_kind)
                 } else {
                     Some(*value_value_kind)

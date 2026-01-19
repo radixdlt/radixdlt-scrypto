@@ -396,9 +396,9 @@ fn test_oracle_proxy_with_global() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let resources = create_some_resources(&mut ledger);
     let (public_key, _, _account) = ledger.new_account(false);
-    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let owner_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
@@ -472,9 +472,9 @@ fn test_oracle_generic_proxy_with_global() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let resources = create_some_resources(&mut ledger);
     let (public_key, _, _account) = ledger.new_account(false);
-    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let owner_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
@@ -578,8 +578,8 @@ fn test_oracle_proxy_with_owned() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let resources = create_some_resources(&mut ledger);
     let (public_key, _, _account) = ledger.new_account(false);
-    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let owner_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
 
     // Publish and instantiate Oracle Proxy
     let proxy_address = initialize_package(
@@ -638,9 +638,9 @@ fn test_oracle_proxy_costing_overhead() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let resources = create_some_resources(&mut ledger);
     let (public_key, _, _account) = ledger.new_account(false);
-    let owner_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
-    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let owner_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let proxy_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
+    let oracle_manager_badge = NonFungibleGlobalId::from_public_key(public_key);
 
     // Publish and instantiate Oracle v1
     let oracle_v1_address = initialize_package(

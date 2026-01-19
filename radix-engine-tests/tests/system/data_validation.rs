@@ -327,11 +327,15 @@ fn vec_of_u8_underflow_should_not_cause_panic() {
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::TypeCheckError(TypeCheckError::KeyValueStorePayloadValidationError(
-                                                                  KeyOrValue::Value, e
-                                                              )))
-            if e.eq("[ERROR] byte offset: 7-7, value path: Array.[99999992], cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
-        _ => false,
-    })
+    receipt.expect_specific_failure(|e|
+        matches!(e,
+            RuntimeError::SystemError(
+                SystemError::TypeCheckError(
+                    TypeCheckError::KeyValueStorePayloadValidationError(
+                        KeyOrValue::Value, e
+                    )
+                )
+            )
+            if e.eq("[ERROR] byte offset: 7-7, value path: Array.[99999992], cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })")
+        ))
 }

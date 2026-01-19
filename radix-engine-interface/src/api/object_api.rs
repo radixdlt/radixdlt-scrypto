@@ -3,8 +3,7 @@ use crate::internal_prelude::*;
 use crate::object_modules::metadata::METADATA_BLUEPRINT;
 use crate::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::types::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use radix_common::constants::{
     METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
@@ -20,7 +19,7 @@ use sbor::rust::vec::Vec;
 #[repr(u8)]
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -68,9 +67,9 @@ impl From<Option<AttachedModuleId>> for ModuleId {
     }
 }
 
-impl Into<Option<AttachedModuleId>> for ModuleId {
-    fn into(self) -> Option<AttachedModuleId> {
-        match self {
+impl From<ModuleId> for Option<AttachedModuleId> {
+    fn from(val: ModuleId) -> Self {
+        match val {
             ModuleId::Main => None,
             ModuleId::Metadata => Some(AttachedModuleId::Metadata),
             ModuleId::Royalty => Some(AttachedModuleId::Royalty),
@@ -111,7 +110,7 @@ impl ModuleId {
 #[repr(u8)]
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Debug,
@@ -161,9 +160,9 @@ impl AttachedModuleId {
     }
 }
 
-impl Into<ModuleId> for AttachedModuleId {
-    fn into(self) -> ModuleId {
-        match self {
+impl From<AttachedModuleId> for ModuleId {
+    fn from(val: AttachedModuleId) -> Self {
+        match val {
             AttachedModuleId::Metadata => ModuleId::Metadata,
             AttachedModuleId::Royalty => ModuleId::Royalty,
             AttachedModuleId::RoleAssignment => ModuleId::RoleAssignment,
@@ -171,7 +170,7 @@ impl Into<ModuleId> for AttachedModuleId {
     }
 }
 
-#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct FieldValue {
     pub value: Vec<u8>,
@@ -267,6 +266,7 @@ pub trait SystemObjectApi<E> {
     ) -> Result<GlobalAddress, E>;
 
     /// Globalizes with a new inner object and emits an event
+    #[allow(clippy::too_many_arguments)]
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,

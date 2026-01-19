@@ -45,6 +45,7 @@ impl Ed25519PrivateKey {
         self.signing_key().to_bytes().to_vec()
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
         if slice.len() != Ed25519PrivateKey::LENGTH {
             return Err(());
@@ -55,9 +56,10 @@ impl Ed25519PrivateKey {
         Ok(Self(Box::pin(Some(signing_key))))
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn from_u64(n: u64) -> Result<Self, ()> {
         let mut bytes = [0u8; Ed25519PrivateKey::LENGTH];
-        (&mut bytes[Ed25519PrivateKey::LENGTH - 8..Ed25519PrivateKey::LENGTH])
+        bytes[Ed25519PrivateKey::LENGTH - 8..Ed25519PrivateKey::LENGTH]
             .copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(Box::pin(Some(SigningKey::from_bytes(&bytes)))))
@@ -80,8 +82,8 @@ mod tests {
         let sig = Ed25519Signature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
-        assert_eq!(sk.sign(&test_message_hash), sig);
-        assert!(verify_ed25519(&test_message_hash, &pk, &sig));
+        assert_eq!(sk.sign(test_message_hash), sig);
+        assert!(verify_ed25519(test_message_hash, &pk, &sig));
     }
 
     fn find_slice_in_memory(ptr: *const u8, slice: &[u8]) -> Option<usize> {

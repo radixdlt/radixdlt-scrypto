@@ -1676,10 +1676,8 @@ impl AccessControllerLedgerSimulator {
                 timed_recovery_delay_in_minutes,
             )
             .build();
-        let receipt = ledger.execute_manifest(
-            manifest,
-            [NonFungibleGlobalId::from_public_key(&public_key)],
-        );
+        let receipt =
+            ledger.execute_manifest(manifest, [NonFungibleGlobalId::from_public_key(public_key)]);
         receipt.expect_commit_success();
 
         let access_controller_address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -1976,7 +1974,7 @@ impl AccessControllerLedgerSimulator {
     fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.ledger.execute_manifest(
             manifest,
-            [NonFungibleGlobalId::from_public_key(&self.account.1)],
+            [NonFungibleGlobalId::from_public_key(self.account.1)],
         )
     }
 

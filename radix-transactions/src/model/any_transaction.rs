@@ -110,6 +110,7 @@ mod tests {
     use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
 
+    #[deprecated = "Should only be used by transaction v1, because it's less flexible than hash_encoded_sbor_value_body"]
     fn hash_encoded_sbor_value<T: ManifestEncode>(value: T) -> Hash {
         // Ignore the version byte
         hash(&manifest_encode(&value).unwrap()[1..])
@@ -120,9 +121,26 @@ mod tests {
         hash(&manifest_encode(&value).unwrap()[2..])
     }
 
+    fn hash_contatenated_hashes<H: Into<Hash>>(hashes: impl IntoIterator<Item = H>) -> Hash {
+        let concatenated_hashes: Vec<u8> = hashes
+            .into_iter()
+            .flat_map(|h| Into::<Hash>::into(h).0)
+            .collect();
+        hash(concatenated_hashes)
+    }
+
+    fn hash_from_partial_prepare(value: &impl TransactionPartialPrepare) -> Hash {
+        value
+            .prepare_partial(PreparationSettings::latest_ref())
+            .unwrap()
+            .get_summary()
+            .hash
+    }
+
     /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
     /// It also provides an example payload which can be used in other implementations.
     #[test]
+    #[allow(deprecated)] // Transaction V1 is allowed to use deprecated hashing
     pub fn v1_user_transaction_structure() {
         let network = NetworkDefinition::simulator();
         let preparation_settings = PreparationSettings::babylon();
@@ -280,7 +298,7 @@ mod tests {
         //======================
         // NOTARIZED TRANSACTION
         //======================
-        let notary_signature = notary_private_key.sign(&signed_intent_hash);
+        let notary_signature = notary_private_key.sign(signed_intent_hash);
 
         let notary_signature_v1 = NotarySignatureV1(notary_signature.into());
         let expected_notary_signature_v1_hash = hash_encoded_sbor_value(&notary_signature_v1);
@@ -347,40 +365,250 @@ mod tests {
     pub fn v2_notarized_transaction_structure() {
         let network = NetworkDefinition::simulator();
 
-        // TODO - add more of the structure
-        create_checked_childless_subintent_v2(&network);
+        let (signed_transaction_intent, signed_transaction_intent_hash) =
+            create_signed_transaction_intent_v2(&network);
+        let (notary_signature, notary_signature_hash) =
+            create_notary_signature_v2(signed_transaction_intent_hash);
+
+        let notarized_transaction = NotarizedTransactionV2 {
+            signed_transaction_intent,
+            notary_signature,
+        };
+        let expected_hash = NotarizedTransactionHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V2Notarized as u8,
+                ]
+                .as_slice(),
+                signed_transaction_intent_hash.0.as_slice(),
+                notary_signature_hash.0.as_slice(),
+            ]
+            .concat(),
+        ));
+        let raw = notarized_transaction.to_raw().unwrap();
+
+        let prepared_transaction = notarized_transaction
+            .prepare(&PreparationSettings::latest())
+            .unwrap();
+        let actual_transaction_intent_hash = prepared_transaction.transaction_intent_hash();
+        let actual_signed_transaction_intent_hash =
+            prepared_transaction.signed_transaction_intent_hash();
+        let notarized_transaction_hash = prepared_transaction.notarized_transaction_hash();
+
+        assert_eq!(expected_hash, notarized_transaction_hash);
+        assert_eq!(
+            notarized_transaction_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "notarizedtransaction_sim1qh37lkr547jgv5zfvlkq4njdhn62m2sg09k6njmkuma7u2hd4zasrmhyew",
+        );
+        assert_eq!(
+            actual_signed_transaction_intent_hash
+                .to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "signedintent_sim1z2at9wmfh7pcx7ad0c4npyv3xn3mecf2gyehwd6g6w99v56ntfsq4k92yx",
+        );
+        assert_eq!(
+            actual_transaction_intent_hash
+                .to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "txid_sim1v7xlgxkrk59qekpj53x8jul0lml0r4nzn3yfmv4jd5ysjewmkaust5l3t2",
+        );
+        assert_eq!(
+            hex::encode(raw.as_slice()),
+            "4d220c0221032103210322010120072009b3f25a3a1839f46ddb09b068271811f6f00a79246fb24e7a808a9e46d6075d010009000000002105210607f20a01000000000000000a0a000000000000002200002201010500000000000000000a00000000000000002020020704000102030702050622010121020c0a746578742f706c61696e2200010c0c48656c6c6f20776f726c64212020010720b37d9be9fe7362e9f01a828af77a3298758ac7d43be750575befdbd395c28918202201610209000000002100202101012105210607f20a01000000000000000a0a000000000000002200002201010500000000000000000a00000000000000002020020704000102030702050622010121020c0a746578742f706c61696e2200010c0c48656c6c6f20776f726c64212020002022016001210020220101022007204d956b5eb1147b3a80c40170e340e2918d2a9f33bdb529c54401e3ed80a4e70a2101200740e04f0e563d71ca150d900d75538d2253dff0f77d86c8ecfa4dcd25ac94de5a4ed27d76ac95c3ee8ebdcc1da52df6d1ca5f265bc1f973f631bc753e4146b3aa0c20200122010102200720c561fa9f643fe5c60113cce9db282fde2b9e5ca5fc6b6fc0d1679bb339c9f72f2101200740860417490e96c91addd5a390f5f1bcd2697535f23a947d2337b291a7b86611f56cc3aa0606ac8b8cba98381c35ef9a1f655362b18764eb90b1d8b814ec17f40e2201012101200740975a47326156a7818b4776e3e455a67c906c34eda7a9c9bb9688c77664ed9679c78aa9e33740aa1d3631b89119071a3feaf02b650799da64da7f659d107db905"
+        );
+
+        // Check that the transaction we created is actually valid...
+        prepared_transaction
+            .validate(&TransactionValidator::new_for_latest_simulator())
+            .unwrap();
+    }
+
+    fn create_notary_signature_v2(
+        hash_to_sign: SignedTransactionIntentHash,
+    ) -> (NotarySignatureV2, Hash) {
+        let notary_signature = NotarySignatureV2(
+            TransactionV2Builder::testing_default_notary()
+                .sign_without_public_key(hash_to_sign.as_hash()),
+        );
+        let expected_hash = hash_encoded_sbor_value_body(&notary_signature);
+        let actual_hash = hash_from_partial_prepare(&notary_signature);
+        assert_eq!(expected_hash, actual_hash);
+        (notary_signature, actual_hash)
+    }
+
+    fn create_signed_transaction_intent_v2(
+        network: &NetworkDefinition,
+    ) -> (SignedTransactionIntentV2, SignedTransactionIntentHash) {
+        let (transaction_intent, transaction_intent_hash, subintent_hash) =
+            create_transaction_intent_v2(network);
+        let (transaction_intent_signatures, transaction_intent_signatures_hash) =
+            create_intent_signatures_v2(vec![2313], transaction_intent_hash);
+        let (non_root_subintent_signatures, non_root_subintent_signatures_hash) =
+            create_non_root_subintent_signatures(vec![subintent_hash]);
+
+        let signed = SignedTransactionIntentV2 {
+            transaction_intent,
+            transaction_intent_signatures,
+            non_root_subintent_signatures,
+        };
+
+        let expected_hash = SignedTransactionIntentHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V2SignedTransactionIntent as u8,
+                ]
+                .as_slice(),
+                transaction_intent_hash.0.as_slice(),
+                transaction_intent_signatures_hash.0.as_slice(),
+                non_root_subintent_signatures_hash.0.as_slice(),
+            ]
+            .concat(),
+        ));
+
+        let prepared = signed.prepare(&PreparationSettings::latest()).unwrap();
+        let actual_hash = prepared.signed_transaction_intent_hash();
+        assert_eq!(
+            actual_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "signedintent_sim1z2at9wmfh7pcx7ad0c4npyv3xn3mecf2gyehwd6g6w99v56ntfsq4k92yx",
+        );
+        assert_eq!(expected_hash, actual_hash);
+
+        (signed, actual_hash)
+    }
+
+    fn create_non_root_subintent_signatures(
+        subintent_hashes: Vec<SubintentHash>,
+    ) -> (NonRootSubintentSignaturesV2, Hash) {
+        let (batches, batch_hashes): (Vec<_>, Vec<_>) = subintent_hashes
+            .into_iter()
+            .enumerate()
+            .map(|(i, subintent_hash)| {
+                create_intent_signatures_v2(vec![(i * 100 + 42) as u64], subintent_hash)
+            })
+            .unzip();
+        let signature_batches = NonRootSubintentSignaturesV2 {
+            by_subintent: batches,
+        };
+        let expected_hash = hash_contatenated_hashes(batch_hashes);
+        let actual_hash = hash_from_partial_prepare(&signature_batches);
+        assert_eq!(expected_hash, actual_hash);
+        (signature_batches, expected_hash)
+    }
+
+    fn create_intent_signatures_v2(
+        key_sources: Vec<u64>,
+        intent_hash: impl Into<IntentHash>,
+    ) -> (IntentSignaturesV2, Hash) {
+        let hash_to_sign = intent_hash.into().into_hash();
+        let signatures = IntentSignaturesV2 {
+            signatures: key_sources
+                .into_iter()
+                .map(|key_source| {
+                    create_intent_signature_v1(
+                        Ed25519PrivateKey::from_u64(key_source).unwrap(),
+                        &hash_to_sign,
+                    )
+                })
+                .collect(),
+        };
+        let expected_hash = hash_encoded_sbor_value_body(&signatures);
+        let actual_hash = hash_from_partial_prepare(&signatures);
+        assert_eq!(expected_hash, actual_hash);
+        (signatures, actual_hash)
+    }
+
+    fn create_intent_signature_v1(signer: impl Signer, hash_to_sign: &Hash) -> IntentSignatureV1 {
+        let signature = signer.sign_with_public_key(hash_to_sign);
+        IntentSignatureV1(signature)
+    }
+
+    fn create_transaction_intent_v2(
+        network: &NetworkDefinition,
+    ) -> (TransactionIntentV2, TransactionIntentHash, SubintentHash) {
+        let (subintent_1, subintent_1_hash) = create_checked_childless_subintent_v2(network);
+        let (non_root_subintents, non_root_subintents_hash) =
+            create_non_root_subintents_v2(vec![subintent_1], vec![subintent_1_hash]);
+
+        let (transaction_header, transaction_header_hash) = create_transaction_header_v2();
+        let (root_intent_core, root_intent_core_hash) = create_intent_core_v2(
+            &NetworkDefinition::simulator(),
+            vec![InstructionV2::YieldToChild(YieldToChild::empty(0))],
+            vec![subintent_1_hash],
+        );
+
+        let expected_transaction_intent_hash = TransactionIntentHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V2TransactionIntent as u8,
+                ]
+                .as_slice(),
+                transaction_header_hash.as_slice(),
+                root_intent_core_hash.as_slice(),
+                non_root_subintents_hash.as_slice(),
+            ]
+            .concat(),
+        ));
+
+        let transaction_intent = TransactionIntentV2 {
+            transaction_header,
+            root_intent_core,
+            non_root_subintents,
+        };
+
+        let actual_hash = transaction_intent
+            .prepare(PreparationSettings::latest_ref())
+            .unwrap()
+            .transaction_intent_hash();
+
+        assert_eq!(expected_transaction_intent_hash, actual_hash);
+        assert_eq!(
+            expected_transaction_intent_hash
+                .to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "txid_sim1v7xlgxkrk59qekpj53x8jul0lml0r4nzn3yfmv4jd5ysjewmkaust5l3t2",
+        );
+
+        (transaction_intent, actual_hash, subintent_1_hash)
+    }
+
+    fn create_transaction_header_v2() -> (TransactionHeaderV2, Hash) {
+        let transaction_header = TransactionHeaderV2 {
+            notary_public_key: TransactionV2Builder::testing_default_notary()
+                .public_key()
+                .into(),
+            notary_is_signatory: false,
+            tip_basis_points: 0,
+        };
+        let expected_hash = hash_encoded_sbor_value_body(&transaction_header);
+        let actual_hash = hash_from_partial_prepare(&transaction_header);
+        assert_eq!(expected_hash, actual_hash);
+        (transaction_header, expected_hash)
+    }
+
+    fn create_non_root_subintents_v2(
+        subintents: Vec<SubintentV2>,
+        hashes: Vec<SubintentHash>,
+    ) -> (NonRootSubintentsV2, Hash) {
+        let non_root_subintents = NonRootSubintentsV2(subintents);
+
+        let expected_hash = hash_contatenated_hashes(hashes);
+        let actual_hash = hash_from_partial_prepare(&non_root_subintents);
+        assert_eq!(expected_hash, actual_hash);
+
+        (non_root_subintents, expected_hash)
     }
 
     fn create_checked_childless_subintent_v2(
         network: &NetworkDefinition,
     ) -> (SubintentV2, SubintentHash) {
-        let (header, expected_header_hash) = create_intent_header_v2(network);
-        let (blobs, expected_blobs_hash) = create_blobs_v1();
-        let (instructions, expected_instructions_hash) =
-            create_childless_subintent_instructions_v2();
-        let (message, expected_message_hash) = create_message_v2();
-        let (child_intent_constraints, expected_constraints_hash) =
-            create_childless_child_intents_v2();
-
-        let subintent = SubintentV2 {
-            intent_core: IntentCoreV2 {
-                header,
-                instructions,
-                blobs,
-                message,
-                children: child_intent_constraints,
-            },
-        };
-        let expected_intent_core_hash = hash(
-            [
-                expected_header_hash.as_slice(),
-                expected_blobs_hash.as_slice(),
-                expected_message_hash.as_slice(),
-                expected_constraints_hash.as_slice(),
-                expected_instructions_hash.as_slice(),
-            ]
-            .concat(),
+        let (intent_core, intent_core_hash) = create_intent_core_v2(
+            network,
+            vec![InstructionV2::YieldToParent(YieldToParent::empty())],
+            vec![],
         );
+
+        let subintent = SubintentV2 { intent_core };
+
         let expected_subintent_hash = SubintentHash(hash(
             [
                 [
@@ -388,7 +616,7 @@ mod tests {
                     TransactionDiscriminator::V2Subintent as u8,
                 ]
                 .as_slice(),
-                expected_intent_core_hash.as_slice(),
+                intent_core_hash.as_slice(),
             ]
             .concat(),
         ));
@@ -400,10 +628,46 @@ mod tests {
         assert_eq!(expected_subintent_hash, actual_subintent_hash);
         assert_eq!(
             expected_subintent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
-            "subtxid_sim1ree59h2u2sguzl6g72pn7q9hpe3r28l95c05f2rfe7cgfp4sgmwqx5l3mu",
+            "subtxid_sim1kd7eh607wd3wnuq6s290w73jnp6c437580n4q46malda89wz3yvq3cph38",
         );
 
         (subintent, actual_subintent_hash)
+    }
+
+    fn create_intent_core_v2(
+        network: &NetworkDefinition,
+        instructions: Vec<InstructionV2>,
+        children: Vec<SubintentHash>,
+    ) -> (IntentCoreV2, Hash) {
+        let (header, expected_header_hash) = create_intent_header_v2(network);
+        let (blobs, expected_blobs_hash) = create_blobs_v1();
+        let (instructions, expected_instructions_hash) =
+            create_subintent_instructions_v2(instructions);
+        let (message, expected_message_hash) = create_message_v2();
+        let (child_intent_constraints, expected_constraints_hash) =
+            create_child_subintent_specifiers_v2(children);
+
+        let intent_core = IntentCoreV2 {
+            header,
+            instructions,
+            blobs,
+            message,
+            children: child_intent_constraints,
+        };
+
+        let expected_hash = hash(
+            [
+                expected_header_hash.as_slice(),
+                expected_blobs_hash.as_slice(),
+                expected_message_hash.as_slice(),
+                expected_constraints_hash.as_slice(),
+                expected_instructions_hash.as_slice(),
+            ]
+            .concat(),
+        );
+        let actual_hash = hash_from_partial_prepare(&intent_core);
+        assert_eq!(expected_hash, actual_hash);
+        (intent_core, expected_hash)
     }
 
     fn create_intent_header_v2(network: &NetworkDefinition) -> (IntentHeaderV2, Hash) {
@@ -416,11 +680,7 @@ mod tests {
             intent_discriminator: 0,
         };
         let expected_hash = hash_encoded_sbor_value_body(&intent_header);
-        let actual_hash = intent_header
-            .prepare_partial(PreparationSettings::latest_ref())
-            .unwrap()
-            .get_summary()
-            .hash;
+        let actual_hash = hash_from_partial_prepare(&intent_header);
         assert_eq!(expected_hash, actual_hash);
         (intent_header, expected_hash)
     }
@@ -428,31 +688,24 @@ mod tests {
     fn create_blobs_v1() -> (BlobsV1, Hash) {
         let blob1: Vec<u8> = vec![0, 1, 2, 3];
         let blob2: Vec<u8> = vec![5, 6];
-        let expected_hash = hash([hash(&blob1).0.as_slice(), hash(&blob2).0.as_slice()].concat());
+        let expected_hash = hash_contatenated_hashes([hash(&blob1), hash(&blob2)]);
 
         let blobs_v1 = BlobsV1 {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let actual_hash = blobs_v1
-            .prepare_partial(PreparationSettings::latest_ref())
-            .unwrap()
-            .get_summary()
-            .hash;
+        let actual_hash = hash_from_partial_prepare(&blobs_v1);
         assert_eq!(expected_hash, actual_hash);
 
         (blobs_v1, expected_hash)
     }
 
-    fn create_childless_subintent_instructions_v2() -> (InstructionsV2, Hash) {
-        let instructions = InstructionsV2::from(vec![]);
+    fn create_subintent_instructions_v2(
+        instructions: Vec<InstructionV2>,
+    ) -> (InstructionsV2, Hash) {
+        let instructions = InstructionsV2::from(instructions);
         let expected_hash = hash_encoded_sbor_value_body(&instructions);
-
-        let actual_hash = instructions
-            .prepare_partial(PreparationSettings::latest_ref())
-            .unwrap()
-            .get_summary()
-            .hash;
+        let actual_hash = hash_from_partial_prepare(&instructions);
         assert_eq!(expected_hash, actual_hash);
 
         (instructions, expected_hash)
@@ -462,37 +715,29 @@ mod tests {
         let message = MessageV2::Plaintext(PlaintextMessageV1::text("Hello world!"));
         let expected_hash = hash_encoded_sbor_value_body(&message);
 
-        let actual_hash = message
-            .prepare_partial(PreparationSettings::latest_ref())
-            .unwrap()
-            .get_summary()
-            .hash;
+        let actual_hash = hash_from_partial_prepare(&message);
         assert_eq!(expected_hash, actual_hash);
 
         (message, expected_hash)
     }
 
-    fn create_childless_child_intents_v2() -> (ChildSubintentSpecifiersV2, Hash) {
-        let children: ChildSubintentSpecifiersV2 = ChildSubintentSpecifiersV2 {
-            children: Default::default(),
+    fn create_child_subintent_specifiers_v2(
+        children: Vec<SubintentHash>,
+    ) -> (ChildSubintentSpecifiersV2, Hash) {
+        let child_subintent_specifiers: ChildSubintentSpecifiersV2 = ChildSubintentSpecifiersV2 {
+            children: children.clone().into_iter().map(|h| h.into()).collect(),
         };
-        // Concatenation of all hashes
-        let empty: [u8; 0] = [];
-        let expected_hash = hash(&empty);
-
-        let actual_hash = children
-            .prepare_partial(PreparationSettings::latest_ref())
-            .unwrap()
-            .get_summary()
-            .hash;
+        let expected_hash = hash_contatenated_hashes(children);
+        let actual_hash = hash_from_partial_prepare(&child_subintent_specifiers);
         assert_eq!(expected_hash, actual_hash);
 
-        (children, expected_hash)
+        (child_subintent_specifiers, expected_hash)
     }
 
     /// This test demonstrates how the hashes and payloads are constructed in a valid system transaction.
     /// A system transaction can be embedded into the node's LedgerTransaction structure, eg as part of Genesis
     #[test]
+    #[allow(deprecated)] // Transaction V1 is allowed to use deprecated hashing
     pub fn v1_system_transaction_structure() {
         let instructions = vec![InstructionV1::DropAuthZoneProofs(DropAuthZoneProofs)];
         let expected_instructions_hash = hash_encoded_sbor_value(&instructions);
@@ -519,13 +764,13 @@ mod tests {
         let expected_preallocated_addresses_hash =
             hash_encoded_sbor_value(&pre_allocated_addresses_v1);
 
-        let hash_for_execution = hash(format!("Pretend genesis transaction"));
+        let hash_for_execution = hash("Pretend genesis transaction");
 
         let system_transaction_v1 = SystemTransactionV1 {
             instructions: instructions_v1.clone(),
             blobs: blobs_v1.clone(),
             pre_allocated_addresses: pre_allocated_addresses_v1.clone(),
-            hash_for_execution: hash_for_execution.clone(),
+            hash_for_execution,
         };
         let expected_system_transaction_hash = SystemTransactionHash::from_hash(hash(
             [
@@ -546,7 +791,7 @@ mod tests {
         SystemTransactionV1::from_raw(&raw_system_transaction)
             .expect("SystemTransaction can be decoded");
         let system_transaction_as_versioned =
-            manifest_decode::<AnyTransaction>(&raw_system_transaction.as_slice()).unwrap();
+            manifest_decode::<AnyTransaction>(raw_system_transaction.as_slice()).unwrap();
         assert_eq!(
             system_transaction_as_versioned,
             AnyTransaction::SystemTransactionV1(system_transaction_v1)

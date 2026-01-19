@@ -134,7 +134,7 @@ impl<V> KeyValueEntrySubstate<V> {
 
     pub fn lock_status(&self) -> LockStatus {
         match self {
-            KeyValueEntrySubstate::V1(substate) => substate.lock_status.clone(),
+            KeyValueEntrySubstate::V1(substate) => substate.lock_status,
         }
     }
 }

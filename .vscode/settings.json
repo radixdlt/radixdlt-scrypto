@@ -28,12 +28,14 @@
         "flamegraph",
         "Formattable",
         "generification",
+        "indexset",
         "instantiatable",
         "Instrumenter",
         "Invokable",
         "keyvaluestore",
         "ledgertransaction",
         "Mergeable",
+        "milli",
         "notarizedtransaction",
         "pdec",
         "Peekable",
@@ -71,6 +73,7 @@
         "Validatable",
         "virtualizable",
         "Wasmer",
-        "Wasmi"
+        "Wasmi",
+        "wasmprinter"
     ]
 }

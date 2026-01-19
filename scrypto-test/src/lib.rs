@@ -81,6 +81,13 @@
 //! [`SystemApi`]: crate::prelude::SystemApi
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
+#![allow(
+    // Allowed since many of the result types we use are quite large and fixing them one by one is 
+    // not something we can easily do.
+    // TODO: Remove this in the future.
+    clippy::result_large_err
+)]
+
 pub mod environment;
 pub mod ledger_simulator;
 pub mod prelude;

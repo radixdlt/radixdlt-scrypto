@@ -171,7 +171,7 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
                 event: typed_event,
             },
             // We also return the schema here because it can't be read later as there are issues with &mut references
-            &self.state.schema,
+            self.state.schema,
         )
     }
 
@@ -291,8 +291,8 @@ struct TypedTraverserState<'s, E: CustomExtension> {
 }
 
 impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
-    fn map_container_start_event<'t, 'de>(
-        &'t mut self,
+    fn map_container_start_event<'de>(
+        &mut self,
         type_id: LocalTypeId,
         header: ContainerHeader<E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E> {
@@ -303,7 +303,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                 TypeKind::Any => self.container_stack.push(ContainerType::Any(type_id)),
                 TypeKind::Tuple { field_types } if field_types.len() == length => self
                     .container_stack
-                    .push(ContainerType::Tuple(type_id, &field_types)),
+                    .push(ContainerType::Tuple(type_id, field_types)),
                 TypeKind::Tuple { field_types } => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingTupleLength {
@@ -361,7 +361,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                 } => {
                     let element_type = look_up_type!(self, *element_type_id);
                     if !value_kind_matches_type_kind::<E>(
-                        &self.schema,
+                        self.schema,
                         element_value_kind,
                         element_type,
                     ) {
@@ -397,7 +397,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                     value_type: value_type_id,
                 } => {
                     let key_type = look_up_type!(self, *key_type_id);
-                    if !value_kind_matches_type_kind::<E>(&self.schema, key_value_kind, key_type) {
+                    if !value_kind_matches_type_kind::<E>(self.schema, key_value_kind, key_type) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildKeyType {
@@ -408,11 +408,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                         )
                     }
                     let value_type = look_up_type!(self, *value_type_id);
-                    if !value_kind_matches_type_kind::<E>(
-                        &self.schema,
-                        value_value_kind,
-                        value_type,
-                    ) {
+                    if !value_kind_matches_type_kind::<E>(self.schema, value_value_kind, value_type)
+                    {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildValueType {
@@ -442,15 +439,15 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         TypedTraversalEvent::ContainerStart(type_id, header)
     }
 
-    fn map_terminal_value_event<'t, 'de>(
-        &'t mut self,
+    fn map_terminal_value_event<'de>(
+        &mut self,
         type_id: LocalTypeId,
         value_ref: TerminalValueRef<'de, E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E> {
         let value_kind = value_ref.value_kind();
         let type_kind = look_up_type!(self, type_id);
 
-        if !value_kind_matches_type_kind::<E>(&self.schema, value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E>(self.schema, value_kind, type_kind) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -464,15 +461,15 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         TypedTraversalEvent::TerminalValue(type_id, value_ref)
     }
 
-    fn map_terminal_value_batch_event<'t, 'de>(
-        &'t mut self,
+    fn map_terminal_value_batch_event<'de>(
+        &mut self,
         type_id: LocalTypeId,
         value_batch_ref: TerminalValueBatchRef<'de>,
     ) -> TypedTraversalEvent<'de, E> {
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, type_id);
 
-        if !value_kind_matches_type_kind::<E>(&self.schema, value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E>(self.schema, value_kind, type_kind) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -486,8 +483,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         TypedTraversalEvent::TerminalValueBatch(type_id, value_batch_ref)
     }
 
-    fn map_container_end_event<'t, 'de>(
-        &'t mut self,
+    fn map_container_end_event<'de>(
+        &mut self,
         header: ContainerHeader<E::CustomTraversal>,
     ) -> TypedTraversalEvent<'de, E> {
         let container = self.container_stack.pop().unwrap();
@@ -527,11 +524,8 @@ fn value_kind_matches_type_kind<E: CustomExtension>(
     if matches!(type_kind, TypeKind::Any) {
         return true;
     }
-    match value_kind {
-        ValueKind::Custom(custom_value_kind) => {
-            return E::custom_value_kind_matches_type_kind(schema, custom_value_kind, type_kind);
-        }
-        _ => {}
+    if let ValueKind::Custom(custom_value_kind) = value_kind {
+        return E::custom_value_kind_matches_type_kind(schema, custom_value_kind, type_kind);
     }
     match type_kind {
         TypeKind::Any => true,

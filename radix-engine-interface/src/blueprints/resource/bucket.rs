@@ -144,7 +144,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for B
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        Own::decode_body_with_value_kind(decoder, value_kind).map(|o| Self(o))
+        Own::decode_body_with_value_kind(decoder, value_kind).map(Self)
     }
 }
 

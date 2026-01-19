@@ -50,12 +50,9 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
             for (partition_num, partition_updates) in &node_updates.partition_updates {
                 let partition_key = DbPartitionKey {
                     node_key: node_key.clone(),
-                    partition_num: partition_num.clone(),
+                    partition_num: *partition_num,
                 };
-                let partition = self
-                    .partitions
-                    .entry(partition_key.clone())
-                    .or_insert_with(|| BTreeMap::new());
+                let partition = self.partitions.entry(partition_key.clone()).or_default();
                 match partition_updates {
                     PartitionDatabaseUpdates::Delta { substate_updates } => {
                         for (sort_key, update) in substate_updates {
@@ -87,7 +84,7 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
 
 impl ListableSubstateDatabase for InMemorySubstateDatabase {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        let partition_iter = self.partitions.iter().map(|(key, _)| key.clone());
+        let partition_iter = self.partitions.keys().cloned();
         Box::new(partition_iter)
     }
 }

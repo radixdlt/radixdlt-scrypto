@@ -33,7 +33,7 @@ pub const MAX_SUBSTATE_VALUE_SIZE: usize = 64 * 1024 * 1024;
 
 /// The maximum invoke payload size.
 #[cfg(not(feature = "coverage"))]
-pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 1 * 1024 * 1024;
+pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 1024 * 1024;
 #[cfg(feature = "coverage")]
 pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 32 * 1024 * 1024;
 

@@ -8,8 +8,6 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -25,6 +23,12 @@ impl ComponentAddress {
         Self(node_id)
     }
 
+    /// # Safety
+    ///
+    /// This function doesn't check that the provided [`NodeId`] has the correct [`EntityType`] for
+    /// this address type. The result of calling this constructor function is that you may end up
+    /// with an address whose [`NodeId`] is incorrect (e.g., a [`NodeId`] of a resource on a
+    /// [`PackageAddress`])
     pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
@@ -100,8 +104,8 @@ impl ComponentAddress {
 
 #[cfg(feature = "fuzzing")]
 // Implementing arbitrary by hand to make sure that global component address is generated.
-impl<'a> Arbitrary<'a> for ComponentAddress {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+impl<'a> ::arbitrary::Arbitrary<'a> for ComponentAddress {
+    fn arbitrary(u: &mut ::arbitrary::Unstructured<'a>) -> ::arbitrary::Result<Self> {
         use core::cmp::min;
         let component_entities: [u8; 14] = [
             EntityType::GlobalConsensusManager as u8,
@@ -184,9 +188,9 @@ impl TryFrom<GlobalAddress> for ComponentAddress {
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0.into()
+impl From<ComponentAddress> for [u8; NodeId::LENGTH] {
+    fn from(val: ComponentAddress) -> Self {
+        val.0.into()
     }
 }
 
@@ -291,9 +295,9 @@ impl fmt::Debug for ComponentAddress {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
     type Error = AddressBech32EncodeError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
@@ -301,7 +305,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "ComponentAddress({})", hex::encode(&self.0))
+        write!(f, "ComponentAddress({})", hex::encode(self.0))
             .map_err(AddressBech32EncodeError::FormatError)
     }
 }
@@ -312,6 +316,7 @@ mod tests {
     use crate::internal_prelude::*;
 
     #[test]
+    #[allow(clippy::unnecessary_fallible_conversions)]
     fn component_address_initialization() {
         let node_id = [0; NodeId::LENGTH];
         let addr = unsafe { ComponentAddress::new_unchecked(node_id) };
@@ -325,7 +330,7 @@ mod tests {
         // validate conversions
         ComponentAddress::try_from_hex(&addr.to_hex()).unwrap();
         Reference::try_from(addr).unwrap();
-        let _ = ManifestAddress::try_from(addr).unwrap();
+        let _ = ManifestAddress::from(addr);
 
         // pass empty string to fail conversion
         assert!(

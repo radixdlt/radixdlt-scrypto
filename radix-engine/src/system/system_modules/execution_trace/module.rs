@@ -52,6 +52,13 @@ impl ExecutionTraceModule {
     }
 }
 
+// This structure tracks changes in resource balances per actor and vault.
+// Its purpose is to record balance changes for each instruction within a transaction
+// (as observed in `TransactionExecutionTrace`).
+// These changes can be further examined using the node's Core API.
+// NOTE!
+// This feature is not a comprehensive abstraction and may be removed in the future once it
+// is deprecated in the node's Core API.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ResourceChange {
     pub node_id: NodeId,
@@ -89,12 +96,17 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
     }
 }
 
+// Supported operations on Vaults.
+// The Recall operation is intentionally not supported, as it is impossible to identify the account
+// from which resources are recalled. This is because Recall functions with an internal vault.
 #[derive(Debug, Clone)]
 pub enum VaultOp {
-    Put(ResourceAddress, Decimal), // TODO: add non-fungible support
+    Put(ResourceAddress, Decimal),
     Take(ResourceAddress, Decimal),
+    // We intentionally disregard IDs and only use the amount for non-fungibles.
+    // This maintains backward compatibility for users of the `ResourceChange` struct.
+    TakeNonFungibles(ResourceAddress, Decimal),
     TakeAdvanced(ResourceAddress, Decimal),
-    Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
 }
 
@@ -109,7 +121,7 @@ impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
     fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) =
             self.api_ref().kernel_read_substate_uncosted(
-                &bucket_id,
+                bucket_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             ) {
@@ -175,7 +187,7 @@ impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
 
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         let is_fungible = if let Some(substate) = self.api_ref().kernel_read_substate_uncosted(
-            &proof_id,
+            proof_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         ) {
@@ -273,15 +285,15 @@ impl BucketSnapshot {
         match self {
             BucketSnapshot::Fungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
             BucketSnapshot::NonFungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
         }
     }
     pub fn amount(&self) -> Decimal {
         match self {
-            BucketSnapshot::Fungible { liquid, .. } => liquid.clone(),
+            BucketSnapshot::Fungible { liquid, .. } => *liquid,
             BucketSnapshot::NonFungible { liquid, .. } => liquid.len().into(),
         }
     }
@@ -304,15 +316,15 @@ impl ProofSnapshot {
         match self {
             ProofSnapshot::Fungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
             ProofSnapshot::NonFungible {
                 resource_address, ..
-            } => resource_address.clone(),
+            } => *resource_address,
         }
     }
     pub fn amount(&self) -> Decimal {
         match self {
-            ProofSnapshot::Fungible { total_locked, .. } => total_locked.clone(),
+            ProofSnapshot::Fungible { total_locked, .. } => *total_locked,
             ProofSnapshot::NonFungible { total_locked, .. } => total_locked.len().into(),
         }
     }
@@ -334,7 +346,7 @@ pub enum TraceActor {
 impl TraceActor {
     pub fn from_actor(actor: &Actor) -> TraceActor {
         match actor {
-            Actor::Method(MethodActor { node_id, .. }) => TraceActor::Method(node_id.clone()),
+            Actor::Method(MethodActor { node_id, .. }) => TraceActor::Method(*node_id),
             _ => TraceActor::NonMethod,
         }
     }
@@ -404,7 +416,7 @@ impl ExecutionTrace {
 }
 
 impl ResourceSummary {
-    pub fn default() -> Self {
+    pub fn new_empty() -> Self {
         Self {
             buckets: index_map_new(),
             proofs: index_map_new(),
@@ -445,6 +457,12 @@ impl ResourceSummary {
             proofs.insert(*node_id, x);
         }
         Self { buckets, proofs }
+    }
+}
+
+impl Default for ResourceSummary {
+    fn default() -> Self {
+        Self::new_empty()
     }
 }
 
@@ -725,7 +743,9 @@ impl ExecutionTraceModule {
             Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
                 if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id()) {
                     match ident.as_str() {
-                        VAULT_TAKE_IDENT | VAULT_TAKE_ADVANCED_IDENT | VAULT_RECALL_IDENT => {
+                        VAULT_TAKE_IDENT
+                        | VAULT_TAKE_ADVANCED_IDENT
+                        | NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                             for (_, resource) in &resource_summary.buckets {
                                 let op = if ident == VAULT_TAKE_IDENT {
                                     VaultOp::Take(resource.resource_address(), resource.amount())
@@ -734,14 +754,17 @@ impl ExecutionTraceModule {
                                         resource.resource_address(),
                                         resource.amount(),
                                     )
-                                } else if ident == VAULT_RECALL_IDENT {
-                                    VaultOp::Recall(resource.resource_address(), resource.amount())
+                                } else if ident == NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT {
+                                    VaultOp::TakeNonFungibles(
+                                        resource.resource_address(),
+                                        resource.amount(),
+                                    )
                                 } else {
                                     panic!("Unhandled vault method")
                                 };
                                 self.vault_ops.push((
                                     caller.clone(),
-                                    node_id.clone(),
+                                    *node_id,
                                     op,
                                     self.instruction_index(),
                                 ));
@@ -751,13 +774,14 @@ impl ExecutionTraceModule {
                         | VAULT_GET_AMOUNT_IDENT
                         | VAULT_FREEZE_IDENT
                         | VAULT_UNFREEZE_IDENT
-                        | VAULT_BURN_IDENT => { /* no-op */ }
+                        | VAULT_BURN_IDENT
+                        | VAULT_RECALL_IDENT => { /* no-op */ }
                         FUNGIBLE_VAULT_LOCK_FEE_IDENT
                         | FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
                         | FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => { /* no-op */ }
-                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT
-                        | NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
+
+                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
                         | NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT
                         | NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT
                         | NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT
@@ -841,7 +865,7 @@ impl ExecutionTraceModule {
         self.current_instruction_index
     }
 
-    fn handle_vault_put_input<'s>(
+    fn handle_vault_put_input(
         &mut self,
         resource_summary: &ResourceSummary,
         caller: &Actor,
@@ -851,14 +875,14 @@ impl ExecutionTraceModule {
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
-                vault_id.clone(),
+                *vault_id,
                 VaultOp::Put(resource.resource_address(), resource.amount()),
                 self.instruction_index(),
             ));
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(
+    fn handle_vault_lock_fee_input(
         &mut self,
         caller: &Actor,
         vault_id: &NodeId,
@@ -868,7 +892,7 @@ impl ExecutionTraceModule {
         let FungibleVaultLockFeeInput { amount, contingent } = args.as_typed().unwrap();
         self.vault_ops.push((
             actor,
-            vault_id.clone(),
+            *vault_id,
             VaultOp::LockFee(amount, contingent),
             self.instruction_index(),
         ));
@@ -904,7 +928,7 @@ pub fn calculate_resource_changes(
                 }
                 VaultOp::Take(resource_address, amount)
                 | VaultOp::TakeAdvanced(resource_address, amount)
-                | VaultOp::Recall(resource_address, amount) => {
+                | VaultOp::TakeNonFungibles(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()

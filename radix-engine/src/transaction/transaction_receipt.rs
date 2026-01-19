@@ -93,7 +93,7 @@ impl TransactionReceipt {
         // Putting use in here so it doesn't cause unused import compile warning in no-std
         use crate::system::actor::*;
 
-        let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
+        let address_bech32m_encoder = AddressBech32Encoder::new(network_definition);
 
         let mut lines = Vec::<String>::new();
         let mut path_stack = vec![];
@@ -218,6 +218,7 @@ pub struct TransactionFeeDetails {
 
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -429,7 +430,7 @@ impl CommitResult {
             };
 
             if is_consensus_manager {
-                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data) {
+                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(event_data) {
                     return Some(epoch_change_event);
                 }
             }
@@ -467,84 +468,6 @@ impl CommitResult {
             },
             TransactionOutcome::Failure(_) => panic!("Transaction failed"),
         }
-    }
-
-    pub fn state_updates(
-        &self,
-    ) -> BTreeMap<NodeId, BTreeMap<PartitionNumber, BTreeMap<SubstateKey, DatabaseUpdate>>> {
-        let mut updates = BTreeMap::<
-            NodeId,
-            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, DatabaseUpdate>>,
-        >::new();
-        for (node_id, x) in &self.state_updates.by_node {
-            let NodeStateUpdates::Delta { by_partition } = x;
-            for (partition_num, y) in by_partition {
-                match y {
-                    PartitionStateUpdates::Delta { by_substate } => {
-                        for (substate_key, substate_update) in by_substate {
-                            updates
-                                .entry(node_id.clone())
-                                .or_default()
-                                .entry(partition_num.clone())
-                                .or_default()
-                                .insert(substate_key.clone(), substate_update.clone());
-                        }
-                    }
-                    PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                        new_substate_values,
-                    }) => {
-                        for (substate_key, substate_value) in new_substate_values {
-                            updates
-                                .entry(node_id.clone())
-                                .or_default()
-                                .entry(partition_num.clone())
-                                .or_default()
-                                .insert(
-                                    substate_key.clone(),
-                                    DatabaseUpdate::Set(substate_value.clone()),
-                                );
-                        }
-                    }
-                }
-            }
-        }
-        updates
-    }
-
-    /// Note - there is a better display of these on the receipt, which uses the schemas
-    /// to display clear details
-    pub fn state_updates_string(&self) -> String {
-        let mut buffer = String::new();
-        for (node_id, x) in &self.state_updates() {
-            buffer.push_str(&format!("\n{:?}, {:?}\n", node_id, node_id.entity_type()));
-            for (partition_num, y) in x {
-                buffer.push_str(&format!("    {:?}\n", partition_num));
-                for (substate_key, substate_update) in y {
-                    buffer.push_str(&format!(
-                        "        {}\n",
-                        match substate_key {
-                            SubstateKey::Field(x) => format!("Field: {}", x),
-                            SubstateKey::Map(x) =>
-                                format!("Map: {:?}", scrypto_decode::<ScryptoValue>(&x).unwrap()),
-                            SubstateKey::Sorted(x) => format!(
-                                "Sorted: {:?}, {:?}",
-                                x.0,
-                                scrypto_decode::<ScryptoValue>(&x.1).unwrap()
-                            ),
-                        },
-                    ));
-                    buffer.push_str(&format!(
-                        "        {}\n",
-                        match substate_update {
-                            DatabaseUpdate::Set(x) =>
-                                format!("Set: {:?}", scrypto_decode::<ScryptoValue>(&x).unwrap()),
-                            DatabaseUpdate::Delete => format!("Delete"),
-                        }
-                    ));
-                }
-            }
-        }
-        buffer
     }
 }
 
@@ -671,7 +594,7 @@ impl TransactionReceipt {
             .to_string(NO_NETWORK);
         assert!(
             error_message.contains(error_needle),
-            "{error_needle:?} was not contained in RuntimeError"
+            "{error_needle:?} was not contained in RuntimeError: {error_message}"
         );
     }
 
@@ -865,7 +788,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
                 .get_schema(full_type_id.0.as_ref(), &full_type_id.1)
                 .unwrap();
 
-            (full_type_id.2.clone(), schema)
+            (full_type_id.2, schema)
         })
     }
 
@@ -1017,12 +940,18 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
     }
 }
 
+impl<'a> Default for TransactionReceiptDisplayContextBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for TransactionReceipt {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let result = &self.result;
@@ -1111,7 +1040,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
+                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(x)
                                 .expect("Impossible case! Instruction output can't be decoded")
                                 .to_string(ValueDisplayParameters::Schemaless {
                                     display_mode: DisplayMode::RustLike(RustLikeOptions::full()),
@@ -1195,9 +1124,9 @@ impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
 {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &TransactionReceiptDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         let state_updates = self.0;
@@ -1288,6 +1217,7 @@ impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn display_substate_change<'a, F: fmt::Write>(
     f: &mut F,
     prefix: &str,
@@ -1334,7 +1264,7 @@ fn format_receipt_substate_key<'a, F: fmt::Write>(
         }
         SubstateSystemStructure::SystemSchema => {
             let key_contents = substate_key.for_map().unwrap();
-            let hash: SchemaHash = scrypto_decode(&*key_contents).unwrap();
+            let hash: SchemaHash = scrypto_decode(key_contents).unwrap();
             write!(f, "SchemaHash({})", hash.0)
         }
         SubstateSystemStructure::KeyValueStoreEntry(structure) => {
@@ -1377,7 +1307,7 @@ fn format_receipt_substate_key<'a, F: fmt::Write>(
             let (sort_bytes, key_contents) = substate_key.for_sorted().unwrap();
             let value = scrypto_decode(key_contents).unwrap();
             let full_type_id = extract_object_type_id(&structure.key_schema);
-            write!(f, "SortKey({}, ", u16::from_be_bytes(sort_bytes.clone()))?;
+            write!(f, "SortKey({}, ", u16::from_be_bytes(*sort_bytes))?;
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
@@ -1438,7 +1368,7 @@ pub fn format_receipt_substate_value<'a, F: fmt::Write>(
                 let payload =
                     scrypto_decode::<KeyValueEntrySubstate<ScryptoRawValue>>(substate_value)
                         .unwrap();
-                (payload.into_value(), structure.value_full_type_id.clone())
+                (payload.into_value(), structure.value_full_type_id)
             }
             SubstateSystemStructure::ObjectField(structure) => {
                 let payload =
@@ -1499,8 +1429,8 @@ fn write_lock_status<F: fmt::Write>(f: &mut F, lock_status: LockStatus) -> Resul
 
 fn extract_object_type_id(structure: &ObjectSubstateTypeReference) -> FullyScopedTypeId<NodeId> {
     match structure {
-        ObjectSubstateTypeReference::Package(r) => r.full_type_id.clone().into_general(),
-        ObjectSubstateTypeReference::ObjectInstance(r) => r.resolved_full_type_id.clone(),
+        ObjectSubstateTypeReference::Package(r) => r.full_type_id.into_general(),
+        ObjectSubstateTypeReference::ObjectInstance(r) => r.resolved_full_type_id,
     }
 }
 
@@ -1526,7 +1456,7 @@ fn display_event<'a, F: fmt::Write>(
         first_line_indent: 0,
     };
     let raw_value = scrypto_decode::<ScryptoRawValue>(event_data).unwrap();
-    if let Some(_) = schema_lookup {
+    if schema_lookup.is_some() {
         write!(
             f,
             "\n{} Emitter: {}\n   Event: ",

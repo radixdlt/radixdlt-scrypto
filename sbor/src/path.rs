@@ -7,6 +7,12 @@ use crate::*;
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);
 
+impl Default for SborPathBuf {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SborPathBuf {
     pub fn new() -> Self {
         SborPathBuf(vec![])

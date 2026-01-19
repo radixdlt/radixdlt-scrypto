@@ -242,7 +242,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -301,7 +301,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -367,7 +367,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -439,7 +439,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -501,7 +501,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -567,7 +567,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let (public_key, _, _) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -826,7 +826,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -871,7 +871,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -915,7 +915,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
-    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+    let virtual_signature_badge = NonFungibleGlobalId::from_public_key(public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let manifest = ManifestBuilder::new()

@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2021"
 description = "Reference implementation of Radix Engine, from the Radix DLT project."
 readme = "README.md"
@@ -49,7 +49,8 @@ wasmi = {  workspace = true }
 lazy_static = { workspace = true }
 
 [dev-dependencies]
-wabt = { workspace = true }
+wat = { workspace = true }
+wasmprinter = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
 

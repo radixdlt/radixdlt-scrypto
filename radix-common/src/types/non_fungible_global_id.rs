@@ -1,11 +1,9 @@
 use crate::internal_prelude::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
 
 /// Represents the global id of a non-fungible.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(
     Clone,
@@ -159,9 +157,9 @@ impl fmt::Display for ParseNonFungibleGlobalIdError {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleGlobalId {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         write!(
@@ -180,13 +178,13 @@ impl fmt::Debug for NonFungibleGlobalId {
 }
 
 pub trait FromPublicKey: Sized {
-    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self;
+    fn from_public_key<P: HasPublicKeyHash>(public_key: P) -> Self;
     fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self;
 }
 
 impl FromPublicKey for NonFungibleGlobalId {
     /// Prefer using the `signature(public_key)` or `public_key.signature_proof()`.
-    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self {
+    fn from_public_key<P: HasPublicKeyHash>(public_key: P) -> Self {
         Self::from_public_key_hash(public_key.get_hash())
     }
 
@@ -279,7 +277,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &address_bech32_decoder,
-                &NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
+                NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );

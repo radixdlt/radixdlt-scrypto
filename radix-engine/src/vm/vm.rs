@@ -32,7 +32,7 @@ impl VmBoot {
                 BOOT_LOADER_PARTITION,
                 BootLoaderField::VmBoot,
             )
-            .unwrap_or_else(|| Self::babylon_genesis())
+            .unwrap_or_else(Self::babylon_genesis)
     }
 
     pub fn latest() -> Self {
@@ -60,7 +60,7 @@ impl VmApi for VmBoot {
     fn get_scrypto_version(&self) -> ScryptoVmVersion {
         match self {
             VmBoot::V1 { scrypto_version } => ScryptoVmVersion::try_from(*scrypto_version)
-                .expect(&format!("Unexpected scrypto version: {}", scrypto_version)),
+                .unwrap_or_else(|_| panic!("Unexpected scrypto version: {}", scrypto_version)),
         }
     }
 }
@@ -106,8 +106,8 @@ impl<E: NativeVmExtension> VmModules<DefaultWasmEngine, E> {
 
 pub type DefaultVmModules = VmModules<DefaultWasmEngine, NoExtension>;
 
-impl DefaultVmModules {
-    pub fn default() -> Self {
+impl Default for DefaultVmModules {
+    fn default() -> Self {
         Self {
             scrypto_vm: ScryptoVm::default(),
             vm_extension: NoExtension,
@@ -289,7 +289,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api, unify with VmApi
     fn invoke<
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError>
+            + KernelNodeApi
+            + KernelSubstateApi<SystemLockData>
+            + SystemBasedKernelInternalApi,
         V: VmApi,
     >(
         &mut self,
@@ -316,7 +319,7 @@ impl VmPackageValidation {
 
                 // Validate WASM
                 let instrumented_code = ScryptoV1WasmValidator::new(version)
-                    .validate(&code, definition.blueprints.values())
+                    .validate(code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(
                             PackageError::InvalidWasm(e),

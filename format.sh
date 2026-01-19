@@ -10,7 +10,6 @@ cd "$(dirname "$0")"
 (set -x; cd radix-engine-tests/assets/blueprints; cargo fmt)
 (set -x; cd radix-clis/tests/blueprints; cargo fmt)
 (set -x; cd scrypto-test/tests/blueprints; cargo fmt)
-(set -x; cd scrypto-test/assets/blueprints; cargo fmt)
 (set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo fmt)
 (set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo fmt)
 

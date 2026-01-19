@@ -350,72 +350,72 @@ macro_rules! define_versioned {
         ])?
         $(,)?
     ) => {
-        $crate::eager_replace! {
-            [!SET! #FullGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?]
-            [!SET! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
-            [!SET! #TypeGenerics = $(< $( $lt ),+ >)?]
-            [!SET! #VersionedType = $versioned_name $(< $( $lt ),+ >)?]
-            [!SET! #VersionedTypePath = $versioned_name $(::< $( $lt ),+ >)?]
-            [!SET! #VersionsType = $versions_name $(< $( $lt ),+ >)?]
-            [!SET! #VersionsTypePath = $versions_name $(::< $( $lt ),+ >)?]
-            [!SET:ident! #PermitSborAttributesAlias = $versioned_name _PermitSborAttributes]
+        $crate::prelude::preinterpret! {
+            [!set! #full_generics = $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?]
+            [!set! #impl_generics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
+            [!set! #type_generics = $(< $( $lt ),+ >)?]
+            [!set! #versioned_type = $versioned_name $(< $( $lt ),+ >)?]
+            [!set! #versioned_type_path = $versioned_name $(::< $( $lt ),+ >)?]
+            [!set! #versions_type = $versions_name $(< $( $lt ),+ >)?]
+            [!set! #versions_type_path = $versions_name $(::< $( $lt ),+ >)?]
+            [!set! #permit_sbor_attribute_alias = [!ident! $versioned_name _PermitSborAttributes]]
 
             #[allow(dead_code)]
             $vis type $latest_version_alias = $latest_version_type;
 
-            use $crate::PermitSborAttributes as #PermitSborAttributesAlias;
+            use $crate::PermitSborAttributes as #permit_sbor_attribute_alias;
 
-            #[derive(#PermitSborAttributesAlias)]
+            #[derive(#permit_sbor_attribute_alias)]
             $(#[$attributes])*
             $($(#[$outer_attributes])*)?
             // Needs to go below $attributes so that a #[derive(Sbor)] in the attributes can see it.
-            #[sbor(as_type = [!stringify! #VersionsType])]
+            #[sbor(as_type = [!string! #versions_type])]
             /// If you wish to get access to match on the versions, use `.as_ref()` or `.as_mut()`.
-            $vis struct $versioned_name #FullGenerics
+            $vis struct $versioned_name #full_generics
             {
-                inner: Option<#VersionsType>,
+                inner: Option<#versions_type>,
             }
 
-            impl #ImplGenerics #VersionedType
+            impl #impl_generics #versioned_type
             {
-                pub fn new(inner: #VersionsType) -> Self {
+                pub fn new(inner: #versions_type) -> Self {
                     Self {
                         inner: Some(inner),
                     }
                 }
             }
 
-            impl #ImplGenerics AsRef<#VersionsType> for #VersionedType
+            impl #impl_generics AsRef<#versions_type> for #versioned_type
             {
-                fn as_ref(&self) -> &#VersionsType {
+                fn as_ref(&self) -> &#versions_type {
                     self.inner.as_ref().unwrap()
                 }
             }
 
-            impl #ImplGenerics AsMut<#VersionsType> for #VersionedType
+            impl #impl_generics AsMut<#versions_type> for #versioned_type
             {
-                fn as_mut(&mut self) -> &mut #VersionsType {
+                fn as_mut(&mut self) -> &mut #versions_type {
                     self.inner.as_mut().unwrap()
                 }
             }
 
-            impl #ImplGenerics From<#VersionsType> for #VersionedType
+            impl #impl_generics From<#versions_type> for #versioned_type
             {
-                fn from(value: #VersionsType) -> Self {
+                fn from(value: #versions_type) -> Self {
                     Self::new(value)
                 }
             }
 
-            impl #ImplGenerics From<#VersionedType> for #VersionsType
+            impl #impl_generics From<#versioned_type> for #versions_type
             {
-                fn from(value: #VersionedType) -> Self {
+                fn from(value: #versioned_type) -> Self {
                     value.inner.unwrap()
                 }
             }
 
-            impl #ImplGenerics Versioned for #VersionedType
+            impl #impl_generics Versioned for #versioned_type
             {
-                type Versions = #VersionsType;
+                type Versions = #versions_type;
                 type LatestVersion = $latest_version_type;
 
                 fn is_fully_updated(&self) -> bool {
@@ -464,7 +464,7 @@ macro_rules! define_versioned {
                 }
             }
 
-            [!SET:ident! #discriminators = $versioned_name _discriminators]
+            [!set! #discriminators = [!ident! $versioned_name _discriminators]]
             #[allow(non_snake_case)]
             mod #discriminators {
                 // The initial version of this tool used 0-indexed/off-by-one discriminators accidentally.
@@ -476,10 +476,10 @@ macro_rules! define_versioned {
                 pub const LATEST_VERSION: u8 = $latest_version - 1;
             }
 
-            #[derive(#PermitSborAttributesAlias)]
+            #[derive(#permit_sbor_attribute_alias)]
             $(#[$attributes])*
             $($(#[$inner_attributes])*)?
-            $vis enum $versions_name #FullGenerics
+            $vis enum $versions_name #full_generics
             {
                 $($(
                     #[sbor(discriminator(#discriminators::[!ident! VERSION_ $version_num]))]
@@ -490,7 +490,7 @@ macro_rules! define_versioned {
             }
 
             #[allow(dead_code)]
-            impl #ImplGenerics #VersionsType
+            impl #impl_generics #versions_type
             {
                 /// Returns if update happened, and the updated versioned enum.
                 fn attempt_single_update(self) -> (bool, Self) {
@@ -551,36 +551,36 @@ macro_rules! define_versioned {
                     }
                 }
 
-                pub fn into_versioned(self) -> #VersionedType {
-                    #VersionedTypePath::new(self)
+                pub fn into_versioned(self) -> #versioned_type {
+                    #versioned_type_path::new(self)
                 }
             }
 
             $($(
                 #[allow(dead_code)]
-                impl #ImplGenerics From<$version_type> for #VersionsType {
+                impl #impl_generics From<$version_type> for #versions_type {
                     fn from(value: $version_type) -> Self {
                         Self::[!ident! V $version_num](value)
                     }
                 }
 
                 #[allow(dead_code)]
-                impl #ImplGenerics From<$version_type> for #VersionedType {
+                impl #impl_generics From<$version_type> for #versioned_type {
                     fn from(value: $version_type) -> Self {
-                        Self::new(#VersionsTypePath::[!ident! V $version_num](value))
+                        Self::new(#versions_type_path::[!ident! V $version_num](value))
                     }
                 }
             )*)?
 
             #[allow(dead_code)]
-            impl #ImplGenerics From<$latest_version_type> for #VersionsType {
+            impl #impl_generics From<$latest_version_type> for #versions_type {
                 fn from(value: $latest_version_type) -> Self {
                     Self::[!ident! V $latest_version](value)
                 }
             }
 
             #[allow(dead_code)]
-            impl #ImplGenerics From<$latest_version_type> for #VersionedType {
+            impl #impl_generics From<$latest_version_type> for #versioned_type {
                 fn from(value: $latest_version_type) -> Self {
                     Self::new($versions_name::[!ident! V $latest_version](value))
                 }
@@ -588,9 +588,9 @@ macro_rules! define_versioned {
 
             // This trait is similar to `SborEnumVariantFor<X, Versioned>`, but it's nicer to use as
             // it's got a better name and can be implemented without needing a specific CustomValueKind.
-            [!SET:ident! #VersionTrait = $versioned_name Version]
+            [!set! #version_trait = [!ident! $versioned_name Version]]
             #[allow(dead_code)]
-            $vis trait #VersionTrait {
+            $vis trait #version_trait {
                 // Note: We need to use an explicit associated type to capture the generics.
                 type Versioned: sbor::Versioned;
 
@@ -610,9 +610,9 @@ macro_rules! define_versioned {
             }
 
             $($(
-                impl #ImplGenerics #VersionTrait for $version_type
+                impl #impl_generics #version_trait for $version_type
                 {
-                    type Versioned = #VersionedType;
+                    type Versioned = #versioned_type;
 
                     const DISCRIMINATOR: u8 = #discriminators::[!ident! VERSION_ $version_num];
                     type OwnedSborVariant = sbor::SborFixedEnumVariant::<{ #discriminators::[!ident! VERSION_ $version_num] }, (Self,)>;
@@ -627,14 +627,14 @@ macro_rules! define_versioned {
                     }
 
                     fn into_versioned(self) -> Self::Versioned {
-                        #VersionedTypePath::new(self.into())
+                        #versioned_type_path::new(self.into())
                     }
                 }
             )*)?
 
-            impl #ImplGenerics #VersionTrait for $latest_version_type
+            impl #impl_generics #version_trait for $latest_version_type
             {
-                type Versioned = $versioned_name #TypeGenerics;
+                type Versioned = $versioned_name #type_generics;
 
                 const DISCRIMINATOR: u8 = #discriminators::LATEST_VERSION;
                 type OwnedSborVariant = sbor::SborFixedEnumVariant::<{ #discriminators::LATEST_VERSION }, (Self,)>;
@@ -649,7 +649,7 @@ macro_rules! define_versioned {
                 }
 
                 fn into_versioned(self) -> Self::Versioned {
-                    #VersionedTypePath::new(self.into())
+                    #versioned_type_path::new(self.into())
                 }
             }
         }
@@ -805,7 +805,7 @@ mod tests {
                 .resolve_type_metadata(type_id2)
                 .unwrap()
                 .clone()
-                .with_name(name.map(|name| Cow::Borrowed(name)))
+                .with_name(name.map(Cow::Borrowed))
         );
         assert_eq!(
             schema1.v1().resolve_type_validation(type_id1),

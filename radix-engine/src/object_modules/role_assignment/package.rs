@@ -165,7 +165,7 @@ impl RoleAssignmentNativePackage {
                     api,
                 )?;
                 ResolvedPermission::RoleList {
-                    role_assignment_of: global_address.clone(),
+                    role_assignment_of: *global_address,
                     role_list,
                     module_id: input.module,
                 }
@@ -251,7 +251,7 @@ impl RoleAssignmentNativePackage {
     ///
     /// The system has reserved all role keys starting with `_`.
     pub fn is_role_key_reserved(role_key: &RoleKey) -> bool {
-        return role_key.key.starts_with("_");
+        role_key.key.starts_with("_")
     }
 
     /// Checks if a role key is a reserved and has been defined.
@@ -328,7 +328,7 @@ impl RoleAssignmentNativePackage {
         role_key: &RoleKey,
         service: &mut SystemService<Y>,
     ) -> Result<RoleList, RuntimeError> {
-        if Self::is_role_key_reserved(&role_key) || module.eq(&ModuleId::RoleAssignment) {
+        if Self::is_role_key_reserved(role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());
         }
 
@@ -355,6 +355,7 @@ impl RoleAssignmentNativePackage {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn init_system_struct(
         owner_role: OwnerRoleEntry,
         roles: IndexMap<ModuleId, RoleAssignmentInit>,
@@ -377,10 +378,10 @@ impl RoleAssignmentNativePackage {
 
         let owner_role_field = match owner_role.updater {
             OwnerRoleUpdater::None => FieldValue::immutable(
-                &RoleAssignmentOwnerFieldPayload::from_content_source(owner_role_substate),
+                RoleAssignmentOwnerFieldPayload::from_content_source(owner_role_substate),
             ),
             OwnerRoleUpdater::Owner | OwnerRoleUpdater::Object => FieldValue::new(
-                &RoleAssignmentOwnerFieldPayload::from_content_source(owner_role_substate),
+                RoleAssignmentOwnerFieldPayload::from_content_source(owner_role_substate),
             ),
         };
 

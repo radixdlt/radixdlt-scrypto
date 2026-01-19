@@ -31,7 +31,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
     println!(
         "{}",
@@ -51,7 +51,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         ledger.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
     let component_address = ledger.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 3)
@@ -95,7 +95,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let resource_address = ledger.create_non_fungible_resource(account);
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
     let component_address = ledger.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 3)
@@ -163,7 +163,7 @@ fn can_use_bucket_for_authorization() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -179,7 +179,7 @@ fn can_use_vault_for_authorization() {
         ledger.create_restricted_burn_token(account);
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
     let component_address = ledger.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, auth_resource_address, 1)
@@ -211,7 +211,7 @@ fn can_use_vault_for_authorization() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -244,7 +244,7 @@ fn can_create_proof_from_account_and_pass_on() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -276,18 +276,11 @@ fn cant_move_restricted_proof_to_auth_zone() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Moving restricted proof downstream") =>
-        {
-            true
-        }
-        _ => false,
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Moving restricted proof downstream")));
 }
 
 #[test]
@@ -315,18 +308,11 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Moving restricted proof downstream") =>
-        {
-            true
-        }
-        _ => false,
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Moving restricted proof downstream")));
 }
 
 #[test]
@@ -354,7 +340,7 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -391,7 +377,7 @@ fn can_move_restricted_proofs_internally() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -424,7 +410,7 @@ fn can_return_locked_bucket() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -521,7 +507,7 @@ fn can_pass_locked_bucket_into_method_call_and_back() {
         .build_no_validate();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -537,7 +523,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
     let component_address = ledger.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
         |builder| {
             builder
                 .withdraw_from_account(account, resource_address, 1)
@@ -568,7 +554,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -583,7 +569,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let resource_address = ledger.create_non_fungible_resource(account);
     let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
     let component_address = ledger.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+        btreeset![NonFungibleGlobalId::from_public_key(public_key)],
         |builder| {
             builder
                 .withdraw_non_fungibles_from_account(
@@ -638,7 +624,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -695,7 +681,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
@@ -728,11 +714,13 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -762,11 +750,13 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -796,11 +786,13 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -830,11 +822,13 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -857,11 +851,13 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -884,11 +880,13 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -911,11 +909,13 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -938,11 +938,13 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
-        _ => false,
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _,
+            )))
+        )
     })
 }
 
@@ -970,14 +972,11 @@ fn test_proof_check() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dbd2333630248b3e688c93892cec2d199bd917b8a4e019864a552e1f774)") => true,
-        _ => false,
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dbd2333630248b3e688c93892cec2d199bd917b8a4e019864a552e1f774)")));
 }
 
 #[test]
@@ -1004,16 +1003,9 @@ fn test_proof_check_with_message() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        vec![NonFungibleGlobalId::from_public_key(public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Not XRD proof") =>
-        {
-            true
-        }
-        _ => false,
-    });
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::PanicMessage(e)) if e.eq("Not XRD proof")));
 }

@@ -1,0 +1,164 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("package_address_reservation")
+    NamedAddress("package_address")
+;
+PUBLISH_PACKAGE_ADVANCED
+    Enum<0u8>()
+    Tuple(
+        Map<String, Tuple>(
+            "KVStore" => Tuple(
+                Enum<0u8>(),
+                false,
+                Array<String>(),
+                Array<Address>(),
+                Tuple(
+                    Array<Enum>(),
+                    Enum<0u8>(
+                        Tuple(
+                            Array<Enum>(
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            160u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            131u8
+                                        ),
+                                        Enum<0u8>(
+                                            12u8
+                                        ),
+                                        Enum<0u8>(
+                                            12u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            9u8
+                                        )
+                                    )
+                                )
+                            ),
+                            Array<Tuple>(
+                                Tuple(
+                                    Enum<1u8>(
+                                        "KVStore"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "kv_store"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "KVStore_create_key_value_store_with_remote_type_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "package_address",
+                                                "blueprint_name",
+                                                "type_name"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "TestType"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "b"
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+                            Array<Enum>(
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>()
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Array<Tuple>(
+                            Tuple(
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        0u64
+                                    )
+                                ),
+                                Enum<0u8>(),
+                                Enum<0u8>()
+                            )
+                        ),
+                        Array<Enum>()
+                    ),
+                    Map<String, Enum>(),
+                    Map<String, Enum>(
+                        "TestType" => Enum<1u8>(
+                            2u64
+                        )
+                    ),
+                    Tuple(
+                        Map<String, Tuple>(
+                            "create_key_value_store_with_remote_type" => Tuple(
+                                Enum<0u8>(),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        1u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        66u8
+                                    )
+                                ),
+                                "KVStore_create_key_value_store_with_remote_type"
+                            )
+                        )
+                    ),
+                    Tuple(
+                        Map<Enum, String>()
+                    )
+                ),
+                Enum<0u8>(),
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
+            )
+        )
+    )
+    Blob("43940af7c65889131ce8d6d60fc71a22865682fed7198d920c296cfa07e7aea4")
+    Map<String, Tuple>()
+    Enum<1u8>(
+        AddressReservation("package_address_reservation")
+    )
+;
+CALL_FUNCTION
+    NamedAddress("package_address")
+    "KVStore"
+    "create_key_value_store_with_remote_type"
+    NamedAddress("package_address")
+    "KVStore"
+    "TestType"
+;

@@ -90,6 +90,51 @@ impl TryFrom<AnyManifest> for SubintentManifestV2 {
     }
 }
 
+pub trait ManifestPayload:
+    Into<AnyManifest>
+    + TryFrom<AnyManifest>
+    + for<'a> ManifestSborEnumVariantFor<
+        AnyManifest,
+        OwnedVariant: ManifestDecode,
+        BorrowedVariant<'a>: ManifestEncode,
+    >
+{
+    fn to_raw(self) -> Result<RawManifest, EncodeError> {
+        Ok(manifest_encode(&self.as_encodable_variant())?.into())
+    }
+
+    fn to_canonical_bytes(self) -> Result<Vec<u8>, EncodeError> {
+        self.to_raw().map(|raw| raw.0)
+    }
+
+    fn from_raw(raw: &RawManifest) -> Result<Self, DecodeError> {
+        Ok(Self::from_decoded_variant(manifest_decode(raw.as_ref())?))
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        AnyManifest::attempt_decode_from_arbitrary_payload(bytes)?
+            .try_into()
+            .map_err(|_| {
+                format!(
+                    "Manifest wasn't of the expected type: {}.",
+                    std::any::type_name::<Self>()
+                )
+            })
+    }
+}
+
+impl<
+        M: Into<AnyManifest>
+            + TryFrom<AnyManifest>
+            + for<'a> ManifestSborEnumVariantFor<
+                AnyManifest,
+                OwnedVariant: ManifestDecode,
+                BorrowedVariant<'a>: ManifestEncode,
+            >,
+    > ManifestPayload for M
+{
+}
+
 // It's not technically a conventional transaction payload, but let's reuse the macro
 define_raw_transaction_payload!(RawManifest, TransactionPayloadKind::Other);
 
@@ -98,8 +143,16 @@ impl AnyManifest {
         Ok(RawManifest::from_vec(manifest_encode(self)?))
     }
 
+    pub fn to_canonical_bytes(self) -> Result<Vec<u8>, EncodeError> {
+        self.to_raw().map(|raw| raw.0)
+    }
+
     pub fn from_raw(raw: &RawManifest) -> Result<Self, DecodeError> {
-        Ok(manifest_decode(raw.as_slice())?)
+        manifest_decode(raw.as_slice())
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        AnyManifest::attempt_decode_from_arbitrary_payload(bytes)
     }
 
     pub fn attempt_decode_from_arbitrary_payload(bytes: &[u8]) -> Result<Self, String> {
@@ -158,9 +211,7 @@ impl AnyManifest {
             });
         }
 
-        Err(format!(
-            "Cannot decode transaction manifest or transaction payload"
-        ))
+        Err("Cannot decode transaction manifest or transaction payload".to_string())
     }
 }
 
@@ -184,7 +235,7 @@ impl ReadableManifestBase for AnyManifest {
         iterator
     }
 
-    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef {
+    fn get_known_object_names_ref(&self) -> ManifestObjectNamesRef<'_> {
         match self {
             AnyManifest::V1(m) => m.get_known_object_names_ref(),
             AnyManifest::SystemV1(m) => m.get_known_object_names_ref(),
@@ -216,7 +267,7 @@ impl ReadableManifestBase for AnyManifest {
 }
 
 impl ReadableManifest for AnyManifest {
-    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect> {
+    fn iter_instruction_effects(&self) -> impl Iterator<Item = ManifestInstructionEffect<'_>> {
         let iterator: Box<dyn Iterator<Item = ManifestInstructionEffect>> = match self {
             AnyManifest::V1(m) => Box::new(m.iter_instruction_effects()),
             AnyManifest::SystemV1(m) => Box::new(m.iter_instruction_effects()),
@@ -245,7 +296,7 @@ impl ReadableManifest for AnyManifest {
         }
     }
 
-    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect {
+    fn instruction_effect(&self, index: usize) -> ManifestInstructionEffect<'_> {
         match self {
             AnyManifest::V1(m) => m.instruction_effect(index),
             AnyManifest::SystemV1(m) => m.instruction_effect(index),
@@ -279,20 +330,68 @@ impl TryFrom<&str> for ManifestKind {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let kind = match value.to_ascii_lowercase().as_str() {
-            "v1" => Self::V1,
-            "systemv1" => Self::SystemV1,
-            "v2" => Self::V2,
-            "subintentv2" => Self::SubintentV2,
-            "system" => Self::LATEST_SYSTEM,
-            "transaction" => Self::LATEST_TRANSACTION,
-            "subintent" => Self::LATEST_SUBINTENT,
-            _ => {
-                return Err(format!(
+        let kind =
+            match value.to_ascii_lowercase().as_str() {
+                "v1" => Self::V1,
+                "systemv1" => Self::SystemV1,
+                "v2" => Self::V2,
+                "subintentv2" => Self::SubintentV2,
+                "system" => Self::LATEST_SYSTEM,
+                "transaction" => Self::LATEST_TRANSACTION,
+                "subintent" => Self::LATEST_SUBINTENT,
+                _ => return Err(
                     "Manifest kind not recognized. Try one of: V1 | SystemV1 | V2 | SubintentV2"
-                ))
-            }
-        };
+                        .to_string(),
+                ),
+            };
         Ok(kind)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::internal_prelude::*;
+
+    #[test]
+    pub fn subintent_manifest_v2_is_round_trip_encodable_and_fixed() {
+        let builder = ManifestBuilder::new_subintent_v2();
+        let lookup = builder.name_lookup();
+
+        // We include an object name to check that gets preserved
+        let manifest = builder
+            .take_all_from_worktop(XRD, "my_bucket")
+            .yield_to_parent((lookup.bucket("my_bucket"),))
+            .build();
+        let encoded = manifest.clone().to_raw().unwrap();
+        let decoded = SubintentManifestV2::from_raw(&encoded).unwrap();
+        assert_eq!(manifest, decoded);
+
+        // Ensuring that old encoded manifests can be decoded is required to ensure that manifests
+        // saved with `rtmc` can still be read with `rtmd`
+        let cuttlefish_hex = "4d2203012104202202020180005da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c660012101810000000023202000202000220101230c230509616464726573736573090c00076275636b657473090c0100000000096d795f6275636b657407696e74656e7473090c000670726f6f6673090c000c7265736572766174696f6e73090c00";
+        let cuttlefish_raw = RawManifest::from_hex(cuttlefish_hex).unwrap();
+        let cuttlefish_decoded = SubintentManifestV2::from_raw(&cuttlefish_raw).unwrap();
+        assert_eq!(manifest, cuttlefish_decoded);
+    }
+
+    #[test]
+    pub fn transaction_intent_manifest_v2_is_round_trip_encodable_and_fixed() {
+        let builder = ManifestBuilder::new_v2();
+
+        // We include an object name to check that gets preserved
+        let manifest = builder
+            .lock_fee_from_faucet()
+            .create_proof_from_auth_zone_of_all(XRD, "my_proof")
+            .build();
+        let encoded = manifest.clone().to_raw().unwrap();
+        let decoded = TransactionManifestV2::from_raw(&encoded).unwrap();
+        assert_eq!(manifest, decoded);
+
+        // Ensuring that old encoded manifests can be decoded is required to ensure that manifests
+        // saved with `rtmc` can still be read with `rtmd`
+        let cuttlefish_hex = "4d220201210420220241038000c0566318c6318c64f798cacc6318c6318cf7be8af78a78f8a6318c6318c60c086c6f636b5f66656521018500002059dd64f00c0f010000000000000000000000000000160180005da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c623202000202000220101230c230509616464726573736573090c00076275636b657473090c0007696e74656e7473090c000670726f6f6673090c0100000000086d795f70726f6f660c7265736572766174696f6e73090c00";
+        let cuttlefish_raw = RawManifest::from_hex(cuttlefish_hex).unwrap();
+        let cuttlefish_decoded = TransactionManifestV2::from_raw(&cuttlefish_raw).unwrap();
+        assert_eq!(manifest, cuttlefish_decoded);
     }
 }

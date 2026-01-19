@@ -17,24 +17,31 @@ pub type MetadataCreateOutput = Own;
 
 pub const METADATA_CREATE_WITH_DATA_IDENT: &str = "create_with_data";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct MetadataCreateWithDataInput {
     pub data: MetadataInit,
 }
 
-pub type MetadataCreateWithDataManifestInput = MetadataCreateWithDataInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct MetadataCreateWithDataManifestInput {
+    pub data: ManifestMetadataInit,
+}
 
 pub type MetadataCreateWithDataOutput = Own;
 
 pub const METADATA_SET_IDENT: &str = "set";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestEncode, ManifestCategorize)]
 pub struct MetadataSetInput {
     pub key: String,
     pub value: MetadataValue,
 }
 
-pub type MetadataSetManifestInput = MetadataSetInput;
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+pub struct MetadataSetManifestInput {
+    pub key: String,
+    pub value: ManifestMetadataValue,
+}
 
 pub type MetadataSetOutput = ();
 

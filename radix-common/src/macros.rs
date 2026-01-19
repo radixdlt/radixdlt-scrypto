@@ -172,3 +172,212 @@ macro_rules! to_manifest_value_and_unwrap {
         $crate::data::manifest::to_manifest_value($value).unwrap()
     }};
 }
+
+/// This macro is used to create types that are supposed to be equivalent to existing types that
+/// implement [`ScryptoSbor`]. These types are untyped which means that at the language-level, they
+/// don't contain any type information (e.g., enums don't contain variants, structs don't contain
+/// named fields, etc...).
+///
+/// It's a useful concepts for certain types that are too complex to create an equivalent manifest
+/// types for. For example, `AccessRules` is too complex and has a lot of dependencies and therefore
+/// creating a manifest type for it is very complex. Instead, we could opt to a create a manifest
+/// type for it that has the same schema as it and that offers two way conversion from and into it
+/// such that we can use it in any manifest invocation.
+///
+/// The `$scrypto_ty` provided to this macro must implement [`ScryptoSbor`] and [`ScryptoDescribe`]
+/// and the generated type (named `$manifest_ty_ident`) will implement [`ManifestSbor`] and also
+/// [`ScryptoDescribe`] with the same schema as the original Scrypto type.
+///
+/// # Note on Panics
+///
+/// The `From<$scrypto_ty> for $manifest_ty_ident` implementation will PANIC if it fails. Ensure
+/// that this macro is not used anywhere in the engine itself and only used in the interface.
+///
+/// [`ScryptoSbor`]: crate::prelude::ScryptoSbor
+/// [`ScryptoDescribe`]: crate::prelude::ScryptoDescribe
+/// [`ManifestSbor`]: crate::prelude::ManifestSbor
+#[macro_export]
+macro_rules! define_untyped_manifest_type_wrapper {
+    (
+        $scrypto_ty: ty => $manifest_ty_ident: ident ($inner_ty: ty)
+    ) => {
+        #[cfg_attr(
+            feature = "fuzzing",
+            derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
+        )]
+        #[derive(
+            Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            $crate::prelude::ManifestEncode,
+            $crate::prelude::ManifestCategorize,
+        )]
+        #[sbor(transparent)]
+        pub struct $manifest_ty_ident($inner_ty);
+
+        const _: () = {
+            impl $manifest_ty_ident {
+                pub fn new(
+                    value: impl Into<$scrypto_ty>,
+                ) -> Result<Self, $crate::prelude::ConversionError> {
+                    let value = Into::<$scrypto_ty>::into(value);
+                    let encoded_scrypto_bytes = $crate::prelude::scrypto_encode(&value)
+                        .map_err($crate::prelude::ConversionError::EncodeError)?;
+                    let scrypto_value = $crate::prelude::scrypto_decode::<
+                        $crate::prelude::ScryptoValue,
+                    >(&encoded_scrypto_bytes)
+                    .map_err($crate::prelude::ConversionError::DecodeError)?;
+
+                    let manifest_value =
+                        $crate::prelude::scrypto_value_to_manifest_value(scrypto_value)?;
+                    let encoded_manifest_bytes = $crate::prelude::manifest_encode(&manifest_value)
+                        .map_err($crate::prelude::ConversionError::EncodeError)?;
+                    $crate::prelude::manifest_decode(&encoded_manifest_bytes)
+                        .map(Self)
+                        .map_err($crate::prelude::ConversionError::DecodeError)
+                }
+
+                pub fn try_into_typed(
+                    self,
+                ) -> Result<$scrypto_ty, $crate::prelude::ConversionError> {
+                    let value = self.0;
+                    let encoded_manifest_bytes = $crate::prelude::manifest_encode(&value)
+                        .map_err($crate::prelude::ConversionError::EncodeError)?;
+                    let manifest_value = $crate::prelude::manifest_decode::<
+                        $crate::prelude::ManifestValue,
+                    >(&encoded_manifest_bytes)
+                    .map_err($crate::prelude::ConversionError::DecodeError)?;
+
+                    let scrypto_value =
+                        $crate::prelude::manifest_value_to_scrypto_value(manifest_value)?;
+                    let encoded_scrypto_bytes = $crate::prelude::scrypto_encode(&scrypto_value)
+                        .map_err($crate::prelude::ConversionError::EncodeError)?;
+                    $crate::prelude::scrypto_decode::<$scrypto_ty>(&encoded_scrypto_bytes)
+                        .map_err($crate::prelude::ConversionError::DecodeError)
+                }
+            }
+
+            // Note: this conversion WILL PANIC if it fails.
+            impl<T> From<T> for $manifest_ty_ident
+            where
+                T: Into<$scrypto_ty>,
+            {
+                fn from(value: T) -> Self {
+                    Self::new(value).expect(concat!(
+                        "Conversion from ",
+                        stringify!($scrypto_ty),
+                        " into ",
+                        stringify!($manifest_ty_ident),
+                        " failed despite not being expected to fail"
+                    ))
+                }
+            }
+
+            impl TryFrom<$manifest_ty_ident> for $scrypto_ty {
+                type Error = $crate::prelude::ConversionError;
+
+                fn try_from(value: $manifest_ty_ident) -> Result<Self, Self::Error> {
+                    value.try_into_typed()
+                }
+            }
+
+            impl $crate::prelude::Describe<$crate::prelude::ScryptoCustomTypeKind>
+                for $manifest_ty_ident
+            {
+                const TYPE_ID: $crate::prelude::RustTypeId =
+                    <$scrypto_ty as $crate::prelude::Describe<
+                        $crate::prelude::ScryptoCustomTypeKind,
+                    >>::TYPE_ID;
+
+                fn type_data() -> $crate::prelude::TypeData<
+                    $crate::prelude::ScryptoCustomTypeKind,
+                    $crate::prelude::RustTypeId,
+                > {
+                    <$scrypto_ty as Describe<$crate::prelude::ScryptoCustomTypeKind>>::type_data()
+                }
+
+                fn add_all_dependencies(
+                    aggregator: &mut $crate::prelude::TypeAggregator<$crate::prelude::ScryptoCustomTypeKind>
+                ) {
+                    <$scrypto_ty as Describe<$crate::prelude::ScryptoCustomTypeKind>>::add_all_dependencies(aggregator)
+                }
+            }
+
+            // Manual implementation of decoding to allow us to check the schema on-decode to mirror
+            // what the Scrypto equivalent types do.
+            //
+            // The Scrypto types do it a little differently where their schema check is implicit
+            // (e.g., SBOR contains 5 fields but struct has 2) and therefore we need to do an
+            // explicit schema check here so that no types that dont match the schema can be decoded
+            // into this wrapper type.
+            impl<D: $crate::prelude::Decoder<$crate::prelude::ManifestCustomValueKind>> $crate::prelude::Decode<$crate::prelude::ManifestCustomValueKind, D> for $manifest_ty_ident
+            {
+                #[inline]
+                fn decode_body_with_value_kind(
+                    decoder: &mut D,
+                    value_kind: $crate::prelude::ValueKind<$crate::prelude::ManifestCustomValueKind>,
+                ) -> Result<Self, $crate::prelude::DecodeError> {
+                    // Store the schema of this type in a lazy-static. The schema doesn't change and
+                    // we don't want to recreate the schema each time we want to decode it.
+                    ::lazy_static::lazy_static! {
+                        static ref SCHEMA: ($crate::prelude::LocalTypeId, $crate::prelude::VersionedSchema<$crate::prelude::ScryptoCustomSchema>) = $crate::prelude::generate_full_schema_from_single_type::<
+                            $scrypto_ty,
+                            $crate::prelude::ScryptoCustomSchema
+                        >();
+                    }
+
+                    // Start by decoding the value and creating this object.
+                    let inner_value = <$inner_ty
+                        as $crate::prelude::Decode<$crate::prelude::ManifestCustomValueKind, D>
+                    >::decode_body_with_value_kind(decoder, value_kind)?;
+
+                    // Re-encode this type and do the schema check.
+                    let encoded = $crate::prelude::manifest_encode(&inner_value).map_err(|_| $crate::prelude::DecodeError::InvalidCustomValue)?;
+                    $crate::prelude::validate_payload_against_schema::<$crate::prelude::ManifestCustomExtension, _>(
+                        &encoded,
+                        SCHEMA.1.v1(),
+                        SCHEMA.0,
+                        &(),
+                        $crate::prelude::MANIFEST_SBOR_V1_MAX_DEPTH
+                    )
+                    .map_err(|_| $crate::prelude::DecodeError::InvalidCustomValue)?;
+
+                    // All succeeded, return the value
+                    Ok(Self(inner_value))
+                }
+            }
+        };
+    };
+}
+
+#[cfg(test)]
+mod test {
+    use crate::prelude::*;
+
+    #[test]
+    fn decoding_into_opaque_value_with_incorrect_schema_fails() {
+        // Arrange
+        #[derive(ScryptoSbor)]
+        pub enum MyEnum {
+            Variant(u32),
+        }
+
+        #[derive(ScryptoSbor, ManifestSbor)]
+        pub enum MyOtherEnum {
+            Variant(Decimal),
+        }
+
+        define_untyped_manifest_type_wrapper!(
+            MyEnum => ManifestMyEnum(EnumVariantValue<ManifestCustomValueKind, ManifestCustomValue>)
+        );
+
+        let encoded = manifest_encode(&MyOtherEnum::Variant(Decimal::ONE)).unwrap();
+
+        // Act
+        let decoded = manifest_decode::<ManifestMyEnum>(&encoded);
+
+        // Assert
+        assert_eq!(decoded, Err(DecodeError::InvalidCustomValue))
+    }
+}

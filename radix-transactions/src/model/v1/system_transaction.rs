@@ -12,7 +12,7 @@ impl SystemTransactionV1 {
     pub fn with_proofs_ref(
         &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> SystemTransactionV1WithProofs {
+    ) -> SystemTransactionV1WithProofs<'_> {
         SystemTransactionV1WithProofs {
             initial_proofs,
             transaction: Cow::Borrowed(self),

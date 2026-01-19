@@ -39,6 +39,7 @@ pub fn format_payload_as_nested_string<F: fmt::Write, E: FormattableCustomExtens
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn format_partial_payload_as_nested_string<
     F: fmt::Write,
     E: FormattableCustomExtension,
@@ -115,7 +116,7 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomExtension>(
         TerminalValue(type_id, value_ref) => format_terminal_value(f, context, type_id, value_ref),
         _ => Err(FormattingError::Sbor(
             typed_event
-                .display_as_unexpected_event("ContainerStart | TerminalValue", &context.schema),
+                .display_as_unexpected_event("ContainerStart | TerminalValue", context.schema),
         )),
     }
 }
@@ -177,20 +178,20 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomExtension>(
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
-            write!(f, "\n")?;
+            writeln!(f)?;
             match tuple_data.field_names {
                 Some(field_names) => {
                     for i in 0..tuple_header.length {
                         write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
-                        write!(f, ",\n")?;
+                        writeln!(f, ",")?;
                     }
                 }
                 _ => {
                     for _ in 0..tuple_header.length {
                         write!(f, "{}", child_indent)?;
                         format_value_tree(f, traverser, context)?;
-                        write!(f, ",\n")?;
+                        writeln!(f, ",")?;
                     }
                 }
             }
@@ -265,20 +266,20 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomExtension>(
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
-            write!(f, "\n")?;
+            writeln!(f)?;
             match enum_data.field_names {
                 Some(field_names) => {
                     for i in 0..field_length {
                         write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
-                        write!(f, ",\n")?;
+                        writeln!(f, ",")?;
                     }
                 }
                 _ => {
                     for _ in 0..field_length {
                         write!(f, "{}", child_indent)?;
                         format_value_tree(f, traverser, context)?;
-                        write!(f, ",\n")?;
+                        writeln!(f, ",")?;
                     }
                 }
             }
@@ -341,7 +342,7 @@ fn format_array<F: fmt::Write, E: FormattableCustomExtension>(
                     f.write_str(&hex::encode(bytes))?;
                 }
                 _ => Err(FormattingError::Sbor(
-                    typed_event.display_as_unexpected_event("TerminalValueBatch", &context.schema),
+                    typed_event.display_as_unexpected_event("TerminalValueBatch", context.schema),
                 ))?,
             };
             write!(f, "\"))")?;
@@ -367,11 +368,11 @@ fn format_array<F: fmt::Write, E: FormattableCustomExtension>(
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
-            write!(f, "\n")?;
+            writeln!(f)?;
             for _ in 0..child_count {
                 write!(f, "{}", child_indent)?;
                 format_value_tree(f, traverser, context)?;
-                write!(f, ",\n")?;
+                writeln!(f, ",")?;
             }
 
             write!(f, "{})", parent_indent)?;
@@ -445,11 +446,11 @@ fn format_map<F: fmt::Write, E: FormattableCustomExtension>(
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
-            write!(f, "\n")?;
+            writeln!(f)?;
             for _ in 0..child_count {
                 write!(f, "{}", child_indent)?;
                 format_value_tree(f, traverser, context)?;
-                write!(f, ",\n")?;
+                writeln!(f, ",")?;
             }
 
             write!(f, "{})", parent_indent)?;
@@ -516,6 +517,7 @@ mod tests {
     use radix_rust::*;
 
     #[derive(Sbor, Hash, Eq, PartialEq)]
+    #[allow(clippy::enum_variant_names)]
     enum TestEnum {
         UnitVariant,
         SingleFieldVariant { field: u8 },

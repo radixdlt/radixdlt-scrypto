@@ -42,10 +42,9 @@ impl TransactionTrackerNativePackage {
             ))
         }
 
-        let mut fields = Vec::new();
-        fields.push(FieldSchema::static_field(
+        let fields = vec![FieldSchema::static_field(
             aggregator.add_child_type_and_descendents::<TransactionTrackerSubstate>(),
-        ));
+        )];
 
         let mut functions = index_map_new();
         functions.insert(
@@ -232,7 +231,7 @@ impl TransactionTrackerBlueprint {
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,
             indexmap!(
-                0u8 => FieldValue::new(&TransactionTrackerSubstate::V1(TransactionTrackerSubstateV1{
+                0u8 => FieldValue::new(TransactionTrackerSubstate::V1(TransactionTrackerSubstateV1{
                     start_epoch: current_epoch.number(),
                     start_partition: PARTITION_RANGE_START,
                     partition_range_start_inclusive: PARTITION_RANGE_START,

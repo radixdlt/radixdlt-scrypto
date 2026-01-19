@@ -1,4 +1,4 @@
-use crate::data::*;
+use crate::data::{to_decimal, to_non_fungible_local_id, to_precise_decimal};
 use crate::internal_prelude::*;
 use radix_common::data::manifest::model::{
     ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof,

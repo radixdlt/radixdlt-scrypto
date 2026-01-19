@@ -344,7 +344,7 @@ impl IteratedLeafKey for LeafKey {
     }
 
     fn get_nibble(&self, index: usize) -> Nibble {
-        Nibble::from(if index % 2 == 0 {
+        Nibble::from(if index.is_multiple_of(2) {
             self.bytes[index / 2] >> 4
         } else {
             self.bytes[index / 2] & 0x0F
@@ -458,7 +458,7 @@ impl NibblePath {
 
     /// Adds a nibble to the end of the nibble path.
     pub fn push(&mut self, nibble: Nibble) {
-        if self.num_nibbles % 2 == 0 {
+        if self.num_nibbles.is_multiple_of(2) {
             self.bytes.push(u8::from(nibble) << 4);
         } else {
             self.bytes[self.num_nibbles / 2] |= u8::from(nibble);
@@ -468,7 +468,7 @@ impl NibblePath {
 
     /// Pops a nibble from the end of the nibble path.
     pub fn pop(&mut self) -> Option<Nibble> {
-        let poped_nibble = if self.num_nibbles % 2 == 0 {
+        let poped_nibble = if self.num_nibbles.is_multiple_of(2) {
             self.bytes.last_mut().map(|last_byte| {
                 let nibble = *last_byte & 0x0F;
                 *last_byte &= 0xF0;
@@ -486,7 +486,7 @@ impl NibblePath {
     /// Returns the last nibble.
     pub fn last(&self) -> Option<Nibble> {
         let last_byte_option = self.bytes.last();
-        if self.num_nibbles % 2 == 0 {
+        if self.num_nibbles.is_multiple_of(2) {
             last_byte_option.map(|last_byte| Nibble::from(*last_byte & 0x0F))
         } else {
             let last_byte = last_byte_option.expect("Last byte must exist if num_nibbles is odd.");
@@ -509,7 +509,7 @@ impl NibblePath {
     }
 
     /// Get a bit iterator iterates over the whole nibble path.
-    pub fn bits(&self) -> BitIterator {
+    pub fn bits(&self) -> BitIterator<'_> {
         BitIterator {
             nibble_path: self,
             pos: (0..self.num_nibbles * 4),
@@ -517,7 +517,7 @@ impl NibblePath {
     }
 
     /// Get a nibble iterator iterates over the whole nibble path.
-    pub fn nibbles(&self) -> NibbleIterator {
+    pub fn nibbles(&self) -> NibbleIterator<'_> {
         NibbleIterator::new(self, 0, self.num_nibbles)
     }
 
@@ -539,8 +539,8 @@ impl NibblePath {
     pub fn truncate(&mut self, len: usize) {
         assert!(len <= self.num_nibbles);
         self.num_nibbles = len;
-        self.bytes.truncate((len + 1) / 2);
-        if len % 2 != 0 {
+        self.bytes.truncate(len.div_ceil(2));
+        if !len.is_multiple_of(2) {
             *self.bytes.last_mut().expect("must exist.") &= 0xF0;
         }
     }
@@ -879,7 +879,7 @@ impl InternalNode {
 
     /// Given a range [start, start + width), returns the sub-bitmap of that range.
     fn range_bitmaps(start: u8, width: u8, bitmaps: (u16, u16)) -> (u16, u16) {
-        assert!(start < 16 && width.count_ones() == 1 && start % width == 0);
+        assert!(start < 16 && width.count_ones() == 1 && start.is_multiple_of(width));
         assert!(width <= 16 && (start + width) <= 16);
         // A range with `start == 8` and `width == 4` will generate a mask 0b0000111100000000.
         // use as converting to smaller integer types when 'width == 16'

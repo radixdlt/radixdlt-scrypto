@@ -325,7 +325,7 @@ create_well_known_lookup!(
         //
         (
             DECIMAL,
-            MISC_TYPES_START + 0,
+            MISC_TYPES_START,
             unnamed_custom_type_kind(ScryptoCustomTypeKind::Decimal, None)
         ),
         (
@@ -382,7 +382,7 @@ create_well_known_lookup!(
         // Crypto-related types from CRYPTO_TYPES_START
         (
             PUBLIC_KEY,
-            CRYPTO_TYPES_START + 0,
+            CRYPTO_TYPES_START,
             named_enum(
                 "PublicKey",
                 [
@@ -440,7 +440,7 @@ create_well_known_lookup!(
         // ROLE ASSIGNMENT TYPES
         (
             ACCESS_RULE,
-            ROLE_ASSIGNMENT_TYPES_START + 0,
+            ROLE_ASSIGNMENT_TYPES_START,
             named_enum(
                 "AccessRule",
                 [
@@ -534,7 +534,7 @@ create_well_known_lookup!(
         // OTHER MODULE TYPES
         (
             MODULE_ID,
-            OTHER_MODULE_TYPES_START + 0,
+            OTHER_MODULE_TYPES_START,
             named_enum(
                 "ModuleId",
                 [
@@ -650,7 +650,7 @@ mod tests {
 
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             &scrypto_encode(&value).unwrap(),
-            &ScryptoCustomSchema::empty_schema(),
+            ScryptoCustomSchema::empty_schema(),
             id.into(),
             &(),
             10,

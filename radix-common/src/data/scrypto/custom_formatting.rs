@@ -19,21 +19,21 @@ impl<'a> ScryptoValueDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ScryptoValueDisplayContext<'a>> for AddressDisplayContext<'a> {
-    fn into(self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bech32(self.encoder)
+impl<'a> From<AddressDisplayContext<'a>> for ScryptoValueDisplayContext<'a> {
+    fn from(val: AddressDisplayContext<'a>) -> Self {
+        ScryptoValueDisplayContext::with_optional_bech32(val.encoder)
     }
 }
 
-impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a AddressBech32Encoder {
-    fn into(self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bech32(Some(self))
+impl<'a> From<&'a AddressBech32Encoder> for ScryptoValueDisplayContext<'a> {
+    fn from(val: &'a AddressBech32Encoder) -> Self {
+        ScryptoValueDisplayContext::with_optional_bech32(Some(val))
     }
 }
 
-impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
-    fn into(self) -> ScryptoValueDisplayContext<'a> {
-        ScryptoValueDisplayContext::with_optional_bech32(self)
+impl<'a> From<Option<&'a AddressBech32Encoder>> for ScryptoValueDisplayContext<'a> {
+    fn from(val: Option<&'a AddressBech32Encoder>) -> Self {
+        ScryptoValueDisplayContext::with_optional_bech32(val)
     }
 }
 

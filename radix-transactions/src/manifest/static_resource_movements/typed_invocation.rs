@@ -45,6 +45,7 @@ macro_rules! define_manifest_typed_invocation {
         paste::paste! {
             /* The TypedManifestNativeInvocation enum */
             #[derive(Debug, ManifestSbor, ScryptoDescribe)]
+            #[allow(clippy::large_enum_variant)]
             pub enum TypedManifestNativeInvocation {
                 $(
                     [< $blueprint_ident BlueprintInvocation >]([< $blueprint_ident BlueprintInvocation >])
@@ -226,6 +227,7 @@ macro_rules! define_manifest_typed_invocation {
             /* The Method and Function types for each blueprint */
             $(
                 #[derive(Debug, ManifestSbor, ScryptoDescribe)]
+                #[allow(clippy::large_enum_variant)]
                 pub enum [< $blueprint_ident BlueprintInvocation >] {
                     Method([< $blueprint_ident BlueprintMethod >]),
                     DirectMethod([< $blueprint_ident BlueprintDirectMethod >]),
@@ -248,16 +250,18 @@ macro_rules! define_manifest_typed_invocation {
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
                         match method_name {
                             $(
-                                $method_name => decode_args(args)
-                                    .map(Self::$method_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeMethodInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            method_name: method_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $method_name => decode_args(
+                                    args,
+                                )
+                                .map(Self::$method_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeMethodInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        method_name: method_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid method was called. We
                             // have all of the methods on all blueprints we have supported so this
@@ -285,16 +289,18 @@ macro_rules! define_manifest_typed_invocation {
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
                         match direct_method_name {
                             $(
-                                $direct_method_name => decode_args(args)
-                                    .map(Self::$direct_method_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeDirectMethodInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            method_name: direct_method_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $direct_method_name => decode_args(
+                                    args,
+                                )
+                                .map(Self::$direct_method_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeDirectMethodInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        method_name: direct_method_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid method was called. We
                             // have all of the methods on all blueprints we have supported so this
@@ -323,16 +329,18 @@ macro_rules! define_manifest_typed_invocation {
                     ) -> Result<Self, TypedManifestNativeInvocationError> {
                         match function_name {
                             $(
-                                $function_name => decode_args(args)
-                                    .map(Self::$function_ident)
-                                    .map_err(|error| {
-                                        TypedManifestNativeInvocationError::FailedToDecodeFunctionInvocation {
-                                            blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
-                                            function_name: function_name.to_owned(),
-                                            args: args.clone(),
-                                            error
-                                        }
-                                    }),
+                                $function_name => decode_args(
+                                    args,
+                                )
+                                .map(Self::$function_ident)
+                                .map_err(|error| {
+                                    TypedManifestNativeInvocationError::FailedToDecodeFunctionInvocation {
+                                        blueprint_id: ::radix_common::prelude::BlueprintId::new(&$package_address, $blueprint_name),
+                                        function_name: function_name.to_owned(),
+                                        args: args.clone(),
+                                        error
+                                    }
+                                }),
                             )*
                             // If we get here then it means that an invalid function was called. We
                             // have all of the functions on all blueprints we have supported so this
@@ -1350,5 +1358,5 @@ pub enum TypedManifestNativeInvocationError {
 
 fn decode_args<M: ManifestDecode>(args: &ManifestValue) -> Result<M, String> {
     let encoded = manifest_encode(&args).map_err(|error| format!("{error:#?}"))?;
-    manifest_decode(&encoded).map_err(|error| format!("{error:#?}"))
+    manifest_decode::<M>(&encoded).map_err(|error| format!("{error:#?}"))
 }

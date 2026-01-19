@@ -7,6 +7,12 @@ pub struct NamedSchemaVersions<S: CustomSchema, C: ComparableSchema<S>> {
     custom_schema: PhantomData<S>,
 }
 
+impl<S: CustomSchema, C: ComparableSchema<S>> Default for NamedSchemaVersions<S, C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: CustomSchema, C: ComparableSchema<S>> NamedSchemaVersions<S, C> {
     pub fn new() -> Self {
         Self {
@@ -51,7 +57,7 @@ pub trait ComparableSchema<S: CustomSchema>: Clone + VecSbor<S::DefaultCustomExt
     }
 
     fn encode_to_hex(&self) -> String {
-        hex::encode(&self.encode_to_bytes())
+        hex::encode(self.encode_to_bytes())
     }
 
     fn decode_from_bytes(bytes: &[u8]) -> Self {
@@ -89,8 +95,8 @@ impl<S: CustomSchema> ComparableSchema<S> for SingleTypeSchema<S> {
         settings: &SchemaComparisonSettings,
     ) -> SchemaComparisonResult<'s, S> {
         SchemaComparisonKernel::new(
-            &self.schema.as_unique_version(),
-            &compared.schema.as_unique_version(),
+            self.schema.as_unique_version(),
+            compared.schema.as_unique_version(),
             settings,
         )
         .compare_using_fixed_type_roots(&[ComparisonTypeRoot {
@@ -108,8 +114,8 @@ impl<S: CustomSchema> ComparableSchema<S> for TypeCollectionSchema<S> {
         settings: &SchemaComparisonSettings,
     ) -> SchemaComparisonResult<'s, S> {
         SchemaComparisonKernel::new(
-            &self.schema.as_unique_version(),
-            &compared.schema.as_unique_version(),
+            self.schema.as_unique_version(),
+            compared.schema.as_unique_version(),
             settings,
         )
         .compare_using_named_type_roots(&self.type_ids, &compared.type_ids)
@@ -117,6 +123,7 @@ impl<S: CustomSchema> ComparableSchema<S> for TypeCollectionSchema<S> {
 }
 
 pub trait IntoComparableSchema<C: ComparableSchema<S>, S: CustomSchema> {
+    #[allow(clippy::wrong_self_convention)]
     fn into_schema(&self) -> C;
 }
 
@@ -132,8 +139,8 @@ impl<S: CustomSchema> IntoComparableSchema<Self, S> for TypeCollectionSchema<S> 
     }
 }
 
-impl<'a, C: ComparableSchema<S>, S: CustomSchema, T: IntoComparableSchema<C, S> + ?Sized>
-    IntoComparableSchema<C, S> for &'a T
+impl<C: ComparableSchema<S>, S: CustomSchema, T: IntoComparableSchema<C, S> + ?Sized>
+    IntoComparableSchema<C, S> for &T
 {
     fn into_schema(&self) -> C {
         <T as IntoComparableSchema<C, S>>::into_schema(*self)

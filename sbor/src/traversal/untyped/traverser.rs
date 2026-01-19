@@ -6,8 +6,8 @@ use crate::value_kind::*;
 use crate::*;
 
 /// Returns the length of the value at the start of the partial payload.
-pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomExtension>(
-    partial_payload: &'de [u8],
+pub fn calculate_value_tree_body_byte_length<E: CustomExtension>(
+    partial_payload: &[u8],
     value_kind: ValueKind<E::CustomValueKind>,
     current_depth: usize,
     depth_limit: usize,
@@ -466,7 +466,7 @@ impl<'t, 'd, 'de, T: CustomTraversal> ActionHandler<'t, 'd, 'de, T> {
         container_header: ContainerHeader<T>,
     ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
         let next_action = NextAction::ReadContainerContentStart {
-            container_header: container_header.clone(),
+            container_header,
             container_start_offset: self.start_offset,
         };
         self.complete(

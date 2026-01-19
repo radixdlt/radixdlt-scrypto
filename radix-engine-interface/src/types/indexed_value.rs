@@ -38,10 +38,10 @@ impl IndexedScryptoValue {
                     if let traversal::TerminalValueRef::Custom(c) = r {
                         match c.0 {
                             ScryptoCustomValue::Reference(node_id) => {
-                                references.push(node_id.0.into());
+                                references.push(node_id.0);
                             }
                             ScryptoCustomValue::Own(node_id) => {
-                                owned_nodes.push(node_id.0.into());
+                                owned_nodes.push(node_id.0);
                             }
                             ScryptoCustomValue::Decimal(_)
                             | ScryptoCustomValue::PreciseDecimal(_)
@@ -67,7 +67,7 @@ impl IndexedScryptoValue {
         })
     }
 
-    fn get_scrypto_value(&self) -> Ref<ScryptoValue> {
+    fn get_scrypto_value(&self) -> Ref<'_, ScryptoValue> {
         let is_empty = { self.scrypto_value.borrow().is_none() };
 
         if is_empty {
@@ -106,7 +106,7 @@ impl IndexedScryptoValue {
         self.get_scrypto_value().clone()
     }
 
-    pub fn as_scrypto_value(&self) -> Ref<ScryptoValue> {
+    pub fn as_scrypto_value(&self) -> Ref<'_, ScryptoValue> {
         self.get_scrypto_value()
     }
 
@@ -122,6 +122,7 @@ impl IndexedScryptoValue {
         &self.bytes
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.bytes.len()
     }
@@ -139,9 +140,9 @@ impl IndexedScryptoValue {
     }
 }
 
-impl Into<Vec<u8>> for IndexedScryptoValue {
-    fn into(self) -> Vec<u8> {
-        self.bytes
+impl From<IndexedScryptoValue> for Vec<u8> {
+    fn from(val: IndexedScryptoValue) -> Self {
+        val.bytes
     }
 }
 
@@ -165,9 +166,9 @@ impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomExten
 {
     type Error = sbor::representations::FormattingError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ValueDisplayParameters<'_, '_, ScryptoCustomExtension>,
     ) -> Result<(), Self::Error> {
         ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(f, *context)

@@ -117,6 +117,16 @@ impl<
     }
 }
 
+impl<
+        K: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+        V: ScryptoEncode + ScryptoDecode + ScryptoDescribe,
+    > Default for KeyValueStore<K, V>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 //========
 // binary
 //========

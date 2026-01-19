@@ -129,8 +129,8 @@ impl FungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             indexmap! {
-                FungibleProofField::Moveable.field_index() => FieldValue::new(&proof_info),
-                FungibleProofField::ProofRefs.field_index() => FieldValue::new(&proof_evidence),
+                FungibleProofField::Moveable.field_index() => FieldValue::new(proof_info),
+                FungibleProofField::ProofRefs.field_index() => FieldValue::new(proof_evidence),
             },
         )?;
 

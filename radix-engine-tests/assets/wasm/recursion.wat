@@ -6,10 +6,13 @@
         (local.get $0)
         (i32.const 2)
       )
-      (return
-        (i32.const 1)
+      (then
+        (return
+          (i32.const 1)
+        )
       )
     )
+
     (return
       (i32.add
         (call $f

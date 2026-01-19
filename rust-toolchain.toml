@@ -1,0 +1,28 @@
+[toolchain]
+# IMPORTANT:
+# To update the Rust version, you must update it in the below places (including the toolchain below) in this repo:
+# => [rust-toolchain.toml] Update the channel
+# => [README.md - part 1] Update "Install Rust - we recommend to use Rust X.XX.X"
+# => [README.md - part 2] Update "rustup default X.XX.X"
+# => [action.yml - part 1] Update "toolchain: X.XX.X"
+# => [action.yml - part 2] Update the three lines starting "rustup toolchain install nightly-202?-??-??"
+#    in the "radix-clis-scrypto-coverage" step, or update the comment explaining why a
+#    different version is used.
+# => [Dockerfile] Update "FROM rust:X.XX.X-slim-bookworm AS base-image" in the deterministic builder
+# => [radix-clis/assets/template/rust-toolchain.toml_template] Update the rust version
+# => [scrypto-install-scripts/*] Update the all version in each scripts "# Versions to install" section. Keep the current version number format:
+#   => [scrypto-install-scripts/install-scrypto-debian.sh] "LLVM_VERSION=XX", "RUST_VERSION=X.XX.X", "RADIX_CLI_VERSION=X.X.X"
+#   => [scrypto-install-scripts/install-scrypto-macos.sh] "LLVM_VERSION=XX", "RUST_VERSION=X.XX.X", "RADIX_CLI_VERSION=X.X.X"
+#   => [scrypto-install-scripts/install-scrypto-windows.ps1] "$llvmVersion = 'XX.X.X'", "$rustVersion = 'X.XX.X'", "$radixCliVersion = 'X.X.X'"
+# => [https://docs.radixdlt.com/docs/getting-rust-scrypto] Update the recommended rust version on docs
+#
+# Additionally, Rust version should be updated in below repos on respective branches:
+# => babylon-node:
+#  => ./core-rust/rust-toolchain.toml
+#  => .github/actions/setup-env/action.yml
+# => fuzzer:
+#  => .github/actions/setup-env/action.yml
+channel = "1.92.0"
+components = ["rustfmt", "rust-src"]
+targets = ["wasm32-unknown-unknown"]
+profile = "default"

@@ -24,7 +24,7 @@ impl TypeInfoSubstate {
                         ..
                     },
                 ..
-            }) => Some(outer_object.clone()),
+            }) => Some(*outer_object),
             _ => None,
         }
     }

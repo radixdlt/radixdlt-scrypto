@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod component;
 mod kv_store;
 mod kv_store_data_ref;

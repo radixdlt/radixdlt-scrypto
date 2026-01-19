@@ -19,6 +19,7 @@ impl BlueprintId {
         }
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.package_address.as_bytes().len() + self.blueprint_name.len()
     }
@@ -27,9 +28,9 @@ impl BlueprintId {
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for BlueprintId {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         write!(

@@ -451,7 +451,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
     /// Returns the built transaction manifest, without further validation.
     /// If you also wish to validate the manifest, use [`build`][Self::build] instead.
     pub fn build_no_validate(mut self) -> M {
-        self.manifest.set_names(self.object_names().into());
+        self.manifest.set_names(self.object_names());
         #[cfg(feature = "dump_manifest_to_file")]
         {
             let bytes = manifest_encode(&self.manifest).unwrap();
@@ -739,11 +739,11 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         divisibility,
                         track_total_supply,
-                        metadata,
-                        resource_roles,
+                        metadata: metadata.into(),
+                        resource_roles: resource_roles.into(),
                         initial_supply,
                         address_reservation: None,
                     }
@@ -755,11 +755,11 @@ where
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
-                    owner_role,
+                    owner_role: owner_role.into(),
                     divisibility,
                     track_total_supply,
-                    metadata,
-                    resource_roles,
+                    metadata: metadata.into(),
+                    resource_roles: resource_roles.into(),
                     address_reservation: None,
                 }),
             }
@@ -794,14 +794,14 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
                         entries,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         address_reservation: None,
                     }
                 ),
@@ -813,13 +813,13 @@ where
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         id_type,
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         address_reservation: None,
                     }
                 ),
@@ -854,12 +854,12 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         entries,
                         address_reservation: None,
                     }
@@ -873,12 +873,12 @@ where
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
-                        owner_role,
+                        owner_role: owner_role.into(),
                         track_total_supply,
                         non_fungible_schema:
                             NonFungibleDataSchema::new_local_without_self_package_replacement::<V>(),
-                        resource_roles,
-                        metadata,
+                        resource_roles: resource_roles.into(),
+                        metadata: metadata.into(),
                         entries: vec![],
                         address_reservation: None,
                     }
@@ -914,7 +914,9 @@ where
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedInput { owner_role }),
+            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedManifestInput {
+                owner_role: owner_role.into()
+            }),
         })
     }
 
@@ -1189,7 +1191,9 @@ where
             address,
             ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-            RoleAssignmentSetOwnerInput { rule: rule.into() },
+            RoleAssignmentSetOwnerManifestInput {
+                rule: rule.into().into(),
+            },
         )
     }
 
@@ -1222,10 +1226,10 @@ where
             address,
             ModuleId::RoleAssignment,
             ROLE_ASSIGNMENT_SET_IDENT,
-            RoleAssignmentSetInput {
+            RoleAssignmentSetManifestInput {
                 module: role_module,
                 role_key: role_key.into(),
-                rule: rule.into(),
+                rule: rule.into().into(),
             },
         )
     }
@@ -1242,7 +1246,7 @@ where
             ROLE_ASSIGNMENT_GET_IDENT,
             RoleAssignmentGetInput {
                 module: role_module,
-                role_key: role_key.into(),
+                role_key,
             },
         )
     }
@@ -1438,7 +1442,7 @@ where
         let address = address.resolve_referenced(&self.registrar);
         match value.to_metadata_entry() {
             Some(value) => self.add_v1_instruction(CallMetadataMethod {
-                address: address.into(),
+                address,
                 method_name: METADATA_SET_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&MetadataSetInput {
                     key: key.into(),
@@ -1446,7 +1450,7 @@ where
                 }),
             }),
             None => self.add_v1_instruction(CallMetadataMethod {
-                address: address.into(),
+                address,
                 method_name: METADATA_REMOVE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&MetadataRemoveInput { key: key.into() }),
             }),
@@ -1461,7 +1465,7 @@ where
         let address = address.resolve_referenced(&self.registrar);
         let key = key.into();
         self.add_v1_instruction(CallMetadataMethod {
-            address: address.into(),
+            address,
             method_name: METADATA_LOCK_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataLockInput { key }),
         })
@@ -1474,7 +1478,7 @@ where
     ) -> Self {
         let address = address.resolve_referenced(&self.registrar);
         self.add_v1_instruction(CallMetadataMethod {
-            address: address.into(),
+            address,
             method_name: METADATA_LOCK_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataLockInput { key: key.into() }),
         })
@@ -1486,7 +1490,7 @@ where
         address_reservation: impl ConsumedOptionalManifestAddressReservation,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: impl Into<MetadataInit>,
+        metadata: impl Into<ManifestMetadataInit>,
         owner_role: OwnerRole,
     ) -> Self {
         let address_reservation = address_reservation.mark_consumed(&self.registrar);
@@ -1498,10 +1502,10 @@ where
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: code_blob_ref,
-                definition: definition,
+                definition: definition.into(),
                 metadata: metadata.into(),
                 package_address: address_reservation,
-                owner_role,
+                owner_role: owner_role.into(),
             }),
         })
     }
@@ -1516,8 +1520,8 @@ where
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: code_blob_ref,
-                definition,
-                metadata: metadata_init!(),
+                definition: definition.into(),
+                metadata: metadata_init!().into(),
             }),
         })
     }
@@ -1538,9 +1542,9 @@ where
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: code_blob_ref,
-                definition,
-                metadata: metadata_init!(),
-                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
+                definition: definition.into(),
+                metadata: metadata_init!().into(),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge))).into(),
             }),
         })
     }
@@ -1827,7 +1831,7 @@ where
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedManifestInput {
-                owner_role,
+                owner_role: owner_role.into(),
                 address_reservation
             }),
         })
@@ -2158,7 +2162,10 @@ where
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-            manifest_args!(bucket, authorized_depositor_badge),
+            manifest_args!(
+                bucket,
+                authorized_depositor_badge.map(ManifestResourceOrNonFungible::from)
+            ),
         )
     }
 
@@ -2210,7 +2217,10 @@ where
         self.call_method(
             address,
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-            manifest_args!(bucket, authorized_depositor_badge),
+            manifest_args!(
+                bucket,
+                authorized_depositor_badge.map(ManifestResourceOrNonFungible::from)
+            ),
         )
     }
 
@@ -2261,7 +2271,7 @@ where
             ACCOUNT_CREATE_ADVANCED_IDENT,
             AccountCreateAdvancedManifestInput {
                 address_reservation,
-                owner_role,
+                owner_role: owner_role.into(),
             },
         )
     }
@@ -2281,10 +2291,10 @@ where
             ACCESS_CONTROLLER_CREATE_IDENT,
             (
                 controlled_asset,
-                RuleSet {
-                    primary_role,
-                    recovery_role,
-                    confirmation_role,
+                ManifestRuleSet {
+                    primary_role: primary_role.into(),
+                    recovery_role: recovery_role.into(),
+                    confirmation_role: confirmation_role.into(),
                 },
                 timed_recovery_delay_in_minutes,
                 Option::<()>::None,

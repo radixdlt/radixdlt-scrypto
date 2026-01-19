@@ -32,6 +32,7 @@ pub mod blueprint {
 
     super::wasm_extern_c! {
         /// Invokes a blueprint function
+        #[allow(clippy::too_many_arguments)]
         pub fn blueprint_call(
             package_address_ptr: *const u8,
             package_address_len: usize,
@@ -383,6 +384,7 @@ macro_rules! wasm_extern_c {
         $(
             #[cfg(not(target_arch = "wasm32"))]
             $(#[$meta])*
+            #[allow(clippy::missing_safety_doc)]
             pub unsafe fn $fn_ident ( $(_: $arg_type),* ) $(-> $rtn_type)? {
                 unimplemented!("Not implemented for non-wasm targets")
             }

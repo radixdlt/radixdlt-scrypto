@@ -69,7 +69,7 @@ impl FolderContentAligner {
                         err
                     );
                 });
-                if &actual_contents != contents.as_ref() {
+                if actual_contents != contents.as_ref() {
                     panic!(
                         "File {} did not match the expected contents",
                         path.to_string_lossy()

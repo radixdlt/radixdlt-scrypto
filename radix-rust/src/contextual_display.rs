@@ -20,9 +20,9 @@ pub trait ContextualDisplay<Context> {
     /// instead of a `&Context`.
     ///
     /// [`format`]: #method.format
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &Context,
     ) -> Result<(), Self::Error>;
 
@@ -34,9 +34,9 @@ pub trait ContextualDisplay<Context> {
     ///
     /// [`contextual_format`]: #method.contextual_format
     /// [`display`]: #method.display
-    fn format<F: fmt::Write, TContext: Into<Context>>(
+    fn format<TContext: Into<Context>>(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: TContext,
     ) -> Result<(), Self::Error> {
         self.contextual_format(f, &context.into())
@@ -60,7 +60,7 @@ pub trait ContextualDisplay<Context> {
     /// ```
     ///
     /// [`format`]: #method.format
-    fn display<'a, 'b, TContext: Into<Context>>(
+    fn display<'a, TContext: Into<Context>>(
         &'a self,
         context: TContext,
     ) -> ContextDisplayable<'a, Self, Context> {
@@ -70,7 +70,22 @@ pub trait ContextualDisplay<Context> {
         }
     }
 
-    fn to_string<'a, 'b, TContext: Into<Context>>(&'a self, context: TContext) -> String {
+    /// Returns an object implementing [`fmt::Debug`] using the contextual display implementation.
+    ///
+    /// Typically you should use [`format`] instead.
+    ///
+    /// [`format`]: #method.format
+    fn debug_as_display<'a, TContext: Into<Context>>(
+        &'a self,
+        context: TContext,
+    ) -> ContextDebuggableAsDisplay<'a, Self, Context> {
+        ContextDebuggableAsDisplay {
+            value: self,
+            context: context.into(),
+        }
+    }
+
+    fn to_string<TContext: Into<Context>>(&self, context: TContext) -> String {
         self.display(context).to_string()
     }
 }
@@ -83,7 +98,26 @@ where
     context: TContext,
 }
 
-impl<'a, 'b, TValue, TContext> fmt::Display for ContextDisplayable<'a, TValue, TContext>
+impl<'a, TValue, TContext> fmt::Display for ContextDisplayable<'a, TValue, TContext>
+where
+    TValue: ContextualDisplay<TContext> + ?Sized,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        self.value
+            .contextual_format(f, &self.context)
+            .map_err(|_| fmt::Error) // We eat any errors into fmt::Error
+    }
+}
+
+pub struct ContextDebuggableAsDisplay<'a, TValue, TContext>
+where
+    TValue: ContextualDisplay<TContext> + ?Sized,
+{
+    value: &'a TValue,
+    context: TContext,
+}
+
+impl<'a, TValue, TContext> fmt::Debug for ContextDebuggableAsDisplay<'a, TValue, TContext>
 where
     TValue: ContextualDisplay<TContext> + ?Sized,
 {

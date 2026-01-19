@@ -32,7 +32,7 @@ pub trait TransactionPayload:
     }
 
     fn prepare(&self, settings: &PreparationSettings) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare(&self.to_raw()?, settings)?)
+        Self::Prepared::prepare(&self.to_raw()?, settings)
     }
 }
 
@@ -258,10 +258,12 @@ macro_rules! define_raw_transaction_payload {
                 self.0.as_slice()
             }
 
+            #[allow(clippy::len_without_is_empty)]
             pub fn len(&self) -> usize {
                 self.as_slice().len()
             }
 
+            #[allow(clippy::wrong_self_convention)]
             pub fn to_vec(self) -> Vec<u8> {
                 self.0
             }

@@ -30,16 +30,13 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError> {
-            match export_name {
-                "new" => {
-                    let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
-                    let node_id = api.new_simple_object(
-                        BLUEPRINT_NAME,
-                        indexmap![0u8 => FieldValue::new(Reference(auth_zone))],
-                    )?;
-                    api.drop_object(&node_id)?;
-                }
-                _ => {}
+            if export_name == "new" {
+                let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
+                let node_id = api.new_simple_object(
+                    BLUEPRINT_NAME,
+                    indexmap![0u8 => FieldValue::new(Reference(auth_zone))],
+                )?;
+                api.drop_object(&node_id)?;
             }
 
             Ok(IndexedScryptoValue::from_typed(&()))
@@ -157,23 +154,20 @@ fn cannot_write_reference_in_kv_store() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError> {
-            match export_name {
-                "kv_store" => {
-                    let kv_store = api.key_value_store_new(
-                        KeyValueStoreDataSchema::new_local_without_self_package_replacement::<
-                            (),
-                            Reference,
-                        >(false),
-                    )?;
-                    let handle = api.key_value_store_open_entry(
-                        &kv_store,
-                        &scrypto_encode(&()).unwrap(),
-                        LockFlags::MUTABLE,
-                    )?;
-                    let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
-                    api.key_value_entry_set_typed(handle, Reference(auth_zone))?;
-                }
-                _ => {}
+            if export_name == "kv_store" {
+                let kv_store = api.key_value_store_new(
+                    KeyValueStoreDataSchema::new_local_without_self_package_replacement::<
+                        (),
+                        Reference,
+                    >(false),
+                )?;
+                let handle = api.key_value_store_open_entry(
+                    &kv_store,
+                    &scrypto_encode(&()).unwrap(),
+                    LockFlags::MUTABLE,
+                )?;
+                let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
+                api.key_value_entry_set_typed(handle, Reference(auth_zone))?;
             }
 
             Ok(IndexedScryptoValue::from_typed(&()))

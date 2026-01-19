@@ -39,7 +39,7 @@ pub trait SystemFieldApi<E: Debug> {
     /// Retrieve the value of a field
     fn field_read_typed<S: ScryptoDecode>(&mut self, handle: FieldHandle) -> Result<S, E> {
         let buf = self.field_read(handle)?;
-        let typed_substate: S = scrypto_decode(&buf).map_err(|e| e).unwrap();
+        let typed_substate: S = scrypto_decode(&buf).unwrap();
         Ok(typed_substate)
     }
 

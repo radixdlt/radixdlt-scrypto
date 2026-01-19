@@ -3,13 +3,13 @@ set -e
 
 cd "$(dirname "$0")"
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: ./build.sh <package_name>"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: ./build.sh <scrypto_builder_image_tag> <package_name>"
     exit 1
 fi
 
 IMAGE_NAME="radixdlt/scrypto-builder"
-IMAGE_TAG="v1.1.1"
+IMAGE_TAG="$0"
 WORKSPACE_DIR="blueprints"
 DESTINATION_DIR="."
 for PACKAGE_NAME in $1

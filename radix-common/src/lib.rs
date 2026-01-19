@@ -72,6 +72,7 @@ pub mod prelude {
     pub use super::address::*;
     pub use super::constants::*;
     pub use super::crypto::*;
+    pub use super::data::conversions::*;
     pub use super::data::manifest::prelude::*;
     pub use super::data::scrypto::prelude::*;
     pub use super::math::*;

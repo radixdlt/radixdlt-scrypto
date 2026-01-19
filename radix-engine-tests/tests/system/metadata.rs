@@ -14,10 +14,12 @@ fn publish_metadata_package(
 ) -> PackageAddress {
     let code =
         include_workspace_asset_bytes!("radix-transaction-scenarios", "metadata.wasm").to_vec();
-    let package_def = manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!(
+    let package_def = manifest_decode::<ManifestPackageDefinition>(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "metadata.rpd"
     ))
+    .unwrap()
+    .try_into_typed()
     .unwrap();
     ledger.publish_package_simple((code, package_def))
 }
@@ -252,7 +254,7 @@ fn verify_metadata_set_and_get_success() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     // add String metadata
     ledger.set_metadata(account.into(), "key", "value", proof);
@@ -269,7 +271,7 @@ fn verify_metadata_get_fail() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     // add String metadata
     ledger.set_metadata(account.into(), "key", "value", proof);
@@ -294,7 +296,7 @@ fn verify_metadata_vec_get_fail() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     // add String metadata
     ledger.set_metadata(account.into(), "key", "value", proof);
@@ -319,7 +321,7 @@ fn verify_metadata_array_set_and_get_success() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     let value = [10u8; 10].as_ref().to_metadata_entry().unwrap();
 
@@ -342,7 +344,7 @@ fn verify_metadata_array_get_fail() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     let value = [10u8; 10].as_ref().to_metadata_entry().unwrap();
 
@@ -373,7 +375,7 @@ fn verify_metadata_array_get_other_type_fail() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     let value = [10u8; 10].as_ref().to_metadata_entry().unwrap();
 
@@ -404,7 +406,7 @@ fn verify_metadata_array_get_vec_fail() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let proof = NonFungibleGlobalId::from_public_key(public_key);
 
     let value = [10u8; 10].as_ref().to_metadata_entry().unwrap();
 
@@ -468,10 +470,10 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
     assert_metadata_val_encoding(PublicKey::Secp256k1(Secp256k1PublicKey(
         [0; Secp256k1PublicKey::LENGTH],
     )));
-    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey(
+    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(Secp256k1PublicKey(
         [0; Secp256k1PublicKey::LENGTH],
     )));
-    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(&Ed25519PublicKey(
+    assert_metadata_val_encoding(NonFungibleGlobalId::from_public_key(Ed25519PublicKey(
         [0; Ed25519PublicKey::LENGTH],
     )));
     assert_metadata_val_encoding(NonFungibleLocalId::integer(1));
@@ -506,12 +508,12 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
         PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
     ]);
     assert_metadata_val_encoding(vec![
-        NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
-        NonFungibleGlobalId::from_public_key(&Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH])),
     ]);
     assert_metadata_val_encoding(vec![
-        NonFungibleGlobalId::from_public_key(&Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
-        NonFungibleGlobalId::from_public_key(&Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
+        NonFungibleGlobalId::from_public_key(Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])),
     ]);
     assert_metadata_val_encoding(vec![
         NonFungibleLocalId::integer(1),

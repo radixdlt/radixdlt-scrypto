@@ -40,7 +40,7 @@ fn test_stake_reconciliation() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
     receipt.expect_commit_success();
 
@@ -70,7 +70,7 @@ fn test_stake_reconciliation() {
         .build();
     let receipt = ledger.execute_manifest(
         manifest,
-        vec![NonFungibleGlobalId::from_public_key(&account_pk)],
+        vec![NonFungibleGlobalId::from_public_key(account_pk)],
     );
 
     let address_encoder = AddressBech32Encoder::for_simulator();
@@ -285,20 +285,20 @@ fn test_stake_reconciliation() {
             write!(&mut error_message, "\n\nEXPECTED:").unwrap();
             format_receipt_substate_value(
                 &mut error_message,
-                &substate_structure,
+                substate_structure,
                 &receipt_display_context,
-                &expected_old_value,
+                expected_old_value,
             )
             .unwrap();
             write!(&mut error_message, "\nACTUAL:").unwrap();
             format_receipt_substate_value(
                 &mut error_message,
-                &substate_structure,
+                substate_structure,
                 &receipt_display_context,
-                &database_value,
+                database_value,
             )
             .unwrap();
-            write!(&mut error_message, "\n").unwrap();
+            writeln!(&mut error_message).unwrap();
         }
         // For printing:
         // let (db_partition_key, db_sort_key) = full_key;
@@ -322,7 +322,7 @@ fn test_stake_reconciliation() {
         //     hex::encode(new_value)
         // );
     }
-    if error_message.len() > 0 {
+    if !error_message.is_empty() {
         panic!("{}", error_message);
     }
 

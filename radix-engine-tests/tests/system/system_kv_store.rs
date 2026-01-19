@@ -45,16 +45,14 @@ impl VmInvoke for TestInvoke {
                     String,
                     (),
                 >(TEST_UTILS_PACKAGE, false);
-                match &mut schema {
-                    KeyValueStoreDataSchema::Local {
-                        additional_schema, ..
-                    } => {
-                        additional_schema
-                            .v1_mut()
-                            .type_metadata
-                            .push(TypeMetadata::unnamed());
-                    }
-                    _ => {}
+                if let KeyValueStoreDataSchema::Local {
+                    additional_schema, ..
+                } = &mut schema
+                {
+                    additional_schema
+                        .v1_mut()
+                        .type_metadata
+                        .push(TypeMetadata::unnamed());
                 }
                 api.key_value_store_new(schema)?;
             }

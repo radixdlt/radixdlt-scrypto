@@ -2,8 +2,7 @@ use crate::address::{AddressBech32EncodeError, AddressDisplayContext};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
-#[cfg(feature = "fuzzing")]
-use arbitrary::Arbitrary;
+
 use prelude::scrypto_encode;
 use radix_rust::ContextualDisplay;
 use sbor::rust::prelude::*;
@@ -17,7 +16,7 @@ pub const BOOT_LOADER_RESERVED_NODE_ID_FIRST_BYTE: u8 = 0u8;
 /// The unique identifier of a (stored) node.
 #[cfg_attr(
     feature = "fuzzing",
-    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+    derive(::arbitrary::Arbitrary, ::serde::Serialize, ::serde::Deserialize)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
@@ -44,7 +43,7 @@ impl NodeId {
     }
 
     pub fn to_hex(&self) -> String {
-        hex::encode(&self.0)
+        hex::encode(self.0)
     }
 
     pub fn try_from_hex(hex: &str) -> Option<Self> {
@@ -121,6 +120,7 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -138,9 +138,9 @@ impl AsRef<[u8]> for NodeId {
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for NodeId {
-    fn into(self) -> [u8; NodeId::LENGTH] {
-        self.0
+impl From<NodeId> for [u8; NodeId::LENGTH] {
+    fn from(val: NodeId) -> Self {
+        val.0
     }
 }
 
@@ -194,18 +194,16 @@ impl From<Reference> for NodeId {
 
 impl Debug for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("NodeId")
-            .field(&hex::encode(&self.0))
-            .finish()
+        f.debug_tuple("NodeId").field(&hex::encode(self.0)).finish()
     }
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
     type Error = AddressBech32EncodeError;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         if let Some(encoder) = context.encoder {
@@ -222,7 +220,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
         }
 
         // This could be made more performant by streaming the hex into the formatter
-        write!(f, "NodeId({})", hex::encode(&self.0)).map_err(AddressBech32EncodeError::FormatError)
+        write!(f, "NodeId({})", hex::encode(self.0)).map_err(AddressBech32EncodeError::FormatError)
     }
 }
 
@@ -291,7 +289,7 @@ impl SubstateKey {
         }
     }
 
-    pub fn as_ref(&self) -> SubstateKeyRef {
+    pub fn as_ref(&self) -> SubstateKeyRef<'_> {
         match self {
             SubstateKey::Field(key) => SubstateKeyRef::Field(key),
             SubstateKey::Map(key) => SubstateKeyRef::Map(key),
