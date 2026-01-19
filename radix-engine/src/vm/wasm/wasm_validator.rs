@@ -124,6 +124,10 @@ mod tests {
   (type (;0;) (func (param i64) (result i64)))
   (type (;1;) (func (param i64)))
   (import "env" "gas" (func (;0;) (type 1)))
+  (memory (;0;) 1 64)
+  (global (;0;) (mut i32) i32.const 0)
+  (export "memory" (memory 0))
+  (export "Test_f" (func 2))
   (func (;1;) (type 0) (param i64) (result i64)
     i64.const 14788284
     call 0
@@ -139,7 +143,8 @@ mod tests {
     i32.const 2
     i32.const 0
     i32.store8
-    i64.const 3)
+    i64.const 3
+  )
   (func (;2;) (type 0) (param i64) (result i64)
     local.get 0
     global.get 0
@@ -149,18 +154,16 @@ mod tests {
     global.get 0
     i32.const 1024
     i32.gt_u
-    if  ;; label = @1
+    if ;; label = @1
       unreachable
     end
     call 1
     global.get 0
     i32.const 4
     i32.sub
-    global.set 0)
-  (memory (;0;) 1 64)
-  (global (;0;) (mut i32) (i32.const 0))
-  (export "memory" (memory 0))
-  (export "Test_f" (func 2)))
+    global.set 0
+  )
+)
 "#
         )
     }
