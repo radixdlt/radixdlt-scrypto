@@ -72,7 +72,7 @@ pub enum ScryptoCompilerError {
     /// Compiler is unable to generate target binary file name.
     CargoTargetBinaryResolutionError,
     /// Returns path to Cargo.toml which was failed to load.
-    CargoManifestLoadFailure(String),
+    CargoManifestLoadFailure(PathBuf, cargo_toml::Error),
     /// Returns path to Cargo.toml which cannot be found.
     CargoManifestFileNotFound(String),
     /// Provided package ID is not a member of the workspace.
@@ -601,8 +601,8 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<Vec<(PathBuf, String, Option<cargo_toml::Value>)>>, ScryptoCompilerError>
     {
-        let manifest = Manifest::from_path(manifest_path).map_err(|_| {
-            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
+        let manifest = Manifest::from_path(&manifest_path).map_err(|error| {
+            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.to_path_buf(), error)
         })?;
         if let Some(workspace) = manifest.workspace {
             if workspace.members.is_empty() {
@@ -632,8 +632,9 @@ impl ScryptoCompiler {
                                         metadata,
                                     ))
                                 }
-                                Err(_) => Err(ScryptoCompilerError::CargoManifestLoadFailure(
-                                    member_manifest_input_path.display().to_string(),
+                                Err(error) => Err(ScryptoCompilerError::CargoManifestLoadFailure(
+                                    manifest_path.to_path_buf(),
+                                    error,
                                 )),
                             }
                         })
@@ -649,8 +650,8 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<String>, ScryptoCompilerError> {
         // Find the binary name
-        let manifest = Manifest::from_path(manifest_path).map_err(|_| {
-            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
+        let manifest = Manifest::from_path(&manifest_path).map_err(|error| {
+            ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.to_path_buf(), error)
         })?;
         if let Some(w) = manifest.workspace {
             if !w.members.is_empty() {

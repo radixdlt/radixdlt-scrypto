@@ -12,7 +12,17 @@ fn before_dugong_assert_access_rule_still_works_with_auth_module_disabled() {
 #[test]
 fn after_dugong_assert_access_rule_is_no_op_with_auth_module_disabled() {
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.from_bootstrap_to(ProtocolVersion::Dugong))
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_dugong(|mut dugong_settings| {
+                    dugong_settings.native_entity_metadata_updates =
+                        UpdateSetting::Enabled(Default::default());
+                    dugong_settings.system_logic_updates =
+                        UpdateSetting::Enabled(Default::default());
+                    dugong_settings
+                })
+                .from_bootstrap_to(ProtocolVersion::Dugong)
+        })
         .build();
     assert_access_rule_deny_all_with_no_auth_context(&mut ledger).expect_commit_success();
 }
