@@ -14,7 +14,7 @@ use radix_engine_interface::prelude::*;
 pub struct TrackedResources {
     /// Captures the bounds of explicitly tracked resources.
     /// Some of these may be
-    specified_resources: IndexMap<ResourceAddress, TrackedResource>,
+    specified_resources: IndexMap<AnalyzerResourceAddress, TrackedResource>,
     /// Captures the bounds of unspecified resources.
     unspecified_resources: UnspecifiedResources,
 }
@@ -40,14 +40,14 @@ impl TrackedResources {
     pub fn deconstruct(
         self,
     ) -> (
-        IndexMap<ResourceAddress, TrackedResource>,
+        IndexMap<AnalyzerResourceAddress, TrackedResource>,
         UnspecifiedResources,
     ) {
         (self.specified_resources, self.unspecified_resources)
     }
 
     // &self methods
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, TrackedResource> {
+    pub fn specified_resources(&self) -> &IndexMap<AnalyzerResourceAddress, TrackedResource> {
         &self.specified_resources
     }
 
@@ -84,7 +84,7 @@ impl TrackedResources {
     }
 
     /// Works for any resource, specified and unspecified.
-    fn resource_status(&self, resource: &ResourceAddress) -> Cow<'_, TrackedResource> {
+    fn resource_status(&self, resource: &AnalyzerResourceAddress) -> Cow<'_, TrackedResource> {
         match self.specified_resources.get(resource) {
             Some(bound) => Cow::Borrowed(bound),
             None => Cow::Owned(self.unspecified_resources.resource_status()),
@@ -93,7 +93,7 @@ impl TrackedResources {
 
     /// Works for any resource, specified and unspecified.
     /// If the resource is unspecified, it makes it specified, then returns a reference to the entry.
-    fn resource_status_mut(&mut self, resource: ResourceAddress) -> &mut TrackedResource {
+    fn resource_status_mut(&mut self, resource: AnalyzerResourceAddress) -> &mut TrackedResource {
         match self.specified_resources.entry(resource) {
             indexmap::map::Entry::Occupied(occupied_entry) => occupied_entry.into_mut(),
             indexmap::map::Entry::Vacant(vacant_entry) => {
@@ -177,7 +177,7 @@ impl TrackedResources {
 
     pub fn add_resource(
         mut self,
-        resource: ResourceAddress,
+        resource: impl Into<AnalyzerResourceAddress>,
         amount: TrackedResource,
     ) -> Result<Self, StaticResourceMovementsError> {
         self.mut_add_resource(resource, amount)?;
@@ -186,9 +186,10 @@ impl TrackedResources {
 
     pub fn mut_add_resource(
         &mut self,
-        resource: ResourceAddress,
+        resource: impl Into<AnalyzerResourceAddress>,
         amount: TrackedResource,
     ) -> Result<(), StaticResourceMovementsError> {
+        let resource = resource.into();
         if !amount.bounds().is_valid_for(&resource) {
             return Err(StaticResourceMovementsError::BoundsInvalidForResourceKind);
         }
@@ -197,10 +198,11 @@ impl TrackedResources {
 
     pub fn mut_take_resource(
         &mut self,
-        resource: ResourceAddress,
+        resource: impl Into<AnalyzerResourceAddress>,
         amount: ResourceTakeAmount,
         source: ChangeSource,
     ) -> Result<TrackedResource, StaticResourceMovementsError> {
+        let resource = resource.into();
         if resource.is_fungible() && !amount.aligns_with_fungible_use() {
             return Err(StaticResourceMovementsError::BoundsInvalidForResourceKind);
         }
@@ -213,10 +215,11 @@ impl TrackedResources {
 
     pub fn handle_resource_assertion(
         &mut self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         assertion: ResourceBounds,
         source: ChangeSource,
     ) -> Result<(), StaticResourceMovementsError> {
+        let resource_address = resource_address.into();
         if !assertion.is_valid_for(&resource_address) {
             return Err(StaticResourceMovementsError::BoundsInvalidForResourceKind);
         }
@@ -241,9 +244,9 @@ impl TrackedResources {
             }
         }
 
-        // Now we handle the explict assertions
+        // Now we handle the explicit assertions
         for (resource_address, constraint) in constraints.iter() {
-            self.resource_status_mut(*resource_address)
+            self.resource_status_mut(resource_address.clone())
                 .handle_assertion(
                     ResourceBounds::new_for_manifest_constraint(constraint)?,
                     source,
@@ -265,7 +268,7 @@ impl TrackedResources {
         source: ChangeSource,
     ) -> Result<(), StaticResourceMovementsError> {
         for (resource_address, constraint) in constraints.iter() {
-            self.resource_status_mut(*resource_address)
+            self.resource_status_mut(resource_address.clone())
                 .handle_assertion(
                     ResourceBounds::new_for_manifest_constraint(constraint)?,
                     source,
@@ -852,7 +855,7 @@ impl ResourceBounds {
         &self.constraints.allowed_ids
     }
 
-    pub fn is_valid_for(&self, resource_address: &ResourceAddress) -> bool {
+    pub fn is_valid_for(&self, resource_address: &AnalyzerResourceAddress) -> bool {
         if resource_address.is_fungible() {
             self.is_valid_for_fungible_use()
         } else {
@@ -1396,13 +1399,13 @@ impl StaticResourceMovementsOutput {
             let account_withdraw = if is_non_fungible_withdraw {
                 // Account withdraws are for an exact amount, so we can just use required_ids here
                 AccountWithdraw::Ids(
-                    *resource_address,
+                    resource_address.clone(),
                     specified_resource.bounds().required_ids().clone(),
                 )
             } else {
                 // Account withdraws are for an exact amount, so the two numeric bounds are equivalent
                 AccountWithdraw::Amount(
-                    *resource_address,
+                    resource_address.clone(),
                     specified_resource
                         .bounds
                         .numeric_bounds()
@@ -1428,7 +1431,7 @@ impl StaticResourceMovementsOutput {
 /// withdrawal, but we don't need this for resolving account balances.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct AllBalanceChanges {
-    pub specified_resources: IndexMap<ResourceAddress, AggregatedBalanceChange>,
+    pub specified_resources: IndexMap<AnalyzerResourceAddress, AggregatedBalanceChange>,
     pub unspecified_resource_deposits: UnspecifiedResources,
 }
 
@@ -1488,7 +1491,10 @@ impl AllBalanceChanges {
         ) in self.specified_resources
         {
             if !withdrawn.is_zero() {
-                withdraws.insert(address, NetWithdraw::from_bounds(address, withdrawn)?);
+                withdraws.insert(
+                    address.clone(),
+                    NetWithdraw::from_bounds(address.clone(), withdrawn)?,
+                );
             }
             if !deposited.is_zero() {
                 deposits.insert(address, deposited);
@@ -1520,9 +1526,9 @@ impl AllBalanceChanges {
     /// If the resource is unspecified, it makes it specified, then returns a reference to the entry.
     fn aggregated_balance_change_mut(
         &mut self,
-        resource: ResourceAddress,
+        resource: impl Into<AnalyzerResourceAddress>,
     ) -> &mut AggregatedBalanceChange {
-        match self.specified_resources.entry(resource) {
+        match self.specified_resources.entry(resource.into()) {
             indexmap::map::Entry::Occupied(occupied_entry) => occupied_entry.into_mut(),
             indexmap::map::Entry::Vacant(vacant_entry) => {
                 vacant_entry.insert(AggregatedBalanceChange {
@@ -1614,7 +1620,7 @@ impl AggregatedBalanceChange {
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct NetWithdraws {
-    resources: IndexMap<ResourceAddress, NetWithdraw>,
+    resources: IndexMap<AnalyzerResourceAddress, NetWithdraw>,
 }
 
 impl NetWithdraws {
@@ -1624,11 +1630,11 @@ impl NetWithdraws {
 
     pub fn set_fungible(
         mut self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         total_amount: impl Resolve<Decimal>,
     ) -> Self {
         self.resources.insert(
-            resource_address,
+            resource_address.into(),
             NetWithdraw::Fungible {
                 total_amount: total_amount.resolve(),
             },
@@ -1638,12 +1644,12 @@ impl NetWithdraws {
 
     pub fn set_non_fungible(
         mut self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         known_ids: impl IntoIterator<Item = NonFungibleLocalId>,
         additional_unknown_ids: usize,
     ) -> Self {
         self.resources.insert(
-            resource_address,
+            resource_address.into(),
             NetWithdraw::NonFungible {
                 known_ids: known_ids.into_iter().collect(),
                 additional_unknown_ids,
@@ -1666,9 +1672,10 @@ pub enum NetWithdraw {
 
 impl NetWithdraw {
     pub fn from_bounds(
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         bounds: ResourceBounds,
     ) -> Result<Self, StaticResourceMovementsError> {
+        let resource_address = resource_address.into();
         let Some(total_amount) = bounds.get_exact_amount() else {
             return Err(StaticResourceMovementsError::UnexpectedBoundsForNetWithdraw);
         };
@@ -1691,7 +1698,7 @@ impl NetWithdraw {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct NetDeposits {
-    pub specified_resources: IndexMap<ResourceAddress, ResourceBounds>,
+    pub specified_resources: IndexMap<AnalyzerResourceAddress, ResourceBounds>,
     pub unspecified_resources: UnspecifiedResources,
 }
 
@@ -1704,22 +1711,31 @@ impl NetDeposits {
     }
 
     /// Should only be used if it doesn't already exist
-    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
-        self.specified_resources.insert(resource_address, bounds);
+    pub fn set(
+        mut self,
+        resource_address: impl Into<AnalyzerResourceAddress>,
+        bounds: ResourceBounds,
+    ) -> Self {
+        self.specified_resources
+            .insert(resource_address.into(), bounds);
         self
     }
 
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ResourceBounds> {
+    pub fn specified_resources(&self) -> &IndexMap<AnalyzerResourceAddress, ResourceBounds> {
         &self.specified_resources
     }
 
-    pub fn simple_specified_resources(&self) -> IndexMap<ResourceAddress, SimpleResourceBounds> {
+    pub fn simple_specified_resources(
+        &self,
+    ) -> IndexMap<AnalyzerResourceAddress, SimpleResourceBounds> {
         self.specified_resources
             .iter()
             .map(|(resource_address, resource_bounds)| {
-                let simple_bounds =
-                    SimpleResourceBounds::from_bound(*resource_address, resource_bounds.clone());
-                (*resource_address, simple_bounds)
+                let simple_bounds = SimpleResourceBounds::from_bound(
+                    resource_address.clone(),
+                    resource_bounds.clone(),
+                );
+                (resource_address.clone(), simple_bounds)
             })
             .collect()
     }
@@ -1728,8 +1744,11 @@ impl NetDeposits {
         self.unspecified_resources.clone()
     }
 
-    pub fn bounds_for(&self, resource_address: ResourceAddress) -> ResourceBounds {
-        match self.specified_resources.get(&resource_address) {
+    pub fn bounds_for(
+        &self,
+        resource_address: impl Into<AnalyzerResourceAddress>,
+    ) -> ResourceBounds {
+        match self.specified_resources.get(&resource_address.into()) {
             Some(bounds) => bounds.clone(),
             None => self.unspecified_resources.resource_bounds(),
         }
@@ -1738,13 +1757,13 @@ impl NetDeposits {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccountWithdraw {
-    Amount(ResourceAddress, Decimal),
-    Ids(ResourceAddress, IndexSet<NonFungibleLocalId>),
+    Amount(AnalyzerResourceAddress, Decimal),
+    Ids(AnalyzerResourceAddress, IndexSet<NonFungibleLocalId>),
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AccountDeposit {
-    specified_resources: IndexMap<ResourceAddress, SimpleResourceBounds>,
+    specified_resources: IndexMap<AnalyzerResourceAddress, SimpleResourceBounds>,
     unspecified_resources: UnspecifiedResources,
 }
 
@@ -1757,15 +1776,20 @@ impl AccountDeposit {
     }
 
     /// Should only be used if it doesn't already exist
-    pub fn set(mut self, resource_address: ResourceAddress, bounds: ResourceBounds) -> Self {
+    pub fn set(
+        mut self,
+        resource_address: impl Into<AnalyzerResourceAddress>,
+        bounds: ResourceBounds,
+    ) -> Self {
+        let resource_address = resource_address.into();
         self.specified_resources.insert(
-            resource_address,
+            resource_address.clone(),
             SimpleResourceBounds::from_bound(resource_address, bounds),
         );
         self
     }
 
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, SimpleResourceBounds> {
+    pub fn specified_resources(&self) -> &IndexMap<AnalyzerResourceAddress, SimpleResourceBounds> {
         &self.specified_resources
     }
 
@@ -1773,7 +1797,11 @@ impl AccountDeposit {
         self.unspecified_resources.clone()
     }
 
-    pub fn bounds_for(&self, resource_address: ResourceAddress) -> SimpleResourceBounds {
+    pub fn bounds_for(
+        &self,
+        resource_address: impl Into<AnalyzerResourceAddress>,
+    ) -> SimpleResourceBounds {
+        let resource_address = resource_address.into();
         match self.specified_resources.get(&resource_address) {
             Some(bounds) => bounds.clone(),
             None => SimpleResourceBounds::from_bound(
@@ -1913,7 +1941,11 @@ pub enum SimpleResourceBounds {
 }
 
 impl SimpleResourceBounds {
-    pub fn from_bound(resource_address: ResourceAddress, resource_bounds: ResourceBounds) -> Self {
+    pub fn from_bound(
+        resource_address: impl Into<AnalyzerResourceAddress>,
+        resource_bounds: ResourceBounds,
+    ) -> Self {
+        let resource_address = resource_address.into();
         match resource_address.is_fungible() {
             true => Self::Fungible(resource_bounds.into()),
             false => Self::NonFungible(resource_bounds.into()),

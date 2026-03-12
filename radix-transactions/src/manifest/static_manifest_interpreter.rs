@@ -520,7 +520,8 @@ impl<'a, M: ReadableManifest + ?Sized> StaticManifestInterpreter<'a, M> {
                     // Check the bucket currently exists
                     let state = self.get_existing_bucket::<V>(bucket)?;
                     let resource_address = state.source_amount.resource_address();
-                    if !constraint.is_valid_for(resource_address) {
+                    if !constraint.is_valid_for(&AnalyzerResourceAddress::Static(*resource_address))
+                    {
                         return ControlFlow::Break(
                             ManifestValidationError::InvalidResourceConstraint.into(),
                         );

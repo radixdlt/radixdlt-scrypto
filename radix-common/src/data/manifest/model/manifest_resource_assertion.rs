@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, Default, ManifestSbor, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct ManifestResourceConstraints {
-    specified_resources: IndexMap<ResourceAddress, ManifestResourceConstraint>,
+    specified_resources: IndexMap<AnalyzerResourceAddress, ManifestResourceConstraint>,
 }
 
 impl ManifestResourceConstraints {
@@ -21,9 +21,10 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         constraint: ManifestResourceConstraint,
     ) -> Self {
+        let resource_address = resource_address.into();
         if !constraint.is_valid_for(&resource_address) {
             panic!("Constraint isn't valid for the resource address");
         }
@@ -36,9 +37,10 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_unchecked(
         mut self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         constraint: ManifestResourceConstraint,
     ) -> Self {
+        let resource_address = resource_address.into();
         let replaced = self
             .specified_resources
             .insert(resource_address, constraint);
@@ -53,7 +55,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_exact_amount(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         amount: impl Resolve<Decimal>,
     ) -> Self {
         self.with(
@@ -67,7 +69,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_at_least_amount(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         amount: impl Resolve<Decimal>,
     ) -> Self {
         self.with(
@@ -81,7 +83,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_amount_range(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         lower_bound: impl Resolve<LowerBound>,
         upper_bound: impl Resolve<UpperBound>,
     ) -> Self {
@@ -101,7 +103,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_exact_non_fungibles(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         non_fungible_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         self.with(
@@ -115,7 +117,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_at_least_non_fungibles(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         non_fungible_ids: impl IntoIterator<Item = NonFungibleLocalId>,
     ) -> Self {
         self.with(
@@ -129,7 +131,7 @@ impl ManifestResourceConstraints {
     /// * Panics if constraints have already been specified against the resource
     pub fn with_general_constraint(
         self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         bounds: GeneralResourceConstraint,
     ) -> Self {
         self.with(
@@ -138,11 +140,15 @@ impl ManifestResourceConstraints {
         )
     }
 
-    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
+    pub fn specified_resources(
+        &self,
+    ) -> &IndexMap<AnalyzerResourceAddress, ManifestResourceConstraint> {
         &self.specified_resources
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&ResourceAddress, &ManifestResourceConstraint)> {
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (&AnalyzerResourceAddress, &ManifestResourceConstraint)> {
         self.specified_resources.iter()
     }
 
@@ -160,7 +166,7 @@ impl ManifestResourceConstraints {
         true
     }
 
-    pub fn contains_specified_resource(&self, resource_address: &ResourceAddress) -> bool {
+    pub fn contains_specified_resource(&self, resource_address: &AnalyzerResourceAddress) -> bool {
         self.specified_resources.contains_key(resource_address)
     }
 
@@ -180,7 +186,7 @@ impl ManifestResourceConstraints {
                 {
                     return Err(
                         ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
-                            resource_address: *resource_address,
+                            resource_address: resource_address.clone(),
                         },
                     );
                 }
@@ -190,7 +196,7 @@ impl ManifestResourceConstraints {
                 if !self.specified_resources.contains_key(resource_address) && !ids.is_empty() {
                     return Err(
                         ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
-                            resource_address: *resource_address,
+                            resource_address: resource_address.clone(),
                         },
                     );
                 }
@@ -228,8 +234,8 @@ impl ManifestResourceConstraints {
 }
 
 pub struct AggregateResourceBalances {
-    fungible_resources: IndexMap<ResourceAddress, Decimal>,
-    non_fungible_resources: IndexMap<ResourceAddress, IndexSet<NonFungibleLocalId>>,
+    fungible_resources: IndexMap<AnalyzerResourceAddress, Decimal>,
+    non_fungible_resources: IndexMap<AnalyzerResourceAddress, IndexSet<NonFungibleLocalId>>,
 }
 
 impl Default for AggregateResourceBalances {
@@ -246,8 +252,13 @@ impl AggregateResourceBalances {
         }
     }
 
-    pub fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
+    pub fn add_fungible(
+        &mut self,
+        resource_address: impl Into<AnalyzerResourceAddress>,
+        amount: Decimal,
+    ) {
         if amount.is_positive() {
+            let resource_address = resource_address.into();
             self.fungible_resources
                 .entry(resource_address)
                 .or_default()
@@ -257,10 +268,11 @@ impl AggregateResourceBalances {
 
     pub fn add_non_fungible(
         &mut self,
-        resource_address: ResourceAddress,
+        resource_address: impl Into<AnalyzerResourceAddress>,
         ids: IndexSet<NonFungibleLocalId>,
     ) {
         if !ids.is_empty() {
+            let resource_address = resource_address.into();
             self.non_fungible_resources
                 .entry(resource_address)
                 .or_default()
@@ -284,9 +296,9 @@ impl AggregateResourceBalances {
 }
 
 impl IntoIterator for ManifestResourceConstraints {
-    type Item = (ResourceAddress, ManifestResourceConstraint);
+    type Item = <Self::IntoIter as Iterator>::Item;
     type IntoIter =
-        <IndexMap<ResourceAddress, ManifestResourceConstraint> as IntoIterator>::IntoIter;
+        <IndexMap<AnalyzerResourceAddress, ManifestResourceConstraint> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.specified_resources.into_iter()
@@ -304,7 +316,7 @@ pub enum ManifestResourceConstraint {
 }
 
 impl ManifestResourceConstraint {
-    pub fn is_valid_for(&self, resource_address: &ResourceAddress) -> bool {
+    pub fn is_valid_for(&self, resource_address: &AnalyzerResourceAddress) -> bool {
         if resource_address.is_fungible() {
             self.is_valid_for_fungible_use()
         } else {
@@ -437,10 +449,10 @@ impl ManifestResourceConstraint {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceConstraintsError {
     UnexpectedNonZeroBalanceOfUnspecifiedResource {
-        resource_address: ResourceAddress,
+        resource_address: AnalyzerResourceAddress,
     },
     ResourceConstraintFailed {
-        resource_address: ResourceAddress,
+        resource_address: AnalyzerResourceAddress,
         error: ResourceConstraintError,
     },
 }
@@ -1135,5 +1147,78 @@ resolvable_with_identity_impl!(UpperBound);
 impl<T: Resolve<Decimal>> ResolveFrom<T> for UpperBound {
     fn resolve_from(value: T) -> Self {
         UpperBound::Inclusive(value.resolve())
+    }
+}
+
+/// The primary address type used in the static analyzer.
+///
+/// The static analyzer is capable of analyzing more resource movements than just static movements,
+/// it's capable of also analyzing movements of dynamic resources which are resources which were
+/// created within the same manifest or transaction.
+///
+/// This type allows for both [`Static`] and [`Dynamic`] resources to be tracked throughout the
+/// whole codebase.
+///
+/// [`Static`]: Self::Static
+/// [`Dynamic`]: Self::Dynamic
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
+pub enum AnalyzerResourceAddress {
+    /// A static resource address of a resource which was created before the manifest being analyzed
+    /// by the static analyzer.
+    Static(ResourceAddress),
+
+    /// A dynamic address of a resource which was created within the same manifest which is being
+    /// analyzed by the analyzer.
+    Dynamic {
+        blueprint_id: BlueprintId,
+        address_reservation: u32,
+        named_address: u32,
+    },
+}
+
+impl AnalyzerResourceAddress {
+    /// Creates an [`AnalyzerResourceAddress`] for a resource that already exists on-ledger
+    /// with a known [`ResourceAddress`].
+    pub fn new_static(address: impl Into<ResourceAddress>) -> Self {
+        Self::Static(address.into())
+    }
+
+    /// Creates an [`AnalyzerResourceAddress`] for a resource that is being created within the
+    /// manifest currently being analyzed. The resource is identified by its creating blueprint,
+    /// the address reservation that will resolve to its final address, and the named address
+    /// used to reference it in subsequent manifest instructions.
+    pub fn new_dynamic(
+        blueprint_id: impl Into<BlueprintId>,
+        address_reservation: impl Into<ManifestAddressReservation>,
+        named_address: impl Into<ManifestNamedAddress>,
+    ) -> Self {
+        Self::Dynamic {
+            blueprint_id: blueprint_id.into(),
+            address_reservation: address_reservation.into().0,
+            named_address: named_address.into().0,
+        }
+    }
+
+    /// Returns `true` if this resource is fungible. For static addresses, this is determined
+    /// from the address's entity type. For dynamic addresses, this checks whether the creating
+    /// blueprint is the [`FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT`].
+    pub fn is_fungible(&self) -> bool {
+        match self {
+            AnalyzerResourceAddress::Static(resource_address) => resource_address.is_fungible(),
+            AnalyzerResourceAddress::Dynamic { blueprint_id, .. } => {
+                blueprint_id.blueprint_name == "FungibleResourceManager"
+            }
+        }
+    }
+
+    /// Returns `true` if this resource is non-fungible, i.e. not fungible.
+    pub fn is_non_fungible(&self) -> bool {
+        !self.is_fungible()
+    }
+}
+
+impl From<ResourceAddress> for AnalyzerResourceAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::new_static(value)
     }
 }

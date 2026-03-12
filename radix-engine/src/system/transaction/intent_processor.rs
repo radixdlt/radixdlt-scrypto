@@ -394,7 +394,7 @@ impl<'a> IntentProcessorObjects<'a> {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT) => {
                         let bucket = Bucket(Own(*node_id));
                         if let Some(checker) = &mut resource_constraint_checker {
-                            let resource_address = info
+                            let resource_address: ResourceAddress = info
                                 .blueprint_info
                                 .outer_obj_info
                                 .expect()
@@ -409,7 +409,7 @@ impl<'a> IntentProcessorObjects<'a> {
                     (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                         let bucket = Bucket(Own(*node_id));
                         if let Some(checker) = &mut resource_constraint_checker {
-                            let resource_address = info
+                            let resource_address: ResourceAddress = info
                                 .blueprint_info
                                 .outer_obj_info
                                 .expect()

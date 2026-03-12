@@ -83,7 +83,7 @@ macro_rules! handle_single_unknown_output_static_invocation_resources_output_imp
                     ]);
                 for resource_address in details.sent_resources.specified_resources().keys() {
                     tracked_resources.handle_resource_assertion(
-                        *resource_address,
+                        resource_address.clone(),
                         ResourceBounds::zero(),
                         details.source,
                     )?;
@@ -495,7 +495,7 @@ fn handle_possible_refund(
         .collect::<Vec<_>>();
     for known_resource in known_resources {
         let attempted_deposit = sent_resources.mut_take_resource(
-            known_resource,
+            known_resource.clone(),
             ResourceTakeAmount::All,
             details.source,
         )?;

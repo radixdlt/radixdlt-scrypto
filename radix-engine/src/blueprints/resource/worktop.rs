@@ -416,7 +416,7 @@ impl WorktopBlueprint {
         if amount.is_zero() {
             let worktop_error =
                 WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
-                    resource_address: input.resource_address,
+                    resource_address: input.resource_address.into(),
                     error: ResourceConstraintError::ExpectedNonZeroAmount,
                 });
             return Err(RuntimeError::ApplicationError(
@@ -449,7 +449,7 @@ impl WorktopBlueprint {
         if amount < input.amount {
             let worktop_error =
                 WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
-                    resource_address: input.resource_address,
+                    resource_address: input.resource_address.into(),
                     error: ResourceConstraintError::ExpectedAtLeastAmount {
                         expected_at_least_amount: input.amount,
                         actual_amount: amount,
@@ -486,7 +486,7 @@ impl WorktopBlueprint {
         if let Some(missing_id) = input.ids.difference(&bucket_ids).next() {
             let worktop_error =
                 WorktopError::AssertionFailed(ResourceConstraintsError::ResourceConstraintFailed {
-                    resource_address: input.resource_address,
+                    resource_address: input.resource_address.into(),
                     error: ResourceConstraintError::NonFungibleMissing {
                         missing_id: missing_id.clone(),
                     },
