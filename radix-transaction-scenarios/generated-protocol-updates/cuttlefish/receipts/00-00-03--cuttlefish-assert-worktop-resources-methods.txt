@@ -288,7 +288,7 @@ STATE UPDATES: 1 entity
                  ),
                  input: BlueprintPayloadDef::Static(
                    ScopedTypeId(
-                     SchemaHash(hex("d864dc25e8ee1e5dad8df5b6c8b32c54681d2150a914530d33f898c7feafc2a2")),
+                     SchemaHash(hex("680bb5a17153e83fde0189e7299a1e51c022a25e1bdd178bd3f9e5177b46f21f")),
                      LocalTypeId::SchemaLocalIndex(
                        0u64,
                      ),
@@ -296,7 +296,7 @@ STATE UPDATES: 1 entity
                  ),
                  output: BlueprintPayloadDef::Static(
                    ScopedTypeId(
-                     SchemaHash(hex("d864dc25e8ee1e5dad8df5b6c8b32c54681d2150a914530d33f898c7feafc2a2")),
+                     SchemaHash(hex("680bb5a17153e83fde0189e7299a1e51c022a25e1bdd178bd3f9e5177b46f21f")),
                      LocalTypeId::WellKnown(
                        WellKnownTypeId(66u8),
                      ),
@@ -314,15 +314,15 @@ STATE UPDATES: 1 entity
                  ),
                  input: BlueprintPayloadDef::Static(
                    ScopedTypeId(
-                     SchemaHash(hex("d864dc25e8ee1e5dad8df5b6c8b32c54681d2150a914530d33f898c7feafc2a2")),
+                     SchemaHash(hex("680bb5a17153e83fde0189e7299a1e51c022a25e1bdd178bd3f9e5177b46f21f")),
                      LocalTypeId::SchemaLocalIndex(
-                       8u64,
+                       10u64,
                      ),
                    ),
                  ),
                  output: BlueprintPayloadDef::Static(
                    ScopedTypeId(
-                     SchemaHash(hex("d864dc25e8ee1e5dad8df5b6c8b32c54681d2150a914530d33f898c7feafc2a2")),
+                     SchemaHash(hex("680bb5a17153e83fde0189e7299a1e51c022a25e1bdd178bd3f9e5177b46f21f")),
                      LocalTypeId::WellKnown(
                        WellKnownTypeId(66u8),
                      ),
@@ -393,7 +393,7 @@ STATE UPDATES: 1 entity
          PackageCodeOriginalCodeV1(hex("000000000000001a")),
        )
   ├─ Partition(1): 1 change
-    └─ Set: SchemaHash(d864dc25e8ee1e5dad8df5b6c8b32c54681d2150a914530d33f898c7feafc2a2)
+    └─ Set: SchemaHash(680bb5a17153e83fde0189e7299a1e51c022a25e1bdd178bd3f9e5177b46f21f)
        Value: KeyValueEntrySubstate::V1(
          KeyValueEntrySubstateV1 {
            value: Option::Some(
@@ -408,12 +408,39 @@ STATE UPDATES: 1 entity
                      ],
                    },
                    TypeKind::Map {
-                     key_type: LocalTypeId::WellKnown(
-                       WellKnownTypeId(133u8),
-                     ),
-                     value_type: LocalTypeId::SchemaLocalIndex(
+                     key_type: LocalTypeId::SchemaLocalIndex(
                        2u64,
                      ),
+                     value_type: LocalTypeId::SchemaLocalIndex(
+                       4u64,
+                     ),
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(133u8),
+                         ),
+                       ],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           3u64,
+                         ),
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(9u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(131u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
                    },
                    TypeKind::Enum {
                      variants: {
@@ -430,17 +457,17 @@ STATE UPDATES: 1 entity
                        ],
                        3u8 => [
                          LocalTypeId::SchemaLocalIndex(
-                           3u64,
+                           5u64,
                          ),
                        ],
                        4u8 => [
                          LocalTypeId::SchemaLocalIndex(
-                           3u64,
+                           5u64,
                          ),
                        ],
                        5u8 => [
                          LocalTypeId::SchemaLocalIndex(
-                           4u64,
+                           6u64,
                          ),
                        ],
                      },
@@ -453,16 +480,16 @@ STATE UPDATES: 1 entity
                    TypeKind::Tuple {
                      field_types: [
                        LocalTypeId::SchemaLocalIndex(
-                         3u64,
-                       ),
-                       LocalTypeId::SchemaLocalIndex(
                          5u64,
                        ),
                        LocalTypeId::SchemaLocalIndex(
-                         6u64,
+                         7u64,
                        ),
                        LocalTypeId::SchemaLocalIndex(
-                         7u64,
+                         8u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         9u64,
                        ),
                      ],
                    },
@@ -490,7 +517,7 @@ STATE UPDATES: 1 entity
                      variants: {
                        0u8 => [
                          LocalTypeId::SchemaLocalIndex(
-                           3u64,
+                           5u64,
                          ),
                        ],
                        1u8 => [],
@@ -522,6 +549,49 @@ STATE UPDATES: 1 entity
                        "ManifestResourceConstraints",
                      ),
                      child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AnalyzerResourceAddress",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Static",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Dynamic",
+                             ),
+                             child_names: Option::Some(
+                               ChildNames::NamedFields(
+                                 [
+                                   "blueprint_id",
+                                   "named_address",
+                                 ],
+                               ),
+                             ),
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "BlueprintId",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "package_address",
+                           "blueprint_name",
+                         ],
+                       ),
+                     ),
                    },
                    TypeMetadata {
                      type_name: Option::Some(
@@ -672,6 +742,8 @@ STATE UPDATES: 1 entity
                    },
                  ],
                  type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
                    TypeValidation::None,
                    TypeValidation::None,
                    TypeValidation::None,

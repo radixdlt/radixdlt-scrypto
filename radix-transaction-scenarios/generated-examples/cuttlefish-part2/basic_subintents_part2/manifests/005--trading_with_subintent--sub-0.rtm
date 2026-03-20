@@ -9,8 +9,10 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("sold_to_parent")
 ;
 ASSERT_NEXT_CALL_RETURNS_ONLY
-    Map<Address, Enum>(
-        Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3") => Enum<2u8>(
+    Map<Enum, Enum>(
+        Enum<0u8>(
+            Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+        ) => Enum<2u8>(
             Decimal("23.32")
         )
     )
