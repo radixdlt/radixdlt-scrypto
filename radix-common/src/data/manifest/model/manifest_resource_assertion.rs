@@ -138,15 +138,11 @@ impl ManifestResourceConstraints {
         )
     }
 
-    pub fn specified_resources(
-        &self,
-    ) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
+    pub fn specified_resources(&self) -> &IndexMap<ResourceAddress, ManifestResourceConstraint> {
         &self.specified_resources
     }
 
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = (&ResourceAddress, &ManifestResourceConstraint)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&ResourceAddress, &ManifestResourceConstraint)> {
         self.specified_resources.iter()
     }
 
@@ -250,11 +246,7 @@ impl AggregateResourceBalances {
         }
     }
 
-    pub fn add_fungible(
-        &mut self,
-        resource_address: ResourceAddress,
-        amount: Decimal,
-    ) {
+    pub fn add_fungible(&mut self, resource_address: ResourceAddress, amount: Decimal) {
         if amount.is_positive() {
             self.fungible_resources
                 .entry(resource_address)
