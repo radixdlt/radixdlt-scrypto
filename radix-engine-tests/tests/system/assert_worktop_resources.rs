@@ -27,7 +27,7 @@ fn when_more_is_returned_assert_worktop_resources_only_should_fail() {
         |_, resource2| {
             Some(
                 ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
-                    resource_address: resource2,
+                    resource_address: resource2.into(),
                 },
             )
         },
@@ -86,7 +86,7 @@ fn when_less_is_returned_assert_next_call_returns_include_should_fail() {
         false,
         |_, _| {
             Some(ResourceConstraintsError::ResourceConstraintFailed {
-                resource_address: XRD,
+                resource_address: XRD.into(),
                 error: ResourceConstraintError::ExpectedAtLeastAmount {
                     expected_at_least_amount: dec!(1),
                     actual_amount: dec!(0),
@@ -111,7 +111,7 @@ fn when_less_is_returned_assert_next_call_returns_only_should_fail() {
         |_, resource2| {
             Some(
                 ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
-                    resource_address: resource2,
+                    resource_address: resource2.into(),
                 },
             )
         },
@@ -135,7 +135,7 @@ fn when_empty_constraints_on_assert_next_call_returns_only_should_fail() {
         |resource1, _resource2| {
             Some(
                 ResourceConstraintsError::UnexpectedNonZeroBalanceOfUnspecifiedResource {
-                    resource_address: resource1,
+                    resource_address: resource1.into(),
                 },
             )
         },

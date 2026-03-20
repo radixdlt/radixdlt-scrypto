@@ -1171,7 +1171,6 @@ pub enum AnalyzerResourceAddress {
     /// analyzed by the analyzer.
     Dynamic {
         blueprint_id: BlueprintId,
-        address_reservation: u32,
         named_address: u32,
     },
 }
@@ -1189,12 +1188,10 @@ impl AnalyzerResourceAddress {
     /// used to reference it in subsequent manifest instructions.
     pub fn new_dynamic(
         blueprint_id: impl Into<BlueprintId>,
-        address_reservation: impl Into<ManifestAddressReservation>,
         named_address: impl Into<ManifestNamedAddress>,
     ) -> Self {
         Self::Dynamic {
             blueprint_id: blueprint_id.into(),
-            address_reservation: address_reservation.into().0,
             named_address: named_address.into().0,
         }
     }

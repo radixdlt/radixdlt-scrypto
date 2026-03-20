@@ -23,7 +23,7 @@ fn simple_account_transfer_with_an_explicit_take_all_is_correctly_classified() {
     assert_eq!(all_deposits.len(), 1);
     assert_eq!(
         all_withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&vec![AccountWithdraw::Amount(XRD.into(), 10.into())])
     );
     assert_eq!(
         all_deposits.get(&account2),
@@ -69,7 +69,7 @@ fn simple_account_transfer_with_an_explicit_take_exact_is_correctly_classified()
     assert_eq!(all_deposits.len(), 1);
     assert_eq!(
         all_withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&vec![AccountWithdraw::Amount(XRD.into(), 10.into())])
     );
     assert_eq!(
         all_deposits.get(&account2),
@@ -117,7 +117,7 @@ fn simple_account_transfer_with_two_deposits_is_correctly_classified() {
     assert_eq!(all_deposits.len(), 1);
     assert_eq!(
         all_withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&vec![AccountWithdraw::Amount(XRD.into(), 10.into())])
     );
     assert_eq!(
         all_deposits.get(&account2),
@@ -165,7 +165,7 @@ fn simple_account_transfer_with_a_take_all_is_correctly_classified() {
     assert_eq!(all_deposits.len(), 1);
     assert_eq!(
         all_withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&vec![AccountWithdraw::Amount(XRD.into(), 10.into())])
     );
     assert_eq!(
         all_deposits.get(&account2),
@@ -211,7 +211,7 @@ fn simple_account_transfer_deposit_batch_is_correctly_classified() {
     assert_eq!(all_deposits.len(), 1);
     assert_eq!(
         all_withdraws.get(&account1),
-        Some(&vec![AccountWithdraw::Amount(XRD, 10.into())])
+        Some(&vec![AccountWithdraw::Amount(XRD.into(), 10.into())])
     );
     assert_eq!(
         all_deposits.get(&account2),
@@ -261,7 +261,7 @@ fn simple_account_transfer_of_non_fungibles_by_amount_is_classified_correctly() 
     assert_eq!(
         all_withdraws.get(&account1),
         Some(&vec![AccountWithdraw::Amount(
-            non_fungible_address,
+            non_fungible_address.into(),
             10.into()
         )])
     );
@@ -323,7 +323,7 @@ fn simple_account_transfer_of_non_fungibles_by_ids_is_classified_correctly() {
     assert_eq!(
         all_withdraws.get(&account1),
         Some(&vec![AccountWithdraw::Ids(
-            non_fungible_address,
+            non_fungible_address.into(),
             [NonFungibleLocalId::integer(1)].into_iter().collect(),
         )])
     );
@@ -1114,7 +1114,9 @@ fn static_analyzer_understands_when_non_of_the_input_resources_will_be_returned(
         UnspecifiedResources::none()
     );
     assert_eq!(
-        first_deposit.specified_resources().get(&XRD),
+        first_deposit
+            .specified_resources()
+            .get(&AnalyzerResourceAddress::from(XRD)),
         Some(&SimpleResourceBounds::Fungible(
             SimpleFungibleResourceBounds::Exact(50.into())
         ))

@@ -2033,10 +2033,10 @@ impl From<ResourceBounds> for SimpleNonFungibleResourceBounds {
 /// resolved from a [`ManifestNamedAddress`] to a particular [`BlueprintId`] that is known.
 ///
 /// [`Named`]: ResolvedDynamicAddress::Named
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ManifestSbor)]
 pub enum ResolvedDynamicAddress<T: AsRef<NodeId>> {
     StaticAddress(T),
-    BlueprintResolvedFromNamedAddress(BlueprintId),
+    BlueprintResolvedFromNamedAddress(BlueprintId, ManifestNamedAddress),
 }
 
 impl<T: AsRef<NodeId>> ResolvedDynamicAddress<T> {
@@ -2055,7 +2055,7 @@ impl<T: AsRef<NodeId>> ResolvedDynamicAddress<T> {
                 .as_ref()
                 .entity_type()
                 .and_then(resolve_main_module_blueprint_id),
-            Self::BlueprintResolvedFromNamedAddress(blueprint_id) => Some(blueprint_id),
+            Self::BlueprintResolvedFromNamedAddress(blueprint_id, ..) => Some(blueprint_id),
         }
     }
 

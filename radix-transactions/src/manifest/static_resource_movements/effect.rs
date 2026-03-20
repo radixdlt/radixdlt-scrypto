@@ -28,6 +28,9 @@ pub struct InvocationDetails<'a> {
     pub receiver: InvocationReceiver,
     pub sent_resources: &'a TrackedResources,
     pub source: ChangeSource,
+    pub named_addresses: &'a IndexMap<ManifestNamedAddress, BlueprintId>,
+    pub address_reservations:
+        &'a IndexMap<ManifestAddressReservation, (BlueprintId, ManifestNamedAddress)>,
 }
 
 #[derive(Debug)]
@@ -291,17 +294,6 @@ unknown_output_static_invocation_resources_output_impl![
     MultiResourcePoolContributeManifestInput,
     // This returns unknown resources of an unknown amount from the redemption.
     [no_resource_inputs_returned]: MultiResourcePoolRedeemManifestInput,
-    /* FungibleResourceManager */
-    // This returns this resource so we know the amount but we don't know the resource address
-    // so we can't do much with that.
-    FungibleResourceManagerCreateWithInitialSupplyManifestInput,
-    /* NonFungibleResourceManager */
-    // This returns this resource so we know the ids but we don't know the resource address
-    // so we can't do much with that.
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
-    // This returns this resource so we know the ids but we don't know the resource address
-    // so we can't do much with that.
-    NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput,
     /* Vault */
     // We don't know what resource is in the vault. We know the amount/ids returned but not the
     // resource address.
@@ -375,7 +367,7 @@ impl StaticInvocationResourcesOutput for AccountSecurifyManifestInput {
                 )
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(..),
             ) => TrackedResources::new_empty().add_resource(
                 ACCOUNT_OWNER_BADGE,
                 TrackedResource::exact_amount(1, [details.source])?,
@@ -392,12 +384,24 @@ impl StaticInvocationResourcesOutput for AccountWithdrawManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -411,12 +415,24 @@ impl StaticInvocationResourcesOutput for AccountWithdrawNonFungiblesManifestInpu
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -430,12 +446,24 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawManifestInput 
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -449,12 +477,24 @@ impl StaticInvocationResourcesOutput for AccountLockFeeAndWithdrawNonFungiblesMa
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -572,7 +612,7 @@ impl StaticInvocationResourcesOutput for IdentitySecurifyToSingleBadgeManifestIn
                 )?
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(..),
             ) => TrackedResources::new_empty().add_resource(
                 IDENTITY_OWNER_BADGE,
                 TrackedResource::exact_amount(1, [details.source])?,
@@ -603,12 +643,24 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -622,12 +674,24 @@ impl StaticInvocationResourcesOutput for AccountLockerRecoverNonFungiblesManifes
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -641,12 +705,24 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimManifestInput {
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -660,12 +736,24 @@ impl StaticInvocationResourcesOutput for AccountLockerClaimNonFungiblesManifestI
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -705,12 +793,24 @@ impl StaticInvocationResourcesOutput for TwoResourcePoolProtectedWithdrawManifes
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -726,12 +826,24 @@ impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManif
         &self,
         details: InvocationDetails,
     ) -> Result<TrackedResources, StaticResourceMovementsError> {
-        let ManifestResourceAddress::Static(resource_address) = self.resource_address else {
-            return Ok(
-                TrackedResources::new_with_possible_balance_of_unspecified_resources([
-                    details.source
-                ]),
-            );
+        let resource_address = match self.resource_address {
+            ManifestResourceAddress::Static(resource_address) => {
+                AnalyzerResourceAddress::Static(resource_address)
+            }
+            ManifestResourceAddress::Named(manifest_named_address) => {
+                let Some(blueprint_id) = details.named_addresses.get(&manifest_named_address)
+                else {
+                    return Ok(
+                        TrackedResources::new_with_possible_balance_of_unspecified_resources([
+                            details.source,
+                        ]),
+                    );
+                };
+                AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: manifest_named_address.0,
+                }
+            }
         };
         TrackedResources::new_empty().add_resource(
             resource_address,
@@ -742,6 +854,33 @@ impl StaticInvocationResourcesOutput for MultiResourcePoolProtectedWithdrawManif
 // endregion:MultiResourcePool
 
 // region:FungibleResourceManager
+impl StaticInvocationResourcesOutput
+    for FungibleResourceManagerCreateWithInitialSupplyManifestInput
+{
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let Some(resource_address) = self
+            .address_reservation
+            .and_then(|reservation| details.address_reservations.get(&reservation))
+            .map(
+                |(blueprint_id, named_manifest_address)| AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: named_manifest_address.0,
+                },
+            )
+        else {
+            return Ok(TrackedResources::new_empty().add_unspecified_resources([details.source]));
+        };
+
+        TrackedResources::new_empty().add_resource(
+            resource_address,
+            TrackedResource::exact_amount(self.initial_supply, [details.source])?,
+        )
+    }
+}
+
 impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInput {
     fn output(
         &self,
@@ -766,10 +905,21 @@ impl StaticInvocationResourcesOutput for FungibleResourceManagerMintManifestInpu
                 }
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
-            )
-            | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                    blueprint_id,
+                    named_manifest_address,
+                ),
+            ) => {
+                let resource_address = AnalyzerResourceAddress::Dynamic {
+                    blueprint_id,
+                    named_address: named_manifest_address.0,
+                };
+                TrackedResources::new_empty().add_resource(
+                    resource_address,
+                    TrackedResource::exact_amount(self.amount, [details.source])?,
+                )
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -795,6 +945,60 @@ impl StaticInvocationResourcesOutput for ResourceManagerCreateEmptyBucketInput {
 // endregion:FungibleResourceManager
 
 // region:NonFungibleResourceManager
+impl StaticInvocationResourcesOutput
+    for NonFungibleResourceManagerCreateWithInitialSupplyManifestInput
+{
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let Some(resource_address) = self
+            .address_reservation
+            .and_then(|reservation| details.address_reservations.get(&reservation))
+            .map(
+                |(blueprint_id, named_manifest_address)| AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: named_manifest_address.0,
+                },
+            )
+        else {
+            return Ok(TrackedResources::new_empty().add_unspecified_resources([details.source]));
+        };
+
+        TrackedResources::new_empty().add_resource(
+            resource_address,
+            TrackedResource::exact_non_fungibles(self.entries.keys().cloned(), [details.source]),
+        )
+    }
+}
+
+impl StaticInvocationResourcesOutput
+    for NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput
+{
+    fn output(
+        &self,
+        details: InvocationDetails,
+    ) -> Result<TrackedResources, StaticResourceMovementsError> {
+        let Some(resource_address) = self
+            .address_reservation
+            .and_then(|reservation| details.address_reservations.get(&reservation))
+            .map(
+                |(blueprint_id, named_manifest_address)| AnalyzerResourceAddress::Dynamic {
+                    blueprint_id: blueprint_id.clone(),
+                    named_address: named_manifest_address.0,
+                },
+            )
+        else {
+            return Ok(TrackedResources::new_empty().add_unspecified_resources([details.source]));
+        };
+
+        TrackedResources::new_empty().add_resource(
+            resource_address,
+            TrackedResource::exact_amount(self.entries.len(), [details.source])?,
+        )
+    }
+}
+
 impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestInput {
     fn output(
         &self,
@@ -822,10 +1026,24 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintManifestI
                 }
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
-            )
-            | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                    blueprint_id,
+                    named_manifest_address,
+                ),
+            ) => {
+                let resource_address = AnalyzerResourceAddress::Dynamic {
+                    blueprint_id,
+                    named_address: named_manifest_address.0,
+                };
+                TrackedResources::new_empty().add_resource(
+                    resource_address,
+                    TrackedResource::exact_non_fungibles(
+                        self.entries.keys().cloned(),
+                        [details.source],
+                    ),
+                )
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -858,10 +1076,21 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintRuidManif
                 }
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
-            )
-            | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                    blueprint_id,
+                    named_manifest_address,
+                ),
+            ) => {
+                let resource_address = AnalyzerResourceAddress::Dynamic {
+                    blueprint_id,
+                    named_address: named_manifest_address.0,
+                };
+                TrackedResources::new_empty().add_resource(
+                    resource_address,
+                    TrackedResource::exact_amount(self.entries.len(), [details.source])?,
+                )
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),
@@ -894,10 +1123,21 @@ impl StaticInvocationResourcesOutput for NonFungibleResourceManagerMintSingleRui
                 }
             }
             InvocationReceiver::GlobalMethod(
-                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(_),
-            )
-            | InvocationReceiver::DirectAccess(_)
-            | InvocationReceiver::BlueprintFunction(_) => Ok(
+                ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
+                    blueprint_id,
+                    named_manifest_address,
+                ),
+            ) => {
+                let resource_address = AnalyzerResourceAddress::Dynamic {
+                    blueprint_id,
+                    named_address: named_manifest_address.0,
+                };
+                TrackedResources::new_empty().add_resource(
+                    resource_address,
+                    TrackedResource::exact_amount(Decimal::ONE, [details.source])?,
+                )
+            }
+            InvocationReceiver::DirectAccess(_) | InvocationReceiver::BlueprintFunction(_) => Ok(
                 TrackedResources::new_with_possible_balance_of_unspecified_resources([
                     details.source
                 ]),

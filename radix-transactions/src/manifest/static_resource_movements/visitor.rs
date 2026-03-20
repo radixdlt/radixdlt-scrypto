@@ -13,6 +13,9 @@ pub struct StaticResourceMovementsVisitor {
     tracked_buckets: IndexMap<ManifestBucket, (ResourceAddress, TrackedResource)>,
     /// The blueprint of all running named addresses
     tracked_named_addresses: IndexMap<ManifestNamedAddress, BlueprintId>,
+    /// The details of all running address reservations
+    tracked_address_reservations:
+        IndexMap<ManifestAddressReservation, (BlueprintId, ManifestNamedAddress)>,
     /// The information about the invocations observed in this manifest. This will be surfaced to
     /// the user when they call the output function.
     invocation_static_information: IndexMap<usize, InvocationStaticInformation>,
@@ -62,6 +65,7 @@ impl StaticResourceMovementsVisitor {
             worktop,
             tracked_buckets: Default::default(),
             tracked_named_addresses: Default::default(),
+            tracked_address_reservations: Default::default(),
             invocation_static_information: Default::default(),
             current_instruction: None,
             next_invocation_assertion: None,
@@ -93,6 +97,8 @@ impl StaticResourceMovementsVisitor {
                     receiver,
                     sent_resources: &invocation_input,
                     source: change_source,
+                    named_addresses: &self.tracked_named_addresses,
+                    address_reservations: &self.tracked_address_reservations,
                 })?
             }
             None => TrackedResources::new_with_possible_balance_of_unspecified_resources([
@@ -163,6 +169,7 @@ impl StaticResourceMovementsVisitor {
                             .expect("Interpreter should have validated the address exists, because we're handling this on instruction end");
                         ResolvedDynamicAddress::BlueprintResolvedFromNamedAddress(
                             blueprint_id.clone(),
+                            *named_address,
                         )
                     }
                 };
@@ -415,13 +422,22 @@ impl StaticResourceMovementsVisitor {
             named_address,
             package_address,
             blueprint_name,
-            ..
+            state,
         }: OnNewNamedAddress,
     ) -> Result<(), StaticResourceMovementsError> {
         self.tracked_named_addresses.insert(
             named_address,
             BlueprintId::new(package_address, blueprint_name),
         );
+        if let Some(address_reservation) = state.associated_reservation {
+            self.tracked_address_reservations.insert(
+                address_reservation,
+                (
+                    BlueprintId::new(package_address, blueprint_name),
+                    named_address,
+                ),
+            );
+        }
         Ok(())
     }
 
