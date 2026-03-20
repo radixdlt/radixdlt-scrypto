@@ -1123,6 +1123,83 @@ fn static_analyzer_understands_when_non_of_the_input_resources_will_be_returned(
     );
 }
 
+#[test]
+fn dynamic_resource_create_deposit_withdraw_redeposit_is_correctly_classified() {
+    // Arrange
+    let account = account_address(1);
+    let dynamic_resource = AnalyzerResourceAddress::Dynamic {
+        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
+        named_address: 0,
+    };
+
+    let builder = ManifestBuilder::new_v2();
+    let lookup = builder.name_lookup();
+    let manifest = builder
+        .lock_fee(account, 25)
+        .allocate_global_address(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            "reservation",
+            "new_resource",
+        )
+        .call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+            FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                owner_role: OwnerRole::None.into(),
+                track_total_supply: true,
+                divisibility: 18,
+                initial_supply: dec!(100),
+                resource_roles: FungibleResourceRoles::default().into(),
+                metadata: ModuleConfig::default(),
+                address_reservation: Some(lookup.address_reservation("reservation")),
+            },
+        )
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .call_method(
+            account,
+            ACCOUNT_WITHDRAW_IDENT,
+            AccountWithdrawManifestInput {
+                resource_address: ManifestResourceAddress::Named(
+                    lookup.named_address("new_resource"),
+                ),
+                amount: dec!(10),
+            },
+        )
+        .deposit_batch(account, ManifestExpression::EntireWorktop)
+        .build();
+
+    // Act
+    let (all_deposits, all_withdraws, net_deposits, net_withdraws) =
+        statically_analyze(&manifest).unwrap();
+
+    // Assert
+    assert_eq!(all_withdraws.len(), 1);
+    assert_eq!(
+        all_withdraws.get(&account),
+        Some(&vec![AccountWithdraw::Amount(
+            dynamic_resource.clone(),
+            10.into()
+        )])
+    );
+
+    let account_deposits = all_deposits.get(&account).unwrap();
+    assert_eq!(account_deposits.len(), 2);
+
+    assert_eq!(
+        net_deposits.get(&account),
+        Some(&NetDeposits::empty(UnspecifiedResources::none()).set(
+            dynamic_resource.clone(),
+            ResourceBounds::exact_amount(110).unwrap()
+        )),
+    );
+    assert_eq!(
+        net_withdraws.get(&account),
+        Some(&NetWithdraws::empty().set_fungible(dynamic_resource, 10))
+    );
+}
+
 fn account_address(id: u64) -> ComponentAddress {
     unsafe {
         ComponentAddress::new_unchecked(node_id(EntityType::GlobalPreallocatedEd25519Account, id).0)
