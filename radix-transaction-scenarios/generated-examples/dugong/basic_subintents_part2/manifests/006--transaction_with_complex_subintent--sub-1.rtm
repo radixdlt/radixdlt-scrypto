@@ -20,7 +20,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("given_to_parent")
 ;
 ASSERT_NEXT_CALL_RETURNS_ONLY
-    Map<Enum, Enum>()
+    Map<Address, Enum>()
 ;
 YIELD_TO_PARENT
     Bucket("given_to_parent")

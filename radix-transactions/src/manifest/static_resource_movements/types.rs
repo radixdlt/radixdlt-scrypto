@@ -239,14 +239,20 @@ impl TrackedResources {
     ) -> Result<(), StaticResourceMovementsError> {
         // First, we handle the ONLY by asserting all specified resources not included in the constraints are zero.
         for (resource_address, tracked_resource) in self.specified_resources.iter_mut() {
-            if !constraints.contains_specified_resource(resource_address) {
+            let is_in_constraints = match resource_address {
+                AnalyzerResourceAddress::Static(addr) => {
+                    constraints.contains_specified_resource(addr)
+                }
+                AnalyzerResourceAddress::Dynamic { .. } => false,
+            };
+            if !is_in_constraints {
                 tracked_resource.handle_assertion(ResourceBounds::zero(), source)?;
             }
         }
 
         // Now we handle the explicit assertions
         for (resource_address, constraint) in constraints.iter() {
-            self.resource_status_mut(resource_address.clone())
+            self.resource_status_mut((*resource_address).into())
                 .handle_assertion(
                     ResourceBounds::new_for_manifest_constraint(constraint)?,
                     source,
@@ -268,7 +274,7 @@ impl TrackedResources {
         source: ChangeSource,
     ) -> Result<(), StaticResourceMovementsError> {
         for (resource_address, constraint) in constraints.iter() {
-            self.resource_status_mut(resource_address.clone())
+            self.resource_status_mut((*resource_address).into())
                 .handle_assertion(
                     ResourceBounds::new_for_manifest_constraint(constraint)?,
                     source,

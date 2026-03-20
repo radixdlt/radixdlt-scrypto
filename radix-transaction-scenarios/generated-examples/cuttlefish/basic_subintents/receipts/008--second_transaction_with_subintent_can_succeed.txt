@@ -23,7 +23,7 @@ EVENTS: 8
      ResourceAddress(Reference("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")),
      Decimal("50"),
    )
-├─ Emitter: Method { node: internal_vault_sim1trkmcv068aqq96j9zfyv6mpr8fpqkr73qhrvj34mc8m48t9lllhx8q, module_id: Main }
+├─ Emitter: Method { node: internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w, module_id: Main }
    Event: DepositEvent {
      amount: Decimal("50"),
    }
@@ -52,7 +52,7 @@ STATE UPDATES: 6 entities
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("0.77418503519"),
+             0u8 => Decimal("0.7738086323275"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -82,7 +82,7 @@ STATE UPDATES: 6 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("9974.43382385441")),
+         LiquidFungibleResource(Decimal("9974.43532946586")),
        )
 ├─ internal_vault_sim1tz7udp8myqsz4j2252zflxahmecw0qnc8cvxv6e0tnp86vu3tw53r0 across 1 partitions
   └─ Partition(64): 1 change
@@ -90,7 +90,7 @@ STATE UPDATES: 6 entities
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
          LiquidFungibleResource(Decimal("930")),
        )
-├─ internal_vault_sim1trkmcv068aqq96j9zfyv6mpr8fpqkr73qhrvj34mc8m48t9lllhx8q across 1 partitions
+├─ internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
@@ -100,7 +100,7 @@ STATE UPDATES: 6 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("1.54837007038")),
+         LiquidFungibleResource(Decimal("1.547617264655")),
        )
 
 OUTPUTS: 3
@@ -115,7 +115,7 @@ BALANCE CHANGES: 4
 ├─ Vault: internal_vault_sim1tz7udp8myqsz4j2252zflxahmecw0qnc8cvxv6e0tnp86vu3tw53r0
    ResAddr: resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8
    Change: -50
-├─ Vault: internal_vault_sim1trkmcv068aqq96j9zfyv6mpr8fpqkr73qhrvj34mc8m48t9lllhx8q
+├─ Vault: internal_vault_sim1tz0aysacqsjfltp0frmz92xfagepnp73eswtz4z6rkeyzq8tkkqc5w
    ResAddr: resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8
    Change: 50
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
