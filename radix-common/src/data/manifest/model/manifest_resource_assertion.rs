@@ -1137,3 +1137,73 @@ impl<T: Resolve<Decimal>> ResolveFrom<T> for UpperBound {
         UpperBound::Inclusive(value.resolve())
     }
 }
+
+/// The primary address type used in the static analyzer.
+///
+/// The static analyzer is capable of analyzing more resource movements than just static movements,
+/// it's capable of also analyzing movements of dynamic resources which are resources which were
+/// created within the same manifest or transaction.
+///
+/// This type allows for both [`Static`] and [`Dynamic`] resources to be tracked throughout the
+/// whole codebase.
+///
+/// [`Static`]: Self::Static
+/// [`Dynamic`]: Self::Dynamic
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ManifestSbor, ScryptoSbor)]
+pub enum AnalyzerResourceAddress {
+    /// A static resource address of a resource which was created before the manifest being analyzed
+    /// by the static analyzer.
+    Static(ResourceAddress),
+
+    /// A dynamic address of a resource which was created within the same manifest which is being
+    /// analyzed by the analyzer.
+    Dynamic {
+        blueprint_id: BlueprintId,
+        named_address: u32,
+    },
+}
+
+impl AnalyzerResourceAddress {
+    /// Creates an [`AnalyzerResourceAddress`] for a resource that already exists on-ledger
+    /// with a known [`ResourceAddress`].
+    pub fn new_static(address: impl Into<ResourceAddress>) -> Self {
+        Self::Static(address.into())
+    }
+
+    /// Creates an [`AnalyzerResourceAddress`] for a resource that is being created within the
+    /// manifest currently being analyzed. The resource is identified by its creating blueprint,
+    /// the address reservation that will resolve to its final address, and the named address
+    /// used to reference it in subsequent manifest instructions.
+    pub fn new_dynamic(
+        blueprint_id: impl Into<BlueprintId>,
+        named_address: impl Into<ManifestNamedAddress>,
+    ) -> Self {
+        Self::Dynamic {
+            blueprint_id: blueprint_id.into(),
+            named_address: named_address.into().0,
+        }
+    }
+
+    /// Returns `true` if this resource is fungible. For static addresses, this is determined
+    /// from the address's entity type. For dynamic addresses, this checks whether the creating
+    /// blueprint is the [`FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT`].
+    pub fn is_fungible(&self) -> bool {
+        match self {
+            AnalyzerResourceAddress::Static(resource_address) => resource_address.is_fungible(),
+            AnalyzerResourceAddress::Dynamic { blueprint_id, .. } => {
+                blueprint_id.blueprint_name == "FungibleResourceManager"
+            }
+        }
+    }
+
+    /// Returns `true` if this resource is non-fungible, i.e. not fungible.
+    pub fn is_non_fungible(&self) -> bool {
+        !self.is_fungible()
+    }
+}
+
+impl From<ResourceAddress> for AnalyzerResourceAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::new_static(value)
+    }
+}
