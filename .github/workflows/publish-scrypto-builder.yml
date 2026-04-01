@@ -27,8 +27,7 @@ jobs:
       target: "scrypto-builder"
       platforms: "linux/amd64"
       provenance: "false"
-      scan_image: true
-      snyk_target_ref: ${{ github.ref_name }}
+      scan_image: false
       enable_dockerhub: true
     secrets:
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
