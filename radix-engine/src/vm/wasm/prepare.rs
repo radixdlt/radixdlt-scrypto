@@ -773,6 +773,39 @@ impl WasmModule {
                             ));
                         }
                     }
+                    // Crypto Utils v3 (Dugong) — BLS12-381 G1 (min-sig) signature verification
+                    CRYPTO_UTILS_BLS12381_V1_VERIFY_MIN_SIG_FUNCTION_NAME => {
+                        if version < ScryptoVmVersion::crypto_utils_v3() {
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::ProtocolVersionMismatch {
+                                    name: entry.name.to_string(),
+                                    current_version: version.into(),
+                                    expected_version: ScryptoVmVersion::crypto_utils_v3().into(),
+                                },
+                            ));
+                        }
+
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I32],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
                     CRYPTO_UTILS_BLS12381_V1_AGGREGATE_VERIFY_FUNCTION_NAME => {
                         if version < ScryptoVmVersion::crypto_utils_v1() {
                             return Err(PrepareError::InvalidImport(
@@ -1579,6 +1612,11 @@ mod tests {
                     CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_FUNCTION_NAME,
                     CRYPTO_UTILS_SECP256K1_ECDSA_VERIFY_AND_KEY_RECOVER_UNCOMPRESSED_FUNCTION_NAME,
                 ],
+            ),
+            (
+                ScryptoVmVersion::V1_2,
+                ScryptoVmVersion::crypto_utils_v3(),
+                vec![CRYPTO_UTILS_BLS12381_V1_VERIFY_MIN_SIG_FUNCTION_NAME],
             ),
         ] {
             for name in names {

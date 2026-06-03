@@ -5,6 +5,13 @@ use crate::{internal_prelude::*, system::system_callback::SystemBoot};
 pub struct DugongSettings {
     pub native_entity_metadata_updates: UpdateSetting<NoSettings>,
     pub system_logic_updates: UpdateSetting<NoSettings>,
+    /// Introduces Crypto Utils v3 by booting the Scrypto VM to V1_3, enabling
+    /// BLS12-381 G1 (min-sig) signature verification
+    /// ([`crate::vm::ScryptoVmVersion::crypto_utils_v3`]) — the variant used by unchained
+    /// drand networks (e.g. quicknet).
+    ///
+    /// Disabled by default, consistent with the rest of the (not-yet-enacted) Dugong update.
+    pub vm_boot_to_enable_crypto_utils_v3: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for DugongSettings {
@@ -27,6 +34,7 @@ impl UpdateSettings for DugongSettings {
         Self {
             native_entity_metadata_updates: UpdateSetting::Disabled,
             system_logic_updates: UpdateSetting::Disabled,
+            vm_boot_to_enable_crypto_utils_v3: UpdateSetting::Disabled,
         }
     }
 
@@ -57,6 +65,7 @@ fn generate_main_batch(
     DugongSettings {
         native_entity_metadata_updates,
         system_logic_updates,
+        vm_boot_to_enable_crypto_utils_v3,
     }: &DugongSettings,
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
@@ -75,7 +84,25 @@ fn generate_main_batch(
         );
     }
 
+    if let UpdateSetting::Enabled(NoSettings) = &vm_boot_to_enable_crypto_utils_v3 {
+        batch.mut_add_flash(
+            "dugong-vm-boot-to-enable-crypto-utils-v3",
+            generate_vm_boot_to_enable_crypto_utils_v3(),
+        );
+    }
+
     batch
+}
+
+fn generate_vm_boot_to_enable_crypto_utils_v3() -> StateUpdates {
+    StateUpdates::empty().set_substate(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::VmBoot,
+        VmBoot::V1 {
+            scrypto_version: ScryptoVmVersion::crypto_utils_v3().into(),
+        },
+    )
 }
 
 fn generate_dugong_native_metadata_updates() -> StateUpdates {

@@ -132,6 +132,9 @@ pub enum ExecutionCostingEntry<'a> {
     Bls12381V1Verify {
         size: usize,
     },
+    Bls12381V1VerifyMinSig {
+        size: usize,
+    },
     Bls12381V1AggregateVerify {
         sizes: &'a [usize],
     },
@@ -229,6 +232,9 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::EncodeBech32Address => ft.encode_bech32_address_cost(),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
             ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
+            ExecutionCostingEntry::Bls12381V1VerifyMinSig { size } => {
+                ft.bls12381_v1_verify_min_sig_cost(*size)
+            }
             ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {
                 ft.bls12381_v1_aggregate_verify_cost(sizes)
             }
@@ -439,6 +445,9 @@ pub mod owned {
 
         /* crypto utils */
         Bls12381V1Verify {
+            size: usize,
+        },
+        Bls12381V1VerifyMinSig {
             size: usize,
         },
         Bls12381V1AggregateVerify {
@@ -682,6 +691,9 @@ pub mod owned {
                 ExecutionCostingEntry::EncodeBech32Address => Self::EncodeBech32Address,
                 ExecutionCostingEntry::Panic { size } => Self::Panic { size },
                 ExecutionCostingEntry::Bls12381V1Verify { size } => Self::Bls12381V1Verify { size },
+                ExecutionCostingEntry::Bls12381V1VerifyMinSig { size } => {
+                    Self::Bls12381V1VerifyMinSig { size }
+                }
                 ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {
                     Self::Bls12381V1AggregateVerify {
                         sizes: sizes.to_vec(),

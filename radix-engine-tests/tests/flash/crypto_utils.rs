@@ -145,3 +145,52 @@ fn run_flash_test_test_environment_crypto_utils_v2(
         );
     }
 }
+
+#[test]
+fn publishing_crypto_utils_v3_in_dugong_using_test_environment_without_state_flash_should_fail() {
+    run_flash_test_test_environment_crypto_utils_v3(false, false);
+}
+
+#[test]
+fn publishing_crypto_utils_v3_in_dugong_using_test_environment_with_state_flash_should_succeed() {
+    run_flash_test_test_environment_crypto_utils_v3(true, true);
+}
+
+fn run_flash_test_test_environment_crypto_utils_v3(
+    enable_crypto_utils_v3: bool,
+    expect_success: bool,
+) {
+    // Arrange
+    let mut test_env = TestEnvironmentBuilder::new()
+        .with_protocol(|builder| {
+            builder
+                .configure_dugong(|_| {
+                    DugongSettings::all_disabled().set(|s| {
+                        s.vm_boot_to_enable_crypto_utils_v3 =
+                            UpdateSetting::new(enable_crypto_utils_v3)
+                    })
+                })
+                .from_bootstrap_to(ProtocolVersion::Dugong)
+        })
+        .build();
+
+    // Act
+    let result = PackageFactory::compile_and_publish(
+        path_local_blueprint!("crypto_scrypto_v3"),
+        &mut test_env,
+        CompileProfile::Fast,
+    );
+
+    // Assert
+    if expect_success {
+        let _package_address = result.unwrap();
+    } else {
+        let err = result.unwrap_err();
+        assert_matches!(
+            err,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(..)
+            ))
+        );
+    }
+}

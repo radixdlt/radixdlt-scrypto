@@ -2199,6 +2199,9 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
                 ClientCostingEntry::Bls12381V1Verify { size } => {
                     ExecutionCostingEntry::Bls12381V1Verify { size }
                 }
+                ClientCostingEntry::Bls12381V1VerifyMinSig { size } => {
+                    ExecutionCostingEntry::Bls12381V1VerifyMinSig { size }
+                }
                 ClientCostingEntry::Bls12381V1AggregateVerify { sizes } => {
                     ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes }
                 }

@@ -97,7 +97,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             // Practically speaking, there is little gain of keeping multiple buffers open before
             // [multi-value](https://github.com/WebAssembly/multi-value/blob/master/proposals/multi-value/Overview.md) is supported and used.
             // We reduce it to `4` so that the amount of memory that a transaction can consume is reduced, which is beneficial for parallel execution.
-            ScryptoVmVersion::V1_2 => 4,
+            ScryptoVmVersion::V1_2 | ScryptoVmVersion::V1_3 => 4,
         };
         if self.buffers.len() >= max_number_of_buffers {
             return Err(InvokeError::SelfError(WasmRuntimeError::TooManyBuffers));
@@ -604,6 +604,28 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             })?;
 
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
+    }
+
+    /// This method is only available to packages uploaded after the "Dugong"
+    /// protocol update due to checks in [`ScryptoV1WasmValidator::validate`].
+    #[trace_resources(log=message.len())]
+    fn crypto_utils_bls12381_v1_verify_min_sig(
+        &mut self,
+        message: Vec<u8>,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let public_key: Bls12381G2PublicKey =
+            scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
+        let signature: Bls12381G1Signature =
+            scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Bls12381V1VerifyMinSig {
+                size: message.len(),
+            })?;
+
+        Ok(verify_bls12381_v1_min_sig(&message, &public_key, &signature) as u32)
     }
 
     /// This method is only available to packages uploaded after "Anemone"

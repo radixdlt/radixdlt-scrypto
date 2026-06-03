@@ -259,6 +259,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto_scrypto_v3"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
 name = "curve25519-dalek"
 version = "4.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
