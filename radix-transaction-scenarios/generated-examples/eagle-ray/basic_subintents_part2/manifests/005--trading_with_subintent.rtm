@@ -1,0 +1,35 @@
+USE_CHILD
+    NamedIntent("trading_subintent")
+    Intent("subtxid_sim13fg6p57q7ssz3ussuezkzdcqug54jh94hn4lgjhs8r2wdlmz9qlsm32upf")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "lock_fee"
+    Decimal("5000")
+;
+YIELD_TO_CHILD
+    NamedIntent("trading_subintent")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Bucket("bought")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "deposit"
+    Bucket("bought")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "withdraw"
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("23.5")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("sold")
+;
+YIELD_TO_CHILD
+    NamedIntent("trading_subintent")
+    Bucket("sold")
+;

@@ -1,0 +1,1267 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 3.10260192004 XRD
+├─ Network execution: 1.086688 XRD, 21733760 execution cost units
+├─ Network finalization: 0.35385035 XRD, 7077007 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 1.66206357004 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 98
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("581073479b7b43b10246dcd4c07def6fefe255c1ef8ecc58e15434630217")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("10000"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz5gg6yu0tdp574fsjnkh4mdz3jfklwv9xwk5p5fsnv0t74azdnkaz, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tr6nfpfdga8f0l2c25ngcfxdxj8r3z6m2rcdnu3k4wf0988zddyqhp, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tpf6rf465f0zmc26slxsulvmu904yx8gghsz5z9kntf3hnrudfnn57, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tphw97wgrdhyzds3tlhq87q84047gn3c0z23jqjn8upxchp06safcr, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqldjlrvud5aaz4wj85pj6se477uc0aztqrpgsshs0x8fg0au8lfua, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("588a890373aceb71961efeb3837738700bc11b5a1aeabe73efccdcc63a85")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9gjqmn4n4hr9s7l6ecxaecwq9uzx66rt4tuul0enwvvw59kzsg2k, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58a4f2fe9eb6b52c16a9d04e37f35d92fcc9ffb424b1700af51928c7d735")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzj09l57k66jc94f6p8r0u6ajt7vnla5yjchqzh4ry5v04e4c5jmkq, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5886848765779e2177cc28e29310d2839ecdef39c69d5388ca6f944c209d")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzrgfpm9w70zza7v9r3fxyxjsw0vmmeec6w48zx2d72ycgya0a7xuz, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58163413722ee096cf25565c5580a3099cec60b3138c8fea1bc671b729e3")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqtrgymj9msfdne92ew9tq9rpxwwcc9nzwxgl6smcecmw20rp64k8f, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58f476d9595c7609f2ef59df0d955db2c680d151e9f1fb19668194dc8f1b")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tr68dk2et3mqnuh0t80sm92aktrgp523a8clkxtxsx2dercm4507w5, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58339341ae177019d59f12834e893b14a24d5e9a754c1122e5cbeab4cc16")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqeexsdwzacpn4vlz2p5azfmzj3y6h56w4xpzgh9e04tfnqktpr07d, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz5gg6yu0tdp574fsjnkh4mdz3jfklwv9xwk5p5fsnv0t74azdnkaz, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tr6nfpfdga8f0l2c25ngcfxdxj8r3z6m2rcdnu3k4wf0988zddyqhp, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tpf6rf465f0zmc26slxsulvmu904yx8gghsz5z9kntf3hnrudfnn57, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tphw97wgrdhyzds3tlhq87q84047gn3c0z23jqjn8upxchp06safcr, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqldjlrvud5aaz4wj85pj6se477uc0aztqrpgsshs0x8fg0au8lfua, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("584f3fe04db8ae246d1eb0a9f47309ffce10016af1962b22f8bbee8844c9")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tp8nlczdhzhzgmg7kz5lgucfll8pqqt27xtzkghch0hgs3xfrfjxwn, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5836b64a5f5db743c6590c453f4eb0fd557febced26ae728a4c6e7feca37")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqmtvjjltkm583jep3zn7n4sl42hl67w6f4ww29ycmnlaj3hy94rqr, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("587fb0134074f7f8973458daad2667278342518da73c9a4fd51757f93695")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tplmqy6qwnml39e5trd26fn8y7p5y5vd5u7f5n74zatljd54j9x6nk, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58afe88a4be416663c3105013ca95cfc6a872ea0c14df10ad49ca8ab6e58")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzh73zjtustxv0p3q5qne22ul34gwt4qc9xlzzk5nj52kmjcn47gnc, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("581b97a88585b23850b329886afcd101bc2d010936984a555e05492f82e4")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqde02y9skers59n9xyx4lx3qx7z6qgfx6vy5427q4yjlqhy8f3t2x, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58ed4cdece8308cd2e67a980a3d400dca7366c2a1346c4cb8022e7bd4634")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1trk5ehkwsvyv6tn84xq284qqmjnnvmp2zdrvfjuqytnm6335t0rdyk, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz5gg6yu0tdp574fsjnkh4mdz3jfklwv9xwk5p5fsnv0t74azdnkaz, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tr6nfpfdga8f0l2c25ngcfxdxj8r3z6m2rcdnu3k4wf0988zddyqhp, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tpf6rf465f0zmc26slxsulvmu904yx8gghsz5z9kntf3hnrudfnn57, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tphw97wgrdhyzds3tlhq87q84047gn3c0z23jqjn8upxchp06safcr, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tqldjlrvud5aaz4wj85pj6se477uc0aztqrpgsshs0x8fg0au8lfua, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce, module_id: Main }
+   Event: WithdrawEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5859f0902c2b49ee2f973ed42f07502d02e79722ae45b0c84222b71f550f")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpvlpypv9dy7utuh8m2z7p6s95pw09ez4ezmpjzzy2m374g0me4hff, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58a4f11ae66fee498f862b2c82ad7e995bb92a24ff18ec25adb2c59d11c8")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzj0zxhxdlhynrux9vkg9tt7n9dmj23yluvwcfddktze6ywgempqmr, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5830c66a15b48868dc48de6b8f7639957aa4166e18d4a1ee90800a6654fe")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqcvv6s4kjyx3hzgme4c7a3ej4a2g9nwrr22rm5ssq9xv487tndlny, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("580f722742832ee31f15e962aaf274735508443508cf02129a52f02a0be4")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tq8hyf6zsvhwx8c4a9324un5wd2ss3p4pr8syy562tcz5zlytuxstl, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("588ea99606f13b1556befca2cdf5af9ea2716b4aebe42163804b682a0918")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz82n9sx7ya32447lj3vmad0n638z662a0jzzcuqfd5z5zgcdf5hsl, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58af22a5ccc70b5c297a048ec5c3de860ba155428fb3efe4b4b60d78cb2b")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzhj9fwvcu94c2t6qj8vts77sc96z42z37e7le95kcxh3jety5v9m0, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("333"),
+   }
+├─ Emitter: Method { node: account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+     Decimal("333"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("3.10260192004"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("1.55130096002"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("1.55130096002"),
+   }
+
+STATE UPDATES: 34 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("16.6873702368425"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("adc2d127467b652734c8903b127ce7c437501e59b79fc1474c10de96b3e31aff"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ account_sim1c8c55r92y72djt5kl0rus3x4a4c20p38lc2yk20t9nffzfyrfmrvce across 1 partitions
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj")),
+       )
+├─ account_sim1cxxs50g33zwlh08x8j27ers5w3vh79sgt2dgvjdwed0239yg3v3k53 across 1 partitions
+  └─ Partition(65): 6 changes
+    ├─ Set: ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tr68dk2et3mqnuh0t80sm92aktrgp523a8clkxtxsx2dercm4507w5")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzj09l57k66jc94f6p8r0u6ajt7vnla5yjchqzh4ry5v04e4c5jmkq")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqeexsdwzacpn4vlz2p5azfmzj3y6h56w4xpzgh9e04tfnqktpr07d")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqtrgymj9msfdne92ew9tq9rpxwwcc9nzwxgl6smcecmw20rp64k8f")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzrgfpm9w70zza7v9r3fxyxjsw0vmmeec6w48zx2d72ycgya0a7xuz")),
+       )
+    └─ Set: ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tz9gjqmn4n4hr9s7l6ecxaecwq9uzx66rt4tuul0enwvvw59kzsg2k")),
+       )
+├─ account_sim1cx8u26guxc3ajs0xggyq3cecpzrm9hu28s2gq7y4y0zrlxavkkk6q8 across 1 partitions
+  └─ Partition(65): 6 changes
+    ├─ Set: ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqde02y9skers59n9xyx4lx3qx7z6qgfx6vy5427q4yjlqhy8f3t2x")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqmtvjjltkm583jep3zn7n4sl42hl67w6f4ww29ycmnlaj3hy94rqr")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1trk5ehkwsvyv6tn84xq284qqmjnnvmp2zdrvfjuqytnm6335t0rdyk")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzh73zjtustxv0p3q5qne22ul34gwt4qc9xlzzk5nj52kmjcn47gnc")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tplmqy6qwnml39e5trd26fn8y7p5y5vd5u7f5n74zatljd54j9x6nk")),
+       )
+    └─ Set: ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tp8nlczdhzhzgmg7kz5lgucfll8pqqt27xtzkghch0hgs3xfrfjxwn")),
+       )
+├─ account_sim1c9a4tjg4cy8st9q0dlzwrlunvjp30ckj9c2s2c9xdlfkyyqwltxceh across 1 partitions
+  └─ Partition(65): 6 changes
+    ├─ Set: ResourceAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tz82n9sx7ya32447lj3vmad0n638z662a0jzzcuqfd5z5zgcdf5hsl")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzj0zxhxdlhynrux9vkg9tt7n9dmj23yluvwcfddktze6ywgempqmr")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzhj9fwvcu94c2t6qj8vts77sc96z42z37e7le95kcxh3jety5v9m0")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tq8hyf6zsvhwx8c4a9324un5wd2ss3p4pr8syy562tcz5zlytuxstl")),
+       )
+    ├─ Set: ResourceAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqcvv6s4kjyx3hzgme4c7a3ej4a2g9nwrr22rm5ssq9xv487tndlny")),
+       )
+    └─ Set: ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tpvlpypv9dy7utuh8m2z7p6s95pw09ez4ezmpjzzy2m374g0me4hff")),
+       )
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999969933.25051905263")),
+       )
+├─ internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Hash(hex("adc2d127467b652734c8903b127ce7c437501e59b79fc1474c10de96b3e31aff"))
+       Value: Epoch(2u64)
+├─ internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("9001")),
+       )
+├─ internal_vault_sim1tz5gg6yu0tdp574fsjnkh4mdz3jfklwv9xwk5p5fsnv0t74azdnkaz across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999992001")),
+       )
+├─ internal_vault_sim1tr6nfpfdga8f0l2c25ngcfxdxj8r3z6m2rcdnu3k4wf0988zddyqhp across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999994001")),
+       )
+├─ internal_vault_sim1tpf6rf465f0zmc26slxsulvmu904yx8gghsz5z9kntf3hnrudfnn57 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999991001")),
+       )
+├─ internal_vault_sim1tphw97wgrdhyzds3tlhq87q84047gn3c0z23jqjn8upxchp06safcr across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("7367.600265340755479782")),
+       )
+├─ internal_vault_sim1tqldjlrvud5aaz4wj85pj6se477uc0aztqrpgsshs0x8fg0au8lfua across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("5325.555320336758663998")),
+       )
+├─ internal_vault_sim1tz9gjqmn4n4hr9s7l6ecxaecwq9uzx66rt4tuul0enwvvw59kzsg2k across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tzj09l57k66jc94f6p8r0u6ajt7vnla5yjchqzh4ry5v04e4c5jmkq across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tzrgfpm9w70zza7v9r3fxyxjsw0vmmeec6w48zx2d72ycgya0a7xuz across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tqtrgymj9msfdne92ew9tq9rpxwwcc9nzwxgl6smcecmw20rp64k8f across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tr68dk2et3mqnuh0t80sm92aktrgp523a8clkxtxsx2dercm4507w5 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tqeexsdwzacpn4vlz2p5azfmzj3y6h56w4xpzgh9e04tfnqktpr07d across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tp8nlczdhzhzgmg7kz5lgucfll8pqqt27xtzkghch0hgs3xfrfjxwn across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tqmtvjjltkm583jep3zn7n4sl42hl67w6f4ww29ycmnlaj3hy94rqr across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tplmqy6qwnml39e5trd26fn8y7p5y5vd5u7f5n74zatljd54j9x6nk across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tzh73zjtustxv0p3q5qne22ul34gwt4qc9xlzzk5nj52kmjcn47gnc across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tqde02y9skers59n9xyx4lx3qx7z6qgfx6vy5427q4yjlqhy8f3t2x across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1trk5ehkwsvyv6tn84xq284qqmjnnvmp2zdrvfjuqytnm6335t0rdyk across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tpvlpypv9dy7utuh8m2z7p6s95pw09ez4ezmpjzzy2m374g0me4hff across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tzj0zxhxdlhynrux9vkg9tt7n9dmj23yluvwcfddktze6ywgempqmr across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tqcvv6s4kjyx3hzgme4c7a3ej4a2g9nwrr22rm5ssq9xv487tndlny across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tq8hyf6zsvhwx8c4a9324un5wd2ss3p4pr8syy562tcz5zlytuxstl across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tz82n9sx7ya32447lj3vmad0n638z662a0jzzcuqfd5z5zgcdf5hsl across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+├─ internal_vault_sim1tzhj9fwvcu94c2t6qj8vts77sc96z42z37e7le95kcxh3jety5v9m0 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("333")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("33.374740473685")),
+       )
+
+OUTPUTS: 24
+├─ Unit
+├─ Own("internal_component_sim1lqc0ueq9tll27almsvz92ae9paumlaaku3vjxp8gzq7cwdu7gju3zr")
+├─ Unit
+├─ Own("internal_component_sim1lrwxcfe0g4sc2c87r6lrta99kj4gkqz2ulsccqqjqarfvhx2qdty7g")
+├─ Own("internal_component_sim1lz8j8dszltyehz4xwq59dd7aytysxn27s6ugamy80kny4gmxpdzqt9")
+├─ Own("internal_component_sim1lp9eclxdxvyx37dyp8sqlj8qdjnl996lv0809vuhgtesme9d8z55tk")
+├─ Own("internal_component_sim1lp63eg7d32v9c9yvpdkjfhwtdrktuz7jza5r4th5agd73zad8ec9sv")
+├─ Own("internal_component_sim1lzhsenzrjds9m8l4al4u5qlv44jcgq65audkdgr3tswxhurlutts5n")
+├─ Own("internal_component_sim1lpxvyndwpcs9qzax78vvvjxsa2rrrqhjkcjm5z29f3jpzx2jj4fdv3")
+├─ Unit
+├─ Own("internal_component_sim1lp0zwczvrl60cefv7ylqwc7q0n94qqr6eka3wl5dffdzgfsa6x23su")
+├─ Own("internal_component_sim1lpguffnwzsvy69vnaqkhekxvvgh25hwk027k03p7jp5993hckqp3kf")
+├─ Own("internal_component_sim1lp3ufmxhl99n96p80lqs6qmqef4dedsmkvswpahz6zu69c5gna8y3r")
+├─ Own("internal_component_sim1lqjzevf8lksxhy7yvrw9650n6krd0acmcfptmyztyse95x34szda83")
+├─ Own("internal_component_sim1lrt2qmj94khchrver58klmpurlstcd8gnpapwqt667tsr029jrv89y")
+├─ Own("internal_component_sim1lzv4edj36mn3vqfqe0ptt93f4cgyvnqqdz0uwfp52tcjs02sxrys0r")
+├─ Unit
+├─ Own("internal_component_sim1lpqh8amgmz9es0kjvrs0xr5gz5s8hux5alppryrnlnsn4xhrd4ul8f")
+├─ Own("internal_component_sim1lztnrx54wslje76fq9pam0yz5z3j2rvuyqhztztcvj4fa5d04vqspp")
+├─ Own("internal_component_sim1lzarwetquufucztgsl6g94mlt9xyjndhuz27szersl9c85p0lje5ef")
+├─ Own("internal_component_sim1lqmh4ag6uac96fj8j9thxz2ajsukyxnkydrvzvxh74gcvg3gl4cj86")
+├─ Own("internal_component_sim1lz3tpq8m292de2u3xvqy2n9clsaeamgqupvkmknct269ff69fcumsz")
+├─ Own("internal_component_sim1lz50cxj7yk8h0ucny087ryfua0ve2pqndyvcrdta2t7xr5axhlfhaq")
+└─ Unit
+
+BALANCE CHANGES: 26
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -10003.10260192004
+├─ Vault: internal_vault_sim1tqg8x3um0dpmzqjxmn2vql00dlh7y4wpa78vck8p2s6xxqshxmn4dj
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 9001
+├─ Vault: internal_vault_sim1tz5gg6yu0tdp574fsjnkh4mdz3jfklwv9xwk5p5fsnv0t74azdnkaz
+   ResAddr: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6
+   Change: -999
+├─ Vault: internal_vault_sim1tr6nfpfdga8f0l2c25ngcfxdxj8r3z6m2rcdnu3k4wf0988zddyqhp
+   ResAddr: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r
+   Change: -999
+├─ Vault: internal_vault_sim1tpf6rf465f0zmc26slxsulvmu904yx8gghsz5z9kntf3hnrudfnn57
+   ResAddr: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg
+   Change: -999
+├─ Vault: internal_vault_sim1tphw97wgrdhyzds3tlhq87q84047gn3c0z23jqjn8upxchp06safcr
+   ResAddr: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av
+   Change: -999
+├─ Vault: internal_vault_sim1tqldjlrvud5aaz4wj85pj6se477uc0aztqrpgsshs0x8fg0au8lfua
+   ResAddr: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh
+   Change: -999
+├─ Vault: internal_vault_sim1tz9gjqmn4n4hr9s7l6ecxaecwq9uzx66rt4tuul0enwvvw59kzsg2k
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 333
+├─ Vault: internal_vault_sim1tzj09l57k66jc94f6p8r0u6ajt7vnla5yjchqzh4ry5v04e4c5jmkq
+   ResAddr: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6
+   Change: 333
+├─ Vault: internal_vault_sim1tzrgfpm9w70zza7v9r3fxyxjsw0vmmeec6w48zx2d72ycgya0a7xuz
+   ResAddr: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r
+   Change: 333
+├─ Vault: internal_vault_sim1tqtrgymj9msfdne92ew9tq9rpxwwcc9nzwxgl6smcecmw20rp64k8f
+   ResAddr: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg
+   Change: 333
+├─ Vault: internal_vault_sim1tr68dk2et3mqnuh0t80sm92aktrgp523a8clkxtxsx2dercm4507w5
+   ResAddr: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av
+   Change: 333
+├─ Vault: internal_vault_sim1tqeexsdwzacpn4vlz2p5azfmzj3y6h56w4xpzgh9e04tfnqktpr07d
+   ResAddr: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh
+   Change: 333
+├─ Vault: internal_vault_sim1tp8nlczdhzhzgmg7kz5lgucfll8pqqt27xtzkghch0hgs3xfrfjxwn
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 333
+├─ Vault: internal_vault_sim1tqmtvjjltkm583jep3zn7n4sl42hl67w6f4ww29ycmnlaj3hy94rqr
+   ResAddr: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6
+   Change: 333
+├─ Vault: internal_vault_sim1tplmqy6qwnml39e5trd26fn8y7p5y5vd5u7f5n74zatljd54j9x6nk
+   ResAddr: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r
+   Change: 333
+├─ Vault: internal_vault_sim1tzh73zjtustxv0p3q5qne22ul34gwt4qc9xlzzk5nj52kmjcn47gnc
+   ResAddr: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg
+   Change: 333
+├─ Vault: internal_vault_sim1tqde02y9skers59n9xyx4lx3qx7z6qgfx6vy5427q4yjlqhy8f3t2x
+   ResAddr: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av
+   Change: 333
+├─ Vault: internal_vault_sim1trk5ehkwsvyv6tn84xq284qqmjnnvmp2zdrvfjuqytnm6335t0rdyk
+   ResAddr: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh
+   Change: 333
+├─ Vault: internal_vault_sim1tpvlpypv9dy7utuh8m2z7p6s95pw09ez4ezmpjzzy2m374g0me4hff
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 333
+├─ Vault: internal_vault_sim1tzj0zxhxdlhynrux9vkg9tt7n9dmj23yluvwcfddktze6ywgempqmr
+   ResAddr: resource_sim1tkfckt7hpmvlfsnstmwx2l77l05fzqvumz5lm52trhfe7l6dqlqgq6
+   Change: 333
+├─ Vault: internal_vault_sim1tqcvv6s4kjyx3hzgme4c7a3ej4a2g9nwrr22rm5ssq9xv487tndlny
+   ResAddr: resource_sim1t4p3qcpvx8dk82yyj0vnykm8sl0zq6xensykkamkagcw6wjhlkkz4r
+   Change: 333
+├─ Vault: internal_vault_sim1tq8hyf6zsvhwx8c4a9324un5wd2ss3p4pr8syy562tcz5zlytuxstl
+   ResAddr: resource_sim1tk7mptlvqfyqs7qja7gxule3j5u8kanyk2wfy7e43dd5ss0mkxzecg
+   Change: 333
+├─ Vault: internal_vault_sim1tz82n9sx7ya32447lj3vmad0n638z662a0jzzcuqfd5z5zgcdf5hsl
+   ResAddr: resource_sim1tka8xjc60dqnj3kqaefdpljcs7arhu2wgxvqwr0yazh2k99ef6c6av
+   Change: 333
+├─ Vault: internal_vault_sim1tzhj9fwvcu94c2t6qj8vts77sc96z42z37e7le95kcxh3jety5v9m0
+   ResAddr: resource_sim1t5fzsxrjcs304hpyeqtagr7aj4kmvmhjq73fe9z8g87nfd5zw9nvdh
+   Change: 333
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 1.55130096002
+
+NEW ENTITIES: 0

@@ -1,0 +1,61 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+CALL_METHOD
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
+    "withdraw"
+    Address("resource_sim1t5jlu5a523le5q26rclvu9agrr6yjw9783u58fz883gd4s3f47dg6p")
+    Decimal("7000")
+;
+CALL_METHOD
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
+    "withdraw"
+    Address("resource_sim1tkdfgge5tle7w3wnpaz899ve33elycz98yu2dnuqdurnnvhr4v08a2")
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
+    "withdraw"
+    Address("resource_sim1tkpjzky4e6aq9q5m5332dfm8was8axxjtcwrmhms50qtwc2el8a9s6")
+    Decimal("8000")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("pool_1_resource_1")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1t5jlu5a523le5q26rclvu9agrr6yjw9783u58fz883gd4s3f47dg6p")
+    Bucket("pool_1_resource_2")
+;
+CALL_METHOD
+    Address("component_sim1cpgrkhlh7rqy036fgjcrzupeln7wtcvc8dzv28sck8g9tqg0h00lh8")
+    "add_liquidity"
+    Bucket("pool_1_resource_1")
+    Bucket("pool_1_resource_2")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tkdfgge5tle7w3wnpaz899ve33elycz98yu2dnuqdurnnvhr4v08a2")
+    Bucket("pool_2_resource_1")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tkpjzky4e6aq9q5m5332dfm8was8axxjtcwrmhms50qtwc2el8a9s6")
+    Bucket("pool_2_resource_2")
+;
+CALL_METHOD
+    Address("component_sim1crm3jwwepvqj9vypzvkgmw3cqkuvulhjtq05mge5d38y6ceh9wl529")
+    "add_liquidity"
+    Bucket("pool_2_resource_1")
+    Bucket("pool_2_resource_2")
+;
+CALL_METHOD
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

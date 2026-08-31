@@ -1,0 +1,68 @@
+USE_CHILD
+    NamedIntent("child_sending_resources_to_verified_parent")
+    Intent("subtxid_sim16we38q79vd95rfvytddwxn4qxnlfsvttv80kz9t688j5n06kd4nqfr0ua5")
+;
+USE_CHILD
+    NamedIntent("child_bouncing_resources")
+    Intent("subtxid_sim1lh5la66jj3dwl69z2cjjf0hphaj90yl5l5xnd7s8mxx273tkhw2qer299e")
+;
+ASSERT_WORKTOP_IS_EMPTY;
+ASSERT_NEXT_CALL_RETURNS_INCLUDE
+    Map<Address, Enum>(
+        Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8") => Enum<2u8>(
+            Decimal("5")
+        )
+    )
+;
+YIELD_TO_CHILD
+    NamedIntent("child_sending_resources_to_verified_parent")
+;
+ASSERT_WORKTOP_RESOURCES_INCLUDE
+    Map<Address, Enum>(
+        Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8") => Enum<1u8>(
+            Decimal("10")
+        )
+    )
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Bucket("bucket")
+;
+ASSERT_BUCKET_CONTENTS
+    Bucket("bucket")
+    Enum<0u8>()
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>()
+;
+YIELD_TO_CHILD
+    NamedIntent("child_bouncing_resources")
+    Bucket("bucket")
+;
+ASSERT_NEXT_CALL_RETURNS_ONLY
+    Map<Address, Enum>(
+        Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8") => Enum<5u8>(
+            Tuple(
+                Array<NonFungibleLocalId>(),
+                Enum<1u8>(
+                    Decimal("5")
+                ),
+                Enum<0u8>(
+                    Decimal("100")
+                ),
+                Enum<1u8>()
+            )
+        )
+    )
+;
+YIELD_TO_CHILD
+    NamedIntent("child_bouncing_resources")
+;
+TAKE_FROM_WORKTOP
+    Address("resource_sim1thqu8jcc3zh8ukuh0rwtllr84dgrd3z8j9zjdelkx3zf4kjasgvnm8")
+    Decimal("10")
+    Bucket("final_bucket")
+;
+YIELD_TO_PARENT
+    Bucket("final_bucket")
+;

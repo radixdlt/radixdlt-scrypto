@@ -1,0 +1,134 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    Enum<1u8>()
+    true
+    Enum<0u8>(
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
+        ),
+        Enum<0u8>(
+            66u8
+        ),
+        Array<String>()
+    )
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("#1#") => Tuple(
+            Tuple()
+        )
+    )
+    Tuple(
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Radiswap - dApp Owner Badge"
+                    )
+                ),
+                false
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities"
+                    )
+                ),
+                false
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "badge",
+                            "dex",
+                            "pool",
+                            "radiswap"
+                        )
+                    )
+                ),
+                false
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<13u8>(
+                        "https://radiswap.radixdlt.com/"
+                    )
+                ),
+                false
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "account_type"
+    Enum<0u8>(
+        "dapp definition"
+    )
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "name"
+    Enum<0u8>(
+        "Radiswap dApp Definition"
+    )
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "description"
+    Enum<0u8>(
+        "[EXAMPLE] The Radiswap dApp definition account"
+    )
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "tags"
+    Enum<128u8>(
+        Array<String>(
+            "dex",
+            "pool",
+            "radiswap"
+        )
+    )
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "info_url"
+    Enum<13u8>(
+        "https://radiswap.radixdlt.com/"
+    )
+;
+SET_METADATA
+    Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")
+    "claimed_websites"
+    Enum<142u8>(
+        Array<String>(
+            "https://radiswap.radixdlt.com"
+        )
+    )
+;

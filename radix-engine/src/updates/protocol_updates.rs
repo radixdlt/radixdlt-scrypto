@@ -8,6 +8,7 @@ define_single_versioned! {
         #[sbor_assert(backwards_compatible(
             cuttlefish = "FILE:protocol_update_status_substate_cuttlefish_schema.bin",
             dugong = "FILE:protocol_update_status_substate_dugong_schema.bin",
+            eagle_ray = "FILE:protocol_update_status_substate_eagle_ray_schema.bin",
         ))]
     ]
 }
@@ -258,6 +259,11 @@ define_protocol_version_and_updates! {
             variant_name: Dugong,
             logical_name: "dugong",
             display_name: "Dugong",
+        },
+        {
+            variant_name: EagleRay,
+            logical_name: "eagle-ray",
+            display_name: "Eagle Ray",
         }
     ]
 }
@@ -302,7 +308,7 @@ mod tests {
 
     #[test]
     fn assert_latest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Dugong);
+        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::EagleRay);
     }
 
     #[test]
@@ -337,6 +343,7 @@ mod tests {
                 ProtocolVersion::CuttlefishPart1,
                 ProtocolVersion::CuttlefishPart2,
                 ProtocolVersion::Dugong,
+                ProtocolVersion::EagleRay,
             ],
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))

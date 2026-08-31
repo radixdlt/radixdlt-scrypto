@@ -1,0 +1,6 @@
+Name: Eagle Ray
+
+========= SUMMARY HASHES =========
+These Eagle Ray hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
+State changes: 35ec4dc29e92fb50 (allowed to change if not deployed to any network)
+Events       : 07c81f1e6d320830 (allowed to change if not deployed to any network)

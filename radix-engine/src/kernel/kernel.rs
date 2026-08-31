@@ -32,10 +32,14 @@ pub type KernelBootSubstate = KernelBoot;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
 #[sbor_assert(backwards_compatible(
     cuttlefish = "FILE:kernel_boot_substate_cuttlefish_schema.bin",
+    eagle_ray = "FILE:kernel_boot_substate_eagle_ray_schema.bin",
 ))]
 pub enum KernelBoot {
     V1,
     V2 {
+        global_nodes_version: AlwaysVisibleGlobalNodesVersion,
+    },
+    V3 {
         global_nodes_version: AlwaysVisibleGlobalNodesVersion,
     },
 }
@@ -62,10 +66,22 @@ impl KernelBoot {
         }
     }
 
+    pub fn eagle_ray_for_previous_parameters(
+        global_nodes_version: AlwaysVisibleGlobalNodesVersion,
+    ) -> Self {
+        Self::V3 {
+            global_nodes_version,
+        }
+    }
+
     pub fn always_visible_global_nodes_version(&self) -> AlwaysVisibleGlobalNodesVersion {
         match self {
             KernelBoot::V1 => AlwaysVisibleGlobalNodesVersion::V1,
             KernelBoot::V2 {
+                global_nodes_version,
+                ..
+            } => *global_nodes_version,
+            KernelBoot::V3 {
                 global_nodes_version,
                 ..
             } => *global_nodes_version,

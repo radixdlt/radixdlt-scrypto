@@ -1,0 +1,377 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0.73007137689 XRD
+├─ Network execution: 0.27143415 XRD, 5428683 execution cost units
+├─ Network finalization: 0.151268 XRD, 3025360 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.30736922689 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 8
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw, module_id: Main }
+   Event: MintFungibleResourceEvent {
+     amount: Decimal("1"),
+   }
+├─ Emitter: Method { node: resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58a5b96fbabf561613dc141fe33f4df804326b0e152881fece0d8c64375b")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("1"),
+   }
+├─ Emitter: Method { node: account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+     Decimal("1"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("0.73007137689"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.365035688445"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.365035688445"),
+   }
+
+STATE UPDATES: 9 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("0.353339690035"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("d8e1b71672325194e0a2822b26804d425bbcd86b4bdaf87fcfbeb06d9625646a"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh across 1 partitions
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f")),
+       )
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999998.58664123986")),
+       )
+├─ locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3 across 4 partitions
+  ├─ Partition(2): 1 change
+    └─ Set: "admin_badge"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddress(
+           GlobalAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::Protected(
+             AccessRuleNode::ProofRule(
+               ProofRule::Require(
+                 ResourceOrNonFungible::Resource(
+                   ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+                 ),
+               ),
+             ),
+           ),
+           updater: OwnerRoleUpdater::Owner,
+         },
+       )
+  ├─ Partition(6): 4 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("storer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::Resource(
+                 ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+               ),
+             ),
+           ),
+         ),
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recoverer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::Resource(
+                 ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+               ),
+             ),
+           ),
+         ),
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("storer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::Resource(
+                 ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+               ),
+             ),
+           ),
+         ),
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recoverer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::Resource(
+                 ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+               ),
+             ),
+           ),
+         ),
+       )
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6")),
+               blueprint_name: "AccountLocker",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw across 5 partitions
+  ├─ Partition(2): 1 change
+    └─ Set: "account_locker"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddress(
+           GlobalAddress(Reference("locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3")),
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::Protected(
+             AccessRuleNode::ProofRule(
+               ProofRule::Require(
+                 ResourceOrNonFungible::Resource(
+                   ResourceAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+                 ),
+               ),
+             ),
+           ),
+           updater: OwnerRoleUpdater::Owner,
+         },
+       )
+  ├─ Partition(6): 12 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+  ├─ Partition(64): 2 changes
+    ├─ Set: Field(0)
+       Value: LOCKED FungibleResourceManagerDivisibilityFieldPayload::V1(
+         0u8,
+       )
+    └─ Set: Field(1)
+       Value: LOCKED FungibleResourceManagerTotalSupplyFieldPayload::V1(
+         Decimal("1"),
+       )
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleResourceManager",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "track_total_supply",
+             ],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("1")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0.70667938007")),
+       )
+
+OUTPUTS: 3
+├─ Unit
+├─ Tuple(
+     Reference("locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3"),
+     Own("internal_component_sim1lqy4ynyp0y8e235yemy6vxfknrfdt7p79xr085xv8tyvagedkl0dda"),
+   )
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.73007137689
+├─ Vault: internal_vault_sim1tzjmjma6hatpvy7uzs07x06dlqzry6cwz55grlkwpkxxgd6medwp2f
+   ResAddr: resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw
+   Change: 1
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.365035688445
+
+NEW ENTITIES: 2
+└─ Component: locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3
+└─ Resource: resource_sim1tkgvw0yvyt0vpyzrlkw38rplh5pmgny372rcpxp3973df6yfwqttyw

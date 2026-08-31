@@ -1,0 +1,18 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("bucket")
+;
+CALL_METHOD
+    Address("accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh")
+    "contribute_recovery_fee"
+    Bucket("bucket")
+;
