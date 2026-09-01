@@ -1,8 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{
-    CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
-};
-use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
+use radix_engine::errors::{KernelError, RejectionReason, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
@@ -144,11 +141,7 @@ fn test_recall_on_internal_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateFrameError(CreateFrameError::PassMessageError(
-                    PassMessageError::DirectRefNotFound(..)
-                ))
-            ))
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
         )
     });
 }

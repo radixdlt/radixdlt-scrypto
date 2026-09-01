@@ -283,10 +283,11 @@ lazy_static::lazy_static! {
     /// in a node version. This is to ensure that we can always decode old errors.
     ///
     /// New schemas can be generated with `#[sbor_assert(fixed("FILE:xxx"))]` generator above.
-    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
+    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 3] = {
         [
             ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_pre_cuttlefish_schema.bin")),
             ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_eagle_ray_schema.bin")),
         ]
     };
 }
@@ -458,6 +459,8 @@ pub enum KernelError {
     OrphanedNodes(Vec<error_models::OwnedNodeId>),
 
     StackError(StackError),
+
+    InvalidInvokeAccess,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
