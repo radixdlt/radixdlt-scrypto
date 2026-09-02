@@ -80,8 +80,8 @@ impl KernelBoot {
             KernelBoot::V2 {
                 global_nodes_version,
                 ..
-            } => *global_nodes_version,
-            KernelBoot::V3 {
+            }
+            | KernelBoot::V3 {
                 global_nodes_version,
                 ..
             } => *global_nodes_version,

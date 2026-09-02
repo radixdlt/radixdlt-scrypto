@@ -427,6 +427,201 @@ fn test_internal_typed_reference() {
 }
 
 #[test]
+fn test_internal_typed_reference_normal_take() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_fungible_resource(dec!(100), 18, account);
+    let vault_id = ledger
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "take_via_normal_call",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_internal_typed_reference_normal_take_non_fungibles() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_non_fungible_resource(account);
+    let vault_id = ledger
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "take_non_fungibles_via_normal_call",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_internal_typed_reference_normal_forge_proof() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_fungible_resource(dec!(100), 18, account);
+    let vault_id = ledger
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "forge_proof_via_normal_call",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_internal_typed_reference_normal_forge_nft_proof_bypass() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_non_fungible_resource(account);
+    let vault_id = ledger
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    let target = {
+        let receipt = ledger.execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_function(
+                    package_address,
+                    "GatedTarget",
+                    "instantiate",
+                    manifest_args!(resource),
+                )
+                .build(),
+            vec![],
+        );
+        receipt.expect_commit(true).new_component_addresses()[0]
+    };
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "forge_nft_proof_and_call_gated",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into()), target),
+            )
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_internal_typed_reference_normal_lock_fee() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let vault_id = ledger.get_component_vaults(account, XRD).pop().unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "lock_fee_via_normal_call",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_internal_address_against_own_kind_param_is_rejected() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let resource = ledger.create_fungible_resource(dec!(100), 18, account);
+    let vault_id = ledger
+        .get_component_vaults(account, resource)
+        .pop()
+        .unwrap();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(
+                package_address,
+                "ReferenceTest",
+                "take_via_own_kind",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build(),
+        vec![],
+    );
+
+    // Assert
+    receipt.expect_commit_failure();
+}
+
+#[test]
 fn test_send_and_receive_reference_from_child_call_frame() {
     // This test checks what happens if I create a reference to an owned node, send it to a child, and receive it back.
     // At present, the "send to child" check requires that the reference is a direct reference, which can only
