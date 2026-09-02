@@ -100,9 +100,10 @@ lazy_static::lazy_static! {
     /// See [`HISTORIC_RUNTIME_ERROR_SCHEMAS`] for more information.
     ///
     /// Although the RejectionReason isn't used on the node, we do a similar thing anyway.
-    static ref HISTORIC_REJECTION_REASON_SCHEMAS: [ScryptoSingleTypeSchema; 1] = {
+    static ref HISTORIC_REJECTION_REASON_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
         [
             ScryptoSingleTypeSchema::from(include_bytes!("rejection_reason_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("rejection_reason_eagle_ray_schema.bin")),
         ]
     };
 }

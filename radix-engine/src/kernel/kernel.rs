@@ -32,14 +32,10 @@ pub type KernelBootSubstate = KernelBoot;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
 #[sbor_assert(backwards_compatible(
     cuttlefish = "FILE:kernel_boot_substate_cuttlefish_schema.bin",
-    eagle_ray = "FILE:kernel_boot_substate_eagle_ray_schema.bin",
 ))]
 pub enum KernelBoot {
     V1,
     V2 {
-        global_nodes_version: AlwaysVisibleGlobalNodesVersion,
-    },
-    V3 {
         global_nodes_version: AlwaysVisibleGlobalNodesVersion,
     },
 }
@@ -66,22 +62,10 @@ impl KernelBoot {
         }
     }
 
-    pub fn eagle_ray_for_previous_parameters(
-        global_nodes_version: AlwaysVisibleGlobalNodesVersion,
-    ) -> Self {
-        Self::V3 {
-            global_nodes_version,
-        }
-    }
-
     pub fn always_visible_global_nodes_version(&self) -> AlwaysVisibleGlobalNodesVersion {
         match self {
             KernelBoot::V1 => AlwaysVisibleGlobalNodesVersion::V1,
             KernelBoot::V2 {
-                global_nodes_version,
-                ..
-            }
-            | KernelBoot::V3 {
                 global_nodes_version,
                 ..
             } => *global_nodes_version,
@@ -182,7 +166,6 @@ impl<'h, S: SubstateDatabase> BootLoader<'h, S> {
             &mut self.track,
             &mut self.id_allocator,
             &mut system,
-            kernel_boot,
             call_frame_inits,
         );
 
@@ -359,8 +342,6 @@ pub struct Kernel<
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
-    kernel_boot: KernelBoot,
-
     stacks: KernelStacks<M>,
 
     substate_io: SubstateIO<'g, S>,
@@ -385,7 +366,6 @@ impl<'g, M: KernelCallbackObject<CallFrameData: Default>, S: CommitableSubstateS
             store,
             id_allocator,
             callback,
-            KernelBoot::eagle_ray_for_previous_parameters(AlwaysVisibleGlobalNodesVersion::latest()),
             vec![CallFrameInit {
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),
@@ -404,11 +384,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        kernel_boot: KernelBoot,
         call_frame_inits: Vec<CallFrameInit<M::CallFrameData>>,
     ) -> Self {
         Kernel {
-            kernel_boot,
             stacks: KernelStacks::new(call_frame_inits),
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -1194,26 +1172,6 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        if let KernelBoot::V3 { .. } = self.kernel_boot {
-            let can_be_invoked = match invocation.call_frame_data.invocation_receiver() {
-                Some(InvocationReceiver::Normal(node_id)) => self
-                    .stacks
-                    .current_frame()
-                    .get_node_visibility(&node_id)
-                    .can_be_invoked(false),
-                Some(InvocationReceiver::DirectAccess(node_id)) => self
-                    .stacks
-                    .current_frame()
-                    .get_node_visibility(&node_id)
-                    .can_be_invoked(true),
-                None => true,
-            };
-
-            if !can_be_invoked {
-                return Err(KernelError::InvalidInvokeAccess.into());
-            }
-        }
-
         M::before_invoke(invocation.as_ref(), self)?;
 
         // Before push call frame
@@ -1369,9 +1327,6 @@ where
         always_visible_global_nodes: &'static IndexSet<NodeId>,
     ) -> Kernel<'g, M, S> {
         Self {
-            kernel_boot: KernelBoot::eagle_ray_for_previous_parameters(
-                AlwaysVisibleGlobalNodesVersion::latest(),
-            ),
             stacks: KernelStacks::new(vec![CallFrameInit {
                 data: M::CallFrameData::default(),
                 direct_accesses: Default::default(),

@@ -232,7 +232,7 @@ pub trait KernelInternalApi {
 
     /// Returns the visibility of a node.
     ///
-    /// Used by auth system module and `actor_get_node_id` system function only.
+    /// Used by the auth system module, `actor_get_node_id`, and the V5 method receiver access check.
     fn kernel_get_node_visibility_uncosted(&self, node_id: &NodeId) -> NodeVisibility;
 
     /// Returns the value of a substate.

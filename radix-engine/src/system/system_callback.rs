@@ -14,10 +14,10 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::{CallFrameInit, CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::actor::Actor;
 use crate::system::actor::BlueprintHookActor;
 use crate::system::actor::FunctionActor;
 use crate::system::actor::MethodActor;
+use crate::system::actor::{Actor, MethodType};
 use crate::system::module::InitSystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -84,6 +84,7 @@ pub type SystemBootSubstate = SystemBoot;
 #[sbor_assert(backwards_compatible(
     cuttlefish = "FILE:system_boot_substate_cuttlefish_schema.bin",
     dugong = "FILE:system_boot_substate_dugong_schema.bin",
+    eagle_ray = "FILE:system_boot_substate_eagle_ray_schema.bin",
 ))]
 pub enum SystemBoot {
     V1(SystemParameters),
@@ -112,7 +113,11 @@ impl SystemBoot {
     }
 
     pub fn latest(network_definition: NetworkDefinition) -> Self {
-        Self::cuttlefish(network_definition)
+        Self::eagle_ray_for_previous_parameters(SystemParameters::latest(network_definition))
+    }
+
+    pub fn eagle_ray_for_previous_parameters(parameters: SystemParameters) -> Self {
+        SystemBoot::V2(SystemVersion::V5, parameters)
     }
 
     pub fn cuttlefish(network_definition: NetworkDefinition) -> Self {
@@ -164,11 +169,12 @@ pub enum SystemVersion {
     V2,
     V3,
     V4,
+    V5,
 }
 
 impl SystemVersion {
     pub const fn latest() -> Self {
-        Self::V4
+        Self::V5
     }
 
     fn create_auth_module(
@@ -256,7 +262,12 @@ impl SystemVersion {
     }
 
     pub fn assert_access_rule_is_noop_when_auth_module_disabled(self) -> bool {
-        self >= SystemVersion::V4
+        // Dugong's V4-only behavior must not carry into later versions.
+        matches!(self, SystemVersion::V4)
+    }
+
+    pub fn should_check_method_receiver_access(self) -> bool {
+        self >= SystemVersion::V5
     }
 }
 
@@ -1940,6 +1951,34 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
         invocation: &KernelInvocation<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
+        if api
+            .kernel_get_system()
+            .versioned_system_logic
+            .should_check_method_receiver_access()
+        {
+            let can_be_invoked = match invocation.call_frame_data {
+                Actor::Method(MethodActor {
+                    method_type: MethodType::Direct,
+                    node_id,
+                    ..
+                }) => api
+                    .kernel_get_node_visibility_uncosted(&node_id)
+                    .can_be_invoked(true),
+                Actor::Method(MethodActor {
+                    method_type: MethodType::Main | MethodType::Module(..),
+                    node_id,
+                    ..
+                }) => api
+                    .kernel_get_node_visibility_uncosted(&node_id)
+                    .can_be_invoked(false),
+                Actor::Root | Actor::Function(..) | Actor::BlueprintHook(..) => true,
+            };
+
+            if !can_be_invoked {
+                return Err(KernelError::InvalidInvokeAccess.into());
+            }
+        }
+
         let is_to_barrier = invocation.call_frame_data.is_barrier();
         let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
 

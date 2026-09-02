@@ -1,9 +1,9 @@
 use super::*;
-use crate::{internal_prelude::*, kernel::kernel::KernelBoot};
+use crate::{internal_prelude::*, system::system_callback::SystemBoot};
 
 #[derive(Clone, ScryptoSbor)]
 pub struct EagleRaySettings {
-    pub kernel_version_update: UpdateSetting<NoSettings>,
+    pub system_version_update: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for EagleRaySettings {
@@ -15,13 +15,13 @@ impl UpdateSettings for EagleRaySettings {
 
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
-            kernel_version_update: UpdateSetting::enabled_as_default_for_network(network),
+            system_version_update: UpdateSetting::enabled_as_default_for_network(network),
         }
     }
 
     fn all_disabled() -> Self {
         Self {
-            kernel_version_update: UpdateSetting::Disabled,
+            system_version_update: UpdateSetting::Disabled,
         }
     }
 
@@ -49,33 +49,32 @@ impl ProtocolUpdateGenerator for EagleRayGenerator {
 fn generate_main_batch(
     store: &dyn SubstateDatabase,
     EagleRaySettings {
-        kernel_version_update,
+        system_version_update,
     }: &EagleRaySettings,
 ) -> ProtocolUpdateBatch {
     let mut batch = ProtocolUpdateBatch::empty();
 
-    if let UpdateSetting::Enabled(NoSettings) = kernel_version_update {
+    if let UpdateSetting::Enabled(NoSettings) = system_version_update {
         batch.mut_add_flash(
-            "eagle-ray-kernel-version-update",
-            generate_kernel_boot_v3_updates(store),
+            "eagle-ray-system-version-update",
+            generate_system_boot_v5_updates(store),
         );
     }
 
     batch
 }
 
-fn generate_kernel_boot_v3_updates(store: &dyn SubstateDatabase) -> StateUpdates {
-    let existing_kernel_boot: KernelBoot = store.get_existing_substate(
+fn generate_system_boot_v5_updates(store: &dyn SubstateDatabase) -> StateUpdates {
+    let existing_system_boot: SystemBoot = store.get_existing_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
-        BootLoaderField::KernelBoot,
+        BootLoaderField::SystemBoot,
     );
-    let global_nodes_version = existing_kernel_boot.always_visible_global_nodes_version();
 
     StateUpdates::empty().set_substate(
         TRANSACTION_TRACKER,
         BOOT_LOADER_PARTITION,
-        BootLoaderField::KernelBoot,
-        KernelBoot::eagle_ray_for_previous_parameters(global_nodes_version),
+        BootLoaderField::SystemBoot,
+        SystemBoot::eagle_ray_for_previous_parameters(existing_system_boot.into_parameters()),
     )
 }

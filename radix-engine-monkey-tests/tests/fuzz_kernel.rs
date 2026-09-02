@@ -24,10 +24,6 @@ use scrypto_test::prelude::*;
 struct TestCallFrameData;
 
 impl CallFrameReferences for TestCallFrameData {
-    fn invocation_receiver(&self) -> Option<InvocationReceiver> {
-        None
-    }
-
     fn global_references(&self) -> Vec<NodeId> {
         Default::default()
     }

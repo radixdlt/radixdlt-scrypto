@@ -1,3 +1,4 @@
+use radix_engine::errors::KernelError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemError;
 use radix_engine::system::system_type_checker::TypeCheckError;
@@ -454,7 +455,12 @@ fn test_internal_typed_reference_normal_take() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -485,7 +491,12 @@ fn test_internal_typed_reference_normal_take_non_fungibles() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -515,7 +526,12 @@ fn test_internal_typed_reference_normal_forge_proof() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -561,7 +577,12 @@ fn test_internal_typed_reference_normal_forge_nft_proof_bypass() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -587,7 +608,12 @@ fn test_internal_typed_reference_normal_lock_fee() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -618,7 +644,18 @@ fn test_internal_address_against_own_kind_param_is_rejected() {
     );
 
     // Assert
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    _,
+                    BlueprintPayloadIdentifier::Function(function_name, InputOrOutput::Input),
+                    _
+                )
+            )) if function_name == "take_via_own_kind"
+        )
+    });
 }
 
 #[test]

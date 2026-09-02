@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, InvocationReceiver};
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use radix_engine_interface::api::{AttachedModuleId, ModuleId};
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -87,22 +87,6 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
-    fn invocation_receiver(&self) -> Option<InvocationReceiver> {
-        match self {
-            Actor::Method(MethodActor {
-                method_type: MethodType::Main | MethodType::Module(_),
-                node_id,
-                ..
-            }) => Some(InvocationReceiver::Normal(*node_id)),
-            Actor::Method(MethodActor {
-                method_type: MethodType::Direct,
-                node_id,
-                ..
-            }) => Some(InvocationReceiver::DirectAccess(*node_id)),
-            Actor::Root | Actor::Function(_) | Actor::BlueprintHook(_) => None,
-        }
-    }
-
     fn global_references(&self) -> Vec<NodeId> {
         let mut global_refs = Vec::new();
 

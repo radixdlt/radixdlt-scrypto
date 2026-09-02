@@ -1,35 +1,49 @@
-use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine_tests::prelude::*;
 
 #[test]
-fn default_eagle_ray_settings_advance_kernel_boot_to_v3() {
+fn default_eagle_ray_settings_advance_system_boot_to_v5() {
     // Arrange
     let ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
-    let kernel_boot = KernelBoot::load(ledger.substate_db());
+    let system_boot = ledger.substate_db().get_existing_substate::<SystemBoot>(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+    );
 
     // Assert
     assert_eq!(
-        kernel_boot,
-        KernelBoot::eagle_ray_for_previous_parameters(AlwaysVisibleGlobalNodesVersion::V2),
+        system_boot,
+        SystemBoot::eagle_ray_for_previous_parameters(SystemParameters::latest(
+            NetworkDefinition::simulator(),
+        )),
     );
 }
 
 #[test]
-fn disabled_eagle_ray_kernel_update_leaves_kernel_boot_at_v2() {
+fn disabled_eagle_ray_system_update_leaves_system_boot_at_v3() {
     // Arrange
     let ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| {
             builder
                 .configure_eagle_ray(|settings| {
-                    settings.disable(|settings| &mut settings.kernel_version_update)
+                    settings.disable(|settings| &mut settings.system_version_update)
                 })
                 .from_bootstrap_to(ProtocolVersion::EagleRay)
         })
         .build();
+
     // Act
-    let kernel_boot = KernelBoot::load(ledger.substate_db());
+    let system_boot = ledger.substate_db().get_existing_substate::<SystemBoot>(
+        TRANSACTION_TRACKER,
+        BOOT_LOADER_PARTITION,
+        BootLoaderField::SystemBoot,
+    );
+
     // Assert
-    assert_eq!(kernel_boot, KernelBoot::cuttlefish());
+    assert_eq!(
+        system_boot,
+        SystemBoot::cuttlefish(NetworkDefinition::simulator()),
+    );
 }
