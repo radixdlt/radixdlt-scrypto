@@ -1975,7 +1975,7 @@ impl<V: SystemCallbackObject> KernelCallbackObject for System<V> {
             };
 
             if !can_be_invoked {
-                return Err(KernelError::InvalidInvokeAccess.into());
+                return Err(RuntimeError::SystemError(SystemError::InvalidInvokeAccess));
             }
         }
 

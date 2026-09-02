@@ -460,8 +460,6 @@ pub enum KernelError {
     OrphanedNodes(Vec<error_models::OwnedNodeId>),
 
     StackError(StackError),
-
-    InvalidInvokeAccess,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -588,6 +586,8 @@ pub enum SystemError {
 
     CannotLockFeeInChildSubintent(usize),
     IntentError(IntentError),
+
+    InvalidInvokeAccess,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

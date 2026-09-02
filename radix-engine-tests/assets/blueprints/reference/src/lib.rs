@@ -108,13 +108,11 @@ mod reference_test {
         pub fn take_non_fungibles_via_normal_call(
             reference: TypedNonFungibleVaultReference,
         ) -> Bucket {
-            let ids: IndexSet<NonFungibleLocalId> = scrypto_decode(
-                &ScryptoVmV1Api::object_call(
-                    &reference.0.as_node_id(),
-                    NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                    scrypto_args!(u32::MAX),
-                ),
-            )
+            let ids: IndexSet<NonFungibleLocalId> = scrypto_decode(&ScryptoVmV1Api::object_call(
+                &reference.0.as_node_id(),
+                NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_args!(u32::MAX),
+            ))
             .unwrap();
 
             scrypto_decode(&ScryptoVmV1Api::object_call(
@@ -149,13 +147,11 @@ mod reference_test {
                 &reference.0.as_node_id(),
             ))
             .unwrap();
-            let ids: IndexSet<NonFungibleLocalId> = scrypto_decode(
-                &ScryptoVmV1Api::object_call(
-                    &reference.0.as_node_id(),
-                    NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                    scrypto_args!(u32::MAX),
-                ),
-            )
+            let ids: IndexSet<NonFungibleLocalId> = scrypto_decode(&ScryptoVmV1Api::object_call(
+                &reference.0.as_node_id(),
+                NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+                scrypto_args!(u32::MAX),
+            ))
             .unwrap();
             let proof: Proof = scrypto_decode(&ScryptoVmV1Api::object_call(
                 &reference.0.as_node_id(),

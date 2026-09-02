@@ -1,4 +1,3 @@
-use radix_engine::errors::KernelError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemError;
 use radix_engine::system::system_type_checker::TypeCheckError;
@@ -458,7 +457,7 @@ fn test_internal_typed_reference_normal_take() {
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::InvalidInvokeAccess)
         )
     });
 }
@@ -494,7 +493,7 @@ fn test_internal_typed_reference_normal_take_non_fungibles() {
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::InvalidInvokeAccess)
         )
     });
 }
@@ -529,7 +528,7 @@ fn test_internal_typed_reference_normal_forge_proof() {
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::InvalidInvokeAccess)
         )
     });
 }
@@ -580,7 +579,7 @@ fn test_internal_typed_reference_normal_forge_nft_proof_bypass() {
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::InvalidInvokeAccess)
         )
     });
 }
@@ -611,7 +610,7 @@ fn test_internal_typed_reference_normal_lock_fee() {
     receipt.expect_specific_failure(|error| {
         matches!(
             error,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::InvalidInvokeAccess)
         )
     });
 }
