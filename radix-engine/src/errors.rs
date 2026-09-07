@@ -100,9 +100,10 @@ lazy_static::lazy_static! {
     /// See [`HISTORIC_RUNTIME_ERROR_SCHEMAS`] for more information.
     ///
     /// Although the RejectionReason isn't used on the node, we do a similar thing anyway.
-    static ref HISTORIC_REJECTION_REASON_SCHEMAS: [ScryptoSingleTypeSchema; 1] = {
+    static ref HISTORIC_REJECTION_REASON_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
         [
             ScryptoSingleTypeSchema::from(include_bytes!("rejection_reason_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("rejection_reason_eagle_ray_schema.bin")),
         ]
     };
 }
@@ -283,10 +284,11 @@ lazy_static::lazy_static! {
     /// in a node version. This is to ensure that we can always decode old errors.
     ///
     /// New schemas can be generated with `#[sbor_assert(fixed("FILE:xxx"))]` generator above.
-    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 2] = {
+    static ref HISTORIC_RUNTIME_ERROR_SCHEMAS: [ScryptoSingleTypeSchema; 3] = {
         [
             ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_pre_cuttlefish_schema.bin")),
             ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_cuttlefish_schema.bin")),
+            ScryptoSingleTypeSchema::from(include_bytes!("runtime_error_eagle_ray_schema.bin")),
         ]
     };
 }
@@ -584,6 +586,8 @@ pub enum SystemError {
 
     CannotLockFeeInChildSubintent(usize),
     IntentError(IntentError),
+
+    InvalidInvokeAccess,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

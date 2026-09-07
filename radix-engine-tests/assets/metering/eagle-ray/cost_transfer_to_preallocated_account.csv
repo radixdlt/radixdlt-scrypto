@@ -1,0 +1,54 @@
+Total Cost (XRD)                                                           ,            0.41101537909,    100.0%
+- Execution Cost (XRD)                                                     ,                0.1913715,     46.6%
+- Finalization Cost (XRD)                                                  ,                0.0515111,     12.5%
+- Storage Cost (XRD)                                                       ,            0.16813277909,     40.9%
+- Tipping Cost (XRD)                                                       ,                        0,      0.0%
+- Royalty Cost (XRD)                                                       ,                        0,      0.0%
+Execution Cost Breakdown                                                   ,                  3827430,    100.0%
+- AfterInvoke                                                              ,                      586,      0.0%
+- AllocateNodeId                                                           ,                     2231,      0.1%
+- BeforeInvoke                                                             ,                     2698,      0.1%
+- CheckReference                                                           ,                    40011,      1.0%
+- CloseSubstate                                                            ,                    39474,      1.0%
+- CreateNode                                                               ,                    20314,      0.5%
+- DropNode                                                                 ,                    33040,      0.9%
+- EmitEvent                                                                ,                     3480,      0.1%
+- GetOwnedNodes                                                            ,                     1000,      0.0%
+- LockFee                                                                  ,                      500,      0.0%
+- MarkSubstateAsTransient                                                  ,                       55,      0.0%
+- MoveModule                                                               ,                     1400,      0.0%
+- OpenSubstate::GlobalAccount                                              ,                   249472,      6.5%
+- OpenSubstate::GlobalFungibleResourceManager                              ,                   175335,      4.6%
+- OpenSubstate::GlobalNonFungibleResourceManager                           ,                    42686,      1.1%
+- OpenSubstate::GlobalPackage                                              ,                  1796998,     47.0%
+- OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   487127,     12.7%
+- OpenSubstate::InternalFungibleVault                                      ,                    96660,      2.5%
+- OpenSubstate::InternalGenericComponent                                   ,                    60054,      1.6%
+- PinNode                                                                  ,                      252,      0.0%
+- QueryActor                                                               ,                     2500,      0.1%
+- ReadSubstate                                                             ,                   160366,      4.2%
+- RunNativeCode::Worktop_drain                                             ,                    11224,      0.3%
+- RunNativeCode::Worktop_drop                                              ,                    17918,      0.5%
+- RunNativeCode::Worktop_put                                               ,                    29033,      0.8%
+- RunNativeCode::create                                                    ,                    24592,      0.6%
+- RunNativeCode::create_empty_vault_FungibleResourceManager                ,                    35570,      0.9%
+- RunNativeCode::create_with_data                                          ,                    27471,      0.7%
+- RunNativeCode::get_amount_FungibleBucket                                 ,                    33048,      0.9%
+- RunNativeCode::lock_fee                                                  ,                   116047,      3.0%
+- RunNativeCode::on_virtualize                                             ,                    34520,      0.9%
+- RunNativeCode::put_FungibleVault                                         ,                    24554,      0.6%
+- RunNativeCode::take_FungibleVault                                        ,                    42457,      1.1%
+- RunNativeCode::try_deposit_batch_or_abort                                ,                   121257,      3.2%
+- RunNativeCode::withdraw                                                  ,                    57851,      1.5%
+- SetCallFrameData                                                         ,                      606,      0.0%
+- SetSubstate                                                              ,                      371,      0.0%
+- SwitchStack                                                              ,                     1000,      0.0%
+- ValidateTxPayload                                                        ,                     9880,      0.3%
+- VerifyTxSignatures                                                       ,                    14000,      0.4%
+- WriteSubstate                                                            ,                     9792,      0.3%
+Finalization Cost Breakdown                                                ,                  1030222,    100.0%
+- CommitEvents                                                             ,                    30060,      2.9%
+- CommitIntentStatus                                                       ,                        0,      0.0%
+- CommitLogs                                                               ,                        0,      0.0%
+- CommitStateUpdates::GlobalPreallocatedSecp256k1Account                   ,                   700115,     68.0%
+- CommitStateUpdates::InternalFungibleVault                                ,                   300047,     29.1%

@@ -1,8 +1,7 @@
 //! Core assumptions made in this file:
 //!
-//! 1. That all of the WASM files compiled for coverage are built using the `nightly` toolchain.
-//! 2. That the user doesn't have control over which `nightly` toolchain to use and we will just use
-//!    the `nightly` toolchain available on the system.
+//! 1. Coverage WASM builds use a nightly toolchain.
+//! 2. `SCRYPTO_COVERAGE_TOOLCHAIN` selects it, defaulting to `nightly`.
 //! 3. That we're always building the packages for the `wasm32-unknown-unknown` target.
 //! 4. That we're always using the `release` profile for all of the coverage builds.
 //! 5. That the user already has `clang`, `llvm-cov`, and `llvm-profdata` installed on their local
@@ -14,6 +13,7 @@ use clap::Parser;
 use radix_engine_interface::types::Level;
 use regex::Regex;
 use sbor::prelude::*;
+use scrypto_compiler::coverage_toolchain;
 use scrypto_compiler::is_scrypto_cargo_locked_env_var_active;
 use scrypto_compiler::RustFlags;
 use scrypto_compiler::ScryptoCompiler;
@@ -507,12 +507,10 @@ fn assert_path_exists<P: AsRef<Path>>(path: P) -> Result<P, CoverageError> {
     }
 }
 
-/// Creates a new [`Command`] that uses the nightly compiler by setting the `RUSTUP_TOOLCHAIN`
-/// environment variable. This should be used for all of the commands that we run to ensure that we
-/// are always making use of the same compiler.
+/// Runs coverage commands with the selected toolchain via `RUSTUP_TOOLCHAIN`.
 fn new_nightly_command(program: impl AsRef<OsStr>) -> Command {
     let mut command = Command::new(program);
-    command.env("RUSTUP_TOOLCHAIN", "nightly");
+    command.env("RUSTUP_TOOLCHAIN", coverage_toolchain());
     command
 }
 
@@ -579,6 +577,6 @@ fn construct_build_environment_variables() -> IndexMap<String, String> {
         };
         environment_variables.insert(env_var.to_owned(), encoded_rust_flags);
     }
-    environment_variables.insert("RUSTUP_TOOLCHAIN".to_owned(), "nightly".to_owned());
+    environment_variables.insert("RUSTUP_TOOLCHAIN".to_owned(), coverage_toolchain());
     environment_variables
 }

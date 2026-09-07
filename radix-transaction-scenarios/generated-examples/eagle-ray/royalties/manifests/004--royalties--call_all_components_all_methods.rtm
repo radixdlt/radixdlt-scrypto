@@ -1,0 +1,41 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("component_sim1cr7guww2kc22r6vnk8ffep9sv2aphp0mg6hdngg8x2shzf2xn90zmw")
+    "method_with_no_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cr7guww2kc22r6vnk8ffep9sv2aphp0mg6hdngg8x2shzf2xn90zmw")
+    "method_with_xrd_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cr7guww2kc22r6vnk8ffep9sv2aphp0mg6hdngg8x2shzf2xn90zmw")
+    "method_with_usd_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cr6wkdave3fx5vkf7lmpmgx3yaucurjup5vlxy625vt8vw05jchx45")
+    "method_with_no_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cr6wkdave3fx5vkf7lmpmgx3yaucurjup5vlxy625vt8vw05jchx45")
+    "method_with_xrd_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cr6wkdave3fx5vkf7lmpmgx3yaucurjup5vlxy625vt8vw05jchx45")
+    "method_with_usd_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cp6hfzrywgcv9ffwtdhs7lczul27vkscacekxdmpm7zjzyrmwlppa3")
+    "method_with_no_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cp6hfzrywgcv9ffwtdhs7lczul27vkscacekxdmpm7zjzyrmwlppa3")
+    "method_with_xrd_package_royalty"
+;
+CALL_METHOD
+    Address("component_sim1cp6hfzrywgcv9ffwtdhs7lczul27vkscacekxdmpm7zjzyrmwlppa3")
+    "method_with_usd_package_royalty"
+;

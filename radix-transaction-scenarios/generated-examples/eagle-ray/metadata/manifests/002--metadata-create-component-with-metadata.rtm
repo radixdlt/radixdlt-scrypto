@@ -1,0 +1,305 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3")
+    "MetadataTest"
+    AddressReservation("metadata_component_address_reservation")
+    NamedAddress("metadata_component_address")
+;
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "free"
+;
+CALL_FUNCTION
+    Address("package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3")
+    "MetadataTest"
+    "new_with_address"
+    AddressReservation("metadata_component_address_reservation")
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "address"
+    Enum<8u8>(
+        Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "address_array"
+    Enum<136u8>(
+        Array<Address>(
+            Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "bool"
+    Enum<1u8>(
+        true
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "bool_array"
+    Enum<129u8>(
+        Array<Bool>(
+            true,
+            false
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "decimal"
+    Enum<7u8>(
+        Decimal("1")
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "decimal_array"
+    Enum<135u8>(
+        Array<Decimal>(
+            Decimal("1"),
+            Decimal("2.1")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "i32"
+    Enum<5u8>(
+        4i32
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "i32_array"
+    Enum<133u8>(
+        Array<I32>(
+            4i32,
+            5i32
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "i64"
+    Enum<6u8>(
+        5i64
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "i64_array"
+    Enum<134u8>(
+        Array<I64>(
+            5i64,
+            6i64
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "instant"
+    Enum<12u8>(
+        1687446137i64
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "instant_array"
+    Enum<140u8>(
+        Array<I64>(
+            1687446137i64
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "non_fungible_global_id"
+    Enum<10u8>(
+        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]")
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "non_fungible_global_id_array"
+    Enum<138u8>(
+        Array<Tuple>(
+            NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "non_fungible_local_id"
+    Enum<11u8>(
+        NonFungibleLocalId("<Hello_world>")
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "non_fungible_local_id_array"
+    Enum<139u8>(
+        Array<NonFungibleLocalId>(
+            NonFungibleLocalId("<Hello_world>"),
+            NonFungibleLocalId("#42#"),
+            NonFungibleLocalId("[01]"),
+            NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "origin"
+    Enum<14u8>(
+        "https://www.radixdlt.com"
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "origin_array"
+    Enum<142u8>(
+        Array<String>(
+            "https://www.radixdlt.com"
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "public_key"
+    Enum<9u8>(
+        Enum<1u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000000000")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "public_key_array"
+    Enum<137u8>(
+        Array<Enum>(
+            Enum<1u8>(
+                Bytes("0000000000000000000000000000000000000000000000000000000000000000")
+            ),
+            Enum<0u8>(
+                Bytes("000000000000000000000000000000000000000000000000000000000000000000")
+            )
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "public_key_hash"
+    Enum<15u8>(
+        Enum<1u8>(
+            Bytes("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "public_key_hash_array"
+    Enum<143u8>(
+        Array<Enum>(
+            Enum<1u8>(
+                Bytes("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")
+            ),
+            Enum<0u8>(
+                Bytes("165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428")
+            )
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "string"
+    Enum<0u8>(
+        "Hello"
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "string_array"
+    Enum<128u8>(
+        Array<String>(
+            "Hello",
+            "world!"
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u32"
+    Enum<3u8>(
+        2u32
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u32_array"
+    Enum<131u8>(
+        Array<U32>(
+            2u32,
+            3u32
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u64"
+    Enum<4u8>(
+        3u64
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u64_array"
+    Enum<132u8>(
+        Array<U64>(
+            3u64,
+            4u64
+        )
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u8"
+    Enum<2u8>(
+        1u8
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "u8_array"
+    Enum<130u8>(
+        Bytes("0102")
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "url"
+    Enum<13u8>(
+        "https://www.radixdlt.com"
+    )
+;
+SET_METADATA
+    NamedAddress("metadata_component_address")
+    "url_array"
+    Enum<141u8>(
+        Array<String>(
+            "https://www.radixdlt.com"
+        )
+    )
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

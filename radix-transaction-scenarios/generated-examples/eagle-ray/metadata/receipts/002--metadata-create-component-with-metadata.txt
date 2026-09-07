@@ -1,0 +1,756 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 1.83608138628 XRD
+├─ Network execution: 0.72504135 XRD, 14500827 execution cost units
+├─ Network finalization: 0.23404115 XRD, 4680823 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.87699888628 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 39
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "address",
+     value: GenericMetadataValue::GlobalAddress(
+       GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "address_array",
+     value: GenericMetadataValue::GlobalAddressArray(
+       [
+         GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "bool",
+     value: GenericMetadataValue::Bool(
+       true,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "bool_array",
+     value: GenericMetadataValue::BoolArray(
+       [
+         true,
+         false,
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "decimal",
+     value: GenericMetadataValue::Decimal(
+       Decimal("1"),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "decimal_array",
+     value: GenericMetadataValue::DecimalArray(
+       [
+         Decimal("1"),
+         Decimal("2.1"),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "i32",
+     value: GenericMetadataValue::I32(
+       4i32,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "i32_array",
+     value: GenericMetadataValue::I32Array(
+       [
+         4i32,
+         5i32,
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "i64",
+     value: GenericMetadataValue::I64(
+       5i64,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "i64_array",
+     value: GenericMetadataValue::I64Array(
+       [
+         5i64,
+         6i64,
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "instant",
+     value: GenericMetadataValue::Instant(
+       Instant(1687446137i64),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "instant_array",
+     value: GenericMetadataValue::InstantArray(
+       [
+         Instant(1687446137i64),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "non_fungible_global_id",
+     value: GenericMetadataValue::NonFungibleGlobalId(
+       NonFungibleGlobalId {
+         resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+         local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+       },
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "non_fungible_global_id_array",
+     value: GenericMetadataValue::NonFungibleGlobalIdArray(
+       [
+         NonFungibleGlobalId {
+           resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+           local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+         },
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "non_fungible_local_id",
+     value: GenericMetadataValue::NonFungibleLocalId(
+       NonFungibleLocalId("<Hello_world>"),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "non_fungible_local_id_array",
+     value: GenericMetadataValue::NonFungibleLocalIdArray(
+       [
+         NonFungibleLocalId("<Hello_world>"),
+         NonFungibleLocalId("#42#"),
+         NonFungibleLocalId("[01]"),
+         NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}"),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "origin",
+     value: GenericMetadataValue::Origin(
+       Origin("https://www.radixdlt.com"),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "origin_array",
+     value: GenericMetadataValue::OriginArray(
+       [
+         Origin("https://www.radixdlt.com"),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "public_key",
+     value: GenericMetadataValue::PublicKey(
+       PublicKey::Ed25519(
+         Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+       ),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "public_key_array",
+     value: GenericMetadataValue::PublicKeyArray(
+       [
+         PublicKey::Ed25519(
+           Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+         ),
+         PublicKey::Secp256k1(
+           Secp256k1PublicKey(hex("000000000000000000000000000000000000000000000000000000000000000000")),
+         ),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "public_key_hash",
+     value: GenericMetadataValue::PublicKeyHash(
+       PublicKeyHash::Ed25519(
+         Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+       ),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "public_key_hash_array",
+     value: GenericMetadataValue::PublicKeyHashArray(
+       [
+         PublicKeyHash::Ed25519(
+           Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+         ),
+         PublicKeyHash::Secp256k1(
+           Secp256k1PublicKeyHash(hex("165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428")),
+         ),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "string",
+     value: GenericMetadataValue::String(
+       "Hello",
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "string_array",
+     value: GenericMetadataValue::StringArray(
+       [
+         "Hello",
+         "world!",
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u32",
+     value: GenericMetadataValue::U32(
+       2u32,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u32_array",
+     value: GenericMetadataValue::U32Array(
+       [
+         2u32,
+         3u32,
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u64",
+     value: GenericMetadataValue::U64(
+       3u64,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u64_array",
+     value: GenericMetadataValue::U64Array(
+       [
+         3u64,
+         4u64,
+       ],
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u8",
+     value: GenericMetadataValue::U8(
+       1u8,
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "u8_array",
+     value: GenericMetadataValue::U8Array(
+       hex("0102"),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "url",
+     value: GenericMetadataValue::Url(
+       Url("https://www.radixdlt.com"),
+     ),
+   }
+├─ Emitter: Method { node: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr, module_id: Metadata }
+   Event: SetMetadataEvent {
+     key: "url_array",
+     value: GenericMetadataValue::UrlArray(
+       [
+         Url("https://www.radixdlt.com"),
+       ],
+     ),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("10000"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("1.83608138628"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.91804069314"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.91804069314"),
+   }
+
+STATE UPDATES: 8 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("13.0589202352825"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("9a2ce9b0b3177146fc702f8d80b887d17467efe1ea6081bcc5afa1929fcf2c98"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999979947.76431905887")),
+       )
+├─ internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Hash(hex("9a2ce9b0b3177146fc702f8d80b887d17467efe1ea6081bcc5afa1929fcf2c98"))
+       Value: Epoch(2u64)
+├─ component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr across 5 partitions
+  ├─ Partition(2): 33 changes
+    ├─ Set: "origin"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Origin(
+           Origin("https://www.radixdlt.com"),
+         ),
+       )
+    ├─ Set: "public_key"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKey(
+           PublicKey::Ed25519(
+             Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+           ),
+         ),
+       )
+    ├─ Set: "empty_locked"
+       Value: LOCKED EMPTY
+    ├─ Set: "url"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com"),
+         ),
+       )
+    ├─ Set: "non_fungible_local_id"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleLocalId(
+           NonFungibleLocalId("<Hello_world>"),
+         ),
+       )
+    ├─ Set: "non_fungible_global_id_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleGlobalIdArray(
+           [
+             NonFungibleGlobalId {
+               resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+               local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+             },
+           ],
+         ),
+       )
+    ├─ Set: "bool"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Bool(
+           true,
+         ),
+       )
+    ├─ Set: "decimal_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::DecimalArray(
+           [
+             Decimal("1"),
+             Decimal("2.1"),
+           ],
+         ),
+       )
+    ├─ Set: "address_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddressArray(
+           [
+             GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+           ],
+         ),
+       )
+    ├─ Set: "non_fungible_local_id_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleLocalIdArray(
+           [
+             NonFungibleLocalId("<Hello_world>"),
+             NonFungibleLocalId("#42#"),
+             NonFungibleLocalId("[01]"),
+             NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}"),
+           ],
+         ),
+       )
+    ├─ Set: "public_key_hash_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyHashArray(
+           [
+             PublicKeyHash::Ed25519(
+               Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+             ),
+             PublicKeyHash::Secp256k1(
+               Secp256k1PublicKeyHash(hex("165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428")),
+             ),
+           ],
+         ),
+       )
+    ├─ Set: "u64"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U64(
+           3u64,
+         ),
+       )
+    ├─ Set: "string_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
+             "Hello",
+             "world!",
+           ],
+         ),
+       )
+    ├─ Set: "i64_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I64Array(
+           [
+             5i64,
+             6i64,
+           ],
+         ),
+       )
+    ├─ Set: "bool_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::BoolArray(
+           [
+             true,
+             false,
+           ],
+         ),
+       )
+    ├─ Set: "decimal"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Decimal(
+           Decimal("1"),
+         ),
+       )
+    ├─ Set: "url_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::UrlArray(
+           [
+             Url("https://www.radixdlt.com"),
+           ],
+         ),
+       )
+    ├─ Set: "u8"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U8(
+           1u8,
+         ),
+       )
+    ├─ Set: "public_key_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyArray(
+           [
+             PublicKey::Ed25519(
+               Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+             ),
+             PublicKey::Secp256k1(
+               Secp256k1PublicKey(hex("000000000000000000000000000000000000000000000000000000000000000000")),
+             ),
+           ],
+         ),
+       )
+    ├─ Set: "i32_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I32Array(
+           [
+             4i32,
+             5i32,
+           ],
+         ),
+       )
+    ├─ Set: "origin_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::OriginArray(
+           [
+             Origin("https://www.radixdlt.com"),
+           ],
+         ),
+       )
+    ├─ Set: "u32_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U32Array(
+           [
+             2u32,
+             3u32,
+           ],
+         ),
+       )
+    ├─ Set: "u64_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U64Array(
+           [
+             3u64,
+             4u64,
+           ],
+         ),
+       )
+    ├─ Set: "address"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddress(
+           GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+         ),
+       )
+    ├─ Set: "i32"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I32(
+           4i32,
+         ),
+       )
+    ├─ Set: "non_fungible_global_id"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleGlobalId(
+           NonFungibleGlobalId {
+             resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+             local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+           },
+         ),
+       )
+    ├─ Set: "string"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Hello",
+         ),
+       )
+    ├─ Set: "u32"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U32(
+           2u32,
+         ),
+       )
+    ├─ Set: "i64"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I64(
+           5i64,
+         ),
+       )
+    ├─ Set: "instant"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Instant(
+           Instant(1687446137i64),
+         ),
+       )
+    ├─ Set: "instant_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::InstantArray(
+           [
+             Instant(1687446137i64),
+           ],
+         ),
+       )
+    ├─ Set: "u8_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U8Array(
+           hex("0102"),
+         ),
+       )
+    └─ Set: "public_key_hash"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyHash(
+           PublicKeyHash::Ed25519(
+             Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+           ),
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(6): 4 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Metadata, key: RoleKey("metadata_setter") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Metadata, key: RoleKey("metadata_locker_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Metadata, key: RoleKey("metadata_locker") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Metadata, key: RoleKey("metadata_setter_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED MetadataTest {
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3")),
+               blueprint_name: "MetadataTest",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("20000")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("26.117840470565")),
+       )
+
+OUTPUTS: 37
+├─ Unit
+├─ None
+├─ Own("internal_component_sim1lrv27smp8l50msvpnjrwyeezf3yvrf4a5xmvscuddxym5a7gnqkmw2")
+├─ Reference("component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr")
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+├─ Unit
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -10001.83608138628
+├─ Vault: internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 10000
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.91804069314
+
+NEW ENTITIES: 1
+└─ Component: component_sim1cz4djw7ufpm4rjkwnphzxrn2q7kx8k4a0k2l4wqfz0dwfv4fd9znvr

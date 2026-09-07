@@ -15,6 +15,7 @@ pub struct ProtocolSettings {
     pub cuttlefish_part1: CuttlefishPart1Settings,
     pub cuttlefish_part2: CuttlefishPart2Settings,
     pub dugong: DugongSettings,
+    pub eagle_ray: EagleRaySettings,
 }
 
 impl ProtocolSettings {
@@ -30,6 +31,7 @@ impl ProtocolSettings {
             ProtocolVersion::CuttlefishPart1 => Box::new(self.cuttlefish_part1.create_generator()),
             ProtocolVersion::CuttlefishPart2 => Box::new(self.cuttlefish_part2.create_generator()),
             ProtocolVersion::Dugong => Box::new(self.dugong.create_generator()),
+            ProtocolVersion::EagleRay => Box::new(self.eagle_ray.create_generator()),
         }
     }
 }
@@ -55,6 +57,7 @@ impl ProtocolBuilder {
                     network_definition,
                 ),
                 dugong: DugongSettings::all_enabled_as_default_for_network(network_definition),
+                eagle_ray: EagleRaySettings::all_enabled_as_default_for_network(network_definition),
             },
         }
     }
@@ -96,6 +99,14 @@ impl ProtocolBuilder {
         creator: impl FnOnce(DugongSettings) -> DugongSettings,
     ) -> Self {
         self.settings.dugong = creator(self.settings.dugong);
+        self
+    }
+
+    pub fn configure_eagle_ray(
+        mut self,
+        creator: impl FnOnce(EagleRaySettings) -> EagleRaySettings,
+    ) -> Self {
+        self.settings.eagle_ray = creator(self.settings.eagle_ray);
         self
     }
 

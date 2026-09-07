@@ -1,0 +1,21 @@
+USE_CHILD
+    NamedIntent("subintent-with-free-gift")
+    Intent("subtxid_sim1jkanydle7ppgm70enqtm5ymj6q5kx2wlats3rccm022x2nw6wt8qu3lv25")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "lock_fee"
+    Decimal("5000")
+;
+YIELD_TO_CHILD
+    NamedIntent("subintent-with-free-gift")
+;
+ASSERT_WORKTOP_CONTAINS
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("1")
+;
+CALL_METHOD
+    Address("account_sim1cyq8zqa0cz6jufuskdum6w8uex3wt3n9dwegkq40y9gu65pyxcusds")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;

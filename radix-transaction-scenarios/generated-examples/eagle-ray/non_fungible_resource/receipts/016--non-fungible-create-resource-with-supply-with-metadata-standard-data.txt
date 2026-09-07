@@ -1,0 +1,451 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 1.5591542945 XRD
+├─ Network execution: 0.2794964 XRD, 5589928 execution cost units
+├─ Network finalization: 0.21631105 XRD, 4326221 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 1.0633468445 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 8
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn, module_id: Main }
+   Event: MintNonFungibleResourceEvent {
+     ids: [
+       NonFungibleLocalId("#1#"),
+       NonFungibleLocalId("#2#"),
+       NonFungibleLocalId("#3#"),
+       NonFungibleLocalId("#4#"),
+       NonFungibleLocalId("#5#"),
+       NonFungibleLocalId("#8#"),
+     ],
+   }
+├─ Emitter: Method { node: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("98f96d868c36a008b3a57d113c6a1749e80f97678e3b8ba243924ef252b1")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1nrukmp5vx6sq3va905gnc6shf85ql9m83cachgjrjf80y54302yl8n, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("#1#"),
+       NonFungibleLocalId("#2#"),
+       NonFungibleLocalId("#3#"),
+       NonFungibleLocalId("#4#"),
+       NonFungibleLocalId("#5#"),
+       NonFungibleLocalId("#8#"),
+     ],
+   }
+├─ Emitter: Method { node: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw, module_id: Main }
+   Event: DepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn")),
+     [
+       NonFungibleLocalId("#1#"),
+       NonFungibleLocalId("#2#"),
+       NonFungibleLocalId("#3#"),
+       NonFungibleLocalId("#4#"),
+       NonFungibleLocalId("#5#"),
+       NonFungibleLocalId("#8#"),
+     ],
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("1.5591542945"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.77957714725"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.77957714725"),
+   }
+
+STATE UPDATES: 8 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("2.5711574559825"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("a22767060e05aabbf9757d0cb30f072e4c812aea2c3a7d4b1904cdd532c46886"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999989.71537017607")),
+       )
+├─ resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn across 7 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(df84c30420084cde44b6951a08db21999d2eeb7f6cee0ba27695966c0b170ad1)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(198u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(10u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataStandardNonFungibleData",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "name",
+                           "description",
+                           "key_image_url",
+                           "arbitrary_coolness_rating",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(2): 5 changes
+    ├─ Set: "info_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://developers.radixdlt.com/ecosystem"),
+         ),
+       )
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Radix - Defi Use-cases",
+         ),
+       )
+    ├─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "[EXAMPLE] An example NF using the metadata standard",
+         ),
+       )
+    ├─ Set: "icon_url"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61aded05f3208c78b028bf99_Scrypto-Icon-Round%20(1).png"),
+         ),
+       )
+    └─ Set: "tags"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
+             "collection",
+             "example-tag",
+           ],
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(6): 14 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("non_fungible_data_updater_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("non_fungible_data_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+  ├─ Partition(64): 3 changes
+    ├─ Set: Field(0)
+       Value: LOCKED NonFungibleResourceManagerIdTypeFieldPayload::V1(
+         NonFungibleIdType::Integer,
+       )
+    ├─ Set: Field(1)
+       Value: LOCKED NonFungibleResourceManagerMutableFieldsFieldPayload::V1(
+         NonFungibleResourceManagerMutableFieldsV1 {
+           mutable_field_index: {},
+         },
+       )
+    └─ Set: Field(2)
+       Value: LOCKED NonFungibleResourceManagerTotalSupplyFieldPayload::V1(
+         Decimal("6"),
+       )
+  ├─ Partition(65): 6 changes
+    ├─ Set: NonFungibleLocalId("#3#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Lending",
+         description: "In lending, borrowers pledge their crypto assets as collateral and avail loans in stablecoins or other crypto assets as a means of financing.\n\nHowever, unlike TradFi, DeFi lending uses algorithmic systems where lending and borrowing rates are determined automatically based on each asset's real-time supply and demand.\n\nThis automated approach means more flexibility and access for anyone looking for financing.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414979a8b045995bf75_ICON-LENDING.svg"),
+         arbitrary_coolness_rating: 30u64,
+       }
+    ├─ Set: NonFungibleLocalId("#2#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Stablecoins",
+         description: "A stablecoin is a class of cryptocurrencies that attempt to offer price stability and are backed by a reserve asset. Stablecoins have become popular as they provide the instant processing and security or privacy of cryptocurrencies' payments along with the volatility-free stable valuations of fiat currencies.\n\nStablecoins base their market value on an external reference. This could be a currency like the U.S. dollar or a commodity's price such as gold. Stablecoins achieve price stability via collateralization or algorithmic buying and selling of the reference asset or its derivatives.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f419f77f05b9086565e6_icon-stablecoin.svg"),
+         arbitrary_coolness_rating: 5u64,
+       }
+    ├─ Set: NonFungibleLocalId("#5#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Futures, Options, & Derivatives",
+         description: "A futures contract is an arrangement between two users on an exchange to buy and sell an underlying crypto asset at an agreed-upon price on a certain date in the future.\n\nOptions give the holder the right to buy (call) or sell (put) an underlying crypto asset at a set date without being obligated.\n\nSynthetic assets, also known as synths, are an asset class formed by combining cryptocurrencies and traditional derivative assets, making them tokenized derivatives.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414e8f31b971debfabe_ICON-FUTURES.svg"),
+         arbitrary_coolness_rating: 10u64,
+       }
+    ├─ Set: NonFungibleLocalId("#8#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Gaming",
+         description: "Since we have so many gamers who spend endless hours and money on gaming platforms, DeFi gaming platforms will enable them to monetize their time and progress. The play-to-earn games offer the best of both worlds - they provide an entertaining experience and make playing games lucrative.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f416931770a50ed4a702_ICON-GAMING.svg"),
+         arbitrary_coolness_rating: 71u64,
+       }
+    ├─ Set: NonFungibleLocalId("#4#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Insurance",
+         description: "Insurance protocols provide cover against smart contract failure & exchange hacks using a decentralized protocol, so people can share risk without needing an insurance company.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f4146c4528458c93da96_ICON-NFTS-1.svg"),
+         arbitrary_coolness_rating: 0u64,
+       }
+    └─ Set: NonFungibleLocalId("#1#")
+       Value: UNLOCKED MetadataStandardNonFungibleData {
+         name: "Decentralized Exchanges",
+         description: "Decentralized Exchanges, also known as DEXes, allow users to exchange two or more tokens in a single transaction, at a certain price, without the need for another party to facilitate the transaction.\n\nDEXes allow users to trade assets without the need for a trusted third party. They are the first ever examples of a censorship resistant, non-custodial, and permissionless way of exchanging assets electronically.",
+         key_image_url: Url("https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414d213fd7349b654b9_icon-DEX.svg"),
+         arbitrary_coolness_rating: 45u64,
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "NonFungibleResourceManager",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "track_total_supply",
+             ],
+             generic_substitutions: [
+               GenericSubstitution::Local(
+                 ScopedTypeId(
+                   SchemaHash(hex("df84c30420084cde44b6951a08db21999d2eeb7f6cee0ba27695966c0b170ad1")),
+                   LocalTypeId::SchemaLocalIndex(
+                     0u64,
+                   ),
+                 ),
+               ),
+             ],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw across 1 partitions
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1nrukmp5vx6sq3va905gnc6shf85ql9m83cachgjrjf80y54302yl8n")),
+       )
+├─ internal_vault_sim1nrukmp5vx6sq3va905gnc6shf85ql9m83cachgjrjf80y54302yl8n across 3 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "NonFungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("6")),
+       )
+  └─ Partition(65): 6 changes
+    ├─ Set: NonFungibleLocalId("#3#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#2#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#5#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#8#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#4#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    └─ Set: NonFungibleLocalId("#1#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("5.142314911965")),
+       )
+
+OUTPUTS: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn"),
+     Own("internal_component_sim1lzuj8fghrm8ucjg5n7j9x5t2xjctz7064nzlhx50yu9gws6cek35tg"),
+   )
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -1.5591542945
+├─ Vault: internal_vault_sim1nrukmp5vx6sq3va905gnc6shf85ql9m83cachgjrjf80y54302yl8n
+   ResAddr: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn
+   Change: +{#1#, #2#, #3#, #4#, #5#, #8#}, -{}
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.77957714725
+
+NEW ENTITIES: 1
+└─ Resource: resource_sim1ngy84t92hr3fthvrelg0kmcr2hwqxv00qed9wu2zkffa9yyv8h8zsn
