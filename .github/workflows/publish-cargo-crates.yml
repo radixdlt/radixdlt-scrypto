@@ -5,6 +5,12 @@ on:
     types:
       - released
       - prereleased
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        description: "Dry run: verify secrets/build without publishing to crates.io"
+        default: true
 
 permissions:
   packages: write
@@ -27,29 +33,44 @@ jobs:
         secret_prefix: "CRATES"
         secret_name: ${{ secrets.AWS_CRATES_TOKEN_SECRET_PATH }}
         parse_json: true
-    - name: Publish crates
+    - name: Verify secrets resolved
       run: |
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-rust/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive-common/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-sbor-derive/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common-derive/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-blueprint-schema-init/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-interface/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-derive/Cargo.toml" 
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-interface/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-impls/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling-derive/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-native-sdk/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transactions/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transaction-scenarios/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-queries/Cargo.toml" 
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-bindgen/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-compiler/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-test/Cargo.toml"
-        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-clis/Cargo.toml"
+        if [ -z "$CRATES_TOKEN" ]; then
+          echo "::error::CRATES_TOKEN is empty. Check that the AWS_SCRYPTO_RELEASE_SECRET_ROLE and AWS_CRATES_TOKEN_SECRET_PATH repo secrets are set and the role can read the secret."
+          exit 1
+        fi
+        echo "CRATES_TOKEN resolved successfully (value is masked)."
+    - name: Publish crates
+      env:
+        DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      run: |
+        if [ "$DRY_RUN" = "true" ]; then
+          echo "Running in DRY RUN mode: crates will be packaged and checked, but NOT uploaded to crates.io"
+          FLAGS="--dry-run --no-verify"
+        else
+          FLAGS=""
+        fi
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-rust/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive-common/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor-derive/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./sbor/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-sbor-derive/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-common-derive/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-blueprint-schema-init/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-interface/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-derive/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-interface/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-impls/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine-profiling-derive/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-native-sdk/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transactions/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-engine/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-transaction-scenarios/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-substate-store-queries/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-bindgen/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-compiler/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./scrypto-test/Cargo.toml"
+        cargo publish $FLAGS --token "${{ env.CRATES_TOKEN }}" --manifest-path "./radix-clis/Cargo.toml"

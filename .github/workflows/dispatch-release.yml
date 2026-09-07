@@ -44,4 +44,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VERSION_NUMBER: ${{ inputs.release-tag }}
-        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
