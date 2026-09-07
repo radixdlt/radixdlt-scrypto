@@ -429,6 +429,8 @@ jobs:
   radix-clis-scrypto-coverage:
     name: Run CLI tests (scrypto coverage)
     runs-on: ubuntu-16-cores-selfhosted
+    env:
+      SCRYPTO_COVERAGE_TOOLCHAIN: nightly-2026-03-27
     steps:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
@@ -443,11 +445,9 @@ jobs:
       # This should be at or in front of rust-toolchain.toml
       - name: Install rustc nightly
         run: |
-          rustup toolchain install nightly
-          rustup target add wasm32-unknown-unknown --toolchain nightly
-          rustup override set nightly
-          rustup component add rust-src
-          rustup show
+          rustup toolchain install "$SCRYPTO_COVERAGE_TOOLCHAIN" --component rust-src --target wasm32-unknown-unknown
+          rustup override set "$SCRYPTO_COVERAGE_TOOLCHAIN"
+          rustc -vV
       - name: Install LLVM 22
         run: |
           sudo apt-get install -y lsb-release wget software-properties-common gnupg
@@ -506,4 +506,3 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
-

@@ -968,7 +968,7 @@ impl ScryptoCompiler {
             // Building the sys-root for the standard library.
             let sysroot_src = rustc_sysroot_src({
                 let mut cmd = Command::new("rustc");
-                cmd.arg("+nightly");
+                cmd.arg(format!("+{}", coverage_toolchain()));
                 cmd
             })
             .map_err(|err| ScryptoCompilerError::InvalidSysrootPath(format!("{err:#?}")))?;
@@ -995,7 +995,7 @@ impl ScryptoCompiler {
                 })
                 .cargo({
                     let mut cmd = Command::new("cargo");
-                    cmd.arg("+nightly");
+                    cmd.arg(format!("+{}", coverage_toolchain()));
                     cmd
                 })
                 .rustflags(RustFlags::for_scrypto_compilation().into_iter())
@@ -1036,7 +1036,7 @@ impl ScryptoCompiler {
 
         let mut command = Command::new("cargo");
         if self.input_params.coverage {
-            command.arg("+nightly");
+            command.arg(format!("+{}", coverage_toolchain()));
         }
 
         // Stdio streams used only for 1st phase compilation due to lack of Copy trait.
@@ -1652,6 +1652,11 @@ impl IntoIterator for RustFlags {
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
+}
+
+/// Selects `SCRYPTO_COVERAGE_TOOLCHAIN`, defaulting to `nightly`.
+pub fn coverage_toolchain() -> String {
+    env::var("SCRYPTO_COVERAGE_TOOLCHAIN").unwrap_or_else(|_| "nightly".to_owned())
 }
 
 #[cfg(feature = "std")]
