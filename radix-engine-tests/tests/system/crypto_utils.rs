@@ -180,6 +180,94 @@ fn crypto_scrypto_blake_2b_256_hash(
     )
 }
 
+fn crypto_scrypto_bls12381_v1_verify_min_sig(
+    runner: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+    package_address: PackageAddress,
+    msg: Vec<u8>,
+    pub_key: Bls12381G2PublicKey,
+    signature: Bls12381G1Signature,
+) -> TransactionReceipt {
+    runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(runner.faucet_component(), 500u32)
+            .call_function(
+                package_address,
+                "CryptoScrypto",
+                "bls12381_v1_verify_min_sig",
+                manifest_args!(msg, pub_key, signature),
+            )
+            .build(),
+        vec![],
+    )
+}
+
+/// Builds a ledger with the Scrypto VM booted to V1_3 by enabling the (otherwise-disabled)
+/// Dugong crypto-utils-v3 VM-boot flash. Required to publish/call blueprints that import the
+/// `crypto_utils_bls12381_v1_verify_min_sig` host function.
+fn ledger_with_crypto_utils_v3(
+) -> LedgerSimulator<NoExtension, InMemorySubstateDatabase> {
+    LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_dugong(|_| {
+                    DugongSettings::all_disabled().set(|s| {
+                        s.vm_boot_to_enable_crypto_utils_v3 = UpdateSetting::new(true)
+                    })
+                })
+                .from_bootstrap_to(ProtocolVersion::Dugong)
+        })
+        .build()
+}
+
+#[test]
+fn test_crypto_scrypto_verify_bls12381_v1_min_sig() {
+    // Arrange
+    let mut ledger = ledger_with_crypto_utils_v3();
+
+    let package_address = ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v3"));
+
+    // Real drand quicknet (unchained, min-sig) beacon, round 21180130.
+    let pub_key = Bls12381G2PublicKey::from_str(
+        "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a",
+    )
+    .unwrap();
+    let signature = Bls12381G1Signature::from_str(
+        "96c36d9223c01c8c539c09573afdcad8ce626e0147b245bf9ad489fb01a49403b1588c8803972754b9d8ca8d6ac14319",
+    )
+    .unwrap();
+    // The unchained-drand message is SHA-256(round_number as big-endian u64).
+    let message =
+        hex::decode("7d2207c2d03c3c7561ea7fd7cc80d6f99434428528c266a74ca42766bed7d191").unwrap();
+
+    // Act
+    let verify: bool = get_output!(crypto_scrypto_bls12381_v1_verify_min_sig(
+        &mut ledger,
+        package_address,
+        message,
+        pub_key,
+        signature,
+    ));
+
+    // Assert
+    assert!(verify);
+
+    // Arrange — a different round's message must not verify against this signature.
+    let wrong_message =
+        hex::decode("a7ad19ac9c5255d6233274657a64696767c9c8e3d6391f38a790613201cd0b6f").unwrap();
+
+    // Act
+    let verify_wrong: bool = get_output!(crypto_scrypto_bls12381_v1_verify_min_sig(
+        &mut ledger,
+        package_address,
+        wrong_message,
+        pub_key,
+        signature,
+    ));
+
+    // Assert
+    assert!(!verify_wrong);
+}
+
 #[test]
 fn test_crypto_scrypto_verify_bls12381_v1() {
     // Arrange
@@ -858,6 +946,50 @@ mod costing_tests {
             let data = vec![0u8; size];
             let signature = secret_key.sign_v1(data.as_slice());
             let _ = crypto_scrypto_bls12381_v1_verify(
+                &mut ledger,
+                package_address,
+                data,
+                public_key,
+                signature,
+            );
+        }
+    }
+
+    #[test]
+    fn test_crypto_scrypto_verify_bls12381_v1_min_sig_costing() {
+        let mut ledger = ledger_with_crypto_utils_v3();
+
+        let package_address =
+            ledger.publish_package_simple(PackageLoader::get("crypto_scrypto_v3"));
+
+        // Real drand quicknet beacon (round 21180130). The cost is dominated by the pairing /
+        // final exponentiation, which runs regardless of the message size or whether
+        // verification ultimately succeeds, so a fixed (real) key/signature pair over varying
+        // message sizes is sufficient to characterize the per-byte and fixed costs.
+        let public_key = Bls12381G2PublicKey::from_str(
+            "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a",
+        )
+        .unwrap();
+        let signature = Bls12381G1Signature::from_str(
+            "96c36d9223c01c8c539c09573afdcad8ce626e0147b245bf9ad489fb01a49403b1588c8803972754b9d8ca8d6ac14319",
+        )
+        .unwrap();
+
+        for size in [
+            100usize,
+            200,
+            500,
+            1024,
+            10 * 1024,
+            20 * 1024,
+            50 * 1024,
+            100 * 1024,
+            200 * 1024,
+            500 * 1024,
+            900 * 1024,
+        ] {
+            let data = vec![0u8; size];
+            let _ = crypto_scrypto_bls12381_v1_verify_min_sig(
                 &mut ledger,
                 package_address,
                 data,

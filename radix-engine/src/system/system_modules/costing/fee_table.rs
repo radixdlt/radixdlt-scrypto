@@ -506,6 +506,25 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn bls12381_v1_verify_min_sig_cost(&self, size: usize) -> u32 {
+        // Based on `test_crypto_scrypto_verify_bls12381_v1_min_sig_costing`.
+        //
+        // The min-sig variant differs from min-pk (`bls12381_v1_verify_cost`) in two ways:
+        // - the message is hashed to G1 instead of G2 (cheaper hash-to-curve), and
+        // - the public key is a 96-byte G2 point requiring a more expensive subgroup check,
+        // while the dominant pairing / final-exponentiation cost is comparable.
+        //
+        // The per-byte coefficient (driven by SHA-256 message expansion) matches min-pk; the
+        // fixed term is an initial estimate that mirrors min-pk's measured base and MUST be
+        // recalibrated from the costing test's measured instruction counts (run with the
+        // `resource_tracker` feature) before relying on it for fee determinism.
+        let size = if size < 1024 { 1024 } else { cast(size) };
+        let instructions_cnt = add(mul(size, 36), 15650000);
+        // Convert to cost units
+        instructions_cnt / CPU_INSTRUCTIONS_TO_COST_UNIT
+    }
+
+    #[inline]
     pub fn bls12381_v1_aggregate_verify_cost(&self, sizes: &[usize]) -> u32 {
         // Observed that aggregated verify might be broken down into:
         // - steps depending on message size

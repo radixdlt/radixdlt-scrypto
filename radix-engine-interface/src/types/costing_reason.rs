@@ -18,6 +18,9 @@ pub enum ClientCostingEntry<'a> {
     Bls12381V1Verify {
         size: usize,
     },
+    Bls12381V1VerifyMinSig {
+        size: usize,
+    },
     Bls12381V1AggregateVerify {
         sizes: &'a [usize],
     },

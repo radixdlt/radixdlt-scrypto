@@ -87,6 +87,8 @@ pub const CRYPTO_UTILS_BLS12381_V1_FAST_AGGREGATE_VERIFY_FUNCTION_NAME: &str =
     "crypto_utils_bls12381_v1_fast_aggregate_verify";
 pub const CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME: &str =
     "crypto_utils_bls12381_g2_signature_aggregate";
+pub const CRYPTO_UTILS_BLS12381_V1_VERIFY_MIN_SIG_FUNCTION_NAME: &str =
+    "crypto_utils_bls12381_v1_verify_min_sig";
 pub const CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak256_hash";
 pub const CRYPTO_UTILS_BLAKE2B_256_HASH_FUNCTION_NAME: &str = "crypto_utils_blake2b_256_hash";
 pub const CRYPTO_UTILS_ED25519_VERIFY_FUNCTION_NAME: &str = "crypto_utils_ed25519_verify";

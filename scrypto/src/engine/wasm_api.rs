@@ -318,6 +318,14 @@ pub mod crypto_utils {
             signatures_ptr: *const u8,
             signatures_len: usize) -> Buffer;
 
+        pub fn crypto_utils_bls12381_v1_verify_min_sig(
+            message_ptr: *const u8,
+            message_len: usize,
+            public_key_ptr: *const u8,
+            public_key_len: usize,
+            signature_ptr: *const u8,
+            signature_len: usize) -> u32;
+
         pub fn crypto_utils_keccak256_hash(
             message_ptr: *const u8,
             message_len: usize) -> Buffer;

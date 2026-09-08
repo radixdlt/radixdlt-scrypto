@@ -4,7 +4,10 @@ use radix_common::{
         Ed25519PublicKey, Ed25519Signature, Secp256k1PublicKey, Secp256k1Signature,
         Secp256k1UncompressedPublicKey,
     },
-    prelude::{scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G2Signature, Hash},
+    prelude::{
+        scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G1Signature,
+        Bls12381G2PublicKey, Bls12381G2Signature, Hash,
+    },
 };
 use sbor::prelude::Vec;
 
@@ -69,6 +72,32 @@ impl CryptoUtils {
                 message.as_ref().len(),
                 public_keys.as_ptr(),
                 public_keys.len(),
+                signature.as_ptr(),
+                signature.len(),
+            ) != 0
+        }
+    }
+
+    /// Performs BLS12-381 G1 signature verification (minimal-signature-size "min-sig" variant).
+    ///
+    /// In this variant signatures are in G1 (48 bytes) and public keys in G2 (96 bytes) — the
+    /// mirror of [`Self::bls12381_v1_verify`] (min-pk). It is the variant used by unchained
+    /// drand networks (e.g. quicknet).
+    ///
+    /// Domain specifier tag: BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_
+    pub fn bls12381_v1_verify_min_sig(
+        message: impl AsRef<[u8]>,
+        public_key: impl AsRef<Bls12381G2PublicKey>,
+        signature: impl AsRef<Bls12381G1Signature>,
+    ) -> bool {
+        let public_key: Vec<u8> = scrypto_encode(public_key.as_ref()).unwrap();
+        let signature: Vec<u8> = scrypto_encode(signature.as_ref()).unwrap();
+        unsafe {
+            crypto_utils::crypto_utils_bls12381_v1_verify_min_sig(
+                message.as_ref().as_ptr(),
+                message.as_ref().len(),
+                public_key.as_ptr(),
+                public_key.len(),
                 signature.as_ptr(),
                 signature.len(),
             ) != 0

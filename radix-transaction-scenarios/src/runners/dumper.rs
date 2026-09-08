@@ -157,6 +157,9 @@ mod test {
             .configure_dugong(|_| DugongSettings {
                 native_entity_metadata_updates: UpdateSetting::Enabled(Default::default()),
                 system_logic_updates: UpdateSetting::Enabled(Default::default()),
+                // Kept disabled, consistent with Dugong not being enacted by default; enabling
+                // it would boot the Scrypto VM to V1_3 and change the dumped scenario state.
+                vm_boot_to_enable_crypto_utils_v3: UpdateSetting::Disabled,
             })
             .from_bootstrap_to_latest();
         for protocol_update_executor in protocol_executor.each_protocol_update_executor(&db) {
